@@ -1,0 +1,2214 @@
+[
+  {
+    "name": "NEMA 8 Stepper Motor (8HS11-0204S)",
+    "description": "0.2A bipolar stepper motor, 20mm (NEMA 8) frame, 28mm body length, 1.8Ncm holding torque, 200 steps/rev (1.8°), 4mm round shaft, 4-wire, miniature stepper for camera gimbals and small mechanisms",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20,
+      "height": 20,
+      "depth": 28,
+      "weight": 40
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 16,
+          "boltCount": 4,
+          "boltSize": 2,
+          "holeType": "threaded"
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 4,
+          "shaftLength": 10,
+          "shaftType": "round"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.9V",
+      "current": "0.2A",
+      "power": "0.8W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 0.018,
+      "ratedCurrent": 0.2,
+      "phaseResistance": 19.6,
+      "phaseInductance": 6.5,
+      "rotorInertia": 1.2,
+      "bodyLength": 28,
+      "detentTorque": 0.003,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "8HS11-0204S",
+        "approximatePrice": 12,
+        "url": "https://www.omc-stepperonline.com/nema-8-stepper-motor"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07TTMPJ3X",
+        "approximatePrice": 14,
+        "url": "https://www.amazon.com/dp/B07TTMPJ3X"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Smallest common NEMA stepper. Very low torque — suited for camera gimbals, small positioning stages, and miniature mechanisms only. Pair with TMC2209 driver for quiet operation or A4988 for budget builds. Mount with M2×6 SHCS on 16mm square bolt pattern. No centering pilot on most variants — use alignment pins or tight-tolerance mounting plate. Shaft accepts small GT2 pulleys with 4mm bore. UNVERIFIED: exact pilot diameter varies by manufacturer.",
+    "tags": [
+      "NEMA 8",
+      "nema8",
+      "20mm stepper",
+      "miniature stepper",
+      "micro stepper",
+      "8HS11",
+      "gimbal motor",
+      "camera stabilizer",
+      "small stepper"
+    ]
+  },
+  {
+    "name": "NEMA 11 Stepper Motor Short Body (11HS12-0674S)",
+    "description": "0.67A bipolar stepper motor, 28mm (NEMA 11) frame, 32mm body length, 6Ncm holding torque, 200 steps/rev (1.8°), 5mm D-shaft, 4-wire, compact stepper for medical devices and instruments",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 28,
+      "height": 28,
+      "depth": 32,
+      "weight": 80
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 23,
+          "boltCount": 4,
+          "boltSize": 2.5,
+          "holeType": "threaded"
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 5,
+          "shaftLength": 20,
+          "shaftType": "D",
+          "flatDepth": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.8V",
+      "current": "0.67A",
+      "power": "2.5W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 0.06,
+      "ratedCurrent": 0.67,
+      "phaseResistance": 5.6,
+      "phaseInductance": 4.2,
+      "rotorInertia": 8,
+      "bodyLength": 32,
+      "detentTorque": 0.005,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "11HS12-0674S",
+        "approximatePrice": 12,
+        "url": "https://www.omc-stepperonline.com/nema-11-stepper-motor"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00PNEQI02",
+        "approximatePrice": 14,
+        "url": "https://www.amazon.com/dp/B00PNEQI02"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Compact stepper for space-constrained applications. Pair with TMC2209 or A4988 driver. Mount with M2.5×5 SHCS on 23mm square bolt pattern. Shaft accepts GT2 pulleys with 5mm bore or 5mm flexible couplings. Limited torque — not suitable for direct-drive CNC axes. Good for valve positioning, small dispensers, and instrument positioning.",
+    "tags": [
+      "NEMA 11",
+      "nema11",
+      "28mm stepper",
+      "compact stepper",
+      "11HS12",
+      "medical motor",
+      "instrument stepper",
+      "small stepper motor"
+    ]
+  },
+  {
+    "name": "NEMA 11 Stepper Motor Long Body (11HS20-0674S)",
+    "description": "0.67A bipolar stepper motor, 28mm (NEMA 11) frame, 51mm body length, 12Ncm holding torque, 200 steps/rev (1.8°), 5mm D-shaft, 4-wire, extended torque variant of NEMA 11 for extruders and feeders",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 28,
+      "height": 28,
+      "depth": 51,
+      "weight": 120
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 23,
+          "boltCount": 4,
+          "boltSize": 2.5,
+          "holeType": "threaded"
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 5,
+          "shaftLength": 20,
+          "shaftType": "D",
+          "flatDepth": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.8V",
+      "current": "0.67A",
+      "power": "2.5W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 0.12,
+      "ratedCurrent": 0.67,
+      "phaseResistance": 5.6,
+      "phaseInductance": 8.5,
+      "rotorInertia": 16,
+      "bodyLength": 51,
+      "detentTorque": 0.008,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "11HS20-0674S",
+        "approximatePrice": 15,
+        "url": "https://www.omc-stepperonline.com/nema-11-stepper-motor"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Extended body NEMA 11 with double the torque of the short variant. Pair with TMC2209 or A4988 driver. Mount with M2.5×5 SHCS on 23mm square bolt pattern. Good for compact extruders (like Bondtech LGX Lite) and small lead screw Z-axes. Shaft accepts GT2 pulleys with 5mm bore.",
+    "tags": [
+      "NEMA 11",
+      "nema11",
+      "28mm stepper",
+      "long body stepper",
+      "11HS20",
+      "extruder motor",
+      "high torque NEMA 11"
+    ]
+  },
+  {
+    "name": "NEMA 14 Stepper Motor Short Body (14HS13-0804S)",
+    "description": "0.8A bipolar stepper motor, 35mm (NEMA 14) frame, 34mm body length, 14Ncm holding torque, 200 steps/rev (1.8°), 5mm D-shaft, 4-wire, compact mid-size stepper for extruders and light-duty positioning",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 35,
+      "height": 35,
+      "depth": 34,
+      "weight": 150
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 26,
+          "boltCount": 4,
+          "boltSize": 3,
+          "holeType": "threaded",
+          "pilotDiameter": 22
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 5,
+          "shaftLength": 21,
+          "shaftType": "D",
+          "flatDepth": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.5V",
+      "current": "0.8A",
+      "power": "2.8W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 0.14,
+      "ratedCurrent": 0.8,
+      "phaseResistance": 4.4,
+      "phaseInductance": 5.5,
+      "rotorInertia": 18,
+      "bodyLength": 34,
+      "detentTorque": 0.008,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "14HS13-0804S",
+        "approximatePrice": 12,
+        "url": "https://www.omc-stepperonline.com/nema-14-stepper-motor"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00PNEQKC0",
+        "approximatePrice": 14,
+        "url": "https://www.amazon.com/dp/B00PNEQKC0"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Popular mid-size stepper, commonly used in Voron Stealthburner extruders. Pair with TMC2209 or A4988 driver. Mount with M3×6 SHCS on 26mm square bolt pattern. 22mm centering pilot helps alignment. Shaft accepts GT2 pulleys with 5mm bore or Bondtech drive gears. Good balance of size and torque for direct-drive extruders.",
+    "tags": [
+      "NEMA 14",
+      "nema14",
+      "35mm stepper",
+      "14HS13",
+      "extruder motor",
+      "35BYGH",
+      "Voron stepper",
+      "compact stepper"
+    ]
+  },
+  {
+    "name": "NEMA 14 Stepper Motor Long Body (14HS20-1004S)",
+    "description": "1.0A bipolar stepper motor, 35mm (NEMA 14) frame, 52mm body length, 40Ncm holding torque, 200 steps/rev (1.8°), 5mm D-shaft, 4-wire, high-torque NEMA 14 for lead screw drives and heavier loads",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 35,
+      "height": 35,
+      "depth": 52,
+      "weight": 200
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 26,
+          "boltCount": 4,
+          "boltSize": 3,
+          "holeType": "threaded",
+          "pilotDiameter": 22
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 5,
+          "shaftLength": 21,
+          "shaftType": "D",
+          "flatDepth": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5.0V",
+      "current": "1.0A",
+      "power": "5W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 0.4,
+      "ratedCurrent": 1.0,
+      "phaseResistance": 5.0,
+      "phaseInductance": 12.0,
+      "rotorInertia": 34,
+      "bodyLength": 52,
+      "detentTorque": 0.015,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "14HS20-1004S",
+        "approximatePrice": 16,
+        "url": "https://www.omc-stepperonline.com/nema-14-stepper-motor"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-torque NEMA 14 variant with nearly NEMA 17 torque in a smaller frame. Pair with TMC2209 driver. Mount with M3×6 SHCS on 26mm square bolt pattern. Good for compact Z-axis drives with T8 lead screws, or high-torque extruder applications where NEMA 17 won't fit. UNVERIFIED: exact inductance and rotor inertia may vary by manufacturer.",
+    "tags": [
+      "NEMA 14",
+      "nema14",
+      "35mm stepper",
+      "14HS20",
+      "high torque NEMA 14",
+      "long body",
+      "lead screw motor"
+    ]
+  },
+  {
+    "name": "NEMA 17 Stepper Motor Pancake (17HS08-1004S)",
+    "description": "1.0A bipolar stepper motor, 42mm (NEMA 17) frame, 20mm pancake body length, 12Ncm holding torque, 200 steps/rev (1.8°), 5mm D-shaft, 4-wire, ultra-short profile for direct-drive extruders and space-constrained builds",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 42,
+      "height": 42,
+      "depth": 20,
+      "weight": 130
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 31,
+          "boltCount": 4,
+          "boltSize": 3,
+          "holeType": "threaded",
+          "pilotDiameter": 22
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 5,
+          "shaftLength": 24,
+          "shaftType": "D",
+          "flatDepth": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.5V",
+      "current": "1.0A",
+      "power": "3.5W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin JST PH or bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 0.12,
+      "ratedCurrent": 1.0,
+      "phaseResistance": 3.5,
+      "phaseInductance": 2.0,
+      "rotorInertia": 20,
+      "bodyLength": 20,
+      "detentTorque": 0.012,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "17HS08-1004S",
+        "approximatePrice": 10,
+        "url": "https://www.omc-stepperonline.com/nema-17-stepper-motor"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B09GY5C194",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B09GY5C194"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Ultra-thin pancake stepper — standard NEMA 17 bolt pattern but only 20mm deep. Low torque limits use to direct-drive extruders (Orbiter, Sherpa Mini) or lightweight belt-driven axes. Pair with TMC2209 driver for quiet operation. Mount with M3×8 SHCS on 31mm square bolt pattern. 22mm pilot for centering. Shaft accepts GT2 pulleys with 5mm bore, BMG drive gears, or 5mm flexible couplings.",
+    "tags": [
+      "NEMA 17",
+      "nema17",
+      "42mm stepper",
+      "pancake stepper",
+      "slim stepper",
+      "17HS08",
+      "extruder motor",
+      "thin motor",
+      "low profile stepper",
+      "3d printer"
+    ]
+  },
+  {
+    "name": "NEMA 17 Stepper Motor Short Body (17HS13-0401S)",
+    "description": "0.4A bipolar stepper motor, 42mm (NEMA 17) frame, 34mm body length, 26Ncm holding torque, 200 steps/rev (1.8°), 5mm D-shaft, 4-wire, low-current variant good for battery-powered or 3.3V-logic applications",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 42,
+      "height": 42,
+      "depth": 34,
+      "weight": 220
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 31,
+          "boltCount": 4,
+          "boltSize": 3,
+          "holeType": "threaded",
+          "pilotDiameter": 22
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 5,
+          "shaftLength": 24,
+          "shaftType": "D",
+          "flatDepth": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V",
+      "current": "0.4A",
+      "power": "4.8W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 0.26,
+      "ratedCurrent": 0.4,
+      "phaseResistance": 30,
+      "phaseInductance": 38,
+      "rotorInertia": 34,
+      "bodyLength": 34,
+      "detentTorque": 0.016,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "17HS13-0401S",
+        "approximatePrice": 10,
+        "url": "https://www.omc-stepperonline.com/nema-17-stepper-motor"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Low-current NEMA 17 ideal for battery-powered or thermally constrained applications. High resistance winding allows 12V direct drive without chopping driver. Pair with any stepper driver (A4988, TMC2209). Mount with M3×8 SHCS on 31mm square bolt pattern. 22mm pilot for centering. Good for light-duty CNC pen plotters or laser engraver axes.",
+    "tags": [
+      "NEMA 17",
+      "nema17",
+      "42mm stepper",
+      "short body",
+      "low current stepper",
+      "17HS13",
+      "3d printer",
+      "pen plotter"
+    ]
+  },
+  {
+    "name": "NEMA 17 Stepper Motor Standard (17HS4401)",
+    "description": "1.7A bipolar stepper motor, 42mm (NEMA 17) frame, 40mm body length, 40Ncm (0.4Nm) holding torque, 200 steps/rev (1.8°), 5mm D-shaft, 4-wire, 12V nominal. The most common stepper motor in 3D printing and hobby CNC",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 42,
+      "height": 42,
+      "depth": 40,
+      "weight": 280
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 31,
+          "boltCount": 4,
+          "boltSize": 3,
+          "holeType": "threaded",
+          "pilotDiameter": 22
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 5,
+          "shaftLength": 24,
+          "shaftType": "D",
+          "flatDepth": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V",
+      "current": "1.7A",
+      "power": "5.5W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin JST XH or bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 0.4,
+      "ratedCurrent": 1.7,
+      "phaseResistance": 1.5,
+      "phaseInductance": 2.8,
+      "rotorInertia": 54,
+      "bodyLength": 40,
+      "detentTorque": 0.022,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "17HS16-2004S1",
+        "approximatePrice": 10,
+        "url": "https://www.omc-stepperonline.com/nema-17-stepper-motor"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00PNEQKC0",
+        "approximatePrice": 9,
+        "url": "https://www.amazon.com/dp/B00PNEQKC0"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "THE standard stepper motor for 3D printers, laser engravers, and small CNC machines. Pair with A4988 (budget), DRV8825 (more current headroom), or TMC2209 (quiet, best overall). Needs 12V 2A+ power supply per motor. Mount with M3×8 SHCS on 31mm square bolt pattern. 22mm pilot for centering. Shaft accepts GT2 pulley with 5mm bore, 5mm→8mm flexible coupling for lead screws, or 20-tooth GT2 pulley for belt drive. Used in Ender 3, Prusa MK3, and virtually all hobby 3D printers.",
+    "tags": [
+      "NEMA 17",
+      "nema17",
+      "42mm stepper",
+      "17HS4401",
+      "3d printer motor",
+      "CNC stepper",
+      "Ender 3",
+      "Prusa",
+      "standard stepper",
+      "hobby CNC",
+      "laser engraver"
+    ]
+  },
+  {
+    "name": "NEMA 17 Stepper Motor High Torque (17HS19-2004S1)",
+    "description": "2.0A bipolar stepper motor, 42mm (NEMA 17) frame, 48mm body length, 59Ncm (0.59Nm) holding torque, 200 steps/rev (1.8°), 5mm D-shaft, 4-wire, 12V nominal, high-torque long-body variant for Z-axis and direct drive",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 42,
+      "height": 42,
+      "depth": 48,
+      "weight": 350
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 31,
+          "boltCount": 4,
+          "boltSize": 3,
+          "holeType": "threaded",
+          "pilotDiameter": 22
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 5,
+          "shaftLength": 24,
+          "shaftType": "D",
+          "flatDepth": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V",
+      "current": "2.0A",
+      "power": "7W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin JST XH or bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 0.59,
+      "ratedCurrent": 2.0,
+      "phaseResistance": 1.4,
+      "phaseInductance": 3.0,
+      "rotorInertia": 68,
+      "bodyLength": 48,
+      "detentTorque": 0.026,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "17HS19-2004S1",
+        "approximatePrice": 12,
+        "url": "https://www.omc-stepperonline.com/nema-17-stepper-motor"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0787BQ8GY",
+        "approximatePrice": 11,
+        "url": "https://www.amazon.com/dp/B0787BQ8GY"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Highest torque common NEMA 17. Also sold as 17HS8401 (1.8A variant) by Chinese manufacturers. Pair with TMC2209 (quiet) or DRV8825 (budget, handles 2A+). Mount with M3×8 SHCS on 31mm square bolt pattern. 22mm pilot. Use for dual-Z lead screw drives, heavy direct-drive extruders, or belt-driven axes carrying heavy toolheads. Shaft accepts GT2 pulleys with 5mm bore or 5mm→8mm flexible coupling for T8 lead screws. Needs 12V 3A+ supply for a pair.",
+    "tags": [
+      "NEMA 17",
+      "nema17",
+      "42mm stepper",
+      "17HS8401",
+      "17HS19",
+      "high torque",
+      "long body",
+      "48mm stepper",
+      "Z axis motor",
+      "3d printer",
+      "CNC"
+    ]
+  },
+  {
+    "name": "NEMA 23 Stepper Motor Standard (23HS5628)",
+    "description": "2.8A bipolar stepper motor, 57mm (NEMA 23) frame, 56mm body length, 126Ncm (1.26Nm) holding torque, 200 steps/rev (1.8°), 6.35mm (1/4\") D-shaft, 4-wire, 24V nominal. Standard mid-size CNC stepper",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 57,
+      "height": 57,
+      "depth": 56,
+      "weight": 550
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 47.14,
+          "boltCount": 4,
+          "boltSize": 5,
+          "holeType": "threaded",
+          "pilotDiameter": 38.1
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 6.35,
+          "shaftLength": 21,
+          "shaftType": "D",
+          "flatDepth": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "2.5V",
+      "current": "2.8A",
+      "power": "7W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 1.26,
+      "ratedCurrent": 2.8,
+      "phaseResistance": 0.9,
+      "phaseInductance": 2.5,
+      "rotorInertia": 300,
+      "bodyLength": 56,
+      "detentTorque": 0.04,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "23HS22-2804S",
+        "approximatePrice": 18,
+        "url": "https://www.omc-stepperonline.com/nema-23-stepper-motor"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00PNEQI7I",
+        "approximatePrice": 17,
+        "url": "https://www.amazon.com/dp/B00PNEQI7I"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard CNC stepper — significant step up from NEMA 17 in torque. Requires 24V supply and appropriate driver (DRV8825 minimum, TB6600 or DM542 recommended for full current). Mount with M5×10 SHCS on 47.14mm square bolt pattern. 38.1mm (1.5\") centering pilot. 6.35mm (1/4\") shaft accepts 1/4\" bore pulleys or 6.35→8mm couplings for ball screws. Common on Shapeoko, X-Carve, and mid-size router builds. Use 8mm shaft variant for heavier applications.",
+    "tags": [
+      "NEMA 23",
+      "nema23",
+      "57mm stepper",
+      "23HS5628",
+      "CNC motor",
+      "router motor",
+      "Shapeoko",
+      "X-Carve",
+      "mid-size stepper",
+      "hobby CNC"
+    ]
+  },
+  {
+    "name": "NEMA 23 Stepper Motor High Torque (23HS7628)",
+    "description": "2.8A bipolar stepper motor, 57mm (NEMA 23) frame, 76mm body length, 189Ncm (1.89Nm) holding torque, 200 steps/rev (1.8°), 8mm D-shaft, 4-wire, 24V nominal. High-torque variant for heavier CNC applications",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 57,
+      "height": 57,
+      "depth": 76,
+      "weight": 750
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 47.14,
+          "boltCount": 4,
+          "boltSize": 5,
+          "holeType": "threaded",
+          "pilotDiameter": 38.1
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 8,
+          "shaftLength": 21,
+          "shaftType": "D",
+          "flatDepth": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.2V",
+      "current": "2.8A",
+      "power": "9W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 1.89,
+      "ratedCurrent": 2.8,
+      "phaseResistance": 1.13,
+      "phaseInductance": 4.0,
+      "rotorInertia": 480,
+      "bodyLength": 76,
+      "detentTorque": 0.06,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "23HS30-2804S",
+        "approximatePrice": 23,
+        "url": "https://www.omc-stepperonline.com/nema-23-stepper-motor"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00PNEQTPO",
+        "approximatePrice": 22,
+        "url": "https://www.amazon.com/dp/B00PNEQTPO"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-torque NEMA 23 for heavier CNC routing and plasma cutting tables. Pair with DM542 or TB6600 external stepper driver — breakout board drivers (A4988/DRV8825) cannot handle the current. Mount with M5×10 SHCS on 47.14mm bolt pattern. 8mm shaft variant is common — accepts 8mm bore pulleys or direct 8mm ball screw couplings. Needs 24-36V power supply rated for total motor current draw.",
+    "tags": [
+      "NEMA 23",
+      "nema23",
+      "57mm stepper",
+      "23HS7628",
+      "high torque",
+      "CNC router",
+      "plasma table",
+      "long body stepper",
+      "76mm body"
+    ]
+  },
+  {
+    "name": "NEMA 34 Stepper Motor Standard (34HS31-6004S)",
+    "description": "6.0A bipolar stepper motor, 86mm (NEMA 34) frame, 78mm body length, 480Ncm (4.8Nm) holding torque, 200 steps/rev (1.8°), 14mm D-shaft, 4-wire, 36-48V nominal. Heavy-duty CNC stepper for routers and mills",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 86,
+      "height": 86,
+      "depth": 78,
+      "weight": 1200
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 69.6,
+          "boltCount": 4,
+          "boltSize": 5,
+          "holeType": "threaded",
+          "pilotDiameter": 73
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 14,
+          "shaftLength": 32,
+          "shaftType": "D",
+          "flatDepth": 1.0
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "2.5V",
+      "current": "6.0A",
+      "power": "15W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 4.8,
+      "ratedCurrent": 6.0,
+      "phaseResistance": 0.42,
+      "phaseInductance": 3.8,
+      "rotorInertia": 1100,
+      "bodyLength": 78,
+      "detentTorque": 0.1,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "34HS31-6004S",
+        "approximatePrice": 40,
+        "url": "https://www.omc-stepperonline.com/nema-34-stepper-motor"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00PNEQV06",
+        "approximatePrice": 42,
+        "url": "https://www.amazon.com/dp/B00PNEQV06"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Heavy-duty stepper for full-size CNC routers, plasma tables, and small mills. REQUIRES external stepper driver — DM556 (budget) or DM860 (high performance) rated for 6A+. Do NOT use breakout-board drivers. Mount with M5×12 SHCS on 69.6mm square bolt pattern. 73mm centering pilot. 14mm shaft accepts 14mm bore pulleys or 14mm→12mm/16mm couplings for ball screws. Needs 36-48V power supply rated 10A+ for multi-axis systems. Weight (1.2kg) adds significant inertia — consider closed-loop variant for high-speed applications.",
+    "tags": [
+      "NEMA 34",
+      "nema34",
+      "86mm stepper",
+      "34HS31",
+      "CNC router motor",
+      "plasma cutter",
+      "heavy duty stepper",
+      "industrial stepper"
+    ]
+  },
+  {
+    "name": "NEMA 34 Stepper Motor High Torque (34HS46-5004S)",
+    "description": "5.0A bipolar stepper motor, 86mm (NEMA 34) frame, 118mm body length, 850Ncm (8.5Nm) holding torque, 200 steps/rev (1.8°), 14mm D-shaft, 4-wire, 36-48V nominal. Highest torque NEMA 34 for large CNC machines",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 86,
+      "height": 86,
+      "depth": 118,
+      "weight": 1900
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 69.6,
+          "boltCount": 4,
+          "boltSize": 5,
+          "holeType": "threaded",
+          "pilotDiameter": 73
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 14,
+          "shaftLength": 32,
+          "shaftType": "D",
+          "flatDepth": 1.0
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.0V",
+      "current": "5.0A",
+      "power": "20W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 8.5,
+      "ratedCurrent": 5.0,
+      "phaseResistance": 0.8,
+      "phaseInductance": 8.0,
+      "rotorInertia": 2500,
+      "bodyLength": 118,
+      "detentTorque": 0.15,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "34HS46-5004S",
+        "approximatePrice": 55,
+        "url": "https://www.omc-stepperonline.com/nema-34-stepper-motor"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Highest torque common NEMA 34 — approaches servo territory. Requires DM860 or equivalent driver rated for 5A+ continuous. Very heavy (1.9kg) — high rotor inertia limits maximum acceleration. Consider closed-loop stepper or servo for applications requiring rapid direction changes. Mount with M5×12 SHCS on 69.6mm bolt pattern. 73mm pilot. 14mm shaft. Needs 48V 15A+ power supply for multi-axis CNC. UNVERIFIED: exact inductance value may vary by manufacturer.",
+    "tags": [
+      "NEMA 34",
+      "nema34",
+      "86mm stepper",
+      "34HS46",
+      "high torque stepper",
+      "large CNC",
+      "industrial stepper",
+      "long body NEMA 34"
+    ]
+  },
+  {
+    "name": "NEMA 42 Stepper Motor (42HS60-5004S)",
+    "description": "5.0A bipolar stepper motor, 110mm (NEMA 42) frame, 150mm body length, 2200Ncm (22Nm) holding torque, 200 steps/rev (1.8°), 19mm D-shaft, 4-wire, 48V nominal. Industrial-grade stepper for large CNC and automation",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 110,
+      "height": 110,
+      "depth": 150,
+      "weight": 3500
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "square",
+          "holeSpacing": 89,
+          "boltCount": 4,
+          "boltSize": 6,
+          "holeType": "threaded",
+          "pilotDiameter": 73
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 19,
+          "shaftLength": 40,
+          "shaftType": "D",
+          "flatDepth": 1.0
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.8V",
+      "current": "5.0A",
+      "power": "24W",
+      "interface": "4-wire bipolar",
+      "pinout": "4-pin bare leads"
+    },
+    "specs": {
+      "stepsPerRev": 200,
+      "stepAngle": 1.8,
+      "holdingTorque": 22.0,
+      "ratedCurrent": 5.0,
+      "phaseResistance": 0.96,
+      "phaseInductance": 12.0,
+      "rotorInertia": 6000,
+      "bodyLength": 150,
+      "detentTorque": 0.3,
+      "motorType": "bipolar hybrid"
+    },
+    "suppliers": [
+      {
+        "name": "StepperOnline",
+        "partNumber": "42HS60-5004S",
+        "approximatePrice": 85,
+        "url": "https://www.omc-stepperonline.com/nema-42-stepper-motor"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Largest common NEMA stepper — rarely used in hobby/maker builds. Requires industrial stepper driver (e.g., DM2282) rated for 5A+ at 48V+. Very heavy at 3.5kg — high rotor inertia severely limits acceleration. Consider servo motors for dynamic applications. Mount with M6×15 SHCS on 89mm square bolt pattern. 19mm shaft requires industrial couplings. UNVERIFIED: pilot diameter (73mm listed, may be larger on some manufacturers). Only use when torque requirements exceed NEMA 34 capability.",
+    "tags": [
+      "NEMA 42",
+      "nema42",
+      "110mm stepper",
+      "industrial stepper",
+      "large stepper motor",
+      "high torque stepper",
+      "automation motor"
+    ]
+  },
+  {
+    "name": "130-Type DC Brushed Motor (FA-130)",
+    "description": "Small brushed DC motor, 20mm body diameter, 25mm body length, 3-6V operating range, ~8000 RPM at 3V, 2mm shaft, lightweight hobby/toy motor for small robots and educational projects",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20.4,
+      "depth": 15.4,
+      "length": 25.4,
+      "weight": 18
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "tabCount": 2,
+          "mountingMethod": "press-fit or solder tabs"
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 2,
+          "shaftLength": 8,
+          "shaftType": "round"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3-6V",
+      "current": "150mA no-load, 800mA stall",
+      "power": "2.5W max",
+      "interface": "2-wire DC",
+      "pinout": "2 solder tabs"
+    },
+    "specs": {
+      "voltage": "3-6V",
+      "noLoadRPM": 16000,
+      "stallTorque": 0.005,
+      "stallCurrent": 0.8,
+      "shaftDiameter": 2,
+      "bodyDiameter": 20.4,
+      "bodyLength": 25.4,
+      "motorType": "brushed DC"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "711",
+        "approximatePrice": 2.5,
+        "url": "https://www.adafruit.com/product/711"
+      },
+      {
+        "name": "Pololu",
+        "partNumber": "1117",
+        "approximatePrice": 2,
+        "url": "https://www.pololu.com/product/1117"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B078MR3H45",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/dp/B078MR3H45"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Basic hobby motor. Drive with L9110S (simplest), TB6612FNG, or L298N driver. Runs on 2×AA batteries or 5V USB. 2mm shaft accepts press-fit plastic gears, small pulleys, or wheels with 2mm bore. No built-in encoder — add an optical encoder wheel for position feedback. Very low torque — only suitable for unloaded mechanisms, small fans, or toy vehicles. Also commonly sold as 'toy motor' or 'hobby motor'.",
+    "tags": [
+      "130 motor",
+      "FA-130",
+      "toy motor",
+      "hobby motor",
+      "DC motor",
+      "small motor",
+      "brushed motor",
+      "educational",
+      "robot motor"
+    ]
+  },
+  {
+    "name": "280-Type DC Brushed Motor (RS-280)",
+    "description": "Small brushed DC motor, 24mm body diameter, 30mm body length, 3-12V operating range, ~14000 RPM at 12V, 2.3mm shaft, compact motor for small power tools and robotics",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 24,
+      "length": 30,
+      "weight": 35
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "tabCount": 2,
+          "mountingMethod": "press-fit clip or bracket"
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 2.3,
+          "shaftLength": 10,
+          "shaftType": "round"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3-12V",
+      "current": "200mA no-load, 1.5A stall",
+      "power": "5W max",
+      "interface": "2-wire DC",
+      "pinout": "2 solder tabs"
+    },
+    "specs": {
+      "voltage": "3-12V",
+      "noLoadRPM": 14000,
+      "stallTorque": 0.0045,
+      "stallCurrent": 1.5,
+      "shaftDiameter": 2.3,
+      "bodyDiameter": 24,
+      "bodyLength": 30,
+      "motorType": "brushed DC"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07DQGX369",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/dp/B07DQGX369"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Step up from the 130 motor in power and durability. Drive with L9110S, TB6612FNG, or L298N. Common in RC toys, small pumps, and vibration motors. 2.3mm shaft is non-standard — may need adapter sleeve or matching gears. Mount with bracket/clip or custom 3D-printed holder matching 24mm diameter. UNVERIFIED: exact stall torque varies significantly between manufacturers.",
+    "tags": [
+      "280 motor",
+      "RS-280",
+      "RE-280",
+      "small DC motor",
+      "brushed motor",
+      "RC motor",
+      "hobby motor"
+    ]
+  },
+  {
+    "name": "370-Type DC Brushed Motor (RF-370)",
+    "description": "Compact brushed DC motor, 24.4mm body diameter, 31mm body length, 6-12V operating range, ~9600 RPM at 12V, 2mm shaft, common in air pumps, water pumps, and small appliances",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 24.4,
+      "length": 31,
+      "weight": 45
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "tabCount": 2,
+          "mountingMethod": "press-fit clip or bracket"
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 2,
+          "shaftLength": 10,
+          "shaftType": "round"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "6-12V",
+      "current": "200mA no-load, 2A stall",
+      "power": "8W max",
+      "interface": "2-wire DC",
+      "pinout": "2 solder tabs"
+    },
+    "specs": {
+      "voltage": "6-12V",
+      "noLoadRPM": 9600,
+      "stallTorque": 0.015,
+      "stallCurrent": 2.0,
+      "shaftDiameter": 2,
+      "bodyDiameter": 24.4,
+      "bodyLength": 31,
+      "motorType": "brushed DC"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07WR6J8MC",
+        "approximatePrice": 4,
+        "url": "https://www.amazon.com/dp/B07WR6J8MC"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Similar diameter to RS-280 but optimized for higher torque at lower RPM. Very common in air pumps, water pumps, soap dispensers, and small appliances. Drive with TB6612FNG or L298N. Mount with clip bracket matching 24.4mm OD. 2mm shaft accepts standard 2mm bore attachments. UNVERIFIED: exact RPM and torque vary widely by winding variant.",
+    "tags": [
+      "370 motor",
+      "RF-370",
+      "pump motor",
+      "DC motor",
+      "brushed motor",
+      "small motor",
+      "appliance motor"
+    ]
+  },
+  {
+    "name": "550-Type DC Brushed Motor (RS-550) 12V",
+    "description": "Medium brushed DC motor, 36mm body diameter, 50mm body length, 12V rated, ~18000 RPM no-load, 3.175mm (1/8\") shaft, ball bearing, common in cordless drills, RC cars, and power tools",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 36,
+      "length": 50,
+      "weight": 150
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "2-hole face mount",
+          "holeSpacing": 25,
+          "boltCount": 2,
+          "boltSize": 3,
+          "holeType": "threaded"
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 3.175,
+          "shaftLength": 12,
+          "shaftType": "round"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V",
+      "current": "0.5A no-load, 10A stall",
+      "power": "60W max",
+      "interface": "2-wire DC",
+      "pinout": "2 solder tabs"
+    },
+    "specs": {
+      "voltage": "12V",
+      "noLoadRPM": 18000,
+      "stallTorque": 0.08,
+      "stallCurrent": 10,
+      "shaftDiameter": 3.175,
+      "bodyDiameter": 36,
+      "bodyLength": 50,
+      "motorType": "brushed DC"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0B2BTGMK1",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B0B2BTGMK1"
+      },
+      {
+        "name": "AndyMark",
+        "partNumber": "am-0912",
+        "approximatePrice": 10,
+        "url": "https://andymark.com/products/550-dc-motor-rs-550vc-7527f"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Powerful mid-size DC motor. REQUIRES proper motor driver — BTS7960/IBT-2 for full current, or L298N at reduced load. 3.175mm (1/8\") shaft is standard for drill chucks and collets. Ball bearings for durability. High stall current (10A+) — use PWM soft-start and overcurrent protection. Mount via 2 face-mount threaded holes with M3 screws. Common in FIRST Robotics competition (FRC) builds. Add external encoder for closed-loop control.",
+    "tags": [
+      "550 motor",
+      "RS-550",
+      "drill motor",
+      "power tool motor",
+      "DC motor",
+      "brushed motor",
+      "RC car motor",
+      "FRC motor",
+      "12V motor"
+    ]
+  },
+  {
+    "name": "775-Type DC Brushed Motor 12V (RS-775)",
+    "description": "Large brushed DC motor, 42mm body diameter, 67mm body length, 12V rated, ~12000 RPM no-load, 5mm shaft, ball bearing, built-in fan cooling, high-torque motor for CNC spindles, power tools, and robotics",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 42,
+      "length": 67,
+      "weight": 350
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "2-hole face mount",
+          "holeSpacing": 29,
+          "boltCount": 2,
+          "boltSize": 4,
+          "holeType": "threaded"
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 5,
+          "shaftLength": 17,
+          "shaftType": "round"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V",
+      "current": "1.2A no-load, 18A stall",
+      "power": "80W max",
+      "interface": "2-wire DC",
+      "pinout": "2 solder tabs"
+    },
+    "specs": {
+      "voltage": "12V",
+      "noLoadRPM": 12000,
+      "stallTorque": 0.79,
+      "stallCurrent": 18,
+      "shaftDiameter": 5,
+      "bodyDiameter": 42,
+      "bodyLength": 67,
+      "motorType": "brushed DC"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0B2BT9Z1N",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B0B2BT9Z1N"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Most popular large brushed DC motor in the maker community. REQUIRES high-current driver — BTS7960/IBT-2 (handles 43A), or dedicated motor controller. Do NOT use L298N (current too low). 5mm shaft accepts standard 5mm bore collets, pulleys, and gears. Built-in cooling fan extends duty cycle. Very high stall current (18A+) — MUST use fuse or current limiting. Common as CNC spindle motor (with ER11 collet adapter), robot drive motor, or belt grinder motor. Mount with M4 screws through face plate.",
+    "tags": [
+      "775 motor",
+      "RS-775",
+      "spindle motor",
+      "power motor",
+      "DC motor",
+      "brushed motor",
+      "CNC spindle",
+      "robot motor",
+      "12V high power",
+      "ER11 spindle"
+    ]
+  },
+  {
+    "name": "775-Type DC Brushed Motor 24V (RS-775)",
+    "description": "Large brushed DC motor, 42mm body diameter, 67mm body length, 24V rated, ~9000 RPM no-load, 5mm shaft, ball bearing, built-in fan cooling, 24V variant with higher torque and lower RPM for heavy-duty applications",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 42,
+      "length": 67,
+      "weight": 350
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "pattern": "2-hole face mount",
+          "holeSpacing": 29,
+          "boltCount": 2,
+          "boltSize": 4,
+          "holeType": "threaded"
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 5,
+          "shaftLength": 17,
+          "shaftType": "round"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "24V",
+      "current": "0.8A no-load, 12A stall",
+      "power": "100W max",
+      "interface": "2-wire DC",
+      "pinout": "2 solder tabs"
+    },
+    "specs": {
+      "voltage": "24V",
+      "noLoadRPM": 9000,
+      "stallTorque": 1.2,
+      "stallCurrent": 12,
+      "shaftDiameter": 5,
+      "bodyDiameter": 42,
+      "bodyLength": 67,
+      "motorType": "brushed DC"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07F5LT4M6",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B07F5LT4M6"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "24V winding variant of the 775 motor — higher torque, lower RPM than the 12V version. Better suited for CNC spindles where torque matters more than top speed. Same mounting as 12V variant. Use BTS7960/IBT-2 driver or dedicated 24V motor controller. 5mm shaft. Higher efficiency at rated voltage reduces heat. Pair with 24V 5A+ power supply. Some variants go to 36V — check manufacturer spec before exceeding 24V.",
+    "tags": [
+      "775 motor",
+      "RS-775",
+      "24V motor",
+      "high torque DC",
+      "brushed motor",
+      "CNC spindle",
+      "power motor",
+      "24V high power"
+    ]
+  },
+  {
+    "name": "SG90 Micro Servo Motor",
+    "description": "9g micro servo motor, 1.8kg·cm torque at 4.8V, plastic gears, 0.12s/60° speed at 4.8V, 180° rotation range, 3-wire (signal/VCC/GND), PWM control 50Hz, universal hobby servo for RC and robotics",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 22.2,
+      "height": 31,
+      "depth": 11.8,
+      "weight": 9
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "tabCount": 2,
+          "mountingHoleDiameter": 2,
+          "tabToTabWidth": 32.5,
+          "screwSize": 2
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "splineType": "21-tooth cross",
+          "splineDiameter": 4.6,
+          "shaftType": "spline"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.8-6V",
+      "current": "10mA idle, 250mA moving",
+      "power": "1.2W",
+      "interface": "PWM (50Hz, 1-2ms pulse)",
+      "pinout": "3-pin: signal (orange), VCC (red), GND (brown)"
+    },
+    "specs": {
+      "torque": "1.8 kg·cm at 4.8V",
+      "speed": "0.12 s/60° at 4.8V",
+      "rotationRange": 180,
+      "gearType": "plastic",
+      "splineType": "21-tooth cross",
+      "deadBandWidth": 1,
+      "bearingType": "bushing"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "169",
+        "approximatePrice": 6,
+        "url": "https://www.adafruit.com/product/169"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07MLR1498",
+        "approximatePrice": 2,
+        "url": "https://www.amazon.com/dp/B07MLR1498"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Ubiquitous starter servo. Plastic gears WILL strip under load — use MG90S for anything structural. Control with any microcontroller PWM pin (Arduino pin 9/10 with Servo library). Power from 5V, but use separate supply if driving more than 2 servos (they draw 250mA+ each when moving). Comes with 3 horn styles (single arm, double arm, cross). Mount with M2×10 screws through tab holes or use 3D-printed snap-fit bracket. 21-tooth spline is NOT compatible with 25-tooth standard servo horns.",
+    "tags": [
+      "SG90",
+      "micro servo",
+      "9g servo",
+      "hobby servo",
+      "RC servo",
+      "Tower Pro",
+      "TowerPro",
+      "small servo",
+      "Arduino servo",
+      "PWM servo"
+    ]
+  },
+  {
+    "name": "MG90S Metal Gear Micro Servo Motor",
+    "description": "13.4g micro servo motor with metal gears, 2.2kg·cm torque at 6V, 0.08s/60° speed at 6V, 180° rotation range, 3-wire PWM control, upgraded SG90 replacement with metal gears and ball bearings",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 22.8,
+      "height": 28.5,
+      "depth": 12.2,
+      "weight": 13.4
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "tabCount": 2,
+          "mountingHoleDiameter": 2,
+          "tabToTabWidth": 32.5,
+          "screwSize": 2
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "splineType": "21-tooth cross",
+          "splineDiameter": 4.6,
+          "shaftType": "spline"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.8-6.6V",
+      "current": "10mA idle, 300mA moving",
+      "power": "1.5W",
+      "interface": "PWM (50Hz, 1-2ms pulse)",
+      "pinout": "3-pin: signal (orange), VCC (red), GND (brown)"
+    },
+    "specs": {
+      "torque": "1.8 kg·cm at 4.8V, 2.2 kg·cm at 6V",
+      "speed": "0.10 s/60° at 4.8V, 0.08 s/60° at 6V",
+      "rotationRange": 180,
+      "gearType": "metal",
+      "splineType": "21-tooth cross",
+      "deadBandWidth": 1,
+      "bearingType": "dual ball bearing"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "1143",
+        "approximatePrice": 7,
+        "url": "https://www.adafruit.com/product/1143"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0BWF7YBRL",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/dp/B0BWF7YBRL"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Direct upgrade from SG90 — same mounting holes, same spline, metal gears won't strip. Use this instead of SG90 for anything beyond a demo. Dual ball bearings improve longevity. Same PWM control (50Hz, 1-2ms). 21-tooth spline — compatible with SG90 horns. Mount with M2×10 screws through tab holes. Popular in robot arms (6-DOF kits), pan-tilt camera mounts, and small animatronics. Use separate 5V 2A+ supply for multiple servos.",
+    "tags": [
+      "MG90S",
+      "metal gear micro servo",
+      "9g servo",
+      "micro servo",
+      "SG90 upgrade",
+      "Tower Pro",
+      "TowerPro",
+      "robot servo",
+      "pan tilt servo"
+    ]
+  },
+  {
+    "name": "MG995 Standard Servo Motor (Analog)",
+    "description": "55g standard-size servo motor with metal gears, 10kg·cm torque at 6V, 0.16s/60° speed at 6V, 180° rotation, 3-wire PWM control, analog, 25-tooth spline, workhorse servo for RC and robotics",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 40.7,
+      "height": 42.9,
+      "depth": 19.7,
+      "weight": 55
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "tabCount": 2,
+          "mountingHoleDiameter": 4.2,
+          "tabToTabWidth": 53,
+          "screwSize": 3
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "splineType": "25-tooth",
+          "splineDiameter": 5.8,
+          "shaftType": "spline"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.8-7.2V",
+      "current": "150mA idle, 1.5A stall",
+      "power": "10W max",
+      "interface": "PWM (50Hz, 1-2ms pulse)",
+      "pinout": "3-pin: signal (white/orange), VCC (red), GND (black/brown)"
+    },
+    "specs": {
+      "torque": "8.5 kg·cm at 4.8V, 10 kg·cm at 6V",
+      "speed": "0.20 s/60° at 4.8V, 0.16 s/60° at 6V",
+      "rotationRange": 180,
+      "gearType": "metal",
+      "splineType": "25-tooth",
+      "deadBandWidth": 5,
+      "bearingType": "bushing"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0CKK9KFW8",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/dp/B0CKK9KFW8"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Classic standard-size analog servo. 25-tooth spline compatible with Futaba-style horns (most aftermarket metal horns). Analog control is less precise than digital MG996R but draws less current at idle. Mount with M3 screws through mounting tabs. Use for RC car steering, robot joints, and general-purpose actuation. Needs 6V 2A+ supply for reliable operation under load. Avoid continuous rotation — not designed for it (use continuous rotation servo instead).",
+    "tags": [
+      "MG995",
+      "standard servo",
+      "analog servo",
+      "metal gear servo",
+      "RC servo",
+      "robot servo",
+      "25T spline",
+      "Futaba compatible"
+    ]
+  },
+  {
+    "name": "MG996R Digital Standard Servo Motor",
+    "description": "55g standard-size digital servo motor with metal gears and dual ball bearings, 11kg·cm torque at 6V, 0.14s/60° speed at 6V, 180° rotation, 3-wire PWM control, 25-tooth spline, upgraded MG995",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 40.7,
+      "height": 42.9,
+      "depth": 19.7,
+      "weight": 55
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "tabCount": 2,
+          "mountingHoleDiameter": 4.2,
+          "tabToTabWidth": 53,
+          "screwSize": 3
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "splineType": "25-tooth",
+          "splineDiameter": 5.8,
+          "shaftType": "spline"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.8-7.2V",
+      "current": "500mA running, 2.5A stall",
+      "power": "15W max",
+      "interface": "PWM (50Hz, 1-2ms pulse)",
+      "pinout": "3-pin: signal (white/orange), VCC (red), GND (black/brown)"
+    },
+    "specs": {
+      "torque": "9.4 kg·cm at 4.8V, 11 kg·cm at 6V",
+      "speed": "0.17 s/60° at 4.8V, 0.14 s/60° at 6V",
+      "rotationRange": 180,
+      "gearType": "metal",
+      "splineType": "25-tooth",
+      "deadBandWidth": 5,
+      "bearingType": "dual ball bearing"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0CG3RJ1KP",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/dp/B0CG3RJ1KP"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "MG996R",
+        "approximatePrice": 8,
+        "url": "https://www.digikey.com/en/htmldatasheets/production/5014637/0/0/1/mg996r"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The go-to standard servo for hobby robotics. Digital control for better holding torque and precision vs. analog MG995. 25-tooth spline fits Futaba-style horns — use metal horns for structural applications. Dual ball bearings improve lifespan. Mount with M3 screws through tabs. 2.5A stall current means you MUST use dedicated 6V 5A+ BEC or power supply — NOT Arduino 5V pin. Very common in 6-DOF robot arms, hexapod robots, and RC car steering upgrades.",
+    "tags": [
+      "MG996R",
+      "digital servo",
+      "standard servo",
+      "metal gear servo",
+      "RC servo",
+      "robot servo",
+      "25T spline",
+      "Tower Pro",
+      "TowerPro",
+      "robot arm servo"
+    ]
+  },
+  {
+    "name": "DS3218 High Torque Digital Servo Motor (20kg·cm)",
+    "description": "60g high-torque digital servo motor, 21.5kg·cm at 6.8V, 0.14s/60° at 6.8V, metal gears, IP66 waterproof, 25-tooth spline, 180° or 270° variants, for RC crawlers, large robots, and outdoor applications",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 40.5,
+      "height": 40,
+      "depth": 20,
+      "weight": 60
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "tabCount": 2,
+          "mountingHoleDiameter": 4.2,
+          "tabToTabWidth": 54,
+          "screwSize": 3
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "splineType": "25-tooth",
+          "splineDiameter": 5.8,
+          "shaftType": "spline"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.8-6.8V",
+      "current": "500mA running, 3A stall",
+      "power": "20W max",
+      "interface": "PWM (50Hz, 1-2ms pulse)",
+      "pinout": "3-pin: signal (white), VCC (red), GND (black)"
+    },
+    "specs": {
+      "torque": "19 kg·cm at 5V, 21.5 kg·cm at 6.8V",
+      "speed": "0.16 s/60° at 5V, 0.14 s/60° at 6.8V",
+      "rotationRange": 270,
+      "gearType": "copper + aluminum alloy",
+      "splineType": "25-tooth",
+      "waterproofRating": "IP66",
+      "bearingType": "dual ball bearing"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B076CNKQX4",
+        "approximatePrice": 14,
+        "url": "https://www.amazon.com/dp/B076CNKQX4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Popular high-torque servo for RC crawlers and large robot joints. IP66 waterproof — suitable for outdoor and marine applications. 270° variant is most common — check rotation range before ordering. 25-tooth spline accepts standard Futaba-style horns. Use 2S LiPo (7.4V with BEC regulator) or dedicated 6.8V 5A+ supply. Mount with M3 screws. Copper+aluminum gears are stronger than steel gears in the MG996R. For heavier loads, step up to DS3235 (35kg·cm).",
+    "tags": [
+      "DS3218",
+      "20kg servo",
+      "high torque servo",
+      "waterproof servo",
+      "IP66 servo",
+      "RC crawler servo",
+      "DSSERVO",
+      "robot servo",
+      "heavy duty servo",
+      "270 degree servo"
+    ]
+  },
+  {
+    "name": "DS3235 Ultra High Torque Digital Servo Motor (35kg·cm)",
+    "description": "80g ultra-high-torque digital servo motor, 35kg·cm at 6.8V, 0.13s/60° at 6.8V, stainless steel and aluminum gears, IP66 waterproof, coreless motor, 25-tooth spline, for heavy robot joints and industrial RC",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 40,
+      "height": 38.5,
+      "depth": 20,
+      "weight": 80
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "tabCount": 2,
+          "mountingHoleDiameter": 4.2,
+          "tabToTabWidth": 54,
+          "screwSize": 3
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "splineType": "25-tooth",
+          "splineDiameter": 5.8,
+          "shaftType": "spline"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.8-6.8V",
+      "current": "800mA running, 4A stall",
+      "power": "27W max",
+      "interface": "PWM (50Hz, 1-2ms pulse)",
+      "pinout": "3-pin: signal (white), VCC (red), GND (black)"
+    },
+    "specs": {
+      "torque": "21 kg·cm at 5V, 35 kg·cm at 6.8V",
+      "speed": "0.15 s/60° at 5V, 0.13 s/60° at 6.8V",
+      "rotationRange": 270,
+      "gearType": "stainless steel + aluminum",
+      "splineType": "25-tooth",
+      "waterproofRating": "IP66",
+      "bearingType": "dual ball bearing",
+      "motorType": "coreless"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07VKP9S9K",
+        "approximatePrice": 20,
+        "url": "https://www.amazon.com/dp/B07VKP9S9K"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Strongest commonly available hobby servo. Coreless motor provides smoother response and longer life vs. cored DS3218. Stainless steel gears are extremely durable. Use for heavy robot arm base joints, humanoid hip/knee joints, and large RC rock crawlers. Draws 4A at stall — REQUIRES dedicated high-current BEC or 6.8V 5A+ regulated supply. 25-tooth spline fits standard horns. Mount with M3 screws. For continuous rotation applications, consider a gearmotor instead.",
+    "tags": [
+      "DS3235",
+      "35kg servo",
+      "ultra high torque servo",
+      "waterproof servo",
+      "IP66 servo",
+      "coreless servo",
+      "DSSERVO",
+      "robot servo",
+      "heavy duty servo",
+      "strong servo"
+    ]
+  },
+  {
+    "name": "12V Linear Actuator 50mm Stroke",
+    "description": "12V DC linear actuator, 50mm (2\") stroke, 750N (170 lbs) max force, 10mm/s speed, built-in limit switches, mounting clevis at each end, M6 mounting holes, for automation, furniture, and robotics",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 165,
+      "weight": 350
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 6.2,
+          "holeCount": 2,
+          "mountingType": "clevis pin at each end"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V DC",
+      "current": "2A max",
+      "power": "24W max",
+      "interface": "2-wire DC (reverse polarity to retract)",
+      "pinout": "2-wire: motor+ (red), motor- (black)"
+    },
+    "specs": {
+      "stroke": 50,
+      "maxForce": 750,
+      "speed": 10,
+      "retractedLength": 165,
+      "extendedLength": 215,
+      "mountingHoleDiameter": 6.2,
+      "dutyCycle": "10% (2 min on / 18 min off)",
+      "noiseLevel": "65 dB"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B01IACVKQ4",
+        "approximatePrice": 18,
+        "url": "https://www.amazon.com/dp/B01IACVKQ4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Drive with H-bridge (L298N for low force, BTS7960 for full force) or 2-channel relay module for simple extend/retract. Built-in limit switches prevent over-extension. Reverse motor polarity to change direction. 10% duty cycle — NOT for continuous use. M6 clevis pins at each end allow pivoting mount. Use with 12V 3A+ power supply. For position feedback, add external potentiometer or use actuator with built-in potentiometer variant. Retracted length is stroke + ~115mm — account for this in enclosure design.",
+    "tags": [
+      "linear actuator",
+      "12V actuator",
+      "50mm stroke",
+      "electric actuator",
+      "push pull",
+      "automation actuator",
+      "furniture actuator"
+    ]
+  },
+  {
+    "name": "12V Linear Actuator 100mm Stroke",
+    "description": "12V DC linear actuator, 100mm (4\") stroke, 750N (170 lbs) max force, 10mm/s speed, built-in limit switches, mounting clevis at each end, M6 mounting holes, most popular stroke length",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 210,
+      "weight": 400
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 6.2,
+          "holeCount": 2,
+          "mountingType": "clevis pin at each end"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V DC",
+      "current": "2A max",
+      "power": "24W max",
+      "interface": "2-wire DC (reverse polarity to retract)",
+      "pinout": "2-wire: motor+ (red), motor- (black)"
+    },
+    "specs": {
+      "stroke": 100,
+      "maxForce": 750,
+      "speed": 10,
+      "retractedLength": 210,
+      "extendedLength": 310,
+      "mountingHoleDiameter": 6.2,
+      "dutyCycle": "10% (2 min on / 18 min off)",
+      "noiseLevel": "65 dB"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0D5QBV65B",
+        "approximatePrice": 20,
+        "url": "https://www.amazon.com/dp/B0D5QBV65B"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Most commonly purchased stroke length. Drive with H-bridge (BTS7960 for full force) or relay module. Built-in limit switches prevent over-extension. Reverse polarity to change direction. 10% duty cycle — NOT for continuous use. Retracted length 210mm. M6 clevis pins at both ends. Use with 12V 3A+ supply. Popular for automated doors, hatches, TV lifts, and standing desk mechanisms.",
+    "tags": [
+      "linear actuator",
+      "12V actuator",
+      "100mm stroke",
+      "4 inch actuator",
+      "electric actuator",
+      "push pull",
+      "automation",
+      "TV lift"
+    ]
+  },
+  {
+    "name": "12V Linear Actuator 150mm Stroke",
+    "description": "12V DC linear actuator, 150mm (6\") stroke, 750N (170 lbs) max force, 10mm/s speed, built-in limit switches, mounting clevis at each end, M6 mounting holes",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 260,
+      "weight": 450
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 6.2,
+          "holeCount": 2,
+          "mountingType": "clevis pin at each end"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V DC",
+      "current": "2A max",
+      "power": "24W max",
+      "interface": "2-wire DC (reverse polarity to retract)",
+      "pinout": "2-wire: motor+ (red), motor- (black)"
+    },
+    "specs": {
+      "stroke": 150,
+      "maxForce": 750,
+      "speed": 10,
+      "retractedLength": 260,
+      "extendedLength": 410,
+      "mountingHoleDiameter": 6.2,
+      "dutyCycle": "10% (2 min on / 18 min off)",
+      "noiseLevel": "65 dB"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B01IACVMS0",
+        "approximatePrice": 22,
+        "url": "https://www.amazon.com/dp/B01IACVMS0"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Mid-range stroke. Same drive and mounting as other sizes in this family. Retracted length 260mm — longer than 100mm variant by 50mm. Force decreases at higher speeds — 750N rated at 10mm/s, less at higher speeds. M6 clevis mount at each end. 12V 3A+ supply required.",
+    "tags": [
+      "linear actuator",
+      "12V actuator",
+      "150mm stroke",
+      "6 inch actuator",
+      "electric actuator",
+      "push pull"
+    ]
+  },
+  {
+    "name": "12V Linear Actuator 200mm Stroke",
+    "description": "12V DC linear actuator, 200mm (8\") stroke, 750N (170 lbs) max force, 10mm/s speed, built-in limit switches, mounting clevis at each end, M6 mounting holes, for larger automation projects",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 310,
+      "weight": 500
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 6.2,
+          "holeCount": 2,
+          "mountingType": "clevis pin at each end"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V DC",
+      "current": "2A max",
+      "power": "24W max",
+      "interface": "2-wire DC (reverse polarity to retract)",
+      "pinout": "2-wire: motor+ (red), motor- (black)"
+    },
+    "specs": {
+      "stroke": 200,
+      "maxForce": 750,
+      "speed": 10,
+      "retractedLength": 310,
+      "extendedLength": 510,
+      "mountingHoleDiameter": 6.2,
+      "dutyCycle": "10% (2 min on / 18 min off)",
+      "noiseLevel": "65 dB"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B01IACVP2S",
+        "approximatePrice": 24,
+        "url": "https://www.amazon.com/dp/B01IACVP2S"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Longer stroke for furniture and large mechanisms. Retracted length 310mm — plan for 510mm total when extended. Same mounting and electrical as other sizes. Consider lateral load rating if not used in pure push/pull orientation — side loads significantly reduce lifespan. M6 clevis mount. 12V 3A+ supply.",
+    "tags": [
+      "linear actuator",
+      "12V actuator",
+      "200mm stroke",
+      "8 inch actuator",
+      "electric actuator",
+      "push pull",
+      "furniture actuator"
+    ]
+  },
+  {
+    "name": "12V Linear Actuator 300mm Stroke",
+    "description": "12V DC linear actuator, 300mm (12\") stroke, 750N (170 lbs) max force, 10mm/s speed, built-in limit switches, mounting clevis at each end, M6 mounting holes, longest common hobby stroke length",
+    "categorySlug": "motors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 410,
+      "weight": 600
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 6.2,
+          "holeCount": 2,
+          "mountingType": "clevis pin at each end"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V DC",
+      "current": "2.5A max",
+      "power": "30W max",
+      "interface": "2-wire DC (reverse polarity to retract)",
+      "pinout": "2-wire: motor+ (red), motor- (black)"
+    },
+    "specs": {
+      "stroke": 300,
+      "maxForce": 750,
+      "speed": 10,
+      "retractedLength": 410,
+      "extendedLength": 710,
+      "mountingHoleDiameter": 6.2,
+      "dutyCycle": "10% (2 min on / 18 min off)",
+      "noiseLevel": "70 dB"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B01IACVQ1I",
+        "approximatePrice": 28,
+        "url": "https://www.amazon.com/dp/B01IACVQ1I"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Longest common hobby actuator stroke. 710mm fully extended — ensure your mechanism has clearance. Higher risk of lateral deflection at full extension — support the rod end if possible. Same drive circuit as shorter variants. Consider using two shorter actuators in parallel for higher force rather than one long one. M6 clevis mount. 12V 3A+ supply. Slightly louder (70 dB) than shorter variants due to longer lead screw.",
+    "tags": [
+      "linear actuator",
+      "12V actuator",
+      "300mm stroke",
+      "12 inch actuator",
+      "electric actuator",
+      "push pull",
+      "long stroke",
+      "automation"
+    ]
+  }
+]

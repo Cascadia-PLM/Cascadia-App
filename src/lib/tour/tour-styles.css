@@ -1,0 +1,144 @@
+/* Cascadia PLM Tour Styles - Dark Mode Overrides for driver.js */
+
+/* Dark mode popover styles */
+.dark .cascadia-tour-popover {
+  background-color: rgb(30 41 59); /* slate-800 */
+  color: rgb(241 245 249); /* slate-100 */
+}
+
+.dark .driver-popover {
+  background-color: rgb(30 41 59); /* slate-800 */
+  color: rgb(241 245 249); /* slate-100 */
+}
+
+.dark .driver-popover-title {
+  color: rgb(241 245 249); /* slate-100 */
+}
+
+.dark .driver-popover-description {
+  color: rgb(203 213 225); /* slate-300 */
+}
+
+/* Dark mode button styles */
+.dark .driver-popover-prev-btn {
+  background-color: rgb(51 65 85); /* slate-700 */
+  color: rgb(203 213 225); /* slate-300 */
+  border: 1px solid rgb(71 85 105); /* slate-600 */
+}
+
+.dark .driver-popover-prev-btn:hover {
+  background-color: rgb(71 85 105); /* slate-600 */
+}
+
+.dark .driver-popover-next-btn,
+.dark .driver-popover-done-btn {
+  background-color: rgb(8 145 178); /* cyan-600 */
+  color: white;
+  border: none;
+}
+
+.dark .driver-popover-next-btn:hover,
+.dark .driver-popover-done-btn:hover {
+  background-color: rgb(6 182 212); /* cyan-500 */
+}
+
+/* Dark mode close button */
+.dark .driver-popover-close-btn {
+  color: rgb(148 163 184); /* slate-400 */
+}
+
+.dark .driver-popover-close-btn:hover {
+  color: rgb(241 245 249); /* slate-100 */
+}
+
+/* Dark mode progress indicator */
+.dark .driver-popover-progress-text {
+  color: rgb(148 163 184); /* slate-400 */
+}
+
+/* Dark mode arrow */
+.dark .driver-popover-arrow-side-left .driver-popover-arrow {
+  border-right-color: rgb(30 41 59); /* slate-800 */
+}
+
+.dark .driver-popover-arrow-side-right .driver-popover-arrow {
+  border-left-color: rgb(30 41 59); /* slate-800 */
+}
+
+.dark .driver-popover-arrow-side-top .driver-popover-arrow {
+  border-bottom-color: rgb(30 41 59); /* slate-800 */
+}
+
+.dark .driver-popover-arrow-side-bottom .driver-popover-arrow {
+  border-top-color: rgb(30 41 59); /* slate-800 */
+}
+
+/* Button rendering fixes - prevent blurriness */
+.driver-popover-prev-btn,
+.driver-popover-next-btn,
+.driver-popover-done-btn {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  font-weight: 500;
+  text-rendering: optimizeLegibility;
+}
+
+/* Light mode enhancements */
+.driver-popover-prev-btn {
+  background-color: rgb(241 245 249); /* slate-100 */
+  color: rgb(51 65 85); /* slate-700 */
+  border: 1px solid rgb(203 213 225); /* slate-300 */
+}
+
+.driver-popover-prev-btn:hover {
+  background-color: rgb(226 232 240); /* slate-200 */
+}
+
+.driver-popover-next-btn,
+.driver-popover-done-btn {
+  background-color: rgb(8 145 178); /* cyan-600 */
+  color: white;
+  border: none;
+}
+
+.driver-popover-next-btn:hover,
+.driver-popover-done-btn:hover {
+  background-color: rgb(6 182 212); /* cyan-500 */
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .driver-popover {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .driver-overlay {
+    transition: none !important;
+  }
+}
+
+/* Ensure popover is readable on both themes */
+.cascadia-tour-popover .driver-popover-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.cascadia-tour-popover .driver-popover-description {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Better spacing for popover content */
+.cascadia-tour-popover .driver-popover-footer {
+  margin-top: 1rem;
+}
+
+/* Highlight stage styling */
+.driver-active-element {
+  outline: 2px solid rgb(8 145 178) !important; /* cyan-600 */
+  outline-offset: 2px;
+}

@@ -1,0 +1,11 @@
+Item Number,Name,Description,Make/Buy,Material,Weight (kg),Unit Cost
+TC-001,Test Bracket Assembly,Main structural bracket for testing,Make,Aluminum 6061-T6,0.45,25.50
+TC-002,Test Motor Mount,Motor mounting plate with vibration dampening,Make,Steel AISI 1018,1.20,45.00
+TC-003,Test Control Board,Main control PCB for system operation,Buy,,0.08,125.00
+TC-004,Test Power Cable,12AWG power cable assembly 500mm,Make,Copper,0.15,8.75
+TC-005,Test Bearing,Ball bearing 608-2RS sealed,Buy,Stainless Steel,0.02,4.50
+TC-006,Test Enclosure,Weatherproof electronics enclosure,Buy,ABS Plastic,0.35,32.00
+TC-007,Test Heat Sink,Finned aluminum heat sink 50x50mm,Make,Aluminum 6063,0.12,15.25
+TC-008,Test Connector,Waterproof 4-pin connector,Buy,,0.01,6.80
+TC-009,Test Gasket,Silicone sealing gasket,Make,Silicone Rubber,0.03,2.15
+TC-010,Test Fan Assembly,40mm cooling fan with guard,Buy,,0.05,12.50

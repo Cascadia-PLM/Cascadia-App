@@ -1,0 +1,1931 @@
+[
+  {
+    "name": "ABS Project Box -- 100x60x25mm",
+    "description": "100x60x25mm (3.94x2.36x0.98in) ABS plastic general-purpose project box, black, IP40, 2.5mm wall thickness, 95x55x22mm interior, 4 internal corner PCB mounting bosses with M2.5 brass inserts, 4 self-tapping lid screws, Hammond 1591XXSSBK compatible, lightweight snap-fit or screw-close lid, ideal for small microcontroller boards Arduino Nano ESP8266 sensor nodes RF modules battery packs, UL94-HB flammability rated, hobbyist prototyping IoT electronics enclosure",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 100,
+      "height": 25,
+      "depth": 60,
+      "weight": 32
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 4,
+          "screwSize": "M2.5",
+          "standoffHeight": 4,
+          "pattern": "corner_bosses",
+          "spacingX": 85,
+          "spacingY": 45,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "lid_screw",
+        "specs": {
+          "count": 4,
+          "screwType": "self-tapping",
+          "screwSize": "#4 x 10mm",
+          "position": "corners"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 95,
+      "interiorHeight": 22,
+      "interiorDepth": 55,
+      "wallThickness": 2.5,
+      "material": "ABS",
+      "ipRating": "IP40",
+      "color": "Black",
+      "flammabilityRating": "UL94-HB"
+    },
+    "suppliers": [
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1591XXSSBK",
+        "approximatePrice": 4.25,
+        "url": "https://www.hammfg.com/part/1591XXSSBK"
+      },
+      {
+        "name": "Polycase",
+        "partNumber": "DC-34PBBK",
+        "approximatePrice": 4.95,
+        "url": "https://www.polycase.com/dc-34pb"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07Y5DHP3V",
+        "approximatePrice": 5.49,
+        "url": "https://www.amazon.com/dp/B07Y5DHP3V"
+      }
+    ],
+    "designNotes": "Interior fits most small breakout boards up to 85x45mm PCB. M2.5 standoffs at corners provide 4mm clearance beneath board for underside components. Lid is flat and easily drilled or laser-cut for panel-mount connectors. ABS can be drilled, filed, and solvent-welded with acetone. No ventilation slots -- add 6-8mm holes with drill or step bit if heat dissipation needed. For cable entry, drill 6-16mm holes on short end walls. Pairs with PG7 cable glands for strain relief.",
+    "tags": [
+      "project box",
+      "ABS enclosure",
+      "small enclosure",
+      "Hammond 1591",
+      "electronics box",
+      "hobby box",
+      "prototype enclosure",
+      "black box",
+      "IP40",
+      "Arduino enclosure",
+      "sensor housing",
+      "IoT enclosure",
+      "PCB enclosure",
+      "screw-close lid"
+    ]
+  },
+  {
+    "name": "ABS Project Box -- 80x50x20mm",
+    "description": "80x50x20mm (3.15x1.97x0.79in) ABS plastic miniature project box, black, IP40, 2.5mm wall thickness, 75x45x17mm interior, 4 internal corner PCB standoff bosses M2.5, 4 self-tapping lid screws, Hammond 1551XSBK compatible, very compact enclosure for tiny PCBs wearable electronics key fob remote control small sensor nodes coin cell battery packs, UL94-HB flammability rated, lightweight pocket-sized",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 80,
+      "height": 20,
+      "depth": 50,
+      "weight": 20
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 4,
+          "screwSize": "M2.5",
+          "standoffHeight": 3,
+          "pattern": "corner_bosses",
+          "spacingX": 65,
+          "spacingY": 35,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "lid_screw",
+        "specs": {
+          "count": 4,
+          "screwType": "self-tapping",
+          "screwSize": "#4 x 8mm",
+          "position": "corners"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 75,
+      "interiorHeight": 17,
+      "interiorDepth": 45,
+      "wallThickness": 2.5,
+      "material": "ABS",
+      "ipRating": "IP40",
+      "color": "Black",
+      "flammabilityRating": "UL94-HB"
+    },
+    "suppliers": [
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1551XSBK",
+        "approximatePrice": 3.95,
+        "url": "https://www.hammfg.com/part/1551XSBK"
+      },
+      {
+        "name": "Polycase",
+        "partNumber": "DC-23FBBK",
+        "approximatePrice": 4.25,
+        "url": "https://www.polycase.com/dc-23fb"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07RTBHZ8K",
+        "approximatePrice": 4.99,
+        "url": "https://www.amazon.com/dp/B07RTBHZ8K"
+      }
+    ],
+    "designNotes": "Very compact form factor -- interior accommodates PCBs up to 65x35mm. Low 17mm interior height limits component clearance to ~12mm above PCB. Ideal for flat assemblies with SMD components. Thin walls are easy to drill or cut for micro-USB, JST connectors, LEDs. Consider snap-fit battery holder for CR2032 or AAA cells. Minimal thermal margin -- not suitable for heat-generating circuits above 0.5W without ventilation holes.",
+    "tags": [
+      "project box",
+      "miniature enclosure",
+      "ABS enclosure",
+      "small box",
+      "Hammond 1551",
+      "electronics box",
+      "pocket enclosure",
+      "key fob housing",
+      "wearable enclosure",
+      "sensor housing",
+      "IP40",
+      "black box",
+      "tiny enclosure"
+    ]
+  },
+  {
+    "name": "ABS Project Box -- 120x80x32mm",
+    "description": "120x80x32mm (4.72x3.15x1.26in) ABS plastic project box, black, IP40, 2.5mm wall thickness, 115x75x29mm interior, 4 internal corner PCB mounting bosses M2.5 brass inserts, 4 self-tapping lid screws, Hammond 1591XXSBK compatible, medium-small enclosure for Arduino Uno ESP32 Raspberry Pi Pico relay modules sensor arrays small power supplies, UL94-HB rated, general purpose hobby electronics enclosure",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 120,
+      "height": 32,
+      "depth": 80,
+      "weight": 48
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 4,
+          "screwSize": "M2.5",
+          "standoffHeight": 5,
+          "pattern": "corner_bosses",
+          "spacingX": 105,
+          "spacingY": 65,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "lid_screw",
+        "specs": {
+          "count": 4,
+          "screwType": "self-tapping",
+          "screwSize": "#4 x 12mm",
+          "position": "corners"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 115,
+      "interiorHeight": 29,
+      "interiorDepth": 75,
+      "wallThickness": 2.5,
+      "material": "ABS",
+      "ipRating": "IP40",
+      "color": "Black",
+      "flammabilityRating": "UL94-HB"
+    },
+    "suppliers": [
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1591XXSBK",
+        "approximatePrice": 5.5,
+        "url": "https://www.hammfg.com/part/1591XXSBK"
+      },
+      {
+        "name": "Polycase",
+        "partNumber": "DC-44PBBK",
+        "approximatePrice": 6.25,
+        "url": "https://www.polycase.com/dc-44pb"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07W6T9VBN",
+        "approximatePrice": 6.99,
+        "url": "https://www.amazon.com/dp/B07W6T9VBN"
+      }
+    ],
+    "designNotes": "Interior fits standard Arduino Uno form factor (68.6x53.3mm) with room for shield stacks up to ~20mm tall. PCB mounting pattern at 105x65mm accommodates most common dev boards. Good balance of size and compactness for single-board prototypes. Flat lid surface allows adhesive label or panel-mount switches/LEDs. Drill end walls for barrel jack, USB, antenna SMA connectors. ABS machines cleanly with step drill bits.",
+    "tags": [
+      "project box",
+      "ABS enclosure",
+      "Hammond 1591",
+      "Arduino enclosure",
+      "ESP32 enclosure",
+      "electronics box",
+      "hobby box",
+      "prototype enclosure",
+      "IP40",
+      "black box",
+      "medium enclosure",
+      "dev board housing"
+    ]
+  },
+  {
+    "name": "ABS Project Box -- 150x100x50mm",
+    "description": "150x100x50mm (5.91x3.94x1.97in) ABS plastic project box, black, IP40, 3mm wall thickness, 144x94x47mm interior, 4 internal corner PCB mounting bosses M3 brass inserts, 4 self-tapping lid screws, Hammond 1591XXCSBK compatible, medium enclosure for Raspberry Pi Arduino Mega multi-board assemblies power converters battery packs relay boards, UL94-HB rated, general purpose electronics enclosure",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 150,
+      "height": 50,
+      "depth": 100,
+      "weight": 78
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 4,
+          "screwSize": "M3",
+          "standoffHeight": 6,
+          "pattern": "corner_bosses",
+          "spacingX": 130,
+          "spacingY": 80,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "lid_screw",
+        "specs": {
+          "count": 4,
+          "screwType": "self-tapping",
+          "screwSize": "#6 x 16mm",
+          "position": "corners"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 144,
+      "interiorHeight": 47,
+      "interiorDepth": 94,
+      "wallThickness": 3,
+      "material": "ABS",
+      "ipRating": "IP40",
+      "color": "Black",
+      "flammabilityRating": "UL94-HB"
+    },
+    "suppliers": [
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1591XXCSBK",
+        "approximatePrice": 8.75,
+        "url": "https://www.hammfg.com/part/1591XXCSBK"
+      },
+      {
+        "name": "Polycase",
+        "partNumber": "DC-56PBBK",
+        "approximatePrice": 9.5,
+        "url": "https://www.polycase.com/dc-56pb"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07F3WTYRL",
+        "approximatePrice": 8.99,
+        "url": "https://www.amazon.com/dp/B07F3WTYRL"
+      }
+    ],
+    "designNotes": "Interior accommodates Raspberry Pi 4 (85x56mm) plus HAT/pHAT stack with room for wiring. 130x80mm standoff pattern works for stacking two PCBs with hex standoffs. 47mm interior height allows tall components, heatsinks, or two-tier board stacks. Good candidate for panel-mount DB9/DB25, Ethernet, USB, or power connectors on end walls. Consider adding 12mm ventilation holes with dust filters for active cooling setups. ABS accepts threaded inserts (heat-set M3) well.",
+    "tags": [
+      "project box",
+      "ABS enclosure",
+      "medium enclosure",
+      "Hammond 1591",
+      "Raspberry Pi enclosure",
+      "Arduino Mega enclosure",
+      "electronics box",
+      "prototype enclosure",
+      "IP40",
+      "black box",
+      "multi-board enclosure",
+      "power supply box"
+    ]
+  },
+  {
+    "name": "ABS Project Box -- 158x90x60mm",
+    "description": "158x90x60mm (6.22x3.54x2.36in) ABS plastic medium project box, black, IP40, 3mm wall thickness, 152x84x57mm interior, 4 internal corner PCB mounting bosses M3, 4 self-tapping lid screws, Bud Industries CU-18426-B compatible, medium-tall enclosure for multi-board stacks relay modules motor controllers power supplies battery banks, UL94-HB rated, versatile electronics housing",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 158,
+      "height": 60,
+      "depth": 90,
+      "weight": 88
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 4,
+          "screwSize": "M3",
+          "standoffHeight": 6,
+          "pattern": "corner_bosses",
+          "spacingX": 138,
+          "spacingY": 70,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "lid_screw",
+        "specs": {
+          "count": 4,
+          "screwType": "self-tapping",
+          "screwSize": "#6 x 16mm",
+          "position": "corners"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 152,
+      "interiorHeight": 57,
+      "interiorDepth": 84,
+      "wallThickness": 3,
+      "material": "ABS",
+      "ipRating": "IP40",
+      "color": "Black",
+      "flammabilityRating": "UL94-HB"
+    },
+    "suppliers": [
+      {
+        "name": "Bud Industries",
+        "partNumber": "CU-18426-B",
+        "approximatePrice": 9.5,
+        "url": "https://www.budind.com/product/general-use-boxes/style-a-plastic-boxes/cu-18426-b/"
+      },
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1591XXBTBK",
+        "approximatePrice": 10.25,
+        "url": "https://www.hammfg.com/part/1591XXBTBK"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B073Y7FV3G",
+        "approximatePrice": 9.99,
+        "url": "https://www.amazon.com/dp/B073Y7FV3G"
+      }
+    ],
+    "designNotes": "Tall 57mm interior height is excellent for stacked boards (two PCBs on M3 standoffs with 20mm separation) or bulky components like transformers, large capacitors, relay banks. 138x70mm standoff pattern suits custom PCBs designed for this box. End walls have enough surface area for DB-style connectors, toggle switches, or fuse holders. Bottom can be drilled for rubber feet or wall-mount screw slots. For improved EMI shielding, line interior with adhesive copper tape.",
+    "tags": [
+      "project box",
+      "ABS enclosure",
+      "medium enclosure",
+      "Bud Industries",
+      "tall enclosure",
+      "relay enclosure",
+      "motor controller box",
+      "power supply enclosure",
+      "electronics box",
+      "IP40",
+      "black box",
+      "multi-board stack"
+    ]
+  },
+  {
+    "name": "ABS Project Box -- 200x120x56mm",
+    "description": "200x120x56mm (7.87x4.72x2.20in) ABS plastic large project box, black, IP40, 3mm wall thickness, 194x114x53mm interior, 6 internal PCB mounting bosses M3 brass inserts (4 corners + 2 midpoints), 4 self-tapping lid screws, Hammond 1591XXESBK compatible, large enclosure for full-size Arduino shields Raspberry Pi with HATs multi-board assemblies power distribution terminal strips, UL94-HB rated",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 200,
+      "height": 56,
+      "depth": 120,
+      "weight": 120
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 6,
+          "screwSize": "M3",
+          "standoffHeight": 6,
+          "pattern": "corner_bosses_plus_midpoints",
+          "spacingX": 180,
+          "spacingY": 100,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "lid_screw",
+        "specs": {
+          "count": 4,
+          "screwType": "self-tapping",
+          "screwSize": "#6 x 16mm",
+          "position": "corners"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 194,
+      "interiorHeight": 53,
+      "interiorDepth": 114,
+      "wallThickness": 3,
+      "material": "ABS",
+      "ipRating": "IP40",
+      "color": "Black",
+      "flammabilityRating": "UL94-HB"
+    },
+    "suppliers": [
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1591XXESBK",
+        "approximatePrice": 11.5,
+        "url": "https://www.hammfg.com/part/1591XXESBK"
+      },
+      {
+        "name": "Polycase",
+        "partNumber": "DC-68PBBK",
+        "approximatePrice": 12.25,
+        "url": "https://www.polycase.com/dc-68pb"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07TF5YWRX",
+        "approximatePrice": 11.99,
+        "url": "https://www.amazon.com/dp/B07TF5YWRX"
+      }
+    ],
+    "designNotes": "Large interior fits Raspberry Pi + full-size HAT plus separate driver/power boards side by side. 180x100mm mounting pattern supports custom PCBs or perforated proto-board. 6 standoffs reduce board flex on larger PCBs. Long side walls ideal for multiple panel-mount connectors in a row (e.g., 4x RJ45, USB bank, power inlet + switch). Consider adding vent slots or a 40mm fan cutout for active cooling. Flat lid area is large enough for a membrane keypad or adhesive label overlay.",
+    "tags": [
+      "project box",
+      "ABS enclosure",
+      "large enclosure",
+      "Hammond 1591",
+      "Raspberry Pi enclosure",
+      "multi-board enclosure",
+      "electronics box",
+      "power distribution box",
+      "IP40",
+      "black box",
+      "terminal strip enclosure"
+    ]
+  },
+  {
+    "name": "ABS Project Box -- 200x120x75mm",
+    "description": "200x120x75mm (7.87x4.72x2.95in) ABS plastic large deep project box, black, IP40, 3mm wall thickness, 194x114x72mm interior, 6 internal PCB mounting bosses M3 brass inserts, 4 self-tapping lid screws, Hammond 1591XXDSBK compatible, large-tall enclosure for stacked boards transformer assemblies battery packs motor driver setups CNC controllers 3D printer electronics, UL94-HB rated",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 200,
+      "height": 75,
+      "depth": 120,
+      "weight": 140
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 6,
+          "screwSize": "M3",
+          "standoffHeight": 6,
+          "pattern": "corner_bosses_plus_midpoints",
+          "spacingX": 180,
+          "spacingY": 100,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "lid_screw",
+        "specs": {
+          "count": 4,
+          "screwType": "self-tapping",
+          "screwSize": "#6 x 20mm",
+          "position": "corners"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 194,
+      "interiorHeight": 72,
+      "interiorDepth": 114,
+      "wallThickness": 3,
+      "material": "ABS",
+      "ipRating": "IP40",
+      "color": "Black",
+      "flammabilityRating": "UL94-HB"
+    },
+    "suppliers": [
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1591XXDSBK",
+        "approximatePrice": 13.5,
+        "url": "https://www.hammfg.com/part/1591XXDSBK"
+      },
+      {
+        "name": "Polycase",
+        "partNumber": "DC-68PDBK",
+        "approximatePrice": 14.25,
+        "url": "https://www.polycase.com/dc-68pd"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07YDJV8SR",
+        "approximatePrice": 13.99,
+        "url": "https://www.amazon.com/dp/B07YDJV8SR"
+      }
+    ],
+    "designNotes": "72mm interior depth supports three-tier PCB stacks (bottom board at 6mm, middle at 28mm, top at 50mm using M3 hex standoffs). Excellent for combining power supply board + controller board + interface board. Enough room for small toroidal transformers or 18650 battery packs (2S2P fits with BMS). Long end walls support IEC C14 power inlet + fuse holder combination. Can mount 40mm fan on side wall for forced-air cooling of power components. Consider internal cable routing channels using hot-glue or 3D-printed brackets.",
+    "tags": [
+      "project box",
+      "ABS enclosure",
+      "large enclosure",
+      "deep enclosure",
+      "Hammond 1591",
+      "stacked PCB enclosure",
+      "battery pack housing",
+      "CNC controller box",
+      "3D printer electronics",
+      "motor driver enclosure",
+      "IP40",
+      "black box",
+      "tall enclosure"
+    ]
+  },
+  {
+    "name": "ABS Project Box -- 260x160x90mm",
+    "description": "260x160x90mm (10.24x6.30x3.54in) ABS plastic extra-large project box, black, IP40, 3mm wall thickness, 254x154x87mm interior, 8 internal PCB mounting bosses M3 (4 corners + 4 midpoints), 6 self-tapping lid screws, Hammond 1591XXFSBK compatible, extra-large enclosure for multi-board systems industrial controllers power distribution panels CNC breakout boards PLC replacements, UL94-HB rated",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 260,
+      "height": 90,
+      "depth": 160,
+      "weight": 220
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 8,
+          "screwSize": "M3",
+          "standoffHeight": 8,
+          "pattern": "corner_bosses_plus_midpoints",
+          "spacingX": 240,
+          "spacingY": 140,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "lid_screw",
+        "specs": {
+          "count": 6,
+          "screwType": "self-tapping",
+          "screwSize": "#6 x 20mm",
+          "position": "corners_and_midpoints"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 254,
+      "interiorHeight": 87,
+      "interiorDepth": 154,
+      "wallThickness": 3,
+      "material": "ABS",
+      "ipRating": "IP40",
+      "color": "Black",
+      "flammabilityRating": "UL94-HB"
+    },
+    "suppliers": [
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1591XXFSBK",
+        "approximatePrice": 16.5,
+        "url": "https://www.hammfg.com/part/1591XXFSBK"
+      },
+      {
+        "name": "Bud Industries",
+        "partNumber": "CU-18438-B",
+        "approximatePrice": 17.25,
+        "url": "https://www.budind.com/product/general-use-boxes/style-a-plastic-boxes/cu-18438-b/"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07K1KGP4K",
+        "approximatePrice": 16.99,
+        "url": "https://www.amazon.com/dp/B07K1KGP4K"
+      }
+    ],
+    "designNotes": "Large enough for a full CNC breakout board (typical 200x100mm) plus stepper drivers alongside. Interior supports DIN rail segments up to 230mm mounted on the bottom using self-tapping screws. Can house full ATX-style power supply board or mean-well enclosed power supplies. 8 mounting bosses allow two separate PCBs side by side. Consider routing a slot in the side wall for a 60mm or 80mm fan for high-power applications. Rubber feet recommended due to weight. Multiple cable glands can be installed on both short ends.",
+    "tags": [
+      "project box",
+      "ABS enclosure",
+      "extra-large enclosure",
+      "Hammond 1591",
+      "CNC controller enclosure",
+      "industrial enclosure",
+      "power distribution box",
+      "multi-board enclosure",
+      "PLC replacement box",
+      "breakout board housing",
+      "IP40",
+      "black box"
+    ]
+  },
+  {
+    "name": "ABS Project Box -- 300x200x100mm",
+    "description": "300x200x100mm (11.81x7.87x3.94in) ABS plastic jumbo project box, black, IP40, 3mm wall thickness, 294x194x97mm interior, 8 internal PCB mounting bosses M3 (4 corners + 4 midpoints), 6 self-tapping lid screws, Bud Industries PN-1337-CMB compatible, jumbo enclosure for large multi-board assemblies industrial control panels CNC breakout systems home automation hubs server equipment network appliance housings, UL94-HB rated",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 300,
+      "height": 100,
+      "depth": 200,
+      "weight": 310
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 8,
+          "screwSize": "M3",
+          "standoffHeight": 8,
+          "pattern": "corner_bosses_plus_midpoints",
+          "spacingX": 280,
+          "spacingY": 180,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "lid_screw",
+        "specs": {
+          "count": 6,
+          "screwType": "self-tapping",
+          "screwSize": "#6 x 22mm",
+          "position": "corners_and_midpoints"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 294,
+      "interiorHeight": 97,
+      "interiorDepth": 194,
+      "wallThickness": 3,
+      "material": "ABS",
+      "ipRating": "IP40",
+      "color": "Black",
+      "flammabilityRating": "UL94-HB"
+    },
+    "suppliers": [
+      {
+        "name": "Bud Industries",
+        "partNumber": "PN-1337-CMB",
+        "approximatePrice": 21.5,
+        "url": "https://www.budind.com/product/general-use-boxes/style-a-plastic-boxes/pn-1337-cmb/"
+      },
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1591XXGSBK",
+        "approximatePrice": 22.0,
+        "url": "https://www.hammfg.com/part/1591XXGSBK"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07VPM7QRQ",
+        "approximatePrice": 19.99,
+        "url": "https://www.amazon.com/dp/B07VPM7QRQ"
+      }
+    ],
+    "designNotes": "Largest standard ABS project box size. Interior fits full 250mm DIN rail segment, multiple large PCBs (up to 3 boards at 90x90mm side by side), or complete control systems. 280x180mm mounting pattern ideal for custom backplane or motherboard-style designs. Enough internal volume for enclosed Mean Well power supplies (RS-50, LRS-100 series). Wall thickness supports PG9/PG11 cable glands without reinforcement. Add internal partitions using 3D-printed dividers or hot-glued ABS sheet. Consider using threaded brass inserts (heat-set M3) instead of self-tapping screws for repeated access. Rubber feet essential -- box is top-heavy when populated.",
+    "tags": [
+      "project box",
+      "ABS enclosure",
+      "jumbo enclosure",
+      "extra-large enclosure",
+      "Bud Industries",
+      "Hammond",
+      "industrial enclosure",
+      "control panel box",
+      "CNC controller",
+      "home automation hub",
+      "network appliance",
+      "IP40",
+      "black box",
+      "multi-board system"
+    ]
+  },
+  {
+    "name": "IP65 Weatherproof Junction Box -- 100x68x50mm",
+    "description": "100x68x50mm (3.94x2.68x1.97in) ABS IP65 waterproof junction box, gray, silicone gasket seal, 2.5mm wall thickness, 95x63x45mm interior, 4 internal PCB standoffs M3, wall-mount flanges with 4 screw holes, PG7 cable gland knockouts on sides, hinged or screw-close lid, outdoor rated weatherproof dustproof enclosure for sensors IoT nodes irrigation controllers, UV-resistant, -30C to +70C operating range",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 100,
+      "height": 50,
+      "depth": 68,
+      "weight": 65
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 4,
+          "screwSize": "M3",
+          "standoffHeight": 5,
+          "pattern": "corner_bosses",
+          "spacingX": 82,
+          "spacingY": 50,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "wall_mount_flange",
+        "specs": {
+          "count": 4,
+          "holeCount": 4,
+          "holeDiameter": 4.5,
+          "screwSize": "M4 or #8",
+          "flangeExtension": 8,
+          "position": "external_ears"
+        }
+      },
+      {
+        "type": "cable_gland_knockout",
+        "specs": {
+          "count": 2,
+          "knockoutDiameter": 12.5,
+          "threadSize": "PG7",
+          "position": "short_sides"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 95,
+      "interiorHeight": 45,
+      "interiorDepth": 63,
+      "wallThickness": 2.5,
+      "material": "ABS",
+      "ipRating": "IP65",
+      "color": "Gray",
+      "gasketMaterial": "Silicone",
+      "hingeLid": false,
+      "operatingTemp": "-30C to +70C",
+      "uvResistant": true
+    },
+    "suppliers": [
+      {
+        "name": "Zulkit",
+        "partNumber": "ZK-ABS100",
+        "approximatePrice": 8.5,
+        "url": "https://www.amazon.com/dp/B07Q13MRJK"
+      },
+      {
+        "name": "Qilipsu",
+        "partNumber": "QP-BX-10068",
+        "approximatePrice": 9.25,
+        "url": "https://www.amazon.com/dp/B08CXLQNR7"
+      },
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1554C2GY",
+        "approximatePrice": 10.5,
+        "url": "https://www.hammfg.com/part/1554C2GY"
+      }
+    ],
+    "designNotes": "Smallest standard IP65 box. Interior fits ESP32, Arduino Nano, or LoRa modules with a small sensor breakout. Silicone gasket provides reliable IP65 seal but must be inspected if lid is opened frequently. PG7 glands accept 3-6.5mm cable diameter -- suitable for sensor cables and low-voltage power. Wall mount flanges allow attachment to posts, fence rails, or building walls with M4 screws + wall anchors. For outdoor solar-powered nodes, mount vertically with cable entries pointing down to prevent water ingress at gland seals. UV-resistant ABS withstands direct sunlight exposure for 3-5 years before yellowing.",
+    "tags": [
+      "waterproof enclosure",
+      "IP65",
+      "junction box",
+      "weatherproof box",
+      "outdoor enclosure",
+      "ABS waterproof",
+      "sensor enclosure",
+      "IoT outdoor housing",
+      "irrigation controller",
+      "wall mount enclosure",
+      "cable gland",
+      "PG7",
+      "gray box",
+      "dustproof"
+    ]
+  },
+  {
+    "name": "IP65 Weatherproof Junction Box -- 130x80x70mm",
+    "description": "130x80x70mm (5.12x3.15x2.76in) ABS IP65 waterproof junction box, gray, silicone gasket seal, 3mm wall thickness, 124x74x64mm interior, 4 internal PCB standoffs M3, wall-mount flanges with 4 screw holes, PG7/PG9 cable gland knockouts, screw-close lid with stainless steel screws, outdoor rated weatherproof dustproof enclosure for ESP32 LoRa gateways environmental monitors solar charge controllers, UV-resistant, -30C to +70C operating range",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 130,
+      "height": 70,
+      "depth": 80,
+      "weight": 95
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 4,
+          "screwSize": "M3",
+          "standoffHeight": 6,
+          "pattern": "corner_bosses",
+          "spacingX": 110,
+          "spacingY": 60,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "wall_mount_flange",
+        "specs": {
+          "count": 4,
+          "holeCount": 4,
+          "holeDiameter": 4.5,
+          "screwSize": "M4 or #8",
+          "flangeExtension": 10,
+          "position": "external_ears"
+        }
+      },
+      {
+        "type": "cable_gland_knockout",
+        "specs": {
+          "count": 3,
+          "knockoutDiameter": 15.5,
+          "threadSize": "PG9",
+          "position": "bottom_and_sides"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 124,
+      "interiorHeight": 64,
+      "interiorDepth": 74,
+      "wallThickness": 3,
+      "material": "ABS",
+      "ipRating": "IP65",
+      "color": "Gray",
+      "gasketMaterial": "Silicone",
+      "hingeLid": false,
+      "operatingTemp": "-30C to +70C",
+      "uvResistant": true
+    },
+    "suppliers": [
+      {
+        "name": "Zulkit",
+        "partNumber": "ZK-ABS130",
+        "approximatePrice": 10.5,
+        "url": "https://www.amazon.com/dp/B07RTYPS2V"
+      },
+      {
+        "name": "Qilipsu",
+        "partNumber": "QP-BX-13080",
+        "approximatePrice": 11.25,
+        "url": "https://www.amazon.com/dp/B08CXMPVYS"
+      },
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1554E2GY",
+        "approximatePrice": 13.5,
+        "url": "https://www.hammfg.com/part/1554E2GY"
+      }
+    ],
+    "designNotes": "Good balance of compact size and usable interior for outdoor sensor nodes. 64mm interior height accommodates PCB + battery pack (e.g., 18650 holder) stacked vertically. PG9 glands accept 4-8mm cables -- suitable for most sensor cables, Ethernet (with waterproof RJ45 gland adapter), and 2-core power cables. For LoRa applications, an external antenna can be routed through a bulkhead SMA connector drilled into the lid. Stainless steel lid screws resist corrosion. Mount with cable entries facing down and seal unused knockouts with PG blanking plugs to maintain IP65 rating.",
+    "tags": [
+      "waterproof enclosure",
+      "IP65",
+      "junction box",
+      "weatherproof box",
+      "outdoor enclosure",
+      "ABS waterproof",
+      "LoRa gateway housing",
+      "solar controller enclosure",
+      "environmental monitor",
+      "wall mount enclosure",
+      "cable gland",
+      "PG9",
+      "gray box",
+      "battery enclosure"
+    ]
+  },
+  {
+    "name": "IP67 Weatherproof Junction Box -- 158x90x65mm",
+    "description": "158x90x65mm (6.22x3.54x2.56in) ABS IP67 waterproof junction box, gray, polyurethane foam gasket seal, 3mm wall thickness, 152x84x59mm interior, 4 internal PCB standoffs M3, wall-mount flanges with 4 screw holes, PG9/PG11 cable gland knockouts, stainless steel lid screws, IP67 rated for temporary submersion dustproof weatherproof, outdoor rated enclosure for marine electronics industrial sensors remote monitoring stations, UV-resistant, -40C to +80C operating range",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 158,
+      "height": 65,
+      "depth": 90,
+      "weight": 130
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 4,
+          "screwSize": "M3",
+          "standoffHeight": 6,
+          "pattern": "corner_bosses",
+          "spacingX": 138,
+          "spacingY": 70,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "wall_mount_flange",
+        "specs": {
+          "count": 4,
+          "holeCount": 4,
+          "holeDiameter": 5,
+          "screwSize": "M4",
+          "flangeExtension": 10,
+          "position": "external_ears"
+        }
+      },
+      {
+        "type": "cable_gland_knockout",
+        "specs": {
+          "count": 4,
+          "knockoutDiameter": 18.5,
+          "threadSize": "PG11",
+          "position": "bottom_and_sides"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 152,
+      "interiorHeight": 59,
+      "interiorDepth": 84,
+      "wallThickness": 3,
+      "material": "ABS",
+      "ipRating": "IP67",
+      "color": "Gray",
+      "gasketMaterial": "Polyurethane foam",
+      "hingeLid": false,
+      "operatingTemp": "-40C to +80C",
+      "uvResistant": true
+    },
+    "suppliers": [
+      {
+        "name": "Qilipsu",
+        "partNumber": "QP-BX-15890",
+        "approximatePrice": 12.5,
+        "url": "https://www.amazon.com/dp/B08CXQ35KS"
+      },
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1554G2GY",
+        "approximatePrice": 15.75,
+        "url": "https://www.hammfg.com/part/1554G2GY"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07RPNWD7K",
+        "approximatePrice": 12.99,
+        "url": "https://www.amazon.com/dp/B07RPNWD7K"
+      }
+    ],
+    "designNotes": "IP67 rating means this box can withstand temporary immersion (up to 1m for 30 minutes) -- critical for ground-level outdoor installations or marine-adjacent environments. Polyurethane foam gasket provides superior seal compression vs silicone but should be replaced if lid is removed more than ~50 times. 4 PG11 knockouts accept cables up to 10mm diameter. Use IP67-rated cable glands to maintain protection level. For marine applications, all fasteners should be upgraded to A4 (316) stainless steel. Interior supports standard 130x70mm PCBs comfortably. Desiccant packets recommended inside for humid environments to prevent condensation on electronics.",
+    "tags": [
+      "waterproof enclosure",
+      "IP67",
+      "junction box",
+      "submersible enclosure",
+      "weatherproof box",
+      "outdoor enclosure",
+      "marine enclosure",
+      "industrial sensor housing",
+      "remote monitoring",
+      "wall mount enclosure",
+      "cable gland",
+      "PG11",
+      "gray box",
+      "dustproof",
+      "harsh environment"
+    ]
+  },
+  {
+    "name": "IP65 Weatherproof Junction Box -- 200x120x75mm",
+    "description": "200x120x75mm (7.87x4.72x2.95in) ABS IP65 waterproof junction box, gray, silicone gasket seal, 3mm wall thickness, 194x114x69mm interior, 6 internal PCB standoffs M3, wall-mount flanges with 4 mounting holes, PG9/PG11 cable gland knockouts, stainless steel lid screws, outdoor rated large weatherproof enclosure for Raspberry Pi setups solar charge controllers irrigation systems HVAC controllers access control panels, UV-resistant, -30C to +70C",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 200,
+      "height": 75,
+      "depth": 120,
+      "weight": 180
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 6,
+          "screwSize": "M3",
+          "standoffHeight": 6,
+          "pattern": "corner_bosses_plus_midpoints",
+          "spacingX": 180,
+          "spacingY": 100,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "wall_mount_flange",
+        "specs": {
+          "count": 4,
+          "holeCount": 4,
+          "holeDiameter": 5,
+          "screwSize": "M4 or #10",
+          "flangeExtension": 12,
+          "position": "external_ears"
+        }
+      },
+      {
+        "type": "cable_gland_knockout",
+        "specs": {
+          "count": 4,
+          "knockoutDiameters": [15.5, 18.5],
+          "threadSizes": ["PG9", "PG11"],
+          "position": "bottom_and_sides"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 194,
+      "interiorHeight": 69,
+      "interiorDepth": 114,
+      "wallThickness": 3,
+      "material": "ABS",
+      "ipRating": "IP65",
+      "color": "Gray",
+      "gasketMaterial": "Silicone",
+      "hingeLid": false,
+      "operatingTemp": "-30C to +70C",
+      "uvResistant": true
+    },
+    "suppliers": [
+      {
+        "name": "Qilipsu",
+        "partNumber": "QP-BX-200120",
+        "approximatePrice": 15.5,
+        "url": "https://www.amazon.com/dp/B08CXR3NNP"
+      },
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1554J2GY",
+        "approximatePrice": 18.75,
+        "url": "https://www.hammfg.com/part/1554J2GY"
+      },
+      {
+        "name": "Polycase",
+        "partNumber": "WC-20GY",
+        "approximatePrice": 16.95,
+        "url": "https://www.polycase.com/wc-20"
+      }
+    ],
+    "designNotes": "Large enough for a full Raspberry Pi + POE HAT + relay board stack. Interior 180x100mm mounting area supports two medium PCBs side by side. 69mm depth allows a DIN rail segment on the bottom with small DIN-mount components (terminal blocks, circuit breakers). For HVAC or irrigation controllers, leave room for wiring terminals and label all connections. PG11 glands accept multi-conductor cables up to 10mm OD. For installations in direct sunlight, add a sun shield or mount under an eave -- internal temps can reach 30C above ambient in direct sun. Use stainless steel mounting hardware for outdoor installations.",
+    "tags": [
+      "waterproof enclosure",
+      "IP65",
+      "junction box",
+      "large weatherproof box",
+      "outdoor enclosure",
+      "ABS waterproof",
+      "Raspberry Pi outdoor",
+      "solar controller enclosure",
+      "irrigation box",
+      "HVAC controller",
+      "access control panel",
+      "wall mount enclosure",
+      "cable gland",
+      "gray box"
+    ]
+  },
+  {
+    "name": "IP67 Weatherproof Junction Box -- 200x120x56mm",
+    "description": "200x120x56mm (7.87x4.72x2.20in) polycarbonate IP67 waterproof junction box, gray, polyurethane foam gasket seal, 3mm wall thickness, 194x114x50mm interior, 6 internal PCB standoffs M3, wall-mount flanges with 4 mounting holes, PG11 cable gland knockouts, stainless steel lid screws, IP67 temporary submersion rated, polycarbonate shell for impact resistance, Gewiss GW44206 compatible, industrial outdoor enclosure for marine electronics process control building automation, UV-resistant, -40C to +80C",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 200,
+      "height": 56,
+      "depth": 120,
+      "weight": 165
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 6,
+          "screwSize": "M3",
+          "standoffHeight": 6,
+          "pattern": "corner_bosses_plus_midpoints",
+          "spacingX": 180,
+          "spacingY": 100,
+          "material": "polycarbonate integral boss"
+        }
+      },
+      {
+        "type": "wall_mount_flange",
+        "specs": {
+          "count": 4,
+          "holeCount": 4,
+          "holeDiameter": 5,
+          "screwSize": "M4",
+          "flangeExtension": 12,
+          "position": "external_ears"
+        }
+      },
+      {
+        "type": "cable_gland_knockout",
+        "specs": {
+          "count": 4,
+          "knockoutDiameter": 18.5,
+          "threadSize": "PG11",
+          "position": "bottom_and_sides"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 194,
+      "interiorHeight": 50,
+      "interiorDepth": 114,
+      "wallThickness": 3,
+      "material": "Polycarbonate",
+      "ipRating": "IP67",
+      "color": "Gray",
+      "gasketMaterial": "Polyurethane foam",
+      "hingeLid": false,
+      "operatingTemp": "-40C to +80C",
+      "uvResistant": true,
+      "impactResistance": "IK08"
+    },
+    "suppliers": [
+      {
+        "name": "Gewiss",
+        "partNumber": "GW44206",
+        "approximatePrice": 17.5,
+        "url": "https://www.gewiss.com/ww/en/products/GW44206"
+      },
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1554K2GY",
+        "approximatePrice": 19.25,
+        "url": "https://www.hammfg.com/part/1554K2GY"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07S5Y39TZ",
+        "approximatePrice": 16.99,
+        "url": "https://www.amazon.com/dp/B07S5Y39TZ"
+      }
+    ],
+    "designNotes": "Polycarbonate construction offers significantly better impact resistance (IK08) vs ABS -- critical for industrial, marine, or vandal-prone installations. IP67 rating withstands temporary submersion. Shallower 50mm interior height keeps profile low but limits component height to ~40mm above PCB. Ideal for flat PCB assemblies with SMD components. Polycarbonate is naturally clear/translucent -- this gray version is pigmented, but clear versions allow status LED visibility without drilling. PG11 glands are the sweet spot for most industrial cables (4-10mm OD). For process control, supports 4-20mA transmitter boards with DIN terminals. Use cable ties internally to manage wiring and maintain organized layout for maintenance access.",
+    "tags": [
+      "waterproof enclosure",
+      "IP67",
+      "polycarbonate enclosure",
+      "junction box",
+      "Gewiss",
+      "submersible enclosure",
+      "industrial enclosure",
+      "marine enclosure",
+      "impact resistant",
+      "IK08",
+      "process control",
+      "building automation",
+      "wall mount enclosure",
+      "gray box",
+      "harsh environment"
+    ]
+  },
+  {
+    "name": "IP65 Weatherproof Junction Box -- 230x150x85mm",
+    "description": "230x150x85mm (9.06x5.91x3.35in) ABS IP65 waterproof junction box, gray, silicone gasket seal, 3mm wall thickness, 224x144x79mm interior, 6 internal PCB standoffs M3, wall-mount flanges with 4 mounting holes, PG11/PG13.5 cable gland knockouts, hinged lid with stainless steel hinge pin, large outdoor weatherproof enclosure for multi-board assemblies power distribution outdoor lighting controllers network switches solar inverter accessories, UV-resistant, -30C to +70C",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 230,
+      "height": 85,
+      "depth": 150,
+      "weight": 240
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 6,
+          "screwSize": "M3",
+          "standoffHeight": 8,
+          "pattern": "corner_bosses_plus_midpoints",
+          "spacingX": 210,
+          "spacingY": 130,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "wall_mount_flange",
+        "specs": {
+          "count": 4,
+          "holeCount": 4,
+          "holeDiameter": 5.5,
+          "screwSize": "M5 or #10",
+          "flangeExtension": 14,
+          "position": "external_ears"
+        }
+      },
+      {
+        "type": "cable_gland_knockout",
+        "specs": {
+          "count": 6,
+          "knockoutDiameters": [18.5, 20.5],
+          "threadSizes": ["PG11", "PG13.5"],
+          "position": "bottom_and_both_sides"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 224,
+      "interiorHeight": 79,
+      "interiorDepth": 144,
+      "wallThickness": 3,
+      "material": "ABS",
+      "ipRating": "IP65",
+      "color": "Gray",
+      "gasketMaterial": "Silicone",
+      "hingeLid": true,
+      "operatingTemp": "-30C to +70C",
+      "uvResistant": true
+    },
+    "suppliers": [
+      {
+        "name": "Qilipsu",
+        "partNumber": "QP-BX-230150",
+        "approximatePrice": 18.5,
+        "url": "https://www.amazon.com/dp/B08CXST6RW"
+      },
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1554L2GY",
+        "approximatePrice": 22.5,
+        "url": "https://www.hammfg.com/part/1554L2GY"
+      },
+      {
+        "name": "Polycase",
+        "partNumber": "WC-31GY",
+        "approximatePrice": 20.95,
+        "url": "https://www.polycase.com/wc-31"
+      }
+    ],
+    "designNotes": "Hinged lid greatly improves field serviceability -- no loose screws to drop when accessing internals. 224x144mm interior is large enough for a full 200mm DIN rail segment with terminal blocks, circuit breakers, and surge protectors. 6 cable gland knockouts provide ample entry points for multi-circuit installations. PG13.5 glands accept cables up to 12mm OD including shielded cables and multi-conductor control cables. For outdoor lighting controllers, interior supports DMX decoders and 24V power supplies side by side. Mount a DIN rail on the back wall for a clean, professional internal layout. Interior volume sufficient for natural convection cooling up to ~15W dissipation. Add breather vent (IP66 rated) for installations with thermal cycling to prevent condensation.",
+    "tags": [
+      "waterproof enclosure",
+      "IP65",
+      "large junction box",
+      "hinged lid enclosure",
+      "outdoor enclosure",
+      "ABS waterproof",
+      "power distribution box",
+      "lighting controller",
+      "network switch enclosure",
+      "solar accessory box",
+      "DIN rail enclosure",
+      "wall mount enclosure",
+      "cable gland",
+      "PG13.5",
+      "gray box"
+    ]
+  },
+  {
+    "name": "IP67 Weatherproof Junction Box -- 290x190x140mm",
+    "description": "290x190x140mm (11.42x7.48x5.51in) ABS IP67 waterproof junction box, gray, polyurethane foam gasket, 3mm wall thickness, 284x184x134mm interior, 8 internal PCB standoffs M4, wall-mount flanges with 6 mounting holes, PG11/PG13.5/PG16 cable gland knockouts, stainless steel lid fasteners, IP67 temporary submersion rated, large heavy-duty outdoor enclosure for industrial control panels power distribution marine electronics solar combiner boxes telecom outdoor cabinets, UV-resistant, -40C to +80C",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 290,
+      "height": 140,
+      "depth": 190,
+      "weight": 420
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 8,
+          "screwSize": "M4",
+          "standoffHeight": 8,
+          "pattern": "corner_bosses_plus_midpoints",
+          "spacingX": 264,
+          "spacingY": 164,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "wall_mount_flange",
+        "specs": {
+          "count": 6,
+          "holeCount": 6,
+          "holeDiameter": 6,
+          "screwSize": "M5",
+          "flangeExtension": 15,
+          "position": "external_ears"
+        }
+      },
+      {
+        "type": "cable_gland_knockout",
+        "specs": {
+          "count": 8,
+          "knockoutDiameters": [18.5, 20.5, 22.5],
+          "threadSizes": ["PG11", "PG13.5", "PG16"],
+          "position": "bottom_and_all_sides"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 284,
+      "interiorHeight": 134,
+      "interiorDepth": 184,
+      "wallThickness": 3,
+      "material": "ABS",
+      "ipRating": "IP67",
+      "color": "Gray",
+      "gasketMaterial": "Polyurethane foam",
+      "hingeLid": false,
+      "operatingTemp": "-40C to +80C",
+      "uvResistant": true
+    },
+    "suppliers": [
+      {
+        "name": "Qilipsu",
+        "partNumber": "QP-BX-290190",
+        "approximatePrice": 25.5,
+        "url": "https://www.amazon.com/dp/B08CXTQXRM"
+      },
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1554N2GY",
+        "approximatePrice": 30.5,
+        "url": "https://www.hammfg.com/part/1554N2GY"
+      },
+      {
+        "name": "Bud Industries",
+        "partNumber": "PN-1339-CMB",
+        "approximatePrice": 27.95,
+        "url": "https://www.budind.com/product/general-use-boxes/pn-1339-cmb/"
+      }
+    ],
+    "designNotes": "Large IP67 box suitable for complete industrial control systems. 284x184mm interior fits a full 250mm DIN rail with terminal blocks, relays, circuit breakers, and PLC modules. 134mm depth allows stacking two DIN rails vertically or a DIN rail + large PCB combo. M4 standoffs handle heavy assemblies (power supplies, transformers). PG16 glands accept cables up to 14mm OD -- sufficient for 3-phase power cables. For solar combiner boxes, interior supports MC4 pass-through connectors and DC disconnect switches. 6 wall-mount points provide secure attachment for heavy loaded boxes. Internal mounting plate (galvanized steel, sold separately) recommended for professional installations. Desiccant packets essential in humid/marine environments. Consider vented version with IP66 breather for thermal cycling.",
+    "tags": [
+      "waterproof enclosure",
+      "IP67",
+      "large junction box",
+      "industrial enclosure",
+      "submersible enclosure",
+      "heavy-duty box",
+      "marine enclosure",
+      "solar combiner box",
+      "telecom cabinet",
+      "power distribution",
+      "control panel box",
+      "DIN rail enclosure",
+      "wall mount enclosure",
+      "PG16",
+      "gray box",
+      "harsh environment"
+    ]
+  },
+  {
+    "name": "IP65 Weatherproof Junction Box -- 340x240x120mm",
+    "description": "340x240x120mm (13.39x9.45x4.72in) ABS IP65 waterproof junction box, gray, silicone gasket seal, 3mm wall thickness, 334x234x114mm interior, 8 internal PCB standoffs M4, wall-mount flanges with 6 mounting holes, PG11/PG13.5/PG16/PG21 cable gland knockouts, hinged lid with stainless steel hinge pins, extra-large outdoor weatherproof enclosure for industrial control panels large power distribution HVAC control systems building management solar string combiner outdoor network cabinets, UV-resistant, -30C to +70C",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 340,
+      "height": 120,
+      "depth": 240,
+      "weight": 520
+    },
+    "mountingFeatures": [
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 8,
+          "screwSize": "M4",
+          "standoffHeight": 10,
+          "pattern": "corner_bosses_plus_midpoints",
+          "spacingX": 314,
+          "spacingY": 214,
+          "material": "ABS integral boss"
+        }
+      },
+      {
+        "type": "wall_mount_flange",
+        "specs": {
+          "count": 6,
+          "holeCount": 6,
+          "holeDiameter": 6.5,
+          "screwSize": "M5 or 1/4-20",
+          "flangeExtension": 16,
+          "position": "external_ears"
+        }
+      },
+      {
+        "type": "cable_gland_knockout",
+        "specs": {
+          "count": 10,
+          "knockoutDiameters": [18.5, 20.5, 22.5, 28.5],
+          "threadSizes": ["PG11", "PG13.5", "PG16", "PG21"],
+          "position": "bottom_and_all_sides"
+        }
+      }
+    ],
+    "specs": {
+      "interiorWidth": 334,
+      "interiorHeight": 114,
+      "interiorDepth": 234,
+      "wallThickness": 3,
+      "material": "ABS",
+      "ipRating": "IP65",
+      "color": "Gray",
+      "gasketMaterial": "Silicone",
+      "hingeLid": true,
+      "operatingTemp": "-30C to +70C",
+      "uvResistant": true
+    },
+    "suppliers": [
+      {
+        "name": "Qilipsu",
+        "partNumber": "QP-BX-340240",
+        "approximatePrice": 28.5,
+        "url": "https://www.amazon.com/dp/B08CXV35YN"
+      },
+      {
+        "name": "Hammond Manufacturing",
+        "partNumber": "1554Q2GY",
+        "approximatePrice": 34.5,
+        "url": "https://www.hammfg.com/part/1554Q2GY"
+      },
+      {
+        "name": "Polycase",
+        "partNumber": "WC-44GY",
+        "approximatePrice": 30.95,
+        "url": "https://www.polycase.com/wc-44"
+      }
+    ],
+    "designNotes": "Largest standard weatherproof box before stepping up to full NEMA-rated cabinets. 334x234mm interior accommodates two 300mm DIN rail segments side by side or a 300mm rail + large PCB. Hinged lid essential at this size for field access. PG21 glands accept cables up to 18mm OD -- sufficient for heavy power cables and large cable bundles. 10 knockouts allow complex multi-circuit installations. Interior mounting plate (galvanized steel or aluminum) strongly recommended -- mount with M4 standoffs and use self-adhesive DIN rail clips. For HVAC/BMS applications, supports multiple relay boards, 24V power supplies, and communication modules (RS-485, BACnet, Modbus). Consider wiring duct (slotted PVC) along interior walls for cable management. Weight when fully loaded may exceed 2kg -- use appropriate wall anchors (toggle bolts for hollow walls, expansion anchors for masonry). For solar applications, ensure sufficient clearance between high-voltage DC conductors per NEC requirements.",
+    "tags": [
+      "waterproof enclosure",
+      "IP65",
+      "extra-large junction box",
+      "hinged lid enclosure",
+      "industrial enclosure",
+      "outdoor enclosure",
+      "HVAC control panel",
+      "building management",
+      "solar combiner box",
+      "network cabinet outdoor",
+      "power distribution box",
+      "DIN rail enclosure",
+      "wall mount enclosure",
+      "PG21",
+      "gray box",
+      "large weatherproof"
+    ]
+  },
+  {
+    "name": "DIN Rail Enclosure -- 1 Module (17.5mm wide)",
+    "description": "17.5x90x58mm (0.69x3.54x2.28in) ABS 1-module DIN rail enclosure, gray, 35mm top-hat DIN rail mount (TS-35), 1.5mm wall thickness, 14.5x82x52mm interior, snap-on DIN rail clip, ventilated top and bottom, Phoenix Contact ME series compatible, single-module enclosure for small breakout boards sensor interfaces RS-485 converters signal conditioners DIN rail IoT modules, compact industrial housing",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 17.5,
+      "height": 90,
+      "depth": 58,
+      "weight": 22
+    },
+    "mountingFeatures": [
+      {
+        "type": "din_rail_clip",
+        "specs": {
+          "railType": "35mm top-hat (TS-35)",
+          "railWidth": 35,
+          "clipType": "snap-on",
+          "releaseMethod": "screwdriver lever"
+        }
+      },
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 2,
+          "screwSize": "M2.5",
+          "standoffHeight": 3,
+          "pattern": "vertical_pair",
+          "spacingY": 70,
+          "maxPcbWidth": 13,
+          "material": "ABS integral boss"
+        }
+      }
+    ],
+    "specs": {
+      "moduleCount": 1,
+      "interiorWidth": 14.5,
+      "interiorHeight": 82,
+      "interiorDepth": 52,
+      "wallThickness": 1.5,
+      "material": "ABS",
+      "dinRailType": "35mm top-hat / TS-35",
+      "ventilated": true,
+      "color": "Gray"
+    },
+    "suppliers": [
+      {
+        "name": "Phoenix Contact",
+        "partNumber": "2869357",
+        "approximatePrice": 4.5,
+        "url": "https://www.phoenixcontact.com/en-us/products/2869357"
+      },
+      {
+        "name": "Camdenboss",
+        "partNumber": "CNMB/1",
+        "approximatePrice": 3.95,
+        "url": "https://www.camdenboss.com/cnmb-1"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07QBD8K2P",
+        "approximatePrice": 5.49,
+        "url": "https://www.amazon.com/dp/B07QBD8K2P"
+      }
+    ],
+    "designNotes": "Narrowest standard DIN rail module. Interior width of 14.5mm limits PCBs to ~13mm wide -- suitable for vertical-mount single-row daughter boards. Standard 90mm height mates with industrial DIN rail systems. Ventilation slots on top and bottom provide natural convection for small heat sources. Snap-on clip installs/removes without tools but has a screwdriver-release lever for tight rail installations. PCB typically mounts vertically with components facing one side. Top and bottom openings can accept push-in wire terminals or small connectors. For signal conditioning or RS-485 converters, design a tall narrow PCB (13x75mm) with terminal blocks at top and bottom edges.",
+    "tags": [
+      "DIN rail enclosure",
+      "1 module",
+      "industrial enclosure",
+      "Phoenix Contact",
+      "Camdenboss",
+      "TS-35",
+      "sensor interface",
+      "RS-485 converter",
+      "signal conditioner",
+      "DIN mount",
+      "rail mount",
+      "compact enclosure",
+      "gray enclosure",
+      "ventilated"
+    ]
+  },
+  {
+    "name": "DIN Rail Enclosure -- 2 Module (35mm wide)",
+    "description": "35x90x58mm (1.38x3.54x2.28in) ABS 2-module DIN rail enclosure, gray, 35mm top-hat DIN rail mount (TS-35), 1.5mm wall thickness, 32x82x52mm interior, snap-on DIN rail clip, ventilated, Phoenix Contact ME series compatible, 2-module enclosure for Arduino Nano ESP8266 small relay modules RS-232/RS-485 adapters voltage regulators small power supplies DIN rail prototyping, compact industrial housing",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 35,
+      "height": 90,
+      "depth": 58,
+      "weight": 32
+    },
+    "mountingFeatures": [
+      {
+        "type": "din_rail_clip",
+        "specs": {
+          "railType": "35mm top-hat (TS-35)",
+          "railWidth": 35,
+          "clipType": "snap-on",
+          "releaseMethod": "screwdriver lever"
+        }
+      },
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 4,
+          "screwSize": "M2.5",
+          "standoffHeight": 3,
+          "pattern": "corner_bosses",
+          "spacingX": 24,
+          "spacingY": 70,
+          "maxPcbWidth": 30,
+          "material": "ABS integral boss"
+        }
+      }
+    ],
+    "specs": {
+      "moduleCount": 2,
+      "interiorWidth": 32,
+      "interiorHeight": 82,
+      "interiorDepth": 52,
+      "wallThickness": 1.5,
+      "material": "ABS",
+      "dinRailType": "35mm top-hat / TS-35",
+      "ventilated": true,
+      "color": "Gray"
+    },
+    "suppliers": [
+      {
+        "name": "Phoenix Contact",
+        "partNumber": "2869370",
+        "approximatePrice": 5.25,
+        "url": "https://www.phoenixcontact.com/en-us/products/2869370"
+      },
+      {
+        "name": "Camdenboss",
+        "partNumber": "CNMB/2",
+        "approximatePrice": 4.5,
+        "url": "https://www.camdenboss.com/cnmb-2"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07QBGBZCH",
+        "approximatePrice": 6.49,
+        "url": "https://www.amazon.com/dp/B07QBGBZCH"
+      }
+    ],
+    "designNotes": "Most popular small DIN rail module size. 32mm interior width accommodates Arduino Nano (18mm wide) or ESP8266 boards with room for vertical wiring. PCB standoff pattern at 24x70mm works for custom narrow PCBs. Two-module width provides enough internal volume for a small voltage regulator circuit or RS-485 transceiver board with screw terminals. Ventilation adequate for ~1W continuous dissipation. Top/bottom openings fit standard 3.5mm pitch push-in or screw terminal blocks. Can be combined side-by-side on DIN rail for modular system builds. Consider designing the PCB with edge-mount connectors to maximize interior space.",
+    "tags": [
+      "DIN rail enclosure",
+      "2 module",
+      "industrial enclosure",
+      "Phoenix Contact",
+      "Camdenboss",
+      "TS-35",
+      "Arduino Nano enclosure",
+      "ESP8266 enclosure",
+      "RS-485 adapter",
+      "voltage regulator housing",
+      "DIN mount",
+      "rail mount",
+      "compact enclosure",
+      "gray enclosure",
+      "ventilated"
+    ]
+  },
+  {
+    "name": "DIN Rail Enclosure -- 4 Module (70mm wide)",
+    "description": "70x90x58mm (2.76x3.54x2.28in) ABS 4-module DIN rail enclosure, gray, 35mm top-hat DIN rail mount (TS-35), 1.5mm wall thickness, 67x82x52mm interior, snap-on DIN rail clip, ventilated top and bottom, Phoenix Contact ME series compatible, 4-module enclosure for ESP32 Raspberry Pi Pico relay modules stepper drivers CAN bus interfaces Modbus gateways PLC I/O expansion custom automation boards, industrial DIN housing",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 70,
+      "height": 90,
+      "depth": 58,
+      "weight": 48
+    },
+    "mountingFeatures": [
+      {
+        "type": "din_rail_clip",
+        "specs": {
+          "railType": "35mm top-hat (TS-35)",
+          "railWidth": 35,
+          "clipType": "snap-on",
+          "releaseMethod": "screwdriver lever"
+        }
+      },
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 4,
+          "screwSize": "M3",
+          "standoffHeight": 4,
+          "pattern": "corner_bosses",
+          "spacingX": 57,
+          "spacingY": 70,
+          "maxPcbWidth": 63,
+          "material": "ABS integral boss"
+        }
+      }
+    ],
+    "specs": {
+      "moduleCount": 4,
+      "interiorWidth": 67,
+      "interiorHeight": 82,
+      "interiorDepth": 52,
+      "wallThickness": 1.5,
+      "material": "ABS",
+      "dinRailType": "35mm top-hat / TS-35",
+      "ventilated": true,
+      "color": "Gray"
+    },
+    "suppliers": [
+      {
+        "name": "Phoenix Contact",
+        "partNumber": "2869396",
+        "approximatePrice": 8.5,
+        "url": "https://www.phoenixcontact.com/en-us/products/2869396"
+      },
+      {
+        "name": "Camdenboss",
+        "partNumber": "CNMB/4",
+        "approximatePrice": 7.25,
+        "url": "https://www.camdenboss.com/cnmb-4"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07QBYJ32K",
+        "approximatePrice": 9.49,
+        "url": "https://www.amazon.com/dp/B07QBYJ32K"
+      }
+    ],
+    "designNotes": "Versatile mid-size DIN module. 67mm interior width fits most small dev boards including ESP32 DevKit (51mm wide) and Raspberry Pi Pico (21x51mm with room to spare). 57x70mm PCB mounting area is the sweet spot for custom automation boards with screw terminals on top and bottom edges. M3 standoffs provide solid mounting for heavier boards. Ideal for single-channel motor drivers, 4-relay modules, CAN/Modbus gateway boards. Ventilation handles ~2W continuous dissipation. For custom PCB design, target 60x78mm board size with 3mm corner radius to match interior contours. Top and bottom slots accept standard 5.08mm pitch DIN terminal blocks (up to 12 positions).",
+    "tags": [
+      "DIN rail enclosure",
+      "4 module",
+      "industrial enclosure",
+      "Phoenix Contact",
+      "Camdenboss",
+      "TS-35",
+      "ESP32 DIN enclosure",
+      "relay module housing",
+      "Modbus gateway",
+      "CAN bus interface",
+      "PLC I/O expansion",
+      "stepper driver enclosure",
+      "DIN mount",
+      "rail mount",
+      "automation housing"
+    ]
+  },
+  {
+    "name": "DIN Rail Enclosure -- 6 Module (105mm wide)",
+    "description": "105x90x58mm (4.13x3.54x2.28in) ABS 6-module DIN rail enclosure, gray, 35mm top-hat DIN rail mount (TS-35), 1.5mm wall thickness, 102x82x52mm interior, snap-on DIN rail clip, ventilated top and bottom, Phoenix Contact ME series compatible, 6-module enclosure for Raspberry Pi Arduino Mega multi-relay boards stepper motor controllers industrial I/O boards PLC replacement custom SCADA controllers Modbus RTU masters, large industrial DIN housing",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 105,
+      "height": 90,
+      "depth": 58,
+      "weight": 65
+    },
+    "mountingFeatures": [
+      {
+        "type": "din_rail_clip",
+        "specs": {
+          "railType": "35mm top-hat (TS-35)",
+          "railWidth": 35,
+          "clipType": "snap-on",
+          "releaseMethod": "screwdriver lever"
+        }
+      },
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 6,
+          "screwSize": "M3",
+          "standoffHeight": 4,
+          "pattern": "corner_bosses_plus_midpoints",
+          "spacingX": 90,
+          "spacingY": 70,
+          "maxPcbWidth": 98,
+          "material": "ABS integral boss"
+        }
+      }
+    ],
+    "specs": {
+      "moduleCount": 6,
+      "interiorWidth": 102,
+      "interiorHeight": 82,
+      "interiorDepth": 52,
+      "wallThickness": 1.5,
+      "material": "ABS",
+      "dinRailType": "35mm top-hat / TS-35",
+      "ventilated": true,
+      "color": "Gray"
+    },
+    "suppliers": [
+      {
+        "name": "Phoenix Contact",
+        "partNumber": "2869419",
+        "approximatePrice": 11.25,
+        "url": "https://www.phoenixcontact.com/en-us/products/2869419"
+      },
+      {
+        "name": "Camdenboss",
+        "partNumber": "CNMB/6",
+        "approximatePrice": 9.75,
+        "url": "https://www.camdenboss.com/cnmb-6"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07QC3VH72",
+        "approximatePrice": 12.49,
+        "url": "https://www.amazon.com/dp/B07QC3VH72"
+      }
+    ],
+    "designNotes": "Large DIN module accommodates full-size development boards. Raspberry Pi 4 (85x56mm) fits with the PCB mounted vertically -- route connectors to top/bottom openings. 90x70mm standoff pattern supports industrial-grade custom PCBs. 6 standoffs prevent board flex on larger assemblies. Excellent for 8-channel relay boards, multi-axis stepper controllers, or complete PLC replacement boards with digital/analog I/O. Top and bottom slots accept up to 18 positions of 5.08mm pitch terminals or 10 positions of 7.62mm pitch high-current terminals. Ventilation slots handle ~3-4W continuous. For Raspberry Pi applications, design a carrier board that maps GPIO to DIN-style screw terminals. Consider adding a status LED window or cutout on the front face.",
+    "tags": [
+      "DIN rail enclosure",
+      "6 module",
+      "industrial enclosure",
+      "Phoenix Contact",
+      "Camdenboss",
+      "TS-35",
+      "Raspberry Pi DIN",
+      "Arduino Mega DIN",
+      "multi-relay enclosure",
+      "PLC replacement",
+      "SCADA controller",
+      "stepper controller",
+      "industrial I/O",
+      "DIN mount",
+      "rail mount",
+      "large DIN enclosure"
+    ]
+  },
+  {
+    "name": "DIN Rail Enclosure -- 12 Module (210mm wide)",
+    "description": "210x90x75mm (8.27x3.54x2.95in) polycarbonate 12-module DIN rail enclosure, gray, 35mm top-hat DIN rail mount (TS-35), 2mm wall thickness, 206x82x69mm interior, dual snap-on DIN rail clips, ventilated top and bottom and sides, Camdenboss CNMB/12 compatible, 12-module extra-wide enclosure for multi-board assemblies complete PLC systems multi-axis motor controllers data acquisition systems power monitoring equipment industrial gateway routers edge computing DIN rail servers, deep 75mm profile, heavy-duty industrial housing",
+    "categorySlug": "enclosures",
+    "entryType": "component",
+    "dimensions": {
+      "width": 210,
+      "height": 90,
+      "depth": 75,
+      "weight": 120
+    },
+    "mountingFeatures": [
+      {
+        "type": "din_rail_clip",
+        "specs": {
+          "railType": "35mm top-hat (TS-35)",
+          "railWidth": 35,
+          "clipType": "dual snap-on",
+          "clipSpacing": 175,
+          "releaseMethod": "screwdriver lever"
+        }
+      },
+      {
+        "type": "pcb_standoff",
+        "specs": {
+          "count": 8,
+          "screwSize": "M3",
+          "standoffHeight": 5,
+          "pattern": "corner_bosses_plus_midpoints",
+          "spacingX": 190,
+          "spacingY": 70,
+          "maxPcbWidth": 200,
+          "material": "polycarbonate integral boss"
+        }
+      }
+    ],
+    "specs": {
+      "moduleCount": 12,
+      "interiorWidth": 206,
+      "interiorHeight": 82,
+      "interiorDepth": 69,
+      "wallThickness": 2,
+      "material": "Polycarbonate",
+      "dinRailType": "35mm top-hat / TS-35",
+      "ventilated": true,
+      "color": "Gray"
+    },
+    "suppliers": [
+      {
+        "name": "Camdenboss",
+        "partNumber": "CNMB/12",
+        "approximatePrice": 18.5,
+        "url": "https://www.camdenboss.com/cnmb-12"
+      },
+      {
+        "name": "Phoenix Contact",
+        "partNumber": "2869484",
+        "approximatePrice": 22.5,
+        "url": "https://www.phoenixcontact.com/en-us/products/2869484"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07QCHP2MS",
+        "approximatePrice": 19.99,
+        "url": "https://www.amazon.com/dp/B07QCHP2MS"
+      }
+    ],
+    "designNotes": "Largest standard DIN rail module enclosure. 206mm interior width fits two standard PCBs side by side or one large motherboard-class board. Dual DIN rail clips provide stable mounting even when fully loaded -- critical for heavy assemblies with transformers or large terminal blocks. 75mm depth (vs 58mm on smaller modules) provides significantly more PCB component clearance. Polycarbonate construction is tougher than ABS and suitable for industrial environments with vibration. 8 standoffs support a single large PCB (200x78mm) or can mount two smaller boards on independent standoff sets. Top/bottom/side ventilation handles ~8-10W continuous dissipation. For edge computing or gateway applications, consider Raspberry Pi CM4 carrier board designs that expose Ethernet, USB, and serial ports through top/bottom openings. Terminal blocks can span full 200mm width -- up to 36 positions at 5.08mm pitch. Consider custom 3D-printed front panel inserts for LCD displays, buttons, or indicator LEDs.",
+    "tags": [
+      "DIN rail enclosure",
+      "12 module",
+      "industrial enclosure",
+      "Camdenboss",
+      "Phoenix Contact",
+      "TS-35",
+      "extra-wide DIN",
+      "PLC enclosure",
+      "multi-axis controller",
+      "data acquisition",
+      "power monitor",
+      "industrial gateway",
+      "edge computing DIN",
+      "DIN mount",
+      "rail mount",
+      "polycarbonate",
+      "heavy-duty",
+      "deep profile"
+    ]
+  }
+]

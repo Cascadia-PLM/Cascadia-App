@@ -1,0 +1,870 @@
+[
+  {
+    "name": "A4988 Stepper Motor Driver Module",
+    "description": "Allegro A4988 microstepping stepper motor driver breakout board, 8-35V motor supply, 2A peak per phase (1A without heatsink), up to 1/16 microstepping, STEP/DIR interface, adjustable current via VREF potentiometer, StepStick form factor",
+    "categorySlug": "motor-drivers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 15.2,
+      "height": 20.3,
+      "depth": 10,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 16,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 8,
+          "rowSpacing": 15.2,
+          "headerType": "through-hole male"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "8-35V motor, 3-5.3V logic",
+      "current": "2A peak, 1A continuous (no heatsink)",
+      "power": "35W max",
+      "interface": "STEP/DIR",
+      "pinout": "16-pin DIP: VMOT, GND, 2B, 2A, 1A, 1B, VDD, GND (top); EN, MS1, MS2, MS3, RST, SLP, STEP, DIR (bottom)"
+    },
+    "specs": {
+      "maxVoltage": 35,
+      "maxCurrent": 2.0,
+      "continuousCurrent": 1.0,
+      "microsteppingModes": "full, 1/2, 1/4, 1/8, 1/16",
+      "maxMicrostepping": 16,
+      "interface": "STEP/DIR",
+      "thermalShutdown": true,
+      "overcurrentProtection": true,
+      "vrefFormula": "I_max = VREF / (8 × R_sense); R_sense = 0.068Ω on most modules"
+    },
+    "suppliers": [
+      {
+        "name": "Pololu",
+        "partNumber": "1182",
+        "approximatePrice": 6,
+        "url": "https://www.pololu.com/product/1182"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B01FFGAKK8",
+        "approximatePrice": 2,
+        "url": "https://www.amazon.com/dp/B01FFGAKK8"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "ROB-12779",
+        "approximatePrice": 6,
+        "url": "https://www.sparkfun.com/products/12779"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The budget standard for stepper driving. Set VREF before connecting motor: VREF = I_max × 8 × 0.068 (for 1A: VREF ≈ 0.544V). MUST add 100µF capacitor across VMOT/GND near the module — voltage spikes WILL destroy it without this. Heatsink required above 0.5A continuous. Connect RST to SLP if not using reset/sleep. Works with all NEMA 8 through NEMA 17 steppers. Marginal for NEMA 23 (use DRV8825 or better). Audible whine at some speeds — use TMC2209 if noise matters. Fits standard 3D printer controller boards (RAMPS, SKR, etc.).",
+    "tags": [
+      "A4988",
+      "stepper driver",
+      "StepStick",
+      "microstepping driver",
+      "3d printer driver",
+      "RAMPS",
+      "CNC driver",
+      "Allegro",
+      "Pololu"
+    ]
+  },
+  {
+    "name": "DRV8825 Stepper Motor Driver Module",
+    "description": "Texas Instruments DRV8825 microstepping stepper motor driver breakout board, 8.2-45V motor supply, 2.5A peak per phase (1.5A without heatsink), up to 1/32 microstepping, STEP/DIR interface, adjustable current via VREF potentiometer, StepStick form factor, drop-in A4988 upgrade",
+    "categorySlug": "motor-drivers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 15.2,
+      "height": 20.3,
+      "depth": 10,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 16,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 8,
+          "rowSpacing": 15.2,
+          "headerType": "through-hole male"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "8.2-45V motor, 3.3-5V logic",
+      "current": "2.5A peak, 1.5A continuous (no heatsink)",
+      "power": "45W max",
+      "interface": "STEP/DIR",
+      "pinout": "16-pin DIP: VMOT, GND, B2, B1, A1, A2, FLT, GND (top); EN, M0, M1, M2, RST, SLP, STEP, DIR (bottom)"
+    },
+    "specs": {
+      "maxVoltage": 45,
+      "maxCurrent": 2.5,
+      "continuousCurrent": 1.5,
+      "microsteppingModes": "full, 1/2, 1/4, 1/8, 1/16, 1/32",
+      "maxMicrostepping": 32,
+      "interface": "STEP/DIR",
+      "thermalShutdown": true,
+      "overcurrentProtection": true,
+      "vrefFormula": "I_max = VREF / (5 × R_sense); R_sense = 0.1Ω on Pololu boards"
+    },
+    "suppliers": [
+      {
+        "name": "Pololu",
+        "partNumber": "2133",
+        "approximatePrice": 9,
+        "url": "https://www.pololu.com/product/2133"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B01FFGAKK8",
+        "approximatePrice": 2.5,
+        "url": "https://www.amazon.com/dp/B07BND65C8"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Direct upgrade from A4988 — same StepStick footprint but higher voltage (45V vs 35V), more current (2.5A vs 2A), and finer microstepping (1/32 vs 1/16). CAUTION: pin-compatible but NOT drop-in — microstepping pins (M0/M1/M2) have different logic than A4988 (MS1/MS2/MS3). VREF formula differs from A4988: VREF = I_max × 5 × 0.1. Still needs 100µF capacitor on VMOT. Good for NEMA 17 at full current or light NEMA 23 loads. Known to have noisier operation than A4988 at some microstep settings. Use TMC2209 if noise is a concern.",
+    "tags": [
+      "DRV8825",
+      "stepper driver",
+      "StepStick",
+      "microstepping driver",
+      "3d printer driver",
+      "CNC driver",
+      "Texas Instruments",
+      "TI",
+      "Pololu",
+      "A4988 upgrade"
+    ]
+  },
+  {
+    "name": "TMC2208 Silent Stepper Motor Driver Module",
+    "description": "Trinamic TMC2208 ultra-quiet stepper motor driver breakout board, 5-36V motor supply, 2A peak (1.4A continuous RMS), up to 1/256 microstepping via MicroPlyer interpolation, StealthChop2 for silent operation, STEP/DIR or UART interface, StepStick form factor",
+    "categorySlug": "motor-drivers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 15.2,
+      "height": 20.3,
+      "depth": 10,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 16,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 8,
+          "rowSpacing": 15.2,
+          "headerType": "through-hole male"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5-36V motor, 3.3-5V logic",
+      "current": "2A peak, 1.4A continuous RMS",
+      "power": "36W max",
+      "interface": "STEP/DIR or single-wire UART",
+      "pinout": "16-pin StepStick: VM, GND, B2, B1, A2, A1, VIO, GND (top); EN, MS1, MS2, PDN_UART, CLK, STEP, DIR, GND (bottom)"
+    },
+    "specs": {
+      "maxVoltage": 36,
+      "maxCurrent": 2.0,
+      "continuousCurrent": 1.4,
+      "microsteppingModes": "full, 1/2, 1/4, 1/8, 1/16 (native); up to 1/256 interpolated",
+      "maxMicrostepping": 256,
+      "interface": "STEP/DIR, UART",
+      "stealthChop": true,
+      "spreadCycle": false,
+      "thermalShutdown": true,
+      "overcurrentProtection": true,
+      "stallDetection": false
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B082LSQJZH",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/dp/B082LSQJZH"
+      },
+      {
+        "name": "Filastruder",
+        "partNumber": "SilentStepStick-TMC2208",
+        "approximatePrice": 10,
+        "url": "https://www.filastruder.com/products/silentstepstick-tmc2208-stepper-motor-driver"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Silent operation via StealthChop2 — motors are virtually inaudible. UART interface allows runtime configuration of current, microstepping, and StealthChop parameters from firmware (Marlin, Klipper). NO stallGuard (sensorless homing) — use TMC2209 if you need that. 1/256 microstepping is interpolated from native 1/16 — smoother motion but same positional resolution as 1/16. Current limited to 1.4A RMS continuous — fine for most NEMA 17 motors but NOT for high-current NEMA 17 (2A+) or NEMA 23. StepStick form factor fits all standard 3D printer boards.",
+    "tags": [
+      "TMC2208",
+      "silent stepper driver",
+      "Trinamic",
+      "StealthChop",
+      "quiet motor driver",
+      "3d printer driver",
+      "UART stepper",
+      "StepStick",
+      "Watterott",
+      "BigTreeTech",
+      "BTT"
+    ]
+  },
+  {
+    "name": "TMC2209 Silent Stepper Motor Driver Module",
+    "description": "Trinamic TMC2209 ultra-quiet stepper motor driver breakout board, 4.75-29V motor supply, 2.8A peak (2A continuous RMS), up to 1/256 microstepping, StealthChop2 + SpreadCycle + CoolStep, stallGuard4 sensorless homing, STEP/DIR or UART interface, StepStick form factor",
+    "categorySlug": "motor-drivers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 15.2,
+      "height": 20.3,
+      "depth": 10,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 16,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 8,
+          "rowSpacing": 15.2,
+          "headerType": "through-hole male"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.75-29V motor, 3.3-5V logic",
+      "current": "2.8A peak, 2A continuous RMS",
+      "power": "29W max",
+      "interface": "STEP/DIR or single-wire UART",
+      "pinout": "16-pin StepStick: VM, GND, B2, B1, A2, A1, VIO, GND (top); EN, MS1, MS2, PDN_UART, CLK, STEP, DIR, DIAG (bottom)"
+    },
+    "specs": {
+      "maxVoltage": 29,
+      "maxCurrent": 2.8,
+      "continuousCurrent": 2.0,
+      "microsteppingModes": "full, 1/2, 1/4, 1/8, 1/16 (native); up to 1/256 interpolated",
+      "maxMicrostepping": 256,
+      "interface": "STEP/DIR, UART",
+      "stealthChop": true,
+      "spreadCycle": true,
+      "coolStep": true,
+      "stallGuard": "stallGuard4",
+      "thermalShutdown": true,
+      "overcurrentProtection": true,
+      "stallDetection": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08GYL2GYN",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/dp/B08GYL2GYN"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "1460-TMC2209-SILENTSTEPSTICK-ND",
+        "approximatePrice": 11,
+        "url": "https://www.digikey.com/en/products/detail/trinamic-motion-control-gmbh/TMC2209-SILENTSTEPSTICK/10232491"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The best all-around stepper driver for NEMA 17 motors. Silent StealthChop2 mode for idle/slow moves, SpreadCycle for high-speed/high-load. stallGuard4 enables sensorless homing (eliminate endstop switches). CoolStep reduces current dynamically when load is low — saves power and reduces heat. UART allows tuning from Klipper/Marlin. 29V max is lower than A4988/DRV8825 — fine for 12-24V systems but NOT for 36V+ setups (use TMC5160). Handles all NEMA 17 motors comfortably. The recommended driver for Voron, Rat Rig, and modern 3D printer builds.",
+    "tags": [
+      "TMC2209",
+      "silent stepper driver",
+      "Trinamic",
+      "StealthChop",
+      "SpreadCycle",
+      "CoolStep",
+      "stallGuard",
+      "sensorless homing",
+      "3d printer driver",
+      "UART stepper",
+      "StepStick",
+      "BigTreeTech",
+      "BTT",
+      "Voron",
+      "Klipper"
+    ]
+  },
+  {
+    "name": "TMC5160 High-Power Stepper Motor Driver Module",
+    "description": "Trinamic TMC5160 high-voltage high-current stepper motor driver breakout board, 8-60V motor supply, 3A RMS (up to 15A with external MOSFETs), up to 1/256 microstepping, StealthChop2 + SpreadCycle + CoolStep + stallGuard2, SPI interface, for NEMA 23/34 and high-performance applications",
+    "categorySlug": "motor-drivers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20,
+      "height": 25,
+      "depth": 12,
+      "weight": 5
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 16,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 8,
+          "rowSpacing": 15.2,
+          "headerType": "through-hole male"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "8-60V motor, 3.3-5V logic",
+      "current": "3A RMS (integrated), up to 15A with external MOSFETs",
+      "power": "150W max",
+      "interface": "SPI or STEP/DIR",
+      "pinout": "16-pin StepStick compatible; SPI: SCK, MOSI, MISO, CS"
+    },
+    "specs": {
+      "maxVoltage": 60,
+      "maxCurrent": 3.0,
+      "maxCurrentExternal": 15.0,
+      "continuousCurrent": 3.0,
+      "microsteppingModes": "full through 1/256",
+      "maxMicrostepping": 256,
+      "interface": "SPI, STEP/DIR",
+      "stealthChop": true,
+      "spreadCycle": true,
+      "coolStep": true,
+      "stallGuard": "stallGuard2",
+      "thermalShutdown": true,
+      "overcurrentProtection": true,
+      "stallDetection": true,
+      "motionController": "built-in ramp generator"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08PKJY4G1",
+        "approximatePrice": 18,
+        "url": "https://www.amazon.com/dp/B08PKJY4G1"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "1460-TMC5160-BOB-ND",
+        "approximatePrice": 25,
+        "url": "https://www.digikey.com/en/products/detail/trinamic-motion-control-gmbh/TMC5160-BOB/10232590"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The premium driver for NEMA 23+ motors and high-voltage systems. SPI interface required — does NOT work with simple STEP/DIR-only boards (though it has STEP/DIR fallback). 60V max supports 48V systems common in larger CNC machines. 3A integrated is enough for most NEMA 23 motors. For NEMA 34 (5A+), use the HV variant with external MOSFETs. BigTreeTech TMC5160 T Plus is the common module variant. All Trinamic features: StealthChop2 for silence, SpreadCycle for performance, CoolStep for efficiency, stallGuard for sensorless homing. Built-in ramp generator can offload step generation from the MCU. Significantly more expensive than TMC2209 — only use when voltage or current exceeds TMC2209 limits.",
+    "tags": [
+      "TMC5160",
+      "high power stepper driver",
+      "Trinamic",
+      "SPI stepper",
+      "60V driver",
+      "NEMA 23 driver",
+      "NEMA 34 driver",
+      "BigTreeTech",
+      "BTT",
+      "high voltage stepper",
+      "CNC driver",
+      "StealthChop"
+    ]
+  },
+  {
+    "name": "L298N Dual H-Bridge DC Motor Driver Module",
+    "description": "L298N dual full H-bridge motor driver module, 5-46V motor supply, 2A continuous per channel (3A peak), drives 2 DC motors or 1 stepper motor, PWM speed control, built-in 5V regulator, screw terminals, heatsink included",
+    "categorySlug": "motor-drivers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 43,
+      "height": 43,
+      "depth": 27,
+      "weight": 30
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeDiameter": 3.2,
+          "holeSpacing": 37,
+          "boltSize": 3
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalCount": 6,
+          "terminalPitch": 5.08,
+          "wireGauge": "12-22 AWG"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5-46V motor, 5V logic (from onboard regulator or external)",
+      "current": "2A per channel continuous, 3A peak",
+      "power": "25W max",
+      "interface": "digital GPIO + PWM",
+      "pinout": "IN1, IN2, IN3, IN4 (direction), ENA, ENB (PWM speed), 5V, GND"
+    },
+    "specs": {
+      "channels": 2,
+      "maxVoltage": 46,
+      "maxCurrent": 2.0,
+      "peakCurrent": 3.0,
+      "voltageDropPerChannel": 2.0,
+      "interface": "GPIO direction + PWM enable",
+      "builtInRegulator": "5V 0.5A (disable above 12V motor input)",
+      "thermalProtection": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B014KMHSW6",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/dp/B014KMHSW6"
+      },
+      {
+        "name": "Adafruit",
+        "partNumber": "5765",
+        "approximatePrice": 5,
+        "url": "https://www.adafruit.com/product/5765"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The classic beginner motor driver. MAJOR CAVEAT: ~2V voltage drop per channel due to bipolar transistor design — a 12V motor only gets ~10V. For higher efficiency, use TB6612FNG (MOSFET-based, ~0.5V drop). Drives 2 DC motors independently or 1 unipolar stepper. Built-in 5V regulator works up to ~12V motor input (remove jumper above 12V to avoid regulator damage). Screw terminals make wiring easy. PWM via ENA/ENB pins controls speed. 4 mounting holes for M3 screws. Good for learning, prototypes, and small robots. NOT recommended for 550/775 motors (current too low).",
+    "tags": [
+      "L298N",
+      "H-bridge",
+      "motor driver",
+      "dual motor driver",
+      "DC motor driver",
+      "Arduino motor driver",
+      "beginner motor driver",
+      "robot driver"
+    ]
+  },
+  {
+    "name": "TB6612FNG Dual Motor Driver Module",
+    "description": "Toshiba TB6612FNG dual MOSFET H-bridge motor driver breakout board, 2.5-13.5V motor supply, 1.2A continuous per channel (3.2A peak), 2 DC motors or 1 stepper, low voltage drop, PWM up to 100kHz, compact SparkFun/Pololu breakout",
+    "categorySlug": "motor-drivers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20,
+      "height": 25,
+      "depth": 3,
+      "weight": 2
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 16,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 8,
+          "headerType": "through-hole"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "2.5-13.5V motor, 2.7-5.5V logic",
+      "current": "1.2A per channel continuous, 3.2A peak",
+      "power": "15W max",
+      "interface": "digital GPIO + PWM",
+      "pinout": "PWMA, AIN1, AIN2, STBY, BIN1, BIN2, PWMB, VM, VCC, GND, A01, A02, B01, B02"
+    },
+    "specs": {
+      "channels": 2,
+      "maxVoltage": 13.5,
+      "maxCurrent": 1.2,
+      "peakCurrent": 3.2,
+      "voltageDropPerChannel": 0.5,
+      "interface": "GPIO direction + PWM speed + STBY",
+      "maxPWMFrequency": 100000,
+      "thermalProtection": true,
+      "standbyMode": true
+    },
+    "suppliers": [
+      {
+        "name": "SparkFun",
+        "partNumber": "ROB-14451",
+        "approximatePrice": 5.5,
+        "url": "https://www.sparkfun.com/sparkfun-motor-driver-dual-tb6612fng-1a.html"
+      },
+      {
+        "name": "Pololu",
+        "partNumber": "713",
+        "approximatePrice": 4.5,
+        "url": "https://www.pololu.com/product/713"
+      },
+      {
+        "name": "Adafruit",
+        "partNumber": "2448",
+        "approximatePrice": 5,
+        "url": "https://www.adafruit.com/product/2448"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Superior to L298N for small motors — MOSFET design means only ~0.5V drop vs. L298N's ~2V drop. Perfect for 130/280/370 motors and SG90/MG90S servos. 3.3V and 5V logic compatible. STBY pin puts the chip in low-power standby. Max 13.5V limits use to smaller motors — NOT for 550/775 motors. Can drive one small bipolar stepper motor. SparkFun and Pololu breakout boards have identical pinout. Compact enough for breadboard prototyping. Use with Arduino, ESP32, Raspberry Pi Pico.",
+    "tags": [
+      "TB6612FNG",
+      "motor driver",
+      "dual motor driver",
+      "MOSFET driver",
+      "Toshiba",
+      "SparkFun",
+      "Pololu",
+      "Adafruit",
+      "small motor driver",
+      "robot driver",
+      "low dropout"
+    ]
+  },
+  {
+    "name": "L9110S Dual Motor Driver Module",
+    "description": "L9110S dual H-bridge motor driver module, 2.5-12V motor supply, 0.8A continuous per channel (1.5A peak), ultra-compact 31×22mm board, female headers for direct connection, drives 2 small DC motors, lowest-cost dual driver",
+    "categorySlug": "motor-drivers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 31,
+      "height": 22,
+      "depth": 12,
+      "weight": 5
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 8,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 4,
+          "headerType": "female header"
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalCount": 4,
+          "terminalPitch": 5.08,
+          "wireGauge": "16-24 AWG"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "2.5-12V motor and logic combined",
+      "current": "0.8A per channel continuous, 1.5A peak",
+      "power": "10W max",
+      "interface": "digital GPIO (2 pins per motor)",
+      "pinout": "VCC, GND, A-IA, A-IB, B-IA, B-IB (motor direction via 2-pin input per channel)"
+    },
+    "specs": {
+      "channels": 2,
+      "maxVoltage": 12,
+      "maxCurrent": 0.8,
+      "peakCurrent": 1.5,
+      "interface": "2-wire per channel (IA/IB set direction and speed via PWM)",
+      "thermalProtection": false
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00M0F243E",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com/dp/B00M0F243E"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Cheapest dual motor driver. Only suitable for small motors (130-type, 280-type). 0.8A continuous is the real limit — don't expect sustained 1.5A. No separate motor/logic supply — single VCC powers everything. Control is simple: set both IA/IB low to stop, one high to go forward, other high for reverse, both high for brake. No dedicated PWM pin — apply PWM to either IA or IB for speed control. No mounting holes — glue, tape, or mount to breadboard. Good for simple Arduino robot cars with small motors.",
+    "tags": [
+      "L9110S",
+      "L9110",
+      "HG7881",
+      "motor driver",
+      "dual motor driver",
+      "cheap motor driver",
+      "small motor driver",
+      "robot car driver",
+      "Arduino motor"
+    ]
+  },
+  {
+    "name": "BTS7960 High-Current Motor Driver Module (IBT-2)",
+    "description": "BTS7960 43A full H-bridge motor driver module (IBT-2), 6-27V motor supply, 43A continuous, PWM or level control, built-in current sensing, over-temperature/over-voltage/under-voltage/short-circuit protection, for 550/775 motors and heavy robotics",
+    "categorySlug": "motor-drivers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 50,
+      "height": 50,
+      "depth": 30,
+      "weight": 60
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeDiameter": 3.2,
+          "boltSize": 3
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalCount": 4,
+          "terminalPitch": 9.5,
+          "wireGauge": "8-14 AWG"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 8,
+          "pinPitch": 2.54,
+          "headerType": "female header"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "6-27V motor, 3.3-5V logic",
+      "current": "43A continuous max",
+      "power": "750W max",
+      "interface": "PWM or digital GPIO",
+      "pinout": "VCC (5V), GND, RPWM, LPWM, R_EN, L_EN, R_IS (current sense), L_IS (current sense)"
+    },
+    "specs": {
+      "channels": 1,
+      "maxVoltage": 27,
+      "maxCurrent": 43,
+      "interface": "dual-PWM (RPWM/LPWM for direction + speed)",
+      "currentSensing": true,
+      "overTemperatureProtection": true,
+      "overVoltageProtection": true,
+      "underVoltageProtection": true,
+      "shortCircuitProtection": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00WSN98DC",
+        "approximatePrice": 9,
+        "url": "https://www.amazon.com/dp/B00WSN98DC"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The go-to driver for 550/775 motors and heavy robotics. 43A rating handles stall current of most 775 motors. Single channel — need 2 modules for differential-drive robot. RPWM/LPWM control: PWM on RPWM (LPWM low) for forward, PWM on LPWM (RPWM low) for reverse. R_IS/L_IS pins output current sense voltage for monitoring. Built-in protection makes it robust. Use 12-24V supply rated for expected motor current. Heavy-gauge wiring required for motor connections (14 AWG minimum for 20A+). Mount with M3 screws. Add fuse between power supply and module for safety. Also sold as 'IBT-2' module.",
+    "tags": [
+      "BTS7960",
+      "IBT-2",
+      "high current motor driver",
+      "43A motor driver",
+      "H-bridge",
+      "775 motor driver",
+      "robot motor driver",
+      "heavy duty driver",
+      "Infineon",
+      "power motor driver"
+    ]
+  },
+  {
+    "name": "20A Brushless ESC (Electronic Speed Controller)",
+    "description": "20A continuous brushless DC motor ESC, 2-3S LiPo (5.6-12.6V), 25A burst, 5V/2A BEC, SimonK/BLHeli firmware, for small drones, RC aircraft, and brushless hobby motors",
+    "categorySlug": "motor-drivers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 24,
+      "height": 45,
+      "depth": 9,
+      "weight": 18
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "mountingMethod": "zip tie, double-sided tape, or heat-shrink wrap"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "2-3S LiPo (5.6-12.6V), 5-9 NiMH",
+      "current": "20A continuous, 25A burst (10s)",
+      "power": "250W max",
+      "interface": "PWM servo signal (50-500Hz)",
+      "pinout": "3-wire input: signal (white), VCC/BEC 5V (red), GND (black); 3-wire motor output; 2-wire battery input"
+    },
+    "specs": {
+      "maxCurrent": 20,
+      "burstCurrent": 25,
+      "voltageRange": "2-3S LiPo",
+      "becOutput": "5V 2A linear",
+      "firmware": "SimonK or BLHeli",
+      "signalFrequency": "50-432 Hz",
+      "programmable": true,
+      "brakeMode": "configurable",
+      "lowVoltageCutoff": "configurable"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08DNM7V33",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B08DNM7V33"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Entry-level brushless ESC for small quad rotors and RC planes. 20A is suitable for small 2205-2207 motors on 5\" quads or smaller. BEC provides 5V to power flight controller — check if your FC needs 5V or 3.3V. Calibrate ESC throttle range before first use (many support auto-calibrate). SimonK firmware is faster response, BLHeli is more configurable. For FPV racing, consider BLHeli_S or BLHeli_32 variants. No reverse by default — configure brake mode if needed. Heat-shrink is pre-applied on most units. Solder XT30 or XT60 connector for battery.",
+    "tags": [
+      "ESC",
+      "20A ESC",
+      "brushless ESC",
+      "electronic speed controller",
+      "drone ESC",
+      "RC ESC",
+      "SimonK",
+      "BLHeli",
+      "BLDC driver",
+      "quadcopter"
+    ]
+  },
+  {
+    "name": "30A Brushless ESC (Electronic Speed Controller)",
+    "description": "30A continuous brushless DC motor ESC, 2-4S LiPo (5.6-16.8V), 40A burst, 5V/2A BEC, SimonK/BLHeli firmware, most popular size for 5\" FPV quads, general RC aircraft, and hobby brushless motor applications",
+    "categorySlug": "motor-drivers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 27,
+      "height": 50,
+      "depth": 10,
+      "weight": 24
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "mountingMethod": "zip tie, double-sided tape, or heat-shrink wrap"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "2-4S LiPo (5.6-16.8V), 5-12 NiMH",
+      "current": "30A continuous, 40A burst (10s)",
+      "power": "500W max",
+      "interface": "PWM servo signal (50-500Hz)",
+      "pinout": "3-wire input: signal (white), VCC/BEC 5V (red), GND (black); 3-wire motor output; 2-wire battery input"
+    },
+    "specs": {
+      "maxCurrent": 30,
+      "burstCurrent": 40,
+      "voltageRange": "2-4S LiPo",
+      "becOutput": "5V 2A linear",
+      "firmware": "SimonK or BLHeli",
+      "signalFrequency": "50-432 Hz",
+      "programmable": true,
+      "brakeMode": "configurable",
+      "lowVoltageCutoff": "configurable"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0CZGS6BW6",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B0CZGS6BW6"
+      },
+      {
+        "name": "SpeedyFPV",
+        "partNumber": "XXD-30A",
+        "approximatePrice": 9,
+        "url": "https://speedyfpv.com/products/xxd-30a-brushless-esc-2-3s-with-built-in-2a-bec"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The most popular ESC rating for 5\" FPV quads and general RC. 30A handles 2306-2407 motors on 4S comfortably. BEC output powers flight controller or receiver. Calibrate throttle range on first use. For 4-in-1 ESC boards (modern quads), look for 4×30A all-in-one boards instead of 4 separate ESCs. Solder 3.5mm bullet connectors for motor wires, XT60 for battery. Program via servo tester or transmitter. Soft start is default on most — good for aircraft, disable for direct-response applications.",
+    "tags": [
+      "ESC",
+      "30A ESC",
+      "brushless ESC",
+      "electronic speed controller",
+      "drone ESC",
+      "RC ESC",
+      "FPV ESC",
+      "SimonK",
+      "BLHeli",
+      "BLDC driver",
+      "quadcopter",
+      "RC airplane"
+    ]
+  },
+  {
+    "name": "40A Brushless ESC (Electronic Speed Controller)",
+    "description": "40A continuous brushless DC motor ESC, 2-6S LiPo (5.6-25.2V), 55A burst, 5V/3A BEC, BLHeli firmware, for large RC aircraft, heavy-lift drones, and high-power brushless motor applications",
+    "categorySlug": "motor-drivers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 28,
+      "height": 55,
+      "depth": 12,
+      "weight": 35
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "mountingMethod": "zip tie, double-sided tape, or heat-shrink wrap"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "2-6S LiPo (5.6-25.2V), 5-18 NiMH",
+      "current": "40A continuous, 55A burst (10s)",
+      "power": "1000W max",
+      "interface": "PWM servo signal (50-500Hz)",
+      "pinout": "3-wire input: signal (white), VCC/BEC 5V (red), GND (black); 3-wire motor output; 2-wire battery input"
+    },
+    "specs": {
+      "maxCurrent": 40,
+      "burstCurrent": 55,
+      "voltageRange": "2-6S LiPo",
+      "becOutput": "5V 3A switching",
+      "firmware": "BLHeli or BLHeli_32",
+      "signalFrequency": "50-500 Hz",
+      "programmable": true,
+      "brakeMode": "configurable",
+      "lowVoltageCutoff": "configurable"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07B4XMZHZ",
+        "approximatePrice": 15,
+        "url": "https://www.amazon.com/dp/B07B4XMZHZ"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-power ESC for large aircraft, heavy-lift drones, and large brushless motors. 6S support allows higher voltage systems (up to 25.2V). Switching BEC (3A) is more efficient than linear BEC on lower-rated ESCs. Good for motors drawing 30-35A sustained (2814, 2826, and larger outrunners). MUST use XT60 or larger connectors — XT30 will overheat at 40A. Heavier gauge motor/battery wires needed (12-14 AWG). Consider Castle Creations or Hobbywing for higher reliability in expensive builds. Check ESC-motor timing compatibility — 'high' timing for high-RPM, 'low' for max efficiency.",
+    "tags": [
+      "ESC",
+      "40A ESC",
+      "brushless ESC",
+      "electronic speed controller",
+      "drone ESC",
+      "RC ESC",
+      "high power ESC",
+      "BLHeli",
+      "BLHeli_32",
+      "BLDC driver",
+      "6S ESC",
+      "large drone",
+      "heavy lift"
+    ]
+  }
+]

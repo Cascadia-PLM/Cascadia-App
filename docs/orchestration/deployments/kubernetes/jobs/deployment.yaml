@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cascadia-jobs
+  namespace: cascadia
+  labels:
+    app: cascadia
+    component: jobs
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cascadia
+      component: jobs
+  template:
+    metadata:
+      labels:
+        app: cascadia
+        component: jobs
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+
+      containers:
+        - name: jobs
+          image: cascadia/jobs:latest
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 3002
+              protocol: TCP
+
+          env:
+            # From ConfigMap
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: cascadia-config
+                  key: NODE_ENV
+
+            # From Secrets
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cascadia-secrets
+                  key: database-url
+            - name: RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cascadia-secrets
+                  key: rabbitmq-url
+
+          resources:
+            requests:
+              cpu: '250m'
+              memory: '256Mi'
+            limits:
+              cpu: '1000m'
+              memory: '1Gi'
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3

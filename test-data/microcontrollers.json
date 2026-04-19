@@ -1,0 +1,1430 @@
+[
+  {
+    "name": "ESP32-DevKitC V4 (WROOM-32E)",
+    "description": "Espressif ESP32-DevKitC V4 development board, ESP32-WROOM-32E module, Xtensa dual-core 32-bit LX6 at 240MHz, 4MB flash, 520KB SRAM, WiFi 802.11 b/g/n 2.4GHz, Bluetooth 4.2 BR/EDR + BLE, 34 GPIO pins, 18 ADC channels (12-bit), 2× 8-bit DAC, micro-USB (CP2102 UART bridge), 38-pin (2×19) or 30-pin (2×15) variants, 54.4×27.9mm PCB, breadboard-compatible 22.86mm row spacing, 3.3V logic with 5V USB input, no mounting holes, the original ESP32 devkit",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 27.9,
+      "height": 54.4,
+      "depth": 10.0,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 38,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 19,
+          "rowSpacing": 22.86,
+          "headerType": "through-hole male",
+          "breadboardCompatible": true
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3V logic, 5V USB input",
+      "current": "500mA typical, 240mA WiFi TX peak",
+      "power": "2.5W max",
+      "interface": "USB-to-UART (CP2102)",
+      "pinout": "38-pin: 2×19 with GND, 3V3, EN, GPIO0-39, VIN, 5V"
+    },
+    "specs": {
+      "cpu": "Xtensa dual-core LX6 @ 240MHz",
+      "architecture": "32-bit",
+      "flashSize": 4,
+      "ramSize": 0.52,
+      "psram": false,
+      "wifi": "802.11 b/g/n, 2.4GHz",
+      "bluetooth": "4.2 BR/EDR + BLE",
+      "gpioCount": 34,
+      "adcChannels": 18,
+      "adcBits": 12,
+      "dacChannels": 2,
+      "usbType": "Micro-USB",
+      "usbBridge": "CP2102",
+      "operatingVoltage": 3.3,
+      "inputVoltage": "5V USB or VIN"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "ESP32-DEVKITC-32E",
+        "approximatePrice": 10,
+        "url": "https://www.digikey.com/en/products/detail/espressif-systems/ESP32-DEVKITC-32E/12091810"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "356-ESP32DEVKITC32E",
+        "approximatePrice": 10,
+        "url": "https://www.mouser.com/ProductDetail/Espressif-Systems/ESP32-DevKitC-32E"
+      },
+      {
+        "name": "Adafruit",
+        "partNumber": "4693",
+        "approximatePrice": 10,
+        "url": "https://www.adafruit.com/product/4693"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The original ESP32 devkit — massive community support, countless tutorials and libraries. For breadboard use, the 38-pin version occupies the full width (both pin rows right at the edges). Boot mode: hold BOOT button (GPIO0 LOW) during reset to enter download mode. AVOID using these GPIOs for general I/O: GPIO0 (boot mode), GPIO2 (boot mode), GPIO5 (boot mode strapping), GPIO12 (flash voltage select), GPIO15 (boot log). ADC2 channels cannot be used while WiFi is active — only use ADC1 (GPIOs 32-39) for analog reads in WiFi projects. Power: 5V via USB or VIN pin, onboard 3.3V regulator. No mounting holes — design a clip/cradle or use M2 standoffs with adhesive. For projects needing USB OTG or more GPIO, upgrade to ESP32-S3.",
+    "tags": [
+      "ESP32",
+      "ESP32-WROOM-32",
+      "DevKitC",
+      "Espressif",
+      "WiFi MCU",
+      "Bluetooth MCU",
+      "IoT",
+      "Arduino compatible",
+      "dual core",
+      "maker board",
+      "breadboard MCU"
+    ]
+  },
+  {
+    "name": "ESP32-S3-DevKitC-1 (WROOM-1, N8R8)",
+    "description": "Espressif ESP32-S3-DevKitC-1 development board, ESP32-S3-WROOM-1-N8R8 module, Xtensa dual-core 32-bit LX7 at 240MHz, 8MB flash, 512KB SRAM + 8MB PSRAM, WiFi 802.11 b/g/n 2.4GHz, Bluetooth 5.0 LE, 45 GPIO pins, 20 ADC channels (12-bit), USB-C native USB OTG + micro-USB UART, 44-pin (2×22), 69×25.5mm PCB, AI/ML acceleration, USB HID support, vector extensions for neural networks",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 25.5,
+      "height": 69.0,
+      "depth": 10.0,
+      "weight": 11
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 44,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 22,
+          "rowSpacing": 22.86,
+          "headerType": "through-hole male",
+          "breadboardCompatible": true
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3V logic, 5V USB input",
+      "current": "500mA typical",
+      "power": "2.5W max",
+      "interface": "Native USB OTG (USB-C) + UART bridge (micro-USB)",
+      "pinout": "44-pin: 2×22 with GPIO0-48, 3V3, GND, 5V"
+    },
+    "specs": {
+      "cpu": "Xtensa dual-core LX7 @ 240MHz",
+      "architecture": "32-bit",
+      "flashSize": 8,
+      "ramSize": 0.512,
+      "psram": 8,
+      "wifi": "802.11 b/g/n, 2.4GHz",
+      "bluetooth": "5.0 LE",
+      "gpioCount": 45,
+      "adcChannels": 20,
+      "adcBits": 12,
+      "touchChannels": 14,
+      "usbType": "USB-C (native OTG) + Micro-USB (UART)",
+      "nativeUsb": true,
+      "operatingVoltage": 3.3,
+      "inputVoltage": "5V USB"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "ESP32-S3-DEVKITC-1-N8R8",
+        "approximatePrice": 15,
+        "url": "https://www.digikey.com/en/products/detail/espressif-systems/ESP32-S3-DEVKITC-1-N8R8/16162639"
+      },
+      {
+        "name": "Adafruit",
+        "partNumber": "5336",
+        "approximatePrice": 20,
+        "url": "https://www.adafruit.com/product/5336"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "356-ESP32S3DEVKTC1N8R8",
+        "approximatePrice": 15,
+        "url": "https://www.mouser.com/ProductDetail/Espressif-Systems/ESP32-S3-DevKitC-1-N8R8"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The best ESP32 for most new projects — more GPIO, native USB, PSRAM for buffers/AI, and BLE 5.0. Two USB ports: USB-C is native USB OTG (can act as HID keyboard/mouse, mass storage, or CDC), micro-USB is traditional UART programming. For TFT displays with LVGL, the 8MB PSRAM is essential for frame buffers. AI/ML: has vector instructions for neural network inference — use ESP-DL framework. Touch sensing on 14 GPIOs. Same boot mode caveats as original ESP32 (GPIO0 for boot). ADC2 still unavailable during WiFi — use ADC1. The N8R8 variant (8MB flash + 8MB PSRAM) is the recommended SKU. No mounting holes — same enclosure design considerations as DevKitC V4.",
+    "tags": [
+      "ESP32-S3",
+      "ESP32S3",
+      "DevKitC",
+      "Espressif",
+      "WiFi MCU",
+      "USB OTG",
+      "PSRAM",
+      "AI MCU",
+      "ML MCU",
+      "BLE 5.0",
+      "USB HID",
+      "touch sensing"
+    ]
+  },
+  {
+    "name": "ESP32-C3-DevKitM-1 (MINI-1)",
+    "description": "Espressif ESP32-C3-DevKitM-1 development board, ESP32-C3-MINI-1 module, 32-bit RISC-V single-core at 160MHz, 4MB flash, 400KB SRAM, WiFi 802.11 b/g/n 2.4GHz, Bluetooth 5.0 LE, 22 GPIO (15 broken out), 6 ADC channels (12-bit), micro-USB UART, 30-pin (2×15), 54.4×26mm PCB, ultra-low-cost WiFi+BLE solution, RISC-V architecture, breadboard-compatible",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 26.0,
+      "height": 54.4,
+      "depth": 8.0,
+      "weight": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 30,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 15,
+          "rowSpacing": 22.86,
+          "headerType": "through-hole male",
+          "breadboardCompatible": true
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3V logic, 5V USB input",
+      "current": "350mA typical",
+      "power": "1.5W max",
+      "interface": "USB-to-UART bridge",
+      "pinout": "30-pin: 2×15 with GPIO0-21, 3V3, GND, 5V, EN"
+    },
+    "specs": {
+      "cpu": "RISC-V single-core @ 160MHz",
+      "architecture": "32-bit RISC-V",
+      "flashSize": 4,
+      "ramSize": 0.4,
+      "psram": false,
+      "wifi": "802.11 b/g/n, 2.4GHz",
+      "bluetooth": "5.0 LE",
+      "gpioCount": 22,
+      "gpioAvailable": 15,
+      "adcChannels": 6,
+      "adcBits": 12,
+      "usbType": "Micro-USB",
+      "usbBridge": "USB-to-UART",
+      "operatingVoltage": 3.3,
+      "inputVoltage": "5V USB"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "ESP32-C3-DEVKITM-1",
+        "approximatePrice": 8,
+        "url": "https://www.digikey.com/en/products/detail/espressif-systems/ESP32-C3-DEVKITM-1/14553017"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "356-ESP32C3DEVKITM1",
+        "approximatePrice": 8,
+        "url": "https://www.mouser.com/ProductDetail/Espressif-Systems/ESP32-C3-DevKitM-1"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Budget WiFi+BLE board with RISC-V architecture — good for cost-sensitive IoT devices. Single-core only (160MHz RISC-V vs dual-core 240MHz Xtensa on original ESP32), so less processing power but lower cost and power consumption. Only 15 GPIO pins broken out on the devkit — verify your project's pin requirements before choosing. 6 ADC channels only. No PSRAM — not suitable for large frame buffers or ML workloads. Same WiFi and BLE 5.0 as ESP32-S3 but in a smaller/cheaper package. Arduino and ESP-IDF support is mature. Good for: simple IoT sensors, home automation nodes, ESPHome devices. For projects needing more GPIO or processing power, use ESP32-S3 instead.",
+    "tags": [
+      "ESP32-C3",
+      "ESP32C3",
+      "RISC-V",
+      "Espressif",
+      "WiFi MCU",
+      "BLE 5.0",
+      "IoT",
+      "low cost MCU",
+      "budget WiFi",
+      "ESPHome"
+    ]
+  },
+  {
+    "name": "ESP32-C6-DevKitC-1 (WROOM-1, N8)",
+    "description": "Espressif ESP32-C6-DevKitC-1 development board, ESP32-C6-WROOM-1-N8 module, 32-bit RISC-V single-core at 160MHz + low-power core at 20MHz, 8MB flash, 512KB SRAM, Wi-Fi 6 (802.11ax) 2.4GHz, Bluetooth 5.0 LE with Coded PHY, IEEE 802.15.4 (Thread 1.3 + Zigbee 3.0), 23 GPIO, 2× USB-C ports (UART + native USB), 30-pin (2×15), 67×25.5mm PCB, Matter-ready, first ESP32 with Wi-Fi 6 and Thread/Zigbee support",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 25.5,
+      "height": 67.0,
+      "depth": 10.0,
+      "weight": 11
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 30,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 15,
+          "rowSpacing": 22.86,
+          "headerType": "through-hole male",
+          "breadboardCompatible": true
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3V logic, 5V USB input",
+      "current": "350mA typical",
+      "power": "1.5W max",
+      "interface": "2× USB-C (UART bridge + native USB 2.0 full-speed)",
+      "pinout": "30-pin: 2×15 with GPIO0-23, 3V3, GND, 5V"
+    },
+    "specs": {
+      "cpu": "RISC-V single-core @ 160MHz + LP core @ 20MHz",
+      "architecture": "32-bit RISC-V (dual-core: HP + LP)",
+      "flashSize": 8,
+      "ramSize": 0.512,
+      "psram": false,
+      "wifi": "Wi-Fi 6 (802.11ax), 2.4GHz",
+      "bluetooth": "5.0 LE (Coded PHY for long range)",
+      "thread": "IEEE 802.15.4 (Thread 1.3)",
+      "zigbee": "Zigbee 3.0",
+      "gpioCount": 23,
+      "adcChannels": 7,
+      "adcBits": 12,
+      "usbType": "2× USB-C",
+      "nativeUsb": true,
+      "operatingVoltage": 3.3,
+      "inputVoltage": "5V USB"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "ESP32-C6-DEVKITC-1-N8",
+        "approximatePrice": 9,
+        "url": "https://www.digikey.com/en/products/detail/espressif-systems/ESP32-C6-DEVKITC-1-N8/18100564"
+      },
+      {
+        "name": "Adafruit",
+        "partNumber": "5672",
+        "approximatePrice": 10,
+        "url": "https://www.adafruit.com/product/5672"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "356-ESP32C6DEVKC1N8",
+        "approximatePrice": 9,
+        "url": "https://www.mouser.com/ProductDetail/Espressif-Systems/ESP32-C6-DevKitC-1-N8"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The ESP32 for smart home and Matter — combines Wi-Fi 6, BLE 5.0, Thread, and Zigbee in one chip. Key for Matter protocol which can bridge between Thread and WiFi. Wi-Fi 6 (802.11ax) brings Target Wake Time (TWT) for much better power efficiency in battery-powered IoT devices. Two USB-C ports: one for UART programming, one for native USB. Low-power RISC-V core (20MHz) can handle sensor polling while the main core sleeps — excellent for battery projects. BLE Coded PHY enables long-range BLE (~1km line of sight). Thread/Zigbee mesh networking for home automation. ESP-IDF and Arduino support. Good for: Matter smart home devices, mesh sensor networks, battery-powered IoT. Not ideal for compute-heavy tasks (single HP core at 160MHz).",
+    "tags": [
+      "ESP32-C6",
+      "ESP32C6",
+      "Wi-Fi 6",
+      "Thread",
+      "Zigbee",
+      "Matter",
+      "RISC-V",
+      "Espressif",
+      "IoT",
+      "smart home",
+      "mesh network",
+      "802.15.4",
+      "BLE long range"
+    ]
+  },
+  {
+    "name": "Arduino Nano (ATmega328P)",
+    "description": "Arduino Nano classic, ATmega328P 8-bit AVR microcontroller at 16MHz, 32KB flash (2KB bootloader), 2KB SRAM, 1KB EEPROM, 14 digital I/O (6 PWM), 8 analog inputs (10-bit ADC), mini-USB, 30-pin DIP (2×15), 18×45mm PCB, 15.24mm (600mil) row spacing, 5V logic, 7-12V input, no WiFi/Bluetooth, the compact Arduino classic for embedded projects",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 18.0,
+      "height": 45.0,
+      "depth": 18.0,
+      "weight": 7
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 30,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 15,
+          "rowSpacing": 15.24,
+          "headerType": "through-hole male",
+          "breadboardCompatible": true,
+          "dipFormat": "DIP-30 (600mil)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V logic",
+      "current": "40mA per I/O pin, 200mA total",
+      "power": "0.5W typical",
+      "interface": "USB-to-UART (ATmega16U2 or FTDI)",
+      "pinout": "30-pin DIP: D0-D13, A0-A7, VIN, GND, RST, 5V, 3V3, AREF"
+    },
+    "specs": {
+      "cpu": "ATmega328P, 8-bit AVR @ 16MHz",
+      "architecture": "8-bit AVR",
+      "flashSize": 0.032,
+      "ramSize": 0.002,
+      "eeprom": 1,
+      "wifi": "none",
+      "bluetooth": "none",
+      "gpioCount": 22,
+      "digitalPins": 14,
+      "pwmPins": 6,
+      "analogInputs": 8,
+      "adcBits": 10,
+      "usbType": "Mini-USB",
+      "usbBridge": "ATmega16U2",
+      "operatingVoltage": 5,
+      "inputVoltage": "7-12V recommended"
+    },
+    "suppliers": [
+      {
+        "name": "Arduino",
+        "partNumber": "A000005",
+        "approximatePrice": 26,
+        "url": "https://store.arduino.cc/products/arduino-nano"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "DEV-11113",
+        "approximatePrice": 26,
+        "url": "https://www.sparkfun.com/products/11113"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0097AU5OU",
+        "approximatePrice": 25,
+        "url": "https://www.amazon.com/dp/B0097AU5OU"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The classic small-form-factor Arduino — proven, well-documented, massive library ecosystem. 5V logic is convenient for interfacing with 5V sensors and displays (no level shifting needed), but incompatible with 3.3V devices without dividers. 600mil DIP row spacing fits standard breadboards with room on both sides. No WiFi/Bluetooth — for wireless, use Arduino Nano ESP32 instead. 32KB flash fills up fast with libraries — keep code lean. Only 2KB SRAM — avoid large arrays and String objects (use F() macro for string literals). For more flash/RAM at the same form factor and lower price, consider Arduino Nano Every. Compatible with most Arduino shields via adapter. No mounting holes — use the DIP pin headers or design a clip mount.",
+    "tags": [
+      "Arduino Nano",
+      "ATmega328P",
+      "AVR",
+      "8-bit",
+      "Arduino",
+      "compact MCU",
+      "DIP-30",
+      "5V logic",
+      "beginner board"
+    ]
+  },
+  {
+    "name": "Arduino Nano Every (ATmega4809)",
+    "description": "Arduino Nano Every, ATmega4809 8-bit AVR microcontroller at 20MHz, 48KB flash, 6KB SRAM, 256B EEPROM, 20 digital I/O (5 PWM), 8 analog inputs (10-bit ADC), micro-USB, 30-pin DIP (2×15), 18×45mm PCB, 15.24mm (600mil) row spacing, castellated pads for SMT, 5V logic, 7-21V input, pin-compatible with Arduino Nano, budget Arduino board",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 18.0,
+      "height": 45.0,
+      "depth": 18.0,
+      "weight": 5
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 30,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 15,
+          "rowSpacing": 15.24,
+          "headerType": "through-hole male + castellated pads",
+          "breadboardCompatible": true,
+          "dipFormat": "DIP-30 (600mil)",
+          "castellated": true
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V logic",
+      "current": "40mA per I/O pin",
+      "power": "0.5W typical",
+      "interface": "USB-to-UART (ATSAMD11D14A)",
+      "pinout": "30-pin DIP: same pinout as Arduino Nano"
+    },
+    "specs": {
+      "cpu": "ATmega4809, 8-bit AVR @ 20MHz",
+      "architecture": "8-bit AVR (megaAVR 0-series)",
+      "flashSize": 0.048,
+      "ramSize": 0.006,
+      "eeprom": 0.256,
+      "wifi": "none",
+      "bluetooth": "none",
+      "gpioCount": 20,
+      "digitalPins": 20,
+      "pwmPins": 5,
+      "analogInputs": 8,
+      "adcBits": 10,
+      "usbType": "Micro-USB",
+      "usbBridge": "ATSAMD11D14A",
+      "operatingVoltage": 5,
+      "inputVoltage": "7-21V",
+      "castellatedPads": true
+    },
+    "suppliers": [
+      {
+        "name": "Arduino",
+        "partNumber": "ABX00028",
+        "approximatePrice": 13,
+        "url": "https://store.arduino.cc/products/arduino-nano-every"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "ABX00028",
+        "approximatePrice": 14,
+        "url": "https://www.digikey.com/en/products/detail/arduino/ABX00028/10238639"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07VX7MX27",
+        "approximatePrice": 15,
+        "url": "https://www.amazon.com/dp/B07VX7MX27"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Budget upgrade to the classic Nano — more flash (48KB vs 32KB), more SRAM (6KB vs 2KB), higher clock (20MHz vs 16MHz), and half the price. Pin-compatible with Arduino Nano (same DIP-30 layout). Castellated pads allow direct SMT soldering onto a carrier PCB — great for production designs. NOTE: uses megaAVR 0-series (ATmega4809), not classic AVR — some low-level register-access code from Nano sketches won't compile directly (timer registers are different). High-level Arduino API is fully compatible. Wider input voltage range (7-21V vs 7-12V). EEPROM is much smaller (256B vs 1KB). No WiFi/Bluetooth. Best choice when you need a cheap, simple, 5V Arduino in Nano form factor without wireless.",
+    "tags": [
+      "Arduino Nano Every",
+      "ATmega4809",
+      "AVR",
+      "8-bit",
+      "Arduino",
+      "budget MCU",
+      "DIP-30",
+      "castellated",
+      "megaAVR"
+    ]
+  },
+  {
+    "name": "Arduino Nano ESP32 (u-blox NORA-W106)",
+    "description": "Arduino Nano ESP32, ESP32-S3 via u-blox NORA-W106-10B module, Xtensa dual-core LX7 at 240MHz, 16MB flash, 512KB SRAM + 8MB PSRAM, WiFi 802.11 b/g/n 2.4GHz, Bluetooth 5.0 LE, 14 digital I/O + 8 analog inputs (12-bit ADC), USB-C native USB, 30-pin DIP (2×15), 17.78×43.18mm PCB, 15.24mm (600mil) row spacing, 3.3V logic, Arduino Nano form factor with ESP32-S3 power",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 17.78,
+      "height": 43.18,
+      "depth": 15.0,
+      "weight": 6
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 30,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 15,
+          "rowSpacing": 15.24,
+          "headerType": "through-hole male",
+          "breadboardCompatible": true,
+          "dipFormat": "DIP-30 (600mil)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3V logic, 5V USB input",
+      "current": "500mA typical",
+      "power": "2.5W max",
+      "interface": "USB-C (native USB)",
+      "pinout": "30-pin DIP: D0-D13, A0-A7, VIN, GND, RST, 3V3, 5V"
+    },
+    "specs": {
+      "cpu": "Xtensa dual-core LX7 @ 240MHz (ESP32-S3)",
+      "architecture": "32-bit",
+      "flashSize": 16,
+      "ramSize": 0.512,
+      "psram": 8,
+      "wifi": "802.11 b/g/n, 2.4GHz",
+      "bluetooth": "5.0 LE",
+      "gpioCount": 24,
+      "digitalPins": 14,
+      "analogInputs": 8,
+      "adcBits": 12,
+      "usbType": "USB-C",
+      "nativeUsb": true,
+      "operatingVoltage": 3.3,
+      "inputVoltage": "6-21V VIN"
+    },
+    "suppliers": [
+      {
+        "name": "Arduino",
+        "partNumber": "ABX00083",
+        "approximatePrice": 18,
+        "url": "https://store.arduino.cc/products/nano-esp32"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "DEV-24304",
+        "approximatePrice": 20,
+        "url": "https://www.sparkfun.com/products/24304"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0C947BHK4",
+        "approximatePrice": 20,
+        "url": "https://www.amazon.com/dp/B0C947BHK4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "ESP32-S3 power in a Nano form factor — the upgrade path from Arduino Nano when you need WiFi/BLE. IMPORTANT: this is a 3.3V board, NOT 5V like the classic Nano. Existing 5V shields/sensors may need level shifting. Pin mapping differs from standard ESP32-S3 devkits — use Arduino pin numbers (D0-D13, A0-A7), not ESP32 GPIO numbers. The u-blox NORA-W106 module provides the wireless and has its own antenna. USB-C is native USB (can act as HID device). 16MB flash + 8MB PSRAM is very generous — supports MicroPython, large Arduino sketches, and frame buffers. Works with both Arduino IDE and ESP-IDF (via Arduino as component). MicroPython is factory-installed — hold BOOT button during reset to re-enter Arduino bootloader mode.",
+    "tags": [
+      "Arduino Nano ESP32",
+      "ESP32-S3",
+      "Arduino",
+      "WiFi",
+      "BLE",
+      "Nano form factor",
+      "USB-C",
+      "NORA-W106",
+      "u-blox",
+      "MicroPython"
+    ]
+  },
+  {
+    "name": "Arduino Uno R3 (ATmega328P)",
+    "description": "Arduino Uno R3, ATmega328P 8-bit AVR at 16MHz, 32KB flash (0.5KB bootloader), 2KB SRAM, 1KB EEPROM, 14 digital I/O (6 PWM), 6 analog inputs (10-bit ADC), USB-B, 68.6×53.4mm PCB, female shield headers, 4× M3 mounting holes in standard Arduino shield pattern, 5V logic, 7-12V input, the definitive beginner Arduino, massive shield ecosystem",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 53.4,
+      "height": 68.6,
+      "depth": 15.0,
+      "weight": 25
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeDiameter": 3.2,
+          "boltSize": 3,
+          "pattern": "Arduino Uno shield pattern (non-rectangular)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 32,
+          "pinPitch": 2.54,
+          "headerType": "female socket",
+          "layout": "Arduino shield-compatible (digital + analog + power headers along board edges)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V logic",
+      "current": "40mA per I/O pin, 200mA total from 3.3V pin",
+      "power": "1W typical",
+      "interface": "USB-B (ATmega16U2 bridge)",
+      "pinout": "Female headers: D0-D13 (digital), A0-A5 (analog), power header (VIN, 5V, 3.3V, GND, RESET)"
+    },
+    "specs": {
+      "cpu": "ATmega328P, 8-bit AVR @ 16MHz",
+      "architecture": "8-bit AVR",
+      "flashSize": 0.032,
+      "ramSize": 0.002,
+      "eeprom": 1,
+      "wifi": "none",
+      "bluetooth": "none",
+      "gpioCount": 20,
+      "digitalPins": 14,
+      "pwmPins": 6,
+      "analogInputs": 6,
+      "adcBits": 10,
+      "usbType": "USB-B",
+      "usbBridge": "ATmega16U2",
+      "operatingVoltage": 5,
+      "inputVoltage": "7-12V recommended"
+    },
+    "suppliers": [
+      {
+        "name": "Arduino",
+        "partNumber": "A000066",
+        "approximatePrice": 28,
+        "url": "https://store.arduino.cc/products/arduino-uno-rev3"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "DEV-11021",
+        "approximatePrice": 28,
+        "url": "https://www.sparkfun.com/products/11021"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B008GRTSV6",
+        "approximatePrice": 27,
+        "url": "https://www.amazon.com/dp/B008GRTSV6"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "A000066",
+        "approximatePrice": 27,
+        "url": "https://www.digikey.com/en/products/detail/arduino/A000066/2784006"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "THE beginner Arduino — every tutorial starts here. 4× M3 mounting holes for enclosure mounting (NOTE: hole pattern is NOT a simple rectangle — one hole is offset for historical reasons). Shield-compatible female headers accept stacking shields (motor, Ethernet, relay, LCD, etc.). 5V logic — direct compatibility with most hobbyist sensors and 5V displays. Only 2KB SRAM and 32KB flash — very limited for complex projects. For more resources at the same form factor, upgrade to Uno R4 WiFi. USB-B connector is bulky but sturdy. Barrel jack accepts 7-12V DC for standalone operation. The ATmega16U2 USB bridge can be reprogrammed for custom USB protocols (advanced use). When designing enclosures, account for the USB-B connector and barrel jack protruding from the board edge.",
+    "tags": [
+      "Arduino Uno",
+      "Arduino Uno R3",
+      "ATmega328P",
+      "AVR",
+      "8-bit",
+      "Arduino",
+      "beginner board",
+      "shield compatible",
+      "5V logic",
+      "starter kit"
+    ]
+  },
+  {
+    "name": "Arduino Uno R4 WiFi (Renesas RA4M1 + ESP32-S3)",
+    "description": "Arduino Uno R4 WiFi, Renesas RA4M1 Arm Cortex-M4 at 48MHz + ESP32-S3 for WiFi/BLE, 256KB flash, 32KB SRAM, 8KB EEPROM, 14 digital I/O (6 PWM), 6 analog inputs (14-bit ADC), 1× 12-bit DAC, CAN bus, USB-C, 68.85×53.34mm PCB, same shield-compatible form factor as Uno R3, 4× M3 mounting holes, WiFi 802.11 b/g/n + BLE 5.0, 12×8 LED matrix on board, 5V logic, the modern Arduino Uno",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 53.34,
+      "height": 68.85,
+      "depth": 15.0,
+      "weight": 30
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeDiameter": 3.2,
+          "boltSize": 3,
+          "pattern": "Arduino Uno shield pattern (same as R3)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 32,
+          "pinPitch": 2.54,
+          "headerType": "female socket",
+          "layout": "Arduino shield-compatible (same as Uno R3)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V logic",
+      "current": "40mA per I/O pin",
+      "power": "1.5W typical",
+      "interface": "USB-C",
+      "pinout": "Female headers: D0-D13, A0-A5, power header (compatible with Uno R3 shields)"
+    },
+    "specs": {
+      "cpu": "Renesas RA4M1 (Arm Cortex-M4) @ 48MHz",
+      "cpuWifi": "ESP32-S3 (Xtensa dual-core LX7 @ 240MHz)",
+      "architecture": "32-bit ARM + 32-bit Xtensa",
+      "flashSize": 0.256,
+      "ramSize": 0.032,
+      "eeprom": 8,
+      "wifi": "802.11 b/g/n, 2.4GHz (via ESP32-S3)",
+      "bluetooth": "5.0 LE (via ESP32-S3)",
+      "gpioCount": 20,
+      "digitalPins": 14,
+      "pwmPins": 6,
+      "analogInputs": 6,
+      "adcBits": 14,
+      "dacChannels": 1,
+      "dacBits": 12,
+      "canBus": true,
+      "usbType": "USB-C",
+      "ledMatrix": "12×8 (96 LEDs)",
+      "operatingVoltage": 5,
+      "inputVoltage": "6-24V"
+    },
+    "suppliers": [
+      {
+        "name": "Arduino",
+        "partNumber": "ABX00087",
+        "approximatePrice": 28,
+        "url": "https://store.arduino.cc/products/uno-r4-wifi"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "DEV-22632",
+        "approximatePrice": 28,
+        "url": "https://www.sparkfun.com/products/22632"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0C8V88Z9D",
+        "approximatePrice": 28,
+        "url": "https://www.amazon.com/dp/B0C8V88Z9D"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The modern Uno — same shield form factor as R3 but with dramatically upgraded specs. 14-bit ADC (vs 10-bit on R3), DAC output, CAN bus, WiFi/BLE, and USB-C. Shield-compatible with most Uno R3 shields. The onboard 12×8 LED matrix is fun for visual feedback (use Arduino_LED_Matrix library). The ESP32-S3 handles WiFi/BLE and can also be programmed independently for dual-processor applications. CAN bus support makes it suitable for automotive and industrial projects. 5V logic maintained for backward compatibility. Wider input voltage range (6-24V vs 7-12V). USB-C replaces the old USB-B connector. When using WiFi, the ESP32-S3 communicates with the RA4M1 via internal serial — this uses some SRAM. Same mounting hole pattern as R3 — existing enclosures and mounts work.",
+    "tags": [
+      "Arduino Uno R4",
+      "Uno R4 WiFi",
+      "Renesas RA4M1",
+      "ARM Cortex-M4",
+      "ESP32-S3",
+      "Arduino",
+      "WiFi",
+      "BLE",
+      "CAN bus",
+      "14-bit ADC",
+      "LED matrix",
+      "shield compatible"
+    ]
+  },
+  {
+    "name": "Arduino Mega 2560",
+    "description": "Arduino Mega 2560, ATmega2560 8-bit AVR at 16MHz, 256KB flash (8KB bootloader), 8KB SRAM, 4KB EEPROM, 54 digital I/O (15 PWM), 16 analog inputs (10-bit ADC), 4 hardware UARTs, USB-B, 101.52×53.3mm PCB, female shield headers, 4× M3 mounting holes, 5V logic, 7-12V input, the large-pin-count Arduino for complex projects with many I/O requirements",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 53.3,
+      "height": 101.52,
+      "depth": 15.0,
+      "weight": 37
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeDiameter": 3.2,
+          "boltSize": 3,
+          "pattern": "Arduino Mega shield pattern"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 86,
+          "pinPitch": 2.54,
+          "headerType": "female socket",
+          "layout": "Arduino Mega shield-compatible (digital + analog + power + extra I/O headers)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V logic",
+      "current": "40mA per I/O pin",
+      "power": "1.5W typical",
+      "interface": "USB-B (ATmega16U2 bridge)",
+      "pinout": "Female headers: D0-D53 (digital), A0-A15 (analog), 4× UART, power header"
+    },
+    "specs": {
+      "cpu": "ATmega2560, 8-bit AVR @ 16MHz",
+      "architecture": "8-bit AVR",
+      "flashSize": 0.256,
+      "ramSize": 0.008,
+      "eeprom": 4,
+      "wifi": "none",
+      "bluetooth": "none",
+      "gpioCount": 70,
+      "digitalPins": 54,
+      "pwmPins": 15,
+      "analogInputs": 16,
+      "adcBits": 10,
+      "hardwareUarts": 4,
+      "usbType": "USB-B",
+      "usbBridge": "ATmega16U2",
+      "operatingVoltage": 5,
+      "inputVoltage": "7-12V recommended"
+    },
+    "suppliers": [
+      {
+        "name": "Arduino",
+        "partNumber": "A000067",
+        "approximatePrice": 50,
+        "url": "https://store.arduino.cc/products/arduino-mega-2560-rev3"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "DEV-11061",
+        "approximatePrice": 48,
+        "url": "https://www.sparkfun.com/products/11061"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B006H06TVG",
+        "approximatePrice": 43,
+        "url": "https://www.amazon.com/dp/B006H06TVG"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The Arduino for projects that need lots of I/O — 54 digital + 16 analog pins, 4 hardware serial ports. Used heavily in 3D printers (RAMPS 1.4 shield), CNC controllers, and complex robotics. Pin-compatible with Uno shields on the first section of headers, plus extended headers for the extra I/O. 256KB flash provides ample room for large sketches. 4 hardware UARTs allow simultaneous communication with multiple serial devices (GPS, GSM, Bluetooth modules, etc.) without SoftwareSerial limitations. Despite more I/O, still only 8KB SRAM — memory management still matters. 5V logic throughout. The largest standard Arduino form factor — consider ESP32-S3 if you need WiFi and can map I/O through expanders. RAMPS 1.4 shield plugs directly on top for 3D printer controller builds.",
+    "tags": [
+      "Arduino Mega",
+      "Arduino Mega 2560",
+      "ATmega2560",
+      "AVR",
+      "8-bit",
+      "Arduino",
+      "many GPIO",
+      "3D printer controller",
+      "RAMPS",
+      "CNC controller",
+      "4 UART",
+      "large Arduino"
+    ]
+  },
+  {
+    "name": "Raspberry Pi Pico (RP2040)",
+    "description": "Raspberry Pi Pico, RP2040 dual-core Arm Cortex-M0+ at 133MHz, 2MB flash, 264KB SRAM, 26 GPIO pins, 3 ADC channels (12-bit), 16 PWM channels, 8 PIO state machines, micro-USB, 40-pin (2×20), 21×51mm PCB, 17.78mm (700mil) row spacing, 4× mounting holes (2.1mm), 3.3V logic (NOT 5V tolerant), unpopulated headers with castellated pads, USB 1.1 host/device, $4 microcontroller board",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 21.0,
+      "height": 51.0,
+      "depth": 3.9,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeDiameter": 2.1,
+          "boltSize": 2,
+          "pattern": "rectangular corners"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 40,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 20,
+          "rowSpacing": 17.78,
+          "headerType": "unpopulated through-hole + castellated pads",
+          "breadboardCompatible": true,
+          "dipFormat": "700mil"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3V logic (NOT 5V tolerant)",
+      "current": "16mA per GPIO pin",
+      "power": "0.5W typical",
+      "interface": "Micro-USB (USB 1.1 host/device)",
+      "pinout": "40-pin: GP0-GP28, 3V3, GND, VSYS, VBUS, ADC_VREF, RUN"
+    },
+    "specs": {
+      "cpu": "Dual-core Arm Cortex-M0+ @ 133MHz (RP2040)",
+      "architecture": "32-bit ARM",
+      "flashSize": 2,
+      "ramSize": 0.264,
+      "wifi": "none",
+      "bluetooth": "none",
+      "gpioCount": 26,
+      "adcChannels": 3,
+      "adcBits": 12,
+      "pwmChannels": 16,
+      "pioStateMachines": 8,
+      "usbType": "Micro-USB",
+      "usb": "USB 1.1 host/device",
+      "operatingVoltage": 3.3,
+      "inputVoltage": "1.8-5.5V VSYS or 5V USB",
+      "temperatureSensor": "internal (via ADC4)"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "4864",
+        "approximatePrice": 4,
+        "url": "https://www.adafruit.com/product/4864"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "DEV-17829",
+        "approximatePrice": 4,
+        "url": "https://www.sparkfun.com/products/17829"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "SC0915",
+        "approximatePrice": 4,
+        "url": "https://www.digikey.com/en/products/detail/raspberry-pi/SC0915/13624793"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Incredible value at $4 — dual-core, 264KB RAM, and PIO state machines that can bit-bang almost any digital protocol. CRITICAL: GPIO is 3.3V and NOT 5V tolerant — any 5V signal will damage the pins. Use level shifters for 5V devices. Headers are unpopulated — solder your own male headers, or use castellated pads for direct PCB soldering. 4 mounting holes (2.1mm for M2 screws) make enclosure mounting easy. PIO state machines are unique to RP2040 — they can implement custom protocols (WS2812B LEDs, parallel displays, etc.) without CPU load. Supports MicroPython, CircuitPython, Arduino, and C/C++ SDK. No WiFi/Bluetooth — for wireless, use Pico W. Only 3 user ADC channels (ADC0-2, GP26-28); ADC3 is internal voltage monitor, ADC4 is temperature sensor. For MicroPython: drag-and-drop .uf2 firmware via USB mass storage boot mode (hold BOOTSEL during power-on).",
+    "tags": [
+      "Raspberry Pi Pico",
+      "RP2040",
+      "Pico",
+      "ARM Cortex-M0+",
+      "PIO",
+      "MicroPython",
+      "CircuitPython",
+      "$4 MCU",
+      "dual core",
+      "maker board",
+      "Raspberry Pi"
+    ]
+  },
+  {
+    "name": "Raspberry Pi Pico W (RP2040 + CYW43439)",
+    "description": "Raspberry Pi Pico W, RP2040 dual-core Arm Cortex-M0+ at 133MHz + Infineon CYW43439 wireless, 2MB flash, 264KB SRAM, WiFi 802.11n 2.4GHz (WPA3), Bluetooth 5.2 + BLE, 26 GPIO pins, 3 ADC channels (12-bit), 16 PWM channels, 8 PIO, micro-USB, 40-pin (2×20), 21×51mm PCB, 4× mounting holes (2.1mm), 3.3V logic, same form factor as Pico, $6 WiFi microcontroller",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 21.0,
+      "height": 51.0,
+      "depth": 3.9,
+      "weight": 4
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeDiameter": 2.1,
+          "boltSize": 2,
+          "pattern": "rectangular corners"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 40,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 20,
+          "rowSpacing": 17.78,
+          "headerType": "unpopulated through-hole + castellated pads",
+          "breadboardCompatible": true,
+          "dipFormat": "700mil"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3V logic (NOT 5V tolerant)",
+      "current": "16mA per GPIO pin",
+      "power": "0.8W typical (WiFi active)",
+      "interface": "Micro-USB (USB 1.1 host/device)",
+      "pinout": "40-pin: same as Pico (GP23, GP24, GP25, GP29 used internally for wireless)"
+    },
+    "specs": {
+      "cpu": "Dual-core Arm Cortex-M0+ @ 133MHz (RP2040)",
+      "architecture": "32-bit ARM",
+      "flashSize": 2,
+      "ramSize": 0.264,
+      "wifi": "802.11n, 2.4GHz, WPA3 (CYW43439)",
+      "bluetooth": "5.2 + BLE",
+      "gpioCount": 26,
+      "gpioNote": "GP23, GP24, GP25, GP29 used internally for wireless",
+      "adcChannels": 3,
+      "adcBits": 12,
+      "pwmChannels": 16,
+      "pioStateMachines": 8,
+      "usbType": "Micro-USB",
+      "operatingVoltage": 3.3,
+      "inputVoltage": "1.8-5.5V VSYS or 5V USB"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "5526",
+        "approximatePrice": 6,
+        "url": "https://www.adafruit.com/product/5526"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "DEV-20173",
+        "approximatePrice": 6,
+        "url": "https://www.sparkfun.com/products/20173"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "SC0918",
+        "approximatePrice": 6,
+        "url": "https://www.digikey.com/en/products/detail/raspberry-pi/SC0918/16608263"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Pico + WiFi + Bluetooth for $6 — the cheapest WiFi-capable dev board. Same form factor and pin-compatible with standard Pico. IMPORTANT: GP23, GP24, GP25, and GP29 are used internally for the wireless module — do NOT use these as GPIO. The onboard LED is now controlled via the CYW43439 (not GP25 like on the non-W Pico) — use the wireless driver to toggle it. WPA3 support for modern secure networks. Bluetooth 5.2 + BLE was added in later Pico SDK releases — ensure your SDK is up to date. WiFi adds ~100mA to power consumption. Same PIO, ADC, and mounting as standard Pico. Great for: IoT sensors, web servers, MQTT nodes, home automation. For more processing power and flash with WiFi, consider Pico 2 W when available.",
+    "tags": [
+      "Raspberry Pi Pico W",
+      "RP2040",
+      "Pico W",
+      "WiFi MCU",
+      "CYW43439",
+      "Infineon",
+      "wireless Pico",
+      "IoT",
+      "MicroPython",
+      "CircuitPython",
+      "$6 WiFi"
+    ]
+  },
+  {
+    "name": "Raspberry Pi Pico 2 (RP2350)",
+    "description": "Raspberry Pi Pico 2, RP2350 dual-architecture processor — selectable dual-core Arm Cortex-M33 or dual-core RISC-V Hazard3 at 150MHz, 4MB flash, 520KB SRAM, 26 GPIO pins, 3 ADC channels (12-bit), 24 PWM channels, 12 PIO state machines, micro-USB, 40-pin (2×20), 21×51mm PCB, same Pico form factor, 4× mounting holes (2.1mm), 3.3V logic, pin-compatible with original Pico, $5 next-gen microcontroller",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 21.0,
+      "height": 51.0,
+      "depth": 3.9,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeDiameter": 2.1,
+          "boltSize": 2,
+          "pattern": "rectangular corners"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 40,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 20,
+          "rowSpacing": 17.78,
+          "headerType": "unpopulated through-hole + castellated pads",
+          "breadboardCompatible": true,
+          "dipFormat": "700mil"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3V logic (NOT 5V tolerant)",
+      "current": "16mA per GPIO pin",
+      "power": "0.6W typical",
+      "interface": "Micro-USB (USB 1.1 host/device)",
+      "pinout": "40-pin: same as Pico (pin-compatible)"
+    },
+    "specs": {
+      "cpu": "Dual-core Arm Cortex-M33 or RISC-V Hazard3 @ 150MHz (RP2350)",
+      "architecture": "32-bit ARM or RISC-V (selectable)",
+      "flashSize": 4,
+      "ramSize": 0.52,
+      "wifi": "none",
+      "bluetooth": "none",
+      "gpioCount": 26,
+      "adcChannels": 3,
+      "adcBits": 12,
+      "pwmChannels": 24,
+      "pioStateMachines": 12,
+      "usbType": "Micro-USB",
+      "usb": "USB 1.1 host/device",
+      "operatingVoltage": 3.3,
+      "inputVoltage": "1.8-5.5V VSYS or 5V USB",
+      "securityFeatures": "ARM TrustZone, OTP, secure boot"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "6006",
+        "approximatePrice": 5,
+        "url": "https://www.adafruit.com/product/6006"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "DEV-24870",
+        "approximatePrice": 5,
+        "url": "https://www.sparkfun.com/products/24870"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "SC1632",
+        "approximatePrice": 5,
+        "url": "https://www.digikey.com/en/products/detail/raspberry-pi/SC1632/24585513"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The Pico 2 is a significant upgrade: 2× flash (4MB), 2× SRAM (520KB), faster cores (150MHz Cortex-M33), and selectable RISC-V architecture — all for just $1 more than the original Pico. Pin-compatible and drop-in replacement for Pico in existing designs. Cortex-M33 has hardware floating-point and DSP instructions (M0+ did not). RISC-V Hazard3 cores can be selected at boot for RISC-V development. 12 PIO state machines (up from 8) and 24 PWM channels (up from 16). Security features include ARM TrustZone, one-time programmable memory, and secure boot — relevant for commercial products. No WiFi — Pico 2 W variant expected. Same mounting holes, form factor, and 3.3V logic as original Pico. Use Pico SDK v2.0+ for RP2350 support. MicroPython and CircuitPython builds available.",
+    "tags": [
+      "Raspberry Pi Pico 2",
+      "RP2350",
+      "Pico 2",
+      "ARM Cortex-M33",
+      "RISC-V",
+      "Hazard3",
+      "dual architecture",
+      "MicroPython",
+      "CircuitPython",
+      "$5 MCU",
+      "Raspberry Pi"
+    ]
+  },
+  {
+    "name": "Raspberry Pi Zero 2 W",
+    "description": "Raspberry Pi Zero 2 W, Broadcom BCM2710A1 (RP3A0 SiP) quad-core 64-bit Arm Cortex-A53 at 1GHz, 512MB LPDDR2 RAM, WiFi 802.11 b/g/n 2.4GHz, Bluetooth 4.2 + BLE, 40-pin GPIO header (unpopulated), micro-USB OTG + micro-USB power, mini-HDMI, 65×30mm PCB, microSD card slot, runs full Linux (Raspberry Pi OS), smallest Raspberry Pi SBC, compact Linux computer for embedded and IoT projects",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 30.0,
+      "height": 65.0,
+      "depth": 5.3,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 40,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 20,
+          "headerType": "unpopulated through-hole",
+          "layout": "Standard Raspberry Pi 40-pin HAT-compatible"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V input, 3.3V GPIO logic",
+      "current": "350mA idle, 700mA+ under load",
+      "power": "3.5W max",
+      "interface": "Micro-USB OTG + mini-HDMI",
+      "pinout": "40-pin GPIO: 28 GPIO, I2C, SPI, UART, PCM, PWM (same as Pi 4/5)"
+    },
+    "specs": {
+      "cpu": "Broadcom BCM2710A1, quad-core Arm Cortex-A53 @ 1GHz (64-bit)",
+      "architecture": "64-bit ARMv8",
+      "ram": 0.512,
+      "storage": "microSD (no onboard flash)",
+      "wifi": "802.11 b/g/n, 2.4GHz",
+      "bluetooth": "4.2 + BLE",
+      "gpioCount": 28,
+      "gpioHeader": "40-pin HAT-compatible",
+      "videoOutput": "mini-HDMI (up to 1080p60)",
+      "usbPorts": "1× micro-USB OTG",
+      "powerInput": "micro-USB 5V",
+      "camera": "CSI-2 (22-pin, requires adapter cable)",
+      "os": "Raspberry Pi OS (Linux)"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "5291",
+        "approximatePrice": 19,
+        "url": "https://www.adafruit.com/product/5291"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "DEV-18713",
+        "approximatePrice": 15,
+        "url": "https://www.sparkfun.com/products/18713"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The smallest full-Linux Raspberry Pi — runs the same Raspberry Pi OS as larger models. GPIO header is unpopulated — solder your own or use hammer headers (Pimoroni). Same 40-pin HAT-compatible pinout as Pi 4/5, but physically smaller so most HATs overhang the board. Only 512MB RAM limits what you can run — headless (no desktop) recommended. Micro-USB OTG port is data+power combo — use a powered USB hub for peripherals. Mini-HDMI requires an adapter cable (not included). Power via separate micro-USB port (5V, 2.5A recommended). CSI camera connector is 22-pin (not 15-pin like Pi 4) — requires adapter cable for standard Pi cameras. MicroSD card required for OS (minimum 8GB, 16GB+ recommended). Great for: headless IoT gateways, kiosks, retro gaming (RetroPie), compact Linux projects. For more power, upgrade to Pi 4B or Pi 5.",
+    "tags": [
+      "Raspberry Pi Zero",
+      "Pi Zero 2 W",
+      "Raspberry Pi",
+      "Linux SBC",
+      "compact computer",
+      "IoT gateway",
+      "headless Linux",
+      "ARM Cortex-A53",
+      "WiFi computer"
+    ]
+  },
+  {
+    "name": "Raspberry Pi 4 Model B (4GB)",
+    "description": "Raspberry Pi 4 Model B 4GB, Broadcom BCM2711 quad-core 64-bit Arm Cortex-A72 at 1.5GHz, 4GB LPDDR4-3200 RAM, dual-band WiFi 802.11ac (2.4+5GHz), Bluetooth 5.0 + BLE, 40-pin GPIO header, 2× USB 3.0 + 2× USB 2.0, 2× micro-HDMI (4K60), Gigabit Ethernet, USB-C power, 85.6×56.5mm PCB, 4× M2.5 mounting holes (58×49mm pattern), microSD slot, full Linux desktop computer, Raspberry Pi OS / Ubuntu",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 56.5,
+      "height": 85.6,
+      "depth": 19.5,
+      "weight": 46
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeDiameter": 2.7,
+          "boltSize": 2.5,
+          "holeSpacingX": 58.0,
+          "holeSpacingY": 49.0,
+          "pattern": "rectangular corners (HAT-compatible)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 40,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 20,
+          "headerType": "through-hole male (pre-installed)",
+          "layout": "Standard Raspberry Pi 40-pin HAT-compatible"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V input via USB-C, 3.3V GPIO logic",
+      "current": "3A recommended power supply",
+      "power": "7.5W typical, 15W max",
+      "interface": "USB-C (power), 2× USB 3.0, 2× USB 2.0, Gigabit Ethernet",
+      "pinout": "40-pin GPIO: 28 GPIO, I2C, SPI, UART, PCM, PWM"
+    },
+    "specs": {
+      "cpu": "Broadcom BCM2711, quad-core Arm Cortex-A72 @ 1.5GHz (64-bit)",
+      "architecture": "64-bit ARMv8",
+      "ram": 4,
+      "storage": "microSD (no onboard flash)",
+      "wifi": "Dual-band 802.11ac (WiFi 5), 2.4+5GHz",
+      "bluetooth": "5.0 + BLE",
+      "gpioCount": 28,
+      "gpioHeader": "40-pin HAT-compatible",
+      "usb3Ports": 2,
+      "usb2Ports": 2,
+      "ethernet": "Gigabit (true, not USB-throttled)",
+      "videoOutput": "2× micro-HDMI (up to 4Kp60)",
+      "powerInput": "USB-C 5V/3A",
+      "camera": "CSI-2 (15-pin)",
+      "display": "DSI (15-pin)",
+      "os": "Raspberry Pi OS, Ubuntu, many others"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "4296",
+        "approximatePrice": 55,
+        "url": "https://www.adafruit.com/product/4296"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07TC2BK1X",
+        "approximatePrice": 55,
+        "url": "https://www.amazon.com/dp/B07TC2BK1X"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "A full desktop computer the size of a credit card. 4GB is the sweet spot for most projects — enough for desktop use, media centers, and moderate server workloads. Mounting holes are 58×49mm pattern with M2.5 screws — critical for case/enclosure design. REQUIRES active or passive cooling — the Cortex-A72 throttles without it. Official Raspberry Pi case includes a small fan. USB-C power input — use a quality 5V/3A USB-C power supply (official Raspberry Pi PSU recommended). The two micro-HDMI ports require adapter cables. GPIO header is pre-installed (unlike Pico/Zero). HAT ecosystem is huge — hundreds of add-on boards. True Gigabit Ethernet (not shared with USB like Pi 3). 4K dual display capable. Also available in 2GB ($35 MSRP) and 8GB ($75 MSRP) variants. For the latest generation, consider Pi 5 instead.",
+    "tags": [
+      "Raspberry Pi 4",
+      "Pi 4B",
+      "Raspberry Pi",
+      "Linux SBC",
+      "single board computer",
+      "ARM Cortex-A72",
+      "desktop computer",
+      "media center",
+      "home server",
+      "4K",
+      "Gigabit Ethernet"
+    ]
+  },
+  {
+    "name": "Raspberry Pi 5 (8GB)",
+    "description": "Raspberry Pi 5 8GB, Broadcom BCM2712 quad-core 64-bit Arm Cortex-A76 at 2.4GHz, 8GB LPDDR4X-4267 RAM, dual-band WiFi 802.11ac (2.4+5GHz), Bluetooth 5.0 + BLE, 40-pin GPIO header, 2× USB 3.0 + 2× USB 2.0, 2× micro-HDMI (4Kp60), Gigabit Ethernet, USB-C power (USB-PD), PCIe 2.0 x1 for NVMe SSD, 85.6×56.5mm PCB, 4× M2.5 mounting holes (58×49mm pattern), dedicated RP1 I/O controller, the fastest Raspberry Pi, 2-3× faster than Pi 4",
+    "categorySlug": "microcontrollers",
+    "entryType": "component",
+    "dimensions": {
+      "width": 56.5,
+      "height": 85.6,
+      "depth": 20.0,
+      "weight": 48
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeDiameter": 2.7,
+          "boltSize": 2.5,
+          "holeSpacingX": 58.0,
+          "holeSpacingY": 49.0,
+          "pattern": "rectangular corners (HAT+ compatible)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 40,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 20,
+          "headerType": "through-hole male (pre-installed)",
+          "layout": "Standard Raspberry Pi 40-pin HAT/HAT+ compatible"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V input via USB-C (USB-PD), 3.3V GPIO logic",
+      "current": "5A recommended power supply (USB-PD)",
+      "power": "12W typical, 25W max",
+      "interface": "USB-C (power, USB-PD), 2× USB 3.0, 2× USB 2.0, Gigabit Ethernet, PCIe 2.0 x1",
+      "pinout": "40-pin GPIO: 28 GPIO, I2C, SPI, UART, PCM, PWM (same as Pi 4)"
+    },
+    "specs": {
+      "cpu": "Broadcom BCM2712, quad-core Arm Cortex-A76 @ 2.4GHz (64-bit)",
+      "architecture": "64-bit ARMv8",
+      "ram": 8,
+      "storage": "microSD + PCIe 2.0 x1 (M.2 NVMe via HAT+)",
+      "wifi": "Dual-band 802.11ac (WiFi 5), 2.4+5GHz",
+      "bluetooth": "5.0 + BLE",
+      "gpioCount": 28,
+      "gpioHeader": "40-pin HAT+ compatible",
+      "ioController": "RP1 (dedicated southbridge)",
+      "usb3Ports": 2,
+      "usb2Ports": 2,
+      "ethernet": "Gigabit",
+      "pcie": "PCIe 2.0 x1",
+      "videoOutput": "2× micro-HDMI (up to 4Kp60)",
+      "powerInput": "USB-C 5V/5A (USB-PD)",
+      "camera": "2× 4-lane MIPI CSI-2",
+      "display": "2× 4-lane MIPI DSI",
+      "rtc": "onboard (battery backup via connector)",
+      "os": "Raspberry Pi OS, Ubuntu, many others"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "5812",
+        "approximatePrice": 80,
+        "url": "https://www.adafruit.com/product/5812"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0CTQ3BQLS",
+        "approximatePrice": 80,
+        "url": "https://www.amazon.com/dp/B0CTQ3BQLS"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The most powerful Raspberry Pi — 2-3× faster than Pi 4 with Cortex-A76 cores. CRITICAL: requires USB-PD power supply at 5V/5A (27W) — standard USB-C chargers may not work reliably. Use the official Raspberry Pi 27W USB-C power supply. REQUIRES active cooling — Cortex-A76 at 2.4GHz generates significant heat. Official Active Cooler or case with fan is strongly recommended. PCIe 2.0 x1 slot enables NVMe SSD via M.2 HAT+ — dramatically faster storage than microSD. Same mounting hole pattern as Pi 4 (58×49mm, M2.5) — many Pi 4 cases work but connector positions have shifted slightly. New RP1 I/O controller chip handles GPIO, USB, Ethernet (dedicated silicon, not shared with CPU). HAT+ connector adds auto-detection for add-on boards. Onboard RTC with battery backup connector eliminates need for external RTC module. 8GB RAM handles desktop workloads, Docker containers, databases, and AI inference. Also available in 4GB ($60 MSRP). For the highest RAM, a 16GB variant exists.",
+    "tags": [
+      "Raspberry Pi 5",
+      "Pi 5",
+      "Raspberry Pi",
+      "Linux SBC",
+      "single board computer",
+      "ARM Cortex-A76",
+      "PCIe",
+      "NVMe",
+      "desktop computer",
+      "AI inference",
+      "4K",
+      "USB-PD",
+      "RP1"
+    ]
+  }
+]

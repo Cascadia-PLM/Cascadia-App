@@ -1,0 +1,2314 @@
+[
+  {
+    "name": "1N4148 Signal Diode",
+    "description": "1N4148 DO-35 small-signal switching diode, 75V 200mA 4ns recovery time, 500mW, glass axial through-hole, ubiquitous fast switching diode, signal clipping, protection, demodulation",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 3.5,
+      "diameter": 1.85,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 7.62,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "75V reverse",
+      "current": "200mA",
+      "power": "500mW",
+      "interface": null,
+      "pinout": "anode-cathode (cathode band)"
+    },
+    "specs": {
+      "type": "signal-diode",
+      "forwardVoltage": "0.72V typ",
+      "reverseVoltage": "75V",
+      "maxCurrent": "200mA",
+      "recoveryTime": "4ns",
+      "package": "DO-35 glass axial"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "1N4148FS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/1N4148/458782"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "512-1N4148",
+        "approximatePrice": 0.5,
+        "url": "https://www.mouser.com/ProductDetail/512-1N4148"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Ubiquitous small-signal diode. Fast 4ns recovery. NOT for power.",
+    "tags": [
+      "diode",
+      "signal-diode",
+      "switching",
+      "DO-35",
+      "through-hole",
+      "1N4148",
+      "fast-recovery",
+      "glass",
+      "axial"
+    ]
+  },
+  {
+    "name": "1N4001 Rectifier Diode",
+    "description": "1N4001 DO-41 general purpose rectifier diode, 50V 1A, 1.1V forward voltage, axial through-hole, AC-DC rectification, low-voltage power supply",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 5.2,
+      "diameter": 2.7,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.7,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "50V reverse",
+      "current": "1A",
+      "power": null,
+      "interface": null,
+      "pinout": "anode-cathode (cathode band)"
+    },
+    "specs": {
+      "type": "rectifier-diode",
+      "forwardVoltage": "1.1V",
+      "reverseVoltage": "50V",
+      "maxCurrent": "1A",
+      "recoveryTime": null,
+      "package": "DO-41 axial"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "1N4001RLGOS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/1N4001RLG/918020"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard general-purpose rectifier for low-voltage AC-DC conversion up to 50V. Lowest PIV rating in the 1N400x family — choose 1N4007 for higher-voltage applications.",
+    "tags": [
+      "diode",
+      "rectifier",
+      "DO-41",
+      "through-hole",
+      "1N4001",
+      "axial",
+      "power"
+    ]
+  },
+  {
+    "name": "1N4007 Rectifier Diode",
+    "description": "1N4007 DO-41 general purpose rectifier diode, 1000V 1A, 1.1V forward voltage, axial through-hole, AC mains rectification, flyback protection, freewheeling diode for inductive loads",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 5.2,
+      "diameter": 2.7,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.7,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "1000V reverse",
+      "current": "1A",
+      "power": null,
+      "interface": null,
+      "pinout": "anode-cathode (cathode band)"
+    },
+    "specs": {
+      "type": "rectifier-diode",
+      "forwardVoltage": "1.1V",
+      "reverseVoltage": "1000V",
+      "maxCurrent": "1A",
+      "recoveryTime": null,
+      "package": "DO-41 axial"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "1N4007RLGOS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/1N4007RLG/920447"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard flyback/freewheeling diode for relay coils, solenoids, and inductive loads.",
+    "tags": [
+      "diode",
+      "rectifier",
+      "DO-41",
+      "through-hole",
+      "1N4007",
+      "flyback",
+      "freewheeling",
+      "axial",
+      "power",
+      "relay",
+      "solenoid"
+    ]
+  },
+  {
+    "name": "1N5817 Schottky Diode",
+    "description": "1N5817 DO-41 Schottky barrier rectifier diode, 20V 1A, 0.45V forward voltage, low Vf, fast switching, axial through-hole, power supply reverse polarity protection, OR-ing",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 5.2,
+      "diameter": 2.7,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.7,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "20V reverse",
+      "current": "1A",
+      "power": null,
+      "interface": null,
+      "pinout": "anode-cathode (cathode band)"
+    },
+    "specs": {
+      "type": "schottky-diode",
+      "forwardVoltage": "0.45V",
+      "reverseVoltage": "20V",
+      "maxCurrent": "1A",
+      "recoveryTime": null,
+      "package": "DO-41 axial"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "1N5817RLGOS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/1N5817RLG/964484"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Low Vf Schottky for power supplies and reverse polarity protection.",
+    "tags": [
+      "diode",
+      "schottky",
+      "DO-41",
+      "through-hole",
+      "1N5817",
+      "low-Vf",
+      "axial",
+      "power",
+      "reverse-polarity"
+    ]
+  },
+  {
+    "name": "1N5819 Schottky Diode",
+    "description": "1N5819 DO-41 Schottky barrier rectifier diode, 40V 1A, 0.60V forward voltage, low Vf, fast switching, axial through-hole, power supply rectification, reverse polarity protection",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 5.2,
+      "diameter": 2.7,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.7,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "40V reverse",
+      "current": "1A",
+      "power": null,
+      "interface": null,
+      "pinout": "anode-cathode (cathode band)"
+    },
+    "specs": {
+      "type": "schottky-diode",
+      "forwardVoltage": "0.60V",
+      "reverseVoltage": "40V",
+      "maxCurrent": "1A",
+      "recoveryTime": null,
+      "package": "DO-41 axial"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "1N5819RLGOS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/1N5819RLG/964487"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Higher-voltage Schottky (40V) for power supply rectification and reverse polarity protection where 1N5817 margin is insufficient. Low Vf minimizes conduction losses.",
+    "tags": [
+      "diode",
+      "schottky",
+      "DO-41",
+      "through-hole",
+      "1N5819",
+      "low-Vf",
+      "axial",
+      "power",
+      "reverse-polarity"
+    ]
+  },
+  {
+    "name": "SS34 Schottky Diode",
+    "description": "SS34 DO-214AB (SMC) surface-mount Schottky rectifier, 40V 3A, 0.55V forward voltage, SMD power rectification, reverse polarity protection, OR-ing diode",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 7.75,
+      "width": 5.28,
+      "height": 2.62,
+      "weight": 0.8
+    },
+    "mountingFeatures": [
+      {
+        "type": "smd",
+        "specs": {
+          "package": "DO-214AB",
+          "padCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "40V reverse",
+      "current": "3A",
+      "power": null,
+      "interface": null,
+      "pinout": "anode-cathode (cathode band)"
+    },
+    "specs": {
+      "type": "schottky-diode",
+      "forwardVoltage": "0.55V",
+      "reverseVoltage": "40V",
+      "maxCurrent": "3A",
+      "recoveryTime": null,
+      "package": "DO-214AB (SMC)"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "SS34-ND",
+        "approximatePrice": 0.75,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/SS34/965722"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-current SMD Schottky for power supply designs requiring 3A capability. DO-214AB (SMC) package handles significant power dissipation. Use for OR-ing supplies, reverse polarity protection, and output rectification in switching power supplies.",
+    "tags": [
+      "diode",
+      "schottky",
+      "SMD",
+      "DO-214AB",
+      "SMC",
+      "SS34",
+      "3A",
+      "surface-mount",
+      "power"
+    ]
+  },
+  {
+    "name": "1N4728A Zener Diode 3.3V",
+    "description": "1N4728A DO-41 3.3V zener voltage regulator diode, 1W power, 303mA max current, axial through-hole, voltage reference, clamp, regulator, overvoltage protection",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 5.2,
+      "diameter": 2.7,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.7,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3V zener",
+      "current": "303mA max",
+      "power": "1W",
+      "interface": null,
+      "pinout": "anode-cathode (cathode band)"
+    },
+    "specs": {
+      "type": "zener-diode",
+      "zenerVoltage": "3.3V",
+      "tolerance": "±5%",
+      "power": "1W",
+      "maxCurrent": "303mA",
+      "package": "DO-41 axial"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "1N4728ATLGOS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/1N4728ATG/918106"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "3.3V zener for voltage clamping, overvoltage protection of 3.3V logic rails, and simple shunt regulation. Reverse-bias to regulate; use series resistor to limit current to safe operating region.",
+    "tags": [
+      "diode",
+      "zener",
+      "DO-41",
+      "through-hole",
+      "1N4728A",
+      "3.3V",
+      "voltage-reference",
+      "clamp",
+      "axial"
+    ]
+  },
+  {
+    "name": "1N4733A Zener Diode 5.1V",
+    "description": "1N4733A DO-41 5.1V zener voltage regulator diode, 1W power, 196mA max current, axial through-hole, 5V rail clamping, voltage reference, overvoltage protection",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 5.2,
+      "diameter": 2.7,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.7,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5.1V zener",
+      "current": "196mA max",
+      "power": "1W",
+      "interface": null,
+      "pinout": "anode-cathode (cathode band)"
+    },
+    "specs": {
+      "type": "zener-diode",
+      "zenerVoltage": "5.1V",
+      "tolerance": "±5%",
+      "power": "1W",
+      "maxCurrent": "196mA",
+      "package": "DO-41 axial"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "1N4733ATLGOS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/1N4733ATG/918110"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "5.1V zener for clamping and protecting 5V logic rails. Commonly used as overvoltage protection on USB power inputs and microcontroller I/O pins. The slight overvoltage (5.1V vs 5.0V) prevents false triggering under normal conditions.",
+    "tags": [
+      "diode",
+      "zener",
+      "DO-41",
+      "through-hole",
+      "1N4733A",
+      "5.1V",
+      "5V",
+      "voltage-reference",
+      "clamp",
+      "axial"
+    ]
+  },
+  {
+    "name": "1N4742A Zener Diode 12V",
+    "description": "1N4742A DO-41 12V zener voltage regulator diode, 1W power, 83mA max current, axial through-hole, 12V rail clamping, voltage reference, gate bias supply, overvoltage protection",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 5.2,
+      "diameter": 2.7,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.7,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V zener",
+      "current": "83mA max",
+      "power": "1W",
+      "interface": null,
+      "pinout": "anode-cathode (cathode band)"
+    },
+    "specs": {
+      "type": "zener-diode",
+      "zenerVoltage": "12V",
+      "tolerance": "±5%",
+      "power": "1W",
+      "maxCurrent": "83mA",
+      "package": "DO-41 axial"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "1N4742ATLGOS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/1N4742ATG/918118"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "12V zener for clamping 12V rails and protecting power circuits. Also used as a gate bias supply clamp for MOSFETs and as a reference in power supply feedback loops. At 1W, maximum continuous current is 83mA — use series resistor accordingly.",
+    "tags": [
+      "diode",
+      "zener",
+      "DO-41",
+      "through-hole",
+      "1N4742A",
+      "12V",
+      "voltage-reference",
+      "clamp",
+      "axial"
+    ]
+  },
+  {
+    "name": "BZX55C5V0 Zener Diode 5.0V",
+    "description": "BZX55C5V0 DO-35 5.0V zener voltage regulator diode, 500mW, 100mA max, small-signal glass axial through-hole, 5V precision reference, clamp, protection",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "length": 3.5,
+      "diameter": 1.85,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 7.62,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5.0V zener",
+      "current": "100mA max",
+      "power": "500mW",
+      "interface": null,
+      "pinout": "anode-cathode (cathode band)"
+    },
+    "specs": {
+      "type": "zener-diode",
+      "zenerVoltage": "5.0V",
+      "tolerance": "±5%",
+      "power": "500mW",
+      "maxCurrent": "100mA",
+      "package": "DO-35 glass axial"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "BZX55C5V0-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/vishay-semiconductor-diodes-division/BZX55C5V0/1823948"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Compact 500mW zener in DO-35 glass body for space-constrained designs. Use for low-power 5V clamping and reference applications where the smaller 1N4733A footprint is preferred. Maximum 100mA — appropriate for signal-level protection, not power regulation.",
+    "tags": [
+      "diode",
+      "zener",
+      "DO-35",
+      "through-hole",
+      "BZX55C5V0",
+      "5V",
+      "voltage-reference",
+      "clamp",
+      "glass",
+      "axial"
+    ]
+  },
+  {
+    "name": "2N2222A NPN BJT Transistor",
+    "description": "2N2222A TO-92 NPN bipolar junction transistor, 40V Vceo, 600mA Ic, hFE 100-300, 625mW, general-purpose switching and amplification, through-hole",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 4.7,
+      "depth": 3.6,
+      "height": 4.8,
+      "weight": 0.4
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 1.27,
+          "leadCount": 3
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "40V Vceo",
+      "current": "600mA Ic",
+      "power": "625mW",
+      "interface": null,
+      "pinout": "E-B-C (left to right, flat face forward)"
+    },
+    "specs": {
+      "type": "npn-bjt",
+      "vceoMax": "40V",
+      "icMax": "600mA",
+      "hFE": "100-300",
+      "vbeOn": "0.6V typ",
+      "ft": "300MHz",
+      "package": "TO-92"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "2N2222ATFR-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/2N2222ATF/975539"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Classic NPN for switching up to 600mA. Use 1kΩ base resistor from 5V.",
+    "tags": [
+      "transistor",
+      "BJT",
+      "NPN",
+      "TO-92",
+      "through-hole",
+      "2N2222A",
+      "switching",
+      "amplifier",
+      "small-signal"
+    ]
+  },
+  {
+    "name": "2N3904 NPN BJT Transistor",
+    "description": "2N3904 TO-92 NPN bipolar junction transistor, 40V Vceo, 200mA Ic, hFE 100-300, 625mW, most common small-signal NPN, general-purpose switching and amplification",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 4.7,
+      "depth": 3.6,
+      "height": 4.8,
+      "weight": 0.4
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 1.27,
+          "leadCount": 3
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "40V Vceo",
+      "current": "200mA Ic",
+      "power": "625mW",
+      "interface": null,
+      "pinout": "E-B-C (left to right, flat face forward)"
+    },
+    "specs": {
+      "type": "npn-bjt",
+      "vceoMax": "40V",
+      "icMax": "200mA",
+      "hFE": "100-300",
+      "vbeOn": "0.65V typ",
+      "ft": "300MHz",
+      "package": "TO-92"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "2N3904FS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/2N3904/458620"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Most common small-signal NPN. Complementary to 2N3906.",
+    "tags": [
+      "transistor",
+      "BJT",
+      "NPN",
+      "TO-92",
+      "through-hole",
+      "2N3904",
+      "switching",
+      "amplifier",
+      "small-signal"
+    ]
+  },
+  {
+    "name": "BC547B NPN BJT Transistor",
+    "description": "BC547B TO-92 NPN bipolar junction transistor, 45V Vceo, 100mA Ic, hFE 200-450, 500mW, low-noise small-signal amplifier and switching, note C-B-E pinout",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 4.7,
+      "depth": 3.6,
+      "height": 4.8,
+      "weight": 0.4
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 1.27,
+          "leadCount": 3
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "45V Vceo",
+      "current": "100mA Ic",
+      "power": "500mW",
+      "interface": null,
+      "pinout": "C-B-E (left to right, flat face forward)"
+    },
+    "specs": {
+      "type": "npn-bjt",
+      "vceoMax": "45V",
+      "icMax": "100mA",
+      "hFE": "200-450",
+      "vbeOn": "0.65V typ",
+      "ft": "300MHz",
+      "package": "TO-92"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "BC547BFS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/BC547B/458816"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Higher hFE (200-450) than 2N3904 makes it excellent for amplification. CAUTION: pinout is C-B-E (flat face forward), opposite to 2N series E-B-C — verify before substituting. Common in European designs.",
+    "tags": [
+      "transistor",
+      "BJT",
+      "NPN",
+      "TO-92",
+      "through-hole",
+      "BC547B",
+      "switching",
+      "amplifier",
+      "small-signal",
+      "low-noise"
+    ]
+  },
+  {
+    "name": "2N3906 PNP BJT Transistor",
+    "description": "2N3906 TO-92 PNP bipolar junction transistor, -40V Vceo, 200mA Ic, hFE 100-300, 625mW, complementary pair to 2N3904, general-purpose switching and amplification",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 4.7,
+      "depth": 3.6,
+      "height": 4.8,
+      "weight": 0.4
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 1.27,
+          "leadCount": 3
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "-40V Vceo",
+      "current": "200mA Ic",
+      "power": "625mW",
+      "interface": null,
+      "pinout": "E-B-C (left to right, flat face forward)"
+    },
+    "specs": {
+      "type": "pnp-bjt",
+      "vceoMax": "-40V",
+      "icMax": "200mA",
+      "hFE": "100-300",
+      "vbeOn": "-0.65V typ",
+      "ft": "250MHz",
+      "package": "TO-92"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "2N3906FS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/2N3906/458621"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard PNP complement to 2N3904. Used in push-pull output stages, high-side switches controlled by NPN, and complementary amplifier designs. PNP conducts when base is pulled LOW relative to emitter.",
+    "tags": [
+      "transistor",
+      "BJT",
+      "PNP",
+      "TO-92",
+      "through-hole",
+      "2N3906",
+      "switching",
+      "amplifier",
+      "small-signal",
+      "complementary"
+    ]
+  },
+  {
+    "name": "BC557B PNP BJT Transistor",
+    "description": "BC557B TO-92 PNP bipolar junction transistor, -45V Vceo, 100mA Ic, hFE 200-450, 500mW, complementary to BC547B, note C-B-E pinout, low-noise small-signal amplifier",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 4.7,
+      "depth": 3.6,
+      "height": 4.8,
+      "weight": 0.4
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 1.27,
+          "leadCount": 3
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "-45V Vceo",
+      "current": "100mA Ic",
+      "power": "500mW",
+      "interface": null,
+      "pinout": "C-B-E (left to right, flat face forward)"
+    },
+    "specs": {
+      "type": "pnp-bjt",
+      "vceoMax": "-45V",
+      "icMax": "100mA",
+      "hFE": "200-450",
+      "vbeOn": "-0.65V typ",
+      "ft": "150MHz",
+      "package": "TO-92"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "BC557BFS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/onsemi/BC557B/458826"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "PNP complement to BC547B with matching high hFE (200-450) for low-noise amplifier stages. CAUTION: pinout is C-B-E (flat face forward), same as BC547B but opposite to 2N series — verify before substituting.",
+    "tags": [
+      "transistor",
+      "BJT",
+      "PNP",
+      "TO-92",
+      "through-hole",
+      "BC557B",
+      "switching",
+      "amplifier",
+      "small-signal",
+      "low-noise",
+      "complementary"
+    ]
+  },
+  {
+    "name": "IRLZ44N N-Channel Logic-Level MOSFET",
+    "description": "IRLZ44N TO-220 N-channel logic-level power MOSFET, 55V Vds, 47A Id, 22mΩ Rds(on), Vgs(th) 1-2V, fully switches from 3.3V/5V GPIO, through-hole power switching",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.4,
+      "depth": 4.7,
+      "height": 15.9,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.9,
+          "leadSpacing": 2.54,
+          "leadCount": 3
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "holeDiameter": 3.5,
+          "holeCount": 1,
+          "description": "TO-220 mounting tab for heatsink"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "55V Vds",
+      "current": "47A Id",
+      "power": null,
+      "interface": null,
+      "pinout": "G-D-S (left to right, face forward); tab = drain"
+    },
+    "specs": {
+      "type": "n-mosfet",
+      "vdsMax": "55V",
+      "idMax": "47A",
+      "rdsOn": "22mΩ",
+      "vgsThreshold": "1-2V",
+      "gateCharge": "36nC",
+      "package": "TO-220",
+      "logicLevel": true
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "IRLZ44NPBF-ND",
+        "approximatePrice": 1.75,
+        "url": "https://www.digikey.com/en/products/detail/infineon-technologies/IRLZ44NPBF/811787"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "942-IRLZ44NPBF",
+        "approximatePrice": 1.75,
+        "url": "https://www.mouser.com/ProductDetail/942-IRLZ44NPBF"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Logic-level gate — switches from 3.3V/5V GPIO. Add 10kΩ gate pull-down.",
+    "tags": [
+      "transistor",
+      "MOSFET",
+      "N-channel",
+      "TO-220",
+      "through-hole",
+      "IRLZ44N",
+      "logic-level",
+      "power-switch",
+      "high-current",
+      "Arduino",
+      "Raspberry-Pi"
+    ]
+  },
+  {
+    "name": "IRF520N N-Channel MOSFET",
+    "description": "IRF520N TO-220 N-channel power MOSFET, 100V Vds, 9.7A Id, 200mΩ Rds(on), Vgs(th) 2-4V, through-hole power switching, motor control",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.4,
+      "depth": 4.7,
+      "height": 15.9,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.9,
+          "leadSpacing": 2.54,
+          "leadCount": 3
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "holeDiameter": 3.5,
+          "holeCount": 1,
+          "description": "TO-220 mounting tab for heatsink"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "100V Vds",
+      "current": "9.7A Id",
+      "power": null,
+      "interface": null,
+      "pinout": "G-D-S (left to right, face forward); tab = drain"
+    },
+    "specs": {
+      "type": "n-mosfet",
+      "vdsMax": "100V",
+      "idMax": "9.7A",
+      "rdsOn": "200mΩ",
+      "vgsThreshold": "2-4V",
+      "gateCharge": "16nC",
+      "package": "TO-220",
+      "logicLevel": false
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "IRF520NPBF-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/infineon-technologies/IRF520NPBF/812272"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "100V N-channel MOSFET for moderate-current applications. Not logic-level — requires gate drive of 10V for full enhancement. Use a gate driver IC or NPN pre-driver when controlling from 3.3V/5V logic. Suitable for DC motor control and power switching up to 9.7A.",
+    "tags": [
+      "transistor",
+      "MOSFET",
+      "N-channel",
+      "TO-220",
+      "through-hole",
+      "IRF520N",
+      "power-switch",
+      "motor-control",
+      "100V"
+    ]
+  },
+  {
+    "name": "IRF540N N-Channel MOSFET",
+    "description": "IRF540N TO-220 N-channel power MOSFET, 100V Vds, 33A Id, 44mΩ Rds(on), Vgs(th) 2-4V, through-hole high-current power switching, motor control, H-bridge",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.4,
+      "depth": 4.7,
+      "height": 15.9,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.9,
+          "leadSpacing": 2.54,
+          "leadCount": 3
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "holeDiameter": 3.5,
+          "holeCount": 1,
+          "description": "TO-220 mounting tab for heatsink"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "100V Vds",
+      "current": "33A Id",
+      "power": null,
+      "interface": null,
+      "pinout": "G-D-S (left to right, face forward); tab = drain"
+    },
+    "specs": {
+      "type": "n-mosfet",
+      "vdsMax": "100V",
+      "idMax": "33A",
+      "rdsOn": "44mΩ",
+      "vgsThreshold": "2-4V",
+      "gateCharge": "72nC",
+      "package": "TO-220",
+      "logicLevel": false
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "IRF540NPBF-ND",
+        "approximatePrice": 1.75,
+        "url": "https://www.digikey.com/en/products/detail/infineon-technologies/IRF540NPBF/811556"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-current 100V N-channel MOSFET suitable for H-bridges and heavy motor loads. Not logic-level — Vgs(th) of 2-4V requires 10V gate drive for full enhancement. Use IR2101 or similar gate driver for PWM applications. Heatsink strongly recommended above 10A continuous.",
+    "tags": [
+      "transistor",
+      "MOSFET",
+      "N-channel",
+      "TO-220",
+      "through-hole",
+      "IRF540N",
+      "power-switch",
+      "motor-control",
+      "H-bridge",
+      "100V",
+      "high-current"
+    ]
+  },
+  {
+    "name": "IRLB8721 N-Channel Logic-Level MOSFET",
+    "description": "IRLB8721 TO-220 N-channel logic-level power MOSFET, 30V Vds, 62A Id, 6.5mΩ Rds(on), Vgs(th) 1.5-2.5V, fully ON at 3.3V, best logic-level MOSFET for Arduino/Raspberry Pi",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.4,
+      "depth": 4.7,
+      "height": 15.9,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.9,
+          "leadSpacing": 2.54,
+          "leadCount": 3
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "holeDiameter": 3.5,
+          "holeCount": 1,
+          "description": "TO-220 mounting tab for heatsink"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "30V Vds",
+      "current": "62A Id",
+      "power": null,
+      "interface": null,
+      "pinout": "G-D-S (left to right, face forward); tab = drain"
+    },
+    "specs": {
+      "type": "n-mosfet",
+      "vdsMax": "30V",
+      "idMax": "62A",
+      "rdsOn": "6.5mΩ",
+      "vgsThreshold": "1.5-2.5V",
+      "gateCharge": "21nC",
+      "package": "TO-220",
+      "logicLevel": true
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "IRLB8721PBF-ND",
+        "approximatePrice": 2.5,
+        "url": "https://www.digikey.com/en/products/detail/infineon-technologies/IRLB8721PBF/2127671"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Best logic-level MOSFET for Arduino/RPi. Fully ON at 3.3V. 6.5mΩ Rds(on).",
+    "tags": [
+      "transistor",
+      "MOSFET",
+      "N-channel",
+      "TO-220",
+      "through-hole",
+      "IRLB8721",
+      "logic-level",
+      "power-switch",
+      "high-current",
+      "Arduino",
+      "Raspberry-Pi",
+      "3.3V",
+      "ultra-low-Rds"
+    ]
+  },
+  {
+    "name": "IRF9540N P-Channel MOSFET",
+    "description": "IRF9540N TO-220 P-channel power MOSFET, -100V Vds, 23A Id, 117mΩ Rds(on), Vgs(th) -2 to -4V, high-side switching, through-hole, complement to IRF540N",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.4,
+      "depth": 4.7,
+      "height": 15.9,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.9,
+          "leadSpacing": 2.54,
+          "leadCount": 3
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "holeDiameter": 3.5,
+          "holeCount": 1,
+          "description": "TO-220 mounting tab for heatsink"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "-100V Vds",
+      "current": "23A Id",
+      "power": null,
+      "interface": null,
+      "pinout": "G-D-S (left to right, face forward); tab = drain"
+    },
+    "specs": {
+      "type": "p-mosfet",
+      "vdsMax": "-100V",
+      "idMax": "23A",
+      "rdsOn": "117mΩ",
+      "vgsThreshold": "-2V to -4V",
+      "gateCharge": "51nC",
+      "package": "TO-220",
+      "logicLevel": false
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "IRF9540NPBF-ND",
+        "approximatePrice": 2.5,
+        "url": "https://www.digikey.com/en/products/detail/infineon-technologies/IRF9540NPBF/812270"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "P-channel high-side switch. Gate LOW to turn ON. Pair with NPN for logic control.",
+    "tags": [
+      "transistor",
+      "MOSFET",
+      "P-channel",
+      "TO-220",
+      "through-hole",
+      "IRF9540N",
+      "high-side",
+      "power-switch",
+      "100V",
+      "complementary"
+    ]
+  },
+  {
+    "name": "LM7805 +5V Linear Voltage Regulator (TO-220)",
+    "description": "ST Micro L7805CV +5V fixed linear voltage regulator, TO-220 through-hole, 1.5A max output, 7-25V input range, 2V dropout, thermal shutdown, overcurrent protection, 3-terminal regulator, 5V power rail, logic supply, microcontroller power",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.4,
+      "height": 15.9,
+      "depth": 4.7,
+      "weight": 2.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 3,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.8,
+          "pinout": "Input-Ground-Output"
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "holeSize": 3.5,
+          "holeCenterFromTop": 7,
+          "note": "TO-220 mounting tab for heatsink attachment"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "7-25V input, 5V output",
+      "current": "1.5A max",
+      "power": "15W (with heatsink)",
+      "interface": null,
+      "pinout": "TO-220: 1=Input, 2=GND, 3=Output"
+    },
+    "specs": {
+      "inputVoltageRange": "7-25V",
+      "outputVoltage": 5,
+      "maxCurrent": 1.5,
+      "dropout": "2V",
+      "package": "TO-220",
+      "quiescentCurrent": "6mA",
+      "lineRegulation": "3mV",
+      "loadRegulation": "15mV",
+      "thermalShutdown": true,
+      "overcurrentProtection": true,
+      "tempRange": "0°C to +125°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "497-1443-5-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/stmicroelectronics/L7805CV/585964"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Add 0.33µF ceramic input cap and 0.1µF ceramic output cap per datasheet — place as close as possible to the IC pins. Heatsink required at higher currents: dissipates (Vin-5V)×Iout as heat. At 12V in, 1A out → 7W heat dissipation, which will exceed its thermal limit without a heatsink. For high current or large Vin-Vout differential, consider a switching regulator (e.g., LM2596, MP1584). Suitable for microcontroller and logic supply from 9V or 12V wall adapter.",
+    "tags": [
+      "voltage-regulator",
+      "linear-regulator",
+      "LM7805",
+      "L7805CV",
+      "5V",
+      "TO-220",
+      "through-hole",
+      "1.5A",
+      "fixed-voltage",
+      "power-supply",
+      "3-terminal",
+      "ST-Micro"
+    ]
+  },
+  {
+    "name": "LM7809 +9V Linear Voltage Regulator (TO-220)",
+    "description": "ST Micro L7809CV +9V fixed linear voltage regulator, TO-220 through-hole, 1.5A max output, 11.5-25V input range, 2V dropout, thermal shutdown, overcurrent protection, 3-terminal regulator, 9V power rail, analog circuit supply",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.4,
+      "height": 15.9,
+      "depth": 4.7,
+      "weight": 2.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 3,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.8,
+          "pinout": "Input-Ground-Output"
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "holeSize": 3.5,
+          "holeCenterFromTop": 7,
+          "note": "TO-220 mounting tab for heatsink attachment"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "11.5-25V input, 9V output",
+      "current": "1.5A max",
+      "power": "15W (with heatsink)",
+      "interface": null,
+      "pinout": "TO-220: 1=Input, 2=GND, 3=Output"
+    },
+    "specs": {
+      "inputVoltageRange": "11.5-25V",
+      "outputVoltage": 9,
+      "maxCurrent": 1.5,
+      "dropout": "2V",
+      "package": "TO-220",
+      "quiescentCurrent": "6mA",
+      "lineRegulation": "4mV",
+      "loadRegulation": "18mV",
+      "thermalShutdown": true,
+      "overcurrentProtection": true,
+      "tempRange": "0°C to +125°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "497-1446-5-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/stmicroelectronics/L7809CV/585967"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Add 0.33µF ceramic input cap and 0.1µF ceramic output cap per datasheet. Heatsink required at higher loads: dissipates (Vin-9V)×Iout as heat. Typically driven from a 12V or 15V supply. Common for op-amp single-supply stages, relay coils, and small motor drives. Use LM317 if you need a voltage between standard 78xx values.",
+    "tags": [
+      "voltage-regulator",
+      "linear-regulator",
+      "LM7809",
+      "L7809CV",
+      "9V",
+      "TO-220",
+      "through-hole",
+      "1.5A",
+      "fixed-voltage",
+      "power-supply",
+      "3-terminal",
+      "ST-Micro"
+    ]
+  },
+  {
+    "name": "LM7812 +12V Linear Voltage Regulator (TO-220)",
+    "description": "ST Micro L7812CV +12V fixed linear voltage regulator, TO-220 through-hole, 1.5A max output, 14.5-30V input range, 2V dropout, thermal shutdown, overcurrent protection, 3-terminal regulator, 12V power rail, relay supply, motor drive, analog supply",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.4,
+      "height": 15.9,
+      "depth": 4.7,
+      "weight": 2.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 3,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.8,
+          "pinout": "Input-Ground-Output"
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "holeSize": 3.5,
+          "holeCenterFromTop": 7,
+          "note": "TO-220 mounting tab for heatsink attachment"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "14.5-30V input, 12V output",
+      "current": "1.5A max",
+      "power": "15W (with heatsink)",
+      "interface": null,
+      "pinout": "TO-220: 1=Input, 2=GND, 3=Output"
+    },
+    "specs": {
+      "inputVoltageRange": "14.5-30V",
+      "outputVoltage": 12,
+      "maxCurrent": 1.5,
+      "dropout": "2V",
+      "package": "TO-220",
+      "quiescentCurrent": "6mA",
+      "lineRegulation": "4mV",
+      "loadRegulation": "20mV",
+      "thermalShutdown": true,
+      "overcurrentProtection": true,
+      "tempRange": "0°C to +125°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "497-1452-5-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/stmicroelectronics/L7812CV/585973"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Add 0.33µF ceramic input cap and 0.1µF ceramic output cap per datasheet. Heatsink required for most loads — dissipates (Vin-12V)×Iout as heat. Common supply for relay coils, solenoids, fan motors, and op-amp dual-supply rails when combined with LM7912 (-12V). Requires at least 14.5V input — use 15V to 18V transformer secondary or wall adapter. For higher input voltages, a switching pre-regulator saves thermal headroom.",
+    "tags": [
+      "voltage-regulator",
+      "linear-regulator",
+      "LM7812",
+      "L7812CV",
+      "12V",
+      "TO-220",
+      "through-hole",
+      "1.5A",
+      "fixed-voltage",
+      "power-supply",
+      "3-terminal",
+      "ST-Micro"
+    ]
+  },
+  {
+    "name": "LM317 Adjustable Linear Voltage Regulator (TO-220)",
+    "description": "ST Micro LM317T adjustable positive linear voltage regulator, TO-220 through-hole, 1.5A max, 1.25-37V adjustable output, 3-40V input, 2-resistor set-point, thermal shutdown, overcurrent protection, variable power supply, battery charger, current regulator",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.4,
+      "height": 15.9,
+      "depth": 4.7,
+      "weight": 2.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 3,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.8,
+          "pinout": "Adjust-Output-Input"
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "holeSize": 3.5,
+          "holeCenterFromTop": 7,
+          "note": "TO-220 mounting tab for heatsink attachment"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3-40V input, 1.25-37V output adjustable",
+      "current": "1.5A max",
+      "power": "15W (with heatsink)",
+      "interface": null,
+      "pinout": "TO-220: 1=Adjust, 2=Output, 3=Input"
+    },
+    "specs": {
+      "inputVoltageRange": "3-40V",
+      "outputVoltageRange": "1.25-37V adjustable",
+      "maxCurrent": 1.5,
+      "referenceVoltage": "1.25V",
+      "dropout": "3V typical",
+      "package": "TO-220",
+      "quiescentCurrent": "50µA (to adjust pin)",
+      "lineRegulation": "0.01%/V",
+      "loadRegulation": "0.1%",
+      "thermalShutdown": true,
+      "overcurrentProtection": true,
+      "tempRange": "0°C to +125°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "497-1575-5-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/stmicroelectronics/LM317T/585969"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Output voltage set by R1/R2 resistor divider: Vout = 1.25 × (1 + R2/R1). Standard approach: R1=240Ω. For 3.3V: R2=384Ω (use 390Ω). For 5V: R2=720Ω (use 720Ω or 680Ω+40Ω). For 9V: R2=1.49kΩ. For 12V: R2=2.07kΩ. Use a 10kΩ trimmer for R2 in lab supplies. Add 0.1µF ceramic on input, 1µF on output, 10µF electrolytic on adjust pin. Note LM317 pinout differs from 78xx series — pin 1 is Adjust, not Input. Pin 2 is Output (center pin), pin 3 is Input.",
+    "tags": [
+      "voltage-regulator",
+      "linear-regulator",
+      "LM317",
+      "LM317T",
+      "adjustable",
+      "variable",
+      "TO-220",
+      "through-hole",
+      "1.5A",
+      "power-supply",
+      "variable-voltage",
+      "battery-charger",
+      "ST-Micro"
+    ]
+  },
+  {
+    "name": "AMS1117-3.3 LDO Voltage Regulator (SOT-223)",
+    "description": "Advanced Monolithic Systems AMS1117-3.3 low-dropout 3.3V regulator, SOT-223 bare IC, 1A max, 4.5-15V input, 1.3V dropout, thermal shutdown, 3.3V logic supply, ESP32 power, Arduino 3.3V rail, USB-to-3.3V conversion, SMD LDO",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 6.5,
+      "height": 3.5,
+      "depth": 1.6,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 4,
+          "leadSpacing": 2.3,
+          "leadDiameter": 0.7,
+          "note": "SOT-223: 3 leads on one side + 1 large tab on opposite side (tab=Output)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.5-15V input, 3.3V output",
+      "current": "1A max",
+      "power": "1W typical (limited by SOT-223 thermal)",
+      "interface": null,
+      "pinout": "SOT-223: 1=Adjust/GND, 2=Output, 3=Input, 4=Output tab"
+    },
+    "specs": {
+      "inputVoltageRange": "4.5-15V",
+      "outputVoltage": 3.3,
+      "maxCurrent": 1,
+      "dropout": "1.3V at 1A",
+      "package": "SOT-223",
+      "quiescentCurrent": "5mA",
+      "lineRegulation": "0.2%",
+      "loadRegulation": "0.4%",
+      "thermalShutdown": true,
+      "tempRange": "-40°C to +125°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "AMS1117-3.3-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/advanced-monolithic-systems-inc/AMS1117-3.3/584274"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Low-dropout regulator for 3.3V logic from 5V supply. Minimum input voltage is 4.6V (3.3V + 1.3V dropout) — cannot be directly powered from a low-charge 3.7V LiPo. Needs 10µF tantalum or ceramic on both input and output for stability; the AMS1117 can oscillate without adequate output capacitance. Common on Arduino-compatible boards, ESP8266/ESP32 breakouts, and Raspberry Pi accessory boards. SOT-223 tab is Output — can solder to a copper pour for improved thermal performance.",
+    "tags": [
+      "voltage-regulator",
+      "LDO",
+      "low-dropout",
+      "AMS1117",
+      "3.3V",
+      "SOT-223",
+      "SMD",
+      "1A",
+      "power-supply",
+      "ESP32",
+      "Arduino",
+      "3V3",
+      "logic-supply"
+    ]
+  },
+  {
+    "name": "AMS1117-5.0 LDO Voltage Regulator (SOT-223)",
+    "description": "Advanced Monolithic Systems AMS1117-5.0 low-dropout 5V regulator, SOT-223 bare IC, 1A max, 6.5-15V input, 1.3V dropout, thermal shutdown, 5V logic supply, USB power conditioning, 5V from 7.4V LiPo, SMD LDO",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 6.5,
+      "height": 3.5,
+      "depth": 1.6,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 4,
+          "leadSpacing": 2.3,
+          "leadDiameter": 0.7,
+          "note": "SOT-223: 3 leads on one side + 1 large tab on opposite side (tab=Output)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "6.5-15V input, 5V output",
+      "current": "1A max",
+      "power": "1W typical (limited by SOT-223 thermal)",
+      "interface": null,
+      "pinout": "SOT-223: 1=Adjust/GND, 2=Output, 3=Input, 4=Output tab"
+    },
+    "specs": {
+      "inputVoltageRange": "6.5-15V",
+      "outputVoltage": 5,
+      "maxCurrent": 1,
+      "dropout": "1.3V at 1A",
+      "package": "SOT-223",
+      "quiescentCurrent": "5mA",
+      "lineRegulation": "0.2%",
+      "loadRegulation": "0.4%",
+      "thermalShutdown": true,
+      "tempRange": "-40°C to +125°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "AMS1117-5.0-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/advanced-monolithic-systems-inc/AMS1117-5.0/584275"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "5V LDO from 9V or 12V supply. Minimum input is 6.3V — can be powered from a 7.4V (2S) LiPo pack, though dropout increases near end of battery. Needs 10µF ceramic or tantalum on input and output for stability. SOT-223 tab is Output — tie to copper pour for better heat dissipation. Current limited to ~1A in this package — use LM7805 TO-220 + heatsink when more current is needed.",
+    "tags": [
+      "voltage-regulator",
+      "LDO",
+      "low-dropout",
+      "AMS1117",
+      "5V",
+      "SOT-223",
+      "SMD",
+      "1A",
+      "power-supply",
+      "5V-logic",
+      "USB-power"
+    ]
+  },
+  {
+    "name": "LM358 Dual Op-Amp (DIP-8)",
+    "description": "TI LM358P dual general-purpose op-amp, DIP-8 through-hole, single or dual supply 4-32V, 1.1MHz GBW, 0.6V/µs slew rate, single-supply operation, comparator, summing amplifier, current-to-voltage, sensor signal conditioning, low-power dual op-amp",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 6.35,
+      "height": 9.4,
+      "depth": 3.3,
+      "weight": 1
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 8,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.5,
+          "rowSpacing": 7.62,
+          "pinout": "DIP-8 dual-row"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4-32V single supply or ±2-16V dual supply",
+      "current": "0.7mA supply current typical",
+      "power": null,
+      "interface": null,
+      "pinout": "DIP-8: 1=OUT1, 2=IN1-, 3=IN1+, 4=GND, 5=IN2+, 6=IN2-, 7=OUT2, 8=VCC"
+    },
+    "specs": {
+      "channels": 2,
+      "supplyVoltage": "4-32V single or ±2-16V dual",
+      "gbw": "1.1MHz",
+      "slewRate": "0.6V/µs",
+      "inputOffsetVoltage": "7mV typical",
+      "inputBiasCurrentMax": "250nA",
+      "outputSwing": "0V to Vcc-1.5V (NOT rail-to-rail)",
+      "package": "DIP-8",
+      "supplyCurrentPerChannel": "0.7mA",
+      "openLoopGain": "100dB",
+      "cmrr": "80dB",
+      "tempRange": "0°C to +70°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "296-1395-5-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/texas-instruments/LM358P/277628"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Dual general-purpose op-amp with single-supply capability. Output swings to within ~1.5V of the positive rail but cannot reach the negative rail — this is NOT a rail-to-rail output part. Input common-mode range extends to the negative supply, making it useful as a comparator or zero-volt sensing amplifier. Avoid in precision or audio circuits due to higher offset voltage and crossover distortion near output swing limits. Use MCP6002 for rail-to-rail operation in low-voltage systems, or TL072 for low-noise audio applications.",
+    "tags": [
+      "op-amp",
+      "operational-amplifier",
+      "LM358",
+      "dual",
+      "DIP-8",
+      "through-hole",
+      "single-supply",
+      "general-purpose",
+      "comparator",
+      "signal-conditioning",
+      "TI",
+      "Texas-Instruments"
+    ]
+  },
+  {
+    "name": "MCP6002 Dual Rail-to-Rail Op-Amp (DIP-8)",
+    "description": "Microchip MCP6002-I/P dual rail-to-rail input and output op-amp, DIP-8 through-hole, 1.8-6V supply, 1MHz GBW, single-supply, RRIO, 3.3V and 5V compatible, sensor amplifier, active filter, ADC driver, low-voltage signal conditioning",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 6.35,
+      "height": 9.4,
+      "depth": 3.3,
+      "weight": 1
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 8,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.5,
+          "rowSpacing": 7.62,
+          "pinout": "DIP-8 dual-row"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "1.8-6V single supply",
+      "current": "0.9mA supply current typical",
+      "power": null,
+      "interface": null,
+      "pinout": "DIP-8: 1=OUT1, 2=IN1-, 3=IN1+, 4=GND/VSS, 5=IN2+, 6=IN2-, 7=OUT2, 8=VCC/VDD"
+    },
+    "specs": {
+      "channels": 2,
+      "supplyVoltage": "1.8-6V single",
+      "gbw": "1MHz",
+      "slewRate": "0.6V/µs",
+      "inputOffsetVoltage": "4.5mV max",
+      "inputBiasCurrentMax": "1pA typical",
+      "outputSwing": "Rail-to-rail (within 25mV of rails at 10kΩ load)",
+      "railToRailInput": true,
+      "railToRailOutput": true,
+      "package": "DIP-8",
+      "supplyCurrentPerChannel": "0.45mA",
+      "openLoopGain": "106dB",
+      "cmrr": "70dB",
+      "tempRange": "-40°C to +125°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MCP6002-I/P-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/microchip-technology/MCP6002-I-P/589534"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Rail-to-rail input AND output — the output can swing within millivolts of both supply rails, making this ideal for single-supply sensor circuits with 3.3V or 5V microcontrollers. Low input bias current (1pA typical) suits high-impedance sensor interfaces. Perfect for amplifying 0-3.3V sensor outputs to drive an ADC. Preferred over LM358 in any 3.3V or low-voltage system. GBW is only 1MHz — not suitable for audio or RF applications above a few hundred kHz.",
+    "tags": [
+      "op-amp",
+      "operational-amplifier",
+      "MCP6002",
+      "dual",
+      "rail-to-rail",
+      "RRIO",
+      "DIP-8",
+      "through-hole",
+      "single-supply",
+      "1.8V",
+      "3.3V",
+      "5V",
+      "sensor-amplifier",
+      "ADC-driver",
+      "Microchip"
+    ]
+  },
+  {
+    "name": "TL072 Dual JFET Op-Amp (DIP-8)",
+    "description": "TI TL072CP dual JFET-input low-noise op-amp, DIP-8 through-hole, ±15V supply, 3MHz GBW, 13V/µs slew rate, high input impedance, low noise, audio grade, guitar pedal preamp, active filter, audio mixer, instrumentation, tone control",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 6.35,
+      "height": 9.4,
+      "depth": 3.3,
+      "weight": 1
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 8,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.5,
+          "rowSpacing": 7.62,
+          "pinout": "DIP-8 dual-row"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "±5V to ±15V dual supply (10-30V total)",
+      "current": "1.4mA supply current per channel typical",
+      "power": null,
+      "interface": null,
+      "pinout": "DIP-8: 1=OUT1, 2=IN1-, 3=IN1+, 4=VEE/V-, 5=IN2+, 6=IN2-, 7=OUT2, 8=VCC/V+"
+    },
+    "specs": {
+      "channels": 2,
+      "supplyVoltage": "±5V to ±15V (dual supply required)",
+      "gbw": "3MHz",
+      "slewRate": "13V/µs",
+      "inputNoiseDensity": "18nV/√Hz",
+      "inputOffsetVoltage": "10mV max",
+      "inputBiasCurrentMax": "200pA (JFET, very low)",
+      "outputSwing": "Within 1.5V of each rail (not rail-to-rail)",
+      "package": "DIP-8",
+      "supplyCurrentPerChannel": "1.4mA",
+      "openLoopGain": "200V/mV",
+      "cmrr": "86dB",
+      "tempRange": "0°C to +70°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "296-7192-5-ND",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/texas-instruments/TL072CP/277530"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The standard audio op-amp. JFET input means extremely low input bias current (~50pA), making it ideal for high-impedance sources like guitar pickups and condenser microphone capsules. 13V/µs slew rate handles audio frequencies without slew-rate limiting. Requires dual supply (±5V minimum, ±15V typical) — NOT suitable for single-supply or 3.3V/5V-only systems without a charge pump. Use for audio preamps, guitar pedal buffers/distortion stages, active crossovers, and tone controls. Pairs naturally with ±12V or ±15V rails from a dual-winding transformer.",
+    "tags": [
+      "op-amp",
+      "operational-amplifier",
+      "TL072",
+      "dual",
+      "JFET",
+      "audio",
+      "low-noise",
+      "DIP-8",
+      "through-hole",
+      "dual-supply",
+      "guitar-pedal",
+      "preamp",
+      "active-filter",
+      "audio-grade",
+      "TI",
+      "Texas-Instruments"
+    ]
+  },
+  {
+    "name": "LM324 Quad Op-Amp (DIP-14)",
+    "description": "TI LM324N quad general-purpose op-amp, DIP-14 through-hole, single or dual supply 3-32V, 1.2MHz GBW, four independent channels, single-supply comparator bank, multi-channel sensor conditioning, window comparator, voltage follower, low-power quad op-amp",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 6.35,
+      "height": 19.3,
+      "depth": 3.3,
+      "weight": 1.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 14,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.5,
+          "rowSpacing": 7.62,
+          "pinout": "DIP-14 dual-row"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3-32V single supply or ±1.5-16V dual supply",
+      "current": "0.7mA per channel supply current typical",
+      "power": null,
+      "interface": null,
+      "pinout": "DIP-14: 1=OUT1, 2=IN1-, 3=IN1+, 4=VCC, 5=IN2+, 6=IN2-, 7=OUT2, 8=OUT3, 9=IN3-, 10=IN3+, 11=GND, 12=IN4+, 13=IN4-, 14=OUT4"
+    },
+    "specs": {
+      "channels": 4,
+      "supplyVoltage": "3-32V single or ±1.5-16V dual",
+      "gbw": "1.2MHz",
+      "slewRate": "0.6V/µs",
+      "inputOffsetVoltage": "7mV typical",
+      "inputBiasCurrentMax": "250nA",
+      "outputSwing": "0V to Vcc-1.5V (NOT rail-to-rail)",
+      "package": "DIP-14",
+      "supplyCurrentTotal": "2.8mA typical (all 4 channels)",
+      "openLoopGain": "100dB",
+      "cmrr": "80dB",
+      "tempRange": "0°C to +70°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "296-1391-5-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/texas-instruments/LM324N/277627"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Four independent op-amps in one package — economical when you need multiple amplifier stages. Same single-supply capability as LM358 (they are related designs): output swings to within ~1.5V of Vcc but not rail-to-rail. Excellent for multi-channel comparator arrays (window comparators, ADC driving, LED drivers), summing mixers, and multi-zone sensor boards. Low total supply current makes it suitable for battery-powered multi-channel circuits. Same caveats as LM358 for precision or audio use — not recommended.",
+    "tags": [
+      "op-amp",
+      "operational-amplifier",
+      "LM324",
+      "quad",
+      "DIP-14",
+      "through-hole",
+      "single-supply",
+      "general-purpose",
+      "comparator",
+      "4-channel",
+      "multi-channel",
+      "sensor-conditioning",
+      "TI",
+      "Texas-Instruments"
+    ]
+  },
+  {
+    "name": "NE555 Bipolar Timer IC (DIP-8)",
+    "description": "TI NE555P bipolar 555 timer IC, DIP-8 through-hole, 4.5-16V supply, 200mA output, 500kHz max frequency, astable oscillator, monostable pulse generator, PWM, tone generator, missing pulse detector, LED flasher, relay driver, classic timer",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 6.35,
+      "height": 9.4,
+      "depth": 3.3,
+      "weight": 1
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 8,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.5,
+          "rowSpacing": 7.62,
+          "pinout": "DIP-8 dual-row"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.5-16V",
+      "current": "200mA output source/sink",
+      "power": "600mW max",
+      "interface": null,
+      "pinout": "DIP-8: 1=GND, 2=TRIGGER, 3=OUTPUT, 4=RESET, 5=CONTROL, 6=THRESHOLD, 7=DISCHARGE, 8=VCC"
+    },
+    "specs": {
+      "supplyVoltage": "4.5-16V",
+      "maxOutputCurrent": "200mA",
+      "maxFrequency": "500kHz",
+      "timingAccuracy": "±1% typical",
+      "outputLow": "0.1V typical",
+      "outputHigh": "Vcc-1.7V typical",
+      "supplyCurrentQuiescent": "3mA at 5V, 10mA at 15V",
+      "triggerThreshold": "1/3 Vcc",
+      "resetThreshold": "2/3 Vcc",
+      "package": "DIP-8",
+      "astableDutyCycle": ">50% (standard configuration)",
+      "tempRange": "0°C to +70°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "296-1411-5-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/texas-instruments/NE555P/277656"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The classic timer IC. Astable (oscillator) mode: frequency f = 1.44 / ((R1 + 2×R2) × C), duty cycle = (R1+R2)/(R1+2R2). Monostable (one-shot) mode: pulse width T = 1.1 × R × C. Always bypass pin 5 (CONTROL) to GND with a 10nF ceramic cap to prevent noise coupling. Can source or sink 200mA — enough to directly drive small relays, LEDs, buzzers, and transistor bases. Output glitches on power-up: add reset circuit (pin 4) if required. Bipolar design draws significant supply current (~10mA) compared to CMOS LMC555 — use LMC555 for battery-powered applications.",
+    "tags": [
+      "555",
+      "555-timer",
+      "NE555",
+      "timer",
+      "oscillator",
+      "astable",
+      "monostable",
+      "PWM",
+      "DIP-8",
+      "through-hole",
+      "bipolar",
+      "LED-flasher",
+      "tone-generator",
+      "pulse-generator",
+      "TI",
+      "Texas-Instruments"
+    ]
+  },
+  {
+    "name": "LMC555 CMOS Timer IC (DIP-8)",
+    "description": "TI LMC555CN CMOS 555 timer IC, DIP-8 through-hole, 1.5-15V supply, 100mA output, 3MHz max frequency, low power, rail-to-rail output, extended frequency range, CMOS low-power oscillator, battery-operated timer, precision PWM, low-voltage 555",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 6.35,
+      "height": 9.4,
+      "depth": 3.3,
+      "weight": 1
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 8,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.5,
+          "rowSpacing": 7.62,
+          "pinout": "DIP-8 dual-row"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "1.5-15V",
+      "current": "100mA output source/sink",
+      "power": "500mW max",
+      "interface": null,
+      "pinout": "DIP-8: 1=GND, 2=TRIGGER, 3=OUTPUT, 4=RESET, 5=CONTROL, 6=THRESHOLD, 7=DISCHARGE, 8=VCC"
+    },
+    "specs": {
+      "supplyVoltage": "1.5-15V",
+      "maxOutputCurrent": "100mA",
+      "maxFrequency": "3MHz",
+      "timingAccuracy": "±1% typical",
+      "outputLow": "0.1V typical",
+      "outputHigh": "Vcc-0.1V (near rail-to-rail)",
+      "supplyCurrentQuiescent": "0.1mA at 5V (100× lower than NE555)",
+      "triggerThreshold": "1/3 Vcc",
+      "resetThreshold": "2/3 Vcc",
+      "package": "DIP-8",
+      "tempRange": "-40°C to +85°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "296-6540-5-ND",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/texas-instruments/LMC555CN/278398"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "CMOS version of the 555 timer with dramatically lower supply current (0.1mA vs 10mA for bipolar NE555) — essential for battery-powered designs. Operates down to 1.5V, making it compatible with single AA/AAA cells. Output approaches rail-to-rail unlike the bipolar NE555. Maximum frequency 3MHz vs NE555's 500kHz — suitable for higher-frequency PWM and signal generation. Output current limited to 100mA (vs 200mA NE555) — sufficient for logic-level driving but not direct relay operation at high currents. Pin-compatible with NE555 — drop-in replacement. Same pin 5 bypass cap (10nF) recommended.",
+    "tags": [
+      "555",
+      "555-timer",
+      "LMC555",
+      "CMOS-555",
+      "timer",
+      "oscillator",
+      "astable",
+      "monostable",
+      "PWM",
+      "DIP-8",
+      "through-hole",
+      "CMOS",
+      "low-power",
+      "battery",
+      "3MHz",
+      "TI",
+      "Texas-Instruments"
+    ]
+  },
+  {
+    "name": "PC817 Single-Channel Optocoupler (DIP-4)",
+    "description": "Sharp PC817X1NSZ0F single-channel phototransistor optocoupler, DIP-4 through-hole, DC input, 5kV isolation voltage, CTR 50-300%, 35V collector voltage, signal isolation, mains voltage sensing, MOSFET gate drive isolation, digital signal isolation, different-ground-plane interface",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 4.4,
+      "height": 6,
+      "depth": 3.5,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 4,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.5,
+          "rowSpacing": 7.62,
+          "pinout": "DIP-4 dual-row"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5kV isolation, 35V Vce max, 1.2V Vf LED",
+      "current": "50mA LED forward current max, 50mA collector current max",
+      "power": "150mW total dissipation",
+      "interface": null,
+      "pinout": "DIP-4: 1=Anode(LED+), 2=Cathode(LED-), 3=Emitter, 4=Collector"
+    },
+    "specs": {
+      "isolationVoltage": "5000V RMS",
+      "ctr": "50-300%",
+      "inputLedVf": "1.2V",
+      "inputLedIfMax": "50mA",
+      "inputLedIfRecommended": "10-20mA",
+      "outputVceMax": "35V",
+      "outputIcMax": "50mA",
+      "outputType": "phototransistor (NPN)",
+      "responseTime": "4µs rise, 3µs fall",
+      "bandwidth": "~80kHz practical",
+      "package": "DIP-4",
+      "tempRange": "-30°C to +100°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "PC817X1NSZ0F-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/sharp-socle-technology/PC817X1NSZ0F/1287524"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard optoisolator for galvanic signal isolation. Input side drives an LED (Vf ~1.2V, recommended If = 10-20mA) — calculate series resistor R = (Vin - 1.2V) / 0.015A. Output side is an NPN phototransistor; connect collector to Vcc through a pull-up resistor (1-10kΩ typically), emitter to GND. CTR (current transfer ratio) varies widely 50-300% — design for worst-case 50%. Use for mains voltage zero-crossing detection, MOSFET/IGBT gate isolation, isolating 5V logic from 3.3V MCU, and isolating circuits with different ground references. Not suitable for high-speed signals above ~80kHz — use 6N137 for that.",
+    "tags": [
+      "optocoupler",
+      "optoisolator",
+      "PC817",
+      "phototransistor",
+      "DIP-4",
+      "through-hole",
+      "isolation",
+      "5kV",
+      "signal-isolation",
+      "mains-sensing",
+      "galvanic-isolation",
+      "Sharp"
+    ]
+  },
+  {
+    "name": "4N35 Phototransistor Optocoupler (DIP-6)",
+    "description": "Vishay 4N35 general-purpose phototransistor optocoupler, DIP-6 through-hole, 7.5kV isolation, CTR 100% min, base access for bandwidth control, 30V Vce, analog signal isolation, high-isolation signal coupling, AC/DC line isolation, industrial control interface",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 6.35,
+      "height": 7,
+      "depth": 3.3,
+      "weight": 0.6
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 6,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.5,
+          "rowSpacing": 7.62,
+          "pinout": "DIP-6 dual-row"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "7500V isolation, 30V Vce max, 1.5V Vf LED",
+      "current": "60mA LED forward current max, 100mA collector current max",
+      "power": "250mW total dissipation",
+      "interface": null,
+      "pinout": "DIP-6: 1=Anode(LED+), 2=Cathode(LED-), 3=NC, 4=Emitter, 5=Collector, 6=Base"
+    },
+    "specs": {
+      "isolationVoltage": "7500V RMS",
+      "ctr": "100% min at If=10mA",
+      "inputLedVf": "1.5V",
+      "inputLedIfMax": "60mA",
+      "inputLedIfRecommended": "10mA",
+      "outputVceMax": "30V",
+      "outputIcMax": "100mA",
+      "outputType": "phototransistor (NPN) with base access",
+      "responseTime": "10µs rise, 10µs fall",
+      "bandwidth": "~40kHz",
+      "package": "DIP-6",
+      "tempRange": "-55°C to +100°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "4N35-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/vishay-semiconductor-opto-division/4N35/1681141"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Higher isolation voltage (7.5kV) than PC817 makes this preferred for medical or high-voltage industrial applications. The accessible base pin (pin 6) allows external capacitor connection to increase bandwidth (connect capacitor from base to emitter), or leave NC for standard operation. CTR guaranteed at 100% minimum — more predictable than PC817. Phototransistor output: connect collector to Vcc through 1-10kΩ pull-up, emitter to GND. Slower than PC817 (~40kHz practical bandwidth) — use 6N137 when speed matters. Input LED: R = (Vin - 1.5V) / 0.010A at 10mA drive.",
+    "tags": [
+      "optocoupler",
+      "optoisolator",
+      "4N35",
+      "phototransistor",
+      "DIP-6",
+      "through-hole",
+      "7.5kV",
+      "isolation",
+      "signal-isolation",
+      "high-voltage",
+      "industrial",
+      "base-access",
+      "Vishay"
+    ]
+  },
+  {
+    "name": "6N137 High-Speed Optocoupler (DIP-8)",
+    "description": "Broadcom HCPL-0637 high-speed logic output optocoupler, DIP-8 through-hole, 10Mbit/s bandwidth, 5kV isolation, open-collector logic output, VCC pin required, isolated SPI, UART isolation, CAN bus interface, digital signal isolation, high-speed gate drive",
+    "categorySlug": "discrete-semiconductors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 6.35,
+      "height": 9.4,
+      "depth": 3.3,
+      "weight": 1
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 8,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.5,
+          "rowSpacing": 7.62,
+          "pinout": "DIP-8 dual-row"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5kV isolation, 4.5-5.5V Vcc, 1.5V Vf LED",
+      "current": "25mA LED forward current, 13mA VCC supply",
+      "power": "360mW max",
+      "interface": "Open-collector logic output with enable pin",
+      "pinout": "DIP-8: 1=Anode(LED+), 2=Cathode(LED-), 3=NC, 4=GND, 5=Vout(open-collector), 6=VCC, 7=Enable, 8=NC"
+    },
+    "specs": {
+      "isolationVoltage": "5000V RMS",
+      "maxDataRate": "10Mbit/s",
+      "propagationDelay": "48ns typical",
+      "inputLedVf": "1.5V",
+      "inputLedIfMax": "25mA",
+      "inputLedIfRecommended": "7.5-15mA",
+      "outputType": "open-collector with internal pull-up to Vcc",
+      "outputVccRange": "4.5-5.5V",
+      "fanout": "8 LS-TTL loads",
+      "package": "DIP-8",
+      "enablePin": true,
+      "tempRange": "-40°C to +85°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "516-1557-5-ND",
+        "approximatePrice": 2,
+        "url": "https://www.digikey.com/en/products/detail/broadcom-limited/HCPL-0637-000E/1040573"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-speed optocoupler with built-in logic output — no external pull-up required. 10Mbit/s bandwidth enables isolated SPI (up to ~5MHz clock), UART up to 1Mbaud, and isolated CAN bus interfaces. Unlike PC817/4N35, this part requires a separate Vcc supply (4.5-5.5V) on the output side — must provide power to both input and output sections independently, which is the point (galvanic isolation). Enable pin (pin 7) must be pulled HIGH (tied to Vcc) for normal operation or used for tri-state control. Input LED current sets speed: higher If = faster response but more current draw. Connect bypass 0.1µF ceramic on Vcc close to pin 6. Use two 6N137 (or use two channels of HCPL-0631) for full-duplex UART isolation.",
+    "tags": [
+      "optocoupler",
+      "optoisolator",
+      "6N137",
+      "HCPL-0637",
+      "high-speed",
+      "logic-output",
+      "DIP-8",
+      "through-hole",
+      "10Mbit",
+      "5kV",
+      "isolation",
+      "SPI-isolation",
+      "UART-isolation",
+      "CAN-isolation",
+      "digital-isolation",
+      "Broadcom"
+    ]
+  }
+]

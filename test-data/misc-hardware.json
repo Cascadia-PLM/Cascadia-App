@@ -1,0 +1,5851 @@
+[
+  {
+    "name": "Compression Spring 0.5×4×10 (Light Duty)",
+    "description": "Compression spring, 0.5mm wire diameter, 4mm OD, 3mm ID, 10mm free length, music wire spring steel, light duty small spring, approximately 0.8 N/mm spring rate, for small mechanisms, battery contacts, micro switches",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 4,
+      "height": 10,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "fitsDiameter": 3,
+          "description": "Fits over 3mm shaft or bolt"
+        }
+      }
+    ],
+    "specs": {
+      "wireDiameter": "0.5mm",
+      "outerDiameter": "4mm",
+      "innerDiameter": "3mm",
+      "freeLength": "10mm",
+      "material": "Music Wire / Spring Steel",
+      "springRate": "~0.8 N/mm",
+      "maxDeflection": "~5mm",
+      "endType": "Closed and ground"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9657K111",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/compression-springs"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=compression+spring+0.5mm+wire+4mm+OD"
+      },
+      {
+        "name": "Lee Spring",
+        "approximatePrice": 1.5,
+        "url": "https://www.leespring.com/compression-springs"
+      }
+    ],
+    "designNotes": "Light-duty miniature compression spring. Suitable for battery contacts, small latches, and micro-mechanism return springs. ID fits over M3 fasteners or 3mm shafts. Low spring rate provides gentle resistance. Pack quantities of 10-20 are most economical.",
+    "tags": [
+      "compression-spring",
+      "spring",
+      "0.5mm-wire",
+      "4mm-OD",
+      "light-duty",
+      "miniature-spring",
+      "music-wire",
+      "return-spring"
+    ]
+  },
+  {
+    "name": "Compression Spring 0.5×5×15",
+    "description": "Compression spring, 0.5mm wire diameter, 5mm OD, 4mm ID, 15mm free length, music wire spring steel, light duty spring for small assemblies, button return springs, pen mechanisms",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 5,
+      "height": 15,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "fitsDiameter": 4,
+          "description": "Fits over 4mm shaft or M4 bolt"
+        }
+      }
+    ],
+    "specs": {
+      "wireDiameter": "0.5mm",
+      "outerDiameter": "5mm",
+      "innerDiameter": "4mm",
+      "freeLength": "15mm",
+      "material": "Music Wire / Spring Steel",
+      "springRate": "~0.5 N/mm",
+      "maxDeflection": "~7mm",
+      "endType": "Closed and ground"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9657K124",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/compression-springs"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=compression+spring+0.5mm+wire+5mm+OD"
+      },
+      {
+        "name": "Lee Spring",
+        "approximatePrice": 1.5,
+        "url": "https://www.leespring.com/compression-springs"
+      }
+    ],
+    "designNotes": "Light-duty spring with longer free length. Common in pen click mechanisms, button return springs, and small latches. ID accommodates M4 shoulder bolts or 4mm guide pins.",
+    "tags": [
+      "compression-spring",
+      "spring",
+      "0.5mm-wire",
+      "5mm-OD",
+      "light-duty",
+      "pen-spring",
+      "button-spring",
+      "music-wire"
+    ]
+  },
+  {
+    "name": "Compression Spring 0.6×5×10",
+    "description": "Compression spring, 0.6mm wire diameter, 5mm OD, 3.8mm ID, 10mm free length, music wire spring steel, medium-light duty, electronics assemblies, switch return springs",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 5,
+      "height": 10,
+      "weight": 0.4
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "fitsDiameter": 3.8,
+          "description": "Fits over 3mm shaft with clearance"
+        }
+      }
+    ],
+    "specs": {
+      "wireDiameter": "0.6mm",
+      "outerDiameter": "5mm",
+      "innerDiameter": "3.8mm",
+      "freeLength": "10mm",
+      "material": "Music Wire / Spring Steel",
+      "springRate": "~1.2 N/mm",
+      "maxDeflection": "~4mm",
+      "endType": "Closed and ground"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9657K148",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/compression-springs"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=compression+spring+0.6mm+wire+5mm+OD"
+      },
+      {
+        "name": "Lee Spring",
+        "approximatePrice": 1.5,
+        "url": "https://www.leespring.com/compression-springs"
+      }
+    ],
+    "designNotes": "Slightly stiffer than the 0.5mm wire variant. Good for applications needing more positive return force in compact spaces. ID clears M3 bolts with room.",
+    "tags": [
+      "compression-spring",
+      "spring",
+      "0.6mm-wire",
+      "5mm-OD",
+      "compact",
+      "switch-spring",
+      "music-wire"
+    ]
+  },
+  {
+    "name": "Compression Spring 0.6×6×15",
+    "description": "Compression spring, 0.6mm wire diameter, 6mm OD, 4.8mm ID, 15mm free length, music wire spring steel, medium-light duty, general purpose small spring, fits M4 bolts",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6,
+      "height": 15,
+      "weight": 0.7
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "fitsDiameter": 4.8,
+          "description": "Fits over M4 bolt or 4mm shaft"
+        }
+      }
+    ],
+    "specs": {
+      "wireDiameter": "0.6mm",
+      "outerDiameter": "6mm",
+      "innerDiameter": "4.8mm",
+      "freeLength": "15mm",
+      "material": "Music Wire / Spring Steel",
+      "springRate": "~0.8 N/mm",
+      "maxDeflection": "~7mm",
+      "endType": "Closed and ground"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9657K165",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/compression-springs"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=compression+spring+0.6mm+wire+6mm+OD"
+      },
+      {
+        "name": "Lee Spring",
+        "approximatePrice": 1.5,
+        "url": "https://www.leespring.com/compression-springs"
+      }
+    ],
+    "designNotes": "Versatile medium-light spring. Fits comfortably over M4 hardware. Good balance of compactness and travel for small jig fixtures and light-duty return mechanisms.",
+    "tags": [
+      "compression-spring",
+      "spring",
+      "0.6mm-wire",
+      "6mm-OD",
+      "general-purpose",
+      "return-spring",
+      "music-wire"
+    ]
+  },
+  {
+    "name": "Compression Spring 0.7×6×20",
+    "description": "Compression spring, 0.7mm wire diameter, 6mm OD, 4.6mm ID, 20mm free length, music wire spring steel, medium duty, hobby mechanisms, 3D printer tensioners, jig springs",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6,
+      "height": 20,
+      "weight": 1.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "fitsDiameter": 4.6,
+          "description": "Fits over M4 bolt or 4mm shaft"
+        }
+      }
+    ],
+    "specs": {
+      "wireDiameter": "0.7mm",
+      "outerDiameter": "6mm",
+      "innerDiameter": "4.6mm",
+      "freeLength": "20mm",
+      "material": "Music Wire / Spring Steel",
+      "springRate": "~1.0 N/mm",
+      "maxDeflection": "~10mm",
+      "endType": "Closed and ground"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9657K198",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/compression-springs"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=compression+spring+0.7mm+wire+6mm+OD"
+      },
+      {
+        "name": "Lee Spring",
+        "approximatePrice": 1.5,
+        "url": "https://www.leespring.com/compression-springs"
+      }
+    ],
+    "designNotes": "Good all-around medium duty spring with decent travel. Common in hobby mechanisms, extruder tensioners, and custom jig fixtures. ID clears M4 fasteners.",
+    "tags": [
+      "compression-spring",
+      "spring",
+      "0.7mm-wire",
+      "6mm-OD",
+      "medium-duty",
+      "tensioner",
+      "jig-spring",
+      "music-wire"
+    ]
+  },
+  {
+    "name": "Compression Spring 0.8×6×15",
+    "description": "Compression spring, 0.8mm wire diameter, 6mm OD, 4.4mm ID, 15mm free length, music wire spring steel, medium duty, compact stiff spring, detent springs, plunger springs",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6,
+      "height": 15,
+      "weight": 0.9
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "fitsDiameter": 4.4,
+          "description": "Fits over M4 bolt or 4mm shaft"
+        }
+      }
+    ],
+    "specs": {
+      "wireDiameter": "0.8mm",
+      "outerDiameter": "6mm",
+      "innerDiameter": "4.4mm",
+      "freeLength": "15mm",
+      "material": "Music Wire / Spring Steel",
+      "springRate": "~2.0 N/mm",
+      "maxDeflection": "~5mm",
+      "endType": "Closed and ground"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9657K221",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/compression-springs"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=compression+spring+0.8mm+wire+6mm+OD"
+      },
+      {
+        "name": "Lee Spring",
+        "approximatePrice": 1.5,
+        "url": "https://www.leespring.com/compression-springs"
+      }
+    ],
+    "designNotes": "Compact but stiff spring. Higher spring rate in small package makes it ideal for detent mechanisms, spring-loaded plungers, and latch returns. Short deflection range — verify travel requirements.",
+    "tags": [
+      "compression-spring",
+      "spring",
+      "0.8mm-wire",
+      "6mm-OD",
+      "medium-duty",
+      "stiff",
+      "detent-spring",
+      "plunger-spring",
+      "music-wire"
+    ]
+  },
+  {
+    "name": "Compression Spring 0.8×8×20 (3D Printer Bed Spring)",
+    "description": "Compression spring, 0.8mm wire diameter, 8mm OD, 6.4mm ID, 20mm free length, music wire spring steel, 3D printer heated bed leveling spring, Ender 3 Prusa bed spring, yellow die spring style, fits M4 leveling screws",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "height": 20,
+      "weight": 1.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "fitsDiameter": 6.4,
+          "description": "Fits over M4 leveling screw with clearance"
+        }
+      }
+    ],
+    "specs": {
+      "wireDiameter": "0.8mm",
+      "outerDiameter": "8mm",
+      "innerDiameter": "6.4mm",
+      "freeLength": "20mm",
+      "material": "Music Wire / Spring Steel",
+      "springRate": "~1.2 N/mm",
+      "maxDeflection": "~10mm",
+      "endType": "Closed and ground"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08517V3R3",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=3d+printer+bed+leveling+springs+8mm"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9657K308",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/compression-springs"
+      },
+      {
+        "name": "Lee Spring",
+        "approximatePrice": 1.5,
+        "url": "https://www.leespring.com/compression-springs"
+      }
+    ],
+    "designNotes": "The most common 3D printer bed leveling spring size. Used on Ender 3, Prusa MK3, and many other printers. Also useful as a general-purpose medium spring. Often sold in 4-packs for ~$5. Yellow die spring variants are stiffer and preferred for print bed use. Slides over M4 screws easily.",
+    "tags": [
+      "compression-spring",
+      "spring",
+      "0.8mm-wire",
+      "8mm-OD",
+      "3d-printer",
+      "bed-spring",
+      "leveling-spring",
+      "ender-3",
+      "prusa",
+      "music-wire",
+      "die-spring"
+    ]
+  },
+  {
+    "name": "Compression Spring 1.0×8×20",
+    "description": "Compression spring, 1.0mm wire diameter, 8mm OD, 6mm ID, 20mm free length, music wire spring steel, medium-heavy duty, tooling springs, clamp springs, jig fixtures",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "height": 20,
+      "weight": 2.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "fitsDiameter": 6,
+          "description": "Fits over M5 bolt or 6mm shaft"
+        }
+      }
+    ],
+    "specs": {
+      "wireDiameter": "1.0mm",
+      "outerDiameter": "8mm",
+      "innerDiameter": "6mm",
+      "freeLength": "20mm",
+      "material": "Music Wire / Spring Steel",
+      "springRate": "~2.5 N/mm",
+      "maxDeflection": "~8mm",
+      "endType": "Closed and ground"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9657K354",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/compression-springs"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=compression+spring+1mm+wire+8mm+OD"
+      },
+      {
+        "name": "Lee Spring",
+        "approximatePrice": 1.5,
+        "url": "https://www.leespring.com/compression-springs"
+      }
+    ],
+    "designNotes": "Stiff 8mm spring for tooling and fixture applications. Provides firm resistance in medium-sized assemblies. ID fits M5 hardware or 5mm dowel pins with clearance.",
+    "tags": [
+      "compression-spring",
+      "spring",
+      "1.0mm-wire",
+      "8mm-OD",
+      "medium-heavy-duty",
+      "tooling-spring",
+      "clamp-spring",
+      "music-wire"
+    ]
+  },
+  {
+    "name": "Compression Spring 1.0×8×25",
+    "description": "Compression spring, 1.0mm wire diameter, 8mm OD, 6mm ID, 25mm free length, music wire spring steel, medium-heavy duty, longer travel, fixture springs, return springs",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "height": 25,
+      "weight": 2.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "fitsDiameter": 6,
+          "description": "Fits over M5 bolt or 6mm shaft"
+        }
+      }
+    ],
+    "specs": {
+      "wireDiameter": "1.0mm",
+      "outerDiameter": "8mm",
+      "innerDiameter": "6mm",
+      "freeLength": "25mm",
+      "material": "Music Wire / Spring Steel",
+      "springRate": "~2.0 N/mm",
+      "maxDeflection": "~12mm",
+      "endType": "Closed and ground"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9657K367",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/compression-springs"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=compression+spring+1mm+wire+8mm+OD+25mm"
+      },
+      {
+        "name": "Lee Spring",
+        "approximatePrice": 1.5,
+        "url": "https://www.leespring.com/compression-springs"
+      }
+    ],
+    "designNotes": "Longer variant of the 1.0×8×20 with more available travel. Good for applications needing firmer return force over a longer stroke. Consider solid height when calculating max compression.",
+    "tags": [
+      "compression-spring",
+      "spring",
+      "1.0mm-wire",
+      "8mm-OD",
+      "medium-heavy-duty",
+      "long-travel",
+      "fixture-spring",
+      "music-wire"
+    ]
+  },
+  {
+    "name": "Compression Spring 1.0×10×30",
+    "description": "Compression spring, 1.0mm wire diameter, 10mm OD, 8mm ID, 30mm free length, music wire spring steel, medium duty large spring, general purpose, enclosure springs, door latches",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 30,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "fitsDiameter": 8,
+          "description": "Fits over M8 bolt or 8mm shaft"
+        }
+      }
+    ],
+    "specs": {
+      "wireDiameter": "1.0mm",
+      "outerDiameter": "10mm",
+      "innerDiameter": "8mm",
+      "freeLength": "30mm",
+      "material": "Music Wire / Spring Steel",
+      "springRate": "~1.5 N/mm",
+      "maxDeflection": "~15mm",
+      "endType": "Closed and ground"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9657K412",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/compression-springs"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=compression+spring+1mm+wire+10mm+OD+30mm"
+      },
+      {
+        "name": "Lee Spring",
+        "approximatePrice": 2,
+        "url": "https://www.leespring.com/compression-springs"
+      }
+    ],
+    "designNotes": "Larger spring with good travel range. The 10mm OD makes it suitable for medium enclosures, door mechanisms, and assemblies using M8 through-bolts. Moderate spring rate provides balanced resistance.",
+    "tags": [
+      "compression-spring",
+      "spring",
+      "1.0mm-wire",
+      "10mm-OD",
+      "general-purpose",
+      "large-spring",
+      "door-latch",
+      "music-wire"
+    ]
+  },
+  {
+    "name": "Compression Spring 1.2×10×25",
+    "description": "Compression spring, 1.2mm wire diameter, 10mm OD, 7.6mm ID, 25mm free length, music wire spring steel, heavy duty, die springs, press tooling, high force compact spring",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 25,
+      "weight": 3.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "fitsDiameter": 7.6,
+          "description": "Fits over M6 bolt with clearance or 7mm shaft"
+        }
+      }
+    ],
+    "specs": {
+      "wireDiameter": "1.2mm",
+      "outerDiameter": "10mm",
+      "innerDiameter": "7.6mm",
+      "freeLength": "25mm",
+      "material": "Music Wire / Spring Steel",
+      "springRate": "~3.5 N/mm",
+      "maxDeflection": "~10mm",
+      "endType": "Closed and ground"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9657K445",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/compression-springs"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=compression+spring+1.2mm+wire+10mm+OD"
+      },
+      {
+        "name": "Lee Spring",
+        "approximatePrice": 2,
+        "url": "https://www.leespring.com/compression-springs"
+      }
+    ],
+    "designNotes": "Heavy-duty spring in a 10mm package. High spring rate for press-fit tooling, die springs, and mechanisms requiring high force in limited space. Verify solid height (approximately 10mm) doesn't interfere with your design.",
+    "tags": [
+      "compression-spring",
+      "spring",
+      "1.2mm-wire",
+      "10mm-OD",
+      "heavy-duty",
+      "die-spring",
+      "high-force",
+      "tooling",
+      "music-wire"
+    ]
+  },
+  {
+    "name": "Compression Spring 1.2×12×30",
+    "description": "Compression spring, 1.2mm wire diameter, 12mm OD, 9.6mm ID, 30mm free length, music wire spring steel, heavy duty large spring, industrial mechanisms, clamp springs, fixture hold-down",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "height": 30,
+      "weight": 4.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "fitsDiameter": 9.6,
+          "description": "Fits over M8 bolt with clearance or 8mm shaft"
+        }
+      }
+    ],
+    "specs": {
+      "wireDiameter": "1.2mm",
+      "outerDiameter": "12mm",
+      "innerDiameter": "9.6mm",
+      "freeLength": "30mm",
+      "material": "Music Wire / Spring Steel",
+      "springRate": "~2.5 N/mm",
+      "maxDeflection": "~14mm",
+      "endType": "Closed and ground"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9657K478",
+        "approximatePrice": 2,
+        "url": "https://www.mcmaster.com/compression-springs"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=compression+spring+1.2mm+wire+12mm+OD"
+      },
+      {
+        "name": "Lee Spring",
+        "approximatePrice": 2,
+        "url": "https://www.leespring.com/compression-springs"
+      }
+    ],
+    "designNotes": "Largest spring in this catalog. Heavy-duty with substantial travel for industrial fixtures, clamp mechanisms, and hold-down assemblies. Fits comfortably over M8 hardware. Good for workholding jigs.",
+    "tags": [
+      "compression-spring",
+      "spring",
+      "1.2mm-wire",
+      "12mm-OD",
+      "heavy-duty",
+      "industrial",
+      "clamp-spring",
+      "fixture",
+      "music-wire"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Disc Magnet 6×2mm",
+    "description": "N52 neodymium rare earth disc magnet, 6mm diameter, 2mm thick, NdFeB, nickel plated Ni-Cu-Ni triple coating, axial magnetization, ~1.2 kg pull force, for sensor triggers, closures, small magnetic assemblies, press-fit into 6mm pocket",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6,
+      "height": 2,
+      "weight": 0.4
+    },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": {
+          "pocketDiameter": 6.05,
+          "pocketDepth": 2.0,
+          "description": "Press-fit into 6.05mm diameter pocket, 2mm deep"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Disc",
+      "diameter": "6mm",
+      "thickness": "2mm",
+      "pullForce": "~1.2 kg (2.6 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "D31SH",
+        "approximatePrice": 0.5,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=D31SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=6mm+x+2mm+neodymium+magnet+N52"
+      },
+      {
+        "name": "Applied Magnets",
+        "approximatePrice": 0.5,
+        "url": "https://www.appliedmagnets.com/"
+      }
+    ],
+    "designNotes": "Tiny but surprisingly strong magnet. Press-fit into a 6.05mm pocket in 3D printed or machined parts. For reliable retention, design pocket 0.05mm larger than magnet and use a drop of CA glue as backup. Keep away from electronics and pacemakers. Demagnetizes above 80C — not suitable for heated environments.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "disc-magnet",
+      "rare-earth",
+      "6mm",
+      "NdFeB",
+      "press-fit",
+      "sensor-magnet",
+      "closure-magnet"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Disc Magnet 6×3mm",
+    "description": "N52 neodymium rare earth disc magnet, 6mm diameter, 3mm thick, NdFeB, nickel plated Ni-Cu-Ni, axial magnetization, ~1.5 kg pull force, magnetic closures, reed switch triggers, small assemblies",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6,
+      "height": 3,
+      "weight": 0.6
+    },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": {
+          "pocketDiameter": 6.05,
+          "pocketDepth": 3.0,
+          "description": "Press-fit into 6.05mm diameter pocket, 3mm deep"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Disc",
+      "diameter": "6mm",
+      "thickness": "3mm",
+      "pullForce": "~1.5 kg (3.3 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "D32SH",
+        "approximatePrice": 0.5,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=D32SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=6mm+x+3mm+neodymium+magnet+N52"
+      }
+    ],
+    "designNotes": "Thicker variant of the 6mm disc with 25% more pull force. Popular for 3D printed enclosure closures and tool holders. Pairing two of these face-to-face gives a satisfying snap closure. Standard 3mm thickness works well with typical 3D print wall thicknesses.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "disc-magnet",
+      "rare-earth",
+      "6mm",
+      "NdFeB",
+      "closure",
+      "reed-switch",
+      "press-fit"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Disc Magnet 8×3mm",
+    "description": "N52 neodymium rare earth disc magnet, 8mm diameter, 3mm thick, NdFeB, nickel plated Ni-Cu-Ni, axial magnetization, ~2.5 kg pull force, enclosure closures, fixture magnets, pickup tools",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "height": 3,
+      "weight": 1.1
+    },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": {
+          "pocketDiameter": 8.05,
+          "pocketDepth": 3.0,
+          "description": "Press-fit into 8.05mm diameter pocket, 3mm deep"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Disc",
+      "diameter": "8mm",
+      "thickness": "3mm",
+      "pullForce": "~2.5 kg (5.5 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "D42SH",
+        "approximatePrice": 1,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=D42SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=8mm+x+3mm+neodymium+magnet+N52"
+      }
+    ],
+    "designNotes": "Sweet spot between size and strength. 2.5 kg pull force is enough for secure enclosure closures and light fixture mounting. Common in Voron and other 3D printer mods for panel attachment. Design pocket as 8.05mm bore, 3mm deep.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "disc-magnet",
+      "rare-earth",
+      "8mm",
+      "NdFeB",
+      "enclosure-closure",
+      "Voron",
+      "press-fit"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Disc Magnet 10×2mm",
+    "description": "N52 neodymium rare earth disc magnet, 10mm diameter, 2mm thick, NdFeB, nickel plated Ni-Cu-Ni, axial magnetization, ~2.3 kg pull force, flat profile, name badge magnets, thin panel closures",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 2,
+      "weight": 1.2
+    },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": {
+          "pocketDiameter": 10.05,
+          "pocketDepth": 2.0,
+          "description": "Press-fit into 10.05mm diameter pocket, 2mm deep"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Disc",
+      "diameter": "10mm",
+      "thickness": "2mm",
+      "pullForce": "~2.3 kg (5.1 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "D51SH",
+        "approximatePrice": 1,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=D51SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=10mm+x+2mm+neodymium+magnet+N52"
+      }
+    ],
+    "designNotes": "Wider but thinner profile — good when you need pull force distributed over a larger area but have limited depth. Popular for name badges and thin panel closures. Wider diameter means more forgiving alignment than smaller disc magnets.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "disc-magnet",
+      "rare-earth",
+      "10mm",
+      "NdFeB",
+      "thin",
+      "badge-magnet",
+      "panel-closure"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Disc Magnet 10×3mm",
+    "description": "N52 neodymium rare earth disc magnet, 10mm diameter, 3mm thick, NdFeB, nickel plated Ni-Cu-Ni, axial magnetization, ~3.5 kg pull force, strong closure magnet, tool holders, jig fixtures, magnetic mounts",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 3,
+      "weight": 1.8
+    },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": {
+          "pocketDiameter": 10.05,
+          "pocketDepth": 3.0,
+          "description": "Press-fit into 10.05mm diameter pocket, 3mm deep"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Disc",
+      "diameter": "10mm",
+      "thickness": "3mm",
+      "pullForce": "~3.5 kg (7.7 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "D52SH",
+        "approximatePrice": 1,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=D52SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=10mm+x+3mm+neodymium+magnet+N52"
+      }
+    ],
+    "designNotes": "Excellent general-purpose magnet. 3.5 kg pull force is strong enough for secure tool holders and magnetic mounts while still being hand-removable. Very popular size in maker projects and 3D printed assemblies.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "disc-magnet",
+      "rare-earth",
+      "10mm",
+      "NdFeB",
+      "tool-holder",
+      "magnetic-mount",
+      "press-fit"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Disc Magnet 10×5mm",
+    "description": "N52 neodymium rare earth disc magnet, 10mm diameter, 5mm thick, NdFeB, nickel plated Ni-Cu-Ni, axial magnetization, ~5.5 kg pull force, heavy duty closure, magnetic coupling, strong holding magnet",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 5,
+      "weight": 3.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": {
+          "pocketDiameter": 10.05,
+          "pocketDepth": 5.0,
+          "description": "Press-fit into 10.05mm diameter pocket, 5mm deep"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Disc",
+      "diameter": "10mm",
+      "thickness": "5mm",
+      "pullForce": "~5.5 kg (12.1 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "D53SH",
+        "approximatePrice": 1.5,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=D53SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=10mm+x+5mm+neodymium+magnet+N52"
+      }
+    ],
+    "designNotes": "Strong magnet — handle carefully to avoid pinching skin or chipping. 5.5 kg pull requires deliberate effort to separate from steel. Good for magnetic couplings through thin walls (e.g., stirrer drives). Stack of two creates a very strong hold.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "disc-magnet",
+      "rare-earth",
+      "10mm",
+      "NdFeB",
+      "heavy-duty",
+      "magnetic-coupling",
+      "strong"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Disc Magnet 12×3mm",
+    "description": "N52 neodymium rare earth disc magnet, 12mm diameter, 3mm thick, NdFeB, nickel plated Ni-Cu-Ni, axial magnetization, ~4.5 kg pull force, cabinet closures, drawer catches, magnetic knife holder",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "height": 3,
+      "weight": 2.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": {
+          "pocketDiameter": 12.05,
+          "pocketDepth": 3.0,
+          "description": "Press-fit into 12.05mm diameter pocket, 3mm deep"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Disc",
+      "diameter": "12mm",
+      "thickness": "3mm",
+      "pullForce": "~4.5 kg (9.9 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "D62SH",
+        "approximatePrice": 1.5,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=D62SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=12mm+x+3mm+neodymium+magnet+N52"
+      }
+    ],
+    "designNotes": "Good for cabinet and drawer catches. 12mm diameter provides a comfortable mounting pad. Can be epoxied to surfaces or press-fit into counterbores. For Forstner-bit installation in wood, use a 12mm bit.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "disc-magnet",
+      "rare-earth",
+      "12mm",
+      "NdFeB",
+      "cabinet-catch",
+      "drawer-closure",
+      "press-fit"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Disc Magnet 15×3mm",
+    "description": "N52 neodymium rare earth disc magnet, 15mm diameter, 3mm thick, NdFeB, nickel plated Ni-Cu-Ni, axial magnetization, ~6 kg pull force, strong mounting magnet, CNC fixture magnets, sign holders",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 15,
+      "height": 3,
+      "weight": 4.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": {
+          "pocketDiameter": 15.1,
+          "pocketDepth": 3.0,
+          "description": "Press-fit into 15.1mm diameter pocket, 3mm deep"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Disc",
+      "diameter": "15mm",
+      "thickness": "3mm",
+      "pullForce": "~6 kg (13.2 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "D82SH",
+        "approximatePrice": 2,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=D82SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com/s?k=15mm+x+3mm+neodymium+magnet+N52"
+      }
+    ],
+    "designNotes": "Strong enough for CNC workholding fixtures and magnetic sign holders. Handle with care — 6 kg pull can cause painful pinches if fingers get caught. Use slide-off technique to separate from steel surfaces rather than pulling straight off.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "disc-magnet",
+      "rare-earth",
+      "15mm",
+      "NdFeB",
+      "CNC-fixture",
+      "sign-holder",
+      "strong"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Disc Magnet 20×3mm",
+    "description": "N52 neodymium rare earth disc magnet, 20mm diameter, 3mm thick, NdFeB, nickel plated Ni-Cu-Ni, axial magnetization, ~8 kg pull force, heavy-duty mounting, industrial holding, magnetic base",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 20,
+      "height": 3,
+      "weight": 7.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": {
+          "pocketDiameter": 20.1,
+          "pocketDepth": 3.0,
+          "description": "Press-fit into 20.1mm diameter pocket, 3mm deep"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Disc",
+      "diameter": "20mm",
+      "thickness": "3mm",
+      "pullForce": "~8 kg (17.6 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "DX02SH",
+        "approximatePrice": 3,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=DX02SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 2.5,
+        "url": "https://www.amazon.com/s?k=20mm+x+3mm+neodymium+magnet+N52"
+      }
+    ],
+    "designNotes": "Very strong magnet — use extreme caution when handling. 8 kg pull force can shatter the magnet if two snap together uncontrolled. Always slide magnets apart, never pull. Excellent for magnetic bases and industrial tool holders. Keep separated during storage with cardboard spacers.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "disc-magnet",
+      "rare-earth",
+      "20mm",
+      "NdFeB",
+      "heavy-duty",
+      "industrial",
+      "magnetic-base"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Disc Magnet 20×5mm",
+    "description": "N52 neodymium rare earth disc magnet, 20mm diameter, 5mm thick, NdFeB, nickel plated Ni-Cu-Ni, axial magnetization, ~12 kg pull force, very strong, industrial holding, magnetic chuck, heavy fixturing",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 20,
+      "height": 5,
+      "weight": 12.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": {
+          "pocketDiameter": 20.1,
+          "pocketDepth": 5.0,
+          "description": "Press-fit into 20.1mm diameter pocket, 5mm deep"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Disc",
+      "diameter": "20mm",
+      "thickness": "5mm",
+      "pullForce": "~12 kg (26.5 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "DX03SH",
+        "approximatePrice": 5,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=DX03SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 4,
+        "url": "https://www.amazon.com/s?k=20mm+x+5mm+neodymium+magnet+N52"
+      }
+    ],
+    "designNotes": "DANGER — 12 kg (26 lbs) pull force. Can cause serious pinch injuries and will shatter if two magnets snap together. Ship in individual foam packaging. Excellent for industrial magnetic chucks, heavy fixture holding, and through-wall magnetic coupling. Always use a pry tool to remove from steel surfaces.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "disc-magnet",
+      "rare-earth",
+      "20mm",
+      "NdFeB",
+      "very-strong",
+      "industrial",
+      "magnetic-chuck",
+      "dangerous"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Block Magnet 10×5×2mm",
+    "description": "N52 neodymium rare earth block rectangular magnet, 10mm × 5mm × 2mm, NdFeB, nickel plated Ni-Cu-Ni, ~1.5 kg pull force, linear sensor magnets, slide mechanisms, small actuators, adhesive mount",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 10,
+      "width": 5,
+      "height": 2,
+      "weight": 0.7
+    },
+    "mountingFeatures": [
+      {
+        "type": "adhesive",
+        "specs": {
+          "pocketLength": 10.1,
+          "pocketWidth": 5.1,
+          "pocketDepth": 2.0,
+          "description": "Adhesive mount or press-fit into rectangular pocket 10.1×5.1×2mm"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Block / Rectangular",
+      "length": "10mm",
+      "width": "5mm",
+      "thickness": "2mm",
+      "pullForce": "~1.5 kg (3.3 lbs)",
+      "magnetization": "Through thickness (2mm)",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "B421SH",
+        "approximatePrice": 0.5,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=B421SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=10x5x2mm+neodymium+block+magnet+N52"
+      }
+    ],
+    "designNotes": "Rectangular profile is useful for linear sensor applications and slide mechanisms where orientation matters. Magnetized through the 2mm thickness. Mount with cyanoacrylate or epoxy, or press-fit into a milled pocket. Easier to orient than disc magnets in rectangular assemblies.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "block-magnet",
+      "rectangular",
+      "rare-earth",
+      "10x5x2",
+      "NdFeB",
+      "sensor-magnet",
+      "linear"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Block Magnet 10×5×3mm",
+    "description": "N52 neodymium rare earth block rectangular magnet, 10mm × 5mm × 3mm, NdFeB, nickel plated Ni-Cu-Ni, ~2 kg pull force, linear actuators, magnetic latches, sensor triggers",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 10,
+      "width": 5,
+      "height": 3,
+      "weight": 1.1
+    },
+    "mountingFeatures": [
+      {
+        "type": "adhesive",
+        "specs": {
+          "pocketLength": 10.1,
+          "pocketWidth": 5.1,
+          "pocketDepth": 3.0,
+          "description": "Adhesive mount or press-fit into rectangular pocket 10.1×5.1×3mm"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Block / Rectangular",
+      "length": "10mm",
+      "width": "5mm",
+      "thickness": "3mm",
+      "pullForce": "~2 kg (4.4 lbs)",
+      "magnetization": "Through thickness (3mm)",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "B422SH",
+        "approximatePrice": 0.5,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=B422SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=10x5x3mm+neodymium+block+magnet+N52"
+      }
+    ],
+    "designNotes": "Thicker variant of the 10×5 block. Better for applications needing more holding force while maintaining the rectangular form factor. Good for magnetic latches where a disc magnet would rotate unwantedly.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "block-magnet",
+      "rectangular",
+      "rare-earth",
+      "10x5x3",
+      "NdFeB",
+      "latch-magnet",
+      "sensor"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Block Magnet 20×10×2mm",
+    "description": "N52 neodymium rare earth block rectangular magnet, 20mm × 10mm × 2mm, NdFeB, nickel plated Ni-Cu-Ni, ~4 kg pull force, magnetic closures, sign mounting, whiteboard magnets, flat profile",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 20,
+      "width": 10,
+      "height": 2,
+      "weight": 3.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "adhesive",
+        "specs": {
+          "pocketLength": 20.1,
+          "pocketWidth": 10.1,
+          "pocketDepth": 2.0,
+          "description": "Adhesive mount or press-fit into rectangular pocket 20.1×10.1×2mm"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Block / Rectangular",
+      "length": "20mm",
+      "width": "10mm",
+      "thickness": "2mm",
+      "pullForce": "~4 kg (8.8 lbs)",
+      "magnetization": "Through thickness (2mm)",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "BX041SH",
+        "approximatePrice": 2,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=BX041SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com/s?k=20x10x2mm+neodymium+block+magnet+N52"
+      }
+    ],
+    "designNotes": "Large surface area in a thin package. Excellent for flat mounting applications. 2mm thickness allows embedding behind thin panels. Mount with double-sided tape or CA glue for permanent installation.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "block-magnet",
+      "rectangular",
+      "rare-earth",
+      "20x10x2",
+      "NdFeB",
+      "flat",
+      "sign-mount",
+      "whiteboard"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Block Magnet 20×10×3mm",
+    "description": "N52 neodymium rare earth block rectangular magnet, 20mm × 10mm × 3mm, NdFeB, nickel plated Ni-Cu-Ni, ~5.5 kg pull force, strong rectangular magnet, panel mounts, fixture clamps",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 20,
+      "width": 10,
+      "height": 3,
+      "weight": 4.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "adhesive",
+        "specs": {
+          "pocketLength": 20.1,
+          "pocketWidth": 10.1,
+          "pocketDepth": 3.0,
+          "description": "Adhesive mount or press-fit into rectangular pocket 20.1×10.1×3mm"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Block / Rectangular",
+      "length": "20mm",
+      "width": "10mm",
+      "thickness": "3mm",
+      "pullForce": "~5.5 kg (12.1 lbs)",
+      "magnetization": "Through thickness (3mm)",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "BX042SH",
+        "approximatePrice": 2.5,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=BX042SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 2,
+        "url": "https://www.amazon.com/s?k=20x10x3mm+neodymium+block+magnet+N52"
+      }
+    ],
+    "designNotes": "Strong rectangular magnet for panel mounting and fixture applications. The 20×10mm face provides excellent contact area. Handle carefully — can pinch or shatter. Good for custom magnetic tool holders and wall-mounted fixtures.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "block-magnet",
+      "rectangular",
+      "rare-earth",
+      "20x10x3",
+      "NdFeB",
+      "panel-mount",
+      "fixture-clamp"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Block Magnet 25×10×3mm",
+    "description": "N52 neodymium rare earth block rectangular magnet, 25mm × 10mm × 3mm, NdFeB, nickel plated Ni-Cu-Ni, ~7 kg pull force, heavy duty rectangular, knife holder magnets, tool rack, industrial mounting",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 25,
+      "width": 10,
+      "height": 3,
+      "weight": 5.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "adhesive",
+        "specs": {
+          "pocketLength": 25.1,
+          "pocketWidth": 10.1,
+          "pocketDepth": 3.0,
+          "description": "Adhesive mount or press-fit into rectangular pocket 25.1×10.1×3mm"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Block / Rectangular",
+      "length": "25mm",
+      "width": "10mm",
+      "thickness": "3mm",
+      "pullForce": "~7 kg (15.4 lbs)",
+      "magnetization": "Through thickness (3mm)",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "BX842SH",
+        "approximatePrice": 3,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=BX842SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 2.5,
+        "url": "https://www.amazon.com/s?k=25x10x3mm+neodymium+block+magnet+N52"
+      }
+    ],
+    "designNotes": "Largest block magnet in catalog. Very strong — great for magnetic knife holders, tool racks, and industrial mounting where you need distributed holding force along a line. Array multiple in a row for a magnetic strip. Use structural adhesive (not just CA) for permanent mounting under load.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "block-magnet",
+      "rectangular",
+      "rare-earth",
+      "25x10x3",
+      "NdFeB",
+      "knife-holder",
+      "tool-rack",
+      "industrial"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Ring Magnet 10×5×3mm",
+    "description": "N52 neodymium rare earth ring magnet, 10mm OD, 5mm ID, 3mm thick, NdFeB, nickel plated Ni-Cu-Ni, axial magnetization, ~2 kg pull force, fits M5 bolt, shaft-mounted magnet, rotary encoder magnet",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 3,
+      "weight": 1.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "boreDiameter": 5,
+          "outerDiameter": 10,
+          "description": "5mm center hole, fits over M5 bolt or 5mm shaft"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Ring",
+      "outerDiameter": "10mm",
+      "innerDiameter": "5mm",
+      "thickness": "3mm",
+      "pullForce": "~2 kg (4.4 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "R422SH",
+        "approximatePrice": 1.5,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=R422SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=10mm+OD+5mm+ID+ring+neodymium+magnet"
+      }
+    ],
+    "designNotes": "Ring magnets allow shaft-through mounting — slide onto a 5mm shaft or M5 bolt. Ideal for rotary encoders, magnetic couplings, and axial sensors. The center hole eliminates the need for a separate mounting pocket.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "ring-magnet",
+      "rare-earth",
+      "10mm-OD",
+      "5mm-ID",
+      "NdFeB",
+      "encoder",
+      "shaft-mount",
+      "rotary"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Ring Magnet 12×4×3mm",
+    "description": "N52 neodymium rare earth ring magnet, 12mm OD, 4mm ID, 3mm thick, NdFeB, nickel plated Ni-Cu-Ni, axial magnetization, ~3 kg pull force, fits M4 bolt, sensor trigger, magnetic coupling",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "height": 3,
+      "weight": 2.2
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "boreDiameter": 4,
+          "outerDiameter": 12,
+          "description": "4mm center hole, fits over M4 bolt or 4mm shaft"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Ring",
+      "outerDiameter": "12mm",
+      "innerDiameter": "4mm",
+      "thickness": "3mm",
+      "pullForce": "~3 kg (6.6 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "R622SH",
+        "approximatePrice": 2,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=R622SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com/s?k=12mm+OD+4mm+ID+ring+neodymium+magnet"
+      }
+    ],
+    "designNotes": "Wider ring with smaller hole — more magnetic material means stronger pull force than the 10×5×3. The 4mm ID fits M4 shoulder bolts perfectly. Good for magnetic couplings and bolt-through mounting configurations.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "ring-magnet",
+      "rare-earth",
+      "12mm-OD",
+      "4mm-ID",
+      "NdFeB",
+      "bolt-mount",
+      "coupling"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Ring Magnet 15×6×3mm",
+    "description": "N52 neodymium rare earth ring magnet, 15mm OD, 6mm ID, 3mm thick, NdFeB, nickel plated Ni-Cu-Ni, axial magnetization, ~4 kg pull force, fits M6 bolt, speaker magnet, magnetic bearing",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 15,
+      "height": 3,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "boreDiameter": 6,
+          "outerDiameter": 15,
+          "description": "6mm center hole, fits over M6 bolt or 6mm shaft"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Ring",
+      "outerDiameter": "15mm",
+      "innerDiameter": "6mm",
+      "thickness": "3mm",
+      "pullForce": "~4 kg (8.8 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "R832SH",
+        "approximatePrice": 2.5,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=R832SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 2,
+        "url": "https://www.amazon.com/s?k=15mm+OD+6mm+ID+ring+neodymium+magnet"
+      }
+    ],
+    "designNotes": "Medium-large ring magnet. 6mm center hole fits M6 hardware for bolt-through mounting. Good for speaker projects, magnetic bearings, and through-shaft sensor applications. Stack multiple for increased pull force.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "ring-magnet",
+      "rare-earth",
+      "15mm-OD",
+      "6mm-ID",
+      "NdFeB",
+      "speaker",
+      "magnetic-bearing"
+    ]
+  },
+  {
+    "name": "N52 Neodymium Ring Magnet 20×10×5mm",
+    "description": "N52 neodymium rare earth ring magnet, 20mm OD, 10mm ID, 5mm thick, NdFeB, nickel plated Ni-Cu-Ni, axial magnetization, ~8 kg pull force, large ring, magnetic coupling, through-shaft sensor, heavy duty",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 20,
+      "height": 5,
+      "weight": 8.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "boreDiameter": 10,
+          "outerDiameter": 20,
+          "description": "10mm center hole, fits over M10 bolt or 10mm shaft"
+        }
+      }
+    ],
+    "specs": {
+      "grade": "N52",
+      "material": "NdFeB (Neodymium Iron Boron)",
+      "coating": "Nickel (Ni-Cu-Ni)",
+      "shape": "Ring",
+      "outerDiameter": "20mm",
+      "innerDiameter": "10mm",
+      "thickness": "5mm",
+      "pullForce": "~8 kg (17.6 lbs)",
+      "magnetization": "Axial",
+      "maxTemp": "80°C (176°F)",
+      "remanence": "~1.45 T"
+    },
+    "suppliers": [
+      {
+        "name": "K&J Magnetics",
+        "partNumber": "RX043SH",
+        "approximatePrice": 5,
+        "url": "https://www.kjmagnetics.com/proddetail.asp?prod=RX043SH"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 4,
+        "url": "https://www.amazon.com/s?k=20mm+OD+10mm+ID+ring+neodymium+magnet"
+      }
+    ],
+    "designNotes": "Largest and strongest ring magnet in catalog. 8 kg pull force through 10mm bore — excellent for magnetic couplings through walls (e.g., stirrer drives, sealed shaft drives). Handle with extreme care. 10mm ID clears M10 hardware or 10mm linear shafts.",
+    "tags": [
+      "magnet",
+      "neodymium",
+      "N52",
+      "ring-magnet",
+      "rare-earth",
+      "20mm-OD",
+      "10mm-ID",
+      "NdFeB",
+      "heavy-duty",
+      "magnetic-coupling",
+      "through-shaft"
+    ]
+  },
+  {
+    "name": "Adhesive Rubber Foot 8×2.5mm (Clear Silicone Bumper)",
+    "description": "Self-adhesive clear silicone rubber bumper foot, 8mm diameter, 2.5mm tall, 3M adhesive backing, transparent, small electronics bumper, PCB feet, anti-slip pad, 3M Bumpon SJ5302 style",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "height": 2.5,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "adhesive_pad",
+        "specs": {
+          "adhesiveDiameter": 8,
+          "description": "Peel-and-stick 3M adhesive backing, apply to flat clean surface"
+        }
+      }
+    ],
+    "specs": {
+      "diameter": "8mm",
+      "height": "2.5mm",
+      "mountType": "Adhesive (peel-and-stick)",
+      "material": "Silicone",
+      "color": "Clear / Transparent",
+      "durometer": "~50A",
+      "adhesiveType": "3M pressure-sensitive",
+      "temperatureRange": "-30°C to 120°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B06XCNM69B",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/s?k=clear+silicone+rubber+bumper+feet+8mm"
+      },
+      {
+        "name": "3M (Bumpon)",
+        "partNumber": "SJ5302",
+        "approximatePrice": 8,
+        "url": "https://www.3m.com/3M/en_US/p/d/b00016625/"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "95495K56",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/bumper-feet"
+      }
+    ],
+    "designNotes": "Tiny transparent bumpers for electronics and small devices. Nearly invisible on white or light-colored enclosures. Prevents scratching and provides minimal vibration damping. Often sold in sheets of 50-100. Clean surface with IPA before applying for best adhesion.",
+    "tags": [
+      "rubber-foot",
+      "bumper",
+      "adhesive-foot",
+      "clear",
+      "silicone",
+      "8mm",
+      "electronics",
+      "PCB-foot",
+      "anti-slip",
+      "3M-Bumpon"
+    ]
+  },
+  {
+    "name": "Adhesive Rubber Foot 10×3mm",
+    "description": "Self-adhesive black EPDM rubber foot, 10mm diameter, 3mm tall, peel-and-stick, standard small enclosure foot, anti-vibration pad, non-slip, electronics project foot",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 3,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "adhesive_pad",
+        "specs": {
+          "adhesiveDiameter": 10,
+          "description": "Peel-and-stick adhesive backing, apply to flat clean surface"
+        }
+      }
+    ],
+    "specs": {
+      "diameter": "10mm",
+      "height": "3mm",
+      "mountType": "Adhesive (peel-and-stick)",
+      "material": "EPDM Rubber",
+      "color": "Black",
+      "durometer": "~60A",
+      "adhesiveType": "Pressure-sensitive",
+      "temperatureRange": "-40°C to 100°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/s?k=adhesive+rubber+feet+10mm+black"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "95495K62",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/bumper-feet"
+      }
+    ],
+    "designNotes": "Standard small adhesive foot for electronics enclosures and small devices. 3mm height provides adequate clearance for bottom-mounted connectors and ventilation. EPDM is more durable than silicone on rough surfaces.",
+    "tags": [
+      "rubber-foot",
+      "bumper",
+      "adhesive-foot",
+      "black",
+      "EPDM",
+      "10mm",
+      "enclosure-foot",
+      "electronics",
+      "anti-vibration"
+    ]
+  },
+  {
+    "name": "Adhesive Rubber Foot 12×4mm",
+    "description": "Self-adhesive black EPDM rubber foot, 12mm diameter, 4mm tall, peel-and-stick, medium enclosure foot, equipment pad, keyboard feet, non-marking",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "height": 4,
+      "weight": 0.8
+    },
+    "mountingFeatures": [
+      {
+        "type": "adhesive_pad",
+        "specs": {
+          "adhesiveDiameter": 12,
+          "description": "Peel-and-stick adhesive backing, apply to flat clean surface"
+        }
+      }
+    ],
+    "specs": {
+      "diameter": "12mm",
+      "height": "4mm",
+      "mountType": "Adhesive (peel-and-stick)",
+      "material": "EPDM Rubber",
+      "color": "Black",
+      "durometer": "~60A",
+      "adhesiveType": "Pressure-sensitive",
+      "temperatureRange": "-40°C to 100°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/s?k=adhesive+rubber+feet+12mm+black"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "95495K64",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/bumper-feet"
+      }
+    ],
+    "designNotes": "Medium-sized adhesive foot. Good all-around choice for desktop electronics, keyboard risers, and small equipment. 4mm height provides good surface clearance. Non-marking on most desk surfaces.",
+    "tags": [
+      "rubber-foot",
+      "bumper",
+      "adhesive-foot",
+      "black",
+      "EPDM",
+      "12mm",
+      "enclosure-foot",
+      "keyboard-foot",
+      "non-marking"
+    ]
+  },
+  {
+    "name": "Adhesive Rubber Foot 15×5mm",
+    "description": "Self-adhesive black EPDM rubber foot, 15mm diameter, 5mm tall, peel-and-stick, medium-large equipment foot, instrument pad, anti-vibration, enclosure base pad",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 15,
+      "height": 5,
+      "weight": 1.2
+    },
+    "mountingFeatures": [
+      {
+        "type": "adhesive_pad",
+        "specs": {
+          "adhesiveDiameter": 15,
+          "description": "Peel-and-stick adhesive backing, apply to flat clean surface"
+        }
+      }
+    ],
+    "specs": {
+      "diameter": "15mm",
+      "height": "5mm",
+      "mountType": "Adhesive (peel-and-stick)",
+      "material": "EPDM Rubber",
+      "color": "Black",
+      "durometer": "~60A",
+      "adhesiveType": "Pressure-sensitive",
+      "temperatureRange": "-40°C to 100°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/s?k=adhesive+rubber+feet+15mm+black"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "95495K66",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/bumper-feet"
+      }
+    ],
+    "designNotes": "Good balance of size and profile for medium equipment. Supports heavier devices than smaller feet due to larger contact area. Apply four at corners of enclosure for stable support.",
+    "tags": [
+      "rubber-foot",
+      "bumper",
+      "adhesive-foot",
+      "black",
+      "EPDM",
+      "15mm",
+      "equipment-pad",
+      "instrument-foot",
+      "anti-vibration"
+    ]
+  },
+  {
+    "name": "Adhesive Rubber Foot 20×8mm",
+    "description": "Self-adhesive black EPDM rubber foot, 20mm diameter, 8mm tall, peel-and-stick, large equipment foot, heavy enclosure pad, amplifier feet, instrument base, anti-vibration isolation",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 20,
+      "height": 8,
+      "weight": 3.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "adhesive_pad",
+        "specs": {
+          "adhesiveDiameter": 20,
+          "description": "Peel-and-stick adhesive backing, apply to flat clean surface"
+        }
+      }
+    ],
+    "specs": {
+      "diameter": "20mm",
+      "height": "8mm",
+      "mountType": "Adhesive (peel-and-stick)",
+      "material": "EPDM Rubber",
+      "color": "Black",
+      "durometer": "~60A",
+      "adhesiveType": "Pressure-sensitive",
+      "temperatureRange": "-40°C to 100°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/s?k=adhesive+rubber+feet+20mm+black"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "95495K71",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/bumper-feet"
+      }
+    ],
+    "designNotes": "Large adhesive foot for heavier equipment. 8mm height provides good clearance for bottom-mounted cables and ventilation. Provides meaningful vibration isolation. For equipment over 5 kg, consider screw-mount feet instead for reliability.",
+    "tags": [
+      "rubber-foot",
+      "bumper",
+      "adhesive-foot",
+      "black",
+      "EPDM",
+      "20mm",
+      "large",
+      "amplifier-foot",
+      "heavy-duty",
+      "anti-vibration"
+    ]
+  },
+  {
+    "name": "Screw-Mount Rubber Foot 15×6mm, M4 Insert",
+    "description": "Screw-mount black EPDM rubber foot with M4 threaded brass insert, 15mm diameter, 6mm tall, secure mechanical attachment, equipment foot, enclosure base, 3D printer foot, CNC machine pad",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 15,
+      "height": 6,
+      "weight": 3.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_insert",
+        "specs": {
+          "threadSize": "M4",
+          "insertMaterial": "Brass",
+          "description": "M4 threaded brass insert, mount with M4×8 or M4×10 screw from inside enclosure"
+        }
+      }
+    ],
+    "specs": {
+      "diameter": "15mm",
+      "height": "6mm",
+      "mountType": "Screw-mount (M4 threaded insert)",
+      "material": "EPDM Rubber",
+      "color": "Black",
+      "screwSize": "M4",
+      "durometer": "~70A",
+      "temperatureRange": "-40°C to 100°C"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9540K21",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/rubber-feet"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=rubber+feet+M4+threaded+15mm"
+      }
+    ],
+    "designNotes": "More reliable than adhesive feet for equipment that gets moved or vibrates. M4 brass insert is durable and reusable. Design enclosure with M4 clearance holes at corners, mount foot from outside, secure with M4 screw from inside. Screw length = enclosure wall thickness + 4mm thread engagement.",
+    "tags": [
+      "rubber-foot",
+      "screw-mount",
+      "M4",
+      "threaded",
+      "EPDM",
+      "15mm",
+      "enclosure-foot",
+      "3D-printer-foot",
+      "secure-mount"
+    ]
+  },
+  {
+    "name": "Screw-Mount Rubber Foot 20×8mm, M4 Insert",
+    "description": "Screw-mount black EPDM rubber foot with M4 threaded brass insert, 20mm diameter, 8mm tall, secure mechanical attachment, medium equipment foot, instrument base, lab equipment pad",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 20,
+      "height": 8,
+      "weight": 5.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_insert",
+        "specs": {
+          "threadSize": "M4",
+          "insertMaterial": "Brass",
+          "description": "M4 threaded brass insert, mount with M4×10 or M4×12 screw"
+        }
+      }
+    ],
+    "specs": {
+      "diameter": "20mm",
+      "height": "8mm",
+      "mountType": "Screw-mount (M4 threaded insert)",
+      "material": "EPDM Rubber",
+      "color": "Black",
+      "screwSize": "M4",
+      "durometer": "~70A",
+      "temperatureRange": "-40°C to 100°C"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9540K31",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/rubber-feet"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=rubber+feet+M4+threaded+20mm"
+      }
+    ],
+    "designNotes": "Larger screw-mount foot with better vibration isolation. 8mm height provides good cable clearance underneath. M4 thread is strong enough for equipment up to ~10 kg (4 feet). Good for lab instruments and test equipment.",
+    "tags": [
+      "rubber-foot",
+      "screw-mount",
+      "M4",
+      "threaded",
+      "EPDM",
+      "20mm",
+      "equipment-foot",
+      "instrument-foot",
+      "lab-equipment"
+    ]
+  },
+  {
+    "name": "Screw-Mount Rubber Foot 25×10mm, M5 Insert",
+    "description": "Screw-mount black EPDM rubber foot with M5 threaded brass insert, 25mm diameter, 10mm tall, heavy equipment foot, machine pad, CNC base, industrial enclosure, vibration isolation",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 25,
+      "height": 10,
+      "weight": 8.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_insert",
+        "specs": {
+          "threadSize": "M5",
+          "insertMaterial": "Brass",
+          "description": "M5 threaded brass insert, mount with M5×12 or M5×16 screw"
+        }
+      }
+    ],
+    "specs": {
+      "diameter": "25mm",
+      "height": "10mm",
+      "mountType": "Screw-mount (M5 threaded insert)",
+      "material": "EPDM Rubber",
+      "color": "Black",
+      "screwSize": "M5",
+      "durometer": "~70A",
+      "temperatureRange": "-40°C to 100°C"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9540K41",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/rubber-feet"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=rubber+feet+M5+threaded+25mm"
+      }
+    ],
+    "designNotes": "Heavy-duty screw-mount foot. M5 thread handles heavier equipment and more vibration than M4. 10mm height gives generous clearance. Good for small CNC machines, 3D printers, and industrial control enclosures. Four of these support up to ~25 kg comfortably.",
+    "tags": [
+      "rubber-foot",
+      "screw-mount",
+      "M5",
+      "threaded",
+      "EPDM",
+      "25mm",
+      "heavy-duty",
+      "CNC-foot",
+      "machine-pad",
+      "industrial"
+    ]
+  },
+  {
+    "name": "Screw-Mount Rubber Foot 30×12mm, M5 Insert",
+    "description": "Screw-mount black EPDM rubber foot with M5 threaded brass insert, 30mm diameter, 12mm tall, heavy-duty machine foot, industrial base pad, vibration damping, large enclosure foot",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 30,
+      "height": 12,
+      "weight": 12.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_insert",
+        "specs": {
+          "threadSize": "M5",
+          "insertMaterial": "Brass",
+          "description": "M5 threaded brass insert, mount with M5×16 or M5×20 screw"
+        }
+      }
+    ],
+    "specs": {
+      "diameter": "30mm",
+      "height": "12mm",
+      "mountType": "Screw-mount (M5 threaded insert)",
+      "material": "EPDM Rubber",
+      "color": "Black",
+      "screwSize": "M5",
+      "durometer": "~70A",
+      "temperatureRange": "-40°C to 100°C"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9540K51",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/rubber-feet"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com/s?k=rubber+feet+M5+threaded+30mm"
+      }
+    ],
+    "designNotes": "Largest foot in catalog. Best vibration isolation due to larger rubber volume. 12mm height allows routing cables underneath equipment. For very heavy equipment (>30 kg), consider adjustable leveling feet with wider bases instead.",
+    "tags": [
+      "rubber-foot",
+      "screw-mount",
+      "M5",
+      "threaded",
+      "EPDM",
+      "30mm",
+      "heavy-duty",
+      "machine-foot",
+      "industrial",
+      "vibration-damping"
+    ]
+  },
+  {
+    "name": "Cable Gland PG7 (3-6.5mm Cable)",
+    "description": "PG7 nylon cable gland, IP68 waterproof, 3-6.5mm cable range, PG7 thread (12.5mm OD, 20 TPI), black nylon PA66, includes locknut and O-ring seal, strain relief, enclosure cable entry",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 19,
+      "height": 25,
+      "weight": 4
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "threadType": "PG7",
+          "holeDiameter": 12.5,
+          "description": "Requires 12.5mm mounting hole, PG7 thread, locknut secures from inside"
+        }
+      }
+    ],
+    "specs": {
+      "threadType": "PG7",
+      "threadSize": "PG7 (12.5mm OD, 20 TPI)",
+      "cableRangeMin": "3mm",
+      "cableRangeMax": "6.5mm",
+      "material": "Nylon PA66 (UL94 V-2)",
+      "ipRating": "IP68",
+      "color": "Black",
+      "withLocknut": true,
+      "operatingTemp": "-20°C to 80°C",
+      "mountingHole": "12.5mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=PG7+cable+gland+IP68+nylon"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7310K12",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/cable-glands"
+      },
+      {
+        "name": "Heyco",
+        "approximatePrice": 1,
+        "url": "https://www.heyco.com/Liquid_Tight_Fittings/"
+      },
+      {
+        "name": "Sealcon",
+        "approximatePrice": 1,
+        "url": "https://www.sealconusa.com/cable-glands/"
+      }
+    ],
+    "designNotes": "Smallest PG-size cable gland. Fits sensor cables, small signal wires, and USB cables (mini/micro). Drill 12.5mm hole, push gland through from outside, thread locknut from inside, tighten. The internal O-ring compresses around the cable for IP68 seal. Always check cable OD is within 3-6.5mm range.",
+    "tags": [
+      "cable-gland",
+      "PG7",
+      "IP68",
+      "waterproof",
+      "strain-relief",
+      "nylon",
+      "cable-entry",
+      "sensor-cable",
+      "enclosure"
+    ]
+  },
+  {
+    "name": "Cable Gland PG9 (4-8mm Cable)",
+    "description": "PG9 nylon cable gland, IP68 waterproof, 4-8mm cable range, PG9 thread (15.2mm OD, 18 TPI), black nylon PA66, includes locknut and O-ring seal, strain relief, enclosure cable entry",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 22,
+      "height": 28,
+      "weight": 6
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "threadType": "PG9",
+          "holeDiameter": 15.2,
+          "description": "Requires 15.2mm mounting hole, PG9 thread, locknut secures from inside"
+        }
+      }
+    ],
+    "specs": {
+      "threadType": "PG9",
+      "threadSize": "PG9 (15.2mm OD, 18 TPI)",
+      "cableRangeMin": "4mm",
+      "cableRangeMax": "8mm",
+      "material": "Nylon PA66 (UL94 V-2)",
+      "ipRating": "IP68",
+      "color": "Black",
+      "withLocknut": true,
+      "operatingTemp": "-20°C to 80°C",
+      "mountingHole": "15.2mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=PG9+cable+gland+IP68+nylon"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7310K14",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/cable-glands"
+      },
+      {
+        "name": "Sealcon",
+        "approximatePrice": 1,
+        "url": "https://www.sealconusa.com/cable-glands/"
+      }
+    ],
+    "designNotes": "Common size for standard USB cables, Cat5 ethernet (without boot), and small power cords. Drill 15.2mm hole or use a step bit. Most 4-pin aviation connectors and small sensor cables fit within the 4-8mm range.",
+    "tags": [
+      "cable-gland",
+      "PG9",
+      "IP68",
+      "waterproof",
+      "strain-relief",
+      "nylon",
+      "cable-entry",
+      "USB-cable",
+      "ethernet",
+      "enclosure"
+    ]
+  },
+  {
+    "name": "Cable Gland PG11 (5-10mm Cable)",
+    "description": "PG11 nylon cable gland, IP68 waterproof, 5-10mm cable range, PG11 thread (18.6mm OD, 18 TPI), black nylon PA66, includes locknut, strain relief, standard power cord entry, Cat5e/Cat6 with boot",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 25,
+      "height": 30,
+      "weight": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "threadType": "PG11",
+          "holeDiameter": 18.6,
+          "description": "Requires 18.6mm mounting hole, PG11 thread, locknut secures from inside"
+        }
+      }
+    ],
+    "specs": {
+      "threadType": "PG11",
+      "threadSize": "PG11 (18.6mm OD, 18 TPI)",
+      "cableRangeMin": "5mm",
+      "cableRangeMax": "10mm",
+      "material": "Nylon PA66 (UL94 V-2)",
+      "ipRating": "IP68",
+      "color": "Black",
+      "withLocknut": true,
+      "operatingTemp": "-20°C to 80°C",
+      "mountingHole": "18.6mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=PG11+cable+gland+IP68+nylon"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7310K16",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/cable-glands"
+      },
+      {
+        "name": "Sealcon",
+        "approximatePrice": 1,
+        "url": "https://www.sealconusa.com/cable-glands/"
+      }
+    ],
+    "designNotes": "Versatile mid-range size. Fits most standard IEC power cords (typically 7-8mm OD), Cat5e/Cat6 ethernet with strain-relief boot, and many stepper motor cables. One of the most commonly used sizes in DIY enclosures.",
+    "tags": [
+      "cable-gland",
+      "PG11",
+      "IP68",
+      "waterproof",
+      "strain-relief",
+      "nylon",
+      "cable-entry",
+      "power-cord",
+      "ethernet-cat6",
+      "enclosure"
+    ]
+  },
+  {
+    "name": "Cable Gland PG13.5 (6-12mm Cable)",
+    "description": "PG13.5 nylon cable gland, IP68 waterproof, 6-12mm cable range, PG13.5 thread (20.4mm OD, 18 TPI), black nylon PA66, includes locknut, multi-conductor cables, SJ power cords",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 28,
+      "height": 33,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "threadType": "PG13.5",
+          "holeDiameter": 20.4,
+          "description": "Requires 20.4mm mounting hole, PG13.5 thread, locknut secures from inside"
+        }
+      }
+    ],
+    "specs": {
+      "threadType": "PG13.5",
+      "threadSize": "PG13.5 (20.4mm OD, 18 TPI)",
+      "cableRangeMin": "6mm",
+      "cableRangeMax": "12mm",
+      "material": "Nylon PA66 (UL94 V-2)",
+      "ipRating": "IP68",
+      "color": "Black",
+      "withLocknut": true,
+      "operatingTemp": "-20°C to 80°C",
+      "mountingHole": "20.4mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=PG13.5+cable+gland+IP68+nylon"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7310K18",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/cable-glands"
+      },
+      {
+        "name": "Sealcon",
+        "approximatePrice": 1,
+        "url": "https://www.sealconusa.com/cable-glands/"
+      }
+    ],
+    "designNotes": "Good for thicker power cables and multi-conductor signal cables. Handles SJ/SJO/SJOOW-type power cords commonly used with bench equipment. The wide 6-12mm range makes it versatile for panels with mixed cable sizes.",
+    "tags": [
+      "cable-gland",
+      "PG13.5",
+      "IP68",
+      "waterproof",
+      "strain-relief",
+      "nylon",
+      "cable-entry",
+      "power-cable",
+      "multi-conductor",
+      "enclosure"
+    ]
+  },
+  {
+    "name": "Cable Gland PG16 (10-14mm Cable)",
+    "description": "PG16 nylon cable gland, IP68 waterproof, 10-14mm cable range, PG16 thread (22.5mm OD, 18 TPI), black nylon PA66, includes locknut, large power cables, VFD motor cables, heavy-gauge wire",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 32,
+      "height": 36,
+      "weight": 14
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "threadType": "PG16",
+          "holeDiameter": 22.5,
+          "description": "Requires 22.5mm mounting hole, PG16 thread, locknut secures from inside"
+        }
+      }
+    ],
+    "specs": {
+      "threadType": "PG16",
+      "threadSize": "PG16 (22.5mm OD, 18 TPI)",
+      "cableRangeMin": "10mm",
+      "cableRangeMax": "14mm",
+      "material": "Nylon PA66 (UL94 V-2)",
+      "ipRating": "IP68",
+      "color": "Black",
+      "withLocknut": true,
+      "operatingTemp": "-20°C to 80°C",
+      "mountingHole": "22.5mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=PG16+cable+gland+IP68+nylon"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7310K21",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/cable-glands"
+      },
+      {
+        "name": "Sealcon",
+        "approximatePrice": 1.5,
+        "url": "https://www.sealconusa.com/cable-glands/"
+      }
+    ],
+    "designNotes": "Largest PG-size in this catalog. For thick power cables, VFD motor leads, and heavy-gauge industrial wiring. Use a step drill bit or hole saw for the 22.5mm mounting hole. For cables larger than 14mm, switch to M25 or M32 metric glands.",
+    "tags": [
+      "cable-gland",
+      "PG16",
+      "IP68",
+      "waterproof",
+      "strain-relief",
+      "nylon",
+      "cable-entry",
+      "power-cable",
+      "heavy-gauge",
+      "VFD"
+    ]
+  },
+  {
+    "name": "Cable Gland M12×1.5 (3-6.5mm Cable)",
+    "description": "M12×1.5 metric nylon cable gland, IP68 waterproof, 3-6.5mm cable range, M12×1.5 thread, black nylon PA66, includes locknut, metric enclosures, IP-rated junction boxes, DIN-standard panel entry",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 18,
+      "height": 24,
+      "weight": 4
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "threadType": "M12×1.5",
+          "holeDiameter": 12,
+          "description": "Requires 12mm mounting hole, M12×1.5 thread, locknut secures from inside"
+        }
+      }
+    ],
+    "specs": {
+      "threadType": "M12×1.5",
+      "threadSize": "M12×1.5",
+      "cableRangeMin": "3mm",
+      "cableRangeMax": "6.5mm",
+      "material": "Nylon PA66 (UL94 V-2)",
+      "ipRating": "IP68",
+      "color": "Black",
+      "withLocknut": true,
+      "operatingTemp": "-20°C to 80°C",
+      "mountingHole": "12mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=M12+cable+gland+IP68+nylon"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7310K52",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/cable-glands"
+      },
+      {
+        "name": "Sealcon",
+        "approximatePrice": 1,
+        "url": "https://www.sealconusa.com/cable-glands/"
+      }
+    ],
+    "designNotes": "Metric equivalent of PG7. Preferred for metric enclosures and DIN-standard panels. M12 thread is standard in many European and industrial junction boxes. Same cable range as PG7 but with metric thread pitch.",
+    "tags": [
+      "cable-gland",
+      "M12",
+      "metric",
+      "IP68",
+      "waterproof",
+      "strain-relief",
+      "nylon",
+      "cable-entry",
+      "DIN-standard",
+      "junction-box"
+    ]
+  },
+  {
+    "name": "Cable Gland M16×1.5 (4-8mm Cable)",
+    "description": "M16×1.5 metric nylon cable gland, IP68 waterproof, 4-8mm cable range, M16×1.5 thread, black nylon PA66, includes locknut, metric panel entry, IP-rated enclosures, industrial automation",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 22,
+      "height": 27,
+      "weight": 6
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "threadType": "M16×1.5",
+          "holeDiameter": 16,
+          "description": "Requires 16mm mounting hole, M16×1.5 thread, locknut secures from inside"
+        }
+      }
+    ],
+    "specs": {
+      "threadType": "M16×1.5",
+      "threadSize": "M16×1.5",
+      "cableRangeMin": "4mm",
+      "cableRangeMax": "8mm",
+      "material": "Nylon PA66 (UL94 V-2)",
+      "ipRating": "IP68",
+      "color": "Black",
+      "withLocknut": true,
+      "operatingTemp": "-20°C to 80°C",
+      "mountingHole": "16mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=M16+cable+gland+IP68+nylon"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7310K54",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/cable-glands"
+      },
+      {
+        "name": "Sealcon",
+        "approximatePrice": 1,
+        "url": "https://www.sealconusa.com/cable-glands/"
+      }
+    ],
+    "designNotes": "Metric equivalent of PG9. Very common in industrial automation panels. M16 knockout holes are standard on many enclosure manufacturers (Rittal, Fibox, etc.). Good for standard USB, small power, and sensor cables.",
+    "tags": [
+      "cable-gland",
+      "M16",
+      "metric",
+      "IP68",
+      "waterproof",
+      "strain-relief",
+      "nylon",
+      "cable-entry",
+      "industrial",
+      "automation"
+    ]
+  },
+  {
+    "name": "Cable Gland M20×1.5 (6-12mm Cable)",
+    "description": "M20×1.5 metric nylon cable gland, IP68 waterproof, 6-12mm cable range, M20×1.5 thread, black nylon PA66, includes locknut, most common metric gland size, standard power entry, industrial panels",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 27,
+      "height": 32,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "threadType": "M20×1.5",
+          "holeDiameter": 20,
+          "description": "Requires 20mm mounting hole, M20×1.5 thread, locknut secures from inside"
+        }
+      }
+    ],
+    "specs": {
+      "threadType": "M20×1.5",
+      "threadSize": "M20×1.5",
+      "cableRangeMin": "6mm",
+      "cableRangeMax": "12mm",
+      "material": "Nylon PA66 (UL94 V-2)",
+      "ipRating": "IP68",
+      "color": "Black",
+      "withLocknut": true,
+      "operatingTemp": "-20°C to 80°C",
+      "mountingHole": "20mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=M20+cable+gland+IP68+nylon"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7310K56",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/cable-glands"
+      },
+      {
+        "name": "Sealcon",
+        "approximatePrice": 1,
+        "url": "https://www.sealconusa.com/cable-glands/"
+      }
+    ],
+    "designNotes": "The most commonly used metric cable gland size. Handles standard IEC power cords, Cat6 ethernet, and most industrial cables. M20 knockouts are pre-punched on many commercial enclosures. Stock this size in quantity — you will use it often.",
+    "tags": [
+      "cable-gland",
+      "M20",
+      "metric",
+      "IP68",
+      "waterproof",
+      "strain-relief",
+      "nylon",
+      "cable-entry",
+      "most-common",
+      "power-cord",
+      "ethernet"
+    ]
+  },
+  {
+    "name": "Cable Gland M25×1.5 (10-16mm Cable)",
+    "description": "M25×1.5 metric nylon cable gland, IP68 waterproof, 10-16mm cable range, M25×1.5 thread, black nylon PA66, includes locknut, large cable entry, multi-pair cables, thick power cords",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 33,
+      "height": 36,
+      "weight": 14
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "threadType": "M25×1.5",
+          "holeDiameter": 25,
+          "description": "Requires 25mm mounting hole, M25×1.5 thread, locknut secures from inside"
+        }
+      }
+    ],
+    "specs": {
+      "threadType": "M25×1.5",
+      "threadSize": "M25×1.5",
+      "cableRangeMin": "10mm",
+      "cableRangeMax": "16mm",
+      "material": "Nylon PA66 (UL94 V-2)",
+      "ipRating": "IP68",
+      "color": "Black",
+      "withLocknut": true,
+      "operatingTemp": "-20°C to 80°C",
+      "mountingHole": "25mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=M25+cable+gland+IP68+nylon"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7310K58",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/cable-glands"
+      },
+      {
+        "name": "Sealcon",
+        "approximatePrice": 1.5,
+        "url": "https://www.sealconusa.com/cable-glands/"
+      }
+    ],
+    "designNotes": "For larger cables — thick power leads, multi-pair signal cables, and shielded industrial cables. Use a 25mm step drill or hole saw. Allows future cable upgrades to thicker gauges within the 10-16mm range.",
+    "tags": [
+      "cable-gland",
+      "M25",
+      "metric",
+      "IP68",
+      "waterproof",
+      "strain-relief",
+      "nylon",
+      "cable-entry",
+      "large-cable",
+      "multi-pair"
+    ]
+  },
+  {
+    "name": "Cable Gland M32×1.5 (15-22mm Cable)",
+    "description": "M32×1.5 metric nylon cable gland, IP68 waterproof, 15-22mm cable range, M32×1.5 thread, black nylon PA66, includes locknut, extra-large cable entry, conduit entry, heavy industrial wiring",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 42,
+      "height": 40,
+      "weight": 22
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "threadType": "M32×1.5",
+          "holeDiameter": 32,
+          "description": "Requires 32mm mounting hole, M32×1.5 thread, locknut secures from inside"
+        }
+      }
+    ],
+    "specs": {
+      "threadType": "M32×1.5",
+      "threadSize": "M32×1.5",
+      "cableRangeMin": "15mm",
+      "cableRangeMax": "22mm",
+      "material": "Nylon PA66 (UL94 V-2)",
+      "ipRating": "IP68",
+      "color": "Black",
+      "withLocknut": true,
+      "operatingTemp": "-20°C to 80°C",
+      "mountingHole": "32mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com/s?k=M32+cable+gland+IP68+nylon"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7310K62",
+        "approximatePrice": 2,
+        "url": "https://www.mcmaster.com/cable-glands"
+      },
+      {
+        "name": "Sealcon",
+        "approximatePrice": 1.5,
+        "url": "https://www.sealconusa.com/cable-glands/"
+      }
+    ],
+    "designNotes": "Largest metric gland in catalog. For heavy industrial cables, conduit entries, and multi-conductor bundles. The 32mm hole requires a hole saw or chassis punch — step bits typically max out around 30mm. Consider panel reinforcement around the hole for thin enclosure walls.",
+    "tags": [
+      "cable-gland",
+      "M32",
+      "metric",
+      "IP68",
+      "waterproof",
+      "strain-relief",
+      "nylon",
+      "cable-entry",
+      "extra-large",
+      "conduit",
+      "industrial"
+    ]
+  },
+  {
+    "name": "Heat Shrink Tubing 3mm 2:1 (Standard)",
+    "description": "Heat shrink tubing, 3mm expanded diameter, shrinks to 1.5mm, 2:1 ratio, black polyolefin, standard non-adhesive, wire insulation, solder joint protection, small gauge wire, 22-26 AWG",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 3,
+      "weight": 0.5
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "3mm",
+      "recoveredDiameter": "1.5mm",
+      "shrinkRatio": "2:1",
+      "adhesiveLined": false,
+      "material": "Polyolefin",
+      "shrinkTemp": "90-120°C",
+      "operatingTemp": "-55°C to 125°C",
+      "color": "Black",
+      "wallThickness": "~0.5mm (after shrink)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=3mm+heat+shrink+tubing+black+polyolefin"
+      },
+      {
+        "name": "DigiKey",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/filter/heat-shrink-tubing/297"
+      },
+      {
+        "name": "Mouser",
+        "approximatePrice": 1.5,
+        "url": "https://www.mouser.com/c/electromechanical/cable-wire-management/heat-shrink-tubing/"
+      }
+    ],
+    "designNotes": "Smallest standard size. For individual small-gauge wires (22-26 AWG). Shrinks with heat gun at 90-120C or lighter (careful not to burn). Slide on BEFORE soldering. 2:1 ratio requires wire/joint to be at least 1.5mm diameter for snug fit. Sold in 1m, 5m, or 10m lengths.",
+    "tags": [
+      "heat-shrink",
+      "tubing",
+      "3mm",
+      "2:1",
+      "polyolefin",
+      "wire-insulation",
+      "solder-joint",
+      "small-gauge",
+      "black"
+    ]
+  },
+  {
+    "name": "Heat Shrink Tubing 5mm 2:1 (Standard)",
+    "description": "Heat shrink tubing, 5mm expanded diameter, shrinks to 2.5mm, 2:1 ratio, black polyolefin, standard non-adhesive, wire splices, connector insulation, 18-22 AWG wire",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 5,
+      "weight": 0.8
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "5mm",
+      "recoveredDiameter": "2.5mm",
+      "shrinkRatio": "2:1",
+      "adhesiveLined": false,
+      "material": "Polyolefin",
+      "shrinkTemp": "90-120°C",
+      "operatingTemp": "-55°C to 125°C",
+      "color": "Black",
+      "wallThickness": "~0.5mm (after shrink)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=5mm+heat+shrink+tubing+black"
+      },
+      {
+        "name": "DigiKey",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/filter/heat-shrink-tubing/297"
+      },
+      {
+        "name": "Mouser",
+        "approximatePrice": 1.5,
+        "url": "https://www.mouser.com/c/electromechanical/cable-wire-management/heat-shrink-tubing/"
+      }
+    ],
+    "designNotes": "Good for 18-22 AWG wire splices and small connector insulation. Covers typical Dupont and JST connector housings. One of the most commonly used sizes for hobby electronics and wiring harnesses.",
+    "tags": [
+      "heat-shrink",
+      "tubing",
+      "5mm",
+      "2:1",
+      "polyolefin",
+      "wire-splice",
+      "connector-insulation",
+      "18AWG",
+      "20AWG",
+      "black"
+    ]
+  },
+  {
+    "name": "Heat Shrink Tubing 6mm 2:1 (Standard)",
+    "description": "Heat shrink tubing, 6mm expanded diameter, shrinks to 3mm, 2:1 ratio, black polyolefin, standard non-adhesive, general purpose, wire bundles, barrel connector insulation",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6,
+      "weight": 1.0
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "6mm",
+      "recoveredDiameter": "3mm",
+      "shrinkRatio": "2:1",
+      "adhesiveLined": false,
+      "material": "Polyolefin",
+      "shrinkTemp": "90-120°C",
+      "operatingTemp": "-55°C to 125°C",
+      "color": "Black",
+      "wallThickness": "~0.6mm (after shrink)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=6mm+heat+shrink+tubing+black"
+      },
+      {
+        "name": "DigiKey",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/filter/heat-shrink-tubing/297"
+      }
+    ],
+    "designNotes": "Versatile middle size. Covers 5.5mm barrel connectors, small wire bundles, and 14-18 AWG wire. Good for labeling wire ends (use white or colored variant for marking).",
+    "tags": [
+      "heat-shrink",
+      "tubing",
+      "6mm",
+      "2:1",
+      "polyolefin",
+      "general-purpose",
+      "wire-bundle",
+      "barrel-connector",
+      "black"
+    ]
+  },
+  {
+    "name": "Heat Shrink Tubing 8mm 2:1 (Standard)",
+    "description": "Heat shrink tubing, 8mm expanded diameter, shrinks to 4mm, 2:1 ratio, black polyolefin, standard non-adhesive, cable strain relief, multi-wire bundles, XT60 connector cover",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "weight": 1.3
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "8mm",
+      "recoveredDiameter": "4mm",
+      "shrinkRatio": "2:1",
+      "adhesiveLined": false,
+      "material": "Polyolefin",
+      "shrinkTemp": "90-120°C",
+      "operatingTemp": "-55°C to 125°C",
+      "color": "Black",
+      "wallThickness": "~0.6mm (after shrink)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=8mm+heat+shrink+tubing+black"
+      },
+      {
+        "name": "DigiKey",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/filter/heat-shrink-tubing/297"
+      }
+    ],
+    "designNotes": "Covers XT60 connectors nicely when slid over the solder joint area. Good for bundling 2-3 small wires together. Also useful as cable strain relief at enclosure entry points when combined with hot glue.",
+    "tags": [
+      "heat-shrink",
+      "tubing",
+      "8mm",
+      "2:1",
+      "polyolefin",
+      "strain-relief",
+      "wire-bundle",
+      "XT60",
+      "black"
+    ]
+  },
+  {
+    "name": "Heat Shrink Tubing 10mm 2:1 (Standard)",
+    "description": "Heat shrink tubing, 10mm expanded diameter, shrinks to 5mm, 2:1 ratio, black polyolefin, standard non-adhesive, cable bundling, wire harness, USB cable repair",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "weight": 1.6
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "10mm",
+      "recoveredDiameter": "5mm",
+      "shrinkRatio": "2:1",
+      "adhesiveLined": false,
+      "material": "Polyolefin",
+      "shrinkTemp": "90-120°C",
+      "operatingTemp": "-55°C to 125°C",
+      "color": "Black",
+      "wallThickness": "~0.7mm (after shrink)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com/s?k=10mm+heat+shrink+tubing+black"
+      },
+      {
+        "name": "DigiKey",
+        "approximatePrice": 2,
+        "url": "https://www.digikey.com/en/products/filter/heat-shrink-tubing/297"
+      }
+    ],
+    "designNotes": "Good for cable bundling and wire harness protection. Covers USB cables and small power cords. Can also be used to add grip to tool handles and smooth rod ends.",
+    "tags": [
+      "heat-shrink",
+      "tubing",
+      "10mm",
+      "2:1",
+      "polyolefin",
+      "cable-bundle",
+      "wire-harness",
+      "USB-cable",
+      "black"
+    ]
+  },
+  {
+    "name": "Heat Shrink Tubing 13mm 2:1 (Standard)",
+    "description": "Heat shrink tubing, 13mm expanded diameter, shrinks to 6.5mm, 2:1 ratio, black polyolefin, standard non-adhesive, cable jacket, wire loom, large connector insulation",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 13,
+      "weight": 2.0
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "13mm",
+      "recoveredDiameter": "6.5mm",
+      "shrinkRatio": "2:1",
+      "adhesiveLined": false,
+      "material": "Polyolefin",
+      "shrinkTemp": "90-120°C",
+      "operatingTemp": "-55°C to 125°C",
+      "color": "Black",
+      "wallThickness": "~0.7mm (after shrink)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com/s?k=13mm+heat+shrink+tubing+black"
+      },
+      {
+        "name": "DigiKey",
+        "approximatePrice": 2,
+        "url": "https://www.digikey.com/en/products/filter/heat-shrink-tubing/297"
+      }
+    ],
+    "designNotes": "For larger wire bundles and cables. Creates a clean cable jacket appearance. Good for tidying up 3D printer wiring looms and CNC cable management.",
+    "tags": [
+      "heat-shrink",
+      "tubing",
+      "13mm",
+      "2:1",
+      "polyolefin",
+      "cable-jacket",
+      "wire-loom",
+      "large-connector",
+      "black"
+    ]
+  },
+  {
+    "name": "Heat Shrink Tubing 16mm 2:1 (Standard)",
+    "description": "Heat shrink tubing, 16mm expanded diameter, shrinks to 8mm, 2:1 ratio, black polyolefin, standard non-adhesive, thick cable jacket, battery pack wrapping, large wire bundles",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 16,
+      "weight": 2.5
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "16mm",
+      "recoveredDiameter": "8mm",
+      "shrinkRatio": "2:1",
+      "adhesiveLined": false,
+      "material": "Polyolefin",
+      "shrinkTemp": "90-120°C",
+      "operatingTemp": "-55°C to 125°C",
+      "color": "Black",
+      "wallThickness": "~0.8mm (after shrink)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2,
+        "url": "https://www.amazon.com/s?k=16mm+heat+shrink+tubing+black"
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 3,
+        "url": "https://www.mcmaster.com/heat-shrink-tubing"
+      }
+    ],
+    "designNotes": "Common for 18650 battery pack wrapping and thick cable assemblies. Wide enough to slide over most multi-conductor cables. For battery packs, use PVC heat shrink instead (shrinks at lower temp, won't damage cells).",
+    "tags": [
+      "heat-shrink",
+      "tubing",
+      "16mm",
+      "2:1",
+      "polyolefin",
+      "cable-jacket",
+      "battery-pack",
+      "large-bundle",
+      "black"
+    ]
+  },
+  {
+    "name": "Heat Shrink Tubing 20mm 2:1 (Standard)",
+    "description": "Heat shrink tubing, 20mm expanded diameter, shrinks to 10mm, 2:1 ratio, black polyolefin, standard non-adhesive, large cable jacket, conduit alternative, battery pack wrap",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 20,
+      "weight": 3.0
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "20mm",
+      "recoveredDiameter": "10mm",
+      "shrinkRatio": "2:1",
+      "adhesiveLined": false,
+      "material": "Polyolefin",
+      "shrinkTemp": "90-120°C",
+      "operatingTemp": "-55°C to 125°C",
+      "color": "Black",
+      "wallThickness": "~0.8mm (after shrink)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2,
+        "url": "https://www.amazon.com/s?k=20mm+heat+shrink+tubing+black"
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 3,
+        "url": "https://www.mcmaster.com/heat-shrink-tubing"
+      }
+    ],
+    "designNotes": "Large diameter for thick cable bundles and as a lightweight alternative to rigid conduit. Can also be used as a protective sleeve on handles and grips. Requires a heat gun — a lighter won't provide even heating on this diameter.",
+    "tags": [
+      "heat-shrink",
+      "tubing",
+      "20mm",
+      "2:1",
+      "polyolefin",
+      "cable-jacket",
+      "conduit-alternative",
+      "large",
+      "black"
+    ]
+  },
+  {
+    "name": "Heat Shrink Tubing 25mm 2:1 (Standard)",
+    "description": "Heat shrink tubing, 25mm expanded diameter, shrinks to 12.5mm, 2:1 ratio, black polyolefin, standard non-adhesive, extra-large cable jacket, hose protection, handle grip, 1 inch diameter",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 25,
+      "weight": 4.0
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "25mm (1 inch)",
+      "recoveredDiameter": "12.5mm (0.5 inch)",
+      "shrinkRatio": "2:1",
+      "adhesiveLined": false,
+      "material": "Polyolefin",
+      "shrinkTemp": "90-120°C",
+      "operatingTemp": "-55°C to 125°C",
+      "color": "Black",
+      "wallThickness": "~1.0mm (after shrink)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2.5,
+        "url": "https://www.amazon.com/s?k=25mm+heat+shrink+tubing+black"
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 3,
+        "url": "https://www.mcmaster.com/heat-shrink-tubing"
+      }
+    ],
+    "designNotes": "Largest standard 2:1 size. 25mm (1 inch) expanded diameter covers most cable bundles and hoses. Can serve as a tool handle grip or protective sleeve. Requires industrial heat gun for even shrinking.",
+    "tags": [
+      "heat-shrink",
+      "tubing",
+      "25mm",
+      "1-inch",
+      "2:1",
+      "polyolefin",
+      "extra-large",
+      "handle-grip",
+      "hose-protection",
+      "black"
+    ]
+  },
+  {
+    "name": "Adhesive-Lined Heat Shrink 3mm 3:1",
+    "description": "Adhesive-lined heat shrink tubing, 3mm expanded diameter, shrinks to 1mm, 3:1 ratio, black polyolefin with hot-melt adhesive lining, waterproof seal, small wire splices, outdoor wiring, marine",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 3,
+      "weight": 0.8
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "3mm",
+      "recoveredDiameter": "1mm",
+      "shrinkRatio": "3:1",
+      "adhesiveLined": true,
+      "adhesiveType": "Hot-melt polyamide",
+      "material": "Polyolefin (outer) + hot-melt adhesive (inner)",
+      "shrinkTemp": "110-130°C",
+      "operatingTemp": "-55°C to 110°C",
+      "color": "Black",
+      "wallThickness": "~1.0mm (after shrink, including adhesive)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2,
+        "url": "https://www.amazon.com/s?k=3mm+adhesive+lined+heat+shrink+3:1"
+      },
+      {
+        "name": "DigiKey",
+        "approximatePrice": 2.5,
+        "url": "https://www.digikey.com/en/products/filter/heat-shrink-tubing/297"
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 3,
+        "url": "https://www.mcmaster.com/heat-shrink-tubing"
+      }
+    ],
+    "designNotes": "3:1 ratio with adhesive lining creates a waterproof seal when shrunk. The hot-melt adhesive flows into gaps and bonds to wire insulation. Essential for outdoor, marine, and automotive wiring where moisture ingress causes corrosion. Costs 2-3x more than standard heat shrink but worth it for any joint exposed to moisture.",
+    "tags": [
+      "heat-shrink",
+      "adhesive-lined",
+      "3mm",
+      "3:1",
+      "waterproof",
+      "marine",
+      "outdoor",
+      "sealed",
+      "hot-melt",
+      "black"
+    ]
+  },
+  {
+    "name": "Adhesive-Lined Heat Shrink 6mm 3:1",
+    "description": "Adhesive-lined heat shrink tubing, 6mm expanded diameter, shrinks to 2mm, 3:1 ratio, black polyolefin with hot-melt adhesive lining, waterproof seal, wire splices, automotive wiring, outdoor connectors",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6,
+      "weight": 1.5
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "6mm",
+      "recoveredDiameter": "2mm",
+      "shrinkRatio": "3:1",
+      "adhesiveLined": true,
+      "adhesiveType": "Hot-melt polyamide",
+      "material": "Polyolefin (outer) + hot-melt adhesive (inner)",
+      "shrinkTemp": "110-130°C",
+      "operatingTemp": "-55°C to 110°C",
+      "color": "Black",
+      "wallThickness": "~1.2mm (after shrink, including adhesive)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2,
+        "url": "https://www.amazon.com/s?k=6mm+adhesive+lined+heat+shrink+3:1"
+      },
+      {
+        "name": "DigiKey",
+        "approximatePrice": 2.5,
+        "url": "https://www.digikey.com/en/products/filter/heat-shrink-tubing/297"
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 3,
+        "url": "https://www.mcmaster.com/heat-shrink-tubing"
+      }
+    ],
+    "designNotes": "Most popular adhesive-lined size. 6mm expanded slides over most solder joints and connectors, while 2mm recovered grips tightly on individual 14-20 AWG wires. The 3:1 ratio accommodates larger diameter variations than 2:1. Look for glue squeeze-out at the ends to confirm a good seal.",
+    "tags": [
+      "heat-shrink",
+      "adhesive-lined",
+      "6mm",
+      "3:1",
+      "waterproof",
+      "automotive",
+      "outdoor",
+      "sealed",
+      "most-popular",
+      "black"
+    ]
+  },
+  {
+    "name": "Adhesive-Lined Heat Shrink 9mm 3:1",
+    "description": "Adhesive-lined heat shrink tubing, 9mm expanded diameter, shrinks to 3mm, 3:1 ratio, black polyolefin with hot-melt adhesive lining, waterproof cable sealing, junction protection, multi-wire splice",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 9,
+      "weight": 2.0
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "9mm",
+      "recoveredDiameter": "3mm",
+      "shrinkRatio": "3:1",
+      "adhesiveLined": true,
+      "adhesiveType": "Hot-melt polyamide",
+      "material": "Polyolefin (outer) + hot-melt adhesive (inner)",
+      "shrinkTemp": "110-130°C",
+      "operatingTemp": "-55°C to 110°C",
+      "color": "Black",
+      "wallThickness": "~1.2mm (after shrink, including adhesive)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2,
+        "url": "https://www.amazon.com/s?k=9mm+adhesive+lined+heat+shrink+3:1"
+      },
+      {
+        "name": "DigiKey",
+        "approximatePrice": 2.5,
+        "url": "https://www.digikey.com/en/products/filter/heat-shrink-tubing/297"
+      }
+    ],
+    "designNotes": "Good for multi-wire splice junctions and cable transitions. The 3:1 ratio means 9mm slides over a connector housing but shrinks tight on a 3-4mm cable. Ideal for sealing where cable diameter changes abruptly.",
+    "tags": [
+      "heat-shrink",
+      "adhesive-lined",
+      "9mm",
+      "3:1",
+      "waterproof",
+      "cable-seal",
+      "junction",
+      "multi-wire",
+      "black"
+    ]
+  },
+  {
+    "name": "Adhesive-Lined Heat Shrink 12mm 3:1",
+    "description": "Adhesive-lined heat shrink tubing, 12mm expanded diameter, shrinks to 4mm, 3:1 ratio, black polyolefin with hot-melt adhesive lining, waterproof cable entry seal, connector boot, outdoor junction",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "weight": 3.0
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "12mm",
+      "recoveredDiameter": "4mm",
+      "shrinkRatio": "3:1",
+      "adhesiveLined": true,
+      "adhesiveType": "Hot-melt polyamide",
+      "material": "Polyolefin (outer) + hot-melt adhesive (inner)",
+      "shrinkTemp": "110-130°C",
+      "operatingTemp": "-55°C to 110°C",
+      "color": "Black",
+      "wallThickness": "~1.5mm (after shrink, including adhesive)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2.5,
+        "url": "https://www.amazon.com/s?k=12mm+adhesive+lined+heat+shrink+3:1"
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 3,
+        "url": "https://www.mcmaster.com/heat-shrink-tubing"
+      }
+    ],
+    "designNotes": "Creates a robust waterproof boot over cable entries and connector transitions. Used extensively in marine, automotive, and outdoor solar installations. Cut a piece 2-3x longer than the joint to ensure full overlap on both sides.",
+    "tags": [
+      "heat-shrink",
+      "adhesive-lined",
+      "12mm",
+      "3:1",
+      "waterproof",
+      "connector-boot",
+      "cable-entry",
+      "outdoor",
+      "solar",
+      "black"
+    ]
+  },
+  {
+    "name": "Adhesive-Lined Heat Shrink 16mm 3:1",
+    "description": "Adhesive-lined heat shrink tubing, 16mm expanded diameter, shrinks to 5.3mm, 3:1 ratio, black polyolefin with hot-melt adhesive lining, large cable seal, cable gland alternative, enclosure entry",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 16,
+      "weight": 4.0
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "16mm",
+      "recoveredDiameter": "5.3mm",
+      "shrinkRatio": "3:1",
+      "adhesiveLined": true,
+      "adhesiveType": "Hot-melt polyamide",
+      "material": "Polyolefin (outer) + hot-melt adhesive (inner)",
+      "shrinkTemp": "110-130°C",
+      "operatingTemp": "-55°C to 110°C",
+      "color": "Black",
+      "wallThickness": "~1.5mm (after shrink, including adhesive)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2.5,
+        "url": "https://www.amazon.com/s?k=16mm+adhesive+lined+heat+shrink+3:1"
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 3,
+        "url": "https://www.mcmaster.com/heat-shrink-tubing"
+      }
+    ],
+    "designNotes": "Can serve as a lightweight alternative to cable glands for semi-permanent installations. Shrink over cable at enclosure entry point for IP67-grade seal. Not as mechanically robust as a proper cable gland but much simpler to install.",
+    "tags": [
+      "heat-shrink",
+      "adhesive-lined",
+      "16mm",
+      "3:1",
+      "waterproof",
+      "cable-seal",
+      "cable-gland-alternative",
+      "enclosure-entry",
+      "black"
+    ]
+  },
+  {
+    "name": "Adhesive-Lined Heat Shrink 19mm 3:1",
+    "description": "Adhesive-lined heat shrink tubing, 19mm expanded diameter, shrinks to 6.3mm, 3:1 ratio, black polyolefin with hot-melt adhesive lining, large cable junction, hose repair, thick wire harness seal",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 19,
+      "weight": 5.0
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "19mm",
+      "recoveredDiameter": "6.3mm",
+      "shrinkRatio": "3:1",
+      "adhesiveLined": true,
+      "adhesiveType": "Hot-melt polyamide",
+      "material": "Polyolefin (outer) + hot-melt adhesive (inner)",
+      "shrinkTemp": "110-130°C",
+      "operatingTemp": "-55°C to 110°C",
+      "color": "Black",
+      "wallThickness": "~1.5mm (after shrink, including adhesive)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 3,
+        "url": "https://www.amazon.com/s?k=19mm+adhesive+lined+heat+shrink+3:1"
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 3,
+        "url": "https://www.mcmaster.com/heat-shrink-tubing"
+      }
+    ],
+    "designNotes": "For thick cable junctions and harness breakout points. Can also be used for temporary hose repairs (not a permanent fix). The large 3:1 ratio means it accommodates significant diameter transitions.",
+    "tags": [
+      "heat-shrink",
+      "adhesive-lined",
+      "19mm",
+      "3:1",
+      "waterproof",
+      "cable-junction",
+      "hose-repair",
+      "wire-harness",
+      "black"
+    ]
+  },
+  {
+    "name": "Adhesive-Lined Heat Shrink 24mm 3:1",
+    "description": "Adhesive-lined heat shrink tubing, 24mm expanded diameter, shrinks to 8mm, 3:1 ratio, black polyolefin with hot-melt adhesive lining, extra large cable seal, industrial cable transition, pipe repair",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 24,
+      "weight": 6.0
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "expandedDiameter": "24mm (approx 1 inch)",
+      "recoveredDiameter": "8mm",
+      "shrinkRatio": "3:1",
+      "adhesiveLined": true,
+      "adhesiveType": "Hot-melt polyamide",
+      "material": "Polyolefin (outer) + hot-melt adhesive (inner)",
+      "shrinkTemp": "110-130°C",
+      "operatingTemp": "-55°C to 110°C",
+      "color": "Black",
+      "wallThickness": "~2.0mm (after shrink, including adhesive)",
+      "soldBy": "Per meter"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 3,
+        "url": "https://www.amazon.com/s?k=24mm+adhesive+lined+heat+shrink+3:1"
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 3,
+        "url": "https://www.mcmaster.com/heat-shrink-tubing"
+      }
+    ],
+    "designNotes": "Largest adhesive-lined size in catalog. For industrial cable junctions, thick harness transitions, and emergency pipe repairs. Requires a high-output heat gun for even heating. Allow extra time for the adhesive to flow — thicker walls take longer to heat through.",
+    "tags": [
+      "heat-shrink",
+      "adhesive-lined",
+      "24mm",
+      "1-inch",
+      "3:1",
+      "waterproof",
+      "industrial",
+      "cable-transition",
+      "extra-large",
+      "black"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-006 (3.63mm ID × 1.78mm CS, Buna-N)",
+    "description": "AS568-006 Buna-N nitrile O-ring, 3.63mm ID, 1.78mm cross-section, 7.19mm OD, 70A durometer, NBR rubber, -30C to 120C, static and dynamic sealing, hydraulic seals, pneumatic fittings",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 7.19,
+      "height": 1.78,
+      "weight": 0.1
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 2.29,
+          "grooveDepth": 1.42,
+          "grooveDiameter": 4.09,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 2.29mm wide × 1.42mm deep, bore groove diameter 4.09mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-006",
+      "standard": "AS568",
+      "innerDiameter": "3.63mm (0.143 in)",
+      "crossSection": "1.78mm (0.070 in)",
+      "outerDiameter": "7.19mm (0.283 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C (-22°F to 248°F)",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K16",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/store/index.php?main_page=product_info&products_id=1671"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 3,
+        "url": "https://www.amazon.com/s?k=AS568-006+O-ring+Buna-N"
+      }
+    ],
+    "designNotes": "Tiny O-ring for miniature fittings and small bore seals. Groove dimensions are critical — use Parker O-Ring Handbook groove specs. For static face seals, groove depth = 80% of cross-section (1.42mm). For dynamic (piston) seals, use 85% squeeze. Always lubricate with compatible grease during assembly.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-006",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "3.63mm-ID",
+      "1.78mm-CS",
+      "static-seal",
+      "miniature"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-007 (5.28mm ID × 1.78mm CS, Buna-N)",
+    "description": "AS568-007 Buna-N nitrile O-ring, 5.28mm ID, 1.78mm cross-section, 8.84mm OD, 70A durometer, NBR rubber, small bore seal, pneumatic cylinder, valve seal",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8.84,
+      "height": 1.78,
+      "weight": 0.1
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 2.29,
+          "grooveDepth": 1.42,
+          "grooveDiameter": 5.74,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 2.29mm wide × 1.42mm deep, bore groove diameter 5.74mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-007",
+      "standard": "AS568",
+      "innerDiameter": "5.28mm (0.208 in)",
+      "crossSection": "1.78mm (0.070 in)",
+      "outerDiameter": "8.84mm (0.348 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K17",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 3,
+        "url": "https://www.amazon.com/s?k=AS568-007+O-ring+Buna-N"
+      }
+    ],
+    "designNotes": "Common small O-ring for pneumatic fittings and small valve seals. 5.28mm ID works with many M5 and 1/8\" NPT port seals. Stock alongside -006 and -010 for good small-size coverage.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-007",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "5.28mm-ID",
+      "1.78mm-CS",
+      "pneumatic",
+      "valve-seal"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-010 (6.07mm ID × 1.78mm CS, Buna-N)",
+    "description": "AS568-010 Buna-N nitrile O-ring, 6.07mm ID, 1.78mm cross-section, 9.63mm OD, 70A durometer, NBR rubber, standard small seal, sensor housings, small cylinder seals",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 9.63,
+      "height": 1.78,
+      "weight": 0.1
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 2.29,
+          "grooveDepth": 1.42,
+          "grooveDiameter": 6.53,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 2.29mm wide × 1.42mm deep, bore groove diameter 6.53mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-010",
+      "standard": "AS568",
+      "innerDiameter": "6.07mm (0.239 in)",
+      "crossSection": "1.78mm (0.070 in)",
+      "outerDiameter": "9.63mm (0.379 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K111",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 3,
+        "url": "https://www.amazon.com/s?k=AS568-010+O-ring+Buna-N"
+      }
+    ],
+    "designNotes": "Start of the common -0xx range. Good for sensor housings, small pneumatic cylinders, and M6 port face seals. The 1xx series uses the same ID sizes but with thicker 2.62mm cross-section for higher pressure.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-010",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "6.07mm-ID",
+      "1.78mm-CS",
+      "sensor-housing",
+      "standard"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-012 (9.19mm ID × 1.78mm CS, Buna-N)",
+    "description": "AS568-012 Buna-N nitrile O-ring, 9.19mm ID, 1.78mm cross-section, 12.75mm OD, 70A durometer, NBR rubber, M10 port seal, small flange seal, manifold gasket",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12.75,
+      "height": 1.78,
+      "weight": 0.2
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 2.29,
+          "grooveDepth": 1.42,
+          "grooveDiameter": 9.65,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 2.29mm wide × 1.42mm deep, bore groove diameter 9.65mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-012",
+      "standard": "AS568",
+      "innerDiameter": "9.19mm (0.362 in)",
+      "crossSection": "1.78mm (0.070 in)",
+      "outerDiameter": "12.75mm (0.502 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K113",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "Fits around 10mm bores and M10 port seals. Common in small hydraulic manifolds and fluid distribution blocks. For higher pressure applications, step up to the -112 (same ID, 2.62mm cross-section).",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-012",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "9.19mm-ID",
+      "1.78mm-CS",
+      "M10-seal",
+      "manifold"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-014 (11.11mm ID × 1.78mm CS, Buna-N)",
+    "description": "AS568-014 Buna-N nitrile O-ring, 11.11mm ID, 1.78mm cross-section, 14.67mm OD, 70A durometer, NBR rubber, 1/2 inch bore seal, piston seal, cylinder rod seal",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 14.67,
+      "height": 1.78,
+      "weight": 0.2
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 2.29,
+          "grooveDepth": 1.42,
+          "grooveDiameter": 11.57,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 2.29mm wide × 1.42mm deep, bore groove diameter 11.57mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-014",
+      "standard": "AS568",
+      "innerDiameter": "11.11mm (0.437 in, ~7/16\")",
+      "crossSection": "1.78mm (0.070 in)",
+      "outerDiameter": "14.67mm (0.577 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K115",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "Close to 1/2 inch bore size. Common in small hydraulic and pneumatic cylinders. For low-pressure static seals, the 1.78mm cross-section is adequate. For higher pressure or dynamic use, prefer -114 (2.62mm CS).",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-014",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "11.11mm-ID",
+      "1.78mm-CS",
+      "cylinder-seal",
+      "piston"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-016 (14.00mm ID × 1.78mm CS, Buna-N)",
+    "description": "AS568-016 Buna-N nitrile O-ring, 14mm ID, 1.78mm cross-section, 17.56mm OD, 70A durometer, NBR rubber, M14 bore seal, face seal, cover gasket",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 17.56,
+      "height": 1.78,
+      "weight": 0.2
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 2.29,
+          "grooveDepth": 1.42,
+          "grooveDiameter": 14.46,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 2.29mm wide × 1.42mm deep, bore groove diameter 14.46mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-016",
+      "standard": "AS568",
+      "innerDiameter": "14.00mm (0.551 in)",
+      "crossSection": "1.78mm (0.070 in)",
+      "outerDiameter": "17.56mm (0.691 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K117",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "14mm ID is a clean metric size — useful for custom-machined housings. Thin cross-section makes it suitable for low-pressure face seals and cover gaskets. For water-tight enclosure lids, consider -116 (2.62mm CS) for more robust sealing.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-016",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "14mm-ID",
+      "1.78mm-CS",
+      "face-seal",
+      "cover-gasket"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-018 (17.04mm ID × 1.78mm CS, Buna-N)",
+    "description": "AS568-018 Buna-N nitrile O-ring, 17.04mm ID, 1.78mm cross-section, 20.60mm OD, 70A durometer, NBR rubber, medium bore seal, shaft seal, housing gasket",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 20.6,
+      "height": 1.78,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 2.29,
+          "grooveDepth": 1.42,
+          "grooveDiameter": 17.5,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 2.29mm wide × 1.42mm deep, bore groove diameter 17.50mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-018",
+      "standard": "AS568",
+      "innerDiameter": "17.04mm (0.671 in)",
+      "crossSection": "1.78mm (0.070 in)",
+      "outerDiameter": "20.60mm (0.811 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K119",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "Medium-bore thin-cross-section O-ring. For low-pressure sealing of housings and covers in the 17mm range. If used as a piston seal, ensure groove is machined to proper depth for dynamic use (groove depth ~1.47mm for dynamic vs 1.42mm for static).",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-018",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "17.04mm-ID",
+      "1.78mm-CS",
+      "shaft-seal",
+      "housing-gasket"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-020 (19.94mm ID × 1.78mm CS, Buna-N)",
+    "description": "AS568-020 Buna-N nitrile O-ring, 19.94mm ID, 1.78mm cross-section, 23.50mm OD, 70A durometer, NBR rubber, 3/4 inch bore, M20 seal, cap seal, lid gasket",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 23.5,
+      "height": 1.78,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 2.29,
+          "grooveDepth": 1.42,
+          "grooveDiameter": 20.4,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 2.29mm wide × 1.42mm deep, bore groove diameter 20.40mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-020",
+      "standard": "AS568",
+      "innerDiameter": "19.94mm (0.785 in, ~3/4\")",
+      "crossSection": "1.78mm (0.070 in)",
+      "outerDiameter": "23.50mm (0.925 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K121",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "Close to 20mm / 3/4 inch bore. Common for cap seals and lid gaskets. Thin 1.78mm CS is acceptable for low-pressure applications; for pressurized systems, use -120 (same ~20mm bore, 2.62mm CS) or -220 (3.53mm CS).",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-020",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "19.94mm-ID",
+      "1.78mm-CS",
+      "M20-seal",
+      "cap-seal",
+      "lid-gasket"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-024 (28.17mm ID × 1.78mm CS, Buna-N)",
+    "description": "AS568-024 Buna-N nitrile O-ring, 28.17mm ID, 1.78mm cross-section, 31.73mm OD, 70A durometer, NBR rubber, large bore thin seal, cover plate gasket, sight glass seal",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 31.73,
+      "height": 1.78,
+      "weight": 0.4
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 2.29,
+          "grooveDepth": 1.42,
+          "grooveDiameter": 28.63,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 2.29mm wide × 1.42mm deep, bore groove diameter 28.63mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-024",
+      "standard": "AS568",
+      "innerDiameter": "28.17mm (1.109 in)",
+      "crossSection": "1.78mm (0.070 in)",
+      "outerDiameter": "31.73mm (1.249 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K125",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "Large bore with thin cross-section. Primarily for static face seals — sight glass windows, cover plates, and inspection port seals. Not recommended for dynamic applications at this size due to thin CS. Use -214 (2.62mm CS) or -218 (3.53mm CS) for pressurized or dynamic seals at similar bore sizes.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-024",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "28.17mm-ID",
+      "1.78mm-CS",
+      "sight-glass",
+      "cover-plate"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-028 (37.69mm ID × 1.78mm CS, Buna-N)",
+    "description": "AS568-028 Buna-N nitrile O-ring, 37.69mm ID, 1.78mm cross-section, 41.25mm OD, 70A durometer, NBR rubber, 1.5 inch bore seal, large cover seal, filter housing gasket",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 41.25,
+      "height": 1.78,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 2.29,
+          "grooveDepth": 1.42,
+          "grooveDiameter": 38.15,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 2.29mm wide × 1.42mm deep, bore groove diameter 38.15mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-028",
+      "standard": "AS568",
+      "innerDiameter": "37.69mm (1.484 in, ~1-1/2\")",
+      "crossSection": "1.78mm (0.070 in)",
+      "outerDiameter": "41.25mm (1.624 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K129",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "Large static seal for filter housings, cover plates, and inspection ports. At this bore size, the thin 1.78mm CS is fragile — handle carefully during assembly. Strongly recommend upgrading to -222 (3.53mm CS) for anything pressurized.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-028",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "37.69mm-ID",
+      "1.78mm-CS",
+      "filter-housing",
+      "large-seal"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-110 (9.25mm ID × 2.62mm CS, Buna-N)",
+    "description": "AS568-110 Buna-N nitrile O-ring, 9.25mm ID, 2.62mm cross-section, 14.49mm OD, 70A durometer, NBR rubber, medium cross-section, hydraulic cylinder seal, M10 port seal, pressurized systems",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 14.49,
+      "height": 2.62,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 3.17,
+          "grooveDepth": 2.1,
+          "grooveDiameter": 9.71,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 3.17mm wide × 2.10mm deep, bore groove diameter 9.71mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-110",
+      "standard": "AS568",
+      "innerDiameter": "9.25mm (0.364 in)",
+      "crossSection": "2.62mm (0.103 in)",
+      "outerDiameter": "14.49mm (0.570 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K141",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      },
+      {
+        "name": "Global O-Ring",
+        "approximatePrice": 0.5,
+        "url": "https://www.globaloring.com/"
+      }
+    ],
+    "designNotes": "Start of the 1xx series (2.62mm cross-section). Thicker CS than -012 provides better sealing at higher pressures. Preferred for hydraulic and pneumatic applications. Groove is wider and deeper than 0xx series — verify groove machining specs carefully.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-110",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "9.25mm-ID",
+      "2.62mm-CS",
+      "hydraulic",
+      "pressurized"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-112 (12.37mm ID × 2.62mm CS, Buna-N)",
+    "description": "AS568-112 Buna-N nitrile O-ring, 12.37mm ID, 2.62mm cross-section, 17.61mm OD, 70A durometer, NBR rubber, 1/2 inch bore seal, hydraulic fitting, pump seal",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 17.61,
+      "height": 2.62,
+      "weight": 0.4
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 3.17,
+          "grooveDepth": 2.1,
+          "grooveDiameter": 12.83,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 3.17mm wide × 2.10mm deep, bore groove diameter 12.83mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-112",
+      "standard": "AS568",
+      "innerDiameter": "12.37mm (0.487 in)",
+      "crossSection": "2.62mm (0.103 in)",
+      "outerDiameter": "17.61mm (0.693 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K143",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "One of the most popular O-ring sizes. 12mm bore is extremely common in hydraulic fittings, pump seals, and custom fluid handling equipment. Stock in quantity — you will use it frequently.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-112",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "12.37mm-ID",
+      "2.62mm-CS",
+      "hydraulic-fitting",
+      "pump-seal",
+      "popular"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-114 (15.54mm ID × 2.62mm CS, Buna-N)",
+    "description": "AS568-114 Buna-N nitrile O-ring, 15.54mm ID, 2.62mm cross-section, 20.78mm OD, 70A durometer, NBR rubber, 5/8 inch bore, cylinder piston seal, valve body seal",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 20.78,
+      "height": 2.62,
+      "weight": 0.4
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 3.17,
+          "grooveDepth": 2.1,
+          "grooveDiameter": 16.0,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 3.17mm wide × 2.10mm deep, bore groove diameter 16.00mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-114",
+      "standard": "AS568",
+      "innerDiameter": "15.54mm (0.612 in)",
+      "crossSection": "2.62mm (0.103 in)",
+      "outerDiameter": "20.78mm (0.818 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K145",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "Solid medium-bore seal. 2.62mm cross-section handles moderate hydraulic pressures. For higher pressure (>10 MPa), add backup rings or step up to the -214 (3.53mm CS).",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-114",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "15.54mm-ID",
+      "2.62mm-CS",
+      "piston-seal",
+      "valve-body"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-116 (18.64mm ID × 2.62mm CS, Buna-N)",
+    "description": "AS568-116 Buna-N nitrile O-ring, 18.64mm ID, 2.62mm cross-section, 23.88mm OD, 70A durometer, NBR rubber, 3/4 inch bore seal, manifold seal, enclosure lid gasket",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 23.88,
+      "height": 2.62,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 3.17,
+          "grooveDepth": 2.1,
+          "grooveDiameter": 19.1,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 3.17mm wide × 2.10mm deep, bore groove diameter 19.10mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-116",
+      "standard": "AS568",
+      "innerDiameter": "18.64mm (0.734 in)",
+      "crossSection": "2.62mm (0.103 in)",
+      "outerDiameter": "23.88mm (0.940 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K147",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "Good for ~20mm bore seals. The 2.62mm CS provides a nice balance between sealing force and groove size. Works well for enclosure lid gaskets where you want a flush O-ring groove.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-116",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "18.64mm-ID",
+      "2.62mm-CS",
+      "manifold-seal",
+      "lid-gasket"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-118 (21.82mm ID × 2.62mm CS, Buna-N)",
+    "description": "AS568-118 Buna-N nitrile O-ring, 21.82mm ID, 2.62mm cross-section, 27.06mm OD, 70A durometer, NBR rubber, large cylinder seal, shaft seal, pump housing gasket",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 27.06,
+      "height": 2.62,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 3.17,
+          "grooveDepth": 2.1,
+          "grooveDiameter": 22.28,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 3.17mm wide × 2.10mm deep, bore groove diameter 22.28mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-118",
+      "standard": "AS568",
+      "innerDiameter": "21.82mm (0.859 in)",
+      "crossSection": "2.62mm (0.103 in)",
+      "outerDiameter": "27.06mm (1.065 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K149",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "22mm bore seal suitable for medium cylinders and shaft seals. The 2.62mm CS provides good sealing but consider backup rings for pressures above 7 MPa (1000 psi). Always verify groove finish — 16-32 microinch Ra for dynamic seals.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-118",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "21.82mm-ID",
+      "2.62mm-CS",
+      "cylinder-seal",
+      "shaft-seal"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-120 (24.99mm ID × 2.62mm CS, Buna-N)",
+    "description": "AS568-120 Buna-N nitrile O-ring, 24.99mm ID, 2.62mm cross-section, 30.23mm OD, 70A durometer, NBR rubber, 1 inch bore seal, large piston seal, housing gasket, flange seal",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 30.23,
+      "height": 2.62,
+      "weight": 0.6
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 3.17,
+          "grooveDepth": 2.1,
+          "grooveDiameter": 25.45,
+          "squeeze": "20-25%",
+          "description": "Static face seal groove: 3.17mm wide × 2.10mm deep, bore groove diameter 25.45mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-120",
+      "standard": "AS568",
+      "innerDiameter": "24.99mm (0.984 in, ~1\")",
+      "crossSection": "2.62mm (0.103 in)",
+      "outerDiameter": "30.23mm (1.190 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K151",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "25mm / 1 inch bore is extremely common. Good for piston seals, flange gaskets, and housing seals. For high-pressure hydraulics, add PTFE backup rings on the low-pressure side of the O-ring.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-120",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "24.99mm-ID",
+      "2.62mm-CS",
+      "1-inch",
+      "piston-seal",
+      "flange-seal"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-210 (18.72mm ID × 3.53mm CS, Buna-N)",
+    "description": "AS568-210 Buna-N nitrile O-ring, 18.72mm ID, 3.53mm cross-section, 25.78mm OD, 70A durometer, NBR rubber, thick cross-section, high pressure seal, hydraulic cylinder, heavy duty sealing",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 25.78,
+      "height": 3.53,
+      "weight": 0.7
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 4.34,
+          "grooveDepth": 2.87,
+          "grooveDiameter": 19.18,
+          "squeeze": "18-22%",
+          "description": "Static face seal groove: 4.34mm wide × 2.87mm deep, bore groove diameter 19.18mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-210",
+      "standard": "AS568",
+      "innerDiameter": "18.72mm (0.737 in)",
+      "crossSection": "3.53mm (0.139 in)",
+      "outerDiameter": "25.78mm (1.015 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K161",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      },
+      {
+        "name": "Global O-Ring",
+        "approximatePrice": 0.5,
+        "url": "https://www.globaloring.com/"
+      }
+    ],
+    "designNotes": "Start of the 2xx series (3.53mm cross-section). Heavy-duty O-ring for high-pressure hydraulic and pneumatic applications. Thicker cross-section resists extrusion better than 1xx series. Groove dimensions are significantly larger — ensure housing has space for the wider groove.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-210",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "18.72mm-ID",
+      "3.53mm-CS",
+      "high-pressure",
+      "hydraulic",
+      "heavy-duty"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-214 (25.07mm ID × 3.53mm CS, Buna-N)",
+    "description": "AS568-214 Buna-N nitrile O-ring, 25.07mm ID, 3.53mm cross-section, 32.13mm OD, 70A durometer, NBR rubber, 1 inch bore heavy-duty seal, high pressure piston, industrial hydraulic",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 32.13,
+      "height": 3.53,
+      "weight": 0.9
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 4.34,
+          "grooveDepth": 2.87,
+          "grooveDiameter": 25.53,
+          "squeeze": "18-22%",
+          "description": "Static face seal groove: 4.34mm wide × 2.87mm deep, bore groove diameter 25.53mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-214",
+      "standard": "AS568",
+      "innerDiameter": "25.07mm (0.987 in, ~1\")",
+      "crossSection": "3.53mm (0.139 in)",
+      "outerDiameter": "32.13mm (1.265 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K165",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "Heavy-duty 1-inch seal. The 3.53mm cross-section handles pressures to ~15 MPa without backup rings. For higher pressures, add PTFE backup rings. Very common in industrial hydraulic equipment.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-214",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "25.07mm-ID",
+      "3.53mm-CS",
+      "1-inch",
+      "high-pressure",
+      "industrial"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-218 (31.42mm ID × 3.53mm CS, Buna-N)",
+    "description": "AS568-218 Buna-N nitrile O-ring, 31.42mm ID, 3.53mm cross-section, 38.48mm OD, 70A durometer, NBR rubber, 1.25 inch bore, large hydraulic cylinder, pump housing seal, flange gasket",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 38.48,
+      "height": 3.53,
+      "weight": 1.1
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 4.34,
+          "grooveDepth": 2.87,
+          "grooveDiameter": 31.88,
+          "squeeze": "18-22%",
+          "description": "Static face seal groove: 4.34mm wide × 2.87mm deep, bore groove diameter 31.88mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-218",
+      "standard": "AS568",
+      "innerDiameter": "31.42mm (1.237 in)",
+      "crossSection": "3.53mm (0.139 in)",
+      "outerDiameter": "38.48mm (1.515 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K169",
+        "approximatePrice": 1,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 0.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "Large heavy-duty seal for 1.25 inch bore applications. Thick enough for moderate-pressure hydraulic use. For pump housings, ensure groove surface finish is 16-32 microinch Ra for reliable sealing.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-218",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "31.42mm-ID",
+      "3.53mm-CS",
+      "hydraulic-cylinder",
+      "pump-housing"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-222 (38.00mm ID × 3.53mm CS, Buna-N)",
+    "description": "AS568-222 Buna-N nitrile O-ring, 38mm ID, 3.53mm cross-section, 45.06mm OD, 70A durometer, NBR rubber, 1.5 inch bore, large flange seal, pipe coupling, pressure vessel port",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 45.06,
+      "height": 3.53,
+      "weight": 1.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 4.34,
+          "grooveDepth": 2.87,
+          "grooveDiameter": 38.46,
+          "squeeze": "18-22%",
+          "description": "Static face seal groove: 4.34mm wide × 2.87mm deep, bore groove diameter 38.46mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-222",
+      "standard": "AS568",
+      "innerDiameter": "38.00mm (1.496 in, ~1-1/2\")",
+      "crossSection": "3.53mm (0.139 in)",
+      "outerDiameter": "45.06mm (1.774 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K173",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 1,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "38mm / 1.5 inch bore seal for large flanges and pipe couplings. Common in industrial fluid handling. At this size, proper groove concentricity becomes critical — eccentricity causes uneven compression and leaks.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-222",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "38mm-ID",
+      "3.53mm-CS",
+      "1.5-inch",
+      "flange-seal",
+      "pipe-coupling"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-226 (50.39mm ID × 3.53mm CS, Buna-N)",
+    "description": "AS568-226 Buna-N nitrile O-ring, 50.39mm ID, 3.53mm cross-section, 57.45mm OD, 70A durometer, NBR rubber, 2 inch bore, large flange seal, filter housing, large cylinder, industrial equipment",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 57.45,
+      "height": 3.53,
+      "weight": 1.7
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 4.34,
+          "grooveDepth": 2.87,
+          "grooveDiameter": 50.85,
+          "squeeze": "18-22%",
+          "description": "Static face seal groove: 4.34mm wide × 2.87mm deep, bore groove diameter 50.85mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-226",
+      "standard": "AS568",
+      "innerDiameter": "50.39mm (1.984 in, ~2\")",
+      "crossSection": "3.53mm (0.139 in)",
+      "outerDiameter": "57.45mm (2.262 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K177",
+        "approximatePrice": 2,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 1,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "2-inch bore seal for large industrial equipment. Handle carefully — the ring can easily twist during installation on large bores. Lubricate well and check for twists before closing. For very high pressure, use 90A durometer instead of 70A.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-226",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "50.39mm-ID",
+      "3.53mm-CS",
+      "2-inch",
+      "large-flange",
+      "filter-housing"
+    ]
+  },
+  {
+    "name": "O-Ring AS568-230 (63.09mm ID × 3.53mm CS, Buna-N)",
+    "description": "AS568-230 Buna-N nitrile O-ring, 63.09mm ID, 3.53mm cross-section, 70.15mm OD, 70A durometer, NBR rubber, 2.5 inch bore, extra large seal, manhole cover, large flange, pressure vessel",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 70.15,
+      "height": 3.53,
+      "weight": 2.1
+    },
+    "mountingFeatures": [
+      {
+        "type": "o_ring_groove",
+        "specs": {
+          "grooveWidth": 4.34,
+          "grooveDepth": 2.87,
+          "grooveDiameter": 63.55,
+          "squeeze": "18-22%",
+          "description": "Static face seal groove: 4.34mm wide × 2.87mm deep, bore groove diameter 63.55mm"
+        }
+      }
+    ],
+    "specs": {
+      "dashNumber": "-230",
+      "standard": "AS568",
+      "innerDiameter": "63.09mm (2.484 in, ~2-1/2\")",
+      "crossSection": "3.53mm (0.139 in)",
+      "outerDiameter": "70.15mm (2.762 in)",
+      "material": "Buna-N / Nitrile (NBR)",
+      "durometer": "70A",
+      "temperatureRange": "-30°C to 120°C",
+      "chemicalResistance": "Petroleum oils, fuels, water, hydraulic fluid",
+      "color": "Black"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "9452K181",
+        "approximatePrice": 2.5,
+        "url": "https://www.mcmaster.com/o-rings"
+      },
+      {
+        "name": "The O-Ring Store",
+        "approximatePrice": 1.5,
+        "url": "https://www.theoringstore.com/"
+      }
+    ],
+    "designNotes": "Largest O-ring in catalog. For 2.5-inch bore flanges, large pressure vessel ports, and access covers. At this size, consider using an O-ring installation cone or bullet to prevent damage during assembly. Check for spiraling/twisting after installation.",
+    "tags": [
+      "o-ring",
+      "AS568",
+      "-230",
+      "buna-n",
+      "nitrile",
+      "NBR",
+      "63.09mm-ID",
+      "3.53mm-CS",
+      "2.5-inch",
+      "extra-large",
+      "pressure-vessel"
+    ]
+  },
+  {
+    "name": "Zip Tie 4\" (100mm) × 2.5mm, 18 lb",
+    "description": "Nylon cable tie, 4 inch 100mm length, 2.5mm width, 18 lb tensile strength, natural white nylon 6/6, small wire bundling, electronics harness, indoor use, lightweight",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 100,
+      "width": 2.5,
+      "height": 1.2,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "cable_bundle",
+        "specs": {
+          "maxBundleDiameter": 22,
+          "description": "Wraps around bundles up to 22mm diameter"
+        }
+      }
+    ],
+    "specs": {
+      "length": "100mm (4 in)",
+      "width": "2.5mm",
+      "tensileStrength": "18 lbs (80 N)",
+      "material": "Nylon 6/6",
+      "color": "Natural / White",
+      "uvResistant": false,
+      "maxBundleDiameter": "22mm",
+      "operatingTemp": "-40°C to 85°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 3,
+        "url": "https://www.amazon.com/s?k=4+inch+cable+ties+100+pack+white"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7130K11",
+        "approximatePrice": 5,
+        "url": "https://www.mcmaster.com/cable-ties"
+      },
+      {
+        "name": "Gardner Bender",
+        "approximatePrice": 3,
+        "url": "https://www.gardnerbender.com/en/cable-management/cable-ties"
+      }
+    ],
+    "designNotes": "Smallest zip tie. Perfect for bundling a few wires inside electronics enclosures. Small and discreet. Natural white color is standard for indoor use — use black UV-resistant version for outdoor. Sold in bags of 100.",
+    "tags": [
+      "zip-tie",
+      "cable-tie",
+      "4-inch",
+      "100mm",
+      "nylon",
+      "white",
+      "small",
+      "electronics",
+      "wire-bundle",
+      "indoor"
+    ]
+  },
+  {
+    "name": "Zip Tie 6\" (150mm) × 2.5mm, 18 lb",
+    "description": "Nylon cable tie, 6 inch 150mm length, 2.5mm width, 18 lb tensile strength, natural white nylon 6/6, general purpose small tie, wiring harness, indoor cable management",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 150,
+      "width": 2.5,
+      "height": 1.2,
+      "weight": 0.8
+    },
+    "mountingFeatures": [
+      {
+        "type": "cable_bundle",
+        "specs": {
+          "maxBundleDiameter": 35,
+          "description": "Wraps around bundles up to 35mm diameter"
+        }
+      }
+    ],
+    "specs": {
+      "length": "150mm (6 in)",
+      "width": "2.5mm",
+      "tensileStrength": "18 lbs (80 N)",
+      "material": "Nylon 6/6",
+      "color": "Natural / White",
+      "uvResistant": false,
+      "maxBundleDiameter": "35mm",
+      "operatingTemp": "-40°C to 85°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/s?k=6+inch+cable+ties+100+pack"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7130K13",
+        "approximatePrice": 5,
+        "url": "https://www.mcmaster.com/cable-ties"
+      },
+      {
+        "name": "Gardner Bender",
+        "approximatePrice": 3.5,
+        "url": "https://www.gardnerbender.com/en/cable-management/cable-ties"
+      }
+    ],
+    "designNotes": "Very common general-purpose size. Long enough for most small cable bundles while staying discreet. Good for behind-desk cable management and electronics projects. Trim the tail flush with side cutters.",
+    "tags": [
+      "zip-tie",
+      "cable-tie",
+      "6-inch",
+      "150mm",
+      "nylon",
+      "white",
+      "general-purpose",
+      "cable-management",
+      "indoor"
+    ]
+  },
+  {
+    "name": "Zip Tie 8\" (200mm) × 3.6mm, 40 lb",
+    "description": "Nylon cable tie, 8 inch 200mm length, 3.6mm width, 40 lb tensile strength, black nylon 6/6, UV-resistant, medium duty, outdoor cable bundling, conduit strapping, automotive",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 200,
+      "width": 3.6,
+      "height": 1.3,
+      "weight": 1.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "cable_bundle",
+        "specs": {
+          "maxBundleDiameter": 50,
+          "description": "Wraps around bundles up to 50mm diameter"
+        }
+      }
+    ],
+    "specs": {
+      "length": "200mm (8 in)",
+      "width": "3.6mm",
+      "tensileStrength": "40 lbs (178 N)",
+      "material": "Nylon 6/6",
+      "color": "Black (UV-resistant)",
+      "uvResistant": true,
+      "maxBundleDiameter": "50mm",
+      "operatingTemp": "-40°C to 85°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 4,
+        "url": "https://www.amazon.com/s?k=8+inch+cable+ties+black+100+pack"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7130K31",
+        "approximatePrice": 6,
+        "url": "https://www.mcmaster.com/cable-ties"
+      },
+      {
+        "name": "Home Depot",
+        "approximatePrice": 4,
+        "url": "https://www.homedepot.com/s/8%20inch%20cable%20ties"
+      }
+    ],
+    "designNotes": "Step up in strength from the 2.5mm wide ties. Black UV-stabilized nylon resists sun degradation for outdoor use. Good for automotive under-hood applications and outdoor cable runs. 40 lb tensile handles medium cable bundles securely.",
+    "tags": [
+      "zip-tie",
+      "cable-tie",
+      "8-inch",
+      "200mm",
+      "nylon",
+      "black",
+      "UV-resistant",
+      "medium-duty",
+      "outdoor",
+      "automotive"
+    ]
+  },
+  {
+    "name": "Zip Tie 8\" (200mm) × 4.8mm, 50 lb",
+    "description": "Nylon cable tie, 8 inch 200mm length, 4.8mm width, 50 lb tensile strength, black nylon 6/6, UV-resistant, standard duty, most common width, versatile general purpose",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 200,
+      "width": 4.8,
+      "height": 1.5,
+      "weight": 2.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "cable_bundle",
+        "specs": {
+          "maxBundleDiameter": 50,
+          "description": "Wraps around bundles up to 50mm diameter"
+        }
+      }
+    ],
+    "specs": {
+      "length": "200mm (8 in)",
+      "width": "4.8mm",
+      "tensileStrength": "50 lbs (222 N)",
+      "material": "Nylon 6/6",
+      "color": "Black (UV-resistant)",
+      "uvResistant": true,
+      "maxBundleDiameter": "50mm",
+      "operatingTemp": "-40°C to 85°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 4.5,
+        "url": "https://www.amazon.com/s?k=8+inch+cable+ties+50lb+black+100+pack"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7130K41",
+        "approximatePrice": 6,
+        "url": "https://www.mcmaster.com/cable-ties"
+      },
+      {
+        "name": "Home Depot",
+        "approximatePrice": 5,
+        "url": "https://www.homedepot.com/s/cable%20ties%208%20inch"
+      }
+    ],
+    "designNotes": "The 4.8mm width is the standard cable tie width — this is the size most people picture when they think 'zip tie'. 50 lb tensile is strong enough for most applications. Stock this in both 8\" and 12\" lengths for good coverage.",
+    "tags": [
+      "zip-tie",
+      "cable-tie",
+      "8-inch",
+      "200mm",
+      "nylon",
+      "black",
+      "UV-resistant",
+      "standard",
+      "most-common-width",
+      "50lb"
+    ]
+  },
+  {
+    "name": "Zip Tie 11\" (280mm) × 4.8mm, 50 lb",
+    "description": "Nylon cable tie, 11 inch 280mm length, 4.8mm width, 50 lb tensile strength, black nylon 6/6, UV-resistant, medium-long tie, pipe strapping, larger cable bundles, panel wiring",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 280,
+      "width": 4.8,
+      "height": 1.5,
+      "weight": 2.8
+    },
+    "mountingFeatures": [
+      {
+        "type": "cable_bundle",
+        "specs": {
+          "maxBundleDiameter": 76,
+          "description": "Wraps around bundles up to 76mm (3 inch) diameter"
+        }
+      }
+    ],
+    "specs": {
+      "length": "280mm (11 in)",
+      "width": "4.8mm",
+      "tensileStrength": "50 lbs (222 N)",
+      "material": "Nylon 6/6",
+      "color": "Black (UV-resistant)",
+      "uvResistant": true,
+      "maxBundleDiameter": "76mm",
+      "operatingTemp": "-40°C to 85°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/s?k=11+inch+cable+ties+black+100+pack"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7130K51",
+        "approximatePrice": 7,
+        "url": "https://www.mcmaster.com/cable-ties"
+      }
+    ],
+    "designNotes": "Good mid-length tie for larger bundles and pipe/conduit strapping up to 3-inch diameter. Long enough for most control panel wiring without being wastefully long. Cut tail flush for professional appearance.",
+    "tags": [
+      "zip-tie",
+      "cable-tie",
+      "11-inch",
+      "280mm",
+      "nylon",
+      "black",
+      "UV-resistant",
+      "medium-long",
+      "pipe-strap",
+      "panel-wiring"
+    ]
+  },
+  {
+    "name": "Zip Tie 12\" (300mm) × 4.8mm, 50 lb",
+    "description": "Nylon cable tie, 12 inch 300mm length, 4.8mm width, 50 lb tensile strength, black nylon 6/6, UV-resistant, standard long tie, conduit mounting, large cable bundles, general utility",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 300,
+      "width": 4.8,
+      "height": 1.5,
+      "weight": 3.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "cable_bundle",
+        "specs": {
+          "maxBundleDiameter": 82,
+          "description": "Wraps around bundles up to 82mm diameter"
+        }
+      }
+    ],
+    "specs": {
+      "length": "300mm (12 in)",
+      "width": "4.8mm",
+      "tensileStrength": "50 lbs (222 N)",
+      "material": "Nylon 6/6",
+      "color": "Black (UV-resistant)",
+      "uvResistant": true,
+      "maxBundleDiameter": "82mm",
+      "operatingTemp": "-40°C to 85°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 5.5,
+        "url": "https://www.amazon.com/s?k=12+inch+cable+ties+black+100+pack"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7130K53",
+        "approximatePrice": 7,
+        "url": "https://www.mcmaster.com/cable-ties"
+      },
+      {
+        "name": "Home Depot",
+        "approximatePrice": 5,
+        "url": "https://www.homedepot.com/s/12%20inch%20cable%20ties"
+      }
+    ],
+    "designNotes": "The 12-inch (300mm) length is the second most stocked size after 8-inch. Long enough for most utility applications — mounting cables to frames, bundling conduit, and securing hoses. A must-have in any workshop.",
+    "tags": [
+      "zip-tie",
+      "cable-tie",
+      "12-inch",
+      "300mm",
+      "nylon",
+      "black",
+      "UV-resistant",
+      "standard-long",
+      "utility",
+      "conduit",
+      "workshop-staple"
+    ]
+  },
+  {
+    "name": "Zip Tie 14\" (350mm) × 4.8mm, 50 lb",
+    "description": "Nylon cable tie, 14 inch 350mm length, 4.8mm width, 50 lb tensile strength, black nylon 6/6, UV-resistant, long tie, fence mounting, large pipe strap, temporary securing",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 350,
+      "width": 4.8,
+      "height": 1.5,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "cable_bundle",
+        "specs": {
+          "maxBundleDiameter": 98,
+          "description": "Wraps around bundles up to 98mm diameter"
+        }
+      }
+    ],
+    "specs": {
+      "length": "350mm (14 in)",
+      "width": "4.8mm",
+      "tensileStrength": "50 lbs (222 N)",
+      "material": "Nylon 6/6",
+      "color": "Black (UV-resistant)",
+      "uvResistant": true,
+      "maxBundleDiameter": "98mm",
+      "operatingTemp": "-40°C to 85°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/s?k=14+inch+cable+ties+black+100+pack"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7130K55",
+        "approximatePrice": 7,
+        "url": "https://www.mcmaster.com/cable-ties"
+      }
+    ],
+    "designNotes": "Long enough to wrap around 4-inch (100mm) pipes and posts. Good for temporary fence mounting, securing items to frames, and large cable bundles. For permanent outdoor installations, consider stainless steel ties instead of nylon.",
+    "tags": [
+      "zip-tie",
+      "cable-tie",
+      "14-inch",
+      "350mm",
+      "nylon",
+      "black",
+      "UV-resistant",
+      "long",
+      "fence-mount",
+      "pipe-strap"
+    ]
+  },
+  {
+    "name": "Zip Tie 18\" (457mm) × 4.8mm, 50 lb",
+    "description": "Nylon cable tie, 18 inch 457mm length, 4.8mm width, 50 lb tensile strength, black nylon 6/6, UV-resistant, extra long, large diameter bundling, duct strapping, trunk organizer",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 457,
+      "width": 4.8,
+      "height": 1.5,
+      "weight": 4.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "cable_bundle",
+        "specs": {
+          "maxBundleDiameter": 133,
+          "description": "Wraps around bundles up to 133mm (5.25 inch) diameter"
+        }
+      }
+    ],
+    "specs": {
+      "length": "457mm (18 in)",
+      "width": "4.8mm",
+      "tensileStrength": "50 lbs (222 N)",
+      "material": "Nylon 6/6",
+      "color": "Black (UV-resistant)",
+      "uvResistant": true,
+      "maxBundleDiameter": "133mm",
+      "operatingTemp": "-40°C to 85°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/s?k=18+inch+cable+ties+black+100+pack"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7130K57",
+        "approximatePrice": 8,
+        "url": "https://www.mcmaster.com/cable-ties"
+      },
+      {
+        "name": "Home Depot",
+        "approximatePrice": 7,
+        "url": "https://www.homedepot.com/s/18%20inch%20cable%20ties"
+      }
+    ],
+    "designNotes": "Extra long for large-diameter applications. Wraps around 6-inch ductwork and large cable trays. Can also be daisy-chained (loop two together) for even larger diameters. Useful for temporary securing during assembly and installation.",
+    "tags": [
+      "zip-tie",
+      "cable-tie",
+      "18-inch",
+      "457mm",
+      "nylon",
+      "black",
+      "UV-resistant",
+      "extra-long",
+      "duct-strap",
+      "large-diameter"
+    ]
+  },
+  {
+    "name": "Heavy Duty Zip Tie 8\" (200mm) × 7.6mm, 120 lb",
+    "description": "Heavy duty nylon cable tie, 8 inch 200mm length, 7.6mm width, 120 lb tensile strength, black nylon 6/6, UV-resistant, industrial strength, equipment mounting, structural cable management",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 200,
+      "width": 7.6,
+      "height": 2.0,
+      "weight": 4.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "cable_bundle",
+        "specs": {
+          "maxBundleDiameter": 44,
+          "description": "Wraps around bundles up to 44mm diameter (shorter usable length due to wider head)"
+        }
+      }
+    ],
+    "specs": {
+      "length": "200mm (8 in)",
+      "width": "7.6mm",
+      "tensileStrength": "120 lbs (534 N)",
+      "material": "Nylon 6/6",
+      "color": "Black (UV-resistant)",
+      "uvResistant": true,
+      "maxBundleDiameter": "44mm",
+      "operatingTemp": "-40°C to 85°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/s?k=heavy+duty+cable+ties+8+inch+120+lb"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7130K71",
+        "approximatePrice": 8,
+        "url": "https://www.mcmaster.com/cable-ties"
+      }
+    ],
+    "designNotes": "Heavy-duty 120 lb tensile for applications where standard ties are too weak. The wider 7.6mm strap distributes load better and resists pulling through soft insulation. Note: the head is larger, reducing effective bundle diameter vs standard 4.8mm ties of same length.",
+    "tags": [
+      "zip-tie",
+      "cable-tie",
+      "8-inch",
+      "200mm",
+      "heavy-duty",
+      "120lb",
+      "nylon",
+      "black",
+      "UV-resistant",
+      "industrial-strength"
+    ]
+  },
+  {
+    "name": "Heavy Duty Zip Tie 12\" (300mm) × 7.6mm, 120 lb",
+    "description": "Heavy duty nylon cable tie, 12 inch 300mm length, 7.6mm width, 120 lb tensile strength, black nylon 6/6, UV-resistant, industrial heavy duty, conduit mounting, equipment strapping, high tension",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 300,
+      "width": 7.6,
+      "height": 2.0,
+      "weight": 6.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "cable_bundle",
+        "specs": {
+          "maxBundleDiameter": 75,
+          "description": "Wraps around bundles up to 75mm diameter"
+        }
+      }
+    ],
+    "specs": {
+      "length": "300mm (12 in)",
+      "width": "7.6mm",
+      "tensileStrength": "120 lbs (534 N)",
+      "material": "Nylon 6/6",
+      "color": "Black (UV-resistant)",
+      "uvResistant": true,
+      "maxBundleDiameter": "75mm",
+      "operatingTemp": "-40°C to 85°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/s?k=heavy+duty+cable+ties+12+inch+120+lb"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7130K73",
+        "approximatePrice": 8,
+        "url": "https://www.mcmaster.com/cable-ties"
+      },
+      {
+        "name": "Home Depot",
+        "approximatePrice": 7,
+        "url": "https://www.homedepot.com/s/heavy%20duty%20cable%20ties%2012"
+      }
+    ],
+    "designNotes": "Workhorse heavy-duty tie. Strong enough to secure conduit to unistrut, mount equipment to frames, and bundle heavy cable runs. For mission-critical installations, use two ties side-by-side for redundancy.",
+    "tags": [
+      "zip-tie",
+      "cable-tie",
+      "12-inch",
+      "300mm",
+      "heavy-duty",
+      "120lb",
+      "nylon",
+      "black",
+      "UV-resistant",
+      "conduit-mount",
+      "industrial"
+    ]
+  },
+  {
+    "name": "Heavy Duty Zip Tie 18\" (457mm) × 7.6mm, 120 lb",
+    "description": "Heavy duty nylon cable tie, 18 inch 457mm length, 7.6mm width, 120 lb tensile strength, black nylon 6/6, UV-resistant, industrial extra-long, large equipment securing, structural, high load",
+    "categorySlug": "misc-hardware",
+    "entryType": "component",
+    "dimensions": {
+      "length": 457,
+      "width": 7.6,
+      "height": 2.0,
+      "weight": 8.0
+    },
+    "mountingFeatures": [
+      {
+        "type": "cable_bundle",
+        "specs": {
+          "maxBundleDiameter": 125,
+          "description": "Wraps around bundles up to 125mm (5 inch) diameter"
+        }
+      }
+    ],
+    "specs": {
+      "length": "457mm (18 in)",
+      "width": "7.6mm",
+      "tensileStrength": "120 lbs (534 N)",
+      "material": "Nylon 6/6",
+      "color": "Black (UV-resistant)",
+      "uvResistant": true,
+      "maxBundleDiameter": "125mm",
+      "operatingTemp": "-40°C to 85°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/s?k=heavy+duty+cable+ties+18+inch+120+lb"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7130K75",
+        "approximatePrice": 8,
+        "url": "https://www.mcmaster.com/cable-ties"
+      },
+      {
+        "name": "Home Depot",
+        "approximatePrice": 8,
+        "url": "https://www.homedepot.com/s/heavy%20duty%20cable%20ties%2018"
+      }
+    ],
+    "designNotes": "The biggest and strongest nylon zip tie commonly available. 120 lb tensile at 18 inches handles large conduit bundles, equipment securing, and structural cable management. For loads exceeding 120 lbs, use stainless steel cable ties or proper band clamps instead.",
+    "tags": [
+      "zip-tie",
+      "cable-tie",
+      "18-inch",
+      "457mm",
+      "heavy-duty",
+      "120lb",
+      "nylon",
+      "black",
+      "UV-resistant",
+      "extra-long",
+      "structural",
+      "maximum-strength"
+    ]
+  }
+]

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cascadia-vault
+  namespace: cascadia
+  labels:
+    app: cascadia
+    component: vault
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: cascadia
+    component: vault

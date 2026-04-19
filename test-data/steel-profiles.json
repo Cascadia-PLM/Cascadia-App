@@ -1,0 +1,760 @@
+[
+  {
+    "name": "Steel Flat Bar 1/2\"x1/8\", A36 Hot Rolled",
+    "description": "A36 hot rolled steel flat bar 1/2 inch wide 1/8 inch thick mild steel structural weldable bracket strap reinforcement",
+    "categorySlug": "steel-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 12.7, "depth": 3.18 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "A36 Hot Rolled Steel",
+      "barWidth": "1/2\"",
+      "thickness": "1/8\"",
+      "profile": "Flat Bar",
+      "yieldStrength": "36 ksi / 250 MPa"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 3.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 1.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 2.5
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 5.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 7.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 9.5
+      }
+    ],
+    "designNotes": "Easily welded (MIG, TIG, stick). Drill with HSS or cobalt bits with cutting fluid. Will rust without coating (paint/powder coat/zinc plate). Stronger and stiffer than aluminum at same size but 2.5x heavier.",
+    "tags": [
+      "steel",
+      "flat-bar",
+      "rectangular-bar",
+      "A36",
+      "hot-rolled",
+      "mild-steel",
+      "structural",
+      "1/2-inch",
+      "1/8-thick"
+    ]
+  },
+  {
+    "name": "Steel Flat Bar 3/4\"x1/8\", A36 Hot Rolled",
+    "description": "A36 hot rolled steel flat bar 3/4 inch wide 1/8 inch thick mild steel structural weldable bracket strap reinforcement",
+    "categorySlug": "steel-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 19.05, "depth": 3.18 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "A36 Hot Rolled Steel",
+      "barWidth": "3/4\"",
+      "thickness": "1/8\"",
+      "profile": "Flat Bar",
+      "yieldStrength": "36 ksi / 250 MPa"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 4.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 1.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 3.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 4.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 6.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 9.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 12.0
+      }
+    ],
+    "designNotes": "Easily welded (MIG, TIG, stick). Drill with HSS or cobalt bits with cutting fluid. Will rust without coating (paint/powder coat/zinc plate). Stronger and stiffer than aluminum at same size but 2.5x heavier.",
+    "tags": [
+      "steel",
+      "flat-bar",
+      "rectangular-bar",
+      "A36",
+      "hot-rolled",
+      "mild-steel",
+      "structural",
+      "3/4-inch",
+      "1/8-thick"
+    ]
+  },
+  {
+    "name": "Steel Flat Bar 1\"x1/8\", A36 Hot Rolled",
+    "description": "A36 hot rolled steel flat bar 1 inch wide 1/8 inch thick mild steel structural weldable bracket strap reinforcement",
+    "categorySlug": "steel-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 25.4, "depth": 3.18 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "A36 Hot Rolled Steel",
+      "barWidth": "1\"",
+      "thickness": "1/8\"",
+      "profile": "Flat Bar",
+      "yieldStrength": "36 ksi / 250 MPa"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 5.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 2.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 7.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 11.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 14.0
+      }
+    ],
+    "designNotes": "Easily welded (MIG, TIG, stick). Drill with HSS or cobalt bits with cutting fluid. Will rust without coating (paint/powder coat/zinc plate). Stronger and stiffer than aluminum at same size but 2.5x heavier.",
+    "tags": [
+      "steel",
+      "flat-bar",
+      "rectangular-bar",
+      "A36",
+      "hot-rolled",
+      "mild-steel",
+      "structural",
+      "1-inch",
+      "1/8-thick"
+    ]
+  },
+  {
+    "name": "Steel Flat Bar 1\"x1/4\", A36 Hot Rolled",
+    "description": "A36 hot rolled steel flat bar 1 inch wide 1/4 inch thick mild steel structural weldable bracket strap reinforcement",
+    "categorySlug": "steel-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 25.4, "depth": 6.35 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "A36 Hot Rolled Steel",
+      "barWidth": "1\"",
+      "thickness": "1/4\"",
+      "profile": "Flat Bar",
+      "yieldStrength": "36 ksi / 250 MPa"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 9.0,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 3.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 6.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 9.0
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 12.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 18.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 24.0
+      }
+    ],
+    "designNotes": "Easily welded (MIG, TIG, stick). Drill with HSS or cobalt bits with cutting fluid. Will rust without coating (paint/powder coat/zinc plate). Stronger and stiffer than aluminum at same size but 2.5x heavier.",
+    "tags": [
+      "steel",
+      "flat-bar",
+      "rectangular-bar",
+      "A36",
+      "hot-rolled",
+      "mild-steel",
+      "structural",
+      "1-inch",
+      "1/4-thick"
+    ]
+  },
+  {
+    "name": "Steel Flat Bar 1-1/2\"x1/8\", A36 Hot Rolled",
+    "description": "A36 hot rolled steel flat bar 1-1/2 inch wide 1/8 inch thick mild steel structural weldable bracket strap reinforcement",
+    "categorySlug": "steel-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 38.1, "depth": 3.18 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "A36 Hot Rolled Steel",
+      "barWidth": "1-1/2\"",
+      "thickness": "1/8\"",
+      "profile": "Flat Bar",
+      "yieldStrength": "36 ksi / 250 MPa"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 7.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 2.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 5.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 7.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 10.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 15.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 20.0
+      }
+    ],
+    "designNotes": "Easily welded (MIG, TIG, stick). Drill with HSS or cobalt bits with cutting fluid. Will rust without coating (paint/powder coat/zinc plate). Stronger and stiffer than aluminum at same size but 2.5x heavier.",
+    "tags": [
+      "steel",
+      "flat-bar",
+      "rectangular-bar",
+      "A36",
+      "hot-rolled",
+      "mild-steel",
+      "structural",
+      "1-1/2-inch",
+      "1/8-thick"
+    ]
+  },
+  {
+    "name": "Steel Flat Bar 1-1/2\"x1/4\", A36 Hot Rolled",
+    "description": "A36 hot rolled steel flat bar 1-1/2 inch wide 1/4 inch thick mild steel structural weldable bracket strap reinforcement",
+    "categorySlug": "steel-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 38.1, "depth": 6.35 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "A36 Hot Rolled Steel",
+      "barWidth": "1-1/2\"",
+      "thickness": "1/4\"",
+      "profile": "Flat Bar",
+      "yieldStrength": "36 ksi / 250 MPa"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 13.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 4.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 9.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 13.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 18.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 27.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 36.0
+      }
+    ],
+    "designNotes": "Easily welded (MIG, TIG, stick). Drill with HSS or cobalt bits with cutting fluid. Will rust without coating (paint/powder coat/zinc plate). Stronger and stiffer than aluminum at same size but 2.5x heavier.",
+    "tags": [
+      "steel",
+      "flat-bar",
+      "rectangular-bar",
+      "A36",
+      "hot-rolled",
+      "mild-steel",
+      "structural",
+      "1-1/2-inch",
+      "1/4-thick"
+    ]
+  },
+  {
+    "name": "Steel Square Tube 1/2\"x1/2\" x 16ga (0.065\" wall)",
+    "description": "A500 Grade B steel square tube 1/2 inch 16 gauge 0.065 wall ERW hollow structural section HSS weldable frame cage bracket",
+    "categorySlug": "steel-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 12.7, "height": 12.7, "depth": 1.65 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "A500 Grade B Steel",
+      "outerSize": "1/2\"",
+      "wallThickness": "0.065\" (16ga)",
+      "innerSize": "9.4 mm",
+      "profile": "Square Tube",
+      "type": "ERW",
+      "yieldStrength": "46 ksi / 317 MPa"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 7.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 2.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 5.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 7.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 10.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 15.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 20.0
+      }
+    ],
+    "designNotes": "Weldable MIG/TIG. Drill with cobalt bits + cutting fluid. Has weld seam on one face (orient cosmetically if exposed). Paint/powder coat to prevent rust. Verify A500 Grade B cert for structural use.",
+    "tags": [
+      "steel",
+      "square-tube",
+      "HSS",
+      "hollow-section",
+      "A500",
+      "grade-B",
+      "structural",
+      "1/2-inch",
+      "16ga"
+    ]
+  },
+  {
+    "name": "Steel Square Tube 3/4\"x3/4\" x 16ga (0.065\" wall)",
+    "description": "A500 Grade B steel square tube 3/4 inch 16 gauge 0.065 wall ERW hollow structural section HSS weldable frame cage bracket",
+    "categorySlug": "steel-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 19.05, "height": 19.05, "depth": 1.65 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "A500 Grade B Steel",
+      "outerSize": "3/4\"",
+      "wallThickness": "0.065\" (16ga)",
+      "innerSize": "15.75 mm",
+      "profile": "Square Tube",
+      "type": "ERW",
+      "yieldStrength": "46 ksi / 317 MPa"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 9.0,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 3.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 6.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 9.0
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 12.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 18.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 24.0
+      }
+    ],
+    "designNotes": "Weldable MIG/TIG. Drill with cobalt bits + cutting fluid. Has weld seam on one face (orient cosmetically if exposed). Paint/powder coat to prevent rust. Verify A500 Grade B cert for structural use.",
+    "tags": [
+      "steel",
+      "square-tube",
+      "HSS",
+      "hollow-section",
+      "A500",
+      "grade-B",
+      "structural",
+      "3/4-inch",
+      "16ga"
+    ]
+  },
+  {
+    "name": "Steel Square Tube 1\"x1\" x 16ga (0.065\" wall)",
+    "description": "A500 Grade B steel square tube 1 inch 16 gauge 0.065 wall ERW hollow structural section HSS weldable frame cage bracket",
+    "categorySlug": "steel-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 25.4, "height": 25.4, "depth": 1.65 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "A500 Grade B Steel",
+      "outerSize": "1\"",
+      "wallThickness": "0.065\" (16ga)",
+      "innerSize": "22.10 mm",
+      "profile": "Square Tube",
+      "type": "ERW",
+      "yieldStrength": "46 ksi / 317 MPa"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 12.0,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 4.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 8.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 12.0
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 16.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 24.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 32.0
+      }
+    ],
+    "designNotes": "Weldable MIG/TIG. Drill with cobalt bits + cutting fluid. Has weld seam on one face (orient cosmetically if exposed). Paint/powder coat to prevent rust. Verify A500 Grade B cert for structural use.",
+    "tags": [
+      "steel",
+      "square-tube",
+      "HSS",
+      "hollow-section",
+      "A500",
+      "grade-B",
+      "structural",
+      "1-inch",
+      "16ga"
+    ]
+  },
+  {
+    "name": "Steel Square Tube 1\"x1\" x 14ga (0.083\" wall)",
+    "description": "A500 Grade B steel square tube 1 inch 14 gauge 0.083 wall ERW hollow structural section HSS weldable frame cage bracket heavy duty",
+    "categorySlug": "steel-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 25.4, "height": 25.4, "depth": 2.11 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "A500 Grade B Steel",
+      "outerSize": "1\"",
+      "wallThickness": "0.083\" (14ga)",
+      "innerSize": "21.18 mm",
+      "profile": "Square Tube",
+      "type": "ERW",
+      "yieldStrength": "46 ksi / 317 MPa"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 15.0,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 5.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 10.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 15.0
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 20.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 30.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 40.0
+      }
+    ],
+    "designNotes": "Weldable MIG/TIG. Drill with cobalt bits + cutting fluid. Has weld seam on one face (orient cosmetically if exposed). Paint/powder coat to prevent rust. Verify A500 Grade B cert for structural use.",
+    "tags": [
+      "steel",
+      "square-tube",
+      "HSS",
+      "hollow-section",
+      "A500",
+      "grade-B",
+      "structural",
+      "1-inch",
+      "14ga"
+    ]
+  },
+  {
+    "name": "Steel Square Tube 1-1/2\"x1-1/2\" x 16ga (0.065\" wall)",
+    "description": "A500 Grade B steel square tube 1-1/2 inch 16 gauge 0.065 wall ERW hollow structural section HSS weldable frame cage bracket",
+    "categorySlug": "steel-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 38.1, "height": 38.1, "depth": 1.65 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "A500 Grade B Steel",
+      "outerSize": "1-1/2\"",
+      "wallThickness": "0.065\" (16ga)",
+      "innerSize": "34.80 mm",
+      "profile": "Square Tube",
+      "type": "ERW",
+      "yieldStrength": "46 ksi / 317 MPa"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 16.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 11.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 16.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 22.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 33.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 44.0
+      }
+    ],
+    "designNotes": "Weldable MIG/TIG. Drill with cobalt bits + cutting fluid. Has weld seam on one face (orient cosmetically if exposed). Paint/powder coat to prevent rust. Verify A500 Grade B cert for structural use.",
+    "tags": [
+      "steel",
+      "square-tube",
+      "HSS",
+      "hollow-section",
+      "A500",
+      "grade-B",
+      "structural",
+      "1-1/2-inch",
+      "16ga"
+    ]
+  }
+]

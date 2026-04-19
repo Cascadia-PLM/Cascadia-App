@@ -1,0 +1,40 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: cascadia
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  # Note: secrets.yaml must be created from secrets.yaml.example
+  # - secrets.yaml
+  - app/deployment.yaml
+  - app/service.yaml
+  - app/hpa.yaml
+  - ingress.yaml
+
+  # Optional: Vault service (standalone file storage)
+  # Uncomment to deploy the vault as a separate service with persistent storage.
+  # Requires cascadia-vault-pvc PersistentVolumeClaim (defined in vault/deployment.yaml).
+  # - vault/deployment.yaml
+  # - vault/service.yaml
+
+  # Optional: Jobs worker (background job processing)
+  # Uncomment to deploy the jobs worker for RabbitMQ-based background processing.
+  # Requires RABBITMQ_URL in cascadia-secrets. HPA scales workers based on CPU load.
+  # - jobs/deployment.yaml
+  # - jobs/hpa.yaml
+
+# Common labels for all resources
+commonLabels:
+  app.kubernetes.io/name: cascadia-plm
+  app.kubernetes.io/part-of: cascadia
+
+# Image customization
+images:
+  - name: cascadia/app
+    newTag: latest
+  # - name: cascadia/vault
+  #   newTag: latest
+  # - name: cascadia/jobs
+  #   newTag: latest

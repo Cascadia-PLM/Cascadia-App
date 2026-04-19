@@ -1,0 +1,1060 @@
+[
+  {
+    "name": "2020 Corner Bracket, L-Shape",
+    "description": "Zinc alloy L-shaped corner bracket for 2020 aluminum extrusion profiles, 90-degree joint connection, M5 bolt mounting, 20x20x20mm compact form factor for right-angle frame construction",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 20, "height": 20, "depth": 20, "weight": 12 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot_bracket",
+        "specs": { "profileSize": 20, "boltSize": 5, "boltCount": 2 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "Zinc Alloy",
+      "compatibleProfile": "2020",
+      "jointType": "90-degree L-joint",
+      "boltSize": "M5",
+      "boltCount": 2,
+      "finish": "Silver"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.8,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard L-bracket for joining two 2020 extrusions at 90 degrees. Requires two M5 bolts and matching T-nuts. Compact design fits within the 20mm profile envelope.",
+    "tags": [
+      "bracket",
+      "corner",
+      "L-shape",
+      "2020",
+      "90-degree",
+      "zinc-alloy",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "2020 Inside Corner Bracket, T-Shape",
+    "description": "Zinc alloy T-shaped inside corner bracket for 2020 aluminum extrusion profiles, 3-way T-joint connection, M5 bolt mounting with 3 fastener points, 20x20x28mm for three-way frame junctions",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 20, "height": 20, "depth": 28, "weight": 18 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot_bracket",
+        "specs": { "profileSize": 20, "boltSize": 5, "boltCount": 3 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "Zinc Alloy",
+      "compatibleProfile": "2020",
+      "jointType": "T-joint (3-way)",
+      "boltSize": "M5",
+      "boltCount": 3,
+      "finish": "Silver"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 1.0,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Inside corner bracket for creating T-junctions with three 2020 extrusions. Three M5 bolt holes allow secure three-way connections at frame intersections.",
+    "tags": [
+      "bracket",
+      "corner",
+      "T-shape",
+      "2020",
+      "3-way",
+      "zinc-alloy",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "2020 Cross Plate Bracket, 4-Way",
+    "description": "Zinc alloy flat cross plate bracket for 2020 aluminum extrusion profiles, 4-way cross joint connection, M5 bolt mounting with 4 fastener points, 60x60x4mm thin plate for planar cross junctions",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 60, "height": 60, "depth": 4, "weight": 30 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot_bracket",
+        "specs": { "profileSize": 20, "boltSize": 5, "boltCount": 4 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "Zinc Alloy",
+      "compatibleProfile": "2020",
+      "jointType": "Cross (4-way)",
+      "boltSize": "M5",
+      "boltCount": 4,
+      "finish": "Silver"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Flat cross plate for joining four 2020 extrusions in a planar cross pattern. Thin 4mm profile keeps the joint flush. Four M5 bolt holes provide secure 4-way connections.",
+    "tags": [
+      "bracket",
+      "cross-plate",
+      "4-way",
+      "2020",
+      "flat",
+      "zinc-alloy",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "3030 Corner Bracket, L-Shape",
+    "description": "Zinc alloy L-shaped corner bracket for 3030 aluminum extrusion profiles, 90-degree joint connection, M6 bolt mounting, 28x28x28mm for right-angle frame construction on 30mm series profiles",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 28, "height": 28, "depth": 28, "weight": 22 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot_bracket",
+        "specs": { "profileSize": 30, "boltSize": 6, "boltCount": 2 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "Zinc Alloy",
+      "compatibleProfile": "3030",
+      "jointType": "90-degree L-joint",
+      "boltSize": "M6",
+      "boltCount": 2,
+      "finish": "Silver"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard L-bracket for joining two 3030 extrusions at 90 degrees. Requires two M6 bolts and matching T-nuts. Sized to fit the 30mm profile series.",
+    "tags": [
+      "bracket",
+      "corner",
+      "L-shape",
+      "3030",
+      "90-degree",
+      "zinc-alloy",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "3030 Inside Corner Bracket, T-Shape",
+    "description": "Zinc alloy T-shaped inside corner bracket for 3030 aluminum extrusion profiles, 3-way T-joint connection, M6 bolt mounting with 3 fastener points, 28x28x38mm for three-way frame junctions on 30mm series",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 28, "height": 28, "depth": 38, "weight": 32 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot_bracket",
+        "specs": { "profileSize": 30, "boltSize": 6, "boltCount": 3 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "Zinc Alloy",
+      "compatibleProfile": "3030",
+      "jointType": "T-joint (3-way)",
+      "boltSize": "M6",
+      "boltCount": 3,
+      "finish": "Silver"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 2.0,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Inside corner bracket for creating T-junctions with three 3030 extrusions. Three M6 bolt holes allow secure three-way connections at frame intersections.",
+    "tags": [
+      "bracket",
+      "corner",
+      "T-shape",
+      "3030",
+      "3-way",
+      "zinc-alloy",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "3030 Cross Plate Bracket, 4-Way",
+    "description": "Zinc alloy flat cross plate bracket for 3030 aluminum extrusion profiles, 4-way cross joint connection, M6 bolt mounting with 4 fastener points, 80x80x4mm thin plate for planar cross junctions on 30mm series",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 80, "height": 80, "depth": 4, "weight": 55 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot_bracket",
+        "specs": { "profileSize": 30, "boltSize": 6, "boltCount": 4 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "Zinc Alloy",
+      "compatibleProfile": "3030",
+      "jointType": "Cross (4-way)",
+      "boltSize": "M6",
+      "boltCount": 4,
+      "finish": "Silver"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 2.5,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Flat cross plate for joining four 3030 extrusions in a planar cross pattern. Thin 4mm profile keeps the joint flush. Four M6 bolt holes provide secure 4-way connections.",
+    "tags": [
+      "bracket",
+      "cross-plate",
+      "4-way",
+      "3030",
+      "flat",
+      "zinc-alloy",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "4040 Corner Bracket, L-Shape",
+    "description": "Die-cast aluminum L-shaped corner bracket for 4040 aluminum extrusion profiles, 90-degree joint connection, M8 bolt mounting, 35x35x35mm heavy-duty right-angle frame construction",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 35, "height": 35, "depth": 35, "weight": 38 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot_bracket",
+        "specs": { "profileSize": 40, "boltSize": 8, "boltCount": 2 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "Die-Cast Aluminum",
+      "compatibleProfile": "4040",
+      "jointType": "90-degree L-joint",
+      "boltSize": "M8",
+      "boltCount": 2,
+      "finish": "Silver"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 2.5,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Heavy-duty L-bracket for joining two 4040 extrusions at 90 degrees. Die-cast aluminum construction provides higher strength than zinc alloy for larger profile assemblies. Requires two M8 bolts and matching T-nuts.",
+    "tags": [
+      "bracket",
+      "corner",
+      "L-shape",
+      "4040",
+      "90-degree",
+      "die-cast-aluminum",
+      "t-slot",
+      "heavy-duty"
+    ]
+  },
+  {
+    "name": "4040 Inside Corner Bracket, T-Shape",
+    "description": "Die-cast aluminum T-shaped inside corner bracket for 4040 aluminum extrusion profiles, 3-way T-joint connection, M8 bolt mounting with 3 fastener points, 35x35x50mm heavy-duty three-way frame junctions",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 35, "height": 35, "depth": 50, "weight": 55 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot_bracket",
+        "specs": { "profileSize": 40, "boltSize": 8, "boltCount": 3 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "Die-Cast Aluminum",
+      "compatibleProfile": "4040",
+      "jointType": "T-joint (3-way)",
+      "boltSize": "M8",
+      "boltCount": 3,
+      "finish": "Silver"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 3.0,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Heavy-duty inside corner bracket for creating T-junctions with three 4040 extrusions. Die-cast aluminum provides superior strength for large frame assemblies. Three M8 bolt holes for secure three-way connections.",
+    "tags": [
+      "bracket",
+      "corner",
+      "T-shape",
+      "4040",
+      "3-way",
+      "die-cast-aluminum",
+      "t-slot",
+      "heavy-duty"
+    ]
+  },
+  {
+    "name": "M3 Drop-In T-Nut for 2020",
+    "description": "M3 drop-in T-nut with spring ball for 2020 aluminum extrusion 6mm slot, carbon steel zinc plated, post-assembly insertion, spring-loaded ball retains position in slot channel",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 10, "height": 4.5, "depth": 10, "weight": 2 },
+    "mountingFeatures": [
+      { "type": "t_nut", "specs": { "boltSize": 3, "slotWidth": 6 } }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M3",
+      "material": "Carbon Steel, Zinc Plated",
+      "style": "Drop-In with Spring Ball",
+      "compatibleProfile": "2020",
+      "slotWidth": 6
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.1,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Drop-in T-nut can be inserted anywhere along the extrusion slot without disassembly. Spring ball mechanism holds the nut in position before tightening, making post-assembly additions convenient.",
+    "tags": [
+      "t-nut",
+      "drop-in",
+      "M3",
+      "2020",
+      "spring-ball",
+      "6mm-slot",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "M3 Slide-In T-Nut for 2020",
+    "description": "M3 slide-in T-nut for 2020 aluminum extrusion 6mm slot, carbon steel zinc plated, pre-assembly insertion from extrusion end, low-profile economical fastener",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 10, "height": 4, "depth": 10, "weight": 1.5 },
+    "mountingFeatures": [
+      { "type": "t_nut", "specs": { "boltSize": 3, "slotWidth": 6 } }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M3",
+      "material": "Carbon Steel, Zinc Plated",
+      "style": "Slide-In",
+      "compatibleProfile": "2020",
+      "slotWidth": 6
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.05,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Slide-in T-nut must be inserted from the end of the extrusion before assembly is complete. Cheaper than drop-in style but requires planning during assembly sequence.",
+    "tags": [
+      "t-nut",
+      "slide-in",
+      "M3",
+      "2020",
+      "6mm-slot",
+      "economical",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "M4 Drop-In T-Nut for 2020",
+    "description": "M4 drop-in T-nut with spring ball for 2020 aluminum extrusion 6mm slot, carbon steel zinc plated, post-assembly insertion, spring-loaded ball retains position in slot channel",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 10, "height": 5, "depth": 10, "weight": 2.5 },
+    "mountingFeatures": [
+      { "type": "t_nut", "specs": { "boltSize": 4, "slotWidth": 6 } }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M4",
+      "material": "Carbon Steel, Zinc Plated",
+      "style": "Drop-In with Spring Ball",
+      "compatibleProfile": "2020",
+      "slotWidth": 6
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.12,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Drop-in T-nut can be inserted anywhere along the extrusion slot without disassembly. Spring ball mechanism holds the nut in position before tightening, making post-assembly additions convenient.",
+    "tags": [
+      "t-nut",
+      "drop-in",
+      "M4",
+      "2020",
+      "spring-ball",
+      "6mm-slot",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "M4 Slide-In T-Nut for 2020",
+    "description": "M4 slide-in T-nut for 2020 aluminum extrusion 6mm slot, carbon steel zinc plated, pre-assembly insertion from extrusion end, low-profile economical fastener",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 10, "height": 4.5, "depth": 10, "weight": 2 },
+    "mountingFeatures": [
+      { "type": "t_nut", "specs": { "boltSize": 4, "slotWidth": 6 } }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M4",
+      "material": "Carbon Steel, Zinc Plated",
+      "style": "Slide-In",
+      "compatibleProfile": "2020",
+      "slotWidth": 6
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.06,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Slide-in T-nut must be inserted from the end of the extrusion before assembly is complete. Cheaper than drop-in style but requires planning during assembly sequence.",
+    "tags": [
+      "t-nut",
+      "slide-in",
+      "M4",
+      "2020",
+      "6mm-slot",
+      "economical",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "M5 Drop-In T-Nut for 2020",
+    "description": "M5 drop-in T-nut with spring ball for 2020 aluminum extrusion 6mm slot, carbon steel zinc plated, post-assembly insertion, spring-loaded ball retains position in slot channel, most common 2020 fastener size",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 10, "height": 6, "depth": 10, "weight": 3 },
+    "mountingFeatures": [
+      { "type": "t_nut", "specs": { "boltSize": 5, "slotWidth": 6 } }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M5",
+      "material": "Carbon Steel, Zinc Plated",
+      "style": "Drop-In with Spring Ball",
+      "compatibleProfile": "2020",
+      "slotWidth": 6
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.15,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Drop-in T-nut can be inserted anywhere along the extrusion slot without disassembly. Spring ball mechanism holds the nut in position before tightening, making post-assembly additions convenient. M5 is the standard bolt size for 2020 brackets.",
+    "tags": [
+      "t-nut",
+      "drop-in",
+      "M5",
+      "2020",
+      "spring-ball",
+      "6mm-slot",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "M5 Slide-In T-Nut for 2020",
+    "description": "M5 slide-in T-nut for 2020 aluminum extrusion 6mm slot, carbon steel zinc plated, pre-assembly insertion from extrusion end, low-profile economical fastener, standard 2020 bolt size",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 10, "height": 5, "depth": 10, "weight": 2.5 },
+    "mountingFeatures": [
+      { "type": "t_nut", "specs": { "boltSize": 5, "slotWidth": 6 } }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M5",
+      "material": "Carbon Steel, Zinc Plated",
+      "style": "Slide-In",
+      "compatibleProfile": "2020",
+      "slotWidth": 6
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.08,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Slide-in T-nut must be inserted from the end of the extrusion before assembly is complete. Cheaper than drop-in style but requires planning during assembly sequence. M5 is the standard bolt size for 2020 brackets.",
+    "tags": [
+      "t-nut",
+      "slide-in",
+      "M5",
+      "2020",
+      "6mm-slot",
+      "economical",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "M6 Drop-In T-Nut for 3030",
+    "description": "M6 drop-in T-nut with spring ball for 3030 aluminum extrusion 8mm slot, carbon steel zinc plated, post-assembly insertion, spring-loaded ball retains position in slot channel",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 13, "height": 6, "depth": 13, "weight": 5 },
+    "mountingFeatures": [
+      { "type": "t_nut", "specs": { "boltSize": 6, "slotWidth": 8 } }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M6",
+      "material": "Carbon Steel, Zinc Plated",
+      "style": "Drop-In with Spring Ball",
+      "compatibleProfile": "3030",
+      "slotWidth": 8
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.2,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Drop-in T-nut can be inserted anywhere along the extrusion slot without disassembly. Spring ball mechanism holds the nut in position before tightening, making post-assembly additions convenient.",
+    "tags": [
+      "t-nut",
+      "drop-in",
+      "M6",
+      "3030",
+      "spring-ball",
+      "8mm-slot",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "M6 Slide-In T-Nut for 3030",
+    "description": "M6 slide-in T-nut for 3030 aluminum extrusion 8mm slot, carbon steel zinc plated, pre-assembly insertion from extrusion end, low-profile economical fastener for 30mm series",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 13, "height": 5.5, "depth": 13, "weight": 4 },
+    "mountingFeatures": [
+      { "type": "t_nut", "specs": { "boltSize": 6, "slotWidth": 8 } }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M6",
+      "material": "Carbon Steel, Zinc Plated",
+      "style": "Slide-In",
+      "compatibleProfile": "3030",
+      "slotWidth": 8
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.1,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Slide-in T-nut must be inserted from the end of the extrusion before assembly is complete. Cheaper than drop-in style but requires planning during assembly sequence.",
+    "tags": [
+      "t-nut",
+      "slide-in",
+      "M6",
+      "3030",
+      "8mm-slot",
+      "economical",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "M8 Drop-In T-Nut for 4040",
+    "description": "M8 drop-in T-nut with spring ball for 4040 aluminum extrusion 8mm slot, carbon steel zinc plated, post-assembly insertion, spring-loaded ball retains position in slot channel, heavy-duty fastener",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 15, "height": 7, "depth": 15, "weight": 8 },
+    "mountingFeatures": [
+      { "type": "t_nut", "specs": { "boltSize": 8, "slotWidth": 8 } }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M8",
+      "material": "Carbon Steel, Zinc Plated",
+      "style": "Drop-In with Spring Ball",
+      "compatibleProfile": "4040",
+      "slotWidth": 8
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.25,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Drop-in T-nut can be inserted anywhere along the extrusion slot without disassembly. Spring ball mechanism holds the nut in position before tightening, making post-assembly additions convenient.",
+    "tags": [
+      "t-nut",
+      "drop-in",
+      "M8",
+      "4040",
+      "spring-ball",
+      "8mm-slot",
+      "t-slot",
+      "heavy-duty"
+    ]
+  },
+  {
+    "name": "M8 Slide-In T-Nut for 4040",
+    "description": "M8 slide-in T-nut for 4040 aluminum extrusion 8mm slot, carbon steel zinc plated, pre-assembly insertion from extrusion end, low-profile economical heavy-duty fastener for 40mm series",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 15, "height": 6.5, "depth": 15, "weight": 7 },
+    "mountingFeatures": [
+      { "type": "t_nut", "specs": { "boltSize": 8, "slotWidth": 8 } }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M8",
+      "material": "Carbon Steel, Zinc Plated",
+      "style": "Slide-In",
+      "compatibleProfile": "4040",
+      "slotWidth": 8
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.15,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Slide-in T-nut must be inserted from the end of the extrusion before assembly is complete. Cheaper than drop-in style but requires planning during assembly sequence.",
+    "tags": [
+      "t-nut",
+      "slide-in",
+      "M8",
+      "4040",
+      "8mm-slot",
+      "economical",
+      "t-slot",
+      "heavy-duty"
+    ]
+  },
+  {
+    "name": "2020 End Cap, Black ABS Plastic",
+    "description": "Black ABS plastic press-fit end cap for 2020 aluminum extrusion profile, 20x20mm face covers open extrusion end, snap-in installation requires no fasteners",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 20, "height": 20, "depth": 8, "weight": 2 },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": { "profileWidth": 20, "profileHeight": 20 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "ABS Plastic",
+      "color": "Black",
+      "compatibleProfile": "2020",
+      "installMethod": "Press-Fit"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.3,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Press-fit end cap snaps into the open end of a 2020 extrusion. Provides a clean finished appearance and prevents debris from entering the slot channels. No tools required for installation.",
+    "tags": [
+      "end-cap",
+      "2020",
+      "ABS",
+      "black",
+      "press-fit",
+      "t-slot",
+      "finishing"
+    ]
+  },
+  {
+    "name": "2040 End Cap, Black ABS Plastic",
+    "description": "Black ABS plastic press-fit end cap for 2040 aluminum extrusion profile, 20x40mm face covers open extrusion end, snap-in installation requires no fasteners",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 20, "height": 40, "depth": 8, "weight": 3 },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": { "profileWidth": 20, "profileHeight": 40 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "ABS Plastic",
+      "color": "Black",
+      "compatibleProfile": "2040",
+      "installMethod": "Press-Fit"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Press-fit end cap snaps into the open end of a 2040 extrusion. Provides a clean finished appearance and prevents debris from entering the slot channels. No tools required for installation.",
+    "tags": [
+      "end-cap",
+      "2040",
+      "ABS",
+      "black",
+      "press-fit",
+      "t-slot",
+      "finishing"
+    ]
+  },
+  {
+    "name": "3030 End Cap, Black ABS Plastic",
+    "description": "Black ABS plastic press-fit end cap for 3030 aluminum extrusion profile, 30x30mm face covers open extrusion end, snap-in installation requires no fasteners",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 30, "height": 30, "depth": 8, "weight": 4 },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": { "profileWidth": 30, "profileHeight": 30 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "ABS Plastic",
+      "color": "Black",
+      "compatibleProfile": "3030",
+      "installMethod": "Press-Fit"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Press-fit end cap snaps into the open end of a 3030 extrusion. Provides a clean finished appearance and prevents debris from entering the slot channels. No tools required for installation.",
+    "tags": [
+      "end-cap",
+      "3030",
+      "ABS",
+      "black",
+      "press-fit",
+      "t-slot",
+      "finishing"
+    ]
+  },
+  {
+    "name": "4040 End Cap, Black ABS Plastic",
+    "description": "Black ABS plastic press-fit end cap for 4040 aluminum extrusion profile, 40x40mm face covers open extrusion end, snap-in installation requires no fasteners",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 40, "height": 40, "depth": 8, "weight": 5 },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": { "profileWidth": 40, "profileHeight": 40 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "ABS Plastic",
+      "color": "Black",
+      "compatibleProfile": "4040",
+      "installMethod": "Press-Fit"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.6,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Press-fit end cap snaps into the open end of a 4040 extrusion. Provides a clean finished appearance and prevents debris from entering the slot channels. No tools required for installation.",
+    "tags": [
+      "end-cap",
+      "4040",
+      "ABS",
+      "black",
+      "press-fit",
+      "t-slot",
+      "finishing"
+    ]
+  },
+  {
+    "name": "4080 End Cap, Black ABS Plastic",
+    "description": "Black ABS plastic press-fit end cap for 4080 aluminum extrusion profile, 40x80mm face covers open extrusion end, snap-in installation requires no fasteners",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 40, "height": 80, "depth": 8, "weight": 8 },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": { "profileWidth": 40, "profileHeight": 80 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "ABS Plastic",
+      "color": "Black",
+      "compatibleProfile": "4080",
+      "installMethod": "Press-Fit"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 1.0,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Press-fit end cap snaps into the open end of a 4080 extrusion. Provides a clean finished appearance and prevents debris from entering the slot channels. No tools required for installation.",
+    "tags": [
+      "end-cap",
+      "4080",
+      "ABS",
+      "black",
+      "press-fit",
+      "t-slot",
+      "finishing"
+    ]
+  },
+  {
+    "name": "4545 End Cap, Black ABS Plastic",
+    "description": "Black ABS plastic press-fit end cap for 4545 aluminum extrusion profile, 45x45mm face covers open extrusion end, snap-in installation requires no fasteners",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 45, "height": 45, "depth": 8, "weight": 6 },
+    "mountingFeatures": [
+      {
+        "type": "press_fit",
+        "specs": { "profileWidth": 45, "profileHeight": 45 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "ABS Plastic",
+      "color": "Black",
+      "compatibleProfile": "4545",
+      "installMethod": "Press-Fit"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.8,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Press-fit end cap snaps into the open end of a 4545 extrusion. Provides a clean finished appearance and prevents debris from entering the slot channels. No tools required for installation.",
+    "tags": [
+      "end-cap",
+      "4545",
+      "ABS",
+      "black",
+      "press-fit",
+      "t-slot",
+      "finishing"
+    ]
+  },
+  {
+    "name": "2020 Panel Mounting Clip, 3mm Panel",
+    "description": "Spring steel zinc plated panel mounting clip for 2020 aluminum extrusion 6mm slot, holds 3mm thick panels, tool-free snap-in installation for acrylic, polycarbonate, or sheet metal panels",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 20, "height": 10, "depth": 8, "weight": 3 },
+    "mountingFeatures": [
+      {
+        "type": "panel_clip",
+        "specs": { "slotWidth": 6, "panelThickness": 3, "profileSize": 20 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "Spring Steel, Zinc Plated",
+      "compatibleProfile": "2020",
+      "slotWidth": 6,
+      "panelThickness": 3,
+      "installMethod": "Snap-In"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Spring steel clip snaps into the 6mm T-slot and grips a 3mm panel. No bolts or T-nuts required. Suitable for mounting acrylic, polycarbonate, thin plywood, or sheet metal panels to 2020 extrusion frames.",
+    "tags": [
+      "panel-clip",
+      "2020",
+      "spring-steel",
+      "3mm-panel",
+      "6mm-slot",
+      "snap-in",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "3030 Panel Mounting Clip, 3mm Panel",
+    "description": "Spring steel zinc plated panel mounting clip for 3030 aluminum extrusion 8mm slot, holds 3mm thick panels, tool-free snap-in installation for acrylic, polycarbonate, or sheet metal panels",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 25, "height": 12, "depth": 10, "weight": 5 },
+    "mountingFeatures": [
+      {
+        "type": "panel_clip",
+        "specs": { "slotWidth": 8, "panelThickness": 3, "profileSize": 30 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "Spring Steel, Zinc Plated",
+      "compatibleProfile": "3030",
+      "slotWidth": 8,
+      "panelThickness": 3,
+      "installMethod": "Snap-In"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.6,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Spring steel clip snaps into the 8mm T-slot and grips a 3mm panel. No bolts or T-nuts required. Suitable for mounting acrylic, polycarbonate, thin plywood, or sheet metal panels to 3030 extrusion frames.",
+    "tags": [
+      "panel-clip",
+      "3030",
+      "spring-steel",
+      "3mm-panel",
+      "8mm-slot",
+      "snap-in",
+      "t-slot"
+    ]
+  },
+  {
+    "name": "2020 Zinc Alloy Hinge",
+    "description": "Zinc alloy hinge for 2020 aluminum extrusion profiles, 180-degree opening angle, M5 bolt mounting with 4 fastener points (2 per side), 58x30x20mm for doors, panels, and access covers on T-slot frames",
+    "categorySlug": "t-slot-hardware",
+    "entryType": "component",
+    "dimensions": { "width": 58, "height": 30, "depth": 20, "weight": 45 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot_bracket",
+        "specs": { "profileSize": 20, "boltSize": 5, "boltCount": 4 }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "Zinc Alloy",
+      "compatibleProfile": "2020",
+      "boltSize": "M5",
+      "boltCount": 4,
+      "openingAngle": 180,
+      "finish": "Silver"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 4.0,
+        "url": "https://www.amazon.com"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "T-slot compatible hinge for 2020 extrusion frames. Mounts with 4 M5 bolts (2 per side) using standard T-nuts. 180-degree opening angle allows full access to enclosure interiors. Suitable for doors, access panels, and hinged covers.",
+    "tags": [
+      "hinge",
+      "2020",
+      "zinc-alloy",
+      "180-degree",
+      "M5",
+      "door",
+      "panel",
+      "t-slot"
+    ]
+  }
+]

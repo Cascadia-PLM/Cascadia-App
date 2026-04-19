@@ -1,0 +1,897 @@
+[
+  {
+    "name": "Loctite 401 Instant Adhesive, Thin (40140)",
+    "description": "General-purpose thin cyanoacrylate instant adhesive, 20g bottle, 80-120 cP low viscosity wicking grade, 3-10 second fixture time on steel, 10-18 N/mm2 shear strength, -40C to +120C service temperature, 0.15mm max gap fill, ethyl cyanoacrylate, bonds rubber, plastics, metals, wood, Henkel Loctite",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 20
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Ethyl cyanoacrylate",
+      "viscosity_cP": 100,
+      "viscosityGrade": "Thin / wicking",
+      "fixtureTime_sec": "3-10",
+      "fullCure_hr": 24,
+      "shearStrength_MPa": "10-18",
+      "shearStrength_psi": "1450-2600",
+      "temperatureMin_C": -40,
+      "temperatureMax_C": 120,
+      "maxGapFill_mm": 0.15,
+      "color": "Colorless to light yellow",
+      "volume_mL": 20,
+      "shelfLife_months": 12
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B004Y960MU",
+        "approximatePrice": 15,
+        "url": "https://www.amazon.com/dp/B004Y960MU"
+      },
+      {
+        "name": "Grainger",
+        "partNumber": "1PEP3",
+        "approximatePrice": 16,
+        "url": "https://www.grainger.com/product/LOCTITE-Instant-Adhesive-1PEP3"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The go-to thin CA for industrial bonding. Low viscosity wicks into tight-fitting joints by capillary action — parts must be well-fitted (gap <0.15mm). Apply to one surface, press together, hold 10 seconds. For plastics that are hard to bond (PE, PP, PTFE), use with Loctite 770 primer. Accelerator (Loctite 7452/7457) speeds cure on inactive surfaces. Store refrigerated for longer shelf life. Does NOT work well on: polyethylene, polypropylene, PTFE, silicone (without primer). Debonder: acetone or Loctite 768. Available in 3g tube (40104, ~$9) for small jobs, 500g bottle (40161, ~$90) for production.",
+    "tags": [
+      "super glue",
+      "CA glue",
+      "cyanoacrylate",
+      "instant adhesive",
+      "Loctite",
+      "thin CA",
+      "wicking glue",
+      "401",
+      "Krazy Glue",
+      "instant bond"
+    ]
+  },
+  {
+    "name": "Loctite 406 Instant Adhesive, Plastics & Rubber (40640)",
+    "description": "Cyanoacrylate instant adhesive optimized for plastics and rubber, 20g bottle, 20 cP water-thin viscosity, 2-10 second fixture time, 10-18 N/mm2 shear strength on steel, -40C to +120C service temperature, bonds EPDM, neoprene, PVC, ABS, polycarbonate, ethyl cyanoacrylate, Henkel Loctite",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 20
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Ethyl cyanoacrylate",
+      "viscosity_cP": 20,
+      "viscosityGrade": "Water-thin",
+      "fixtureTime_sec": "2-10",
+      "fullCure_hr": 24,
+      "shearStrength_MPa": "10-18",
+      "shearStrength_psi": "1450-2600",
+      "temperatureMin_C": -40,
+      "temperatureMax_C": 120,
+      "maxGapFill_mm": 0.1,
+      "color": "Colorless",
+      "volume_mL": 20,
+      "shelfLife_months": 9,
+      "targetMaterials": "Plastics and rubber"
+    },
+    "suppliers": [
+      {
+        "name": "Grainger",
+        "partNumber": "1PEP5",
+        "approximatePrice": 17,
+        "url": "https://www.grainger.com/product/LOCTITE-Instant-Adhesive-1PEP5"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B000FIXQB4",
+        "approximatePrice": 16,
+        "url": "https://www.amazon.com/dp/B000FIXQB4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Specifically formulated for difficult-to-bond plastics and rubbers. Even thinner than Loctite 401 (20 cP vs 100 cP) so it wicks deeper into tight joints. Best for: EPDM, neoprene, nitrile rubber, PVC, ABS, polycarbonate, acrylic. For polyolefins (PE, PP), MUST use with Loctite 770 primer first — the 406+770 combo is the standard industrial solution for bonding PP/PE. Shorter shelf life than 401 (9 months vs 12). If you only stock one CA for general use, pick 401. If you regularly bond rubber or engineering plastics, stock 406 alongside it.",
+    "tags": [
+      "super glue",
+      "CA glue",
+      "cyanoacrylate",
+      "instant adhesive",
+      "Loctite",
+      "thin CA",
+      "plastic glue",
+      "rubber glue",
+      "406",
+      "EPDM adhesive"
+    ]
+  },
+  {
+    "name": "Loctite 454 Gel Instant Adhesive (45440)",
+    "description": "Thixotropic gel cyanoacrylate instant adhesive, 20g tube, non-drip gel viscosity, 5-20 second fixture time, 10-18 N/mm2 shear strength, -40C to +120C service temperature, 0.5mm max gap fill, ethyl cyanoacrylate, for vertical and overhead surfaces, porous materials, gap-filling, Henkel Loctite",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 20
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Ethyl cyanoacrylate (thixotropic gel)",
+      "viscosity_cP": "Thixotropic gel (non-drip)",
+      "viscosityGrade": "Gel",
+      "fixtureTime_sec": "5-20",
+      "fullCure_hr": 24,
+      "shearStrength_MPa": "10-18",
+      "shearStrength_psi": "1450-2600",
+      "temperatureMin_C": -40,
+      "temperatureMax_C": 120,
+      "maxGapFill_mm": 0.5,
+      "color": "Colorless",
+      "volume_mL": 20,
+      "shelfLife_months": 12
+    },
+    "suppliers": [
+      {
+        "name": "Grainger",
+        "partNumber": "1PEP7",
+        "approximatePrice": 21,
+        "url": "https://www.grainger.com/product/LOCTITE-Instant-Adhesive-1PEP7"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B001078FEI",
+        "approximatePrice": 20,
+        "url": "https://www.amazon.com/dp/B001078FEI"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The gel CA for when thin CA won't work: vertical surfaces, overhead application, porous materials (wood, leather, fabric), and gaps up to 0.5mm. Stays where you put it — no wicking or running. Slightly slower fixture time than thin CAs (5-20 sec vs 2-10 sec). Also available as 3g tube (45404, ~$10) for occasional use. Use accelerator (Loctite 7452) on porous or inactive surfaces. For an affordable consumer gel alternative, Gorilla Super Glue Gel works for non-critical applications at 1/3 the price.",
+    "tags": [
+      "super glue gel",
+      "CA gel",
+      "cyanoacrylate gel",
+      "instant adhesive",
+      "Loctite",
+      "gel glue",
+      "gap filling CA",
+      "454",
+      "non-drip glue",
+      "vertical glue"
+    ]
+  },
+  {
+    "name": "Devcon 5-Minute Epoxy (14250)",
+    "description": "Two-part fast-set epoxy adhesive, 25mL dual syringe, 1:1 mix ratio, 5-minute working time, 2500 psi (17 MPa) tensile strength, -40C to +93C service temperature, amber/translucent cure color, bonds metals, ceramics, wood, glass, most plastics, ITW Devcon",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 35
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Two-part epoxy",
+      "mixRatio": "1:1 by volume",
+      "workingTime_min": 5,
+      "handlingStrength_hr": 1,
+      "fullCure_hr": 24,
+      "tensileStrength_psi": 2500,
+      "tensileStrength_MPa": 17,
+      "shearStrength_psi": 1500,
+      "temperatureMin_C": -40,
+      "temperatureMax_C": 93,
+      "colorCured": "Amber/translucent",
+      "shoreHardness": "75D",
+      "volume_mL": 25,
+      "dispenserType": "Dual syringe"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B001OB2GEQ",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B001OB2GEQ"
+      },
+      {
+        "name": "Grainger",
+        "partNumber": "2EPY4",
+        "approximatePrice": 9,
+        "url": "https://www.grainger.com/product/DEVCON-Epoxy-Adhesive-2EPY4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The quick-turnaround epoxy for prototyping and repairs. Mix equal parts on a disposable surface (cardboard, plastic lid), apply within 5 minutes. Handling strength in 1 hour, full strength in 24 hours. Dual syringe ensures correct ratio. Weaker than 30-minute or JB Weld formulas — use for non-structural bonds, fixture holding, and prototyping. For structural applications, use Devcon 2-Ton (30-minute) or JB Weld. Lightly sand and clean surfaces with isopropyl alcohol before bonding for best results. Does NOT bond PE, PP, PTFE, or silicone. Also available in 8.5 oz bottles (14210, ~$20) for larger jobs.",
+    "tags": [
+      "epoxy",
+      "5-minute epoxy",
+      "quick epoxy",
+      "two-part epoxy",
+      "Devcon",
+      "rapid epoxy",
+      "2-part adhesive",
+      "structural adhesive",
+      "fast set epoxy"
+    ]
+  },
+  {
+    "name": "Devcon 2-Ton Epoxy, 30-Minute (31345)",
+    "description": "Two-part high-strength slow-set epoxy adhesive, 25mL dual syringe, 1:1 mix ratio, 30-minute working time, 3500 psi (24 MPa) tensile strength, -40C to +93C service temperature, clear/amber cure color, structural bonding of metals, ceramics, glass, wood, composites, ITW Devcon",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 35
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Two-part epoxy",
+      "mixRatio": "1:1 by volume",
+      "workingTime_min": 30,
+      "handlingStrength_hr": 8,
+      "fullCure_hr": 48,
+      "tensileStrength_psi": 3500,
+      "tensileStrength_MPa": 24,
+      "shearStrength_psi": 2500,
+      "temperatureMin_C": -40,
+      "temperatureMax_C": 93,
+      "colorCured": "Clear/amber",
+      "volume_mL": 25,
+      "dispenserType": "Dual syringe"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B003HNFLMY",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B003HNFLMY"
+      },
+      {
+        "name": "Grainger",
+        "partNumber": "2EPY8",
+        "approximatePrice": 11,
+        "url": "https://www.grainger.com/product/DEVCON-Epoxy-Adhesive-2EPY8"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Stronger than 5-minute epoxy (3500 psi vs 2500 psi tensile) because slower cure allows better cross-linking. Use for structural bonds, load-bearing joints, and anywhere strength matters more than speed. 30-minute working time allows careful positioning and clamping. Clamp or fixture parts for at least 8 hours. Full strength at 48 hours. The longer working time also makes it better for large surface areas. For maximum strength (5020 psi) and heat resistance (288C), use JB Weld Original instead — but JB Weld cures dark grey while this cures nearly clear.",
+    "tags": [
+      "epoxy",
+      "30-minute epoxy",
+      "slow-set epoxy",
+      "two-part epoxy",
+      "Devcon",
+      "2-Ton epoxy",
+      "structural epoxy",
+      "high strength epoxy",
+      "clear epoxy"
+    ]
+  },
+  {
+    "name": "JB Weld Original Cold Weld Steel Reinforced Epoxy (8265S)",
+    "description": "Two-part steel-reinforced epoxy cold weld compound, 2x 1oz tubes (2 oz total), 1:1 mix ratio, 25-minute working time, 5020 psi (34.6 MPa) tensile strength, up to 288C (550F) continuous service temperature, dark grey cure color, machinable when cured, bonds metal, wood, ceramic, fiberglass, concrete, J-B Weld",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 57
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Two-part epoxy with steel particle filler",
+      "mixRatio": "1:1 by volume",
+      "workingTime_min": 25,
+      "setTime_hr": "4-6",
+      "fullCure_hr": "15-24",
+      "tensileStrength_psi": 5020,
+      "tensileStrength_MPa": 34.6,
+      "temperatureMin_C": -40,
+      "temperatureMax_C": 288,
+      "colorCured": "Dark grey (steel-like)",
+      "machinable": true,
+      "drillable": true,
+      "sandable": true,
+      "tappable": true,
+      "volume_oz": 2,
+      "volume_mL": 57
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0006O1ICE",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/dp/B0006O1ICE"
+      },
+      {
+        "name": "Grainger",
+        "partNumber": "5E098",
+        "approximatePrice": 7,
+        "url": "https://www.grainger.com/product/J-B-WELD-Epoxy-Adhesive-5E098"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The strongest commonly available consumer epoxy. Steel-particle filler gives it excellent compression strength and machinability — cured JB Weld can be drilled, tapped, filed, and sanded like metal. Exceptional heat resistance (288C/550F) makes it suitable for exhaust repairs, engine blocks, and high-temperature fixtures. Mix on a disposable surface (steel grey + black hardener) until uniform dark grey. Cures dark grey — NOT suitable for visible/cosmetic joints (use ClearWeld for those). Does NOT bond PE, PP, PTFE, or flexible materials. Also available in 10 oz (8271, ~$15) for larger repairs. For a faster version, JB Weld KwikWeld (8276) sets in 6 minutes but has lower strength.",
+    "tags": [
+      "JB Weld",
+      "cold weld",
+      "steel epoxy",
+      "metal epoxy",
+      "high temp epoxy",
+      "machinable epoxy",
+      "8265S",
+      "J-B Weld",
+      "strongest epoxy",
+      "exhaust repair",
+      "engine repair"
+    ]
+  },
+  {
+    "name": "JB Weld ClearWeld Quick-Set Epoxy (50112)",
+    "description": "Two-part clear quick-set epoxy adhesive, 25mL dual syringe, 1:1 mix ratio, 5-minute working time, 3900 psi (26.9 MPa) tensile strength, up to 260C (500F) service temperature, crystal clear cure color, bonds glass, plastic, ceramic, metal, wood, J-B Weld ClearWeld",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 35
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Two-part clear epoxy",
+      "mixRatio": "1:1 by volume",
+      "workingTime_min": 5,
+      "setTime_hr": 1,
+      "fullCure_hr": 24,
+      "tensileStrength_psi": 3900,
+      "tensileStrength_MPa": 26.9,
+      "temperatureMin_C": -40,
+      "temperatureMax_C": 260,
+      "colorCured": "Clear/transparent",
+      "volume_mL": 25,
+      "dispenserType": "Dual syringe"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B009EU5ZMG",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/dp/B009EU5ZMG"
+      },
+      {
+        "name": "Grainger",
+        "partNumber": "46MW93",
+        "approximatePrice": 7,
+        "url": "https://www.grainger.com/product/J-B-WELD-Epoxy-Adhesive-46MW93"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The clear alternative to JB Weld Original for cosmetic/visible joints. Cures crystal clear so bond lines are nearly invisible on glass, acrylic, and light-colored materials. Strong (3900 psi) with good heat resistance (260C). 5-minute working time is convenient but means you must work quickly on larger assemblies. Dual syringe ensures correct ratio. Good for: glass-to-glass, glass-to-metal, acrylic repairs, jewelry, clear plastic housings. For structural bonds where appearance doesn't matter, JB Weld Original is stronger (5020 psi) and more heat-resistant (288C). UNVERIFIED: 260C/500F temperature rating is commonly cited but should be confirmed against current TDS.",
+    "tags": [
+      "JB Weld",
+      "clear epoxy",
+      "ClearWeld",
+      "transparent epoxy",
+      "glass adhesive",
+      "50112",
+      "J-B Weld",
+      "quick set epoxy",
+      "cosmetic epoxy",
+      "invisible bond"
+    ]
+  },
+  {
+    "name": "Loctite 242 Blue Threadlocker, Medium Strength (24231)",
+    "description": "Medium-strength anaerobic threadlocker, 36mL bottle, blue color, removable with hand tools, 12 Nm breakaway torque on M10, 10-minute fixture time on steel, -54C to +149C service temperature, for M6-M20 (1/4\"-3/4\") fasteners, prevents vibration loosening, dimethacrylate ester, Henkel Loctite",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 50
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Dimethacrylate ester (anaerobic)",
+      "cureType": "Anaerobic (cures in absence of air between metal surfaces)",
+      "strength": "Medium — removable with hand tools",
+      "color": "Blue",
+      "breakawayTorque_Nm": 12,
+      "prevailTorque_Nm": 5,
+      "fixtureTime_min": 10,
+      "fullCure_hr": 24,
+      "temperatureMin_C": -54,
+      "temperatureMax_C": 149,
+      "threadSizeRange": "M6-M20 (1/4\"-3/4\")",
+      "volume_mL": 36,
+      "shelfLife_months": 24,
+      "oilTolerant": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B000I1RSNS",
+        "approximatePrice": 16,
+        "url": "https://www.amazon.com/dp/B000I1RSNS"
+      },
+      {
+        "name": "Grainger",
+        "partNumber": "1THL1",
+        "approximatePrice": 18,
+        "url": "https://www.grainger.com/product/LOCTITE-Threadlocker-1THL1"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "91458A115",
+        "approximatePrice": 19,
+        "url": "https://www.mcmaster.com/91458A115"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The industry standard threadlocker for fasteners that need periodic maintenance. Apply 2-3 drops to bolt threads before assembly. Cures only between metal surfaces (anaerobic). Blue = medium strength = removable with standard hand tools (wrench/socket). Use on: motor mount bolts, bearing retainer screws, machine screws in aluminum, any fastener that sees vibration. NOT needed for: low-vibration applications, fasteners with lock nuts/lock washers, fasteners in plastic (won't cure without metal). Oil-tolerant but surfaces should be reasonably clean. Also available in 6mL tube (24205, ~$8) for occasional use, 50mL (24241, ~$24), 250mL (24231, ~$60) for production.",
+    "tags": [
+      "threadlocker",
+      "blue threadlocker",
+      "Loctite 242",
+      "medium threadlocker",
+      "bolt locker",
+      "thread lock",
+      "vibration lock",
+      "removable threadlocker",
+      "242",
+      "anaerobic adhesive",
+      "screw lock"
+    ]
+  },
+  {
+    "name": "Loctite 271 Red Threadlocker, High Strength (27131)",
+    "description": "High-strength permanent anaerobic threadlocker, 36mL bottle, red color, requires heat (260C) to remove, 28 Nm breakaway torque on M10, 10-minute fixture time on steel, -54C to +149C service temperature, for M6-M20 (1/4\"-3/4\") fasteners, permanent locking, dimethacrylate ester, Henkel Loctite",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 50
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Dimethacrylate ester (anaerobic)",
+      "cureType": "Anaerobic (cures in absence of air between metal surfaces)",
+      "strength": "High — permanent, requires heat to remove",
+      "color": "Red",
+      "breakawayTorque_Nm": 28,
+      "prevailTorque_Nm": 22,
+      "fixtureTime_min": 10,
+      "fullCure_hr": 24,
+      "temperatureMin_C": -54,
+      "temperatureMax_C": 149,
+      "removalMethod": "Heat to 260C (500F) with localized torch",
+      "threadSizeRange": "M6-M20 (1/4\"-3/4\")",
+      "volume_mL": 36,
+      "shelfLife_months": 24,
+      "oilTolerant": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B000I1JYJG",
+        "approximatePrice": 16,
+        "url": "https://www.amazon.com/dp/B000I1JYJG"
+      },
+      {
+        "name": "Grainger",
+        "partNumber": "1THL5",
+        "approximatePrice": 18,
+        "url": "https://www.grainger.com/product/LOCTITE-Threadlocker-1THL5"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "91458A130",
+        "approximatePrice": 19,
+        "url": "https://www.mcmaster.com/91458A130"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "PERMANENT threadlocker — only use on fasteners you do NOT intend to regularly service. Requires heating the joint to 260C (500F) with a heat gun or propane torch for removal, plus impact tools. Red = high strength = permanent. Use on: press-fit bearings, permanent studs, set screws in high-vibration equipment, structural bolts. Do NOT use on: fasteners in plastic or composites (heat removal will damage them), fasteners that need periodic removal (use 242 blue instead), fasteners smaller than M6 (risk of stripping threads during heat removal). Common mistake: using red when blue is sufficient. If in doubt, use blue 242 — you can always step up to red later if it loosens.",
+    "tags": [
+      "threadlocker",
+      "red threadlocker",
+      "Loctite 271",
+      "high strength threadlocker",
+      "permanent threadlocker",
+      "bolt locker",
+      "thread lock",
+      "271",
+      "anaerobic adhesive",
+      "permanent lock",
+      "stud lock"
+    ]
+  },
+  {
+    "name": "Permatex Clear RTV Silicone Sealant (80050)",
+    "description": "Clear RTV silicone adhesive sealant, 3 oz squeeze tube, acetoxy cure, -54C to +204C (-65F to +400F) service temperature, waterproof, flexible, bonds glass, metal, wood, plastic, ceramic, general-purpose silicone for sealing, gasketing, and bonding, Permatex",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 85
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Acetoxy-cure RTV silicone",
+      "cureType": "Room Temperature Vulcanizing (moisture cure)",
+      "skinTime_hr": 1,
+      "fullCure_hr": 24,
+      "temperatureMin_C": -54,
+      "temperatureMax_C": 204,
+      "color": "Clear",
+      "waterproof": true,
+      "flexible": true,
+      "paintable": false,
+      "sensorSafe": false,
+      "volume_oz": 3,
+      "volume_mL": 85,
+      "tubeType": "Squeeze tube"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B000HBGH94",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/dp/B000HBGH94"
+      },
+      {
+        "name": "Grainger",
+        "partNumber": "2GXP1",
+        "approximatePrice": 6,
+        "url": "https://www.grainger.com/product/PERMATEX-RTV-Silicone-2GXP1"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "General-purpose clear silicone for sealing and light bonding. Stays flexible after cure — use for joints that need to accommodate thermal expansion, vibration, or movement. Waterproof and weather-resistant. Acetoxy cure means it smells like vinegar while curing and releases acetic acid — do NOT use on copper, brass, or sensitive electronics (the acid causes corrosion). For electronics, use a neutral-cure (oxime) silicone instead. Ideal for: bathroom/kitchen seals, weatherproofing, aquarium repairs, window gaskets. Apply in a continuous bead, tool with wet finger or soapy water within 10 minutes. Full cure depends on humidity and bead thickness — 24 hours for 3mm bead.",
+    "tags": [
+      "silicone sealant",
+      "RTV silicone",
+      "clear silicone",
+      "Permatex",
+      "waterproof sealant",
+      "gasket maker",
+      "silicone adhesive",
+      "flexible sealant",
+      "room temperature vulcanizing"
+    ]
+  },
+  {
+    "name": "Permatex Ultra Black RTV Silicone Gasket Maker (82180)",
+    "description": "Black RTV silicone gasket maker, 3.35 oz squeeze tube, OEM-specified, sensor-safe, oil-resistant, -54C to +260C (-65F to +500F) service temperature, low-volatility, won't foul O2 sensors, for oil pans, valve covers, transmission pans, intake manifolds, replaces cut gaskets, Permatex Ultra Black",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 95
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "RTV silicone (low-volatility)",
+      "cureType": "Room Temperature Vulcanizing (moisture cure)",
+      "skinTime_hr": 1,
+      "fullCure_hr": 24,
+      "temperatureMin_C": -54,
+      "temperatureMax_C": 260,
+      "color": "Black",
+      "waterproof": true,
+      "oilResistant": true,
+      "sensorSafe": true,
+      "flexible": true,
+      "paintable": false,
+      "volume_oz": 3.35,
+      "volume_mL": 95,
+      "tubeType": "Squeeze tube"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0002UEN1A",
+        "approximatePrice": 9,
+        "url": "https://www.amazon.com/dp/B0002UEN1A"
+      },
+      {
+        "name": "Grainger",
+        "partNumber": "4FHV2",
+        "approximatePrice": 10,
+        "url": "https://www.grainger.com/product/PERMATEX-Gasket-Maker-4FHV2"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The most popular RTV gasket maker. 'Sensor safe' means low-volatility formulation that won't produce fumes to foul oxygen sensors or contaminate catalytic converters. Oil-resistant for engine/transmission applications. Higher temperature rating than clear RTV (260C vs 204C). Apply a continuous 3mm bead to one surface, assemble within 10 minutes, torque to spec, wait 24 hours before filling with fluids. Can replace pre-cut gaskets or supplement them as a sealant. Also available in 13 oz cartridge (81158, ~$13) for caulk gun. For non-automotive industrial use where black color is acceptable, this is a superior general-purpose silicone due to its oil resistance and higher temp rating.",
+    "tags": [
+      "silicone gasket",
+      "RTV gasket maker",
+      "black silicone",
+      "Permatex",
+      "Ultra Black",
+      "oil pan gasket",
+      "sensor safe",
+      "oil resistant silicone",
+      "82180",
+      "gasket sealant",
+      "form-in-place gasket"
+    ]
+  },
+  {
+    "name": "Permatex Ultra Copper High-Temp RTV Silicone Gasket Maker (81878)",
+    "description": "Copper-filled high-temperature RTV silicone gasket maker, 3 oz squeeze tube, sensor-safe, -59C to +371C (-75F to +700F) service temperature, highest temperature rating in Permatex RTV line, for exhaust manifolds, turbo housings, EGR valves, high-performance engines, Permatex Ultra Copper",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 85
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Copper-filled RTV silicone",
+      "cureType": "Room Temperature Vulcanizing (moisture cure)",
+      "skinTime_hr": 1,
+      "fullCure_hr": 24,
+      "temperatureMin_C": -59,
+      "temperatureMax_C": 371,
+      "color": "Copper",
+      "waterproof": true,
+      "oilResistant": true,
+      "sensorSafe": true,
+      "flexible": true,
+      "volume_oz": 3,
+      "volume_mL": 85,
+      "tubeType": "Squeeze tube"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B000CPILN0",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B000CPILN0"
+      },
+      {
+        "name": "Grainger",
+        "partNumber": "2GXR4",
+        "approximatePrice": 11,
+        "url": "https://www.grainger.com/product/PERMATEX-Gasket-Maker-2GXR4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The extreme-temperature silicone. 371C (700F) continuous rating makes it suitable for exhaust manifolds, turbocharger housings, downpipes, and any joint near an exhaust path. The copper filler improves thermal conductivity for better heat dissipation across the joint. Sensor-safe formulation. Use as a gasket supplement or replacement for exhaust gaskets, EGR valve gaskets, and high-temp flanges. Apply a 3mm bead, assemble, wait 1 hour before heat exposure. Full cure 24 hours. For temperatures above 371C, you need a different approach (metal gaskets, high-temp ceramic sealant). Also available as 7.25 oz PowerBead tube (85084, ~$15). Overkill for normal-temperature applications — use Ultra Black instead for general gasketing.",
+    "tags": [
+      "high temp silicone",
+      "copper RTV",
+      "Permatex",
+      "Ultra Copper",
+      "exhaust sealant",
+      "high temperature gasket",
+      "81878",
+      "turbo gasket",
+      "700F silicone",
+      "extreme heat sealant"
+    ]
+  },
+  {
+    "name": "Arctic Silver 5 Thermal Compound (AS5-3.5G)",
+    "description": "High-density silver thermal compound, 3.5g syringe, 8.9 W/mK peak thermal conductivity (after 200-hour burn-in), silver/aluminum oxide/zinc oxide/boron nitride in polysynthetic oil carrier, -50C to +130C (180C intermittent), non-electrically conductive, for CPU/GPU heatsink mounting, Arctic Silver",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 14
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Silver, aluminum oxide, zinc oxide, boron nitride in polysynthetic oils",
+      "thermalConductivity_WmK": 8.9,
+      "thermalConductivity_initial_WmK": 3.5,
+      "burnInTime_hr": 200,
+      "density_gcm3": 4.05,
+      "viscosity_Pas": 69,
+      "temperatureMin_C": -50,
+      "temperatureMax_C": 130,
+      "temperatureMax_intermittent_C": 180,
+      "electricallyConductive": false,
+      "slightlyCapacitive": true,
+      "color": "Silver/grey",
+      "volume_g": 3.5,
+      "coveragePerGram": "Approximately 2-3 CPU applications per gram",
+      "dispenserType": "Syringe"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0087X728K",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/dp/B0087X728K"
+      },
+      {
+        "name": "Newegg",
+        "partNumber": "N82E16835100007",
+        "approximatePrice": 7,
+        "url": "https://www.newegg.com/arctic-silver-5/p/N82E16835100007"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Premium thermal paste for CPU and GPU heatsink mounting. Apply a small dot (rice-grain to pea-size) to center of CPU IHS, mount heatsink with even pressure — the compound spreads on its own. Do NOT spread manually. Reaches peak 8.9 W/mK after ~200 hours of thermal cycling (initial ~3.5 W/mK). NOT electrically conductive but slightly capacitive — keep off exposed PCB traces and SMD pads. Clean old compound with 99% isopropyl alcohol and lint-free cloth before reapplication. For slightly better modern alternatives, consider Thermal Grizzly Kryonaut (12.5 W/mK) or Noctua NT-H1 (no burn-in needed). For permanent bonding (no mechanical clip), use Arctic Alumina Thermal Adhesive instead. Also available in 12g syringe (AS5-12G, ~$18).",
+    "tags": [
+      "thermal paste",
+      "thermal compound",
+      "Arctic Silver",
+      "AS5",
+      "CPU paste",
+      "GPU paste",
+      "heatsink compound",
+      "thermal grease",
+      "heat sink paste",
+      "thermal interface material",
+      "TIM"
+    ]
+  },
+  {
+    "name": "Arctic Alumina Thermal Adhesive (AATA-5G)",
+    "description": "Two-part alumina-filled thermally conductive permanent adhesive, 5g kit (2x 2.5g syringes), 4.0 W/mK thermal conductivity, 1:1 mix ratio, 5-8 minute working time, 24-hour full cure, electrically non-conductive (alumina insulator), -40C to +125C, permanent heatsink bond, Arctic Silver",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 10
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Two-part alumina-filled epoxy adhesive",
+      "thermalConductivity_WmK": 4.0,
+      "mixRatio": "1:1 by volume",
+      "workingTime_min": "5-8",
+      "fullCure_hr": 24,
+      "temperatureMin_C": -40,
+      "temperatureMax_C": 125,
+      "electricallyConductive": false,
+      "electricallyInsulating": true,
+      "bondStrength": "Permanent — very difficult to remove once cured",
+      "color": "White/off-white",
+      "volume_g": 5,
+      "dispenserType": "2x 2.5g syringes"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0087X7262",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B0087X7262"
+      },
+      {
+        "name": "Newegg",
+        "partNumber": "N82E16835100010",
+        "approximatePrice": 8,
+        "url": "https://www.newegg.com/arctic-silver-alumina-adhesive/p/N82E16835100010"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Use when you need a PERMANENT thermally conductive bond with no mechanical fastening — glues heatsinks directly to components. Lower thermal conductivity than Arctic Silver 5 paste (4.0 vs 8.9 W/mK), but provides mechanical bond. Electrically non-conductive (alumina is an insulator) — safe to use near exposed traces unlike silver-filled compounds. Mix equal parts on a clean surface, apply thin layer to both surfaces, press together firmly, clamp 24 hours. WARNING: This is essentially permanent. Removing a cured bond requires prying force that will likely damage the component or heatsink. Only use when clips, screws, or spring-loaded mounts are truly not an option. Common use: bonding small heatsinks to voltage regulators, MOSFETs, or RAM chips on PCBs where there are no clip mounting points.",
+    "tags": [
+      "thermal adhesive",
+      "thermally conductive glue",
+      "Arctic Alumina",
+      "heatsink adhesive",
+      "thermal epoxy",
+      "AATA",
+      "permanent heatsink bond",
+      "thermally conductive adhesive",
+      "heat sink glue",
+      "thermal bonding"
+    ]
+  },
+  {
+    "name": "Weld-On 4 Acrylic Solvent Cement, Water-Thin (10308)",
+    "description": "Water-thin solvent cement for acrylic (PMMA), 4 oz can, 2 cP viscosity, methylene chloride based, capillary application, 3-5 minute set time, 24-48 hour full cure, creates molecular fusion weld on acrylic, nearly invisible bond line, IPS Weld-On",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 170
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Methylene chloride (dichloromethane) solvent cement",
+      "cementType": "Solvent weld (dissolves and fuses surfaces)",
+      "viscosity_cP": 2,
+      "viscosityGrade": "Water-thin",
+      "setTime_min": "3-5",
+      "fullCure_hr": "24-48",
+      "applicationMethod": "Capillary (needle applicator or syringe)",
+      "colorCured": "Clear (nearly invisible)",
+      "compatibleMaterials": "Acrylic (PMMA), polycarbonate (with caveats), butyrate, PETG, styrene",
+      "primaryMaterial": "Acrylic / PMMA / Plexiglass / Lucite",
+      "volume_oz": 4,
+      "volume_mL": 118,
+      "containerType": "Metal can with screw cap"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0096TWKCG",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B0096TWKCG"
+      },
+      {
+        "name": "TAP Plastics",
+        "partNumber": "WO4-4",
+        "approximatePrice": 9,
+        "url": "https://www.tapplastics.com/product/plastics/plastic_glue/weld_on_4_acrylic_adhesive/130"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "This is NOT a glue — it's a solvent that dissolves the acrylic surfaces and fuses them into a single piece. Bond is as strong as the parent material when done correctly. Parts MUST fit tightly with no visible gap — the 2 cP viscosity means it wicks by capillary action and cannot fill gaps. Technique: hold parts together in final position, apply cement along the joint with a needle applicator bottle (sold separately, ~$3), capillary action draws it into the joint. Hold 30 seconds, don't move for 3-5 minutes. Apply with needle applicator bottle (not included). SAFETY: methylene chloride is a SERIOUS inhalation hazard — use only in well-ventilated areas or with organic vapor respirator. Do NOT use on polycarbonate unless you accept crazing risk. For gaps or imperfect fits, use Weld-On 16 instead. Also available in pint (10315, ~$20) and quart (10316, ~$35).",
+    "tags": [
+      "acrylic cement",
+      "acrylic glue",
+      "solvent cement",
+      "Weld-On",
+      "plexiglass glue",
+      "PMMA cement",
+      "plastic cement",
+      "acrylic welding",
+      "Lucite glue",
+      "perspex cement",
+      "IPS Weld-On",
+      "methylene chloride"
+    ]
+  },
+  {
+    "name": "Weld-On 16 Thickened Acrylic Cement (10320)",
+    "description": "Thickened solvent cement for acrylic (PMMA), 5 oz tube, 800-1200 cP syrupy viscosity, contains dissolved PMMA for gap-filling, bead or spread application, 5-10 minute set time, 24-48 hour full cure, clear to slightly amber cure color, for edge bonding and imperfect joints, IPS Weld-On",
+    "categorySlug": "adhesives",
+    "entryType": "component",
+    "dimensions": {
+      "weight": 142
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "chemistry": "Acrylic cement with dissolved PMMA (thickened solvent cement)",
+      "cementType": "Solvent weld with gap fill (dissolved acrylic + solvent)",
+      "viscosity_cP": "800-1200",
+      "viscosityGrade": "Syrupy / thickened",
+      "setTime_min": "5-10",
+      "fullCure_hr": "24-48",
+      "applicationMethod": "Bead or spread (not capillary)",
+      "colorCured": "Clear to slightly amber",
+      "compatibleMaterials": "Acrylic (PMMA), polycarbonate (with caveats), ABS (limited), PVC (limited)",
+      "primaryMaterial": "Acrylic / PMMA / Plexiglass / Lucite",
+      "gapFilling": true,
+      "volume_oz": 5,
+      "volume_mL": 142,
+      "containerType": "Squeeze tube"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B003BVJGGY",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B003BVJGGY"
+      },
+      {
+        "name": "TAP Plastics",
+        "partNumber": "WO16-5",
+        "approximatePrice": 11,
+        "url": "https://www.tapplastics.com/product/plastics/plastic_glue/weld_on_16_702_plastic_glue/133"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The gap-filling version of Weld-On 4 for acrylic. Contains dissolved PMMA that fills gaps and builds fillets, so joints don't need to be perfectly fitted. Apply a bead along the joint line, press parts together. Better for: edge-to-face bonding, joints with slight misalignment, building up fillets for structural reinforcement, and beginners (more forgiving than #4). Slightly less optically clear than #4 due to dissolved PMMA content. Still creates a true solvent weld — not just an adhesive bond. Apply from tube, do NOT use capillary technique (too viscous). SAFETY: contains solvents — ventilate well. For maximum clarity on tight-fitting joints, use Weld-On 4. For bonding acrylic to dissimilar materials (metal, wood), use epoxy instead — solvent cements only work plastic-to-same-plastic. Also available in pint (10322, ~$25) and quart (10324, ~$40).",
+    "tags": [
+      "acrylic cement",
+      "thickened acrylic glue",
+      "solvent cement",
+      "Weld-On 16",
+      "gap filling acrylic",
+      "plexiglass glue",
+      "PMMA cement",
+      "plastic cement",
+      "edge bonding",
+      "acrylic fillet",
+      "IPS Weld-On"
+    ]
+  }
+]

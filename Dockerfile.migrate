@@ -1,0 +1,23 @@
+# Migration Dockerfile - includes drizzle-kit for database migrations and seeding
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including drizzle-kit)
+RUN npm ci
+
+# Copy source code needed for migrations and seeding
+COPY src/lib/db ./src/lib/db
+COPY src/lib/auth ./src/lib/auth
+COPY drizzle.config.ts ./
+COPY tsconfig.json ./
+
+# Copy scripts for seeding (enabled by .dockerignore.migrate)
+COPY scripts ./scripts
+COPY drizzle ./drizzle
+
+# Default command - push schema to database
+CMD ["npx", "drizzle-kit", "push", "--force"]

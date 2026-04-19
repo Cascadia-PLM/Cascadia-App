@@ -1,0 +1,667 @@
+[
+  {
+    "name": "M5 Threaded Rod, A2 Stainless Steel",
+    "description": "M5x0.8 threaded rod allthread A2 304 stainless steel DIN 976 full thread coarse pitch metric 700 MPa",
+    "categorySlug": "threaded-rod",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "diameter": 5
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_rod",
+        "specs": {
+          "threadDiameter": 5,
+          "pitch": 0.8
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M5x0.8",
+      "material": "A2 (304) Stainless Steel",
+      "standard": "DIN 976",
+      "threadType": "Full thread, coarse pitch",
+      "tensileStrength": "700 MPa (class 70)"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 5,
+        "url": ""
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 4,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "200mm",
+        "dimensions": {
+          "length": 200
+        },
+        "approximatePrice": 1
+      },
+      {
+        "label": "300mm",
+        "dimensions": {
+          "length": 300
+        },
+        "approximatePrice": 1.5
+      },
+      {
+        "label": "500mm",
+        "dimensions": {
+          "length": 500
+        },
+        "approximatePrice": 2.5
+      },
+      {
+        "label": "1000mm",
+        "dimensions": {
+          "length": 1000
+        },
+        "approximatePrice": 5
+      }
+    ],
+    "designNotes": "Full-thread rod for through-bolt connections, adjustable leveling feet, tensioning. Cut with hacksaw, chase threads with die after cutting. Use with coupling nuts to join lengths. Pair with hex nuts and flat washers. Stainless resists corrosion but weaker than grade 8.8 alloy steel.",
+    "tags": [
+      "M5",
+      "threaded-rod",
+      "allthread",
+      "stainless",
+      "A2",
+      "304",
+      "DIN-976",
+      "metric"
+    ]
+  },
+  {
+    "name": "M6 Threaded Rod, A2 Stainless Steel",
+    "description": "M6x1.0 threaded rod allthread A2 304 stainless steel DIN 976 full thread coarse pitch metric 700 MPa",
+    "categorySlug": "threaded-rod",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "diameter": 6
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_rod",
+        "specs": {
+          "threadDiameter": 6,
+          "pitch": 1
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M6x1.0",
+      "material": "A2 (304) Stainless Steel",
+      "standard": "DIN 976",
+      "threadType": "Full thread, coarse pitch",
+      "tensileStrength": "700 MPa (class 70)"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 6,
+        "url": ""
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "200mm",
+        "dimensions": {
+          "length": 200
+        },
+        "approximatePrice": 1.5
+      },
+      {
+        "label": "300mm",
+        "dimensions": {
+          "length": 300
+        },
+        "approximatePrice": 2
+      },
+      {
+        "label": "500mm",
+        "dimensions": {
+          "length": 500
+        },
+        "approximatePrice": 3
+      },
+      {
+        "label": "1000mm",
+        "dimensions": {
+          "length": 1000
+        },
+        "approximatePrice": 6
+      }
+    ],
+    "designNotes": "Full-thread rod for through-bolt connections, adjustable leveling feet, tensioning. Cut with hacksaw, chase threads with die after cutting. Use with coupling nuts to join lengths. Pair with hex nuts and flat washers. Stainless resists corrosion but weaker than grade 8.8 alloy steel.",
+    "tags": [
+      "M6",
+      "threaded-rod",
+      "allthread",
+      "stainless",
+      "A2",
+      "304",
+      "DIN-976",
+      "metric"
+    ]
+  },
+  {
+    "name": "M8 Threaded Rod, A2 Stainless Steel",
+    "description": "M8x1.25 threaded rod allthread A2 304 stainless steel DIN 976 full thread coarse pitch metric 700 MPa",
+    "categorySlug": "threaded-rod",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "diameter": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_rod",
+        "specs": {
+          "threadDiameter": 8,
+          "pitch": 1.25
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M8x1.25",
+      "material": "A2 (304) Stainless Steel",
+      "standard": "DIN 976",
+      "threadType": "Full thread, coarse pitch",
+      "tensileStrength": "700 MPa (class 70)"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 9,
+        "url": ""
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 7,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "200mm",
+        "dimensions": {
+          "length": 200
+        },
+        "approximatePrice": 2
+      },
+      {
+        "label": "300mm",
+        "dimensions": {
+          "length": 300
+        },
+        "approximatePrice": 3
+      },
+      {
+        "label": "500mm",
+        "dimensions": {
+          "length": 500
+        },
+        "approximatePrice": 4.5
+      },
+      {
+        "label": "1000mm",
+        "dimensions": {
+          "length": 1000
+        },
+        "approximatePrice": 9
+      }
+    ],
+    "designNotes": "Full-thread rod for through-bolt connections, adjustable leveling feet, tensioning. Cut with hacksaw, chase threads with die after cutting. Use with coupling nuts to join lengths. Pair with hex nuts and flat washers. Stainless resists corrosion but weaker than grade 8.8 alloy steel.",
+    "tags": [
+      "M8",
+      "threaded-rod",
+      "allthread",
+      "stainless",
+      "A2",
+      "304",
+      "DIN-976",
+      "metric"
+    ]
+  },
+  {
+    "name": "M10 Threaded Rod, A2 Stainless Steel",
+    "description": "M10x1.5 threaded rod allthread A2 304 stainless steel DIN 976 full thread coarse pitch metric 700 MPa",
+    "categorySlug": "threaded-rod",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "diameter": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_rod",
+        "specs": {
+          "threadDiameter": 10,
+          "pitch": 1.5
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M10x1.5",
+      "material": "A2 (304) Stainless Steel",
+      "standard": "DIN 976",
+      "threadType": "Full thread, coarse pitch",
+      "tensileStrength": "700 MPa (class 70)"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 13,
+        "url": ""
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 10,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "200mm",
+        "dimensions": {
+          "length": 200
+        },
+        "approximatePrice": 3
+      },
+      {
+        "label": "300mm",
+        "dimensions": {
+          "length": 300
+        },
+        "approximatePrice": 4
+      },
+      {
+        "label": "500mm",
+        "dimensions": {
+          "length": 500
+        },
+        "approximatePrice": 7
+      },
+      {
+        "label": "1000mm",
+        "dimensions": {
+          "length": 1000
+        },
+        "approximatePrice": 13
+      }
+    ],
+    "designNotes": "Full-thread rod for through-bolt connections, adjustable leveling feet, tensioning. Cut with hacksaw, chase threads with die after cutting. Use with coupling nuts to join lengths. Pair with hex nuts and flat washers. Stainless resists corrosion but weaker than grade 8.8 alloy steel.",
+    "tags": [
+      "M10",
+      "threaded-rod",
+      "allthread",
+      "stainless",
+      "A2",
+      "304",
+      "DIN-976",
+      "metric"
+    ]
+  },
+  {
+    "name": "M12 Threaded Rod, A2 Stainless Steel",
+    "description": "M12x1.75 threaded rod allthread A2 304 stainless steel DIN 976 full thread coarse pitch metric 700 MPa",
+    "categorySlug": "threaded-rod",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "diameter": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_rod",
+        "specs": {
+          "threadDiameter": 12,
+          "pitch": 1.75
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M12x1.75",
+      "material": "A2 (304) Stainless Steel",
+      "standard": "DIN 976",
+      "threadType": "Full thread, coarse pitch",
+      "tensileStrength": "700 MPa (class 70)"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 17,
+        "url": ""
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 14,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "200mm",
+        "dimensions": {
+          "length": 200
+        },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "300mm",
+        "dimensions": {
+          "length": 300
+        },
+        "approximatePrice": 5
+      },
+      {
+        "label": "500mm",
+        "dimensions": {
+          "length": 500
+        },
+        "approximatePrice": 8.5
+      },
+      {
+        "label": "1000mm",
+        "dimensions": {
+          "length": 1000
+        },
+        "approximatePrice": 17
+      }
+    ],
+    "designNotes": "Full-thread rod for through-bolt connections, adjustable leveling feet, tensioning. Cut with hacksaw, chase threads with die after cutting. Use with coupling nuts to join lengths. Pair with hex nuts and flat washers. Stainless resists corrosion but weaker than grade 8.8 alloy steel.",
+    "tags": [
+      "M12",
+      "threaded-rod",
+      "allthread",
+      "stainless",
+      "A2",
+      "304",
+      "DIN-976",
+      "metric"
+    ]
+  },
+  {
+    "name": "M5 Coupling Nut, Zinc Plated Steel",
+    "description": "M5 coupling nut extension nut hex long nut zinc plated steel DIN 6334 threaded rod connector",
+    "categorySlug": "nuts",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "height": 20
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "boltSize": 5,
+          "depth": 20
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M5x0.8",
+      "material": "Steel, Zinc Plated",
+      "hexAcrossFlats": "8mm",
+      "length": "20mm",
+      "standard": "DIN 6334"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 0.5,
+        "url": ""
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "For joining threaded rods end-to-end, also useful as long nut for extra thread engagement or as standoff. Wrench size = hex AF (8mm).",
+    "tags": [
+      "M5",
+      "coupling-nut",
+      "extension-nut",
+      "hex-long-nut",
+      "DIN-6334",
+      "zinc",
+      "threaded-rod"
+    ]
+  },
+  {
+    "name": "M6 Coupling Nut, Zinc Plated Steel",
+    "description": "M6 coupling nut extension nut hex long nut zinc plated steel DIN 6334 threaded rod connector",
+    "categorySlug": "nuts",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 25
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "boltSize": 6,
+          "depth": 25
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M6x1.0",
+      "material": "Steel, Zinc Plated",
+      "hexAcrossFlats": "10mm",
+      "length": "25mm",
+      "standard": "DIN 6334"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 0.5,
+        "url": ""
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 0.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "For joining threaded rods end-to-end, also useful as long nut for extra thread engagement or as standoff. Wrench size = hex AF (10mm).",
+    "tags": [
+      "M6",
+      "coupling-nut",
+      "extension-nut",
+      "hex-long-nut",
+      "DIN-6334",
+      "zinc",
+      "threaded-rod"
+    ]
+  },
+  {
+    "name": "M8 Coupling Nut, Zinc Plated Steel",
+    "description": "M8 coupling nut extension nut hex long nut zinc plated steel DIN 6334 threaded rod connector",
+    "categorySlug": "nuts",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 13,
+      "height": 30
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "boltSize": 8,
+          "depth": 30
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M8x1.25",
+      "material": "Steel, Zinc Plated",
+      "hexAcrossFlats": "13mm",
+      "length": "30mm",
+      "standard": "DIN 6334"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 1,
+        "url": ""
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 1,
+        "url": ""
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "For joining threaded rods end-to-end, also useful as long nut for extra thread engagement or as standoff. Wrench size = hex AF (13mm).",
+    "tags": [
+      "M8",
+      "coupling-nut",
+      "extension-nut",
+      "hex-long-nut",
+      "DIN-6334",
+      "zinc",
+      "threaded-rod"
+    ]
+  },
+  {
+    "name": "M10 Coupling Nut, Zinc Plated Steel",
+    "description": "M10 coupling nut extension nut hex long nut zinc plated steel DIN 6334 threaded rod connector",
+    "categorySlug": "nuts",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 17,
+      "height": 40
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "boltSize": 10,
+          "depth": 40
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M10x1.5",
+      "material": "Steel, Zinc Plated",
+      "hexAcrossFlats": "17mm",
+      "length": "40mm",
+      "standard": "DIN 6334"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 1.5,
+        "url": ""
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 1,
+        "url": ""
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "For joining threaded rods end-to-end, also useful as long nut for extra thread engagement or as standoff. Wrench size = hex AF (17mm).",
+    "tags": [
+      "M10",
+      "coupling-nut",
+      "extension-nut",
+      "hex-long-nut",
+      "DIN-6334",
+      "zinc",
+      "threaded-rod"
+    ]
+  },
+  {
+    "name": "M12 Coupling Nut, Zinc Plated Steel",
+    "description": "M12 coupling nut extension nut hex long nut zinc plated steel DIN 6334 threaded rod connector",
+    "categorySlug": "nuts",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 19,
+      "height": 45
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "boltSize": 12,
+          "depth": 45
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "thread": "M12x1.75",
+      "material": "Steel, Zinc Plated",
+      "hexAcrossFlats": "19mm",
+      "length": "45mm",
+      "standard": "DIN 6334"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 2,
+        "url": ""
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "",
+        "approximatePrice": 1.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "For joining threaded rods end-to-end, also useful as long nut for extra thread engagement or as standoff. Wrench size = hex AF (19mm).",
+    "tags": [
+      "M12",
+      "coupling-nut",
+      "extension-nut",
+      "hex-long-nut",
+      "DIN-6334",
+      "zinc",
+      "threaded-rod"
+    ]
+  }
+]

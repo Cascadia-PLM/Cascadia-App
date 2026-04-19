@@ -1,0 +1,959 @@
+[
+  {
+    "name": "3mm Red LED (Lite-On LTL-4221N)",
+    "categorySlug": "leds",
+    "description": "3mm T-1 red LED, 625nm, 2.0V forward voltage, 20mA, 30mcd luminous intensity",
+    "specs": {
+      "color": "red",
+      "wavelength": "625nm",
+      "forwardVoltage": "2.0V typ",
+      "forwardCurrent": "20mA",
+      "maxForwardCurrent": "30mA",
+      "luminousIntensity": "30mcd",
+      "viewingAngle": "30°",
+      "package": "3mm T-1",
+      "size": "3mm"
+    },
+    "electrical": {
+      "voltage": "1.8-2.2V forward",
+      "current": "20mA typical",
+      "power": "40mW"
+    },
+    "dimensions": {
+      "diameter": 3.0,
+      "height": 5.2,
+      "weight": 0.1
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadDiameter": 0.5,
+      "leadSpacing": 2.54,
+      "leadCount": 2,
+      "flatSide": "cathode indicator"
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "160-1087-ND",
+      "approximatePrice": 0.5,
+      "url": "https://www.digikey.com/en/products/detail/lite-on-inc/LTL-4221N/270499"
+    },
+    "designNotes": "Series resistor required. For 5V: R = (5-2.0)/0.020 = 150Ω, use 150Ω or 220Ω. For 3.3V: use 68Ω or 100Ω.",
+    "tags": [
+      "LED",
+      "red LED",
+      "3mm LED",
+      "indicator",
+      "through-hole LED",
+      "T-1",
+      "Lite-On",
+      "LTL-4221N"
+    ]
+  },
+  {
+    "name": "3mm Green LED (Lite-On LTL-4231N)",
+    "categorySlug": "leds",
+    "description": "3mm T-1 green LED, 565nm, 2.2V forward voltage, 20mA, 20mcd luminous intensity",
+    "specs": {
+      "color": "green",
+      "wavelength": "565nm",
+      "forwardVoltage": "2.2V typ",
+      "forwardCurrent": "20mA",
+      "maxForwardCurrent": "30mA",
+      "luminousIntensity": "20mcd",
+      "viewingAngle": "30°",
+      "package": "3mm T-1",
+      "size": "3mm"
+    },
+    "electrical": {
+      "voltage": "2.0-2.4V forward",
+      "current": "20mA typical",
+      "power": "40mW"
+    },
+    "dimensions": {
+      "diameter": 3.0,
+      "height": 5.2,
+      "weight": 0.1
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadDiameter": 0.5,
+      "leadSpacing": 2.54,
+      "leadCount": 2,
+      "flatSide": "cathode indicator"
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "160-1080-ND",
+      "approximatePrice": 0.5,
+      "url": "https://www.digikey.com/en/products/detail/lite-on-inc/LTL-4231N/270507"
+    },
+    "designNotes": "Series resistor required. For 5V: use 150Ω or 220Ω. For 3.3V: use 56Ω or 68Ω. Headroom tight on 3.3V.",
+    "tags": [
+      "LED",
+      "green LED",
+      "3mm LED",
+      "indicator",
+      "through-hole LED",
+      "T-1",
+      "Lite-On",
+      "LTL-4231N"
+    ]
+  },
+  {
+    "name": "3mm Blue LED (Kingbright WP710A10QBC/D)",
+    "categorySlug": "leds",
+    "description": "3mm T-1 blue LED, 470nm, 3.2V forward voltage, 20mA, 50mcd luminous intensity",
+    "specs": {
+      "color": "blue",
+      "wavelength": "470nm",
+      "forwardVoltage": "3.2V typ",
+      "forwardCurrent": "20mA",
+      "maxForwardCurrent": "30mA",
+      "luminousIntensity": "50mcd",
+      "viewingAngle": "30°",
+      "package": "3mm T-1",
+      "size": "3mm"
+    },
+    "electrical": {
+      "voltage": "3.0-3.4V forward",
+      "current": "20mA typical",
+      "power": "40mW"
+    },
+    "dimensions": {
+      "diameter": 3.0,
+      "height": 5.2,
+      "weight": 0.1
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadDiameter": 0.5,
+      "leadSpacing": 2.54,
+      "leadCount": 2,
+      "flatSide": "cathode indicator"
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "754-1217-ND",
+      "approximatePrice": 0.5,
+      "url": "https://www.digikey.com/en/products/detail/kingbright/WP710A10QBC-D/1747452"
+    },
+    "designNotes": "For 5V: use 100Ω. NOT recommended for 3.3V — Vf nearly equals supply.",
+    "tags": [
+      "LED",
+      "blue LED",
+      "3mm LED",
+      "indicator",
+      "through-hole LED",
+      "T-1",
+      "Kingbright",
+      "WP710A10QBC"
+    ]
+  },
+  {
+    "name": "3mm Yellow LED (Lite-On LTL-4251N)",
+    "categorySlug": "leds",
+    "description": "3mm T-1 yellow LED, 590nm, 2.0V forward voltage, 20mA, 20mcd luminous intensity",
+    "specs": {
+      "color": "yellow",
+      "wavelength": "590nm",
+      "forwardVoltage": "2.0V typ",
+      "forwardCurrent": "20mA",
+      "maxForwardCurrent": "30mA",
+      "luminousIntensity": "20mcd",
+      "viewingAngle": "30°",
+      "package": "3mm T-1",
+      "size": "3mm"
+    },
+    "electrical": {
+      "voltage": "1.8-2.2V forward",
+      "current": "20mA typical",
+      "power": "40mW"
+    },
+    "dimensions": {
+      "diameter": 3.0,
+      "height": 5.2,
+      "weight": 0.1
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadDiameter": 0.5,
+      "leadSpacing": 2.54,
+      "leadCount": 2,
+      "flatSide": "cathode indicator"
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "160-1100-ND",
+      "approximatePrice": 0.5,
+      "url": "https://www.digikey.com/en/products/detail/lite-on-inc/LTL-4251N/217574"
+    },
+    "designNotes": "Series resistor required. For 5V: use 150Ω or 220Ω. For 3.3V: use 56Ω or 68Ω.",
+    "tags": [
+      "LED",
+      "yellow LED",
+      "3mm LED",
+      "indicator",
+      "through-hole LED",
+      "T-1",
+      "Lite-On",
+      "LTL-4251N"
+    ]
+  },
+  {
+    "name": "3mm White LED (Kingbright WP710A10LWC/D)",
+    "categorySlug": "leds",
+    "description": "3mm T-1 white LED, 6000K color temperature, 3.2V forward voltage, 20mA, 600mcd luminous intensity",
+    "specs": {
+      "color": "white",
+      "colorTemperature": "6000K",
+      "forwardVoltage": "3.2V typ",
+      "forwardCurrent": "20mA",
+      "maxForwardCurrent": "30mA",
+      "luminousIntensity": "600mcd",
+      "viewingAngle": "30°",
+      "package": "3mm T-1",
+      "size": "3mm"
+    },
+    "electrical": {
+      "voltage": "3.0-3.4V forward",
+      "current": "20mA typical",
+      "power": "40mW"
+    },
+    "dimensions": {
+      "diameter": 3.0,
+      "height": 5.2,
+      "weight": 0.1
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadDiameter": 0.5,
+      "leadSpacing": 2.54,
+      "leadCount": 2,
+      "flatSide": "cathode indicator"
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "754-1218-ND",
+      "approximatePrice": 0.5,
+      "url": "https://www.digikey.com/en/products/detail/kingbright/WP710A10LWC-D/1747453"
+    },
+    "designNotes": "For 5V: use 100Ω. NOT recommended for 3.3V — Vf nearly equals supply.",
+    "tags": [
+      "LED",
+      "white LED",
+      "3mm LED",
+      "indicator",
+      "through-hole LED",
+      "T-1",
+      "Kingbright",
+      "WP710A10LWC"
+    ]
+  },
+  {
+    "name": "5mm Red LED (Kingbright WP7113ID)",
+    "categorySlug": "leds",
+    "description": "5mm T-1 3/4 red LED, 625nm, 2.0V forward voltage, 20mA, 200mcd luminous intensity",
+    "specs": {
+      "color": "red",
+      "wavelength": "625nm",
+      "forwardVoltage": "2.0V typ",
+      "forwardCurrent": "20mA",
+      "maxForwardCurrent": "30mA",
+      "luminousIntensity": "200mcd",
+      "viewingAngle": "30°",
+      "package": "5mm T-1 3/4",
+      "size": "5mm"
+    },
+    "electrical": {
+      "voltage": "1.8-2.2V forward",
+      "current": "20mA typical",
+      "power": "40mW"
+    },
+    "dimensions": {
+      "diameter": 5.0,
+      "height": 8.6,
+      "weight": 0.2,
+      "leadDiameter": 0.6
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadDiameter": 0.6,
+      "leadSpacing": 2.54,
+      "leadCount": 2,
+      "flatSide": "cathode indicator"
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "754-1264-ND",
+      "approximatePrice": 0.5,
+      "url": "https://www.digikey.com/en/products/detail/kingbright/WP7113ID/1747663"
+    },
+    "designNotes": "Series resistor required. For 5V: R = (5-2.0)/0.020 = 150Ω, use 150Ω or 220Ω. For 3.3V: use 68Ω or 100Ω.",
+    "tags": [
+      "LED",
+      "red LED",
+      "5mm LED",
+      "indicator",
+      "through-hole LED",
+      "T-1 3/4",
+      "Kingbright",
+      "WP7113ID"
+    ]
+  },
+  {
+    "name": "5mm Green LED (Kingbright WP7113GD)",
+    "categorySlug": "leds",
+    "description": "5mm T-1 3/4 green LED, 565nm, 2.2V forward voltage, 20mA, 150mcd luminous intensity",
+    "specs": {
+      "color": "green",
+      "wavelength": "565nm",
+      "forwardVoltage": "2.2V typ",
+      "forwardCurrent": "20mA",
+      "maxForwardCurrent": "30mA",
+      "luminousIntensity": "150mcd",
+      "viewingAngle": "30°",
+      "package": "5mm T-1 3/4",
+      "size": "5mm"
+    },
+    "electrical": {
+      "voltage": "2.0-2.4V forward",
+      "current": "20mA typical",
+      "power": "40mW"
+    },
+    "dimensions": {
+      "diameter": 5.0,
+      "height": 8.6,
+      "weight": 0.2,
+      "leadDiameter": 0.6
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadDiameter": 0.6,
+      "leadSpacing": 2.54,
+      "leadCount": 2,
+      "flatSide": "cathode indicator"
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "754-1263-ND",
+      "approximatePrice": 0.5,
+      "url": "https://www.digikey.com/en/products/detail/kingbright/WP7113GD/1747662"
+    },
+    "designNotes": "Series resistor required. For 5V: use 150Ω or 220Ω. For 3.3V: use 56Ω or 68Ω.",
+    "tags": [
+      "LED",
+      "green LED",
+      "5mm LED",
+      "indicator",
+      "through-hole LED",
+      "T-1 3/4",
+      "Kingbright",
+      "WP7113GD"
+    ]
+  },
+  {
+    "name": "5mm Blue LED (Kingbright WP7113QBC/D)",
+    "categorySlug": "leds",
+    "description": "5mm T-1 3/4 blue LED, 470nm, 3.2V forward voltage, 20mA, 300mcd luminous intensity",
+    "specs": {
+      "color": "blue",
+      "wavelength": "470nm",
+      "forwardVoltage": "3.2V typ",
+      "forwardCurrent": "20mA",
+      "maxForwardCurrent": "30mA",
+      "luminousIntensity": "300mcd",
+      "viewingAngle": "30°",
+      "package": "5mm T-1 3/4",
+      "size": "5mm"
+    },
+    "electrical": {
+      "voltage": "3.0-3.4V forward",
+      "current": "20mA typical",
+      "power": "40mW"
+    },
+    "dimensions": {
+      "diameter": 5.0,
+      "height": 8.6,
+      "weight": 0.2,
+      "leadDiameter": 0.6
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadDiameter": 0.6,
+      "leadSpacing": 2.54,
+      "leadCount": 2,
+      "flatSide": "cathode indicator"
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "754-1489-ND",
+      "approximatePrice": 0.5,
+      "url": "https://www.digikey.com/en/products/detail/kingbright/WP7113QBC-D/1747659"
+    },
+    "designNotes": "For 5V: use 100Ω. NOT recommended for 3.3V — Vf nearly equals supply.",
+    "tags": [
+      "LED",
+      "blue LED",
+      "5mm LED",
+      "indicator",
+      "through-hole LED",
+      "T-1 3/4",
+      "Kingbright",
+      "WP7113QBC"
+    ]
+  },
+  {
+    "name": "5mm Yellow LED (Kingbright WP7113YD)",
+    "categorySlug": "leds",
+    "description": "5mm T-1 3/4 yellow LED, 590nm, 2.0V forward voltage, 20mA, 150mcd luminous intensity",
+    "specs": {
+      "color": "yellow",
+      "wavelength": "590nm",
+      "forwardVoltage": "2.0V typ",
+      "forwardCurrent": "20mA",
+      "maxForwardCurrent": "30mA",
+      "luminousIntensity": "150mcd",
+      "viewingAngle": "30°",
+      "package": "5mm T-1 3/4",
+      "size": "5mm"
+    },
+    "electrical": {
+      "voltage": "1.8-2.2V forward",
+      "current": "20mA typical",
+      "power": "40mW"
+    },
+    "dimensions": {
+      "diameter": 5.0,
+      "height": 8.6,
+      "weight": 0.2,
+      "leadDiameter": 0.6
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadDiameter": 0.6,
+      "leadSpacing": 2.54,
+      "leadCount": 2,
+      "flatSide": "cathode indicator"
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "754-1265-ND",
+      "approximatePrice": 0.5,
+      "url": "https://www.digikey.com/en/products/detail/kingbright/WP7113YD/1747664"
+    },
+    "designNotes": "Series resistor required. For 5V: use 150Ω or 220Ω. For 3.3V: use 56Ω or 68Ω.",
+    "tags": [
+      "LED",
+      "yellow LED",
+      "5mm LED",
+      "indicator",
+      "through-hole LED",
+      "T-1 3/4",
+      "Kingbright",
+      "WP7113YD"
+    ]
+  },
+  {
+    "name": "5mm White LED (Cree C503D-WAN)",
+    "categorySlug": "leds",
+    "description": "5mm T-1 3/4 white LED, 6000K color temperature, 3.2V forward voltage, 20mA, 3000mcd, narrow 15° viewing angle",
+    "specs": {
+      "color": "white",
+      "colorTemperature": "6000K",
+      "forwardVoltage": "3.2V typ",
+      "forwardCurrent": "20mA",
+      "maxForwardCurrent": "30mA",
+      "luminousIntensity": "3000mcd",
+      "viewingAngle": "15°",
+      "package": "5mm T-1 3/4",
+      "size": "5mm"
+    },
+    "electrical": {
+      "voltage": "3.0-3.4V forward",
+      "current": "20mA typical",
+      "power": "40mW"
+    },
+    "dimensions": {
+      "diameter": 5.0,
+      "height": 8.6,
+      "weight": 0.2,
+      "leadDiameter": 0.6
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadDiameter": 0.6,
+      "leadSpacing": 2.54,
+      "leadCount": 2,
+      "flatSide": "cathode indicator"
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "C503D-WAN-CCBEB151-ND",
+      "approximatePrice": 0.5,
+      "url": "https://www.digikey.com/en/products/detail/cree-inc/C503D-WAN-CCBEB151/1922944"
+    },
+    "designNotes": "Extremely bright — reduce to 5mA (360Ω from 5V) for indicator use. Narrow 15° viewing angle.",
+    "tags": [
+      "LED",
+      "white LED",
+      "5mm LED",
+      "indicator",
+      "through-hole LED",
+      "T-1 3/4",
+      "Cree",
+      "C503D-WAN",
+      "high brightness"
+    ]
+  },
+  {
+    "name": "5mm RGB LED Common Cathode (Kingbright WP154A4SUREQBFZGC)",
+    "categorySlug": "leds",
+    "description": "5mm T-1 3/4 RGB LED, common cathode, 4-lead, separate series resistors required per channel",
+    "specs": {
+      "configuration": "common cathode",
+      "forwardVoltage": "R: 2.0V typ, G: 2.2V typ, B: 3.2V typ",
+      "forwardCurrent": "20mA per channel",
+      "package": "5mm T-1 3/4",
+      "size": "5mm",
+      "pinout": "4-lead: R anode, cathode (common), G anode, B anode"
+    },
+    "electrical": {
+      "voltage": "R: 1.8-2.2V, G: 2.0-2.4V, B: 3.0-3.4V per channel",
+      "current": "20mA per channel",
+      "power": "120mW max (all channels)"
+    },
+    "dimensions": {
+      "diameter": 5.0,
+      "height": 8.6,
+      "weight": 0.3
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadCount": 4,
+      "leadSpacing": 2.54
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "754-1615-ND",
+      "approximatePrice": 1.0,
+      "url": "https://www.digikey.com/en/products/detail/kingbright/WP154A4SUREQBFZGC/3084120"
+    },
+    "designNotes": "Each channel needs its own series resistor. Red: 150Ω (5V). Green: 150Ω (5V). Blue: 100Ω (5V). Use PWM for color mixing. Cathode to GND, drive anodes HIGH.",
+    "tags": [
+      "LED",
+      "RGB LED",
+      "5mm LED",
+      "common cathode",
+      "through-hole LED",
+      "T-1 3/4",
+      "Kingbright",
+      "WP154A4SUREQBFZGC",
+      "color mixing"
+    ]
+  },
+  {
+    "name": "5mm RGB LED Common Anode (Kingbright WP154A4SUREQBFZGW)",
+    "categorySlug": "leds",
+    "description": "5mm T-1 3/4 RGB LED, common anode, 4-lead, logic-inverted drive — LOW turns LED ON",
+    "specs": {
+      "configuration": "common anode",
+      "forwardVoltage": "R: 2.0V typ, G: 2.2V typ, B: 3.2V typ",
+      "forwardCurrent": "20mA per channel",
+      "package": "5mm T-1 3/4",
+      "size": "5mm",
+      "pinout": "4-lead: R cathode, anode (common), G cathode, B cathode"
+    },
+    "electrical": {
+      "voltage": "R: 1.8-2.2V, G: 2.0-2.4V, B: 3.0-3.4V per channel",
+      "current": "20mA per channel",
+      "power": "120mW max (all channels)"
+    },
+    "dimensions": {
+      "diameter": 5.0,
+      "height": 8.6,
+      "weight": 0.3
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadCount": 4,
+      "leadSpacing": 2.54
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "754-1616-ND",
+      "approximatePrice": 1.0,
+      "url": "https://www.digikey.com/en/products/detail/kingbright/WP154A4SUREQBFZGW/3084121"
+    },
+    "designNotes": "Logic inverted — LOW turns LED ON. Anode to VCC, pull cathodes LOW. Same resistor values as common cathode variant.",
+    "tags": [
+      "LED",
+      "RGB LED",
+      "5mm LED",
+      "common anode",
+      "through-hole LED",
+      "T-1 3/4",
+      "Kingbright",
+      "WP154A4SUREQBFZGW",
+      "color mixing"
+    ]
+  },
+  {
+    "name": "WS2812B Addressable RGB LED Breakout (Adafruit NeoPixel 1655)",
+    "categorySlug": "leds",
+    "description": "Individual WS2812B addressable RGB LED on breakout board, single-wire 800kHz NRZ serial protocol, 5V supply",
+    "specs": {
+      "protocol": "WS2812B",
+      "bitsPerPixel": 24,
+      "supplyVoltage": "5V",
+      "forwardCurrent": "60mA max full white",
+      "package": "breakout board",
+      "pinout": "VDD, GND, DIN, DOUT"
+    },
+    "electrical": {
+      "voltage": "5V",
+      "current": "60mA max full white",
+      "interface": "WS2812B single-wire serial (800kHz NRZ)",
+      "pinout": "VDD, GND, DIN, DOUT"
+    },
+    "dimensions": {
+      "length": 10.0,
+      "width": 10.0,
+      "height": 2.0,
+      "weight": 0.5
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadCount": 4,
+      "leadSpacing": 2.54
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "Adafruit",
+      "partNumber": "1655",
+      "approximatePrice": 3.5,
+      "url": "https://www.adafruit.com/product/1655"
+    },
+    "designNotes": "330-470Ω resistor on DIN line. 100µF cap across power. 5V only. 3.3V MCU data signals may work but level shifter recommended.",
+    "tags": [
+      "LED",
+      "addressable LED",
+      "NeoPixel",
+      "WS2812B",
+      "RGB",
+      "Adafruit",
+      "breakout",
+      "smart LED",
+      "chainable"
+    ]
+  },
+  {
+    "name": "WS2812B 8-LED NeoPixel Stick (Adafruit 1426)",
+    "categorySlug": "leds",
+    "description": "8-LED WS2812B addressable RGB stick, 51mm long, single-wire serial control, 480mA max current draw",
+    "specs": {
+      "protocol": "WS2812B",
+      "bitsPerPixel": 24,
+      "supplyVoltage": "5V",
+      "ledCount": 8,
+      "package": "stick PCB"
+    },
+    "electrical": {
+      "voltage": "5V",
+      "current": "480mA max (8 × 60mA)",
+      "power": "2.4W max"
+    },
+    "dimensions": {
+      "length": 51.0,
+      "width": 10.2,
+      "height": 3.0,
+      "weight": 3.0
+    },
+    "mounting": {
+      "type": "through_hole",
+      "leadCount": 4,
+      "leadSpacing": 2.54
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "Adafruit",
+      "partNumber": "1426",
+      "approximatePrice": 6.0,
+      "url": "https://www.adafruit.com/product/1426"
+    },
+    "designNotes": "330-470Ω resistor on DIN line. 100µF cap across power. 5V only. Plan for 480mA supply capacity at full brightness.",
+    "tags": [
+      "LED",
+      "addressable LED",
+      "NeoPixel",
+      "WS2812B",
+      "RGB",
+      "Adafruit",
+      "LED stick",
+      "smart LED",
+      "chainable"
+    ]
+  },
+  {
+    "name": "WS2812B NeoPixel LED Strip 1m 60 LEDs/m (Adafruit 1138)",
+    "categorySlug": "leds",
+    "description": "1 meter WS2812B addressable RGB LED strip, 60 LEDs/m, 3M adhesive backing, 3.6A max current draw",
+    "specs": {
+      "protocol": "WS2812B",
+      "bitsPerPixel": 24,
+      "supplyVoltage": "5V",
+      "ledCount": 60,
+      "ledDensity": "60 LEDs/m",
+      "backingType": "3M adhesive"
+    },
+    "electrical": {
+      "voltage": "5V",
+      "current": "3.6A max full white",
+      "power": "18W max"
+    },
+    "dimensions": {
+      "length": 1000,
+      "width": 12,
+      "height": 3,
+      "weight": 50
+    },
+    "mounting": {
+      "type": "adhesive_backed",
+      "specs": {
+        "backingType": "3M adhesive"
+      }
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "Adafruit",
+      "partNumber": "1138",
+      "approximatePrice": 20.0,
+      "url": "https://www.adafruit.com/product/1138"
+    },
+    "designNotes": "1000µF cap at input. Need 5V 4A+ supply. Inject power at both ends for long runs.",
+    "tags": [
+      "LED",
+      "addressable LED",
+      "NeoPixel",
+      "WS2812B",
+      "RGB",
+      "Adafruit",
+      "LED strip",
+      "smart LED",
+      "60 LED/m"
+    ]
+  },
+  {
+    "name": "1W Warm White High-Power LED on Star PCB",
+    "categorySlug": "leds",
+    "description": "1W warm white high-power LED mounted on 20mm aluminum star PCB, 2700-3000K, 3.2V forward voltage, 350mA constant current, 100lm",
+    "specs": {
+      "color": "warm white",
+      "colorTemperature": "2700-3000K",
+      "forwardVoltage": "3.2V typ",
+      "forwardCurrent": "350mA",
+      "luminousFlux": "100lm typ",
+      "package": "20mm star PCB"
+    },
+    "electrical": {
+      "voltage": "2.7-3.5V forward",
+      "current": "350mA",
+      "power": "1W"
+    },
+    "dimensions": {
+      "starDiameter": 20.0,
+      "height": 2.5,
+      "weight": 2.0
+    },
+    "mounting": {
+      "type": "star_pcb",
+      "specs": {
+        "starDiameter": "20mm",
+        "mountingHoles": "2x M3",
+        "thermalPad": "aluminum star PCB bottom"
+      }
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "Amazon",
+      "partNumber": "B07C1LKPRB",
+      "approximatePrice": 3.0,
+      "url": "https://www.amazon.com/dp/B07C1LKPRB"
+    },
+    "designNotes": "MUST use constant current driver (LDD-350H). REQUIRES heatsink with thermal paste. Never run without heatsink.",
+    "tags": [
+      "LED",
+      "high-power LED",
+      "warm white",
+      "1W LED",
+      "star PCB",
+      "COB LED",
+      "spotlight",
+      "requires heatsink"
+    ]
+  },
+  {
+    "name": "3W Cool White High-Power LED on Star PCB",
+    "categorySlug": "leds",
+    "description": "3W cool white high-power LED mounted on 20mm aluminum star PCB, 6000K, 3.4V forward voltage, 700mA constant current, 200lm",
+    "specs": {
+      "color": "cool white",
+      "colorTemperature": "6000K",
+      "forwardVoltage": "3.4V typ",
+      "forwardCurrent": "700mA",
+      "luminousFlux": "200lm typ",
+      "package": "20mm star PCB"
+    },
+    "electrical": {
+      "voltage": "3.0-3.8V forward",
+      "current": "700mA",
+      "power": "3W"
+    },
+    "dimensions": {
+      "starDiameter": 20.0,
+      "height": 2.5,
+      "weight": 2.0
+    },
+    "mounting": {
+      "type": "star_pcb",
+      "specs": {
+        "starDiameter": "20mm",
+        "mountingHoles": "2x M3",
+        "thermalPad": "aluminum star PCB bottom"
+      }
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "Amazon",
+      "partNumber": "B07C1LKPRB",
+      "approximatePrice": 4.0,
+      "url": "https://www.amazon.com/dp/B07C1LKPRB"
+    },
+    "designNotes": "MUST use LDD-700H driver. REQUIRES substantial heatsink — 3W generates significant heat.",
+    "tags": [
+      "LED",
+      "high-power LED",
+      "cool white",
+      "3W LED",
+      "star PCB",
+      "COB LED",
+      "spotlight",
+      "requires heatsink"
+    ]
+  },
+  {
+    "name": "Meanwell LDD-350H Constant Current LED Driver",
+    "categorySlug": "leds",
+    "description": "Meanwell LDD-350H buck constant current LED driver, 350mA output, 9-56V input, 2-52V output, SIP-5, PWM/analog dimming",
+    "specs": {
+      "outputCurrent": "350mA",
+      "inputVoltageRange": "9-56V DC",
+      "outputVoltageRange": "2-52V DC",
+      "efficiency": "96%",
+      "topology": "buck",
+      "package": "SIP-5"
+    },
+    "electrical": {
+      "voltage": "9-56V input, 2-52V output",
+      "current": "350mA constant",
+      "power": "19.6W max",
+      "interface": "PWM dimming 100Hz-50kHz or 0-3.3V analog",
+      "pinout": "VIN+, VIN-, VOUT+, VOUT-, DIM"
+    },
+    "dimensions": {
+      "length": 20.0,
+      "width": 11.5,
+      "height": 10.9,
+      "weight": 10.0
+    },
+    "mounting": {
+      "type": "through_hole",
+      "specs": {
+        "leadCount": 5,
+        "leadSpacing": 2.54,
+        "package": "SIP-5"
+      }
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "1866-3641-ND",
+      "approximatePrice": 7.0,
+      "url": "https://www.digikey.com/en/products/detail/mean-well-usa-inc/LDD-350H/7704584"
+    },
+    "designNotes": "Pairs with 1W high-power LEDs. Supports PWM dimming via DIM pin. Wide input voltage range suitable for various power supplies.",
+    "tags": [
+      "LED driver",
+      "constant current",
+      "Meanwell",
+      "LDD-350H",
+      "buck driver",
+      "PWM dimming",
+      "350mA",
+      "SIP-5"
+    ]
+  },
+  {
+    "name": "Meanwell LDD-700H Constant Current LED Driver",
+    "categorySlug": "leds",
+    "description": "Meanwell LDD-700H buck constant current LED driver, 700mA output, 9-56V input, 2-52V output, SIP-5, PWM/analog dimming",
+    "specs": {
+      "outputCurrent": "700mA",
+      "inputVoltageRange": "9-56V DC",
+      "outputVoltageRange": "2-52V DC",
+      "efficiency": "96%",
+      "topology": "buck",
+      "package": "SIP-5"
+    },
+    "electrical": {
+      "voltage": "9-56V input, 2-52V output",
+      "current": "700mA constant",
+      "power": "36.4W max",
+      "interface": "PWM dimming 100Hz-50kHz or 0-3.3V analog",
+      "pinout": "VIN+, VIN-, VOUT+, VOUT-, DIM"
+    },
+    "dimensions": {
+      "length": 20.0,
+      "width": 11.5,
+      "height": 10.9,
+      "weight": 10.0
+    },
+    "mounting": {
+      "type": "through_hole",
+      "specs": {
+        "leadCount": 5,
+        "leadSpacing": 2.54,
+        "package": "SIP-5"
+      }
+    },
+    "stockSizes": null,
+    "supplier": {
+      "name": "DigiKey",
+      "partNumber": "1866-3644-ND",
+      "approximatePrice": 7.0,
+      "url": "https://www.digikey.com/en/products/detail/mean-well-usa-inc/LDD-700H/7704587"
+    },
+    "designNotes": "Pairs with 3W high-power LEDs. Supports PWM dimming via DIM pin. Wide input voltage range suitable for various power supplies.",
+    "tags": [
+      "LED driver",
+      "constant current",
+      "Meanwell",
+      "LDD-700H",
+      "buck driver",
+      "PWM dimming",
+      "700mA",
+      "SIP-5"
+    ]
+  }
+]

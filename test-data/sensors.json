@@ -1,0 +1,1925 @@
+[
+  {
+    "name": "Omron SS-5GL Micro Switch (Lever Type, SPDT, 5A)",
+    "description": "Omron SS-5GL snap-action micro switch, SPDT (COM/NO/NC), lever actuator, 5A at 125VAC / 3A at 250VAC / 5A at 30VDC, 19.8×10.6×6.4mm body, 0.49N operating force, 1M+ electrical life, 10M+ mechanical life, solder lug or PCB terminals, M2.6 mounting hole, gold-plated contacts, precision limit switch for CNC, 3D printers, industrial equipment",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.6,
+      "height": 19.8,
+      "depth": 6.4,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 1,
+          "holeDiameter": 2.6,
+          "boltSize": 2.5,
+          "pattern": "single center"
+        }
+      },
+      {
+        "type": "tab",
+        "specs": {
+          "tabCount": 3,
+          "tabType": "solder lug / PCB pin",
+          "pinPitch": 2.54,
+          "pinout": "COM, NO, NC"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "125VAC / 250VAC / 30VDC max",
+      "current": "5A at 125VAC, 3A at 250VAC, 5A at 30VDC",
+      "power": "625W AC max",
+      "interface": "Mechanical switch",
+      "pinout": "3-terminal: COM, NO, NC"
+    },
+    "specs": {
+      "switchType": "SPDT snap-action",
+      "actuatorType": "simulated roller lever",
+      "operatingForce": 0.49,
+      "releaseForce": 0.15,
+      "differentialTravel": 0.5,
+      "contactResistance": 0.05,
+      "insulationResistance": 100,
+      "electricalLife": 1000000,
+      "mechanicalLife": 10000000,
+      "leverLength": 16.2,
+      "operatingTemp": "-25 to +70°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "SS-5GL-ND",
+        "approximatePrice": 2,
+        "url": "https://www.digikey.com/en/products/detail/omron-electronics-inc-emc-div/SS-5GL/280449"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "653-SS-5GL",
+        "approximatePrice": 2,
+        "url": "https://www.mouser.com/ProductDetail/Omron/SS-5GL"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B012E0NBPI",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/dp/B012E0NBPI"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Industry-standard precision micro switch. Use as limit switch, endstop, or safety interlock. For 3D printers and CNC: wire COM to GND and NO to MCU input pin with internal pull-up enabled. Lever provides ~16mm actuation distance with 0.49N force. Mount with M2.5 screw through the body hole. For roller lever variant, use SS-5GL2 instead. NO contact closes when lever is pressed (actuated), NC opens. Debounce in software (~5-10ms) or add 0.1µF cap across contacts. Gold cross-bar contact ensures reliable low-current switching down to signal levels.",
+    "tags": [
+      "micro switch",
+      "limit switch",
+      "snap switch",
+      "endstop",
+      "Omron",
+      "SS-5GL",
+      "SPDT",
+      "lever switch",
+      "CNC limit switch",
+      "3D printer endstop",
+      "safety switch"
+    ]
+  },
+  {
+    "name": "Omron SS-5GL2 Micro Switch (Roller Lever, SPDT, 5A)",
+    "description": "Omron SS-5GL2 snap-action micro switch, SPDT (COM/NO/NC), roller lever actuator, 5A at 125VAC / 3A at 250VAC / 5A at 30VDC, 19.8×10.6×6.4mm body, steel roller on lever arm, 0.49N operating force, 1M+ electrical life, 10M+ mechanical life, M2.6 mounting hole, ideal for cam-actuated limit sensing",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.6,
+      "height": 19.8,
+      "depth": 6.4,
+      "weight": 4.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 1,
+          "holeDiameter": 2.6,
+          "boltSize": 2.5,
+          "pattern": "single center"
+        }
+      },
+      {
+        "type": "tab",
+        "specs": {
+          "tabCount": 3,
+          "tabType": "solder lug / PCB pin",
+          "pinPitch": 2.54,
+          "pinout": "COM, NO, NC"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "125VAC / 250VAC / 30VDC max",
+      "current": "5A at 125VAC, 3A at 250VAC, 5A at 30VDC",
+      "power": "625W AC max",
+      "interface": "Mechanical switch",
+      "pinout": "3-terminal: COM, NO, NC"
+    },
+    "specs": {
+      "switchType": "SPDT snap-action",
+      "actuatorType": "roller lever",
+      "operatingForce": 0.49,
+      "releaseForce": 0.15,
+      "differentialTravel": 0.5,
+      "contactResistance": 0.05,
+      "insulationResistance": 100,
+      "electricalLife": 1000000,
+      "mechanicalLife": 10000000,
+      "rollerDiameter": 3.0,
+      "leverLength": 23.0,
+      "operatingTemp": "-25 to +70°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "SS-5GL2-ND",
+        "approximatePrice": 2.5,
+        "url": "https://www.digikey.com/en/products/detail/omron-electronics-inc-emc-div/SS-5GL2/280450"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "653-SS-5GL2",
+        "approximatePrice": 2.5,
+        "url": "https://www.mouser.com/ProductDetail/Omron/SS-5GL2"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00E66DWQE",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B00E66DWQE"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Roller lever variant of SS-5GL — the roller reduces wear when actuated by sliding cams, rotating parts, or linear motion mechanisms. Steel roller is more durable than plain lever for repetitive cam-based actuation. Lever extends ~23mm total. Same body, mounting, and electrical specs as SS-5GL. Use for homing switches on CNC and 3D printers where the carriage slides across the lever. Debounce same as SS-5GL (~5-10ms software or 0.1µF cap).",
+    "tags": [
+      "micro switch",
+      "limit switch",
+      "roller lever switch",
+      "endstop",
+      "Omron",
+      "SS-5GL2",
+      "SPDT",
+      "cam switch",
+      "CNC limit switch",
+      "homing switch"
+    ]
+  },
+  {
+    "name": "KW11-3Z Micro Switch (3D Printer Endstop Module)",
+    "description": "KW11-3Z snap-action micro switch on breakout PCB, SPDT (COM/NO/NC), lever actuator, 5A at 250VAC / 0.3A at 250VDC, 20×10×6mm switch body, 40×16mm breakout PCB with 3-pin header and LED indicator, 2× M3 mounting holes at 33mm spacing, common 3D printer endstop module compatible with RAMPS, Marlin, Klipper",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 16.0,
+      "height": 40.0,
+      "depth": 10.0,
+      "weight": 4
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeDiameter": 3.0,
+          "boltSize": 3,
+          "holeSpacing": 33.0,
+          "pattern": "linear"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 3,
+          "headerType": "through-hole male",
+          "pinout": "S(signal), +(VCC), -(GND)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250VAC / 250VDC max (switch), 3.3-5V (module logic)",
+      "current": "5A at 250VAC, 0.3A at 250VDC",
+      "power": "N/A (passive switch)",
+      "interface": "Digital GPIO (active LOW when triggered)",
+      "pinout": "3-pin header: S (signal), + (VCC), - (GND)"
+    },
+    "specs": {
+      "switchType": "SPDT snap-action",
+      "actuatorType": "lever",
+      "operatingForce": 0.6,
+      "mechanicalLife": 100000,
+      "contactResistance": 0.1,
+      "leverLength": 18.0,
+      "ledIndicator": true,
+      "onboardPullup": false,
+      "pcbMountingHoles": 2,
+      "mountingHoleSpacing": 33.0
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07X3TG14F",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/dp/B07X3TG14F"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The standard 3D printer endstop module — compatible with RAMPS 1.4, SKR, and most Marlin/Klipper boards. Breakout PCB includes LED indicator and 3-pin JST-compatible header (S/+/-). Wire: S to endstop signal pin, + to 5V, - to GND. Configure firmware for active-LOW endstop. Lower quality than Omron switches (50K-100K life vs 1M+). M3 mounting holes at 33mm spacing. Switch itself is a generic KW11-3Z — replaceable if worn. For higher reliability applications, use Omron SS-5GL on a custom PCB. Enable internal MCU pull-up on signal pin if the module doesn't have one.",
+    "tags": [
+      "endstop",
+      "micro switch",
+      "3D printer",
+      "limit switch",
+      "KW11-3Z",
+      "RAMPS",
+      "Marlin",
+      "Klipper",
+      "homing switch",
+      "mechanical endstop",
+      "endstop module"
+    ]
+  },
+  {
+    "name": "KY-040 Rotary Encoder Module",
+    "description": "KY-040 incremental rotary encoder on breakout PCB, 20 detents per revolution, quadrature output (CLK/DT) with integrated push button (SW), 3.3-5V operation, 26×19mm PCB, 6mm D-shaft, 10kΩ onboard pull-up resistors, 5-pin header (CLK/DT/SW/+/GND), 2× M3 mounting holes at 18mm spacing, common Arduino/ESP32 input module for menus and parameter adjustment",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 19.0,
+      "height": 26.0,
+      "depth": 30.0,
+      "weight": 6
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeDiameter": 3.0,
+          "boltSize": 3,
+          "holeSpacing": 18.0,
+          "pattern": "linear"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 5,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 5,
+          "headerType": "through-hole male",
+          "pinout": "CLK, DT, SW, +, GND"
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 6.0,
+          "shaftType": "D-shaft",
+          "shaftLength": 15.0
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V",
+      "current": "10mA (pull-up resistors)",
+      "power": "0.05W",
+      "interface": "Digital GPIO (quadrature)",
+      "pinout": "5-pin: CLK (A), DT (B), SW (button), + (VCC), GND"
+    },
+    "specs": {
+      "encoderType": "Incremental, mechanical",
+      "detentsPerRevolution": 20,
+      "pulsesPerRevolution": 20,
+      "pushButton": true,
+      "pullUpResistors": "10kΩ onboard",
+      "outputType": "Quadrature (A/B)",
+      "shaftDiameter": 6.0,
+      "shaftType": "D-shaft"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B06XQTHDRR",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/dp/B06XQTHDRR"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Simple rotary input for menus, volume control, parameter adjustment. The module includes 10kΩ pull-ups so it works directly with any MCU GPIO. Read quadrature signals in interrupt handler for reliable counting — polling at loop speed will miss steps. Debounce is critical — add 100nF caps between CLK/DT and GND, or debounce in software (1-5ms). Push button is active LOW when shaft is pressed. 20 detents provides good tactile feedback. 6mm D-shaft accepts standard knobs. For higher quality/resolution, use a bare Bourns PEC11 encoder instead. Not suitable for motor position feedback — mechanical contacts bounce and wear (use optical/magnetic encoders for motors).",
+    "tags": [
+      "rotary encoder",
+      "KY-040",
+      "encoder module",
+      "incremental encoder",
+      "quadrature encoder",
+      "knob input",
+      "menu control",
+      "volume control",
+      "Arduino encoder"
+    ]
+  },
+  {
+    "name": "Bourns PEC11R Rotary Encoder (EC11, with Push Button)",
+    "description": "Bourns PEC11R series incremental rotary encoder with momentary push button, 20 detents per revolution, mechanical quadrature output, 12mm body, 6mm D-shaft, panel mount via M7 threaded bushing, 5-pin (3 encoder + 2 switch), 15,000-30,000 cycle rotational life, requires external pull-ups, standard panel-mount encoder for instruments, audio equipment, and embedded HMI",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 12.0,
+      "height": 12.0,
+      "depth": 20.0,
+      "weight": 4
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "threadSize": "M7×0.75",
+          "bushingDiameter": 7.0,
+          "panelThickness": "1-3mm",
+          "nutIncluded": true
+        }
+      },
+      {
+        "type": "shaft",
+        "specs": {
+          "shaftDiameter": 6.0,
+          "shaftType": "D-shaft",
+          "shaftLength": 20.0
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 5,
+          "encoderPins": 3,
+          "switchPins": 2,
+          "pinPitch": 2.5,
+          "pinout": "Encoder: A, C(GND), B; Switch: SW1, SW2"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5VDC max (switch and encoder contacts)",
+      "current": "10mA max (switch)",
+      "power": "N/A (passive)",
+      "interface": "Mechanical quadrature + push switch",
+      "pinout": "5-pin: A, C(GND), B (encoder) + SW1, SW2 (push button)"
+    },
+    "specs": {
+      "encoderType": "Incremental, mechanical",
+      "detentsPerRevolution": 20,
+      "pulsesPerRevolution": 20,
+      "pushButton": true,
+      "pushButtonRating": "10mA at 5VDC",
+      "rotationalLife": 15000,
+      "shaftDiameter": 6.0,
+      "shaftType": "D-shaft",
+      "bodyDiameter": 12.0,
+      "mountingBushing": "M7×0.75"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "PEC11R-4215F-S0024-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/bourns-inc/PEC11R-4215F-S0024/4499665"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "652-PEC11R-4215F-S24",
+        "approximatePrice": 1.5,
+        "url": "https://www.mouser.com/ProductDetail/Bourns/PEC11R-4215F-S0024"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07DM2YMT4",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/dp/B07DM2YMT4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Higher quality than KY-040 module — suitable for finished products and panel mounting. Requires external pull-up resistors (4.7kΩ-10kΩ to VCC on A and B pins) since there's no breakout PCB. Panel mount via M7 bushing — drill 7mm hole in panel, secure with included nut and optional washer. Debounce with 10-100nF caps on A/B lines. Push button pins are separate from encoder pins. 15,000-30,000 cycle life is adequate for manual UI controls. Available in many variants: PEC11L (taller body), different detent counts (15, 20, 24, 30). Standard 6mm D-shaft accepts common knobs. For knob selection: look for 6mm D-shaft bore knobs.",
+    "tags": [
+      "rotary encoder",
+      "EC11",
+      "PEC11",
+      "Bourns",
+      "panel mount encoder",
+      "incremental encoder",
+      "quadrature encoder",
+      "encoder with button",
+      "HMI input",
+      "volume knob"
+    ]
+  },
+  {
+    "name": "DHT11 Temperature & Humidity Sensor Module",
+    "description": "DHT11 basic digital temperature and humidity sensor on breakout PCB, 0-50°C temperature range, ±2°C accuracy, 1°C resolution, 20-80% RH humidity, ±5% RH accuracy, single-wire digital interface (proprietary protocol), 3.3-5.5V operation, 1Hz max sampling rate, 30×20mm module with 3-pin header, onboard pull-up resistor, budget environmental sensing for Arduino and ESP32 projects",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20.0,
+      "height": 30.0,
+      "depth": 8.0,
+      "weight": 4
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 1,
+          "holeDiameter": 3.0,
+          "boltSize": 3,
+          "pattern": "single corner"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 3,
+          "headerType": "through-hole male",
+          "pinout": "VCC, DATA, GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5.5V",
+      "current": "0.3mA measuring, 60µA standby",
+      "power": "0.002W",
+      "interface": "Single-wire digital (proprietary, NOT Dallas 1-Wire)",
+      "pinout": "3-pin: VCC, DATA, GND"
+    },
+    "specs": {
+      "sensorType": "Temperature + Humidity",
+      "temperatureRange": "0 to 50°C",
+      "temperatureAccuracy": 2.0,
+      "temperatureResolution": 1.0,
+      "humidityRange": "20-80% RH",
+      "humidityAccuracy": 5.0,
+      "samplingRate": 1.0,
+      "dataFormat": "8-bit",
+      "pullUpResistor": "4.7-10kΩ (on module)",
+      "responseTime": "6-15 seconds"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "386",
+        "approximatePrice": 5,
+        "url": "https://www.adafruit.com/product/386"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07WT2HJ4F",
+        "approximatePrice": 3,
+        "url": "https://www.amazon.com/dp/B07WT2HJ4F"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Budget temperature/humidity sensor — good enough for non-critical monitoring. Key limitations: 0-50°C range only (no freezing temps), ±2°C accuracy (poor), 1°C integer resolution (no decimals), 1 reading/second max. For better accuracy, use DHT22 instead. Use Adafruit DHT library or DHT.h. Module includes pull-up resistor on data line. NOT compatible with Dallas 1-Wire protocol despite similar single-wire interface — uses proprietary Aosong protocol. Can't run multiple on one pin (unlike DS18B20). Place away from heat sources. Allow 1 second stabilization after power-on before first reading. Protocol is timing-sensitive — disable interrupts during read on slower MCUs.",
+    "tags": [
+      "DHT11",
+      "temperature sensor",
+      "humidity sensor",
+      "temp humidity",
+      "environmental sensor",
+      "Aosong",
+      "weather station",
+      "Arduino sensor"
+    ]
+  },
+  {
+    "name": "DHT22 / AM2302 Temperature & Humidity Sensor Module",
+    "description": "DHT22 (AM2302) precision digital temperature and humidity sensor on breakout PCB, -40 to +80°C temperature range, ±0.5°C accuracy, 0.1°C resolution, 0-100% RH humidity, ±2-5% RH accuracy, single-wire digital interface, 3.3-5.5V operation, 0.5Hz max sampling rate (1 reading per 2 seconds), 38×20mm module with 3-pin header, 16-bit resolution, upgraded version of DHT11",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20.0,
+      "height": 38.0,
+      "depth": 10.0,
+      "weight": 5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 1,
+          "holeDiameter": 3.0,
+          "boltSize": 3,
+          "pattern": "single corner"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 3,
+          "headerType": "through-hole male",
+          "pinout": "VCC, DATA, GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5.5V",
+      "current": "1.5mA measuring, 50µA standby",
+      "power": "0.008W",
+      "interface": "Single-wire digital (proprietary, NOT Dallas 1-Wire)",
+      "pinout": "3-pin: VCC, DATA, GND"
+    },
+    "specs": {
+      "sensorType": "Temperature + Humidity",
+      "temperatureRange": "-40 to +80°C",
+      "temperatureAccuracy": 0.5,
+      "temperatureResolution": 0.1,
+      "humidityRange": "0-100% RH",
+      "humidityAccuracy": 2.0,
+      "samplingRate": 0.5,
+      "dataFormat": "16-bit",
+      "pullUpResistor": "4.7-10kΩ (on module)",
+      "responseTime": "2 seconds"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "385",
+        "approximatePrice": 10,
+        "url": "https://www.adafruit.com/product/385"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B073F472JL",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/dp/B073F472JL"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "SEN-10167",
+        "approximatePrice": 6,
+        "url": "https://www.sparkfun.com/products/10167"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The recommended temperature/humidity sensor for most maker projects — much better than DHT11 in every way. Wider range (-40 to +80°C vs 0-50°C), 10× better resolution (0.1°C vs 1°C), better accuracy (±0.5°C vs ±2°C). Main downside: max 1 reading per 2 seconds (0.5Hz). Same library as DHT11 (Adafruit DHT, set type to DHT22). Requires 4.7kΩ pull-up on data line — module includes this. AM2302 is the wired version with 3 pins (integrated pull-up). Slower response time than DS18B20 but provides humidity too. For faster or more accurate temperature only, use DS18B20. Cannot run multiple sensors on one pin.",
+    "tags": [
+      "DHT22",
+      "AM2302",
+      "temperature sensor",
+      "humidity sensor",
+      "temp humidity",
+      "environmental sensor",
+      "Aosong",
+      "weather station",
+      "precision sensor"
+    ]
+  },
+  {
+    "name": "DS18B20 Waterproof Temperature Probe (1-Wire Digital)",
+    "description": "DS18B20 digital temperature sensor in waterproof stainless steel probe housing, -55 to +125°C range, ±0.5°C accuracy (-10 to +85°C), configurable 9-12 bit resolution (0.0625°C max), Dallas/Maxim 1-Wire interface, 3.0-5.5V operation, unique 64-bit ROM address for multi-sensor buses, 6mm diameter × 50mm probe, 1m cable, parasitic power mode supported, IP67 waterproof",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6.0,
+      "length": 50.0,
+      "weight": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "wireColors": "Red(VDD), Yellow/White(DATA), Black(GND)",
+          "cableLength": 1000,
+          "probeType": "Stainless steel cylinder, 6mm OD"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.0-5.5V (also parasitic power on 2 wires)",
+      "current": "1mA active, 750nA standby",
+      "power": "0.005W",
+      "interface": "1-Wire (Dallas/Maxim protocol)",
+      "pinout": "3-wire: Red (VDD), Yellow/White (DATA), Black (GND)"
+    },
+    "specs": {
+      "sensorType": "Digital temperature",
+      "temperatureRange": "-55 to +125°C",
+      "temperatureAccuracy": 0.5,
+      "accuracyRange": "-10 to +85°C",
+      "resolution": "9-12 bit configurable",
+      "maxResolution": 0.0625,
+      "conversionTime9bit": 93.75,
+      "conversionTime12bit": 750,
+      "addressBits": 64,
+      "multiDrop": true,
+      "parasiticPower": true,
+      "waterproof": "IP67",
+      "pullUpResistor": "4.7kΩ required on data line",
+      "probeLength": 50.0,
+      "probeDiameter": 6.0,
+      "cableLength": 1000
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "381",
+        "approximatePrice": 10,
+        "url": "https://www.adafruit.com/product/381"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B012C597T0",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/dp/B012C597T0"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "DS18B20+-ND",
+        "approximatePrice": 4.5,
+        "url": "https://www.digikey.com/en/products/detail/analog-devices-inc-maxim-integrated/DS18B20/956983"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Best temperature sensor for liquid/outdoor/industrial monitoring — waterproof probe withstands immersion. Key advantage: multiple sensors on ONE pin via unique 64-bit addresses. Use OneWire + DallasTemperature libraries. Requires 4.7kΩ pull-up resistor on data line (one per bus, not per sensor). For long cable runs (>5m), reduce pull-up to 2.2kΩ. 12-bit conversion takes 750ms — for faster reads, use 9-bit (94ms, 0.5°C resolution). Parasitic power mode runs on 2 wires only (DATA + GND) — useful for retrofit installations but slightly less reliable. Probe is stainless steel — can be inserted into liquids, pipes, soil. Mount probe with a 6mm clip or pass through a 6mm bulkhead fitting. Counterfeit DS18B20s are common on Amazon/AliExpress — they may have reduced accuracy or missing features.",
+    "tags": [
+      "DS18B20",
+      "temperature probe",
+      "waterproof sensor",
+      "1-Wire",
+      "digital temperature",
+      "liquid temperature",
+      "aquarium sensor",
+      "industrial temperature",
+      "multi-sensor",
+      "Maxim",
+      "Dallas"
+    ]
+  },
+  {
+    "name": "MAX6675 K-Type Thermocouple Breakout Module",
+    "description": "MAX6675 K-type thermocouple-to-digital converter breakout module, 0 to +1024°C range, 0.25°C resolution (12-bit), ±1.5°C accuracy, SPI interface (read-only), 3.0-5.5V operation, 28×14mm PCB, built-in cold junction compensation, open thermocouple detection, includes basic K-type thermocouple probe (0-400°C), screw terminal for thermocouple connection, high-temperature sensing for ovens, kilns, reflow soldering",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 14.0,
+      "height": 28.0,
+      "depth": 8.0,
+      "weight": 4
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 5,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 5,
+          "headerType": "through-hole male",
+          "pinout": "VCC, GND, SCK, CS, SO(MISO)"
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalCount": 2,
+          "terminalPitch": 5.08,
+          "wireGauge": "24-16 AWG",
+          "purpose": "K-type thermocouple connection (+/-)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.0-5.5V",
+      "current": "0.7mA typical, 1.5mA max",
+      "power": "0.008W",
+      "interface": "SPI (read-only, MISO only)",
+      "pinout": "5-pin: VCC, GND, SCK, CS, SO(MISO)"
+    },
+    "specs": {
+      "sensorType": "K-type thermocouple interface",
+      "temperatureRange": "0 to 1024°C",
+      "resolution": 0.25,
+      "adcBits": 12,
+      "accuracy": 1.5,
+      "conversionTime": 220,
+      "spiClockMax": 4.3,
+      "coldJunctionCompensation": true,
+      "openDetection": true,
+      "thermocoupleType": "K-type",
+      "includedProbe": "Basic K-type, 0-400°C, glass braid insulation"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "269",
+        "approximatePrice": 15,
+        "url": "https://www.adafruit.com/product/269"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07QLNKPBJ",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/dp/B07QLNKPBJ"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "MAX6675ISA+-ND",
+        "approximatePrice": 6,
+        "url": "https://www.digikey.com/en/products/detail/analog-devices-inc-maxim-integrated/MAX6675ISA/1536564"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "For high-temperature measurement (0-1024°C) — ovens, kilns, reflow stations, 3D printer hotends. NOTE: MAX6675 is end-of-life; for new designs use MAX31855 (wider range, faster, better accuracy). SPI is read-only — no MOSI connection needed (saves a pin). Included thermocouple probe is basic (glass braid, 0-400°C) — upgrade to a high-temp K-type probe for kiln/oven use. Polarity matters: K-type has + (chromel/yellow) and - (alumel/red) wires — reversed polarity gives negative/wrong readings. Cold junction compensation is built in but affected by heat from nearby components — keep the module away from heat sources. Use MAX6675 library for Arduino. 220ms conversion time limits to ~4 readings/second.",
+    "tags": [
+      "thermocouple",
+      "MAX6675",
+      "K-type",
+      "high temperature",
+      "temperature sensor",
+      "SPI sensor",
+      "reflow",
+      "kiln",
+      "oven sensor",
+      "MAX31855"
+    ]
+  },
+  {
+    "name": "LDR Photoresistor Sensor Module (Analog + Digital)",
+    "description": "GL5528 photoresistor (LDR) sensor module with analog and digital output, LM393 comparator with adjustable threshold potentiometer, 3.3-5V operation, 30×15mm PCB, 5mm LDR element, analog output proportional to light level, digital output for threshold detection, power and threshold LEDs, 1× M3 mounting hole, simple ambient light sensing",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 15.0,
+      "height": 30.0,
+      "depth": 8.0,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 1,
+          "holeDiameter": 3.0,
+          "boltSize": 3,
+          "pattern": "single"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 4,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 4,
+          "headerType": "through-hole male",
+          "pinout": "VCC, GND, DO(digital), AO(analog)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V",
+      "current": "5-10mA",
+      "power": "0.05W",
+      "interface": "Analog + Digital GPIO",
+      "pinout": "4-pin: VCC, GND, DO (digital threshold), AO (analog proportional)"
+    },
+    "specs": {
+      "sensorType": "Photoresistor (Light Dependent Resistor)",
+      "sensorElement": "GL5528",
+      "lightResistance": "8-20kΩ (at 10 lux)",
+      "darkResistance": ">1MΩ",
+      "spectralPeak": "540nm (green)",
+      "responseTime": "20-30ms rise, 30ms decay",
+      "comparator": "LM393",
+      "thresholdAdjustment": "potentiometer",
+      "ledIndicators": "power + threshold",
+      "calibrated": false
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07Q5BWJHG",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/dp/B07Q5BWJHG"
+      },
+      {
+        "name": "Adafruit",
+        "partNumber": "161",
+        "approximatePrice": 1,
+        "url": "https://www.adafruit.com/product/161"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Simplest light sensor — good for day/night detection, light-following robots, auto-brightness. NOT calibrated — provides relative light level only, not lux. For calibrated lux measurements, use BH1750 instead. Analog output is a voltage divider — the relationship between voltage and lux is non-linear. Digital output uses LM393 comparator with adjustable threshold (blue potentiometer) — outputs HIGH or LOW based on light level. Note: GL5528 and similar CdS photoresistors contain cadmium and are being phased out under RoHS/REACH regulations in some markets. For new commercial designs, consider phototransistors or BH1750 digital sensor instead.",
+    "tags": [
+      "LDR",
+      "photoresistor",
+      "light sensor",
+      "light dependent resistor",
+      "ambient light",
+      "GL5528",
+      "photocell",
+      "CdS cell",
+      "day night sensor"
+    ]
+  },
+  {
+    "name": "BH1750 Digital Ambient Light Sensor Module (GY-302)",
+    "description": "BH1750FVI I2C digital ambient light intensity sensor breakout (GY-302), 1-65535 lux measurement range, 1 lux resolution (0.5 lux in high-res mode), spectral response close to human eye, I2C interface (address 0x23 or 0x5C), 3.3-5V operation, 18.5×13.5mm PCB, built-in 50/60Hz ripple rejection, calibrated lux output, ultra-low power (120µA active), precision light sensing for automatic brightness control",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 13.5,
+      "height": 18.5,
+      "depth": 3.0,
+      "weight": 1.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 1,
+          "holeDiameter": 2.5,
+          "boltSize": 2,
+          "pattern": "single corner"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 5,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 5,
+          "headerType": "through-hole male",
+          "pinout": "VCC, GND, SCL, SDA, ADDR"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V",
+      "current": "120µA active, 1µA power-down",
+      "power": "0.0006W",
+      "interface": "I2C",
+      "pinout": "5-pin: VCC, GND, SCL, SDA, ADDR"
+    },
+    "specs": {
+      "sensorType": "Digital ambient light (lux)",
+      "sensorChip": "BH1750FVI (ROHM)",
+      "measurementRange": "1-65535 lux",
+      "resolution": 1.0,
+      "highResolution": 0.5,
+      "accuracy": "±20%",
+      "spectralResponse": "close to human eye (~560nm peak)",
+      "i2cAddress": "0x23 (ADDR LOW) or 0x5C (ADDR HIGH)",
+      "measurementTime": "120ms (high-res), 16ms (low-res)",
+      "rippleRejection": "50/60 Hz",
+      "modes": "Continuous, One-time, High-res, Low-res"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "4681",
+        "approximatePrice": 4.5,
+        "url": "https://www.adafruit.com/product/4681"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07RJGF8PD",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/dp/B07RJGF8PD"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "BH1750FVI-TR-ND",
+        "approximatePrice": 3,
+        "url": "https://www.digikey.com/en/products/detail/rohm-semiconductor/BH1750FVI-TR/1828699"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Best value calibrated light sensor — outputs lux directly over I2C, no analog conversion or calibration needed. Use BH1750 Arduino library. Two I2C addresses available (0x23/0x5C via ADDR pin) — can run two sensors on one bus. 50/60Hz ripple rejection means it works correctly under indoor artificial lighting. High-res mode (0.5 lux) takes 120ms; low-res mode (4 lux) takes 16ms. Ultra-low power makes it ideal for battery projects. For more dynamic range or separate IR/visible measurement, use TSL2591. Spectral response matches human eye perception — ideal for display brightness control. Mount with sensor facing the light source — the IC is directional.",
+    "tags": [
+      "BH1750",
+      "lux sensor",
+      "light sensor",
+      "I2C sensor",
+      "ambient light",
+      "GY-302",
+      "ROHM",
+      "digital light sensor",
+      "brightness sensor",
+      "illuminance"
+    ]
+  },
+  {
+    "name": "TSL2561 Digital Light Sensor Breakout (I2C)",
+    "description": "TSL2561 I2C digital luminosity/light sensor breakout, dual photodiode (visible + IR), 0.1-40000 lux range, 16-bit ADC, 1,000,000:1 dynamic range, programmable interrupt with persist filter, I2C interface (3 selectable addresses: 0x29/0x39/0x49), 2.7-3.6V native with 5V-tolerant breakout, 19×16mm PCB, selectable gain (1× or 16×) and integration time, precision light measurement for camera exposure and grow lights",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 16.0,
+      "height": 19.0,
+      "depth": 3.0,
+      "weight": 1.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeDiameter": 2.5,
+          "holeSpacing": 12.7,
+          "boltSize": 2,
+          "pattern": "linear"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 6,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 6,
+          "headerType": "through-hole male",
+          "pinout": "VCC, GND, SCL, SDA, INT, ADDR"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V (breakout), 2.7-3.6V (IC native)",
+      "current": "0.24mA active, 15µA power-down",
+      "power": "0.001W",
+      "interface": "I2C",
+      "pinout": "6-pin: VCC, GND, SCL, SDA, INT, ADDR"
+    },
+    "specs": {
+      "sensorType": "Digital light (visible + IR)",
+      "sensorChip": "TSL2561 (ams/TAOS)",
+      "measurementRange": "0.1-40000 lux",
+      "dynamicRange": "1:1000000",
+      "adcBits": 16,
+      "dualPhotodiode": true,
+      "channel0": "visible + IR broadband",
+      "channel1": "IR only",
+      "gain": "1× or 16× selectable",
+      "integrationTime": "13.7ms, 101ms, 402ms selectable",
+      "i2cAddresses": "0x29, 0x39, 0x49",
+      "interrupt": "programmable threshold with persist filter"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "439",
+        "approximatePrice": 6,
+        "url": "https://www.adafruit.com/product/439"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00GKNZLIY",
+        "approximatePrice": 4,
+        "url": "https://www.amazon.com/dp/B00GKNZLIY"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "SEN-12055",
+        "approximatePrice": 6,
+        "url": "https://www.sparkfun.com/products/12055"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Higher-end light sensor with dual photodiodes — separates visible and IR light for more accurate lux calculation in mixed lighting. 3 selectable I2C addresses allow up to 3 sensors on one bus. 16× gain option enables very low-light measurement. Programmable interrupt reduces polling — MCU can sleep until light crosses threshold. NOTE: TSL2561 is mature/legacy; TSL2591 (Adafruit 1980, ~$7) is the newer version with 600,000,000:1 dynamic range and better sensitivity. Use Adafruit TSL2561 library. The dual-channel approach (subtracting IR from broadband) gives more accurate lux values than single-photodiode sensors like BH1750 under mixed lighting with significant IR content. Good for grow light monitoring, photography light meters, and scientific applications.",
+    "tags": [
+      "TSL2561",
+      "light sensor",
+      "lux sensor",
+      "I2C sensor",
+      "luminosity",
+      "infrared sensor",
+      "visible light",
+      "TSL2591",
+      "TAOS",
+      "ams",
+      "photometer"
+    ]
+  },
+  {
+    "name": "HC-SR04 Ultrasonic Distance Sensor",
+    "description": "HC-SR04 ultrasonic ranging module, 2-400cm measurement range (practical 2-200cm), ±3mm accuracy, 40kHz ultrasonic transducers, 15° beam angle, trigger/echo digital GPIO interface, 5V operation, 45×20×15mm module including transducer cylinders, 10µs trigger pulse, distance = echo pulse width × 0.034 / 2 (cm), 60ms measurement cycle, 2× M3 mounting holes at 40mm spacing, ubiquitous distance sensor for robotics and obstacle avoidance",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20.0,
+      "height": 45.0,
+      "depth": 15.0,
+      "weight": 9
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeDiameter": 3.0,
+          "boltSize": 3,
+          "holeSpacing": 40.0,
+          "pattern": "linear (outside transducers)",
+          "transducerDiameter": 16.0,
+          "transducerSpacing": 26.0
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 4,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 4,
+          "headerType": "through-hole male",
+          "pinout": "VCC, TRIG, ECHO, GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V (HC-SR04), 3.3-5V (HC-SR04P variant)",
+      "current": "15mA active, 2mA quiescent",
+      "power": "0.075W",
+      "interface": "Digital GPIO (Trigger input + Echo output)",
+      "pinout": "4-pin: VCC, TRIG, ECHO, GND"
+    },
+    "specs": {
+      "sensorType": "Ultrasonic distance",
+      "measurementRange": "2-400cm",
+      "practicalRange": "2-200cm",
+      "accuracy": 3.0,
+      "resolution": 3.0,
+      "beamAngle": 15,
+      "frequency": "40kHz",
+      "triggerPulse": "10µs HIGH",
+      "measurementCycle": 60,
+      "echoVoltage": "5V (standard), 3.3V (HC-SR04P)",
+      "formula": "distance_cm = pulse_width_µs × 0.034 / 2"
+    },
+    "suppliers": [
+      {
+        "name": "SparkFun",
+        "partNumber": "SEN-15569",
+        "approximatePrice": 4,
+        "url": "https://www.sparkfun.com/products/15569"
+      },
+      {
+        "name": "Adafruit",
+        "partNumber": "3942",
+        "approximatePrice": 4,
+        "url": "https://www.adafruit.com/product/3942"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07RGB4W8V",
+        "approximatePrice": 3,
+        "url": "https://www.amazon.com/dp/B07RGB4W8V"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The standard ultrasonic distance sensor — cheap, well-understood, huge community support. CRITICAL: standard HC-SR04 ECHO pin outputs 5V — use a voltage divider (1kΩ + 2kΩ) when connecting to 3.3V MCUs (ESP32, Pico) or use HC-SR04P variant which is 3.3V compatible. Send 10µs HIGH pulse to TRIG, measure ECHO pulse width. Allow 60ms between measurements to avoid echo interference. 15° beam angle means it detects obstacles in a cone — good for area detection, bad for precise targeting. Does not work well with soft/angled surfaces (sound absorbing or deflecting). Minimum range is ~2cm — objects closer return no echo. For precise short-range measurement, use VL53L0X instead. Two transducer holes (16mm diameter) can be used for panel mounting with rubber grommets.",
+    "tags": [
+      "HC-SR04",
+      "ultrasonic sensor",
+      "distance sensor",
+      "sonar",
+      "ranging",
+      "obstacle detection",
+      "proximity sensor",
+      "robotics sensor",
+      "ultrasonic ranging"
+    ]
+  },
+  {
+    "name": "VL53L0X Time-of-Flight Laser Distance Sensor Breakout",
+    "description": "VL53L0X I2C Time-of-Flight (ToF) laser ranging sensor breakout, 30-1000mm range (up to 2000mm in long-range mode), ±3% accuracy, 1mm resolution, 940nm Class 1 VCSEL laser (eye-safe), I2C interface (0x29 default, software-configurable), 2.6-3.5V native with 3.3-5V breakout, 13×18mm PCB (Adafruit), 25° field of view, 23-33ms measurement time, XSHUT pin for multi-sensor addressing, precision short-range distance for drones, robots, and level sensing",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 13.0,
+      "height": 18.0,
+      "depth": 3.0,
+      "weight": 1.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeDiameter": 2.0,
+          "boltSize": 2,
+          "holeSpacing": 12.7,
+          "pattern": "linear"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 6,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 6,
+          "headerType": "through-hole male",
+          "pinout": "VIN, GND, SCL, SDA, GPIO1(INT), XSHUT"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V (breakout), 2.6-3.5V (IC native)",
+      "current": "19mA ranging, 5µA standby",
+      "power": "0.06W",
+      "interface": "I2C",
+      "pinout": "6-pin: VIN, GND, SCL, SDA, GPIO1, XSHUT"
+    },
+    "specs": {
+      "sensorType": "Time-of-Flight laser ranging",
+      "sensorChip": "VL53L0X (STMicroelectronics)",
+      "measurementRange": "30-1000mm (2000mm long-range)",
+      "accuracy": "±3% or ±5mm",
+      "resolution": 1.0,
+      "fieldOfView": 25,
+      "laserWavelength": 940,
+      "laserClass": "Class 1 (eye-safe)",
+      "measurementTime": "23-33ms",
+      "i2cAddress": "0x29 (default, software-configurable)",
+      "multiSensor": "via XSHUT pin address reprogramming"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "3317",
+        "approximatePrice": 15,
+        "url": "https://www.adafruit.com/product/3317"
+      },
+      {
+        "name": "Pololu",
+        "partNumber": "2490",
+        "approximatePrice": 12,
+        "url": "https://www.pololu.com/product/2490"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07XXTMRR2",
+        "approximatePrice": 4.5,
+        "url": "https://www.amazon.com/dp/B07XXTMRR2"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "497-16533-1-ND",
+        "approximatePrice": 4,
+        "url": "https://www.digikey.com/en/products/detail/stmicroelectronics/VL53L0X/6021748"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Precision short-range sensor — much more accurate and focused than HC-SR04 at close range. Works on any surface (unlike ultrasonic). 940nm laser is eye-safe (Class 1). For multiple sensors on one I2C bus: hold all XSHUT pins LOW, then bring up one at a time and reprogram its address (addresses are volatile — reset on power cycle). Use Adafruit VL53L0X library or Pololu VL53L0X library. VL53L1X is the newer version with 4m range and programmable ROI — use that for new designs if range >1m is needed. Accuracy degrades significantly beyond 1m and on dark/low-reflectance surfaces. 25° FoV means it averages distance over a cone — not suitable for small-object detection at range. Good for: drone altitude hold, liquid level sensing, gesture detection, robot obstacle avoidance.",
+    "tags": [
+      "VL53L0X",
+      "ToF sensor",
+      "laser distance",
+      "time of flight",
+      "lidar",
+      "ranging sensor",
+      "I2C sensor",
+      "STMicroelectronics",
+      "proximity sensor",
+      "VL53L1X"
+    ]
+  },
+  {
+    "name": "Sharp GP2Y0A21YK0F IR Analog Distance Sensor (10-80cm)",
+    "description": "Sharp GP2Y0A21YK0F infrared analog distance measuring sensor, 10-80cm range, analog voltage output (inverse non-linear), triangulation-based IR measurement, 4.5-5.5V operation, 29.5×13×13.5mm body, 3-pin JST PH connector, ~30mA current draw, 38Hz update rate (26ms/measurement), ambient light immune (modulated IR), 2× M3 mounting holes at 15.5mm spacing, general-purpose distance sensing for robotics and automation",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 13.0,
+      "height": 29.5,
+      "depth": 13.5,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeDiameter": 3.0,
+          "boltSize": 3,
+          "holeSpacing": 15.5,
+          "pattern": "linear (mounting tabs)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "connectorType": "JST PH 2.0mm",
+          "pinPitch": 2.0,
+          "pinout": "VCC, GND, VO(analog output)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.5-5.5V",
+      "current": "30mA typical",
+      "power": "0.15W",
+      "interface": "Analog voltage output",
+      "pinout": "3-pin JST PH: VCC (red), GND (black), VO (white/yellow)"
+    },
+    "specs": {
+      "sensorType": "IR triangulation distance",
+      "measurementRange": "10-80cm",
+      "outputType": "Analog voltage, inverse non-linear",
+      "outputVoltageRange": "0.4V (80cm) to 3.1V (10cm)",
+      "updateRate": 38.3,
+      "measurementTime": 26,
+      "beamSpotSize": "6mm at 80cm",
+      "ambientLightImmunity": true,
+      "approximateFormula": "distance_cm = 29.988 × voltage^(-1.173)"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "164",
+        "approximatePrice": 15,
+        "url": "https://www.adafruit.com/product/164"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "SEN-00242",
+        "approximatePrice": 14,
+        "url": "https://www.sparkfun.com/products/242"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "425-2819-ND",
+        "approximatePrice": 12,
+        "url": "https://www.digikey.com/en/products/detail/sharp-socle-technology/GP2Y0A21YK0F/750680"
+      },
+      {
+        "name": "Pololu",
+        "partNumber": "136",
+        "approximatePrice": 12,
+        "url": "https://www.pololu.com/product/136"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Classic IR distance sensor — simple analog output, no digital protocol needed. IMPORTANT: output is inverse and non-linear — voltage decreases as distance increases, and the relationship is not linear. Use a lookup table or the approximate formula for conversion. Objects closer than 10cm give DECREASING voltage (same as far objects) — the sensor cannot distinguish <10cm from >80cm. Add a minimum-distance check in software. Requires JST PH cable (not included with bare sensor) — Adafruit 3623 or SparkFun CAB-08733. Add 10-100µF capacitor across VCC/GND near sensor to stabilize power (IR LED pulses draw current spikes). Does not work well on transparent, very dark, or specular surfaces. Good for: robot obstacle detection, paper/object presence detection, level sensing. For wider range, Sharp also makes GP2Y0A02YK0F (20-150cm).",
+    "tags": [
+      "Sharp",
+      "GP2Y0A21",
+      "IR distance",
+      "infrared sensor",
+      "analog sensor",
+      "proximity sensor",
+      "distance sensor",
+      "triangulation",
+      "robotics sensor",
+      "obstacle detection"
+    ]
+  },
+  {
+    "name": "INA219 I2C Current/Power Monitor Breakout",
+    "description": "INA219 high-side I2C current, voltage, and power monitor breakout module, ±3.2A current range (with 0.1Ω shunt), 0-26V bus voltage measurement, 12-bit ADC, 0.8mA current resolution, 4mV voltage resolution, I2C interface (0x40 default, 16 addresses via A0/A1), 3.0-5.5V logic, 26×18mm PCB, screw terminals or through-holes for sense wires, galvanic measurement with inline shunt resistor, power monitoring for batteries, solar panels, and motor loads",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 18.0,
+      "height": 26.0,
+      "depth": 5.0,
+      "weight": 2.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeDiameter": 2.5,
+          "boltSize": 2.5,
+          "holeSpacing": 19.0,
+          "pattern": "linear"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 6,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 6,
+          "headerType": "through-hole male",
+          "pinout": "VCC, GND, SCL, SDA, VIN+, VIN-"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.0-5.5V (logic), 0-26V (bus measurement)",
+      "current": "1mA (IC itself)",
+      "power": "0.005W",
+      "interface": "I2C",
+      "pinout": "6-pin: VCC, GND, SCL, SDA + VIN+/VIN- sense inputs"
+    },
+    "specs": {
+      "sensorType": "Current/Voltage/Power monitor",
+      "sensorChip": "INA219 (Texas Instruments)",
+      "currentRange": "±3.2A (with 0.1Ω shunt)",
+      "currentResolution": 0.8,
+      "busVoltageRange": "0-26V",
+      "voltageResolution": 4,
+      "adcBits": 12,
+      "shuntResistor": 0.1,
+      "maxShuntVoltage": "±320mV or ±160mV",
+      "i2cAddress": "0x40-0x4F (16 addresses via A0/A1)",
+      "sensingType": "High-side or low-side",
+      "powerCalculation": "internal (bus voltage × current)"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "904",
+        "approximatePrice": 10,
+        "url": "https://www.adafruit.com/product/904"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07QFP2FB3",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/dp/B07QFP2FB3"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "INA219BIDR-ND",
+        "approximatePrice": 2.5,
+        "url": "https://www.digikey.com/en/products/detail/texas-instruments/INA219BIDR/1183610"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Best way to measure current digitally via I2C — wire VIN+/VIN- inline with the load (break the positive wire and connect through the sensor). High-side sensing means the shunt resistor is on the positive rail — easier wiring than low-side, and the load ground stays connected directly. 0.1Ω shunt limits maximum current to ±3.2A and introduces ~320mV drop at full scale — for higher currents, replace the shunt resistor (lower Ω = higher range but lower resolution). 16 I2C addresses available (via A0/A1 solder jumpers) — can monitor 16 independent channels on one bus. Use Adafruit INA219 library. Powers from the I2C bus (3.3-5V), measures the separate bus voltage (up to 26V). For >26V bus, use INA226 (up to 36V). Good for: battery monitoring, solar panel power tracking, motor current profiling.",
+    "tags": [
+      "INA219",
+      "current sensor",
+      "power monitor",
+      "voltage monitor",
+      "I2C sensor",
+      "high-side current",
+      "shunt resistor",
+      "battery monitor",
+      "solar monitor",
+      "Texas Instruments"
+    ]
+  },
+  {
+    "name": "ACS712 5A Current Sensor Module",
+    "description": "ACS712ELCTR-05B Hall-effect current sensor module, ±5A bidirectional current measurement, 185mV/A sensitivity, analog voltage output centered at VCC/2, galvanic isolation (2.1kV RMS), 80kHz bandwidth, 4.5-5.5V operation, 31×13mm PCB, 1.2mΩ internal resistance, low insertion loss, screw terminals for current path, 3-pin signal header, Allegro Microsystems, non-contact AC/DC current sensing",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 13.0,
+      "height": 31.0,
+      "depth": 12.0,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 1,
+          "holeDiameter": 3.0,
+          "boltSize": 3,
+          "pattern": "single"
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalCount": 2,
+          "terminalPitch": 5.08,
+          "wireGauge": "16-10 AWG",
+          "purpose": "Current path (IP+, IP-)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 3,
+          "headerType": "through-hole male",
+          "pinout": "VCC, OUT, GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.5-5.5V",
+      "current": "10mA (IC quiescent)",
+      "power": "0.05W (IC only)",
+      "interface": "Analog voltage output",
+      "pinout": "3-pin signal: VCC, OUT, GND + 2 screw terminals: IP+, IP-"
+    },
+    "specs": {
+      "sensorType": "Hall-effect current sensor",
+      "sensorChip": "ACS712ELCTR-05B-T (Allegro)",
+      "currentRange": "±5A bidirectional",
+      "sensitivity": 185,
+      "zeroCurrentOutput": "VCC/2 (~2.5V at 5V)",
+      "accuracy": "±1.5%",
+      "bandwidth": 80,
+      "outputNoise": 21,
+      "galvanicIsolation": "2.1kV RMS",
+      "internalResistance": 1.2,
+      "acOrDc": "both"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "620-1189-1-ND",
+        "approximatePrice": 4,
+        "url": "https://www.digikey.com/en/products/detail/allegro-microsystems/ACS712ELCTR-05B-T/1284606"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00RBHAOUO",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/dp/B00RBHAOUO"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Hall-effect current sensor — galvanically isolated, measures AC or DC current without breaking the circuit path. The current flows through the IC's internal conductor (very low 1.2mΩ resistance). Output is centered at VCC/2 (2.5V) with ±5A producing ±0.925V swing. To calculate current: I = (Vout - 2.5) / 0.185. REQUIRES 5V supply — output is ratiometric to VCC. For 3.3V MCU ADCs, add a voltage divider on the output or use an op-amp level shifter. Output has ~21mV noise (±0.11A equivalent) — average multiple ADC readings for better resolution. With Arduino's 10-bit ADC at 5V, resolution is ~49mV/LSB ÷ 185mV/A ≈ 0.26A per step — adequate for load monitoring, poor for precision measurement. For I2C digital current sensing with better resolution, use INA219 instead.",
+    "tags": [
+      "ACS712",
+      "current sensor",
+      "Hall effect",
+      "5A sensor",
+      "Allegro",
+      "isolated current",
+      "AC current",
+      "DC current",
+      "power monitoring",
+      "analog current sensor"
+    ]
+  },
+  {
+    "name": "ACS712 20A Current Sensor Module",
+    "description": "ACS712ELCTR-20A Hall-effect current sensor module, ±20A bidirectional current measurement, 100mV/A sensitivity, analog voltage output centered at VCC/2, galvanic isolation (2.1kV RMS), 80kHz bandwidth, 4.5-5.5V operation, 31×13mm PCB (same form factor as 5A variant), 1.2mΩ internal resistance, screw terminals for current path, 3-pin signal header, mid-range current sensing for motors and power supplies",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 13.0,
+      "height": 31.0,
+      "depth": 12.0,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 1,
+          "holeDiameter": 3.0,
+          "boltSize": 3,
+          "pattern": "single"
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalCount": 2,
+          "terminalPitch": 5.08,
+          "wireGauge": "16-10 AWG",
+          "purpose": "Current path (IP+, IP-)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 3,
+          "headerType": "through-hole male",
+          "pinout": "VCC, OUT, GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.5-5.5V",
+      "current": "10mA (IC quiescent)",
+      "power": "0.05W (IC only)",
+      "interface": "Analog voltage output",
+      "pinout": "3-pin signal: VCC, OUT, GND + 2 screw terminals: IP+, IP-"
+    },
+    "specs": {
+      "sensorType": "Hall-effect current sensor",
+      "sensorChip": "ACS712ELCTR-20A-T (Allegro)",
+      "currentRange": "±20A bidirectional",
+      "sensitivity": 100,
+      "zeroCurrentOutput": "VCC/2 (~2.5V at 5V)",
+      "accuracy": "±1.5%",
+      "bandwidth": 80,
+      "outputNoise": 11,
+      "galvanicIsolation": "2.1kV RMS",
+      "internalResistance": 1.2,
+      "acOrDc": "both"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "620-1190-1-ND",
+        "approximatePrice": 4,
+        "url": "https://www.digikey.com/en/products/detail/allegro-microsystems/ACS712ELCTR-20A-T/1284608"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00RBHAOUO",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/dp/B00RBHAOUO"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Mid-range version of ACS712 — same PCB and pinout as 5A version, just different sensitivity. 100mV/A means ±20A produces ±2V swing around 2.5V center. Current formula: I = (Vout - 2.5) / 0.100. Lower sensitivity means lower resolution per ADC step: with 10-bit Arduino ADC, ~49mA per LSB. Good for monitoring motors (NEMA 17/23 steppers, small DC motors), heated beds, and medium power supplies. Same noise and isolation specs as 5A variant. Ensure screw terminal wiring is rated for 20A — use appropriate wire gauge (12-14 AWG for 20A continuous). All ACS712 design notes from the 5A variant apply.",
+    "tags": [
+      "ACS712",
+      "current sensor",
+      "Hall effect",
+      "20A sensor",
+      "Allegro",
+      "isolated current",
+      "motor current",
+      "power monitoring",
+      "analog current sensor"
+    ]
+  },
+  {
+    "name": "ACS712 30A Current Sensor Module",
+    "description": "ACS712ELCTR-30A Hall-effect current sensor module, ±30A bidirectional current measurement, 66mV/A sensitivity, analog voltage output centered at VCC/2, galvanic isolation (2.1kV RMS), 80kHz bandwidth, 4.5-5.5V operation, 31×13mm PCB (same form factor as 5A/20A variants), 1.2mΩ internal resistance, screw terminals for current path, 3-pin signal header, high-current sensing for heaters, power supplies, and large motors",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 13.0,
+      "height": 31.0,
+      "depth": 12.0,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 1,
+          "holeDiameter": 3.0,
+          "boltSize": 3,
+          "pattern": "single"
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalCount": 2,
+          "terminalPitch": 5.08,
+          "wireGauge": "14-10 AWG",
+          "purpose": "Current path (IP+, IP-)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 3,
+          "headerType": "through-hole male",
+          "pinout": "VCC, OUT, GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.5-5.5V",
+      "current": "10mA (IC quiescent)",
+      "power": "0.05W (IC only)",
+      "interface": "Analog voltage output",
+      "pinout": "3-pin signal: VCC, OUT, GND + 2 screw terminals: IP+, IP-"
+    },
+    "specs": {
+      "sensorType": "Hall-effect current sensor",
+      "sensorChip": "ACS712ELCTR-30A-T (Allegro)",
+      "currentRange": "±30A bidirectional",
+      "sensitivity": 66,
+      "zeroCurrentOutput": "VCC/2 (~2.5V at 5V)",
+      "accuracy": "±1.5%",
+      "bandwidth": 80,
+      "outputNoise": 7,
+      "galvanicIsolation": "2.1kV RMS",
+      "internalResistance": 1.2,
+      "acOrDc": "both"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "620-1191-1-ND",
+        "approximatePrice": 4,
+        "url": "https://www.digikey.com/en/products/detail/allegro-microsystems/ACS712ELCTR-30A-T/1284610"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00RBHAOUO",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/dp/B00RBHAOUO"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Highest-range ACS712 variant — same form factor as 5A/20A but 66mV/A sensitivity. ±30A produces ±1.98V swing around 2.5V center. Current formula: I = (Vout - 2.5) / 0.066. Lowest resolution of the three: ~74mA per ADC step with 10-bit Arduino. Good for monitoring 3D printer heated beds, NEMA 23/34 steppers, large DC motors, and power supplies. Ensure all wiring is rated for 30A — use 10-12 AWG wire minimum. At 30A continuous, even 1.2mΩ internal resistance dissipates 1.08W as heat in the IC — check thermal limits for sustained high-current operation. For higher precision at high currents, consider dedicated current transformers or Rogowski coils.",
+    "tags": [
+      "ACS712",
+      "current sensor",
+      "Hall effect",
+      "30A sensor",
+      "Allegro",
+      "isolated current",
+      "high current",
+      "power monitoring",
+      "analog current sensor",
+      "heater monitoring"
+    ]
+  },
+  {
+    "name": "MPU-6050 6-Axis IMU Breakout (GY-521)",
+    "description": "MPU-6050 6-axis inertial measurement unit breakout (GY-521), 3-axis accelerometer (±2/4/8/16g) + 3-axis gyroscope (±250/500/1000/2000°/s), 16-bit ADC resolution, I2C interface (0x68 or 0x69), integrated Digital Motion Processor (DMP), 3.3-5V operation, 20×16mm PCB, built-in temperature sensor, interrupt output, auxiliary I2C for external magnetometer, 1kHz sample rate, ubiquitous low-cost IMU for robotics, drones, and motion tracking",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 16.0,
+      "height": 20.0,
+      "depth": 3.0,
+      "weight": 2.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 8,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 8,
+          "headerType": "through-hole male",
+          "pinout": "VCC, GND, SCL, SDA, XDA, XCL, AD0, INT"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V (module), 2.375-3.46V (IC native)",
+      "current": "3.9mA all axes active, 5µA sleep",
+      "power": "0.02W",
+      "interface": "I2C",
+      "pinout": "8-pin: VCC, GND, SCL, SDA, XDA, XCL, AD0, INT"
+    },
+    "specs": {
+      "sensorType": "6-axis IMU (accelerometer + gyroscope)",
+      "sensorChip": "MPU-6050 (InvenSense/TDK)",
+      "accelerometerRanges": "±2g, ±4g, ±8g, ±16g",
+      "gyroscopeRanges": "±250, ±500, ±1000, ±2000 °/s",
+      "adcBits": 16,
+      "accelerometerSensitivity": "16384 LSB/g (at ±2g)",
+      "gyroscopeSensitivity": "131 LSB/(°/s) (at ±250°/s)",
+      "sampleRate": "up to 1kHz (accel), 8kHz (gyro)",
+      "dmp": true,
+      "temperatureSensor": true,
+      "i2cAddress": "0x68 (AD0 LOW) or 0x69 (AD0 HIGH)",
+      "i2cSpeed": "400kHz (Fast mode)",
+      "interruptOutput": true,
+      "auxiliaryI2C": true
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "3886",
+        "approximatePrice": 7,
+        "url": "https://www.adafruit.com/product/3886"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00LP25V1A",
+        "approximatePrice": 3,
+        "url": "https://www.amazon.com/dp/B00LP25V1A"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "1428-1004-1-ND",
+        "approximatePrice": 4,
+        "url": "https://www.digikey.com/en/products/detail/invensense-tdk/MPU-6050/4466447"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The most popular low-cost IMU. Use MPU6050 library or Adafruit MPU6050 library. The on-chip DMP can compute quaternion orientation without host CPU math — use Jeff Rowberg's I2Cdevlib MPU6050 DMP library for this. 6-axis only (no magnetometer) — heading drifts over time without magnetic reference. For 9-axis, connect an external magnetometer (HMC5883L) via the auxiliary I2C bus (XDA/XCL pins). AD0 pin selects I2C address (LOW=0x68, HIGH=0x69) — allows two MPU-6050s on one bus. INT pin can trigger on data ready, motion detection, or FIFO overflow. Mount the sensor flat and secure — vibration causes noisy readings. Accelerometer readings include gravity — subtract it for linear acceleration. MPU-6050 is mature/legacy; consider ICM-42688 for new designs with better noise and power.",
+    "tags": [
+      "MPU-6050",
+      "IMU",
+      "accelerometer",
+      "gyroscope",
+      "6-axis",
+      "GY-521",
+      "InvenSense",
+      "TDK",
+      "motion sensor",
+      "orientation",
+      "tilt sensor",
+      "drone IMU",
+      "robotics"
+    ]
+  },
+  {
+    "name": "MPU-9250 9-Axis IMU Breakout (Accel + Gyro + Magnetometer)",
+    "description": "MPU-9250 9-axis inertial measurement unit breakout, 3-axis accelerometer (±2/4/8/16g) + 3-axis gyroscope (±250/500/1000/2000°/s) + 3-axis magnetometer (AK8963, ±4800µT), 16-bit ADC resolution, I2C/SPI interface, integrated DMP, 3.3-5V operation, 15×25mm PCB, absolute orientation capable with sensor fusion, compass heading, 4kHz gyro / 1kHz accel / 100Hz mag sample rates. NOTE: discontinued/NRND — counterfeits are extremely common",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 15.0,
+      "height": 25.0,
+      "depth": 3.0,
+      "weight": 2.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 10,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 10,
+          "headerType": "through-hole male",
+          "pinout": "VCC, GND, SCL, SDA, EDA, ECL, AD0, INT, NCS, FSYNC"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V (module), 2.4-3.6V (IC native)",
+      "current": "3.7mA all sensors active, 8µA sleep",
+      "power": "0.02W",
+      "interface": "I2C, SPI",
+      "pinout": "10-pin: VCC, GND, SCL, SDA, EDA, ECL, AD0, INT, NCS, FSYNC"
+    },
+    "specs": {
+      "sensorType": "9-axis IMU (accel + gyro + magnetometer)",
+      "sensorChip": "MPU-9250 (InvenSense/TDK)",
+      "accelerometerRanges": "±2g, ±4g, ±8g, ±16g",
+      "gyroscopeRanges": "±250, ±500, ±1000, ±2000 °/s",
+      "magnetometerRange": "±4800µT",
+      "magnetometerChip": "AK8963 (integrated)",
+      "adcBits": 16,
+      "magnetometerSensitivity": "0.6µT/LSB (14-bit), 0.15µT/LSB (16-bit)",
+      "gyroSampleRate": "4kHz",
+      "accelSampleRate": "1kHz",
+      "magSampleRate": "100Hz",
+      "dmp": true,
+      "i2cAddress": "0x68 (AD0 LOW) or 0x69 (AD0 HIGH)",
+      "status": "Discontinued/NRND"
+    },
+    "suppliers": [
+      {
+        "name": "SparkFun",
+        "partNumber": "SEN-13762",
+        "approximatePrice": 15,
+        "url": "https://www.sparkfun.com/products/13762"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B01I1J0Z7Y",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/dp/B01I1J0Z7Y"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "WARNING: MPU-9250 is discontinued and counterfeits are extremely common on Amazon/AliExpress. Many 'MPU-9250' modules are actually remarked MPU-6050 (no magnetometer). Test magnetometer registers on arrival — if AK8963 doesn't respond at 0x0C on the aux I2C bus, it's fake. For new designs, use ICM-20948 instead (SparkFun SEN-15335 ~$17, Adafruit 4554 ~$15). The integrated AK8963 magnetometer enables compass heading and absolute orientation via AHRS sensor fusion (Madgwick or Mahony filter). Magnetometer requires calibration (hard/soft iron compensation) for accurate heading — rotate the sensor in a figure-8 pattern to collect calibration data. Use SparkFun MPU-9250 library or Bolder Flight Systems MPU9250 library. 9-axis DMP mode can compute quaternions on-chip but the DMP firmware is proprietary and poorly documented.",
+    "tags": [
+      "MPU-9250",
+      "IMU",
+      "9-axis",
+      "accelerometer",
+      "gyroscope",
+      "magnetometer",
+      "compass",
+      "AHRS",
+      "InvenSense",
+      "TDK",
+      "ICM-20948",
+      "orientation sensor",
+      "AK8963"
+    ]
+  },
+  {
+    "name": "BNO055 9-Axis Absolute Orientation Sensor Breakout",
+    "description": "BNO055 9-axis absolute orientation sensor breakout, 3-axis accelerometer (±2/4/8/16g) + 3-axis gyroscope (±125/250/500/1000/2000°/s) + 3-axis magnetometer (±1300/2500µT), integrated ARM Cortex-M0 sensor fusion processor, direct Euler angle and quaternion output, I2C/UART interface, 3.3-5V operation, 20×27mm PCB (Adafruit), 2× M2.5 mounting holes, ±2-3° heading accuracy, 100Hz fusion output rate, automatic and saveable calibration, no host-side math required for orientation",
+    "categorySlug": "sensors",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20.0,
+      "height": 27.0,
+      "depth": 4.0,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeDiameter": 2.5,
+          "boltSize": 2.5,
+          "holeSpacing": 20.3,
+          "pattern": "linear"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 9,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 9,
+          "headerType": "through-hole male",
+          "pinout": "VIN, GND, SDA, SCL, RST, INT, ADR, PS0, PS1"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V (module), 2.4-3.6V (IC native)",
+      "current": "12.3mA typical (all sensors + fusion)",
+      "power": "0.06W",
+      "interface": "I2C, UART",
+      "pinout": "9-pin: VIN, GND, SDA, SCL, RST, INT, ADR, PS0, PS1"
+    },
+    "specs": {
+      "sensorType": "9-axis absolute orientation (accel + gyro + mag + fusion)",
+      "sensorChip": "BNO055 (Bosch Sensortec)",
+      "fusionProcessor": "ARM Cortex-M0 (on-chip)",
+      "accelerometerRanges": "±2g, ±4g, ±8g, ±16g",
+      "gyroscopeRanges": "±125, ±250, ±500, ±1000, ±2000 °/s",
+      "magnetometerRange": "±1300µT (XY), ±2500µT (Z)",
+      "headingAccuracy": "±2-3°",
+      "fusionOutputRate": "100Hz",
+      "outputFormats": "Euler angles, quaternions, linear acceleration, gravity vector",
+      "fusionModes": "IMU, COMPASS, M4G, NDOF_FMC_OFF, NDOF",
+      "calibration": "automatic, saveable/restorable",
+      "i2cAddress": "0x28 (default) or 0x29",
+      "i2cSpeed": "400kHz"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "2472",
+        "approximatePrice": 35,
+        "url": "https://www.adafruit.com/product/2472"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "BNO055-ND",
+        "approximatePrice": 10,
+        "url": "https://www.digikey.com/en/products/detail/bosch-sensortec/BNO055/6136301"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07NH35VP9",
+        "approximatePrice": 14,
+        "url": "https://www.amazon.com/dp/B07NH35VP9"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "262-BNO055",
+        "approximatePrice": 10,
+        "url": "https://www.mouser.com/ProductDetail/Bosch-Sensortec/BNO055"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The easiest IMU to use — on-chip sensor fusion means you get Euler angles and quaternions directly from I2C registers with NO math on the host MCU. Use Adafruit BNO055 library. Key advantage over MPU-6050/9250: no need to implement Madgwick/Mahony/Kalman filters yourself. Calibration is automatic but takes 30-60 seconds of movement — save calibration offsets to EEPROM and restore on startup to skip recalibration. NDOF mode provides full absolute orientation but requires periodic magnetometer recalibration. Keep away from magnets, motors, and large ferrous objects that distort magnetic field. RST pin allows hardware reset if sensor locks up. For better performance and lower price, consider BNO085/BNO086 (Adafruit 4754, ~$20) — newer fusion algorithms, lower power, and game rotation vector mode that's immune to magnetic distortion. Mount rigidly — any flex or vibration in the mounting affects accuracy.",
+    "tags": [
+      "BNO055",
+      "IMU",
+      "9-axis",
+      "absolute orientation",
+      "sensor fusion",
+      "Bosch",
+      "Euler angles",
+      "quaternion",
+      "compass",
+      "AHRS",
+      "BNO085",
+      "attitude sensor",
+      "drone IMU",
+      "robotics orientation"
+    ]
+  }
+]

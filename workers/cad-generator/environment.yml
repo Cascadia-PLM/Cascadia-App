@@ -1,0 +1,16 @@
+name: cad-generator
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - cadquery>=2.4
+  - git
+  - pip
+  - pip:
+      - pika>=1.3
+      - 'psycopg[binary]>=3.1'
+      - pydantic>=2.0
+      - pydantic-settings>=2.0
+      - pytest>=7.0
+      - git+https://github.com/meadiode/cq_gears.git

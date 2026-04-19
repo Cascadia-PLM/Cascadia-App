@@ -1,0 +1,4014 @@
+[
+  {
+    "name": "GT2 Timing Pulley 16T (5mm Bore)",
+    "description": "GT2 16-tooth timing pulley, 2mm pitch, 5mm bore with set screw, 6mm belt width, aluminum, 9.75mm OD, NEMA 17 compatible, 3D printer CNC motion GT2-16T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 9.75,
+      "height": 16,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 16,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "5mm",
+      "outerDiameter": "9.75mm",
+      "pitchDiameter": "10.19mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "16mm",
+      "hubLength": "11mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-16T-5B-6",
+        "approximatePrice": 6.0,
+        "url": "https://www.amazon.com/dp/B07KP5JBQ7"
+      }
+    ],
+    "designNotes": "Smallest common GT2 pulley. Good for compact drives needing higher reduction ratios. Minimum bend radius may limit belt life. Pair with larger pulley for speed reduction. NEMA 17 direct-mount.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "16T",
+      "5mm-bore",
+      "NEMA-17",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 16T (6.35mm Bore)",
+    "description": "GT2 16-tooth timing pulley, 2mm pitch, 6.35mm 1/4-inch bore with set screw, 6mm belt width, aluminum, 9.75mm OD, imperial shaft GT2-16T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 9.75,
+      "height": 16,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6.35, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 16,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "6.35mm",
+      "outerDiameter": "9.75mm",
+      "pitchDiameter": "10.19mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "16mm",
+      "hubLength": "11mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-16T-635B-6",
+        "approximatePrice": 6.5,
+        "url": "https://www.amazon.com/dp/B07KP5JBQ7"
+      }
+    ],
+    "designNotes": "16T pulley for 1/4-inch imperial shafts. Tight OD may cause belt fatigue at high speeds. Use with GT2 6mm open or closed-loop belts.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "16T",
+      "6.35mm-bore",
+      "1/4-inch",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 16T (8mm Bore)",
+    "description": "GT2 16-tooth timing pulley, 2mm pitch, 8mm bore with set screw, 6mm belt width, aluminum, 9.75mm OD, NEMA 23 compatible, GT2-16T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 9.75,
+      "height": 16,
+      "weight": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 16,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "8mm",
+      "outerDiameter": "9.75mm",
+      "pitchDiameter": "10.19mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "16mm",
+      "hubLength": "11mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-16T-8B-6",
+        "approximatePrice": 6.5,
+        "url": "https://www.amazon.com/dp/B07KP5JBQ7"
+      }
+    ],
+    "designNotes": "16T pulley with 8mm bore for NEMA 23 motors. Bore is close to OD so hub wall is thin. Verify shaft engagement length for high-torque applications.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "16T",
+      "8mm-bore",
+      "NEMA-23",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 20T (5mm Bore)",
+    "description": "GT2 20-tooth timing pulley, 2mm pitch, 5mm bore with set screw, 6mm belt width, aluminum, 12.22mm OD, NEMA 17 standard, 3D printer X/Y axis GT2-20T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12.22,
+      "height": 16,
+      "weight": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 20,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "5mm",
+      "outerDiameter": "12.22mm",
+      "pitchDiameter": "12.73mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "16mm",
+      "hubLength": "11mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (WINSINN)",
+        "partNumber": "GT2-20T-5B-6",
+        "approximatePrice": 6.5,
+        "url": "https://www.amazon.com/WINSINN-Aluminum-Timing-Pulley-Printer/dp/B077GNZK3J"
+      }
+    ],
+    "designNotes": "The standard 3D printer pulley. Most common GT2 pulley size for NEMA 17 motors. 20T gives 40mm travel per revolution. Default choice for CoreXY and cartesian printers.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "20T",
+      "5mm-bore",
+      "NEMA-17",
+      "2mm-pitch",
+      "belt-drive",
+      "3d-printer",
+      "standard"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 20T (6.35mm Bore)",
+    "description": "GT2 20-tooth timing pulley, 2mm pitch, 6.35mm 1/4-inch bore with set screw, 6mm belt width, aluminum, 12.22mm OD, imperial shaft GT2-20T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12.22,
+      "height": 16,
+      "weight": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6.35, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 20,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "6.35mm",
+      "outerDiameter": "12.22mm",
+      "pitchDiameter": "12.73mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "16mm",
+      "hubLength": "11mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-20T-635B-6",
+        "approximatePrice": 7.0,
+        "url": "https://www.amazon.com/dp/B077GNZK3J"
+      }
+    ],
+    "designNotes": "20T pulley for 1/4-inch shafts. Common on servo motors and small gearboxes with imperial output shafts. Good balance of size and tooth engagement.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "20T",
+      "6.35mm-bore",
+      "1/4-inch",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 20T (8mm Bore)",
+    "description": "GT2 20-tooth timing pulley, 2mm pitch, 8mm bore with set screw, 6mm belt width, aluminum, 12.22mm OD, NEMA 23 shaft GT2-20T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12.22,
+      "height": 16,
+      "weight": 14
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 20,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "8mm",
+      "outerDiameter": "12.22mm",
+      "pitchDiameter": "12.73mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "16mm",
+      "hubLength": "11mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-20T-8B-6",
+        "approximatePrice": 7.0,
+        "url": "https://www.amazon.com/dp/B077GNZK3J"
+      }
+    ],
+    "designNotes": "20T pulley for NEMA 23 motors. Thin wall between bore and teeth — ensure set screw is properly tightened. Consider loctite for vibration-prone applications.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "20T",
+      "8mm-bore",
+      "NEMA-23",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 24T (5mm Bore)",
+    "description": "GT2 24-tooth timing pulley, 2mm pitch, 5mm bore with set screw, 6mm belt width, aluminum, 14.78mm OD, NEMA 17 compatible GT2-24T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 14.78,
+      "height": 16,
+      "weight": 14
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 24,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "5mm",
+      "outerDiameter": "14.78mm",
+      "pitchDiameter": "15.28mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "18mm",
+      "hubLength": "11mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (WINSINN)",
+        "partNumber": "GT2-24T-5B-6",
+        "approximatePrice": 7.0,
+        "url": "https://www.amazon.com/dp/B07JKWJBXK"
+      }
+    ],
+    "designNotes": "24T gives 48mm per revolution for finer step resolution. Larger pitch diameter improves belt wrap angle. Good upgrade from 20T where resolution matters.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "24T",
+      "5mm-bore",
+      "NEMA-17",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 24T (6.35mm Bore)",
+    "description": "GT2 24-tooth timing pulley, 2mm pitch, 6.35mm 1/4-inch bore with set screw, 6mm belt width, aluminum, 14.78mm OD, imperial shaft GT2-24T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 14.78,
+      "height": 16,
+      "weight": 14
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6.35, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 24,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "6.35mm",
+      "outerDiameter": "14.78mm",
+      "pitchDiameter": "15.28mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "18mm",
+      "hubLength": "11mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-24T-635B-6",
+        "approximatePrice": 7.5,
+        "url": "https://www.amazon.com/dp/B07JKWJBXK"
+      }
+    ],
+    "designNotes": "24T pulley for 1/4-inch imperial shafts. Good tooth engagement for reliable power transmission.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "24T",
+      "6.35mm-bore",
+      "1/4-inch",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 24T (8mm Bore)",
+    "description": "GT2 24-tooth timing pulley, 2mm pitch, 8mm bore with set screw, 6mm belt width, aluminum, 14.78mm OD, NEMA 23 compatible GT2-24T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 14.78,
+      "height": 16,
+      "weight": 15
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 24,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "8mm",
+      "outerDiameter": "14.78mm",
+      "pitchDiameter": "15.28mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "18mm",
+      "hubLength": "11mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-24T-8B-6",
+        "approximatePrice": 7.5,
+        "url": "https://www.amazon.com/dp/B07JKWJBXK"
+      }
+    ],
+    "designNotes": "24T for NEMA 23 motors. Better wall thickness than 16T/20T at 8mm bore. Suitable for moderate torque belt drives.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "24T",
+      "8mm-bore",
+      "NEMA-23",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 30T (5mm Bore)",
+    "description": "GT2 30-tooth timing pulley, 2mm pitch, 5mm bore with set screw, 6mm belt width, aluminum, 18.58mm OD, NEMA 17 compatible, speed reduction GT2-30T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 18.58,
+      "height": 16,
+      "weight": 18
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 30,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "5mm",
+      "outerDiameter": "18.58mm",
+      "pitchDiameter": "19.10mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "22mm",
+      "hubLength": "11mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (WINSINN)",
+        "partNumber": "GT2-30T-5B-6",
+        "approximatePrice": 8.0,
+        "url": "https://www.amazon.com/dp/B07PMWKK4J"
+      }
+    ],
+    "designNotes": "Mid-size pulley for speed reduction. 30T:20T gives 1.5:1 ratio. Good belt wrap for reliable operation. 60mm travel per revolution with NEMA 17.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "30T",
+      "5mm-bore",
+      "NEMA-17",
+      "2mm-pitch",
+      "belt-drive",
+      "reduction",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 30T (6.35mm Bore)",
+    "description": "GT2 30-tooth timing pulley, 2mm pitch, 6.35mm 1/4-inch bore with set screw, 6mm belt width, aluminum, 18.58mm OD, imperial shaft GT2-30T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 18.58,
+      "height": 16,
+      "weight": 18
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6.35, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 30,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "6.35mm",
+      "outerDiameter": "18.58mm",
+      "pitchDiameter": "19.10mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "22mm",
+      "hubLength": "11mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-30T-635B-6",
+        "approximatePrice": 8.5,
+        "url": "https://www.amazon.com/dp/B07PMWKK4J"
+      }
+    ],
+    "designNotes": "30T for 1/4-inch imperial shafts. Solid wall thickness for good set screw engagement. Versatile for driven pulleys in reduction setups.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "30T",
+      "6.35mm-bore",
+      "1/4-inch",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 30T (8mm Bore)",
+    "description": "GT2 30-tooth timing pulley, 2mm pitch, 8mm bore with set screw, 6mm belt width, aluminum, 18.58mm OD, NEMA 23 shaft GT2-30T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 18.58,
+      "height": 16,
+      "weight": 20
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 30,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "8mm",
+      "outerDiameter": "18.58mm",
+      "pitchDiameter": "19.10mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "22mm",
+      "hubLength": "11mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-30T-8B-6",
+        "approximatePrice": 9.0,
+        "url": "https://www.amazon.com/dp/B07PMWKK4J"
+      }
+    ],
+    "designNotes": "30T for NEMA 23. Good for driven side in belt reduction systems. Adequate material between bore and tooth root for M4 set screw.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "30T",
+      "8mm-bore",
+      "NEMA-23",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 36T (5mm Bore)",
+    "description": "GT2 36-tooth timing pulley, 2mm pitch, 5mm bore with set screw, 6mm belt width, aluminum, 22.40mm OD, NEMA 17 speed reduction driven pulley GT2-36T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 22.4,
+      "height": 16,
+      "weight": 22
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 36,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "5mm",
+      "outerDiameter": "22.40mm",
+      "pitchDiameter": "22.92mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "26mm",
+      "hubLength": "12mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (WINSINN)",
+        "partNumber": "GT2-36T-5B-6",
+        "approximatePrice": 8.5,
+        "url": "https://www.amazon.com/dp/B07JN2NLXB"
+      }
+    ],
+    "designNotes": "36T driven pulley for 1.8:1 reduction with 20T driver. 72mm travel per revolution. Good choice for belt-driven Z-axis or extruder gearing.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "36T",
+      "5mm-bore",
+      "NEMA-17",
+      "2mm-pitch",
+      "belt-drive",
+      "reduction",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 36T (6.35mm Bore)",
+    "description": "GT2 36-tooth timing pulley, 2mm pitch, 6.35mm 1/4-inch bore with set screw, 6mm belt width, aluminum, 22.40mm OD, imperial shaft GT2-36T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 22.4,
+      "height": 16,
+      "weight": 22
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6.35, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 36,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "6.35mm",
+      "outerDiameter": "22.40mm",
+      "pitchDiameter": "22.92mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "26mm",
+      "hubLength": "12mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-36T-635B-6",
+        "approximatePrice": 9.0,
+        "url": "https://www.amazon.com/dp/B07JN2NLXB"
+      }
+    ],
+    "designNotes": "36T for 1/4-inch shafts. Driven-side pulley for reduction ratios. Ample material for secure set screw clamping.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "36T",
+      "6.35mm-bore",
+      "1/4-inch",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 36T (8mm Bore)",
+    "description": "GT2 36-tooth timing pulley, 2mm pitch, 8mm bore with set screw, 6mm belt width, aluminum, 22.40mm OD, NEMA 23 shaft GT2-36T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 22.4,
+      "height": 16,
+      "weight": 24
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 36,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "8mm",
+      "outerDiameter": "22.40mm",
+      "pitchDiameter": "22.92mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "26mm",
+      "hubLength": "12mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-36T-8B-6",
+        "approximatePrice": 9.5,
+        "url": "https://www.amazon.com/dp/B07JN2NLXB"
+      }
+    ],
+    "designNotes": "36T for NEMA 23 driven applications. Strong wall section for M4 set screw. Good for CNC and larger motion systems.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "36T",
+      "8mm-bore",
+      "NEMA-23",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 40T (5mm Bore)",
+    "description": "GT2 40-tooth timing pulley, 2mm pitch, 5mm bore with set screw, 6mm belt width, aluminum, 24.95mm OD, NEMA 17 2:1 reduction with 20T GT2-40T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 24.95,
+      "height": 16,
+      "weight": 25
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 40,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "5mm",
+      "outerDiameter": "24.95mm",
+      "pitchDiameter": "25.46mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "28mm",
+      "hubLength": "12mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (WINSINN)",
+        "partNumber": "GT2-40T-5B-6",
+        "approximatePrice": 9.0,
+        "url": "https://www.amazon.com/dp/B07L1GQPHV"
+      }
+    ],
+    "designNotes": "40T gives clean 2:1 reduction with 20T driver. 80mm travel per revolution. Popular for belt-driven Z-axis and extruder reduction. Excellent belt wrap.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "40T",
+      "5mm-bore",
+      "NEMA-17",
+      "2mm-pitch",
+      "belt-drive",
+      "2:1-reduction",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 40T (6.35mm Bore)",
+    "description": "GT2 40-tooth timing pulley, 2mm pitch, 6.35mm 1/4-inch bore with set screw, 6mm belt width, aluminum, 24.95mm OD, imperial shaft GT2-40T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 24.95,
+      "height": 16,
+      "weight": 25
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6.35, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 40,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "6.35mm",
+      "outerDiameter": "24.95mm",
+      "pitchDiameter": "25.46mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "28mm",
+      "hubLength": "12mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-40T-635B-6",
+        "approximatePrice": 10.0,
+        "url": "https://www.amazon.com/dp/B07L1GQPHV"
+      }
+    ],
+    "designNotes": "40T for 1/4-inch shafts. Driven-side pulley providing 2:1 ratio with 20T driver. Solid hub for imperial shaft applications.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "40T",
+      "6.35mm-bore",
+      "1/4-inch",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 40T (8mm Bore)",
+    "description": "GT2 40-tooth timing pulley, 2mm pitch, 8mm bore with set screw, 6mm belt width, aluminum, 24.95mm OD, NEMA 23 shaft GT2-40T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 24.95,
+      "height": 16,
+      "weight": 28
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "toothCount": 40,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "8mm",
+      "outerDiameter": "24.95mm",
+      "pitchDiameter": "25.46mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "28mm",
+      "hubLength": "12mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-40T-8B-6",
+        "approximatePrice": 10.0,
+        "url": "https://www.amazon.com/dp/B07L1GQPHV"
+      }
+    ],
+    "designNotes": "40T for NEMA 23. 2:1 reduction with 20T driver for larger CNC systems. Good hub thickness and M4 set screw for secure mounting.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "40T",
+      "8mm-bore",
+      "NEMA-23",
+      "2mm-pitch",
+      "belt-drive",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 60T (5mm Bore)",
+    "description": "GT2 60-tooth timing pulley, 2mm pitch, 5mm bore with set screw, 6mm belt width, aluminum, 37.68mm OD, large reduction driven pulley NEMA 17 GT2-60T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 37.68,
+      "height": 16,
+      "weight": 40
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 2 }
+      }
+    ],
+    "specs": {
+      "toothCount": 60,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "5mm",
+      "outerDiameter": "37.68mm",
+      "pitchDiameter": "38.20mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "30mm",
+      "hubLength": "14mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (WINSINN)",
+        "partNumber": "GT2-60T-5B-6",
+        "approximatePrice": 14.0,
+        "url": "https://www.amazon.com/dp/B07RX7YRPF"
+      }
+    ],
+    "designNotes": "Large 60T pulley for 3:1 reduction with 20T driver. 120mm travel per revolution. Excellent for torque multiplication in belt-driven leadscrews or heavy axis drives.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "60T",
+      "5mm-bore",
+      "NEMA-17",
+      "2mm-pitch",
+      "belt-drive",
+      "3:1-reduction",
+      "large",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 60T (6.35mm Bore)",
+    "description": "GT2 60-tooth timing pulley, 2mm pitch, 6.35mm 1/4-inch bore with set screw, 6mm belt width, aluminum, 37.68mm OD, large reduction GT2-60T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 37.68,
+      "height": 16,
+      "weight": 40
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6.35, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 2 }
+      }
+    ],
+    "specs": {
+      "toothCount": 60,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "6.35mm",
+      "outerDiameter": "37.68mm",
+      "pitchDiameter": "38.20mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "30mm",
+      "hubLength": "14mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-60T-635B-6",
+        "approximatePrice": 14.0,
+        "url": "https://www.amazon.com/dp/B07RX7YRPF"
+      }
+    ],
+    "designNotes": "60T for 1/4-inch shafts. High reduction ratios for precision positioning. Two set screws recommended at this size.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "60T",
+      "6.35mm-bore",
+      "1/4-inch",
+      "2mm-pitch",
+      "belt-drive",
+      "large",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 60T (8mm Bore)",
+    "description": "GT2 60-tooth timing pulley, 2mm pitch, 8mm bore with set screw, 6mm belt width, aluminum, 37.68mm OD, NEMA 23 large reduction GT2-60T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 37.68,
+      "height": 16,
+      "weight": 42
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 2 }
+      }
+    ],
+    "specs": {
+      "toothCount": 60,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "8mm",
+      "outerDiameter": "37.68mm",
+      "pitchDiameter": "38.20mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "30mm",
+      "hubLength": "14mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-60T-8B-6",
+        "approximatePrice": 15.0,
+        "url": "https://www.amazon.com/dp/B07RX7YRPF"
+      }
+    ],
+    "designNotes": "60T for NEMA 23 driven applications. 3:1 with 20T driver. Dual M4 set screws for secure high-torque mounting. Good for CNC axis drives.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "60T",
+      "8mm-bore",
+      "NEMA-23",
+      "2mm-pitch",
+      "belt-drive",
+      "large",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 80T (5mm Bore)",
+    "description": "GT2 80-tooth timing pulley, 2mm pitch, 5mm bore with set screw, 6mm belt width, aluminum, 50.42mm OD, extra-large reduction driven pulley GT2-80T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 50.42,
+      "height": 16,
+      "weight": 60
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 2 }
+      }
+    ],
+    "specs": {
+      "toothCount": 80,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "5mm",
+      "outerDiameter": "50.42mm",
+      "pitchDiameter": "50.93mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "35mm",
+      "hubLength": "14mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (WINSINN)",
+        "partNumber": "GT2-80T-5B-6",
+        "approximatePrice": 18.0,
+        "url": "https://www.amazon.com/dp/B07SF1R7MZ"
+      }
+    ],
+    "designNotes": "Largest common GT2 pulley. 4:1 reduction with 20T driver. 160mm travel per revolution. Use for heavy-duty belt reduction where high torque multiplication is needed. Needs longer belt runs.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "80T",
+      "5mm-bore",
+      "2mm-pitch",
+      "belt-drive",
+      "4:1-reduction",
+      "extra-large",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 80T (6.35mm Bore)",
+    "description": "GT2 80-tooth timing pulley, 2mm pitch, 6.35mm 1/4-inch bore with set screw, 6mm belt width, aluminum, 50.42mm OD, extra-large GT2-80T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 50.42,
+      "height": 16,
+      "weight": 62
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6.35, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 2 }
+      }
+    ],
+    "specs": {
+      "toothCount": 80,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "6.35mm",
+      "outerDiameter": "50.42mm",
+      "pitchDiameter": "50.93mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "35mm",
+      "hubLength": "14mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-80T-635B-6",
+        "approximatePrice": 18.0,
+        "url": "https://www.amazon.com/dp/B07SF1R7MZ"
+      }
+    ],
+    "designNotes": "80T for 1/4-inch shafts. Maximum reduction in GT2 range. Dual set screws for secure mounting. Needs adequate belt tension and long center distances.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "80T",
+      "6.35mm-bore",
+      "1/4-inch",
+      "2mm-pitch",
+      "belt-drive",
+      "extra-large",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Timing Pulley 80T (8mm Bore)",
+    "description": "GT2 80-tooth timing pulley, 2mm pitch, 8mm bore with set screw, 6mm belt width, aluminum, 50.42mm OD, NEMA 23 extra-large reduction GT2-80T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 50.42,
+      "height": 16,
+      "weight": 65
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8, "boreType": "set_screw" }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 2 }
+      }
+    ],
+    "specs": {
+      "toothCount": 80,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreDiameter": "8mm",
+      "outerDiameter": "50.42mm",
+      "pitchDiameter": "50.93mm",
+      "beltWidth": "6mm",
+      "hubDiameter": "35mm",
+      "hubLength": "14mm",
+      "material": "Aluminum 6061",
+      "boreType": "Set Screw"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (PowerBelt)",
+        "partNumber": "GT2-80T-8B-6",
+        "approximatePrice": 19.0,
+        "url": "https://www.amazon.com/dp/B07SF1R7MZ"
+      }
+    ],
+    "designNotes": "Largest GT2 pulley with 8mm bore. 4:1 reduction with 20T driver on NEMA 23. Maximum torque multiplication in GT2 belt systems. Dual M4 set screws.",
+    "tags": [
+      "GT2",
+      "timing-pulley",
+      "80T",
+      "8mm-bore",
+      "NEMA-23",
+      "2mm-pitch",
+      "belt-drive",
+      "extra-large",
+      "aluminum"
+    ]
+  },
+  {
+    "name": "GT2 Open Timing Belt 6mm Width",
+    "description": "GT2 open-ended timing belt, 2mm pitch, 6mm width, rubber with fiberglass core, sold by the meter, 3D printer CNC motion belt GT2-6mm open belt-by-the-meter",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 6,
+      "height": 1.38,
+      "weight": 8
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "6mm",
+      "beltType": "Open-ended",
+      "material": "Neoprene rubber with fiberglass reinforcement",
+      "tensileStrength": "60N per 6mm width",
+      "operatingTemperature": "-30C to +100C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (WINSINN)",
+        "partNumber": "GT2-6mm-Open",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/WINSINN-GT2-Belt-Timing-Printer/dp/B07KP5ZZT2"
+      },
+      {
+        "name": "OpenBuilds",
+        "partNumber": "GT2-2M-6",
+        "approximatePrice": 4.0,
+        "url": "https://openbuildspartstore.com/gt2-2m-timing-belt/"
+      }
+    ],
+    "stockSizes": [
+      { "length": 1000, "unit": "mm", "approximatePrice": 3.5 },
+      { "length": 2000, "unit": "mm", "approximatePrice": 6.0 },
+      { "length": 3000, "unit": "mm", "approximatePrice": 8.5 },
+      { "length": 5000, "unit": "mm", "approximatePrice": 13.0 },
+      { "length": 10000, "unit": "mm", "approximatePrice": 22.0 }
+    ],
+    "designNotes": "Standard 6mm open GT2 belt for 3D printers and CNC. Cut to length and crimp or use belt clamps. Fiberglass core resists stretching. Most common width for CoreXY and cartesian motion. Weight listed is per meter.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "open",
+      "6mm",
+      "2mm-pitch",
+      "rubber",
+      "fiberglass",
+      "3d-printer",
+      "CNC",
+      "by-the-meter"
+    ]
+  },
+  {
+    "name": "GT2 Open Timing Belt 10mm Width",
+    "description": "GT2 open-ended timing belt, 2mm pitch, 10mm width, rubber with fiberglass core, sold by the meter, heavy-duty CNC motion belt GT2-10mm open wide belt",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 10,
+      "height": 1.38,
+      "weight": 13
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "10mm",
+      "beltType": "Open-ended",
+      "material": "Neoprene rubber with fiberglass reinforcement",
+      "tensileStrength": "100N per 10mm width",
+      "operatingTemperature": "-30C to +100C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (WINSINN)",
+        "partNumber": "GT2-10mm-Open",
+        "approximatePrice": 5.5,
+        "url": "https://www.amazon.com/WINSINN-GT2-Belt-10mm-Timing/dp/B07L3NSCYC"
+      },
+      {
+        "name": "OpenBuilds",
+        "partNumber": "GT2-2M-10",
+        "approximatePrice": 6.0,
+        "url": "https://openbuildspartstore.com/gt2-2m-timing-belt/"
+      }
+    ],
+    "stockSizes": [
+      { "length": 1000, "unit": "mm", "approximatePrice": 5.5 },
+      { "length": 2000, "unit": "mm", "approximatePrice": 9.5 },
+      { "length": 3000, "unit": "mm", "approximatePrice": 13.5 },
+      { "length": 5000, "unit": "mm", "approximatePrice": 21.0 },
+      { "length": 10000, "unit": "mm", "approximatePrice": 38.0 }
+    ],
+    "designNotes": "Wide 10mm open GT2 belt for higher load applications. 67% more load capacity than 6mm. Use on larger CNC machines or heavy gantry systems. Requires 10mm-width pulleys or wider. Weight listed is per meter.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "open",
+      "10mm",
+      "2mm-pitch",
+      "rubber",
+      "fiberglass",
+      "CNC",
+      "heavy-duty",
+      "wide",
+      "by-the-meter"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 110mm (6mm Width)",
+    "description": "GT2 closed loop timing belt, 110mm circumference, 55 teeth, 2mm pitch, 6mm width, rubber fiberglass core, small loop GT2-110-6",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 6,
+      "height": 1.38,
+      "weight": 2
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "6mm",
+      "beltType": "Closed loop",
+      "circumference": "110mm",
+      "toothCount": 55,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-110-6",
+        "approximatePrice": 5.0,
+        "url": "https://www.amazon.com/dp/B07JKWJL7Z"
+      }
+    ],
+    "stockSizes": [{ "length": 110, "unit": "mm", "approximatePrice": 5.0 }],
+    "designNotes": "Smallest common closed loop. Very short center distance — suitable for close-coupled pulley pairs. Verify minimum pulley size to avoid over-bending.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "110mm",
+      "6mm",
+      "2mm-pitch",
+      "55T"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 110mm (10mm Width)",
+    "description": "GT2 closed loop timing belt, 110mm circumference, 55 teeth, 2mm pitch, 10mm width, rubber fiberglass core, small loop GT2-110-10",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 10,
+      "height": 1.38,
+      "weight": 3
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "10mm",
+      "beltType": "Closed loop",
+      "circumference": "110mm",
+      "toothCount": 55,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-110-10",
+        "approximatePrice": 6.0,
+        "url": "https://www.amazon.com/dp/B07JKWJL7Z"
+      }
+    ],
+    "stockSizes": [{ "length": 110, "unit": "mm", "approximatePrice": 6.0 }],
+    "designNotes": "10mm wide variant of 110mm loop. Higher load capacity for compact drives. Same center-distance constraints as 6mm version.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "110mm",
+      "10mm",
+      "2mm-pitch",
+      "55T",
+      "wide"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 158mm (6mm Width)",
+    "description": "GT2 closed loop timing belt, 158mm circumference, 79 teeth, 2mm pitch, 6mm width, rubber fiberglass core GT2-158-6",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 6,
+      "height": 1.38,
+      "weight": 3
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "6mm",
+      "beltType": "Closed loop",
+      "circumference": "158mm",
+      "toothCount": 79,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-158-6",
+        "approximatePrice": 5.0,
+        "url": "https://www.amazon.com/dp/B07JKWH8F4"
+      }
+    ],
+    "stockSizes": [{ "length": 158, "unit": "mm", "approximatePrice": 5.0 }],
+    "designNotes": "Common for dual-drive extruder setups and compact belt-driven Z-axis. Center distance ~29mm with two 20T pulleys.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "158mm",
+      "6mm",
+      "2mm-pitch",
+      "79T"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 158mm (10mm Width)",
+    "description": "GT2 closed loop timing belt, 158mm circumference, 79 teeth, 2mm pitch, 10mm width, rubber fiberglass core GT2-158-10",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 10,
+      "height": 1.38,
+      "weight": 4
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "10mm",
+      "beltType": "Closed loop",
+      "circumference": "158mm",
+      "toothCount": 79,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-158-10",
+        "approximatePrice": 6.0,
+        "url": "https://www.amazon.com/dp/B07JKWH8F4"
+      }
+    ],
+    "stockSizes": [{ "length": 158, "unit": "mm", "approximatePrice": 6.0 }],
+    "designNotes": "10mm wide 158mm loop for heavier compact drives. Good for belt-driven extruder reduction setups.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "158mm",
+      "10mm",
+      "2mm-pitch",
+      "79T",
+      "wide"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 188mm (6mm Width)",
+    "description": "GT2 closed loop timing belt, 188mm circumference, 94 teeth, 2mm pitch, 6mm width, rubber fiberglass core GT2-188-6",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 6,
+      "height": 1.38,
+      "weight": 3
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "6mm",
+      "beltType": "Closed loop",
+      "circumference": "188mm",
+      "toothCount": 94,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-188-6",
+        "approximatePrice": 5.0,
+        "url": "https://www.amazon.com/dp/B07JKWM9C1"
+      }
+    ],
+    "stockSizes": [{ "length": 188, "unit": "mm", "approximatePrice": 5.0 }],
+    "designNotes": "188mm loop common in BMG extruder clones and compact belt reduction setups. Center distance ~44mm with two 20T pulleys.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "188mm",
+      "6mm",
+      "2mm-pitch",
+      "94T"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 188mm (10mm Width)",
+    "description": "GT2 closed loop timing belt, 188mm circumference, 94 teeth, 2mm pitch, 10mm width, rubber fiberglass core GT2-188-10",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 10,
+      "height": 1.38,
+      "weight": 5
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "10mm",
+      "beltType": "Closed loop",
+      "circumference": "188mm",
+      "toothCount": 94,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-188-10",
+        "approximatePrice": 6.5,
+        "url": "https://www.amazon.com/dp/B07JKWM9C1"
+      }
+    ],
+    "stockSizes": [{ "length": 188, "unit": "mm", "approximatePrice": 6.5 }],
+    "designNotes": "10mm wide 188mm loop. Higher load capacity for belt reduction drives requiring compact center distances.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "188mm",
+      "10mm",
+      "2mm-pitch",
+      "94T",
+      "wide"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 200mm (6mm Width)",
+    "description": "GT2 closed loop timing belt, 200mm circumference, 100 teeth, 2mm pitch, 6mm width, rubber fiberglass core GT2-200-6",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 6,
+      "height": 1.38,
+      "weight": 4
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "6mm",
+      "beltType": "Closed loop",
+      "circumference": "200mm",
+      "toothCount": 100,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-200-6",
+        "approximatePrice": 5.5,
+        "url": "https://www.amazon.com/dp/B07FCDNK1F"
+      }
+    ],
+    "stockSizes": [{ "length": 200, "unit": "mm", "approximatePrice": 5.5 }],
+    "designNotes": "200mm loop, very common standard size. Center distance ~50mm with two 20T pulleys. Good for small belt drives and extruder gearing.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "200mm",
+      "6mm",
+      "2mm-pitch",
+      "100T"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 200mm (10mm Width)",
+    "description": "GT2 closed loop timing belt, 200mm circumference, 100 teeth, 2mm pitch, 10mm width, rubber fiberglass core GT2-200-10",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 10,
+      "height": 1.38,
+      "weight": 6
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "10mm",
+      "beltType": "Closed loop",
+      "circumference": "200mm",
+      "toothCount": 100,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-200-10",
+        "approximatePrice": 7.0,
+        "url": "https://www.amazon.com/dp/B07FCDNK1F"
+      }
+    ],
+    "stockSizes": [{ "length": 200, "unit": "mm", "approximatePrice": 7.0 }],
+    "designNotes": "10mm wide 200mm loop. Standard size with higher load capacity. Common in heavy extruder drives.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "200mm",
+      "10mm",
+      "2mm-pitch",
+      "100T",
+      "wide"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 280mm (6mm Width)",
+    "description": "GT2 closed loop timing belt, 280mm circumference, 140 teeth, 2mm pitch, 6mm width, rubber fiberglass core GT2-280-6",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 6,
+      "height": 1.38,
+      "weight": 5
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "6mm",
+      "beltType": "Closed loop",
+      "circumference": "280mm",
+      "toothCount": 140,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-280-6",
+        "approximatePrice": 5.5,
+        "url": "https://www.amazon.com/dp/B07FCDL7XR"
+      }
+    ],
+    "stockSizes": [{ "length": 280, "unit": "mm", "approximatePrice": 5.5 }],
+    "designNotes": "280mm loop for medium center distances. Good for reduction drives with 20T/40T pulley pairs at ~90mm center distance.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "280mm",
+      "6mm",
+      "2mm-pitch",
+      "140T"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 280mm (10mm Width)",
+    "description": "GT2 closed loop timing belt, 280mm circumference, 140 teeth, 2mm pitch, 10mm width, rubber fiberglass core GT2-280-10",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 10,
+      "height": 1.38,
+      "weight": 7
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "10mm",
+      "beltType": "Closed loop",
+      "circumference": "280mm",
+      "toothCount": 140,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-280-10",
+        "approximatePrice": 7.0,
+        "url": "https://www.amazon.com/dp/B07FCDL7XR"
+      }
+    ],
+    "stockSizes": [{ "length": 280, "unit": "mm", "approximatePrice": 7.0 }],
+    "designNotes": "10mm wide 280mm loop. Medium center distance with higher load rating. Suitable for driven axes and belt reduction systems.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "280mm",
+      "10mm",
+      "2mm-pitch",
+      "140T",
+      "wide"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 300mm (6mm Width)",
+    "description": "GT2 closed loop timing belt, 300mm circumference, 150 teeth, 2mm pitch, 6mm width, rubber fiberglass core GT2-300-6",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 6,
+      "height": 1.38,
+      "weight": 5
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "6mm",
+      "beltType": "Closed loop",
+      "circumference": "300mm",
+      "toothCount": 150,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-300-6",
+        "approximatePrice": 6.0,
+        "url": "https://www.amazon.com/dp/B07FCDNK1G"
+      }
+    ],
+    "stockSizes": [{ "length": 300, "unit": "mm", "approximatePrice": 6.0 }],
+    "designNotes": "300mm loop, standard medium length. Good for dual-pulley systems at ~100mm center distance. Popular for belt-driven Z-axis on small printers.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "300mm",
+      "6mm",
+      "2mm-pitch",
+      "150T"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 300mm (10mm Width)",
+    "description": "GT2 closed loop timing belt, 300mm circumference, 150 teeth, 2mm pitch, 10mm width, rubber fiberglass core GT2-300-10",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 10,
+      "height": 1.38,
+      "weight": 7
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "10mm",
+      "beltType": "Closed loop",
+      "circumference": "300mm",
+      "toothCount": 150,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-300-10",
+        "approximatePrice": 7.5,
+        "url": "https://www.amazon.com/dp/B07FCDNK1G"
+      }
+    ],
+    "stockSizes": [{ "length": 300, "unit": "mm", "approximatePrice": 7.5 }],
+    "designNotes": "10mm wide 300mm loop. Standard medium size for heavy-duty belt drives and Z-axis setups.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "300mm",
+      "10mm",
+      "2mm-pitch",
+      "150T",
+      "wide"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 400mm (6mm Width)",
+    "description": "GT2 closed loop timing belt, 400mm circumference, 200 teeth, 2mm pitch, 6mm width, rubber fiberglass core GT2-400-6",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 6,
+      "height": 1.38,
+      "weight": 7
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "6mm",
+      "beltType": "Closed loop",
+      "circumference": "400mm",
+      "toothCount": 200,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-400-6",
+        "approximatePrice": 6.5,
+        "url": "https://www.amazon.com/dp/B07FCDPJNQ"
+      }
+    ],
+    "stockSizes": [{ "length": 400, "unit": "mm", "approximatePrice": 6.5 }],
+    "designNotes": "400mm loop for medium-large center distances. Fits 20T/60T reduction pairs at ~100mm center distance. Common in larger 3D printer belt drives.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "400mm",
+      "6mm",
+      "2mm-pitch",
+      "200T"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 400mm (10mm Width)",
+    "description": "GT2 closed loop timing belt, 400mm circumference, 200 teeth, 2mm pitch, 10mm width, rubber fiberglass core GT2-400-10",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 10,
+      "height": 1.38,
+      "weight": 10
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "10mm",
+      "beltType": "Closed loop",
+      "circumference": "400mm",
+      "toothCount": 200,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-400-10",
+        "approximatePrice": 8.0,
+        "url": "https://www.amazon.com/dp/B07FCDPJNQ"
+      }
+    ],
+    "stockSizes": [{ "length": 400, "unit": "mm", "approximatePrice": 8.0 }],
+    "designNotes": "10mm wide 400mm loop. Heavy-duty medium-large belt drive applications. Good for CNC axis reduction drives.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "400mm",
+      "10mm",
+      "2mm-pitch",
+      "200T",
+      "wide"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 500mm (6mm Width)",
+    "description": "GT2 closed loop timing belt, 500mm circumference, 250 teeth, 2mm pitch, 6mm width, rubber fiberglass core GT2-500-6",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 6,
+      "height": 1.38,
+      "weight": 8
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "6mm",
+      "beltType": "Closed loop",
+      "circumference": "500mm",
+      "toothCount": 250,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-500-6",
+        "approximatePrice": 7.0,
+        "url": "https://www.amazon.com/dp/B07FCDQ8TR"
+      }
+    ],
+    "stockSizes": [{ "length": 500, "unit": "mm", "approximatePrice": 7.0 }],
+    "designNotes": "500mm loop for larger belt reduction systems. Good center distances for 20T/80T pulley pairs. Common in belt-driven CNC axes.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "500mm",
+      "6mm",
+      "2mm-pitch",
+      "250T"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 500mm (10mm Width)",
+    "description": "GT2 closed loop timing belt, 500mm circumference, 250 teeth, 2mm pitch, 10mm width, rubber fiberglass core GT2-500-10",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 10,
+      "height": 1.38,
+      "weight": 12
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "10mm",
+      "beltType": "Closed loop",
+      "circumference": "500mm",
+      "toothCount": 250,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-500-10",
+        "approximatePrice": 8.5,
+        "url": "https://www.amazon.com/dp/B07FCDQ8TR"
+      }
+    ],
+    "stockSizes": [{ "length": 500, "unit": "mm", "approximatePrice": 8.5 }],
+    "designNotes": "10mm wide 500mm loop. Heavy-duty for larger reduction drives and CNC applications. Good for machines requiring moderate belt runs.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "500mm",
+      "10mm",
+      "2mm-pitch",
+      "250T",
+      "wide"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 610mm (6mm Width)",
+    "description": "GT2 closed loop timing belt, 610mm circumference, 305 teeth, 2mm pitch, 6mm width, rubber fiberglass core GT2-610-6",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 6,
+      "height": 1.38,
+      "weight": 10
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "6mm",
+      "beltType": "Closed loop",
+      "circumference": "610mm",
+      "toothCount": 305,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-610-6",
+        "approximatePrice": 8.0,
+        "url": "https://www.amazon.com/dp/B07FCDRL9S"
+      }
+    ],
+    "stockSizes": [{ "length": 610, "unit": "mm", "approximatePrice": 8.0 }],
+    "designNotes": "610mm loop for larger motion systems. Common on Ender 3 and similar 3D printers for Y-axis belt drives. Good all-around medium-large size.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "610mm",
+      "6mm",
+      "2mm-pitch",
+      "305T"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 610mm (10mm Width)",
+    "description": "GT2 closed loop timing belt, 610mm circumference, 305 teeth, 2mm pitch, 10mm width, rubber fiberglass core GT2-610-10",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 10,
+      "height": 1.38,
+      "weight": 14
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "10mm",
+      "beltType": "Closed loop",
+      "circumference": "610mm",
+      "toothCount": 305,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-610-10",
+        "approximatePrice": 9.5,
+        "url": "https://www.amazon.com/dp/B07FCDRL9S"
+      }
+    ],
+    "stockSizes": [{ "length": 610, "unit": "mm", "approximatePrice": 9.5 }],
+    "designNotes": "10mm wide 610mm loop for heavy-duty larger motion systems. Good for CNC and upgraded 3D printer belt drives requiring higher tension.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "610mm",
+      "10mm",
+      "2mm-pitch",
+      "305T",
+      "wide"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 852mm (6mm Width)",
+    "description": "GT2 closed loop timing belt, 852mm circumference, 426 teeth, 2mm pitch, 6mm width, rubber fiberglass core GT2-852-6 long loop",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 6,
+      "height": 1.38,
+      "weight": 14
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "6mm",
+      "beltType": "Closed loop",
+      "circumference": "852mm",
+      "toothCount": 426,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-852-6",
+        "approximatePrice": 9.0,
+        "url": "https://www.amazon.com/dp/B07FCDS6TH"
+      }
+    ],
+    "stockSizes": [{ "length": 852, "unit": "mm", "approximatePrice": 9.0 }],
+    "designNotes": "852mm long loop for large machines. Common on Ender 3 X-axis and similar printer motion systems. Accommodates wide pulley spacing.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "852mm",
+      "6mm",
+      "2mm-pitch",
+      "426T",
+      "long"
+    ]
+  },
+  {
+    "name": "GT2 Closed Loop Belt 852mm (10mm Width)",
+    "description": "GT2 closed loop timing belt, 852mm circumference, 426 teeth, 2mm pitch, 10mm width, rubber fiberglass core GT2-852-10 long loop wide",
+    "categorySlug": "gears-transmission",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "width": 10,
+      "height": 1.38,
+      "weight": 20
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "width": "10mm",
+      "beltType": "Closed loop",
+      "circumference": "852mm",
+      "toothCount": 426,
+      "material": "Neoprene rubber with fiberglass reinforcement"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-852-10",
+        "approximatePrice": 11.0,
+        "url": "https://www.amazon.com/dp/B07FCDS6TH"
+      }
+    ],
+    "stockSizes": [{ "length": 852, "unit": "mm", "approximatePrice": 11.0 }],
+    "designNotes": "Longest common GT2 closed loop in 10mm width. For large CNC machines, laser cutters, and heavy-duty motion systems. Heavy belt — ensure adequate tension.",
+    "tags": [
+      "GT2",
+      "timing-belt",
+      "closed-loop",
+      "852mm",
+      "10mm",
+      "2mm-pitch",
+      "426T",
+      "long",
+      "wide"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 0.5 20T (3mm Bore)",
+    "description": "Spur gear module 0.5, 20 teeth, 3mm bore, 20-degree pressure angle, 10mm pitch diameter, 11mm OD, brass, miniature gear M0.5-20T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 11,
+      "height": 5,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 3 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M2", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 0.5,
+      "toothCount": 20,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "10mm",
+      "outerDiameter": "11mm",
+      "boreDiameter": "3mm",
+      "faceWidth": "5mm",
+      "material": "Brass (C3604)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M0.5-20T-3B",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/dp/B07TYVV2WP"
+      },
+      {
+        "name": "SDP-SI",
+        "partNumber": "S10T05M020S0300",
+        "approximatePrice": 8.0,
+        "url": "https://www.sdp-si.com/eStore/"
+      }
+    ],
+    "designNotes": "Miniature brass spur gear for precision instruments, robotics, and encoder mechanisms. Module 0.5 only meshes with other module 0.5 gears. Small tooth profile — avoid high-torque applications.",
+    "tags": [
+      "spur-gear",
+      "module-0.5",
+      "20T",
+      "3mm-bore",
+      "brass",
+      "miniature",
+      "precision"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 0.5 30T (3mm Bore)",
+    "description": "Spur gear module 0.5, 30 teeth, 3mm bore, 20-degree pressure angle, 15mm pitch diameter, 16mm OD, brass, miniature gear M0.5-30T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 16,
+      "height": 5,
+      "weight": 5
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 3 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M2", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 0.5,
+      "toothCount": 30,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "15mm",
+      "outerDiameter": "16mm",
+      "boreDiameter": "3mm",
+      "faceWidth": "5mm",
+      "material": "Brass (C3604)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M0.5-30T-3B",
+        "approximatePrice": 4.0,
+        "url": "https://www.amazon.com/dp/B07TYVXB7P"
+      },
+      {
+        "name": "SDP-SI",
+        "partNumber": "S10T05M030S0300",
+        "approximatePrice": 9.0,
+        "url": "https://www.sdp-si.com/eStore/"
+      }
+    ],
+    "designNotes": "30T module 0.5 gear pairs with 20T for 1.5:1 ratio. Brass for low friction. Good for clock mechanisms, instruments, and light-duty robotics.",
+    "tags": [
+      "spur-gear",
+      "module-0.5",
+      "30T",
+      "3mm-bore",
+      "brass",
+      "miniature",
+      "precision"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 0.5 40T (4mm Bore)",
+    "description": "Spur gear module 0.5, 40 teeth, 4mm bore, 20-degree pressure angle, 20mm pitch diameter, 21mm OD, brass, miniature gear M0.5-40T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 21,
+      "height": 5,
+      "weight": 7
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 4 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M2.5", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 0.5,
+      "toothCount": 40,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "20mm",
+      "outerDiameter": "21mm",
+      "boreDiameter": "4mm",
+      "faceWidth": "5mm",
+      "material": "Brass (C3604)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M0.5-40T-4B",
+        "approximatePrice": 4.5,
+        "url": "https://www.amazon.com/dp/B07TYVYF3S"
+      }
+    ],
+    "designNotes": "40T module 0.5. 2:1 ratio with 20T driver. Good for gear reduction in compact mechanisms. 4mm bore fits common small motor shafts.",
+    "tags": ["spur-gear", "module-0.5", "40T", "4mm-bore", "brass", "miniature"]
+  },
+  {
+    "name": "Spur Gear Module 0.5 50T (4mm Bore)",
+    "description": "Spur gear module 0.5, 50 teeth, 4mm bore, 20-degree pressure angle, 25mm pitch diameter, 26mm OD, brass, miniature gear M0.5-50T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 26,
+      "height": 5,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 4 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M2.5", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 0.5,
+      "toothCount": 50,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "25mm",
+      "outerDiameter": "26mm",
+      "boreDiameter": "4mm",
+      "faceWidth": "5mm",
+      "material": "Brass (C3604)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M0.5-50T-4B",
+        "approximatePrice": 5.0,
+        "url": "https://www.amazon.com/dp/B07TYVZKG4"
+      }
+    ],
+    "designNotes": "50T module 0.5 for 2.5:1 ratio with 20T. Larger miniature gear. Good for multi-stage reduction in precision instruments.",
+    "tags": ["spur-gear", "module-0.5", "50T", "4mm-bore", "brass", "miniature"]
+  },
+  {
+    "name": "Spur Gear Module 0.5 60T (5mm Bore)",
+    "description": "Spur gear module 0.5, 60 teeth, 5mm bore, 20-degree pressure angle, 30mm pitch diameter, 31mm OD, brass, miniature gear M0.5-60T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 31,
+      "height": 5,
+      "weight": 14
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 0.5,
+      "toothCount": 60,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "30mm",
+      "outerDiameter": "31mm",
+      "boreDiameter": "5mm",
+      "faceWidth": "5mm",
+      "material": "Brass (C3604)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M0.5-60T-5B",
+        "approximatePrice": 5.5,
+        "url": "https://www.amazon.com/dp/B07TYW0XM5"
+      }
+    ],
+    "designNotes": "60T module 0.5 with 5mm bore. 3:1 with 20T. Largest practical module 0.5 gear for NEMA 17 output shafts. Fine tooth pitch for smooth, quiet operation.",
+    "tags": ["spur-gear", "module-0.5", "60T", "5mm-bore", "brass", "miniature"]
+  },
+  {
+    "name": "Spur Gear Module 0.5 80T (5mm Bore)",
+    "description": "Spur gear module 0.5, 80 teeth, 5mm bore, 20-degree pressure angle, 40mm pitch diameter, 41mm OD, brass, large miniature gear M0.5-80T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 41,
+      "height": 5,
+      "weight": 22
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 0.5,
+      "toothCount": 80,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "40mm",
+      "outerDiameter": "41mm",
+      "boreDiameter": "5mm",
+      "faceWidth": "5mm",
+      "material": "Brass (C3604)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M0.5-80T-5B",
+        "approximatePrice": 6.0,
+        "url": "https://www.amazon.com/dp/B07TYW1ZN6"
+      }
+    ],
+    "designNotes": "80T module 0.5 for high reduction ratios. 4:1 with 20T driver. Large for this module — use module 1 for higher loads at this diameter. Good for precision positioning.",
+    "tags": [
+      "spur-gear",
+      "module-0.5",
+      "80T",
+      "5mm-bore",
+      "brass",
+      "large-miniature"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 1 12T (5mm Bore)",
+    "description": "Spur gear module 1, 12 teeth, 5mm bore, 20-degree pressure angle, 12mm pitch diameter, 14mm OD, steel, pinion gear M1-12T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 14,
+      "height": 10,
+      "weight": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 1,
+      "toothCount": 12,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "12mm",
+      "outerDiameter": "14mm",
+      "boreDiameter": "5mm",
+      "faceWidth": "10mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1-12T-5B",
+        "approximatePrice": 5.0,
+        "url": "https://www.amazon.com/dp/B07TWG8PZL"
+      },
+      {
+        "name": "SDP-SI",
+        "partNumber": "S10S1M012S0500",
+        "approximatePrice": 10.0,
+        "url": "https://www.sdp-si.com/eStore/"
+      }
+    ],
+    "designNotes": "Small pinion gear, minimum practical tooth count for module 1. May exhibit undercut at 12T with 20-degree pressure angle. Use as driver gear for high reduction ratios.",
+    "tags": ["spur-gear", "module-1", "12T", "5mm-bore", "steel", "pinion"]
+  },
+  {
+    "name": "Spur Gear Module 1 15T (5mm Bore)",
+    "description": "Spur gear module 1, 15 teeth, 5mm bore, 20-degree pressure angle, 15mm pitch diameter, 17mm OD, steel, pinion gear M1-15T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 17,
+      "height": 10,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 1,
+      "toothCount": 15,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "15mm",
+      "outerDiameter": "17mm",
+      "boreDiameter": "5mm",
+      "faceWidth": "10mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1-15T-5B",
+        "approximatePrice": 5.5,
+        "url": "https://www.amazon.com/dp/B07TWGB8DM"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5724T15",
+        "approximatePrice": 8.0
+      }
+    ],
+    "designNotes": "15T module 1 pinion. No undercut at this tooth count. Good minimum driver gear size for moderate loads. Common on NEMA 17 motor shafts.",
+    "tags": ["spur-gear", "module-1", "15T", "5mm-bore", "steel", "pinion"]
+  },
+  {
+    "name": "Spur Gear Module 1 20T (5mm Bore)",
+    "description": "Spur gear module 1, 20 teeth, 5mm bore, 20-degree pressure angle, 20mm pitch diameter, 22mm OD, steel, general purpose gear M1-20T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 22,
+      "height": 10,
+      "weight": 15
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 1,
+      "toothCount": 20,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "20mm",
+      "outerDiameter": "22mm",
+      "boreDiameter": "5mm",
+      "faceWidth": "10mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1-20T-5B",
+        "approximatePrice": 5.5,
+        "url": "https://www.amazon.com/dp/B07TWGCJ9N"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5724T20",
+        "approximatePrice": 9.0
+      }
+    ],
+    "designNotes": "Workhorse module 1 gear. 20T is the standard reference gear for module 1. Meshes with any other module 1 gear at center distance = (T1+T2)/2 mm.",
+    "tags": [
+      "spur-gear",
+      "module-1",
+      "20T",
+      "5mm-bore",
+      "steel",
+      "general-purpose"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 1 24T (6mm Bore)",
+    "description": "Spur gear module 1, 24 teeth, 6mm bore, 20-degree pressure angle, 24mm pitch diameter, 26mm OD, steel, general purpose gear M1-24T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 26,
+      "height": 10,
+      "weight": 20
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 1,
+      "toothCount": 24,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "24mm",
+      "outerDiameter": "26mm",
+      "boreDiameter": "6mm",
+      "faceWidth": "10mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1-24T-6B",
+        "approximatePrice": 6.0,
+        "url": "https://www.amazon.com/dp/B07TWGDK6P"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5724T24",
+        "approximatePrice": 10.0
+      }
+    ],
+    "designNotes": "24T module 1. Common driven gear for 2:1 ratio with 12T pinion. 6mm bore fits many small gearmotor output shafts.",
+    "tags": [
+      "spur-gear",
+      "module-1",
+      "24T",
+      "6mm-bore",
+      "steel",
+      "general-purpose"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 1 30T (6mm Bore)",
+    "description": "Spur gear module 1, 30 teeth, 6mm bore, 20-degree pressure angle, 30mm pitch diameter, 32mm OD, steel, driven gear M1-30T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 32,
+      "height": 10,
+      "weight": 28
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 1,
+      "toothCount": 30,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "30mm",
+      "outerDiameter": "32mm",
+      "boreDiameter": "6mm",
+      "faceWidth": "10mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1-30T-6B",
+        "approximatePrice": 7.0,
+        "url": "https://www.amazon.com/dp/B07TWGFP8R"
+      },
+      {
+        "name": "SDP-SI",
+        "partNumber": "S10S1M030S0600",
+        "approximatePrice": 11.0,
+        "url": "https://www.sdp-si.com/eStore/"
+      }
+    ],
+    "designNotes": "30T module 1 driven gear. 2:1 with 15T, 2.5:1 with 12T. 6mm bore. Good for moderate torque applications in robotics and automation.",
+    "tags": ["spur-gear", "module-1", "30T", "6mm-bore", "steel", "driven"]
+  },
+  {
+    "name": "Spur Gear Module 1 36T (6mm Bore)",
+    "description": "Spur gear module 1, 36 teeth, 6mm bore, 20-degree pressure angle, 36mm pitch diameter, 38mm OD, steel, driven gear M1-36T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 38,
+      "height": 10,
+      "weight": 35
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 1,
+      "toothCount": 36,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "36mm",
+      "outerDiameter": "38mm",
+      "boreDiameter": "6mm",
+      "faceWidth": "10mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1-36T-6B",
+        "approximatePrice": 8.0,
+        "url": "https://www.amazon.com/dp/B07TWGHQ9S"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5724T36",
+        "approximatePrice": 11.0
+      }
+    ],
+    "designNotes": "36T module 1. 3:1 with 12T pinion. Good balance of size and gear ratio. Commonly available size for robotics and light industrial use.",
+    "tags": ["spur-gear", "module-1", "36T", "6mm-bore", "steel", "driven"]
+  },
+  {
+    "name": "Spur Gear Module 1 40T (8mm Bore)",
+    "description": "Spur gear module 1, 40 teeth, 8mm bore, 20-degree pressure angle, 40mm pitch diameter, 42mm OD, steel, driven gear M1-40T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 42,
+      "height": 10,
+      "weight": 42
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 1,
+      "toothCount": 40,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "40mm",
+      "outerDiameter": "42mm",
+      "boreDiameter": "8mm",
+      "faceWidth": "10mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1-40T-8B",
+        "approximatePrice": 9.0,
+        "url": "https://www.amazon.com/dp/B07TWGJR7T"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5724T40",
+        "approximatePrice": 12.0
+      }
+    ],
+    "designNotes": "40T module 1 with 8mm bore. 2:1 with 20T. Substantial gear for moderate-load applications. M4 set screw for secure shaft mounting.",
+    "tags": ["spur-gear", "module-1", "40T", "8mm-bore", "steel", "driven"]
+  },
+  {
+    "name": "Spur Gear Module 1 48T (8mm Bore)",
+    "description": "Spur gear module 1, 48 teeth, 8mm bore, 20-degree pressure angle, 48mm pitch diameter, 50mm OD, steel, large driven gear M1-48T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 50,
+      "height": 10,
+      "weight": 55
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 1,
+      "toothCount": 48,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "48mm",
+      "outerDiameter": "50mm",
+      "boreDiameter": "8mm",
+      "faceWidth": "10mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1-48T-8B",
+        "approximatePrice": 10.0,
+        "url": "https://www.amazon.com/dp/B07TWGKS8U"
+      },
+      {
+        "name": "SDP-SI",
+        "partNumber": "S10S1M048S0800",
+        "approximatePrice": 13.0,
+        "url": "https://www.sdp-si.com/eStore/"
+      }
+    ],
+    "designNotes": "48T module 1 for 4:1 ratio with 12T pinion. Large gear for substantial torque multiplication. Commonly used in robotics and CNC applications.",
+    "tags": [
+      "spur-gear",
+      "module-1",
+      "48T",
+      "8mm-bore",
+      "steel",
+      "large",
+      "driven"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 1 60T (8mm Bore)",
+    "description": "Spur gear module 1, 60 teeth, 8mm bore, 20-degree pressure angle, 60mm pitch diameter, 62mm OD, steel, large driven gear M1-60T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 62,
+      "height": 10,
+      "weight": 75
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "keyway",
+        "specs": { "keyWidth": "3mm", "keyDepth": "1.4mm" }
+      }
+    ],
+    "specs": {
+      "module": 1,
+      "toothCount": 60,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "60mm",
+      "outerDiameter": "62mm",
+      "boreDiameter": "8mm",
+      "faceWidth": "10mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1-60T-8B",
+        "approximatePrice": 12.0,
+        "url": "https://www.amazon.com/dp/B07TWGLT9V"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5724T60",
+        "approximatePrice": 15.0
+      }
+    ],
+    "designNotes": "60T module 1, largest common size in this module. 5:1 with 12T. Keyway at this size for positive drive. High inertia — consider for low-speed, high-torque applications.",
+    "tags": [
+      "spur-gear",
+      "module-1",
+      "60T",
+      "8mm-bore",
+      "steel",
+      "large",
+      "keyway"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 1.5 12T (6mm Bore)",
+    "description": "Spur gear module 1.5, 12 teeth, 6mm bore, 20-degree pressure angle, 18mm pitch diameter, 21mm OD, steel, pinion gear M1.5-12T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 21,
+      "height": 15,
+      "weight": 18
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 1.5,
+      "toothCount": 12,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "18mm",
+      "outerDiameter": "21mm",
+      "boreDiameter": "6mm",
+      "faceWidth": "15mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1.5-12T-6B",
+        "approximatePrice": 8.0,
+        "url": "https://www.amazon.com/dp/B07TWGNXRW"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "57345T12",
+        "approximatePrice": 12.0
+      }
+    ],
+    "designNotes": "Module 1.5 pinion for medium-duty applications. Larger tooth profile than module 1 handles higher loads. 12T is minimum — expect slight undercut.",
+    "tags": [
+      "spur-gear",
+      "module-1.5",
+      "12T",
+      "6mm-bore",
+      "steel",
+      "pinion",
+      "medium-duty"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 1.5 15T (6mm Bore)",
+    "description": "Spur gear module 1.5, 15 teeth, 6mm bore, 20-degree pressure angle, 22.5mm pitch diameter, 25.5mm OD, steel, pinion gear M1.5-15T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 25.5,
+      "height": 15,
+      "weight": 22
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M3", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 1.5,
+      "toothCount": 15,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "22.5mm",
+      "outerDiameter": "25.5mm",
+      "boreDiameter": "6mm",
+      "faceWidth": "15mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1.5-15T-6B",
+        "approximatePrice": 8.5,
+        "url": "https://www.amazon.com/dp/B07TWGPYS8"
+      },
+      {
+        "name": "SDP-SI",
+        "partNumber": "S10S15M015S0600",
+        "approximatePrice": 13.0,
+        "url": "https://www.sdp-si.com/eStore/"
+      }
+    ],
+    "designNotes": "15T module 1.5, no undercut at this tooth count. Good minimum driver for medium-duty gearboxes. Pairs well with 30T or 45T driven gears.",
+    "tags": [
+      "spur-gear",
+      "module-1.5",
+      "15T",
+      "6mm-bore",
+      "steel",
+      "pinion",
+      "medium-duty"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 1.5 20T (8mm Bore)",
+    "description": "Spur gear module 1.5, 20 teeth, 8mm bore, 20-degree pressure angle, 30mm pitch diameter, 33mm OD, steel, general purpose gear M1.5-20T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 33,
+      "height": 15,
+      "weight": 35
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 1.5,
+      "toothCount": 20,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "30mm",
+      "outerDiameter": "33mm",
+      "boreDiameter": "8mm",
+      "faceWidth": "15mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1.5-20T-8B",
+        "approximatePrice": 9.0,
+        "url": "https://www.amazon.com/dp/B07TWGQZT9"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "57345T20",
+        "approximatePrice": 14.0
+      }
+    ],
+    "designNotes": "20T module 1.5 reference gear. 8mm bore for NEMA 23 or larger motor shafts. Center distance formula: (T1+T2)*1.5/2 mm.",
+    "tags": [
+      "spur-gear",
+      "module-1.5",
+      "20T",
+      "8mm-bore",
+      "steel",
+      "general-purpose",
+      "medium-duty"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 1.5 24T (8mm Bore)",
+    "description": "Spur gear module 1.5, 24 teeth, 8mm bore, 20-degree pressure angle, 36mm pitch diameter, 39mm OD, steel, driven gear M1.5-24T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 39,
+      "height": 15,
+      "weight": 45
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 1.5,
+      "toothCount": 24,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "36mm",
+      "outerDiameter": "39mm",
+      "boreDiameter": "8mm",
+      "faceWidth": "15mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1.5-24T-8B",
+        "approximatePrice": 10.0,
+        "url": "https://www.amazon.com/dp/B07TWGS0TA"
+      }
+    ],
+    "designNotes": "24T module 1.5 driven gear. 2:1 with 12T pinion. Good for medium-load gearbox applications. Wider face width than module 1 for better load distribution.",
+    "tags": [
+      "spur-gear",
+      "module-1.5",
+      "24T",
+      "8mm-bore",
+      "steel",
+      "driven",
+      "medium-duty"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 1.5 30T (10mm Bore)",
+    "description": "Spur gear module 1.5, 30 teeth, 10mm bore, 20-degree pressure angle, 45mm pitch diameter, 48mm OD, steel, driven gear M1.5-30T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 48,
+      "height": 15,
+      "weight": 65
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 10 }
+      },
+      {
+        "type": "keyway",
+        "specs": { "keyWidth": "3mm", "keyDepth": "1.4mm" }
+      }
+    ],
+    "specs": {
+      "module": 1.5,
+      "toothCount": 30,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "45mm",
+      "outerDiameter": "48mm",
+      "boreDiameter": "10mm",
+      "faceWidth": "15mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1.5-30T-10B",
+        "approximatePrice": 12.0,
+        "url": "https://www.amazon.com/dp/B07TWGT1UB"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "57345T30",
+        "approximatePrice": 16.0
+      }
+    ],
+    "designNotes": "30T module 1.5 with 10mm bore and keyway. 2:1 with 15T. Keyway provides positive drive for higher torque. Suitable for conveyor drives and automation equipment.",
+    "tags": [
+      "spur-gear",
+      "module-1.5",
+      "30T",
+      "10mm-bore",
+      "steel",
+      "driven",
+      "keyway",
+      "medium-duty"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 1.5 40T (10mm Bore)",
+    "description": "Spur gear module 1.5, 40 teeth, 10mm bore, 20-degree pressure angle, 60mm pitch diameter, 63mm OD, steel, large driven gear M1.5-40T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 63,
+      "height": 15,
+      "weight": 100
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 10 }
+      },
+      {
+        "type": "keyway",
+        "specs": { "keyWidth": "4mm", "keyDepth": "1.8mm" }
+      }
+    ],
+    "specs": {
+      "module": 1.5,
+      "toothCount": 40,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "60mm",
+      "outerDiameter": "63mm",
+      "boreDiameter": "10mm",
+      "faceWidth": "15mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M1.5-40T-10B",
+        "approximatePrice": 15.0,
+        "url": "https://www.amazon.com/dp/B07TWGU2VC"
+      },
+      {
+        "name": "SDP-SI",
+        "partNumber": "S10S15M040S1000",
+        "approximatePrice": 20.0,
+        "url": "https://www.sdp-si.com/eStore/"
+      }
+    ],
+    "designNotes": "40T module 1.5 large driven gear with keyway. High reduction ratios. Substantial gear for industrial and automation applications. Consider bearing support for shaft.",
+    "tags": [
+      "spur-gear",
+      "module-1.5",
+      "40T",
+      "10mm-bore",
+      "steel",
+      "large",
+      "keyway",
+      "medium-duty"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 2 12T (8mm Bore)",
+    "description": "Spur gear module 2, 12 teeth, 8mm bore, 20-degree pressure angle, 24mm pitch diameter, 28mm OD, steel, heavy-duty pinion gear M2-12T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 28,
+      "height": 20,
+      "weight": 30
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 2,
+      "toothCount": 12,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "24mm",
+      "outerDiameter": "28mm",
+      "boreDiameter": "8mm",
+      "faceWidth": "20mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M2-12T-8B",
+        "approximatePrice": 9.0,
+        "url": "https://www.amazon.com/dp/B07TWGV3WD"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5725T12",
+        "approximatePrice": 14.0
+      }
+    ],
+    "designNotes": "Module 2 pinion for heavy-duty drives. Large tooth profile handles high loads. 12T minimum — some undercut expected. 20mm face width for load spreading.",
+    "tags": [
+      "spur-gear",
+      "module-2",
+      "12T",
+      "8mm-bore",
+      "steel",
+      "pinion",
+      "heavy-duty"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 2 15T (8mm Bore)",
+    "description": "Spur gear module 2, 15 teeth, 8mm bore, 20-degree pressure angle, 30mm pitch diameter, 34mm OD, steel, heavy-duty pinion gear M2-15T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 34,
+      "height": 20,
+      "weight": 40
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "set_screw",
+        "specs": { "threadSize": "M4", "quantity": 1 }
+      }
+    ],
+    "specs": {
+      "module": 2,
+      "toothCount": 15,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "30mm",
+      "outerDiameter": "34mm",
+      "boreDiameter": "8mm",
+      "faceWidth": "20mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M2-15T-8B",
+        "approximatePrice": 10.0,
+        "url": "https://www.amazon.com/dp/B07TWGW4XE"
+      },
+      {
+        "name": "SDP-SI",
+        "partNumber": "S10S2M015S0800",
+        "approximatePrice": 15.0,
+        "url": "https://www.sdp-si.com/eStore/"
+      }
+    ],
+    "designNotes": "15T module 2 pinion. No undercut, good tooth form. Robust driver gear for industrial gearboxes and heavy automation equipment.",
+    "tags": [
+      "spur-gear",
+      "module-2",
+      "15T",
+      "8mm-bore",
+      "steel",
+      "pinion",
+      "heavy-duty"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 2 20T (10mm Bore)",
+    "description": "Spur gear module 2, 20 teeth, 10mm bore, 20-degree pressure angle, 40mm pitch diameter, 44mm OD, steel, heavy-duty general purpose gear M2-20T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 44,
+      "height": 20,
+      "weight": 60
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 10 }
+      },
+      {
+        "type": "keyway",
+        "specs": { "keyWidth": "4mm", "keyDepth": "1.8mm" }
+      }
+    ],
+    "specs": {
+      "module": 2,
+      "toothCount": 20,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "40mm",
+      "outerDiameter": "44mm",
+      "boreDiameter": "10mm",
+      "faceWidth": "20mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M2-20T-10B",
+        "approximatePrice": 12.0,
+        "url": "https://www.amazon.com/dp/B07TWGX5YF"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5725T20",
+        "approximatePrice": 16.0
+      }
+    ],
+    "designNotes": "20T module 2 reference gear with keyway. Center distance formula: (T1+T2)*2/2 = (T1+T2) mm. Robust for industrial drives and heavy machinery.",
+    "tags": [
+      "spur-gear",
+      "module-2",
+      "20T",
+      "10mm-bore",
+      "steel",
+      "keyway",
+      "heavy-duty"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 2 24T (10mm Bore)",
+    "description": "Spur gear module 2, 24 teeth, 10mm bore, 20-degree pressure angle, 48mm pitch diameter, 52mm OD, steel, heavy-duty driven gear M2-24T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 52,
+      "height": 20,
+      "weight": 80
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 10 }
+      },
+      {
+        "type": "keyway",
+        "specs": { "keyWidth": "4mm", "keyDepth": "1.8mm" }
+      }
+    ],
+    "specs": {
+      "module": 2,
+      "toothCount": 24,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "48mm",
+      "outerDiameter": "52mm",
+      "boreDiameter": "10mm",
+      "faceWidth": "20mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M2-24T-10B",
+        "approximatePrice": 13.0,
+        "url": "https://www.amazon.com/dp/B07TWGY6ZG"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5725T24",
+        "approximatePrice": 17.0
+      }
+    ],
+    "designNotes": "24T module 2 with keyway. 2:1 with 12T pinion at 36mm center distance. Heavy-duty driven gear for industrial equipment.",
+    "tags": [
+      "spur-gear",
+      "module-2",
+      "24T",
+      "10mm-bore",
+      "steel",
+      "keyway",
+      "heavy-duty",
+      "driven"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 2 30T (12mm Bore)",
+    "description": "Spur gear module 2, 30 teeth, 12mm bore, 20-degree pressure angle, 60mm pitch diameter, 64mm OD, steel, heavy-duty driven gear M2-30T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 64,
+      "height": 20,
+      "weight": 110
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 12 }
+      },
+      {
+        "type": "keyway",
+        "specs": { "keyWidth": "4mm", "keyDepth": "1.8mm" }
+      }
+    ],
+    "specs": {
+      "module": 2,
+      "toothCount": 30,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "60mm",
+      "outerDiameter": "64mm",
+      "boreDiameter": "12mm",
+      "faceWidth": "20mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M2-30T-12B",
+        "approximatePrice": 15.0,
+        "url": "https://www.amazon.com/dp/B07TWGZ70H"
+      },
+      {
+        "name": "SDP-SI",
+        "partNumber": "S10S2M030S1200",
+        "approximatePrice": 20.0,
+        "url": "https://www.sdp-si.com/eStore/"
+      }
+    ],
+    "designNotes": "30T module 2 with 12mm bore and keyway. 2:1 with 15T at 45mm center distance. Heavy-duty for industrial gearboxes, conveyor drives, and machine tools.",
+    "tags": [
+      "spur-gear",
+      "module-2",
+      "30T",
+      "12mm-bore",
+      "steel",
+      "keyway",
+      "heavy-duty",
+      "driven",
+      "large"
+    ]
+  },
+  {
+    "name": "Spur Gear Module 2 40T (12mm Bore)",
+    "description": "Spur gear module 2, 40 teeth, 12mm bore, 20-degree pressure angle, 80mm pitch diameter, 84mm OD, steel, heavy-duty large driven gear M2-40T",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 84,
+      "height": 20,
+      "weight": 180
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 12 }
+      },
+      {
+        "type": "keyway",
+        "specs": { "keyWidth": "4mm", "keyDepth": "1.8mm" }
+      }
+    ],
+    "specs": {
+      "module": 2,
+      "toothCount": 40,
+      "pressureAngle": "20 degrees",
+      "pitchDiameter": "80mm",
+      "outerDiameter": "84mm",
+      "boreDiameter": "12mm",
+      "faceWidth": "20mm",
+      "material": "Carbon Steel (S45C)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (uxcell)",
+        "partNumber": "M2-40T-12B",
+        "approximatePrice": 20.0,
+        "url": "https://www.amazon.com/dp/B07TWH081J"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5725T40",
+        "approximatePrice": 24.0
+      }
+    ],
+    "designNotes": "Largest module 2 gear in catalog. 84mm OD — significant inertia. Keyway mandatory for torque transmission at this size. For heavy industrial drives, machine tools, and large automation.",
+    "tags": [
+      "spur-gear",
+      "module-2",
+      "40T",
+      "12mm-bore",
+      "steel",
+      "keyway",
+      "heavy-duty",
+      "driven",
+      "extra-large"
+    ]
+  },
+  {
+    "name": "GT2 Smooth Idler Pulley 20T Profile (3mm Bore, 6mm Belt)",
+    "description": "GT2 smooth idler pulley, 20-tooth profile diameter, 3mm bore with bearing, 6mm belt width, aluminum with 623ZZ bearing, no teeth, belt tensioner GT2-idler-smooth-3B-6",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "height": 11,
+      "weight": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 3, "bearingType": "623ZZ" }
+      }
+    ],
+    "specs": {
+      "profileTeeth": 20,
+      "toothed": false,
+      "boreSize": "3mm",
+      "outerDiameter": "12mm",
+      "beltWidth": "6mm",
+      "withBearing": true,
+      "bearingType": "623ZZ",
+      "material": "Aluminum body, steel bearing",
+      "flanged": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (WINSINN)",
+        "partNumber": "GT2-Idler-Smooth-3B-6",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/WINSINN-Aluminum-Timing-Idler-Printer/dp/B077GKBRQF"
+      },
+      {
+        "name": "OpenBuilds",
+        "partNumber": "Smooth-Idler-Pulley",
+        "approximatePrice": 4.5,
+        "url": "https://openbuildspartstore.com/smooth-idler-pulley/"
+      }
+    ],
+    "designNotes": "Smooth (toothless) idler for belt back-side tensioning. Built-in 623ZZ bearing for free spinning on 3mm shoulder bolt or shaft. Flanges keep 6mm belt tracking. Most common 3D printer idler.",
+    "tags": [
+      "GT2",
+      "idler",
+      "smooth",
+      "3mm-bore",
+      "6mm-belt",
+      "bearing",
+      "tensioner",
+      "3d-printer"
+    ]
+  },
+  {
+    "name": "GT2 Smooth Idler Pulley 20T Profile (5mm Bore, 6mm Belt)",
+    "description": "GT2 smooth idler pulley, 20-tooth profile diameter, 5mm bore with bearing, 6mm belt width, aluminum with 625ZZ bearing, no teeth, belt tensioner GT2-idler-smooth-5B-6",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "height": 11,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5, "bearingType": "625ZZ" }
+      }
+    ],
+    "specs": {
+      "profileTeeth": 20,
+      "toothed": false,
+      "boreSize": "5mm",
+      "outerDiameter": "12mm",
+      "beltWidth": "6mm",
+      "withBearing": true,
+      "bearingType": "625ZZ",
+      "material": "Aluminum body, steel bearing",
+      "flanged": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (WINSINN)",
+        "partNumber": "GT2-Idler-Smooth-5B-6",
+        "approximatePrice": 4.0,
+        "url": "https://www.amazon.com/WINSINN-Aluminum-Timing-Idler-Printer/dp/B077GKBRQF"
+      },
+      {
+        "name": "OpenBuilds",
+        "partNumber": "Smooth-Idler-Pulley-5mm",
+        "approximatePrice": 5.0,
+        "url": "https://openbuildspartstore.com/smooth-idler-pulley/"
+      }
+    ],
+    "designNotes": "5mm bore smooth idler for M5 bolts or 5mm shafts. Built-in 625ZZ bearing. Use for belt back-side routing where teeth engagement is not needed. Common in CoreXY printers.",
+    "tags": [
+      "GT2",
+      "idler",
+      "smooth",
+      "5mm-bore",
+      "6mm-belt",
+      "bearing",
+      "tensioner",
+      "CoreXY"
+    ]
+  },
+  {
+    "name": "GT2 Smooth Idler Pulley 20T Profile (3mm Bore, 10mm Belt)",
+    "description": "GT2 smooth idler pulley, 20-tooth profile diameter, 3mm bore with bearing, 10mm belt width, aluminum with 623ZZ bearing, no teeth, wide belt tensioner GT2-idler-smooth-3B-10",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "height": 15,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 3, "bearingType": "623ZZ" }
+      }
+    ],
+    "specs": {
+      "profileTeeth": 20,
+      "toothed": false,
+      "boreSize": "3mm",
+      "outerDiameter": "12mm",
+      "beltWidth": "10mm",
+      "withBearing": true,
+      "bearingType": "623ZZ",
+      "material": "Aluminum body, steel bearing",
+      "flanged": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-Idler-Smooth-3B-10",
+        "approximatePrice": 4.0,
+        "url": "https://www.amazon.com/dp/B077GKC4RG"
+      }
+    ],
+    "designNotes": "Smooth idler for 10mm wide GT2 belts on 3mm bore. Wider body accommodates wider belt. Same 623ZZ bearing as 6mm version. For heavy-duty CNC idler applications.",
+    "tags": [
+      "GT2",
+      "idler",
+      "smooth",
+      "3mm-bore",
+      "10mm-belt",
+      "bearing",
+      "tensioner",
+      "wide"
+    ]
+  },
+  {
+    "name": "GT2 Smooth Idler Pulley 20T Profile (5mm Bore, 10mm Belt)",
+    "description": "GT2 smooth idler pulley, 20-tooth profile diameter, 5mm bore with bearing, 10mm belt width, aluminum with 625ZZ bearing, no teeth, wide belt tensioner GT2-idler-smooth-5B-10",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "height": 15,
+      "weight": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5, "bearingType": "625ZZ" }
+      }
+    ],
+    "specs": {
+      "profileTeeth": 20,
+      "toothed": false,
+      "boreSize": "5mm",
+      "outerDiameter": "12mm",
+      "beltWidth": "10mm",
+      "withBearing": true,
+      "bearingType": "625ZZ",
+      "material": "Aluminum body, steel bearing",
+      "flanged": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-Idler-Smooth-5B-10",
+        "approximatePrice": 4.5,
+        "url": "https://www.amazon.com/dp/B077GKC4RG"
+      },
+      {
+        "name": "OpenBuilds",
+        "partNumber": "Smooth-Idler-10mm-5bore",
+        "approximatePrice": 5.5,
+        "url": "https://openbuildspartstore.com/smooth-idler-pulley/"
+      }
+    ],
+    "designNotes": "5mm bore smooth idler for 10mm belts. Largest smooth idler variant. Good for heavy-duty CNC machines using wide belts on M5 fasteners or 5mm shafts.",
+    "tags": [
+      "GT2",
+      "idler",
+      "smooth",
+      "5mm-bore",
+      "10mm-belt",
+      "bearing",
+      "tensioner",
+      "wide",
+      "heavy-duty"
+    ]
+  },
+  {
+    "name": "GT2 Toothed Idler Pulley 20T (3mm Bore, 6mm Belt)",
+    "description": "GT2 toothed idler pulley, 20 teeth, 3mm bore with bearing, 6mm belt width, aluminum with 623ZZ bearing, tooth-side engagement, GT2-idler-toothed-3B-6",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12.22,
+      "height": 11,
+      "weight": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 3, "bearingType": "623ZZ" }
+      }
+    ],
+    "specs": {
+      "toothCount": 20,
+      "toothed": true,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreSize": "3mm",
+      "outerDiameter": "12.22mm",
+      "beltWidth": "6mm",
+      "withBearing": true,
+      "bearingType": "623ZZ",
+      "material": "Aluminum body, steel bearing",
+      "flanged": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (WINSINN)",
+        "partNumber": "GT2-Idler-Toothed-3B-6",
+        "approximatePrice": 4.0,
+        "url": "https://www.amazon.com/WINSINN-Aluminum-Toothed-Timing-Printer/dp/B077GN1DBM"
+      },
+      {
+        "name": "OpenBuilds",
+        "partNumber": "Toothed-Idler-Pulley",
+        "approximatePrice": 5.0,
+        "url": "https://openbuildspartstore.com/toothed-idler-pulley/"
+      }
+    ],
+    "designNotes": "Toothed idler for tooth-side belt engagement. Use when belt wraps around idler on the toothed side. Built-in bearing for free spinning. Critical for CoreXY motion where belt changes direction at toothed side.",
+    "tags": [
+      "GT2",
+      "idler",
+      "toothed",
+      "20T",
+      "3mm-bore",
+      "6mm-belt",
+      "bearing",
+      "CoreXY",
+      "3d-printer"
+    ]
+  },
+  {
+    "name": "GT2 Toothed Idler Pulley 20T (5mm Bore, 6mm Belt)",
+    "description": "GT2 toothed idler pulley, 20 teeth, 5mm bore with bearing, 6mm belt width, aluminum with 625ZZ bearing, tooth-side engagement, GT2-idler-toothed-5B-6",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12.22,
+      "height": 11,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5, "bearingType": "625ZZ" }
+      }
+    ],
+    "specs": {
+      "toothCount": 20,
+      "toothed": true,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreSize": "5mm",
+      "outerDiameter": "12.22mm",
+      "beltWidth": "6mm",
+      "withBearing": true,
+      "bearingType": "625ZZ",
+      "material": "Aluminum body, steel bearing",
+      "flanged": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon (WINSINN)",
+        "partNumber": "GT2-Idler-Toothed-5B-6",
+        "approximatePrice": 4.5,
+        "url": "https://www.amazon.com/WINSINN-Aluminum-Toothed-Timing-Printer/dp/B077GN1DBM"
+      },
+      {
+        "name": "OpenBuilds",
+        "partNumber": "Toothed-Idler-Pulley-5mm",
+        "approximatePrice": 5.5,
+        "url": "https://openbuildspartstore.com/toothed-idler-pulley/"
+      }
+    ],
+    "designNotes": "5mm bore toothed idler. Use on M5 bolts or 5mm shafts. Essential for CoreXY where belt teeth must engage at direction-change points. Built-in bearing eliminates separate bearing mounting.",
+    "tags": [
+      "GT2",
+      "idler",
+      "toothed",
+      "20T",
+      "5mm-bore",
+      "6mm-belt",
+      "bearing",
+      "CoreXY"
+    ]
+  },
+  {
+    "name": "GT2 Toothed Idler Pulley 20T (3mm Bore, 10mm Belt)",
+    "description": "GT2 toothed idler pulley, 20 teeth, 3mm bore with bearing, 10mm belt width, aluminum with 623ZZ bearing, tooth-side engagement wide belt, GT2-idler-toothed-3B-10",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12.22,
+      "height": 15,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 3, "bearingType": "623ZZ" }
+      }
+    ],
+    "specs": {
+      "toothCount": 20,
+      "toothed": true,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreSize": "3mm",
+      "outerDiameter": "12.22mm",
+      "beltWidth": "10mm",
+      "withBearing": true,
+      "bearingType": "623ZZ",
+      "material": "Aluminum body, steel bearing",
+      "flanged": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-Idler-Toothed-3B-10",
+        "approximatePrice": 4.5,
+        "url": "https://www.amazon.com/dp/B077GN3FCN"
+      }
+    ],
+    "designNotes": "Toothed idler for 10mm belts on 3mm bore. Wider for heavy-duty belt routing with tooth engagement. Use where belt wraps around toothed side at direction changes.",
+    "tags": [
+      "GT2",
+      "idler",
+      "toothed",
+      "20T",
+      "3mm-bore",
+      "10mm-belt",
+      "bearing",
+      "wide",
+      "heavy-duty"
+    ]
+  },
+  {
+    "name": "GT2 Toothed Idler Pulley 20T (5mm Bore, 10mm Belt)",
+    "description": "GT2 toothed idler pulley, 20 teeth, 5mm bore with bearing, 10mm belt width, aluminum with 625ZZ bearing, tooth-side engagement wide belt, GT2-idler-toothed-5B-10",
+    "categorySlug": "gears-transmission",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12.22,
+      "height": 15,
+      "weight": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5, "bearingType": "625ZZ" }
+      }
+    ],
+    "specs": {
+      "toothCount": 20,
+      "toothed": true,
+      "pitch": "2mm",
+      "toothProfile": "GT2",
+      "boreSize": "5mm",
+      "outerDiameter": "12.22mm",
+      "beltWidth": "10mm",
+      "withBearing": true,
+      "bearingType": "625ZZ",
+      "material": "Aluminum body, steel bearing",
+      "flanged": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "GT2-Idler-Toothed-5B-10",
+        "approximatePrice": 5.0,
+        "url": "https://www.amazon.com/dp/B077GN3FCN"
+      },
+      {
+        "name": "OpenBuilds",
+        "partNumber": "Toothed-Idler-10mm-5bore",
+        "approximatePrice": 6.0,
+        "url": "https://openbuildspartstore.com/toothed-idler-pulley/"
+      }
+    ],
+    "designNotes": "Largest toothed idler variant. 5mm bore with 625ZZ bearing for 10mm wide belts. Use in heavy-duty CNC machines where wide belt tooth engagement is needed at direction changes.",
+    "tags": [
+      "GT2",
+      "idler",
+      "toothed",
+      "20T",
+      "5mm-bore",
+      "10mm-belt",
+      "bearing",
+      "wide",
+      "heavy-duty"
+    ]
+  }
+]

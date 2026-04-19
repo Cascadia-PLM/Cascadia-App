@@ -1,0 +1,342 @@
+[
+  {
+    "name": "Aluminum Round Tube 1/4\" OD x 0.035\" Wall, 6061-T6",
+    "description": "6061-T6 aluminum round tube 1/4 inch OD 0.035 wall seamless drawn tubing lightweight spacer axle conduit bushing sleeve",
+    "categorySlug": "tubing",
+    "entryType": "raw_stock",
+    "dimensions": { "diameter": 6.35 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "outerDiameter": "1/4\"",
+      "wallThickness": "0.035\"",
+      "innerDiameter": "4.57 mm",
+      "profile": "Round Tube",
+      "type": "Seamless Drawn"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 5.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 2.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 7.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 11.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 14.0
+      }
+    ],
+    "designNotes": "Cut with tube cutter or hacksaw. Flaring/swaging possible with tooling. For bushings/bearings verify ID tolerance (standard is +/-0.005\"). Lightweight structural members, axles, spacers, conduit.",
+    "tags": [
+      "aluminum",
+      "round-tube",
+      "tube",
+      "tubing",
+      "6061",
+      "T6",
+      "seamless",
+      "1/4-inch"
+    ]
+  },
+  {
+    "name": "Aluminum Round Tube 3/8\" OD x 0.035\" Wall, 6061-T6",
+    "description": "6061-T6 aluminum round tube 3/8 inch OD 0.035 wall seamless drawn tubing lightweight spacer axle conduit bushing sleeve",
+    "categorySlug": "tubing",
+    "entryType": "raw_stock",
+    "dimensions": { "diameter": 9.53 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "outerDiameter": "3/8\"",
+      "wallThickness": "0.035\"",
+      "innerDiameter": "7.75 mm",
+      "profile": "Round Tube",
+      "type": "Seamless Drawn"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 6.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 2.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 4.5
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 6.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 9.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 13.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 18.0
+      }
+    ],
+    "designNotes": "Cut with tube cutter or hacksaw. Flaring/swaging possible with tooling. For bushings/bearings verify ID tolerance (standard is +/-0.005\"). Lightweight structural members, axles, spacers, conduit.",
+    "tags": [
+      "aluminum",
+      "round-tube",
+      "tube",
+      "tubing",
+      "6061",
+      "T6",
+      "seamless",
+      "3/8-inch"
+    ]
+  },
+  {
+    "name": "Aluminum Round Tube 1/2\" OD x 0.049\" Wall, 6061-T6",
+    "description": "6061-T6 aluminum round tube 1/2 inch OD 0.049 wall seamless drawn tubing lightweight spacer axle conduit bushing sleeve",
+    "categorySlug": "tubing",
+    "entryType": "raw_stock",
+    "dimensions": { "diameter": 12.7 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "outerDiameter": "1/2\"",
+      "wallThickness": "0.049\"",
+      "innerDiameter": "10.22 mm",
+      "profile": "Round Tube",
+      "type": "Seamless Drawn"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 8.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 3.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 8.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 11.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 17.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 22.0
+      }
+    ],
+    "designNotes": "Cut with tube cutter or hacksaw. Flaring/swaging possible with tooling. For bushings/bearings verify ID tolerance (standard is +/-0.005\"). Lightweight structural members, axles, spacers, conduit.",
+    "tags": [
+      "aluminum",
+      "round-tube",
+      "tube",
+      "tubing",
+      "6061",
+      "T6",
+      "seamless",
+      "1/2-inch"
+    ]
+  },
+  {
+    "name": "Aluminum Round Tube 3/4\" OD x 0.058\" Wall, 6061-T6",
+    "description": "6061-T6 aluminum round tube 3/4 inch OD 0.058 wall seamless drawn tubing lightweight spacer axle conduit bushing sleeve",
+    "categorySlug": "tubing",
+    "entryType": "raw_stock",
+    "dimensions": { "diameter": 19.05 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "outerDiameter": "3/4\"",
+      "wallThickness": "0.058\"",
+      "innerDiameter": "16.11 mm",
+      "profile": "Round Tube",
+      "type": "Seamless Drawn"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 10.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 7.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 10.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 14.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 21.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 28.0
+      }
+    ],
+    "designNotes": "Cut with tube cutter or hacksaw. Flaring/swaging possible with tooling. For bushings/bearings verify ID tolerance (standard is +/-0.005\"). Lightweight structural members, axles, spacers, conduit.",
+    "tags": [
+      "aluminum",
+      "round-tube",
+      "tube",
+      "tubing",
+      "6061",
+      "T6",
+      "seamless",
+      "3/4-inch"
+    ]
+  },
+  {
+    "name": "Aluminum Round Tube 1\" OD x 0.065\" Wall, 6061-T6",
+    "description": "6061-T6 aluminum round tube 1 inch OD 0.065 wall seamless drawn tubing lightweight spacer axle conduit bushing sleeve",
+    "categorySlug": "tubing",
+    "entryType": "raw_stock",
+    "dimensions": { "diameter": 25.4 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "outerDiameter": "1\"",
+      "wallThickness": "0.065\"",
+      "innerDiameter": "22.10 mm",
+      "profile": "Round Tube",
+      "type": "Seamless Drawn"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 13.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 4.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 9.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 13.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 18.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 27.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 36.0
+      }
+    ],
+    "designNotes": "Cut with tube cutter or hacksaw. Flaring/swaging possible with tooling. For bushings/bearings verify ID tolerance (standard is +/-0.005\"). Lightweight structural members, axles, spacers, conduit.",
+    "tags": [
+      "aluminum",
+      "round-tube",
+      "tube",
+      "tubing",
+      "6061",
+      "T6",
+      "seamless",
+      "1-inch"
+    ]
+  }
+]

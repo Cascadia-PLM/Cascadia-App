@@ -1,0 +1,338 @@
+@import 'tailwindcss';
+@import './lib/tour/tour-styles.css';
+@import './components/versioning/graph-animations.css';
+
+/* Enable class-based dark mode */
+@variant dark (.dark &);
+
+body {
+  @apply m-0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family:
+    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Global auto-hiding scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+*:hover {
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 3px;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+}
+
+.dark *:hover {
+  scrollbar-color: rgba(107, 114, 128, 0.5) transparent;
+}
+
+.dark *:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(107, 114, 128, 0.5);
+}
+
+/* Gear animations */
+@keyframes gear-slow-cw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gear-slow-ccw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes gear-fast-cw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gear-fast-ccw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.animate-gear-slow-cw {
+  animation: gear-slow-cw 20s linear infinite;
+}
+
+.animate-gear-slow-ccw {
+  animation: gear-slow-ccw 20s linear infinite;
+}
+
+.animate-gear-fast-cw {
+  animation: gear-fast-cw 1s linear infinite;
+}
+
+.animate-gear-fast-ccw {
+  animation: gear-fast-ccw 1s linear infinite;
+}
+
+/* Loading spinner animation */
+@keyframes spin-smooth {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-smooth {
+  animation: spin-smooth 2s linear infinite;
+}
+
+/* Button spring animation */
+@keyframes button-press {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.button-press-active {
+  animation: button-press 0.2s ease-out;
+}
+
+/* Input shake animation for validation errors */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-4px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Checkmark draw animation */
+@keyframes draw-check {
+  0% {
+    stroke-dashoffset: 20;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw-check {
+  stroke-dasharray: 20;
+  animation: draw-check 0.3s ease-out forwards;
+}
+
+/* Tree expand/collapse animations */
+@keyframes tree-expand {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tree-collapse {
+  from {
+    opacity: 1;
+    max-height: 2000px;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.tree-expand-enter {
+  animation: tree-expand 0.3s ease-out forwards;
+  overflow: hidden;
+}
+
+.tree-collapse-exit {
+  animation: tree-collapse 0.2s ease-in forwards;
+  overflow: hidden;
+}
+
+/* Tree node slide-in animation */
+@keyframes slide-in-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in-from-left 0.3s ease-out;
+}
+
+/* Tree node fade-in with stagger support */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.3s ease-out;
+}
+
+/* Chevron rotation animation */
+.chevron-rotate {
+  transition: transform 0.2s ease-out;
+}
+
+.chevron-rotate-down {
+  transform: rotate(0deg);
+}
+
+.chevron-rotate-right {
+  transform: rotate(-90deg);
+}
+
+/* BOM item hover lift */
+.bom-item-hover {
+  transition: all 0.2s ease-out;
+}
+
+.bom-item-hover:hover {
+  transform: translateX(4px);
+  box-shadow: -4px 0 0 0 #0891b2;
+}
+
+/* Progress bar animation */
+@keyframes progress-fill {
+  from {
+    width: 0;
+  }
+}
+
+.animate-progress {
+  animation: progress-fill 0.6s ease-out;
+}
+
+/* Badge pulse on update */
+@keyframes badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-badge-pulse {
+  animation: badge-pulse 0.4s ease-out;
+}
+
+/* Auto-hiding scrollbar - appears on hover */
+.auto-hide-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+.auto-hide-scroll:hover {
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.auto-hide-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.auto-hide-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.auto-hide-scroll::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 3px;
+  transition: background-color 0.3s ease;
+}
+
+.auto-hide-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+}
+
+.dark .auto-hide-scroll:hover {
+  scrollbar-color: rgba(107, 114, 128, 0.5) transparent;
+}
+
+.dark .auto-hide-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(107, 114, 128, 0.5);
+}

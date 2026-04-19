@@ -1,0 +1,593 @@
+[
+  {
+    "name": "Aluminum Sheet 5052-H32, 0.032\" (20 Gauge)",
+    "description": "5052-H32 aluminum sheet 0.032 inch 20 gauge 0.81mm thin sheet metal formable corrosion resistant sheet stock",
+    "categorySlug": "sheet-stock",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "depth": 0.81
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "5052-H32 Aluminum",
+      "thickness": "0.032\" (20 Gauge, 0.81mm)",
+      "temper": "H32",
+      "tensileStrength": "33 ksi"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\" x 6\"",
+        "dimensions": {
+          "width": 152,
+          "height": 152
+        },
+        "approximatePrice": 1.5
+      },
+      {
+        "label": "12\" x 12\"",
+        "dimensions": {
+          "width": 305,
+          "height": 305
+        },
+        "approximatePrice": 5
+      },
+      {
+        "label": "12\" x 24\"",
+        "dimensions": {
+          "width": 305,
+          "height": 610
+        },
+        "approximatePrice": 10
+      },
+      {
+        "label": "24\" x 24\"",
+        "dimensions": {
+          "width": 610,
+          "height": 610
+        },
+        "approximatePrice": 20
+      },
+      {
+        "label": "24\" x 48\"",
+        "dimensions": {
+          "width": 610,
+          "height": 1219
+        },
+        "approximatePrice": 40
+      }
+    ],
+    "designNotes": "Good formability, bends well on brake, corrosion resistant. Standard alloy for sheet metal fabrication. Cut with snips, shears, or bandsaw. Not heat-treatable.",
+    "tags": [
+      "aluminum",
+      "5052",
+      "H32",
+      "sheet",
+      "20-gauge",
+      "thin",
+      "formable",
+      "sheet-metal",
+      "corrosion-resistant"
+    ]
+  },
+  {
+    "name": "Aluminum Sheet 5052-H32, 0.040\"",
+    "description": "5052-H32 aluminum sheet 0.040 inch 1.02mm sheet metal formable corrosion resistant sheet stock",
+    "categorySlug": "sheet-stock",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "depth": 1.02
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "5052-H32 Aluminum",
+      "thickness": "0.040\" (1.02mm)",
+      "temper": "H32",
+      "tensileStrength": "33 ksi"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 6,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\" x 6\"",
+        "dimensions": {
+          "width": 152,
+          "height": 152
+        },
+        "approximatePrice": 1.5
+      },
+      {
+        "label": "12\" x 12\"",
+        "dimensions": {
+          "width": 305,
+          "height": 305
+        },
+        "approximatePrice": 6
+      },
+      {
+        "label": "12\" x 24\"",
+        "dimensions": {
+          "width": 305,
+          "height": 610
+        },
+        "approximatePrice": 12
+      },
+      {
+        "label": "24\" x 24\"",
+        "dimensions": {
+          "width": 610,
+          "height": 610
+        },
+        "approximatePrice": 24
+      },
+      {
+        "label": "24\" x 48\"",
+        "dimensions": {
+          "width": 610,
+          "height": 1219
+        },
+        "approximatePrice": 48
+      }
+    ],
+    "designNotes": "Good formability, bends well on brake, corrosion resistant. Standard alloy for sheet metal fabrication. Cut with snips, shears, or bandsaw. Not heat-treatable.",
+    "tags": [
+      "aluminum",
+      "5052",
+      "H32",
+      "sheet",
+      "formable",
+      "sheet-metal",
+      "corrosion-resistant"
+    ]
+  },
+  {
+    "name": "Aluminum Sheet 5052-H32, 0.063\" (16 Gauge)",
+    "description": "5052-H32 aluminum sheet 0.063 inch 16 gauge 1.60mm medium sheet metal formable corrosion resistant sheet stock",
+    "categorySlug": "sheet-stock",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "depth": 1.6
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "5052-H32 Aluminum",
+      "thickness": "0.063\" (16 Gauge, 1.60mm)",
+      "temper": "H32",
+      "tensileStrength": "33 ksi"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 8,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\" x 6\"",
+        "dimensions": {
+          "width": 152,
+          "height": 152
+        },
+        "approximatePrice": 2
+      },
+      {
+        "label": "12\" x 12\"",
+        "dimensions": {
+          "width": 305,
+          "height": 305
+        },
+        "approximatePrice": 8
+      },
+      {
+        "label": "12\" x 24\"",
+        "dimensions": {
+          "width": 305,
+          "height": 610
+        },
+        "approximatePrice": 16
+      },
+      {
+        "label": "24\" x 24\"",
+        "dimensions": {
+          "width": 610,
+          "height": 610
+        },
+        "approximatePrice": 32
+      },
+      {
+        "label": "24\" x 48\"",
+        "dimensions": {
+          "width": 610,
+          "height": 1219
+        },
+        "approximatePrice": 64
+      }
+    ],
+    "designNotes": "Good formability, bends well on brake, corrosion resistant. Standard alloy for sheet metal fabrication. Cut with snips, shears, or bandsaw. Not heat-treatable.",
+    "tags": [
+      "aluminum",
+      "5052",
+      "H32",
+      "sheet",
+      "16-gauge",
+      "formable",
+      "sheet-metal",
+      "corrosion-resistant"
+    ]
+  },
+  {
+    "name": "Aluminum Sheet 5052-H32, 0.090\" (13 Gauge)",
+    "description": "5052-H32 aluminum sheet 0.090 inch 13 gauge 2.29mm thick sheet metal formable corrosion resistant sheet stock",
+    "categorySlug": "sheet-stock",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "depth": 2.29
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "5052-H32 Aluminum",
+      "thickness": "0.090\" (13 Gauge, 2.29mm)",
+      "temper": "H32",
+      "tensileStrength": "33 ksi"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 11,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\" x 6\"",
+        "dimensions": {
+          "width": 152,
+          "height": 152
+        },
+        "approximatePrice": 3
+      },
+      {
+        "label": "12\" x 12\"",
+        "dimensions": {
+          "width": 305,
+          "height": 305
+        },
+        "approximatePrice": 11
+      },
+      {
+        "label": "12\" x 24\"",
+        "dimensions": {
+          "width": 305,
+          "height": 610
+        },
+        "approximatePrice": 22
+      },
+      {
+        "label": "24\" x 24\"",
+        "dimensions": {
+          "width": 610,
+          "height": 610
+        },
+        "approximatePrice": 44
+      },
+      {
+        "label": "24\" x 48\"",
+        "dimensions": {
+          "width": 610,
+          "height": 1219
+        },
+        "approximatePrice": 88
+      }
+    ],
+    "designNotes": "Good formability, bends well on brake, corrosion resistant. Standard alloy for sheet metal fabrication. Cut with snips, shears, or bandsaw. Not heat-treatable.",
+    "tags": [
+      "aluminum",
+      "5052",
+      "H32",
+      "sheet",
+      "13-gauge",
+      "formable",
+      "sheet-metal",
+      "corrosion-resistant"
+    ]
+  },
+  {
+    "name": "Aluminum Sheet 6061-T6, 0.125\" (1/8\")",
+    "description": "6061-T6 aluminum sheet 0.125 inch 1/8 inch 3.18mm structural grade CNC machinable sheet stock plate",
+    "categorySlug": "sheet-stock",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "depth": 3.18
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "thickness": "0.125\" (1/8\", 3.18mm)",
+      "temper": "T6",
+      "tensileStrength": "45 ksi"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 13,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\" x 6\"",
+        "dimensions": {
+          "width": 152,
+          "height": 152
+        },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "12\" x 12\"",
+        "dimensions": {
+          "width": 305,
+          "height": 305
+        },
+        "approximatePrice": 13
+      },
+      {
+        "label": "12\" x 24\"",
+        "dimensions": {
+          "width": 305,
+          "height": 610
+        },
+        "approximatePrice": 26
+      },
+      {
+        "label": "24\" x 24\"",
+        "dimensions": {
+          "width": 610,
+          "height": 610
+        },
+        "approximatePrice": 52
+      },
+      {
+        "label": "24\" x 48\"",
+        "dimensions": {
+          "width": 610,
+          "height": 1219
+        },
+        "approximatePrice": 104
+      }
+    ],
+    "designNotes": "Structural grade, CNC machinable. Will crack on tight bends — use 5052 for bending. Good for waterjet and laser cutting.",
+    "tags": [
+      "aluminum",
+      "6061",
+      "T6",
+      "sheet",
+      "plate",
+      "structural",
+      "machinable",
+      "1/8-inch"
+    ]
+  },
+  {
+    "name": "Expanded Steel Sheet, Standard Diamond #16 Flat",
+    "description": "Expanded carbon steel sheet standard diamond pattern flattened 16 gauge mesh guard screen ventilation perforated",
+    "categorySlug": "sheet-stock",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "depth": 1.5
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "Carbon Steel",
+      "pattern": "Standard Diamond, Flattened",
+      "gauge": "16 (1.5mm)",
+      "strandWidth": "0.051\"",
+      "SWD": "1/2\" (12.7mm)",
+      "LWD": "1\" (25.4mm)",
+      "openArea": "67%"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 15,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "12\" x 24\"",
+        "dimensions": {
+          "width": 305,
+          "height": 610
+        },
+        "approximatePrice": 15
+      },
+      {
+        "label": "24\" x 24\"",
+        "dimensions": {
+          "width": 610,
+          "height": 610
+        },
+        "approximatePrice": 26
+      },
+      {
+        "label": "24\" x 48\"",
+        "dimensions": {
+          "width": 610,
+          "height": 1219
+        },
+        "approximatePrice": 45
+      }
+    ],
+    "designNotes": "Good for machine guards, ventilation panels, decorative screens. Flattened type lays flat. Cut with snips or angle grinder. Edges are sharp — deburr. Will rust without coating.",
+    "tags": [
+      "expanded-metal",
+      "diamond",
+      "steel",
+      "mesh",
+      "guard",
+      "screen",
+      "ventilation",
+      "perforated"
+    ]
+  },
+  {
+    "name": "Expanded Aluminum Sheet, Standard Diamond Flat",
+    "description": "Expanded 3003-H14 aluminum sheet standard diamond pattern flattened lightweight mesh guard screen ventilation corrosion resistant",
+    "categorySlug": "sheet-stock",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "depth": 1
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "3003-H14 Aluminum",
+      "pattern": "Standard Diamond, Flattened",
+      "thickness": "0.040\" (1mm)",
+      "SWD": "1/2\" (12.7mm)",
+      "LWD": "1\" (25.4mm)",
+      "openArea": "60%"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 18,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "12\" x 24\"",
+        "dimensions": {
+          "width": 305,
+          "height": 610
+        },
+        "approximatePrice": 18
+      },
+      {
+        "label": "24\" x 24\"",
+        "dimensions": {
+          "width": 610,
+          "height": 610
+        },
+        "approximatePrice": 32
+      },
+      {
+        "label": "24\" x 48\"",
+        "dimensions": {
+          "width": 610,
+          "height": 1219
+        },
+        "approximatePrice": 55
+      }
+    ],
+    "designNotes": "Lightweight, corrosion resistant, no coating needed indoors. Easier to cut than steel. Not for heavy-duty guards.",
+    "tags": [
+      "expanded-metal",
+      "diamond",
+      "aluminum",
+      "mesh",
+      "lightweight",
+      "screen",
+      "ventilation",
+      "3003"
+    ]
+  },
+  {
+    "name": "Perforated Aluminum Sheet, 3/16\" Round Holes, 5052-H32",
+    "description": "Perforated 5052-H32 aluminum sheet 3/16 round holes staggered pattern ventilation speaker grille acoustic decorative",
+    "categorySlug": "sheet-stock",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "depth": 1
+    },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "5052-H32 Aluminum",
+      "holeShape": "Round",
+      "holeDiameter": "3/16\" (4.76mm)",
+      "holeCenters": "1/4\" (6.35mm) staggered",
+      "openArea": "51%",
+      "thickness": "0.040\" (1mm)"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 14,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "12\" x 12\"",
+        "dimensions": {
+          "width": 305,
+          "height": 305
+        },
+        "approximatePrice": 14
+      },
+      {
+        "label": "12\" x 24\"",
+        "dimensions": {
+          "width": 305,
+          "height": 610
+        },
+        "approximatePrice": 24
+      },
+      {
+        "label": "24\" x 24\"",
+        "dimensions": {
+          "width": 610,
+          "height": 610
+        },
+        "approximatePrice": 42
+      },
+      {
+        "label": "24\" x 48\"",
+        "dimensions": {
+          "width": 610,
+          "height": 1219
+        },
+        "approximatePrice": 75
+      }
+    ],
+    "designNotes": "Clean uniform hole pattern for ventilation, speaker grilles, decorative. More uniform than expanded. Can bend on brake (holes may distort slightly). Cut with snips, bandsaw, or laser.",
+    "tags": [
+      "perforated",
+      "aluminum",
+      "sheet",
+      "ventilation",
+      "acoustic",
+      "speaker-grille",
+      "round-holes",
+      "5052"
+    ]
+  }
+]

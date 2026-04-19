@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="420" height="120" viewBox="0 0 420 120" xmlns="http://www.w3.org/2000/svg">
+  <title>Cascadia PLM Logo - Horizontal</title>
+  
+  <defs>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#475569;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#334155;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0284c7;stop-opacity:1" />
+    </linearGradient>
+    
+    <clipPath id="hexClip">
+      <polygon points="0,-45 39,-22.5 39,22.5 0,45 -39,22.5 -39,-22.5"/>
+    </clipPath>
+  </defs>
+  
+  <!-- Icon section -->
+  <g transform="translate(60, 60)">
+    <!-- Hexagon background -->
+    <polygon points="0,-45 39,-22.5 39,22.5 0,45 -39,22.5 -39,-22.5" 
+             fill="url(#iconGrad)"/>
+    
+    <!-- Mountains - clipped to hexagon -->
+    <g clip-path="url(#hexClip)">
+      <!-- Left mountain (back) -->
+      <path d="M-32 22 L-12 -5 L8 22 Z" fill="#ffffff" opacity="0.4"/>
+      
+      <!-- Right mountain (back) -->
+      <path d="M0 22 L18 -3 L36 22 Z" fill="#ffffff" opacity="0.4"/>
+      
+      <!-- Center mountain (front) -->
+      <path d="M-18 22 L0 -16 L18 22 Z" fill="#ffffff"/>
+    </g>
+    
+    <!-- Plane -->
+    <g transform="translate(18, -18) rotate(15)">
+      <path d="M0 2 L12 0 L14 2.5 L12 3.5 L3 3.5 L2 6 L0 6 L1 3.5 Z" fill="#ffffff"/>
+      <path d="M0 1.5 L-2 0 L-2 4 L0 4.5 Z" fill="#ffffff"/>
+    </g>
+    
+    <!-- Wave/river -->
+    <path d="M-30 32 Q-15 26 0 32 Q15 38 30 32" 
+          stroke="url(#waveGrad)" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="130" y="55" font-family="system-ui, -apple-system, sans-serif" font-size="42" font-weight="700" fill="#334155">CASCADIA</text>
+  <text x="130" y="85" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="500" fill="#0ea5e9" letter-spacing="6">PLM</text>
+</svg>

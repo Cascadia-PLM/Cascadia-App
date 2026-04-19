@@ -1,0 +1,823 @@
+[
+  {
+    "name": "2020 T-Slot Aluminum Extrusion (20x20mm)",
+    "description": "2020 profile 20x20mm 6063-T5 aluminum T-slot extrusion, 6mm slot width, M5 bolt compatible, 0.22 kg/m, 4.2mm center bore, 1 slot per face (4 total), lightweight linear rail frame member for 3D printers, CNC routers, laser engravers, and small automation frames",
+    "categorySlug": "t-slot-extrusion",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 20, "height": 20 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot",
+        "specs": {
+          "slotWidth": 6,
+          "slotDepth": 6,
+          "boltSize": 5
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "profile": "2020",
+      "material": "6063-T5 Aluminum",
+      "crossSection": "20x20mm, 1 slot per face (4 total)",
+      "slotCount": "4 slots total, 1 per face",
+      "slotWidth": 6,
+      "centerBore": 4.2,
+      "weightPerMeter": 0.22
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08PDBQPC7",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B08PDBQPC7"
+      },
+      {
+        "name": "Misumi",
+        "partNumber": "HFS5-2020",
+        "approximatePrice": 10,
+        "url": "https://us.misumi-ec.com/vona2/detail/110302683830/"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "100mm",
+        "dimensions": { "length": 100 },
+        "approximatePrice": 1.0
+      },
+      {
+        "label": "200mm",
+        "dimensions": { "length": 200 },
+        "approximatePrice": 2.5
+      },
+      {
+        "label": "250mm",
+        "dimensions": { "length": 250 },
+        "approximatePrice": 3.0
+      },
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 5.0
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 6.0
+      },
+      {
+        "label": "600mm",
+        "dimensions": { "length": 600 },
+        "approximatePrice": 7.0
+      },
+      {
+        "label": "800mm",
+        "dimensions": { "length": 800 },
+        "approximatePrice": 9.5
+      },
+      {
+        "label": "1000mm",
+        "dimensions": { "length": 1000 },
+        "approximatePrice": 12
+      },
+      {
+        "label": "1200mm",
+        "dimensions": { "length": 1200 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "1500mm",
+        "dimensions": { "length": 1500 },
+        "approximatePrice": 18
+      }
+    ],
+    "designNotes": "Most popular extrusion profile for desktop 3D printers and small CNC builds. Pair with M5 T-nuts and 2020 corner brackets (90-degree or tri-corner). Compatible with 20-series hardware: drop-in T-nuts, spring-loaded T-nuts, L-brackets, and angle connectors. Cut with miter saw and aluminum blade or hacksaw. Lightweight but limited rigidity for spans over 500mm without bracing. NOT compatible with 30-series or 40-series hardware. Use M5x8 BHCS for flush mounting into T-slots.",
+    "tags": [
+      "2020",
+      "t-slot",
+      "aluminum",
+      "extrusion",
+      "frame",
+      "20x20",
+      "20-series",
+      "3d printer",
+      "cnc",
+      "laser engraver",
+      "V-slot alternative",
+      "lightweight frame",
+      "desktop automation"
+    ]
+  },
+  {
+    "name": "2040 T-Slot Aluminum Extrusion (20x40mm)",
+    "description": "2040 profile 20x40mm 6063-T5 aluminum T-slot extrusion, 6mm slot width, M5 bolt compatible, 0.44 kg/m, 4.2mm center bore, 2 slots on 40mm faces and 1 on 20mm faces (4 total), double-width rail for increased rigidity in 3D printers, Y-axis gantry beams, and small CNC frames",
+    "categorySlug": "t-slot-extrusion",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 20, "height": 40 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot",
+        "specs": {
+          "slotWidth": 6,
+          "slotDepth": 6,
+          "boltSize": 5
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "profile": "2040",
+      "material": "6063-T5 Aluminum",
+      "crossSection": "20x40mm, 2 slots on 40mm faces, 1 on 20mm faces (4 total)",
+      "slotCount": "4 slots total, 2 on 40mm faces, 1 on 20mm faces",
+      "slotWidth": 6,
+      "centerBore": 4.2,
+      "weightPerMeter": 0.44
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08PKGXTMN",
+        "approximatePrice": 20,
+        "url": "https://www.amazon.com/dp/B08PKGXTMN"
+      },
+      {
+        "name": "Misumi",
+        "partNumber": "HFS5-2040",
+        "approximatePrice": 16,
+        "url": "https://us.misumi-ec.com/vona2/detail/110302683840/"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "200mm",
+        "dimensions": { "length": 200 },
+        "approximatePrice": 4.0
+      },
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 6.0
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 8.0
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 10
+      },
+      {
+        "label": "600mm",
+        "dimensions": { "length": 600 },
+        "approximatePrice": 12
+      },
+      {
+        "label": "800mm",
+        "dimensions": { "length": 800 },
+        "approximatePrice": 16
+      },
+      {
+        "label": "1000mm",
+        "dimensions": { "length": 1000 },
+        "approximatePrice": 20
+      },
+      {
+        "label": "1200mm",
+        "dimensions": { "length": 1200 },
+        "approximatePrice": 24
+      },
+      {
+        "label": "1500mm",
+        "dimensions": { "length": 1500 },
+        "approximatePrice": 30
+      }
+    ],
+    "designNotes": "Double-width 20-series profile ideal for Y-axis gantry beams and bed frames on 3D printers. Pair with M5 T-nuts and 2040 corner brackets. Compatible with all 20-series hardware (same 6mm slot as 2020). Provides significantly more bending resistance than 2020 in the 40mm axis. Cut with miter saw and aluminum blade. Use for horizontal spans requiring extra stiffness without moving to 30-series. NOT compatible with 30-series or 40-series hardware. Popular upgrade for Ender 3 and similar printers.",
+    "tags": [
+      "2040",
+      "t-slot",
+      "aluminum",
+      "extrusion",
+      "frame",
+      "20x40",
+      "20-series",
+      "3d printer",
+      "gantry beam",
+      "Y-axis",
+      "double width",
+      "cnc"
+    ]
+  },
+  {
+    "name": "2060 T-Slot Aluminum Extrusion (20x60mm)",
+    "description": "2060 profile 20x60mm 6063-T5 aluminum T-slot extrusion, 6mm slot width, M5 bolt compatible, 0.66 kg/m, 4.2mm center bore, 3 slots on 60mm faces and 1 on 20mm faces (8 total), triple-width rail for high-rigidity gantry beams, machine bases, and extended-span structural members",
+    "categorySlug": "t-slot-extrusion",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 20, "height": 60 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot",
+        "specs": {
+          "slotWidth": 6,
+          "slotDepth": 6,
+          "boltSize": 5
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "profile": "2060",
+      "material": "6063-T5 Aluminum",
+      "crossSection": "20x60mm, 3 slots on 60mm faces, 1 on 20mm faces (8 total)",
+      "slotCount": "8 slots total, 3 on 60mm faces, 1 on 20mm faces",
+      "slotWidth": 6,
+      "centerBore": 4.2,
+      "weightPerMeter": 0.66
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B09BRGM3GN",
+        "approximatePrice": 28,
+        "url": "https://www.amazon.com/dp/B09BRGM3GN"
+      },
+      {
+        "name": "Misumi",
+        "partNumber": "HFS5-2060",
+        "approximatePrice": 22,
+        "url": "https://us.misumi-ec.com/vona2/detail/110302683860/"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "200mm",
+        "dimensions": { "length": 200 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 8.5
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 11
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "600mm",
+        "dimensions": { "length": 600 },
+        "approximatePrice": 17
+      },
+      {
+        "label": "800mm",
+        "dimensions": { "length": 800 },
+        "approximatePrice": 22
+      },
+      {
+        "label": "1000mm",
+        "dimensions": { "length": 1000 },
+        "approximatePrice": 28
+      },
+      {
+        "label": "1200mm",
+        "dimensions": { "length": 1200 },
+        "approximatePrice": 34
+      },
+      {
+        "label": "1500mm",
+        "dimensions": { "length": 1500 },
+        "approximatePrice": 42
+      }
+    ],
+    "designNotes": "Triple-width 20-series profile for maximum stiffness in the 60mm axis while keeping 20mm depth. Pair with M5 T-nuts and 20-series brackets. Compatible with all 20-series hardware (6mm slot). Excellent as a machine bed rail or gantry cross-member where vertical clearance is limited. Multiple slots on 60mm faces allow mounting linear rails, cable trays, and accessories simultaneously. Cut with miter saw and aluminum blade. NOT compatible with 30-series or 40-series hardware. Consider 4080 if higher load capacity is needed.",
+    "tags": [
+      "2060",
+      "t-slot",
+      "aluminum",
+      "extrusion",
+      "frame",
+      "20x60",
+      "20-series",
+      "gantry beam",
+      "machine base",
+      "triple width",
+      "cnc",
+      "linear rail mount"
+    ]
+  },
+  {
+    "name": "3030 T-Slot Aluminum Extrusion (30x30mm)",
+    "description": "3030 profile 30x30mm 6063-T5 aluminum T-slot extrusion, 8mm slot width, M6 bolt compatible, 0.54 kg/m, 5.5mm center bore, 1 slot per face (4 total), mid-size structural profile for medium CNC machines, workbenches, enclosures, and automation equipment frames",
+    "categorySlug": "t-slot-extrusion",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 30, "height": 30 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot",
+        "specs": {
+          "slotWidth": 8,
+          "slotDepth": 8,
+          "boltSize": 6
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "profile": "3030",
+      "material": "6063-T5 Aluminum",
+      "crossSection": "30x30mm, 1 slot per face (4 total)",
+      "slotCount": "4 slots total, 1 per face",
+      "slotWidth": 8,
+      "centerBore": 5.5,
+      "weightPerMeter": 0.54
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08PFKTBYG",
+        "approximatePrice": 18,
+        "url": "https://www.amazon.com/dp/B08PFKTBYG"
+      },
+      {
+        "name": "Misumi",
+        "partNumber": "HFS6-3030",
+        "approximatePrice": 14,
+        "url": "https://us.misumi-ec.com/vona2/detail/110302684530/"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "200mm",
+        "dimensions": { "length": 200 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 7.0
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 9.0
+      },
+      {
+        "label": "600mm",
+        "dimensions": { "length": 600 },
+        "approximatePrice": 11
+      },
+      {
+        "label": "800mm",
+        "dimensions": { "length": 800 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "1000mm",
+        "dimensions": { "length": 1000 },
+        "approximatePrice": 18
+      },
+      {
+        "label": "1200mm",
+        "dimensions": { "length": 1200 },
+        "approximatePrice": 22
+      },
+      {
+        "label": "1500mm",
+        "dimensions": { "length": 1500 },
+        "approximatePrice": 27
+      }
+    ],
+    "designNotes": "Mid-size 30-series profile bridging the gap between lightweight 20-series and heavy-duty 40-series. Pair with M6 T-nuts and 30-series corner brackets. Compatible with 30-series hardware: 8mm slot drop-in T-nuts, angle brackets, and joining plates. Good balance of rigidity and weight for medium CNC routers and workstation frames. Cut with miter saw and aluminum blade. Stronger than 2020 but lighter than 4040. NOT compatible with 20-series (6mm) or 40-series (8mm but different slot depth) hardware. Less common than 2020 or 4040 — check hardware availability before committing.",
+    "tags": [
+      "3030",
+      "t-slot",
+      "aluminum",
+      "extrusion",
+      "frame",
+      "30x30",
+      "30-series",
+      "cnc",
+      "workbench",
+      "enclosure",
+      "automation",
+      "mid-size frame"
+    ]
+  },
+  {
+    "name": "3060 T-Slot Aluminum Extrusion (30x60mm)",
+    "description": "3060 profile 30x60mm 6063-T5 aluminum T-slot extrusion, 8mm slot width, M6 bolt compatible, 1.08 kg/m, 5.5mm center bore, 2 slots on 60mm faces and 1 on 30mm faces (6 total), double-width 30-series rail for heavy gantry beams, machine beds, and industrial automation frames",
+    "categorySlug": "t-slot-extrusion",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 30, "height": 60 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot",
+        "specs": {
+          "slotWidth": 8,
+          "slotDepth": 8,
+          "boltSize": 6
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "profile": "3060",
+      "material": "6063-T5 Aluminum",
+      "crossSection": "30x60mm, 2 slots on 60mm faces, 1 on 30mm faces (6 total)",
+      "slotCount": "6 slots total, 2 on 60mm faces, 1 on 30mm faces",
+      "slotWidth": 8,
+      "centerBore": 5.5,
+      "weightPerMeter": 1.08
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B09BRFL9XS",
+        "approximatePrice": 34,
+        "url": "https://www.amazon.com/dp/B09BRFL9XS"
+      },
+      {
+        "name": "Misumi",
+        "partNumber": "HFS6-3060",
+        "approximatePrice": 27,
+        "url": "https://us.misumi-ec.com/vona2/detail/110302684560/"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 10
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 17
+      },
+      {
+        "label": "600mm",
+        "dimensions": { "length": 600 },
+        "approximatePrice": 20
+      },
+      {
+        "label": "800mm",
+        "dimensions": { "length": 800 },
+        "approximatePrice": 27
+      },
+      {
+        "label": "1000mm",
+        "dimensions": { "length": 1000 },
+        "approximatePrice": 34
+      },
+      {
+        "label": "1200mm",
+        "dimensions": { "length": 1200 },
+        "approximatePrice": 41
+      },
+      {
+        "label": "1500mm",
+        "dimensions": { "length": 1500 },
+        "approximatePrice": 51
+      }
+    ],
+    "designNotes": "Double-width 30-series profile for applications needing higher bending resistance than 3030. Pair with M6 T-nuts and 30-series brackets. Compatible with all 30-series hardware (8mm slot). Excellent for machine bed rails, heavy gantry cross-members, and structural bases. Dual slots on 60mm faces allow parallel mounting of linear guides. Cut with miter saw and aluminum blade. NOT compatible with 20-series or 40-series hardware. Consider 4080 for even heavier loads — 4080 uses the same 8mm slot width but with deeper 11mm slots for greater clamping force.",
+    "tags": [
+      "3060",
+      "t-slot",
+      "aluminum",
+      "extrusion",
+      "frame",
+      "30x60",
+      "30-series",
+      "cnc",
+      "machine bed",
+      "gantry beam",
+      "industrial",
+      "heavy duty",
+      "automation"
+    ]
+  },
+  {
+    "name": "4040 T-Slot Aluminum Extrusion (40x40mm)",
+    "description": "4040 profile 40x40mm 6063-T5 aluminum T-slot extrusion, 8mm slot width, 11mm slot depth, M8 bolt compatible, 1.35 kg/m, 8mm center bore, 1 slot per face (4 total), heavy-duty structural profile for CNC routers, workbenches, machine guards, conveyor frames, and industrial automation",
+    "categorySlug": "t-slot-extrusion",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 40, "height": 40 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot",
+        "specs": {
+          "slotWidth": 8,
+          "slotDepth": 11,
+          "boltSize": 8
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "profile": "4040",
+      "material": "6063-T5 Aluminum",
+      "crossSection": "40x40mm, 1 slot per face (4 total)",
+      "slotCount": "4 slots total, 1 per face",
+      "slotWidth": 8,
+      "centerBore": 8,
+      "weightPerMeter": 1.35
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08PK3SPDR",
+        "approximatePrice": 28,
+        "url": "https://www.amazon.com/dp/B08PK3SPDR"
+      },
+      {
+        "name": "Misumi",
+        "partNumber": "HFS8-4040",
+        "approximatePrice": 22,
+        "url": "https://us.misumi-ec.com/vona2/detail/110302685430/"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "200mm",
+        "dimensions": { "length": 200 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 8.5
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 11
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "600mm",
+        "dimensions": { "length": 600 },
+        "approximatePrice": 17
+      },
+      {
+        "label": "800mm",
+        "dimensions": { "length": 800 },
+        "approximatePrice": 22
+      },
+      {
+        "label": "1000mm",
+        "dimensions": { "length": 1000 },
+        "approximatePrice": 28
+      },
+      {
+        "label": "1200mm",
+        "dimensions": { "length": 1200 },
+        "approximatePrice": 34
+      },
+      {
+        "label": "1500mm",
+        "dimensions": { "length": 1500 },
+        "approximatePrice": 42
+      }
+    ],
+    "designNotes": "Industry-standard heavy-duty profile widely used in CNC routers, workbenches, and machine guarding. Pair with M8 T-nuts and 40-series heavy-duty corner brackets (cast or plate style). Compatible with 40-series hardware: 8mm slot width with 11mm depth gives superior clamping force over 30-series. Deep slots accept M8 T-head bolts and heavy-duty drop-in T-nuts. Cut with miter saw and carbide-tipped aluminum blade. 8mm center bore accepts M8 threaded rod for end-joining. NOT compatible with 20-series hardware. Significantly heavier than 2020 — plan for weight in gantry designs. Widely available with the largest accessory ecosystem after 2020.",
+    "tags": [
+      "4040",
+      "t-slot",
+      "aluminum",
+      "extrusion",
+      "frame",
+      "40x40",
+      "40-series",
+      "cnc",
+      "workbench",
+      "machine guard",
+      "conveyor",
+      "industrial",
+      "heavy duty"
+    ]
+  },
+  {
+    "name": "4080 T-Slot Aluminum Extrusion (40x80mm)",
+    "description": "4080 profile 40x80mm 6063-T5 aluminum T-slot extrusion, 8mm slot width, 11mm slot depth, M8 bolt compatible, 2.7 kg/m, 8mm center bore, 2 slots on 80mm faces and 1 on 40mm faces (6 total), extra-heavy structural beam for large CNC machines, welding tables, industrial conveyor frames, and machine bases",
+    "categorySlug": "t-slot-extrusion",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 40, "height": 80 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot",
+        "specs": {
+          "slotWidth": 8,
+          "slotDepth": 11,
+          "boltSize": 8
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "profile": "4080",
+      "material": "6063-T5 Aluminum",
+      "crossSection": "40x80mm, 2 slots on 80mm faces, 1 on 40mm faces (6 total)",
+      "slotCount": "6 slots total, 2 on 80mm faces, 1 on 40mm faces",
+      "slotWidth": 8,
+      "centerBore": 8,
+      "weightPerMeter": 2.7
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B09BRJ7WGN",
+        "approximatePrice": 50,
+        "url": "https://www.amazon.com/dp/B09BRJ7WGN"
+      },
+      {
+        "name": "Misumi",
+        "partNumber": "HFS8-4080",
+        "approximatePrice": 40,
+        "url": "https://us.misumi-ec.com/vona2/detail/110302685480/"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 15
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 25
+      },
+      {
+        "label": "600mm",
+        "dimensions": { "length": 600 },
+        "approximatePrice": 30
+      },
+      {
+        "label": "800mm",
+        "dimensions": { "length": 800 },
+        "approximatePrice": 40
+      },
+      {
+        "label": "1000mm",
+        "dimensions": { "length": 1000 },
+        "approximatePrice": 50
+      },
+      {
+        "label": "1200mm",
+        "dimensions": { "length": 1200 },
+        "approximatePrice": 60
+      },
+      {
+        "label": "1500mm",
+        "dimensions": { "length": 1500 },
+        "approximatePrice": 75
+      }
+    ],
+    "designNotes": "Double-width 40-series profile for maximum rigidity in heavy industrial applications. Pair with M8 T-nuts and 40-series heavy-duty brackets. Compatible with all 40-series hardware (8mm slot, 11mm depth). Dual slots on 80mm faces allow parallel linear rail mounting and multi-point attachment. Extremely stiff in the 80mm bending axis — suitable for unsupported spans up to 1500mm under moderate load. Cut with miter saw and carbide-tipped aluminum blade; requires firm clamping due to weight. 8mm center bore for M8 end-joining. NOT compatible with 20-series hardware. Weight adds up quickly in large frames — calculate total mass before committing to 4080 for all members.",
+    "tags": [
+      "4080",
+      "t-slot",
+      "aluminum",
+      "extrusion",
+      "frame",
+      "40x80",
+      "40-series",
+      "cnc",
+      "machine base",
+      "welding table",
+      "conveyor",
+      "industrial",
+      "extra heavy",
+      "beam"
+    ]
+  },
+  {
+    "name": "4545 T-Slot Aluminum Extrusion (45x45mm)",
+    "description": "4545 profile 45x45mm 6063-T5 aluminum T-slot extrusion, 10mm slot width, 11mm slot depth, M8 bolt compatible, 2.05 kg/m, 9mm center bore, 1 slot per face (4 total), heavy-duty 45-series structural profile for industrial machine frames, robotic cells, safety guarding, and precision equipment bases",
+    "categorySlug": "t-slot-extrusion",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 45, "height": 45 },
+    "mountingFeatures": [
+      {
+        "type": "t_slot",
+        "specs": {
+          "slotWidth": 10,
+          "slotDepth": 11,
+          "boltSize": 8
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "profile": "4545",
+      "material": "6063-T5 Aluminum",
+      "crossSection": "45x45mm, 1 slot per face (4 total)",
+      "slotCount": "4 slots total, 1 per face",
+      "slotWidth": 10,
+      "centerBore": 9,
+      "weightPerMeter": 2.05
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B09BRPFK7N",
+        "approximatePrice": 40,
+        "url": "https://www.amazon.com/dp/B09BRPFK7N"
+      },
+      {
+        "name": "Misumi",
+        "partNumber": "HFS8-4545",
+        "approximatePrice": 32,
+        "url": "https://us.misumi-ec.com/vona2/detail/110302685545/"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 12
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 16
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 20
+      },
+      {
+        "label": "600mm",
+        "dimensions": { "length": 600 },
+        "approximatePrice": 24
+      },
+      {
+        "label": "800mm",
+        "dimensions": { "length": 800 },
+        "approximatePrice": 32
+      },
+      {
+        "label": "1000mm",
+        "dimensions": { "length": 1000 },
+        "approximatePrice": 40
+      },
+      {
+        "label": "1200mm",
+        "dimensions": { "length": 1200 },
+        "approximatePrice": 48
+      },
+      {
+        "label": "1500mm",
+        "dimensions": { "length": 1500 },
+        "approximatePrice": 60
+      }
+    ],
+    "designNotes": "Heavy-duty 45-series profile with 10mm wide slots for maximum clamping area. Pair with M8 T-nuts rated for 10mm slots and 45-series corner brackets. The wider 10mm slot accepts larger T-nut heads and provides more bearing surface than 40-series 8mm slots. Compatible with Bosch Rexroth and Item 45-series ecosystems. 9mm center bore accepts M8 threaded rod with clearance. Cut with miter saw and carbide-tipped aluminum blade. Heavier than 4040 at same cross-section due to thicker walls and wider slot geometry. NOT compatible with 20-series, 30-series, or standard 40-series (8mm slot) hardware — requires 45-series 10mm slot accessories. Check accessory availability before specifying, as 45-series is less common than 40-series in hobbyist channels.",
+    "tags": [
+      "4545",
+      "t-slot",
+      "aluminum",
+      "extrusion",
+      "frame",
+      "45x45",
+      "45-series",
+      "industrial",
+      "machine frame",
+      "robotic cell",
+      "safety guard",
+      "Bosch Rexroth",
+      "heavy duty",
+      "precision equipment"
+    ]
+  }
+]

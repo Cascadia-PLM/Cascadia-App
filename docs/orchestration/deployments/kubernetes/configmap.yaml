@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cascadia-config
+  namespace: cascadia
+data:
+  # Application settings
+  NODE_ENV: 'production'
+  BASE_URL: 'https://plm.example.com'
+  LOG_LEVEL: 'info'
+
+  # Vault configuration
+  VAULT_MODE: 'embedded'
+  VAULT_TYPE: 'local' # Change to "s3" for cloud storage
+
+  # S3 configuration (if VAULT_TYPE=s3)
+  S3_BUCKET: 'cascadia-vault'
+  S3_REGION: 'us-east-1'
+  # S3_ENDPOINT: ""  # Set for non-AWS S3-compatible storage
+
+  # Jobs configuration
+  JOBS_MODE: 'embedded' # Change to "service" for separate job workers
+
+  # Worker configuration (if using job workers)
+  WORKER_CONCURRENCY: '5'
+  JOB_TYPES: '*'

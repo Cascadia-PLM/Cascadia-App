@@ -1,0 +1,1652 @@
+[
+  {
+    "name": "1-Channel 5V Relay Module (SRD-05VDC-SL-C)",
+    "description": "Single-channel 5V mechanical relay module with Songle SRD-05VDC-SL-C SPDT relay, 10A @ 250VAC / 10A @ 30VDC contact rating, optocoupler isolation, high/low level trigger selectable, 50 x 26 x 18.5mm PCB, screw terminals for NO/COM/NC, status LED, 3-pin control header (VCC/GND/IN), 15-20mA trigger current",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 26,
+      "height": 18.5,
+      "depth": 50,
+      "weight": 28
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 3.1,
+          "holeCount": 4,
+          "holeSpacingX": 44.5,
+          "holeSpacingY": 20.5
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 3,
+          "wireGaugeMax": 14,
+          "labels": "NO / COM / NC"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "VCC / IN / GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V coil, 250VAC or 30VDC load",
+      "current": "10A max load, 15-20mA trigger",
+      "power": "0.45W coil",
+      "interface": "Digital HIGH/LOW",
+      "pinout": "3-pin header: VCC, IN, GND; 3-pos screw terminal: NO, COM, NC"
+    },
+    "specs": {
+      "coilVoltage": 5,
+      "contactRating": "10A @ 250VAC / 10A @ 30VDC",
+      "contactType": "SPDT (1 Form C)",
+      "channels": 1,
+      "triggerType": "high/low level selectable",
+      "triggerCurrent": 0.02,
+      "isolation": "optocoupler",
+      "relayType": "SRD-05VDC-SL-C",
+      "contactResistance": 0.1,
+      "operateTime": 0.01,
+      "releaseTime": 0.005
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00LW15A4W",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/HiLetgo-Channel-optocoupler-Support-Trigger/dp/B00LW15A4W"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B079FJSYGY",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/Channel-Module-Trigger-Optocoupler-Arduino/dp/B079FJSYGY"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Simplest relay module for switching a single AC or DC load. Use for loads up to 10A — for higher currents use a contactor or SSR. The optocoupler provides isolation between the microcontroller and relay coil. Mount with M3 screws through the 3.1mm holes. Total module draw is ~70mA at 5V when relay is energized — budget this from your power supply, not from a microcontroller pin. Add a flyback diode if driving the relay from a transistor circuit instead of the module. For AC mains switching, ensure proper creepage distances and use an enclosure rated for mains voltage. Pair with Arduino, Raspberry Pi, ESP32, or any 3.3-5V MCU.",
+    "tags": [
+      "relay module",
+      "5V relay",
+      "SRD-05VDC",
+      "single channel relay",
+      "SPDT relay",
+      "opto-isolated relay",
+      "arduino relay",
+      "raspberry pi relay",
+      "AC switch",
+      "Songle relay",
+      "mechanical relay"
+    ]
+  },
+  {
+    "name": "2-Channel 5V Relay Module (SRD-05VDC-SL-C)",
+    "description": "Dual-channel 5V mechanical relay module with two Songle SRD-05VDC-SL-C SPDT relays, 10A @ 250VAC / 10A @ 30VDC per channel, optocoupler isolation, high/low level trigger selectable, 50.5 x 38.5 x 18.5mm PCB, screw terminals for each relay NO/COM/NC, status LEDs, 4-pin control header (VCC/GND/IN1/IN2)",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 38.5,
+      "height": 18.5,
+      "depth": 50.5,
+      "weight": 48
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 3.1,
+          "holeCount": 4,
+          "holeSpacingX": 44.5,
+          "holeSpacingY": 35.5
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 6,
+          "wireGaugeMax": 14,
+          "labels": "NO1/COM1/NC1 + NO2/COM2/NC2"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 4,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "VCC / IN1 / IN2 / GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V coil, 250VAC or 30VDC load",
+      "current": "10A max per channel, 15-20mA trigger per channel",
+      "power": "0.9W both coils",
+      "interface": "Digital HIGH/LOW",
+      "pinout": "4-pin header: VCC, IN1, IN2, GND; 2x 3-pos screw terminal: NO, COM, NC per relay"
+    },
+    "specs": {
+      "coilVoltage": 5,
+      "contactRating": "10A @ 250VAC / 10A @ 30VDC",
+      "contactType": "SPDT (1 Form C) per channel",
+      "channels": 2,
+      "triggerType": "high/low level selectable",
+      "triggerCurrent": 0.02,
+      "isolation": "optocoupler",
+      "relayType": "SRD-05VDC-SL-C",
+      "activeCurrent": 0.14
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B081SYYG8D",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/2-Channel-Channel-Expansion-Triggered-Arduino/dp/B081SYYG8D"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Compact dual-relay module for controlling two independent loads. Total current draw ~140mA at 5V with both relays energized — use a separate 5V supply for the relay VCC if your MCU regulator can't handle it. Mount with M3 screws through the 3.1mm mounting holes (44.5 x 35.5mm spacing). Some modules have a jumper to separate relay VCC from signal VCC for better isolation. Each channel is independently controlled. Pair with Arduino, Raspberry Pi, ESP32, or any 3.3-5V MCU.",
+    "tags": [
+      "2 channel relay",
+      "dual relay",
+      "5V relay module",
+      "SRD-05VDC",
+      "two channel relay",
+      "opto-isolated relay",
+      "arduino relay",
+      "SPDT relay"
+    ]
+  },
+  {
+    "name": "1-Channel 12V Relay Module (SRD-12VDC-SL-C)",
+    "description": "Single-channel 12V mechanical relay module with Songle SRD-12VDC-SL-C SPDT relay, 10A @ 250VAC / 10A @ 30VDC contact rating, optocoupler isolation, high/low level trigger, 50 x 26 x 18.5mm PCB, screw terminals for NO/COM/NC, status LED, 3-pin control header, 20mA trigger current, 12V coil supply",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 26,
+      "height": 18.5,
+      "depth": 50,
+      "weight": 28
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 3.1,
+          "holeCount": 4,
+          "holeSpacingX": 44.5,
+          "holeSpacingY": 20.5
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 3,
+          "wireGaugeMax": 14,
+          "labels": "NO / COM / NC"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "VCC / IN / GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V coil, 250VAC or 30VDC load",
+      "current": "10A max load, 20mA trigger",
+      "power": "0.45W coil",
+      "interface": "Digital HIGH/LOW",
+      "pinout": "3-pin header: VCC, IN, GND; 3-pos screw terminal: NO, COM, NC"
+    },
+    "specs": {
+      "coilVoltage": 12,
+      "contactRating": "10A @ 250VAC / 10A @ 30VDC",
+      "contactType": "SPDT (1 Form C)",
+      "channels": 1,
+      "triggerType": "high/low level selectable",
+      "triggerCurrent": 0.02,
+      "isolation": "optocoupler",
+      "relayType": "SRD-12VDC-SL-C",
+      "contactResistance": 0.1
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00LW15D1M",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/HiLetgo-Channel-Isolation-Support-Trigger/dp/B00LW15D1M"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "12V version for systems already running on 12V supply (automotive, industrial, solar). Same form factor as the 5V version — NOT pin-compatible at the power level (requires 12V VCC instead of 5V). The signal input still accepts 3.3-5V logic levels through the optocoupler. Mount with M3 screws. Use when your project already has a 12V rail and you want to avoid a separate 5V supply for the relay. For 5V MCU systems, the 5V version is simpler.",
+    "tags": [
+      "12V relay",
+      "single channel relay",
+      "SRD-12VDC",
+      "12V relay module",
+      "SPDT relay",
+      "opto-isolated relay",
+      "automotive relay",
+      "Songle relay"
+    ]
+  },
+  {
+    "name": "2-Channel 12V Relay Module (SRD-12VDC-SL-C)",
+    "description": "Dual-channel 12V mechanical relay module with two Songle SRD-12VDC-SL-C SPDT relays, 10A @ 250VAC / 10A @ 30VDC per channel, optocoupler isolation, high/low level trigger, 50 x 39 x 20mm PCB, screw terminals for each relay NO/COM/NC, status LEDs, 4-pin control header",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 39,
+      "height": 20,
+      "depth": 50,
+      "weight": 50
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 3.1,
+          "holeCount": 4,
+          "holeSpacingX": 44.5,
+          "holeSpacingY": 35.5
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 6,
+          "wireGaugeMax": 14,
+          "labels": "NO1/COM1/NC1 + NO2/COM2/NC2"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 4,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "VCC / IN1 / IN2 / GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V coil, 250VAC or 30VDC load",
+      "current": "10A max per channel, 20mA trigger per channel",
+      "power": "0.9W both coils",
+      "interface": "Digital HIGH/LOW",
+      "pinout": "4-pin header: VCC, IN1, IN2, GND; 2x 3-pos screw terminal: NO, COM, NC per relay"
+    },
+    "specs": {
+      "coilVoltage": 12,
+      "contactRating": "10A @ 250VAC / 10A @ 30VDC",
+      "contactType": "SPDT (1 Form C) per channel",
+      "channels": 2,
+      "triggerType": "high/low level selectable",
+      "triggerCurrent": 0.02,
+      "isolation": "optocoupler",
+      "relayType": "SRD-12VDC-SL-C",
+      "activeCurrent": 0.14
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B081SYYG8D",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/HiLetgo-Channel-OPTO-Isolated-Support-Trigger/dp/B00LW2GM84"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "12V dual-relay module — use when your system runs on 12V and you need two independent switching channels. Signal inputs still accept 3.3-5V logic via optocoupler. Total draw ~140mA at 12V with both relays on. Mount with M3 screws through the 3.1mm holes. Some modules have a VCC/JD-VCC jumper to isolate relay power from signal power for better noise immunity.",
+    "tags": [
+      "12V 2 channel relay",
+      "dual relay 12V",
+      "SRD-12VDC",
+      "two channel relay module",
+      "opto-isolated relay",
+      "12V relay module"
+    ]
+  },
+  {
+    "name": "4-Channel 5V Relay Module (Opto-Isolated)",
+    "description": "4-channel 5V mechanical relay module with four SRD-05VDC-SL-C SPDT relays, 10A @ 250VAC / 10A @ 30VDC per channel, optocoupler isolation, high/low level trigger selectable via jumper, 73 x 50 x 18.5mm PCB, screw terminals for all four NO/COM/NC outputs, status LEDs per channel, 6-pin control header (VCC/GND/IN1-IN4)",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 50,
+      "height": 18.5,
+      "depth": 73,
+      "weight": 95
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 3.1,
+          "holeCount": 4,
+          "holeSpacingX": 67,
+          "holeSpacingY": 44.5
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 12,
+          "wireGaugeMax": 14,
+          "labels": "4x (NO/COM/NC)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 6,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "VCC / IN1 / IN2 / IN3 / IN4 / GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V coil, 250VAC or 30VDC load",
+      "current": "10A max per channel, 15-20mA trigger per channel",
+      "power": "1.8W all coils",
+      "interface": "Digital HIGH/LOW",
+      "pinout": "6-pin header: VCC, IN1-IN4, GND; 4x 3-pos screw terminal"
+    },
+    "specs": {
+      "coilVoltage": 5,
+      "contactRating": "10A @ 250VAC / 10A @ 30VDC",
+      "contactType": "SPDT (1 Form C) per channel",
+      "channels": 4,
+      "triggerType": "high/low level selectable",
+      "triggerCurrent": 0.02,
+      "isolation": "optocoupler",
+      "relayType": "SRD-05VDC-SL-C",
+      "activeCurrent": 0.28
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07KNVPHK3",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/Channel-Isolation-Supports-Trigger-Optocoupler/dp/B07KNVPHK3"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "TS0011",
+        "approximatePrice": 9,
+        "url": "https://www.digikey.com/en/products/detail/sunfounder/TS0011/18668621"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The workhorse relay module for home automation and Arduino projects. Use the VCC/JD-VCC jumper to isolate relay power from MCU power — highly recommended for noise-sensitive applications. Total draw ~280mA at 5V with all 4 relays on — use a separate 5V 1A+ supply for the relay VCC. Mount with M3 screws on 67 x 44.5mm bolt pattern. Each channel is independently controlled. For more than 4 channels, use an 8-channel module instead of daisy-chaining. For PWM-controlled loads, use MOSFET modules instead — mechanical relays can't switch fast enough.",
+    "tags": [
+      "4 channel relay",
+      "4ch relay module",
+      "5V relay module",
+      "quad relay",
+      "opto-isolated relay",
+      "arduino relay",
+      "home automation relay",
+      "SunFounder relay",
+      "SRD-05VDC"
+    ]
+  },
+  {
+    "name": "4-Channel 12V Relay Module (Opto-Isolated)",
+    "description": "4-channel 12V mechanical relay module with four SRD-12VDC-SL-C SPDT relays, 10A @ 250VAC / 10A @ 30VDC per channel, optocoupler isolation, high/low level trigger, 73 x 50 x 18.5mm PCB, screw terminals for all four NO/COM/NC outputs, status LEDs, 6-pin control header",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 50,
+      "height": 18.5,
+      "depth": 73,
+      "weight": 95
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 3.1,
+          "holeCount": 4,
+          "holeSpacingX": 67,
+          "holeSpacingY": 44.5
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 12,
+          "wireGaugeMax": 14,
+          "labels": "4x (NO/COM/NC)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 6,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "VCC / IN1 / IN2 / IN3 / IN4 / GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V coil, 250VAC or 30VDC load",
+      "current": "10A max per channel, 20mA trigger per channel",
+      "power": "1.8W all coils",
+      "interface": "Digital HIGH/LOW",
+      "pinout": "6-pin header: VCC, IN1-IN4, GND; 4x 3-pos screw terminal"
+    },
+    "specs": {
+      "coilVoltage": 12,
+      "contactRating": "10A @ 250VAC / 10A @ 30VDC",
+      "contactType": "SPDT (1 Form C) per channel",
+      "channels": 4,
+      "triggerType": "high/low level selectable",
+      "triggerCurrent": 0.02,
+      "isolation": "optocoupler",
+      "relayType": "SRD-12VDC-SL-C",
+      "activeCurrent": 0.28
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00LW2GM84",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/HiLetgo-Channel-OPTO-Isolated-Support-Trigger/dp/B00LW2GM84"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "12V 4-channel relay module for automotive, solar, and industrial 12V systems. Signal inputs accept 3.3-5V logic through optocouplers. Total draw ~280mA at 12V with all relays on. Same mounting pattern as the 5V 4-channel module (67 x 44.5mm, M3 screws). Separate relay power supply from MCU power for best results. Good for 12V battery-powered systems where a 5V regulator isn't desired for the relay supply.",
+    "tags": [
+      "4 channel 12V relay",
+      "quad relay 12V",
+      "12V relay module",
+      "SRD-12VDC",
+      "opto-isolated relay",
+      "automotive relay module"
+    ]
+  },
+  {
+    "name": "8-Channel 5V Relay Module (Opto-Isolated)",
+    "description": "8-channel 5V mechanical relay module with eight SRD-05VDC-SL-C SPDT relays, 10A @ 250VAC / 10A @ 30VDC per channel, optocoupler isolation, high/low level trigger, 138 x 55 x 19mm PCB, screw terminals for all eight NO/COM/NC outputs, status LEDs per channel, 10-pin control header (VCC/GND/IN1-IN8), jumper for VCC/JD-VCC isolation",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 55,
+      "height": 19,
+      "depth": 138,
+      "weight": 190
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 3.1,
+          "holeCount": 4,
+          "holeSpacingX": 132,
+          "holeSpacingY": 49
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 24,
+          "wireGaugeMax": 14,
+          "labels": "8x (NO/COM/NC)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 10,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "VCC / IN1-IN8 / GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V coil, 250VAC or 30VDC load",
+      "current": "10A max per channel, 15-20mA trigger per channel",
+      "power": "3.6W all coils",
+      "interface": "Digital HIGH/LOW",
+      "pinout": "10-pin header: VCC, IN1-IN8, GND; 8x 3-pos screw terminal"
+    },
+    "specs": {
+      "coilVoltage": 5,
+      "contactRating": "10A @ 250VAC / 10A @ 30VDC",
+      "contactType": "SPDT (1 Form C) per channel",
+      "channels": 8,
+      "triggerType": "high/low level selectable",
+      "triggerCurrent": 0.02,
+      "isolation": "optocoupler",
+      "relayType": "SRD-05VDC-SL-C",
+      "activeCurrent": 0.56
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00LX3UH9C",
+        "approximatePrice": 9,
+        "url": "https://www.amazon.com/HiLetgo-Channel-OPTO-Isolated-Support-Trigger/dp/B00LX3UH9C"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0057OC5WK",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/SainSmart-101-70-102-8-Channel-Relay-Module/dp/B0057OC5WK"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "TS0012",
+        "approximatePrice": 14,
+        "url": "https://www.digikey.com/en/products/detail/sunfounder/TS0012/18668607"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Maximum-channel relay module for home automation, irrigation, industrial control. Total draw ~560mA at 5V with all 8 relays on — MUST use a separate 5V 2A+ power supply for the relay VCC. Remove the VCC/JD-VCC jumper and supply relay power independently. Mount with M3 screws. UNVERIFIED: mounting hole spacing varies by manufacturer (132 x 49mm typical). For MCUs with limited GPIO, pair with an MCP23017 I2C port expander or 74HC595 shift register to control all 8 channels from 2-3 pins. Not suitable for rapid switching — use SSR or MOSFET modules for PWM loads.",
+    "tags": [
+      "8 channel relay",
+      "8ch relay module",
+      "5V relay module",
+      "octal relay",
+      "opto-isolated relay",
+      "home automation",
+      "SainSmart relay",
+      "SunFounder relay",
+      "irrigation controller",
+      "SRD-05VDC"
+    ]
+  },
+  {
+    "name": "8-Channel 12V Relay Module (Opto-Isolated)",
+    "description": "8-channel 12V mechanical relay module with eight SRD-12VDC-SL-C SPDT relays, 10A @ 250VAC / 10A @ 30VDC per channel, optocoupler isolation, high/low level trigger, 138 x 55 x 19mm PCB, screw terminals for all eight NO/COM/NC outputs, status LEDs per channel, 10-pin control header, jumper for VCC/JD-VCC isolation",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 55,
+      "height": 19,
+      "depth": 138,
+      "weight": 195
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 3.1,
+          "holeCount": 4,
+          "holeSpacingX": 132,
+          "holeSpacingY": 49
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 24,
+          "wireGaugeMax": 14,
+          "labels": "8x (NO/COM/NC)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 10,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "VCC / IN1-IN8 / GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V coil, 250VAC or 30VDC load",
+      "current": "10A max per channel, 20mA trigger per channel",
+      "power": "3.6W all coils",
+      "interface": "Digital HIGH/LOW",
+      "pinout": "10-pin header: VCC, IN1-IN8, GND; 8x 3-pos screw terminal"
+    },
+    "specs": {
+      "coilVoltage": 12,
+      "contactRating": "10A @ 250VAC / 10A @ 30VDC",
+      "contactType": "SPDT (1 Form C) per channel",
+      "channels": 8,
+      "triggerType": "high/low level selectable",
+      "triggerCurrent": 0.02,
+      "isolation": "optocoupler",
+      "relayType": "SRD-12VDC-SL-C",
+      "activeCurrent": 0.56
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00LW2GA5Y",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/HiLetgo-Channel-Module-Optocoupler-Trigger/dp/B00LW2GA5Y"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "12V 8-channel module for automotive, solar, and industrial systems with existing 12V rail. Total draw ~560mA at 12V with all relays on. Signal inputs accept 3.3-5V logic via optocouplers. MUST use a separate 12V supply — do not power from MCU regulator. Mount with M3 screws. Same form factor as 5V 8-channel version. For MCU GPIO management, use MCP23017 I2C expander or 74HC595 shift register.",
+    "tags": [
+      "8 channel 12V relay",
+      "octal relay 12V",
+      "12V relay module",
+      "SRD-12VDC",
+      "opto-isolated relay",
+      "automotive relay bank",
+      "industrial relay"
+    ]
+  },
+  {
+    "name": "SSR-25DA 25A Solid State Relay (DC to AC)",
+    "description": "Fotek-style SSR-25DA single-phase solid state relay, 25A rated current, 3-32VDC control input, 24-380VAC load output, zero-crossing switching, 63 x 45 x 23mm panel-mount case, screw terminal connections, built-in LED indicator, no moving parts, silent operation, suitable for resistive and inductive AC loads",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 45,
+      "height": 23,
+      "depth": 63,
+      "weight": 98
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltCount": 1,
+          "boltSize": 4,
+          "holeDiameter": 4.4,
+          "holeSpacing": 48,
+          "mountType": "panel-mount with single M4 bolt through base"
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalCount": 4,
+          "labels": "Input: +/- (3-32VDC), Output: AC load terminals",
+          "wireGaugeMax": 10
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3-32VDC control, 24-380VAC load",
+      "current": "25A continuous, 7.5mA control @ 12VDC",
+      "power": "25A × 380V = 9.5kVA max",
+      "interface": "DC voltage control (3-32V)",
+      "pinout": "4 screw terminals: DC+ / DC- (control), AC1 / AC2 (load)"
+    },
+    "specs": {
+      "controlVoltage": "3-32VDC",
+      "loadVoltage": "24-380VAC",
+      "loadCurrent": 25,
+      "zeroCrossing": true,
+      "onVoltage": 1.0,
+      "offLeakageCurrent": 0.002,
+      "responseTime": 0.01,
+      "isolation": "50MΩ @ 500VDC",
+      "dielectricStrength": "2.5kV",
+      "operatingTemp": "-40 to 80°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08FJ5DYXN",
+        "approximatePrice": 9,
+        "url": "https://www.amazon.com/dp/B08FJ5DYXN"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07GNRCVZQ",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B07GNRCVZQ"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Panel-mount SSR for switching AC loads silently with no moving parts. Zero-crossing switching reduces EMI and inrush current. MUST mount on a heatsink for loads above ~5A — the SSR drops ~1V across the output, so at 25A that's 25W of heat. Use a heatsink rated for at least 30W with thermal paste. Standard heatsink for SSR is the aluminum extrusion type with M4 mounting hole. Control input works with any 3-32V DC source including 3.3V and 5V MCU outputs (draws only ~7.5mA at 12V). NOT suitable for DC loads — use SSR-DD series for DC-to-DC switching. For inductive loads (motors, solenoids), add an RC snubber across the output. WARNING: Many 'Fotek' SSRs on Amazon are counterfeits with lower actual ratings — derate to 60% for safety or buy from reputable suppliers.",
+    "tags": [
+      "SSR",
+      "solid state relay",
+      "SSR-25DA",
+      "25A relay",
+      "DC to AC",
+      "zero crossing",
+      "Fotek",
+      "panel mount relay",
+      "AC switch",
+      "silent relay",
+      "no contact relay",
+      "triac relay"
+    ]
+  },
+  {
+    "name": "SSR-40DA 40A Solid State Relay (DC to AC)",
+    "description": "Fotek-style SSR-40DA single-phase solid state relay, 40A rated current, 3-32VDC control input, 24-380VAC load output, zero-crossing switching, 63 x 45 x 23mm panel-mount case, screw terminal connections, built-in LED indicator, no moving parts, silent operation, high-power AC load switching",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 45,
+      "height": 23,
+      "depth": 63,
+      "weight": 105
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltCount": 1,
+          "boltSize": 4,
+          "holeDiameter": 4.4,
+          "holeSpacing": 48,
+          "mountType": "panel-mount with single M4 bolt through base"
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalCount": 4,
+          "labels": "Input: +/- (3-32VDC), Output: AC load terminals",
+          "wireGaugeMax": 8
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3-32VDC control, 24-380VAC load",
+      "current": "40A continuous, 12mA max control",
+      "power": "40A × 380V = 15.2kVA max",
+      "interface": "DC voltage control (3-32V)",
+      "pinout": "4 screw terminals: DC+ / DC- (control), AC1 / AC2 (load)"
+    },
+    "specs": {
+      "controlVoltage": "3-32VDC",
+      "loadVoltage": "24-380VAC",
+      "loadCurrent": 40,
+      "zeroCrossing": true,
+      "onVoltage": 1.0,
+      "offLeakageCurrent": 0.002,
+      "responseTime": 0.01,
+      "isolation": "50MΩ @ 500VDC",
+      "dielectricStrength": "2.5kV",
+      "operatingTemp": "-40 to 80°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07GNRCVZQ",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B07GNRCVZQ"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-current SSR for heavy AC loads — heaters, large motors, industrial equipment. Same case size as SSR-25DA (63 x 45mm). Heatsink is MANDATORY — at 40A the SSR dissipates ~40W internally. Use a large finned heatsink (at least 50W rated) with thermal compound and consider forced air cooling for continuous loads above 25A. Same zero-crossing and control specs as SSR-25DA. WARNING: Counterfeit units are common on Amazon — actual 40A-rated SSRs from genuine manufacturers cost more. Derate to 50-60% of rated current for reliable long-term operation. For loads truly requiring 40A continuous, consider a genuine Crydom or Carlo Gavazzi SSR. Wire with appropriate gauge (8 AWG minimum for 40A).",
+    "tags": [
+      "SSR",
+      "solid state relay",
+      "SSR-40DA",
+      "40A relay",
+      "DC to AC",
+      "zero crossing",
+      "Fotek",
+      "high power relay",
+      "AC switch",
+      "heater control",
+      "industrial relay"
+    ]
+  },
+  {
+    "name": "1-Channel Omron G3MB-202P SSR Module (2A AC)",
+    "description": "Single-channel solid state relay module using Omron G3MB-202P, 2A @ 100-240VAC load, 5V DC control input, zero-crossing switching, phototriac isolation, compact 24 x 32 x 21mm PCB, screw terminals for AC load, 3-pin header for control (VCC/GND/IN), LED indicator, UL/CSA certified relay",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 24,
+      "height": 21,
+      "depth": 32,
+      "weight": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 3.1,
+          "holeCount": 2,
+          "holeSpacingX": 18,
+          "holeSpacingY": 0
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 2,
+          "wireGaugeMax": 16,
+          "labels": "AC load terminals"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "VCC / GND / IN"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V DC control, 100-240VAC load",
+      "current": "2A max load, 160mA module supply",
+      "power": "480W max (2A @ 240V)",
+      "interface": "Digital HIGH/LOW",
+      "pinout": "3-pin header: VCC (5V), GND, IN; 2-pos screw terminal: AC load"
+    },
+    "specs": {
+      "controlVoltage": 5,
+      "loadVoltage": "75-264VAC",
+      "loadCurrent": 2,
+      "zeroCrossing": true,
+      "channels": 1,
+      "relayType": "Omron G3MB-202P",
+      "isolation": "phototriac",
+      "minLoadCurrent": 0.1,
+      "certifications": "UL E64562, CSA LR35535"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00WSN9CJC",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/HiLetgo-Channel-Level-Solid-Module/dp/B00WSN9CJC"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Low-power SSR module for switching small AC loads (LED bulbs, small fans, low-wattage heaters) up to 2A. Uses genuine Omron G3MB-202P with UL/CSA certification — much more reliable than generic SSR modules. Zero-crossing switching for clean, EMI-free operation. No heatsink needed at 2A. Phototriac isolation is superior to optocoupler relay modules for AC loads. NOT suitable for DC loads. For loads above 2A, use SSR-25DA or SSR-40DA panel-mount SSRs. Available in 2/4/8 channel versions from SainSmart and others. 5V control only — for 3.3V MCUs, check the module schematic or add a level shifter.",
+    "tags": [
+      "solid state relay module",
+      "G3MB-202P",
+      "Omron SSR",
+      "2A SSR",
+      "AC SSR module",
+      "zero crossing SSR",
+      "low power relay",
+      "SSR board"
+    ]
+  },
+  {
+    "name": "2-Channel Omron G3MB-202P SSR Module (2A AC)",
+    "description": "Dual-channel solid state relay module using two Omron G3MB-202P relays, 2A @ 100-240VAC per channel, 5V DC control input, zero-crossing switching, phototriac isolation, 42 x 25 x 22mm PCB, screw terminals for AC loads, 4-pin header for control (VCC/GND/CH1/CH2), LED indicators",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 25,
+      "height": 22,
+      "depth": 42,
+      "weight": 20
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 3.1,
+          "holeCount": 2,
+          "holeSpacingX": 36,
+          "holeSpacingY": 0
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 4,
+          "wireGaugeMax": 16,
+          "labels": "2x AC load terminal pairs"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 4,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "VCC / GND / CH1 / CH2"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V DC control, 100-240VAC load",
+      "current": "2A max per channel, 160mA module supply (both on)",
+      "power": "480W max per channel",
+      "interface": "Digital HIGH/LOW",
+      "pinout": "4-pin header: VCC, GND, CH1, CH2; 2x 2-pos screw terminal"
+    },
+    "specs": {
+      "controlVoltage": 5,
+      "loadVoltage": "75-264VAC",
+      "loadCurrent": 2,
+      "zeroCrossing": true,
+      "channels": 2,
+      "relayType": "Omron G3MB-202P",
+      "isolation": "phototriac",
+      "minLoadCurrent": 0.1,
+      "certifications": "UL E64562, CSA LR35535"
+    },
+    "suppliers": [
+      {
+        "name": "SainSmart",
+        "partNumber": "101-70-116",
+        "approximatePrice": 10,
+        "url": "https://www.sainsmart.com/products/2-4-8-ch-5v-solid-state-relay"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Compact dual-channel SSR for switching two independent AC loads up to 2A each. UNVERIFIED: exact PCB dimensions vary by manufacturer (42 x 25mm is typical). Omron G3MB-202P relays are genuine and UL-certified. No heatsink needed. Good for LED lighting control, small appliance switching, and automation. For higher current loads, use panel-mount SSR-25DA/40DA modules. Can be driven directly from 5V MCU GPIO pins.",
+    "tags": [
+      "2 channel SSR",
+      "dual SSR module",
+      "G3MB-202P",
+      "Omron SSR",
+      "2A AC relay",
+      "solid state relay board",
+      "SainSmart SSR"
+    ]
+  },
+  {
+    "name": "4-Channel Omron G3MB-202P SSR Module (2A AC)",
+    "description": "4-channel solid state relay module using four Omron G3MB-202P relays, 2A @ 100-240VAC per channel, 5V DC control input, zero-crossing switching, phototriac isolation, 64 x 40 x 22mm PCB, screw terminals for AC loads, 6-pin header for control (VCC/GND/CH1-CH4), LED indicators per channel",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 40,
+      "height": 22,
+      "depth": 64,
+      "weight": 38
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 3.1,
+          "holeCount": 4,
+          "holeSpacingX": 58,
+          "holeSpacingY": 34
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 8,
+          "wireGaugeMax": 16,
+          "labels": "4x AC load terminal pairs"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 6,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "VCC / GND / CH1 / CH2 / CH3 / CH4"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V DC control, 100-240VAC load",
+      "current": "2A max per channel, 320mA module supply (all on)",
+      "power": "480W max per channel",
+      "interface": "Digital HIGH/LOW",
+      "pinout": "6-pin header: VCC, GND, CH1-CH4; 4x 2-pos screw terminal"
+    },
+    "specs": {
+      "controlVoltage": 5,
+      "loadVoltage": "75-264VAC",
+      "loadCurrent": 2,
+      "zeroCrossing": true,
+      "channels": 4,
+      "relayType": "Omron G3MB-202P",
+      "isolation": "phototriac",
+      "minLoadCurrent": 0.1,
+      "certifications": "UL E64562, CSA LR35535"
+    },
+    "suppliers": [
+      {
+        "name": "SainSmart",
+        "partNumber": "101-70-117",
+        "approximatePrice": 15,
+        "url": "https://www.sainsmart.com/products/2-4-8-ch-5v-solid-state-relay"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "4-channel SSR module for multi-zone AC load control — ideal for lighting zones, multi-heater PID control, or small appliance automation. UNVERIFIED: exact PCB dimensions (64 x 40mm is typical, varies by manufacturer). Zero-crossing switching on all channels for clean operation. No heatsink needed at 2A per channel. Quieter and more reliable than mechanical relay modules for AC switching — no clicking noise, no contact wear. Not suitable for DC loads or loads exceeding 2A per channel.",
+    "tags": [
+      "4 channel SSR",
+      "quad SSR module",
+      "G3MB-202P",
+      "Omron SSR",
+      "4ch solid state relay",
+      "SainSmart SSR",
+      "AC SSR module"
+    ]
+  },
+  {
+    "name": "8-Channel Omron G3MB-202P SSR Module (2A AC)",
+    "description": "8-channel solid state relay module using eight Omron G3MB-202P relays, 2A @ 100-240VAC per channel, 5V DC control input, zero-crossing switching, phototriac isolation, 135 x 35 x 22mm PCB, screw terminals for all eight AC load outputs, 10-pin header for control (VCC/GND/CH1-CH8), LED indicators per channel",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 35,
+      "height": 22,
+      "depth": 135,
+      "weight": 72
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 3.1,
+          "holeCount": 4,
+          "holeSpacingX": 129,
+          "holeSpacingY": 29
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 16,
+          "wireGaugeMax": 16,
+          "labels": "8x AC load terminal pairs"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 10,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "VCC / GND / CH1-CH8"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V DC control, 100-240VAC load",
+      "current": "2A max per channel, 640mA module supply (all on)",
+      "power": "480W max per channel",
+      "interface": "Digital HIGH/LOW",
+      "pinout": "10-pin header: VCC, GND, CH1-CH8; 8x 2-pos screw terminal"
+    },
+    "specs": {
+      "controlVoltage": 5,
+      "loadVoltage": "75-264VAC",
+      "loadCurrent": 2,
+      "zeroCrossing": true,
+      "channels": 8,
+      "relayType": "Omron G3MB-202P",
+      "isolation": "phototriac",
+      "minLoadCurrent": 0.1,
+      "certifications": "UL E64562, CSA LR35535"
+    },
+    "suppliers": [
+      {
+        "name": "SainSmart",
+        "partNumber": "101-70-118",
+        "approximatePrice": 20,
+        "url": "https://www.sainsmart.com/products/2-4-8-ch-5v-solid-state-relay"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B006J4G45G",
+        "approximatePrice": 19,
+        "url": "https://www.amazon.com/SainSmart-8-Channel-Duemilanove-MEGA2560-MEGA1280/dp/B006J4G45G"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "8-channel SSR for multi-zone AC control — lighting, heaters, solenoid valves. UNVERIFIED: exact PCB dimensions (135 x 35mm is typical). Significantly more compact and lighter than 8-channel mechanical relay modules. No clicking noise, no contact bounce, no spark. Total module supply draw ~640mA at 5V with all channels on — use a separate 5V supply. For loads above 2A per channel, use individual SSR-25DA/40DA panel-mount SSRs. Pair with MCP23017 I2C expander for I2C control of all 8 channels.",
+    "tags": [
+      "8 channel SSR",
+      "octal SSR module",
+      "G3MB-202P",
+      "Omron SSR",
+      "8ch solid state relay",
+      "SainSmart SSR",
+      "AC SSR module",
+      "multi-zone control"
+    ]
+  },
+  {
+    "name": "IRF520 MOSFET Driver Module",
+    "description": "IRF520 N-channel MOSFET driver breakout module, 0-24V DC load switching, up to 5A (with heatsink), 3.3V/5V logic input, PWM capable, 33 x 24 x 21mm PCB, screw terminals for power input and load output, 3-pin signal header (SIG/VCC/GND), LED load indicator, adjustable duty cycle",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 24,
+      "height": 21,
+      "depth": 33,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 3,
+          "holeCount": 2,
+          "holeSpacingX": 27,
+          "holeSpacingY": 0
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 4,
+          "wireGaugeMax": 16,
+          "labels": "VIN+/GND (power), V+/V- (load)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "SIG / VCC / GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "0-24V DC load, 3.3-5V logic",
+      "current": "5A max (with heatsink), 1A without heatsink",
+      "power": "120W max theoretical (24V × 5A)",
+      "interface": "PWM or Digital",
+      "pinout": "3-pin header: SIG (PWM/digital), VCC (not used on most modules), GND; 4-pos screw terminal: VIN+, GND, V+, V-"
+    },
+    "specs": {
+      "maxVoltage": 24,
+      "maxCurrent": 5,
+      "continuousCurrentNoHeatsink": 1,
+      "rdsOn": 0.27,
+      "gateThreshold": "2-4V",
+      "channels": 1,
+      "pwmCapable": true,
+      "mosfetType": "IRF520 N-channel"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B01I1J14MO",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/dp/B01I1J14MO"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "COM-10213",
+        "approximatePrice": 4,
+        "url": "https://www.sparkfun.com/n-channel-mosfet-60v-30a.html"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Budget MOSFET switch for DC loads — LED strips, small motors, fans, solenoids. The IRF520 has a relatively high gate threshold (2-4V), which means 3.3V logic may not fully turn it on — it works but with higher Rds(on) and more heat. For reliable 3.3V logic-level switching, use the D4184 module instead. PWM capable up to ~10kHz for LED dimming or motor speed control. NOT suitable for AC loads — use a relay or SSR for AC. Add a flyback diode (1N4007) across inductive loads (motors, solenoids) if not already on the module. Mount with M3 screws. For loads above 2A, add a heatsink to the MOSFET tab. Max practical continuous current is ~3A without forced cooling.",
+    "tags": [
+      "MOSFET module",
+      "IRF520",
+      "MOSFET driver",
+      "DC switch",
+      "PWM switch",
+      "LED dimmer",
+      "motor driver",
+      "N-channel MOSFET",
+      "low side switch",
+      "MOSFET relay replacement"
+    ]
+  },
+  {
+    "name": "D4184 MOSFET Control Module (AOD4184, 15A)",
+    "description": "AOD4184 dual N-channel MOSFET switch module with optocoupler isolation, 5-36V DC load, 15A continuous current (400W max), 3-20V control input, PWM capable up to 20kHz, 33 x 16mm PCB, 8.5mΩ Rds(on), screw terminals for load, 3-pin signal header, LED indicator, low-side switching",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 16,
+      "height": 14,
+      "depth": 33,
+      "weight": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeDiameter": 2,
+          "holeCount": 2,
+          "holeSpacingX": 8,
+          "holeSpacingY": 0
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "pitch": 5.08,
+          "terminalCount": 3,
+          "wireGaugeMax": 14,
+          "labels": "V+ / V- / GND (load side)"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "headerType": "through-hole male",
+          "labels": "SIG+ / SIG- / (optional VCC)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5-36V DC load, 3-20V control",
+      "current": "15A continuous, 400W max",
+      "power": "400W max",
+      "interface": "PWM or Digital (optoisolated)",
+      "pinout": "3-pin header: SIG+, SIG-; 3-pos screw terminal: V+, V-, GND"
+    },
+    "specs": {
+      "maxVoltage": 36,
+      "maxCurrent": 15,
+      "rdsOn": 0.0085,
+      "gateThreshold": "1-3V",
+      "channels": 1,
+      "pwmCapable": true,
+      "pwmMaxFrequency": 20000,
+      "mosfetType": "AOD4184 dual N-channel",
+      "isolation": "optocoupler",
+      "operatingTemp": "-40 to 85°C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07NWD8W26",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B07NWD8W26"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Superior MOSFET switch module — use this instead of IRF520 in nearly all cases. The AOD4184 has ultra-low 8.5mΩ Rds(on) vs 270mΩ on IRF520, meaning far less heat at high currents. Optocoupler isolation means the control signal is electrically isolated from the load — safe for mixed-voltage systems. Reliable switching from 3.3V logic (unlike IRF520). Handles 15A continuous without heatsink in free air at moderate currents. For sustained 15A loads, add airflow or a small heatsink. PWM up to 20kHz for LED dimming, motor control, or heater PID. WARNING: No built-in flyback diode — add a 1N5408 or similar across inductive loads. The 2mm mounting holes are small — use M2 screws or adhesive mounting. Compact size makes it ideal for space-constrained builds.",
+    "tags": [
+      "D4184",
+      "AOD4184",
+      "MOSFET module",
+      "high current MOSFET",
+      "15A switch",
+      "DC switch",
+      "PWM module",
+      "optoisolated MOSFET",
+      "relay replacement",
+      "motor switch",
+      "LED switch",
+      "heater control"
+    ]
+  },
+  {
+    "name": "SparkFun Bi-Directional Logic Level Converter (BOB-12009)",
+    "description": "SparkFun 4-channel bi-directional logic level shifter, BSS138 MOSFET-based with 10K pull-up resistors, 1.8V-5V low side, up to 5V high side, I2C/SPI/UART compatible, 16.1 x 13.3mm breakout PCB, 0.1\" (2.54mm) pitch headers, breadboard friendly, up to 2MHz data rate",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 13.3,
+      "height": 5,
+      "depth": 16.1,
+      "weight": 1
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 12,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 6,
+          "rowSpacing": 10.16,
+          "headerType": "through-hole male",
+          "labels": "LV side: LV, LV1-LV4, GND; HV side: HV, HV1-HV4, GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "1.8-5V low side, 1.8-5V high side",
+      "current": "~1mA quiescent per channel",
+      "power": "<50mW",
+      "interface": "Pass-through (I2C, SPI, UART, GPIO)",
+      "pinout": "LV side: LV (reference voltage), LV1-LV4 (channels), GND; HV side: HV (reference voltage), HV1-HV4 (channels), GND"
+    },
+    "specs": {
+      "channels": 4,
+      "lowVoltage": "1.8-5V",
+      "highVoltage": "1.8-5V",
+      "maxFrequency": 2000000,
+      "direction": "bi-directional",
+      "topology": "BSS138 MOSFET with 10K pull-ups",
+      "i2cSafe": true,
+      "spiCompatible": true,
+      "uartCompatible": true
+    },
+    "suppliers": [
+      {
+        "name": "SparkFun",
+        "partNumber": "BOB-12009",
+        "approximatePrice": 3.5,
+        "url": "https://www.sparkfun.com/sparkfun-logic-level-converter-bi-directional.html"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "1568-1208-ND",
+        "approximatePrice": 3.5,
+        "url": "https://www.digikey.com/en/products/detail/sparkfun-electronics/BOB-12009/5673795"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00M7U5DV2",
+        "approximatePrice": 4,
+        "url": "https://www.amazon.com/SparkFun-BOB-12009-Logic-Converter-Bi-Directional/dp/B00M7U5DV2"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "474-BOB-12009",
+        "approximatePrice": 3.5,
+        "url": "https://www.mouser.com/ProductDetail/SparkFun/BOB-12009"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The standard go-to level shifter for connecting 3.3V and 5V devices. BSS138 topology with pull-ups means it's safe for I2C (which requires pull-ups) and works for slow SPI, UART, and GPIO. NOT recommended for SPI above 2MHz — use TXS0108E-based shifter for high-speed SPI. Each channel is independent and bi-directional. Connect LV pin to your low-voltage reference (e.g., 3.3V) and HV pin to your high-voltage reference (e.g., 5V). Both GNDs must be connected. Breadboard-friendly 0.1\" pitch. Tiny board — consider hot-gluing it down in permanent installations. For I2C buses, this is preferred over the TXS0108E/TXB0108 which can have issues with I2C pull-ups.",
+    "tags": [
+      "level shifter",
+      "logic level converter",
+      "3.3V to 5V",
+      "BSS138",
+      "bi-directional",
+      "I2C level shifter",
+      "SPI level shifter",
+      "voltage translator",
+      "SparkFun",
+      "BOB-12009"
+    ]
+  },
+  {
+    "name": "Adafruit 4-Channel I2C-Safe Bi-Directional Logic Level Converter (ADA757)",
+    "description": "Adafruit 4-channel bi-directional logic level converter, BSS138 MOSFET-based, I2C-safe design with 10K pull-up resistors, 1.8V low side to 10V high side, suitable for I2C/SPI/UART/GPIO, 0.1\" (2.54mm) pitch headers, 2x 6-pin headers, breadboard friendly",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 14,
+      "height": 5,
+      "depth": 18,
+      "weight": 1.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 12,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 6,
+          "rowSpacing": 10.16,
+          "headerType": "through-hole male",
+          "labels": "LV side: LV, A1-A4, GND; HV side: HV, B1-B4, GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "1.8V low side, up to 10V high side",
+      "current": "~1mA quiescent per channel",
+      "power": "<50mW",
+      "interface": "Pass-through (I2C, SPI, UART, GPIO)",
+      "pinout": "LV side: LV (reference), A1-A4 (channels), GND; HV side: HV (reference), B1-B4 (channels), GND"
+    },
+    "specs": {
+      "channels": 4,
+      "lowVoltage": "1.8V minimum",
+      "highVoltage": "up to 10V",
+      "maxFrequency": 2000000,
+      "direction": "bi-directional",
+      "topology": "BSS138 MOSFET with 10K pull-ups",
+      "i2cSafe": true,
+      "spiCompatible": true,
+      "uartCompatible": true
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "757",
+        "approximatePrice": 4,
+        "url": "https://www.adafruit.com/product/757"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "1528-1156-ND",
+        "approximatePrice": 4,
+        "url": "https://www.digikey.com/en/products/detail/adafruit-industries-llc/757/4990756"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "485-757",
+        "approximatePrice": 4,
+        "url": "https://www.mouser.com/ProductDetail/Adafruit/757"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00DJUHBE6",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/ADAFRUIT-INDUSTRIES-757-CONVERTER-DEVELOPMENT/dp/B00DJUHBE6"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "UNVERIFIED: exact PCB dimensions (~18 x 14mm estimated from product photos). Functionally identical to SparkFun BOB-12009 but supports up to 10V on the high side (vs 5V). This makes it useful for interfacing with older 5V/12V logic or industrial sensors. Same BSS138 + pull-up topology — I2C safe and bi-directional. Maximum ~2MHz data rate. Comes fully assembled and tested. Adafruit provides excellent documentation, EagleCAD files, and Fritzing library on GitHub. Preferred when you need >5V level shifting or specifically need I2C compatibility.",
+    "tags": [
+      "level shifter",
+      "Adafruit 757",
+      "I2C level shifter",
+      "BSS138",
+      "bi-directional",
+      "3.3V to 5V",
+      "logic level converter",
+      "voltage translator",
+      "10V level shifter"
+    ]
+  },
+  {
+    "name": "Adafruit 8-Channel Bi-Directional Logic Level Converter (TXB0108, ADA395)",
+    "description": "Adafruit 8-channel bi-directional logic level converter using TI TXB0108 IC, auto-direction sensing, Port A 1.2-3.6V, Port B 1.65-5.5V, 20Mbps data rate, 27 x 10mm breakout PCB, 0.1\" (2.54mm) pitch headers, OE (output enable) pin with pull-up, 0.1µF bypass caps included, push-pull CMOS compatible",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10,
+      "height": 4,
+      "depth": 27,
+      "weight": 1
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 20,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 10,
+          "rowSpacing": 7.62,
+          "headerType": "through-hole male",
+          "labels": "Port A: VCCA, OE, A1-A8, GND; Port B: VCCB, NC, B1-B8, GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "1.2-3.6V (Port A), 1.65-5.5V (Port B)",
+      "current": "<1mA quiescent",
+      "power": "<25mW",
+      "interface": "Pass-through (SPI, UART, GPIO, JTAG, SDIO)",
+      "pinout": "Port A side: VCCA, OE, A1-A8, GND; Port B side: VCCB, NC, B1-B8, GND"
+    },
+    "specs": {
+      "channels": 8,
+      "lowVoltage": "1.2-3.6V (Port A)",
+      "highVoltage": "1.65-5.5V (Port B)",
+      "maxFrequency": 20000000,
+      "direction": "bi-directional (auto-sensing)",
+      "topology": "TXB0108 auto-direction",
+      "i2cSafe": false,
+      "spiCompatible": true,
+      "uartCompatible": true,
+      "outputEnable": true,
+      "minPullupResistance": 50000
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "395",
+        "approximatePrice": 8,
+        "url": "https://www.adafruit.com/product/395"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "1528-1015-ND",
+        "approximatePrice": 8,
+        "url": "https://www.digikey.com/en/products/detail/adafruit-industries-llc/395/5761231"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00XW2L39A",
+        "approximatePrice": 9,
+        "url": "https://www.amazon.com/dp/B00XW2L39A"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-speed 8-channel level shifter for SPI, UART, JTAG, SDIO, and push-pull GPIO. Auto-direction sensing means no configuration needed — it detects which side is driving. WARNING: NOT compatible with I2C — the auto-direction sensing conflicts with I2C's open-drain + strong pull-up topology. If you need I2C level shifting, use the BSS138-based 4-channel modules (SparkFun BOB-12009 or Adafruit 757) instead. OE pin must be tied to VCCA to enable outputs (it has a 10K pull-up on the board). Minimum 50K ohm pull-ups if external pull-ups are needed. VCCA must be ≤ VCCB. 20Mbps data rate is excellent for fast SPI buses. Tiny 27 x 10mm footprint.",
+    "tags": [
+      "level shifter",
+      "TXB0108",
+      "8 channel level shifter",
+      "Adafruit 395",
+      "high speed level shifter",
+      "auto direction",
+      "SPI level shifter",
+      "voltage translator",
+      "20Mbps",
+      "logic level converter"
+    ]
+  },
+  {
+    "name": "SparkFun 8-Channel Bi-Directional Level Shifter (TXS0108E, BOB-11771)",
+    "description": "SparkFun 8-channel bi-directional logic level shifter using TI TXS0108E IC, auto-direction sensing with one-shot accelerator, Port A 1.4-3.6V, Port B 1.65-5.5V, 110Mbps push-pull / 1.2Mbps open-drain, 27.94 x 12.70mm breakout PCB, 0.1\" (2.54mm) pitch headers, OE pin, ESD protection",
+    "categorySlug": "relays-switching",
+    "entryType": "component",
+    "dimensions": {
+      "width": 12.7,
+      "height": 4,
+      "depth": 27.94,
+      "weight": 1.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 20,
+          "pinPitch": 2.54,
+          "rows": 2,
+          "pinsPerRow": 10,
+          "rowSpacing": 7.62,
+          "headerType": "through-hole male",
+          "labels": "Port A: VCCA, OE, A1-A8, GND; Port B: VCCB, NC, B1-B8, GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "1.4-3.6V (Port A), 1.65-5.5V (Port B)",
+      "current": "<1mA quiescent",
+      "power": "<25mW",
+      "interface": "Pass-through (SPI, UART, I2C, GPIO, JTAG, SDIO, SMBus)",
+      "pinout": "Port A side: VCCA, OE, A1-A8, GND; Port B side: VCCB, NC, B1-B8, GND"
+    },
+    "specs": {
+      "channels": 8,
+      "lowVoltage": "1.4-3.6V (Port A)",
+      "highVoltage": "1.65-5.5V (Port B)",
+      "maxFrequencyPushPull": 110000000,
+      "maxFrequencyOpenDrain": 1200000,
+      "direction": "bi-directional (auto-sensing with one-shot accelerator)",
+      "topology": "TXS0108E auto-direction with edge accelerator",
+      "i2cSafe": true,
+      "spiCompatible": true,
+      "uartCompatible": true,
+      "outputEnable": true,
+      "esdProtection": "2000V HBM (Port A), ±8kV CD (Port B)",
+      "propagationDelay": 0.0000000048,
+      "operatingTemp": "-40 to 125°C"
+    },
+    "suppliers": [
+      {
+        "name": "SparkFun",
+        "partNumber": "BOB-11771",
+        "approximatePrice": 5,
+        "url": "https://www.sparkfun.com/sparkfun-level-shifter-8-channel-txs0108e.html"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "1568-1207-ND",
+        "approximatePrice": 5,
+        "url": "https://www.digikey.com/en/products/detail/sparkfun-electronics/BOB-11771/5673794"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0B5VSZJBX",
+        "approximatePrice": 6,
+        "url": "https://www.amazon.com/SparkFun-Bi-Directional-Level-Shifting-Component-Applications/dp/B0B5VSZJBX"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The fastest and most versatile 8-channel level shifter available as a breakout. The TXS0108E improves on the TXB0108 (Adafruit 395) with a one-shot edge-rate accelerator that supports both open-drain AND push-pull signaling — making it I2C-compatible unlike the TXB0108. 110Mbps push-pull for fast SPI, 1.2Mbps open-drain for I2C. OE pin has a 110K pull-down resistor — MUST tie OE to VCCA to enable the outputs. VCCA must be ≤ VCCB. Built-in ESD protection. Propagation delay is only 4.8ns. For I2C only (no need for 8 channels), the BSS138-based 4-channel modules are cheaper and simpler. Use this when you need high-speed SPI + I2C level shifting in one board.",
+    "tags": [
+      "level shifter",
+      "TXS0108E",
+      "8 channel level shifter",
+      "SparkFun",
+      "BOB-11771",
+      "high speed level shifter",
+      "110Mbps",
+      "I2C level shifter",
+      "SPI level shifter",
+      "voltage translator",
+      "auto direction",
+      "logic level converter"
+    ]
+  }
+]

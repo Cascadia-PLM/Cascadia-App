@@ -1,0 +1,60 @@
+# Distributed Deployment - Application Server
+# Run on each app server behind load balancer
+
+services:
+  app:
+    image: cascadia/app:${APP_VERSION:-latest}
+    # Or build locally:
+    # build:
+    #   context: ../../../../
+    #   dockerfile: docker/app.Dockerfile
+    container_name: cascadia-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+
+      # Database (on infrastructure server)
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+
+      # Session
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+
+      # Vault - use S3/MinIO on infrastructure server
+      VAULT_MODE: embedded
+      VAULT_TYPE: s3
+      S3_BUCKET: ${S3_BUCKET:-cascadia-vault}
+      S3_ENDPOINT: ${S3_ENDPOINT:?S3_ENDPOINT is required}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY is required}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY is required}
+      S3_FORCE_PATH_STYLE: 'true'
+
+      # Jobs - submit to RabbitMQ on infrastructure server
+      JOBS_MODE: service
+      RABBITMQ_URL: ${RABBITMQ_URL:?RABBITMQ_URL is required}
+
+    ports:
+      - '${APP_PORT:-3000}:3000'
+
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+    # No volumes needed - files stored in S3/MinIO
+    # Database is remote
+
+    networks:
+      - cascadia-app
+
+networks:
+  cascadia-app:
+    driver: bridge

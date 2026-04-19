@@ -1,0 +1,73 @@
+# Cloud Database Deployment
+# Application only - database hosted by cloud provider
+
+services:
+  app:
+    image: cascadia/app:${APP_VERSION:-latest}
+    # Or build locally:
+    # build:
+    #   context: ../../../..
+    #   dockerfile: docker/app.Dockerfile
+    container_name: cascadia-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+
+      # Cloud database connection (AWS RDS, Cloud SQL, Azure)
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+
+      # Session
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+
+      # Vault - local storage (or configure S3)
+      VAULT_MODE: embedded
+      VAULT_TYPE: ${VAULT_TYPE:-local}
+      FILE_STORAGE_PATH: /app/storage/files
+      VAULT_ROOT: /app/vault
+
+      # S3 storage (optional - for cloud file storage)
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+
+      # Jobs embedded mode
+      JOBS_MODE: embedded
+
+    ports:
+      - '${APP_PORT:-3000}:3000'
+
+    volumes:
+      # Only needed if using local storage
+      - app_storage:/app/storage
+      - app_vault:/app/vault
+
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - cascadia-app
+
+    # Run migrations on startup (safe for cloud DBs)
+    command: sh -c "npx drizzle-kit push --force && npm run serve"
+
+volumes:
+  app_storage:
+    driver: local
+  app_vault:
+    driver: local
+
+networks:
+  cascadia-app:
+    driver: bridge

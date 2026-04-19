@@ -1,0 +1,1751 @@
+[
+  {
+    "name": "MGN7H Linear Rail with Long Carriage Block",
+    "description": "MGN7H miniature linear guide rail with extended (H-type) carriage block, 7mm rail width, 4.8mm rail height, M2 mounting holes, carriage 17x27.7mm with M2 holes on 12x8mm pattern, stainless steel, available in 100-600mm lengths",
+    "categorySlug": "linear-rails",
+    "entryType": "component",
+    "dimensions": {
+      "width": 17,
+      "height": 10.2
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 2,
+          "boltCount": 4,
+          "spacingX": 12,
+          "spacingY": 8
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 2,
+          "holePitch": 15
+        }
+      }
+    ],
+    "specs": {
+      "profile": "MGN7",
+      "railWidth": "7mm",
+      "railHeight": "4.8mm",
+      "carriageType": "H (long)",
+      "carriageLength": "27.7mm",
+      "carriageWidth": "17mm",
+      "carriageMountingHoles": "4x M2, 12x8mm pattern",
+      "railMountingHoles": "M2, 15mm pitch",
+      "material": "Stainless Steel / Chrome Steel",
+      "availableLengths": "100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 9,
+        "url": "https://amazon.com/FBT-miniature-MGN7-MGN7-L400mm-carriage/dp/B00WKOH5W0"
+      },
+      {
+        "name": "Zyltech",
+        "approximatePrice": 12
+      }
+    ],
+    "designNotes": "Smallest MGN profile. Use for lightweight axes under 1kg payload. M2 hardware is fragile — torque carefully. Carriage has 4 M2 tapped holes on 12x8mm spacing. Rail mounts with M2 screws at 15mm pitch. Pair with NEMA 14 or small NEMA 17 steppers. Not suitable for heavy CNC loads. Good for pen plotters, small laser engravers, and compact 3D printers.",
+    "tags": [
+      "MGN7",
+      "MGN7H",
+      "linear-rail",
+      "miniature",
+      "7mm",
+      "hiwin",
+      "3d-printer",
+      "laser",
+      "cnc",
+      "linear-guide"
+    ]
+  },
+  {
+    "name": "MGN7C Linear Rail with Short Carriage Block",
+    "description": "MGN7C miniature linear guide rail with standard (C-type) short carriage block, 7mm rail width, 4.8mm rail height, M2 mounting holes, carriage 17x22.5mm with M2 holes on 12x5mm pattern, stainless steel",
+    "categorySlug": "linear-rails",
+    "entryType": "component",
+    "dimensions": {
+      "width": 17,
+      "height": 10.2
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 2,
+          "boltCount": 4,
+          "spacingX": 12,
+          "spacingY": 5
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 2,
+          "holePitch": 15
+        }
+      }
+    ],
+    "specs": {
+      "profile": "MGN7",
+      "railWidth": "7mm",
+      "railHeight": "4.8mm",
+      "carriageType": "C (short)",
+      "carriageLength": "22.5mm",
+      "carriageWidth": "17mm",
+      "carriageMountingHoles": "4x M2, 12x5mm pattern",
+      "railMountingHoles": "M2, 15mm pitch",
+      "material": "Stainless Steel / Chrome Steel",
+      "availableLengths": "100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 8
+      }
+    ],
+    "designNotes": "Short carriage version of MGN7. 5mm shorter than MGN7H (22.5mm vs 27.7mm). Slightly lower moment load capacity due to shorter contact length. Prefer MGN7H unless space is extremely constrained along the rail axis. Same rail and mounting bolt specs as MGN7H.",
+    "tags": [
+      "MGN7",
+      "MGN7C",
+      "linear-rail",
+      "miniature",
+      "7mm",
+      "short-carriage",
+      "linear-guide"
+    ]
+  },
+  {
+    "name": "MGN9H Linear Rail with Long Carriage Block",
+    "description": "MGN9H miniature linear guide rail with extended (H-type) carriage block, 9mm rail width, 6.5mm rail height, M3 mounting holes, carriage 20x39.9mm with M3 holes on 15x20mm pattern, stainless steel, most popular small 3D printer rail",
+    "categorySlug": "linear-rails",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20,
+      "height": 13
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 3,
+          "boltCount": 4,
+          "spacingX": 15,
+          "spacingY": 20
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 3,
+          "holePitch": 20
+        }
+      }
+    ],
+    "specs": {
+      "profile": "MGN9",
+      "railWidth": "9mm",
+      "railHeight": "6.5mm",
+      "carriageType": "H (long)",
+      "carriageLength": "39.9mm",
+      "carriageWidth": "20mm",
+      "carriageMountingHoles": "4x M3, 15x20mm pattern",
+      "railMountingHoles": "M3, 20mm pitch",
+      "material": "Stainless Steel / Chrome Steel",
+      "railWeight": "380 g/m",
+      "carriageWeight": "26g",
+      "availableLengths": "100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600mm"
+    },
+    "suppliers": [
+      {
+        "name": "Zyltech",
+        "approximatePrice": 14,
+        "url": "https://www.zyltech.com/zyltech-mgn9-linear-rail-with-single-or-double-carriage-block/"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 11
+      }
+    ],
+    "designNotes": "Most popular MGN rail for compact 3D printers. Carriage does not overhang a 2020 extrusion (20mm carriage width = 20mm extrusion width). Mount rail with M3x8 SHCS. Carriage has 4x M3 tapped holes on 15x20mm pattern. Use M3x8 SHCS for carriage mounting. Good balance of size, cost, and load capacity for printers up to 300mm build volume.",
+    "tags": [
+      "MGN9",
+      "MGN9H",
+      "linear-rail",
+      "miniature",
+      "9mm",
+      "hiwin",
+      "3d-printer",
+      "ender-3",
+      "voron",
+      "linear-guide"
+    ]
+  },
+  {
+    "name": "MGN9C Linear Rail with Short Carriage Block",
+    "description": "MGN9C miniature linear guide rail with standard (C-type) short carriage block, 9mm rail width, 6.5mm rail height, M3 mounting holes, carriage 20x28.9mm with M3 holes on 15x10mm pattern, stainless steel",
+    "categorySlug": "linear-rails",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20,
+      "height": 13
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 3,
+          "boltCount": 4,
+          "spacingX": 15,
+          "spacingY": 10
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 3,
+          "holePitch": 20
+        }
+      }
+    ],
+    "specs": {
+      "profile": "MGN9",
+      "railWidth": "9mm",
+      "railHeight": "6.5mm",
+      "carriageType": "C (short)",
+      "carriageLength": "28.9mm",
+      "carriageWidth": "20mm",
+      "carriageMountingHoles": "4x M3, 15x10mm pattern",
+      "railMountingHoles": "M3, 20mm pitch",
+      "material": "Stainless Steel / Chrome Steel",
+      "availableLengths": "100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 10
+      }
+    ],
+    "designNotes": "Short carriage version of MGN9. 11mm shorter than MGN9H (28.9mm vs 39.9mm). Lower moment capacity. Use when mounting space along rail axis is limited. Prefer MGN9H for most applications.",
+    "tags": [
+      "MGN9",
+      "MGN9C",
+      "linear-rail",
+      "miniature",
+      "9mm",
+      "short-carriage",
+      "linear-guide"
+    ]
+  },
+  {
+    "name": "MGN12H Linear Rail with Long Carriage Block",
+    "description": "MGN12H miniature linear guide rail with extended (H-type) carriage block, 12mm rail width, 8mm rail height, M3 mounting holes, carriage 27x45.4mm with M3 holes on 20x20mm pattern, stainless steel, the most popular MGN rail for 3D printers and small CNC",
+    "categorySlug": "linear-rails",
+    "entryType": "component",
+    "dimensions": {
+      "width": 27,
+      "height": 13
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 3,
+          "boltCount": 4,
+          "spacingX": 20,
+          "spacingY": 20
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 3,
+          "holePitch": 25
+        }
+      }
+    ],
+    "specs": {
+      "profile": "MGN12",
+      "railWidth": "12mm",
+      "railHeight": "8mm",
+      "carriageType": "H (long)",
+      "carriageLength": "45.4mm",
+      "carriageWidth": "27mm",
+      "carriageMountingHoles": "4x M3, 20x20mm pattern",
+      "railMountingHoles": "M3, 25mm pitch",
+      "material": "Stainless Steel / Chrome Steel",
+      "railWeight": "650 g/m",
+      "carriageWeight": "54g",
+      "availableLengths": "100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600mm"
+    },
+    "suppliers": [
+      {
+        "name": "Zyltech",
+        "approximatePrice": 16,
+        "url": "https://www.zyltech.com/zyltech-mgn12-h-type-linear-rail-with-single-or-double-carriage-block/"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 13
+      }
+    ],
+    "designNotes": "The most popular MGN rail size overall. Excellent for 3D printer X and Y axes, small CNC routers, and laser cutters. Carriage mounts with M3x8 SHCS on a convenient 20x20mm square pattern. Rail mounts with M3x8 SHCS at 25mm pitch. Fits on 2020 and 2040 extrusion with 7mm overhang per side. Higher load capacity than MGN9 — suitable for direct-drive extruders and heavier tool heads.",
+    "tags": [
+      "MGN12",
+      "MGN12H",
+      "linear-rail",
+      "12mm",
+      "hiwin",
+      "3d-printer",
+      "cnc",
+      "voron",
+      "ender-3",
+      "prusa",
+      "linear-guide"
+    ]
+  },
+  {
+    "name": "MGN12C Linear Rail with Short Carriage Block",
+    "description": "MGN12C miniature linear guide rail with standard (C-type) short carriage block, 12mm rail width, 8mm rail height, M3 mounting holes, carriage 27x34.7mm with M3 holes on 20x15mm pattern, stainless steel",
+    "categorySlug": "linear-rails",
+    "entryType": "component",
+    "dimensions": {
+      "width": 27,
+      "height": 13
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 3,
+          "boltCount": 4,
+          "spacingX": 20,
+          "spacingY": 15
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 3,
+          "holePitch": 25
+        }
+      }
+    ],
+    "specs": {
+      "profile": "MGN12",
+      "railWidth": "12mm",
+      "railHeight": "8mm",
+      "carriageType": "C (short)",
+      "carriageLength": "34.7mm",
+      "carriageWidth": "27mm",
+      "carriageMountingHoles": "4x M3, 20x15mm pattern",
+      "railMountingHoles": "M3, 25mm pitch",
+      "material": "Stainless Steel / Chrome Steel",
+      "availableLengths": "100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600mm"
+    },
+    "suppliers": [
+      {
+        "name": "Zyltech",
+        "approximatePrice": 14,
+        "url": "https://www.zyltech.com/copy-of-zyltech-mgn12-linear-rail-carriage-only-1/"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 12
+      }
+    ],
+    "designNotes": "Short carriage version of MGN12. 10.7mm shorter than MGN12H. Non-square mounting pattern (20x15mm) — check CAD compatibility. Lower moment capacity than H-type. Use when rail-axis space is constrained.",
+    "tags": [
+      "MGN12",
+      "MGN12C",
+      "linear-rail",
+      "12mm",
+      "short-carriage",
+      "linear-guide"
+    ]
+  },
+  {
+    "name": "MGN15H Linear Rail with Long Carriage Block",
+    "description": "MGN15H miniature linear guide rail with extended (H-type) carriage block, 15mm rail width, 10mm rail height, M3 mounting holes, carriage 32x52.4mm with M3 holes on 25x20mm pattern, stainless steel, heaviest-duty MGN profile",
+    "categorySlug": "linear-rails",
+    "entryType": "component",
+    "dimensions": {
+      "width": 32,
+      "height": 15
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 3,
+          "boltCount": 4,
+          "spacingX": 25,
+          "spacingY": 20
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 3,
+          "holePitch": 40
+        }
+      }
+    ],
+    "specs": {
+      "profile": "MGN15",
+      "railWidth": "15mm",
+      "railHeight": "10mm",
+      "carriageType": "H (long)",
+      "carriageLength": "52.4mm",
+      "carriageWidth": "32mm",
+      "carriageMountingHoles": "4x M3, 25x20mm pattern",
+      "railMountingHoles": "M3, 40mm pitch",
+      "material": "Stainless Steel / Chrome Steel",
+      "railWeight": "1060 g/m",
+      "carriageWeight": "92g",
+      "availableLengths": "100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600mm"
+    },
+    "suppliers": [
+      {
+        "name": "Zyltech",
+        "approximatePrice": 22,
+        "url": "https://www.zyltech.com/zyltech-mgn15-linear-rail-with-type-h-single-or-double-block/"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 17
+      }
+    ],
+    "designNotes": "Largest and stiffest MGN profile. Use for Z-axis on heavier 3D printers, small CNC routers, or any axis requiring high rigidity. Overhangs 2020 extrusion by 12mm total (6mm per side) — may need offset mounting or wider extrusion. Mount rail with M3x10 SHCS. Carriage has 4x M3 tapped holes on 25x20mm pattern. For even heavier loads, consider HGR series rails instead.",
+    "tags": [
+      "MGN15",
+      "MGN15H",
+      "linear-rail",
+      "15mm",
+      "hiwin",
+      "cnc",
+      "3d-printer",
+      "heavy-duty",
+      "linear-guide"
+    ]
+  },
+  {
+    "name": "MGN15C Linear Rail with Short Carriage Block",
+    "description": "MGN15C miniature linear guide rail with standard (C-type) short carriage block, 15mm rail width, 10mm rail height, M3 mounting holes, carriage 32x42.1mm with M3 holes on 25x15mm pattern, stainless steel",
+    "categorySlug": "linear-rails",
+    "entryType": "component",
+    "dimensions": {
+      "width": 32,
+      "height": 15
+    },
+    "mountingFeatures": [
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 3,
+          "boltCount": 4,
+          "spacingX": 25,
+          "spacingY": 15
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 3,
+          "holePitch": 40
+        }
+      }
+    ],
+    "specs": {
+      "profile": "MGN15",
+      "railWidth": "15mm",
+      "railHeight": "10mm",
+      "carriageType": "C (short)",
+      "carriageLength": "42.1mm",
+      "carriageWidth": "32mm",
+      "carriageMountingHoles": "4x M3, 25x15mm pattern",
+      "railMountingHoles": "M3, 40mm pitch",
+      "material": "Stainless Steel / Chrome Steel",
+      "availableLengths": "100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600mm"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 15
+      }
+    ],
+    "designNotes": "Short carriage version of MGN15. 10.3mm shorter than MGN15H. Non-square mounting pattern (25x15mm). Lower moment capacity. Prefer MGN15H unless space along rail axis is very limited.",
+    "tags": [
+      "MGN15",
+      "MGN15C",
+      "linear-rail",
+      "15mm",
+      "short-carriage",
+      "linear-guide"
+    ]
+  },
+  {
+    "name": "6mm Hardened Chrome Steel Smooth Rod",
+    "description": "6mm diameter hardened chrome-plated steel linear shaft rod, precision ground, for use with LM6UU and LM6LUU linear bearings, h6 tolerance, surface hardness HRC 58-62",
+    "categorySlug": "linear-rods",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "diameter": 6
+    },
+    "mountingFeatures": [
+      {
+        "type": "shaft",
+        "specs": { "shaftDiameter": 6 }
+      }
+    ],
+    "specs": {
+      "diameter": "6mm",
+      "material": "Chrome-plated Steel (SUJ2/52100)",
+      "tolerance": "h6 (0 to -0.008mm)",
+      "surfaceHardness": "HRC 58-62",
+      "surfaceFinish": "Ra 0.2 or better"
+    },
+    "stockSizes": [
+      {
+        "label": "100mm",
+        "dimensions": { "length": 100 },
+        "approximatePrice": 1.5
+      },
+      {
+        "label": "150mm",
+        "dimensions": { "length": 150 },
+        "approximatePrice": 2
+      },
+      {
+        "label": "200mm",
+        "dimensions": { "length": 200 },
+        "approximatePrice": 2.5
+      },
+      {
+        "label": "250mm",
+        "dimensions": { "length": 250 },
+        "approximatePrice": 3
+      },
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "350mm",
+        "dimensions": { "length": 350 },
+        "approximatePrice": 4
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 4.5
+      },
+      {
+        "label": "450mm",
+        "dimensions": { "length": 450 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "550mm",
+        "dimensions": { "length": 550 },
+        "approximatePrice": 6
+      },
+      {
+        "label": "600mm",
+        "dimensions": { "length": 600 },
+        "approximatePrice": 6.5
+      }
+    ],
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 3.5
+      },
+      {
+        "name": "Misumi",
+        "approximatePrice": 4
+      }
+    ],
+    "designNotes": "Use with LM6UU (standard) or LM6LUU (long) linear bearings. Support with SK6 shaft mounts or SHF6 rod holders. Cut with rotary tool (do NOT hacksaw — will damage chrome plating and create burrs). Typically used in pairs for constrained linear motion. Smaller than 8mm — lower rigidity, suitable for short spans under 300mm.",
+    "tags": [
+      "6mm",
+      "smooth-rod",
+      "linear-shaft",
+      "chrome-steel",
+      "precision",
+      "hardened",
+      "LM6UU"
+    ]
+  },
+  {
+    "name": "8mm Hardened Chrome Steel Smooth Rod",
+    "description": "8mm diameter hardened chrome-plated steel linear shaft rod, precision ground, for use with LM8UU and LM8LUU linear bearings, h6 tolerance, surface hardness HRC 58-62, most common size for 3D printers",
+    "categorySlug": "linear-rods",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "diameter": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "shaft",
+        "specs": { "shaftDiameter": 8 }
+      }
+    ],
+    "specs": {
+      "diameter": "8mm",
+      "material": "Chrome-plated Steel (SUJ2/52100)",
+      "tolerance": "h6 (0 to -0.009mm)",
+      "surfaceHardness": "HRC 58-62",
+      "surfaceFinish": "Ra 0.2 or better"
+    },
+    "stockSizes": [
+      {
+        "label": "100mm",
+        "dimensions": { "length": 100 },
+        "approximatePrice": 2
+      },
+      {
+        "label": "150mm",
+        "dimensions": { "length": 150 },
+        "approximatePrice": 2.5
+      },
+      {
+        "label": "200mm",
+        "dimensions": { "length": 200 },
+        "approximatePrice": 3
+      },
+      {
+        "label": "250mm",
+        "dimensions": { "length": 250 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 4
+      },
+      {
+        "label": "350mm",
+        "dimensions": { "length": 350 },
+        "approximatePrice": 4.5
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "450mm",
+        "dimensions": { "length": 450 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 6
+      },
+      {
+        "label": "550mm",
+        "dimensions": { "length": 550 },
+        "approximatePrice": 6.5
+      },
+      {
+        "label": "600mm",
+        "dimensions": { "length": 600 },
+        "approximatePrice": 7
+      }
+    ],
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 4
+      },
+      {
+        "name": "Misumi",
+        "approximatePrice": 5
+      }
+    ],
+    "designNotes": "The most common linear rod diameter for desktop 3D printers (Prusa i3, Ender-3 clones, etc.). Use with LM8UU or LM8LUU linear bearings. Support with SK8 shaft mounts or SHF8 rod holders at each end. Good rigidity for spans up to 400mm. For longer spans, use 10mm or 12mm rods to reduce deflection.",
+    "tags": [
+      "8mm",
+      "smooth-rod",
+      "linear-shaft",
+      "chrome-steel",
+      "precision",
+      "hardened",
+      "LM8UU",
+      "3d-printer",
+      "prusa",
+      "ender-3"
+    ]
+  },
+  {
+    "name": "10mm Hardened Chrome Steel Smooth Rod",
+    "description": "10mm diameter hardened chrome-plated steel linear shaft rod, precision ground, for use with LM10UU and LM10LUU linear bearings, h6 tolerance, surface hardness HRC 58-62",
+    "categorySlug": "linear-rods",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "diameter": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "shaft",
+        "specs": { "shaftDiameter": 10 }
+      }
+    ],
+    "specs": {
+      "diameter": "10mm",
+      "material": "Chrome-plated Steel (SUJ2/52100)",
+      "tolerance": "h6 (0 to -0.011mm)",
+      "surfaceHardness": "HRC 58-62",
+      "surfaceFinish": "Ra 0.2 or better"
+    },
+    "stockSizes": [
+      {
+        "label": "100mm",
+        "dimensions": { "length": 100 },
+        "approximatePrice": 2.5
+      },
+      {
+        "label": "150mm",
+        "dimensions": { "length": 150 },
+        "approximatePrice": 3
+      },
+      {
+        "label": "200mm",
+        "dimensions": { "length": 200 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "250mm",
+        "dimensions": { "length": 250 },
+        "approximatePrice": 4
+      },
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "350mm",
+        "dimensions": { "length": 350 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 6
+      },
+      {
+        "label": "450mm",
+        "dimensions": { "length": 450 },
+        "approximatePrice": 6.5
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 7
+      },
+      {
+        "label": "550mm",
+        "dimensions": { "length": 550 },
+        "approximatePrice": 7.5
+      },
+      {
+        "label": "600mm",
+        "dimensions": { "length": 600 },
+        "approximatePrice": 8
+      }
+    ],
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 5
+      },
+      {
+        "name": "Misumi",
+        "approximatePrice": 6
+      }
+    ],
+    "designNotes": "Good balance of rigidity and compactness. Use with LM10UU or LM10LUU bearings. Support with SK10 shaft mounts. Suitable for spans up to 500mm. Used in larger 3D printers and small CNC routers.",
+    "tags": [
+      "10mm",
+      "smooth-rod",
+      "linear-shaft",
+      "chrome-steel",
+      "precision",
+      "hardened",
+      "LM10UU"
+    ]
+  },
+  {
+    "name": "12mm Hardened Chrome Steel Smooth Rod",
+    "description": "12mm diameter hardened chrome-plated steel linear shaft rod, precision ground, for use with LM12UU and LM12LUU linear bearings, h6 tolerance, surface hardness HRC 58-62, high rigidity for longer spans",
+    "categorySlug": "linear-rods",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "diameter": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "shaft",
+        "specs": { "shaftDiameter": 12 }
+      }
+    ],
+    "specs": {
+      "diameter": "12mm",
+      "material": "Chrome-plated Steel (SUJ2/52100)",
+      "tolerance": "h6 (0 to -0.011mm)",
+      "surfaceHardness": "HRC 58-62",
+      "surfaceFinish": "Ra 0.2 or better"
+    },
+    "stockSizes": [
+      {
+        "label": "100mm",
+        "dimensions": { "length": 100 },
+        "approximatePrice": 3
+      },
+      {
+        "label": "150mm",
+        "dimensions": { "length": 150 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "200mm",
+        "dimensions": { "length": 200 },
+        "approximatePrice": 4
+      },
+      {
+        "label": "250mm",
+        "dimensions": { "length": 250 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "350mm",
+        "dimensions": { "length": 350 },
+        "approximatePrice": 6
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 7
+      },
+      {
+        "label": "450mm",
+        "dimensions": { "length": 450 },
+        "approximatePrice": 7.5
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 8
+      },
+      {
+        "label": "550mm",
+        "dimensions": { "length": 550 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "600mm",
+        "dimensions": { "length": 600 },
+        "approximatePrice": 10
+      }
+    ],
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 5.5
+      },
+      {
+        "name": "Misumi",
+        "approximatePrice": 7
+      }
+    ],
+    "designNotes": "Highest rigidity in the common rod diameter range. Use with LM12UU or LM12LUU bearings. Support with SK12 shaft mounts. Suitable for spans up to 600mm. Used in CNC routers, laser cutters, and large-format 3D printers. Consider MGN12 linear rails instead for precision applications.",
+    "tags": [
+      "12mm",
+      "smooth-rod",
+      "linear-shaft",
+      "chrome-steel",
+      "precision",
+      "hardened",
+      "LM12UU",
+      "cnc"
+    ]
+  },
+  {
+    "name": "LM6UU Linear Ball Bearing (6x12x19)",
+    "description": "LM6UU closed linear ball bearing bushing, 6mm bore, 12mm OD, 19mm length, double rubber sealed, for 6mm precision smooth rods, 4 ball circuits",
+    "categorySlug": "linear-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "length": 19,
+      "weight": 5
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 12 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "6mm",
+      "outerDiameter": "12mm",
+      "length": "19mm",
+      "material": "Chrome Steel (GCr15)",
+      "sealType": "Double rubber seal",
+      "shaftTolerance": "g6"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00KU6QAUS",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com/LM6UU-linear-bearings-6x12x19-bearing/dp/B00KU6QAUS"
+      }
+    ],
+    "designNotes": "Standard-length linear bearing for 6mm smooth rods. Press-fit into 12mm housing bore (H7 tolerance recommended). Typically used in pairs for each rod. For longer bearing contact and less rocking, use LM6LUU instead. Mount in SC6UU bearing blocks for easy installation.",
+    "tags": ["LM6UU", "LM6", "6mm", "linear-bearing", "bushing", "3d-printer"]
+  },
+  {
+    "name": "LM8UU Linear Ball Bearing (8x15x24)",
+    "description": "LM8UU closed linear ball bearing bushing, 8mm bore, 15mm OD, 24mm length, double rubber sealed, for 8mm precision smooth rods, 4 ball circuits, the most common linear bearing size for desktop 3D printers",
+    "categorySlug": "linear-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 15,
+      "length": 24,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 15 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "8mm",
+      "outerDiameter": "15mm",
+      "length": "24mm",
+      "material": "Chrome Steel (GCr15)",
+      "sealType": "Double rubber seal",
+      "shaftTolerance": "g6"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B087WSZJH9",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com/LM8UU-Linear-Bearings-Length-Printer/dp/B087WSZJH9"
+      },
+      {
+        "name": "Adafruit",
+        "partNumber": "1181",
+        "approximatePrice": 3,
+        "url": "https://www.adafruit.com/product/1181"
+      }
+    ],
+    "designNotes": "The most common linear bearing for 3D printers. Use with 8mm chrome-plated smooth rods. Press-fit into 15mm housing bore. Typically used in pairs per rod for stability. For quieter operation and less play, consider polymer bushings (e.g., Igus RJZM) as an alternative. For longer contact, use LM8LUU. Mount in SC8UU bearing blocks for easy installation.",
+    "tags": [
+      "LM8UU",
+      "LM8",
+      "8mm",
+      "linear-bearing",
+      "bushing",
+      "3d-printer",
+      "prusa",
+      "ender-3"
+    ]
+  },
+  {
+    "name": "LM10UU Linear Ball Bearing (10x19x29)",
+    "description": "LM10UU closed linear ball bearing bushing, 10mm bore, 19mm OD, 29mm length, double rubber sealed, for 10mm precision smooth rods, 4 ball circuits",
+    "categorySlug": "linear-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 19,
+      "length": 29,
+      "weight": 18
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 10 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 19 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "10mm",
+      "outerDiameter": "19mm",
+      "length": "29mm",
+      "material": "Chrome Steel (GCr15)",
+      "sealType": "Double rubber seal",
+      "shaftTolerance": "g6"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2
+      }
+    ],
+    "designNotes": "Linear bearing for 10mm smooth rods. Press-fit into 19mm housing bore. Use with SC10UU pillow blocks. Pair with 10mm hardened chrome rods.",
+    "tags": ["LM10UU", "LM10", "10mm", "linear-bearing", "bushing"]
+  },
+  {
+    "name": "LM12UU Linear Ball Bearing (12x21x30)",
+    "description": "LM12UU closed linear ball bearing bushing, 12mm bore, 21mm OD, 30mm length, double rubber sealed, for 12mm precision smooth rods, 4 ball circuits",
+    "categorySlug": "linear-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 21,
+      "length": 30,
+      "weight": 22
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 12 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 21 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "12mm",
+      "outerDiameter": "21mm",
+      "length": "30mm",
+      "material": "Chrome Steel (GCr15)",
+      "sealType": "Double rubber seal",
+      "shaftTolerance": "g6"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2
+      }
+    ],
+    "designNotes": "Linear bearing for 12mm smooth rods. Press-fit into 21mm housing bore. Use with SC12UU pillow blocks. Suitable for heavier-duty linear motion in CNC and larger printers.",
+    "tags": ["LM12UU", "LM12", "12mm", "linear-bearing", "bushing", "cnc"]
+  },
+  {
+    "name": "LM6LUU Long Linear Ball Bearing (6x12x35)",
+    "description": "LM6LUU extended-length closed linear ball bearing bushing, 6mm bore, 12mm OD, 35mm length, double rubber sealed, for 6mm precision smooth rods, longer contact for reduced rocking",
+    "categorySlug": "linear-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "length": 35,
+      "weight": 9
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 12 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "6mm",
+      "outerDiameter": "12mm",
+      "length": "35mm",
+      "material": "Chrome Steel (GCr15)",
+      "sealType": "Double rubber seal",
+      "shaftTolerance": "g6",
+      "variant": "Long (LUU)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2
+      }
+    ],
+    "designNotes": "Long version of LM6UU (35mm vs 19mm). Reduced rocking and better load distribution. Use when a single bearing per rod is sufficient. Same 12mm OD — fits same housings but needs longer pocket.",
+    "tags": ["LM6LUU", "LM6", "6mm", "linear-bearing", "long", "extended"]
+  },
+  {
+    "name": "LM8LUU Long Linear Ball Bearing (8x15x45)",
+    "description": "LM8LUU extended-length closed linear ball bearing bushing, 8mm bore, 15mm OD, 45mm length, double rubber sealed, for 8mm precision smooth rods, longer contact for reduced rocking, alternative to two LM8UU bearings",
+    "categorySlug": "linear-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 15,
+      "length": 45,
+      "weight": 18
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 15 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "8mm",
+      "outerDiameter": "15mm",
+      "length": "45mm",
+      "material": "Chrome Steel (GCr15)",
+      "sealType": "Double rubber seal",
+      "shaftTolerance": "g6",
+      "variant": "Long (LUU)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2.5
+      }
+    ],
+    "designNotes": "Long version of LM8UU (45mm vs 24mm). Can replace two LM8UU bearings with a single unit for less rocking. Same 15mm OD as LM8UU — needs longer housing pocket. Common upgrade for Prusa-style 3D printers on the Y-axis carriage.",
+    "tags": [
+      "LM8LUU",
+      "LM8",
+      "8mm",
+      "linear-bearing",
+      "long",
+      "extended",
+      "3d-printer"
+    ]
+  },
+  {
+    "name": "LM10LUU Long Linear Ball Bearing (10x19x55)",
+    "description": "LM10LUU extended-length closed linear ball bearing bushing, 10mm bore, 19mm OD, 55mm length, double rubber sealed, for 10mm precision smooth rods",
+    "categorySlug": "linear-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 19,
+      "length": 55,
+      "weight": 33
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 10 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 19 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "10mm",
+      "outerDiameter": "19mm",
+      "length": "55mm",
+      "material": "Chrome Steel (GCr15)",
+      "sealType": "Double rubber seal",
+      "shaftTolerance": "g6",
+      "variant": "Long (LUU)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 3
+      }
+    ],
+    "designNotes": "Long version of LM10UU (55mm vs 29mm). Nearly double the length for improved stability. Same 19mm OD — needs longer housing pocket.",
+    "tags": ["LM10LUU", "LM10", "10mm", "linear-bearing", "long", "extended"]
+  },
+  {
+    "name": "LM12LUU Long Linear Ball Bearing (12x21x57)",
+    "description": "LM12LUU extended-length closed linear ball bearing bushing, 12mm bore, 21mm OD, 57mm length, double rubber sealed, for 12mm precision smooth rods",
+    "categorySlug": "linear-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 21,
+      "length": 57,
+      "weight": 40
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 12 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 21 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "12mm",
+      "outerDiameter": "21mm",
+      "length": "57mm",
+      "material": "Chrome Steel (GCr15)",
+      "sealType": "Double rubber seal",
+      "shaftTolerance": "g6",
+      "variant": "Long (LUU)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 3.5
+      }
+    ],
+    "designNotes": "Long version of LM12UU (57mm vs 30mm). Nearly double the contact length. Same 21mm OD — needs longer housing pocket. Good for CNC applications requiring maximum stability on 12mm rods.",
+    "tags": [
+      "LM12LUU",
+      "LM12",
+      "12mm",
+      "linear-bearing",
+      "long",
+      "extended",
+      "cnc"
+    ]
+  },
+  {
+    "name": "T8x8 Lead Screw (8mm dia, 2mm pitch, 4-start, 8mm lead)",
+    "description": "T8x8 trapezoidal lead screw, 8mm diameter, 2mm pitch, 4-start, 8mm lead per revolution, 304 stainless steel, ACME-type thread, standard for 3D printer Z-axis and CNC linear motion",
+    "categorySlug": "lead-screws",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "diameter": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_shaft",
+        "specs": { "shaftDiameter": 8, "pitch": 2, "lead": 8, "starts": 4 }
+      }
+    ],
+    "specs": {
+      "diameter": "8mm",
+      "pitch": "2mm",
+      "lead": "8mm",
+      "starts": "4",
+      "threadType": "Trapezoidal (ACME)",
+      "material": "304 Stainless Steel"
+    },
+    "stockSizes": [
+      {
+        "label": "100mm",
+        "dimensions": { "length": 100 },
+        "approximatePrice": 4
+      },
+      {
+        "label": "150mm",
+        "dimensions": { "length": 150 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "200mm",
+        "dimensions": { "length": 200 },
+        "approximatePrice": 6
+      },
+      {
+        "label": "250mm",
+        "dimensions": { "length": 250 },
+        "approximatePrice": 7
+      },
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 8
+      },
+      {
+        "label": "350mm",
+        "dimensions": { "length": 350 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 10
+      },
+      {
+        "label": "450mm",
+        "dimensions": { "length": 450 },
+        "approximatePrice": 11
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 12
+      }
+    ],
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B06XXRXQVN",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/NW-Length-Backlash-Spring-Loaded/dp/B06XXRXQVN"
+      },
+      {
+        "name": "Zyltech",
+        "approximatePrice": 7,
+        "url": "https://www.zyltech.com/8mm-lead-screw-trapezoidal-acme-brass-anti-backlash-nut-t8x8-or-t8x2/"
+      }
+    ],
+    "designNotes": "The standard lead screw for 3D printer Z-axes. 8mm lead gives fast travel (8mm per motor revolution). Pair with T8 anti-backlash nut for reduced play. Connect to NEMA 17 stepper motor with 5mm-to-8mm flexible coupling. For finer resolution at the expense of speed, use T8x2 (single-start, 2mm lead). Needs radial bearing support at both ends — do NOT rely on the nut for radial loads.",
+    "tags": [
+      "T8",
+      "lead-screw",
+      "trapezoidal",
+      "ACME",
+      "8mm",
+      "4-start",
+      "3d-printer",
+      "z-axis",
+      "cnc",
+      "Tr8x8"
+    ]
+  },
+  {
+    "name": "T8 Anti-Backlash Spring-Loaded Nut",
+    "description": "T8 spring-loaded anti-backlash nut for 8mm trapezoidal lead screw, brass with spring preload, reduces axial play, 4x M3 mounting holes on 16x16mm pattern, compatible with T8x8 (4-start) and T8x2 (1-start) lead screws",
+    "categorySlug": "lead-screws",
+    "entryType": "component",
+    "dimensions": {
+      "width": 22,
+      "height": 12,
+      "depth": 34,
+      "weight": 15
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": { "boreDiameter": 8, "pitch": 2 }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 3,
+          "boltCount": 4,
+          "spacingX": 16,
+          "spacingY": 16
+        }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "8mm (Tr8 trapezoidal)",
+      "material": "Brass",
+      "mountingPattern": "4x M3, 16x16mm",
+      "antiBacklash": "Spring-loaded preload"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B088THFKZ4",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/BIGTREETECH-Direct-Merge-Link-Screw/dp/B088THFKZ4"
+      },
+      {
+        "name": "Zyltech",
+        "approximatePrice": 4
+      }
+    ],
+    "designNotes": "Eliminates axial backlash in T8 lead screw assemblies using a spring that preloads two nut halves against each other. Mount with M3x8 SHCS through the 16x16mm bolt pattern. Verify lead/pitch compatibility — available in T8x2 and T8x8 variants. Spring tension creates slight additional friction. Replace periodically as brass threads wear.",
+    "tags": [
+      "T8",
+      "anti-backlash",
+      "nut",
+      "brass",
+      "spring-loaded",
+      "lead-screw",
+      "3d-printer",
+      "z-axis"
+    ]
+  },
+  {
+    "name": "T12x2 Lead Screw (12mm dia, 2mm pitch, 1-start, 2mm lead)",
+    "description": "T12x2 trapezoidal lead screw, 12mm diameter, 2mm pitch, single-start, 2mm lead per revolution, 304 stainless steel, high resolution linear motion for CNC and precision applications",
+    "categorySlug": "lead-screws",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "diameter": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_shaft",
+        "specs": { "shaftDiameter": 12, "pitch": 2, "lead": 2, "starts": 1 }
+      }
+    ],
+    "specs": {
+      "diameter": "12mm",
+      "pitch": "2mm",
+      "lead": "2mm",
+      "starts": "1",
+      "threadType": "Trapezoidal (ACME)",
+      "material": "304 Stainless Steel"
+    },
+    "stockSizes": [
+      {
+        "label": "100mm",
+        "dimensions": { "length": 100 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "150mm",
+        "dimensions": { "length": 150 },
+        "approximatePrice": 6
+      },
+      {
+        "label": "200mm",
+        "dimensions": { "length": 200 },
+        "approximatePrice": 7
+      },
+      {
+        "label": "250mm",
+        "dimensions": { "length": 250 },
+        "approximatePrice": 8
+      },
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "350mm",
+        "dimensions": { "length": 350 },
+        "approximatePrice": 10
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 12
+      },
+      {
+        "label": "450mm",
+        "dimensions": { "length": 450 },
+        "approximatePrice": 13
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 14
+      }
+    ],
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 9
+      },
+      {
+        "name": "Zyltech",
+        "approximatePrice": 10,
+        "url": "https://www.zyltech.com/12mm-t12x8-trapezoidal-acme-lead-screw-w-brass-nut-custom-length-up-to-2000mm/"
+      }
+    ],
+    "designNotes": "Single-start T12 for maximum resolution (2mm per revolution with a 200-step motor = 0.01mm per step). Higher stiffness than T8 due to 12mm diameter. Self-locking at single-start — load holds position when motor is off. Connect to NEMA 17 with 5mm-to-12mm coupling (or 8mm-to-12mm). Heavier and more expensive than T8.",
+    "tags": [
+      "T12",
+      "lead-screw",
+      "trapezoidal",
+      "ACME",
+      "12mm",
+      "single-start",
+      "precision",
+      "cnc",
+      "Tr12x2"
+    ]
+  },
+  {
+    "name": "T12x12 Lead Screw (12mm dia, 3mm pitch, 4-start, 12mm lead)",
+    "description": "T12x12 trapezoidal lead screw, 12mm diameter, 3mm pitch, 4-start, 12mm lead per revolution, 304 stainless steel, fast travel for CNC rapid positioning",
+    "categorySlug": "lead-screws",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "diameter": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_shaft",
+        "specs": { "shaftDiameter": 12, "pitch": 3, "lead": 12, "starts": 4 }
+      }
+    ],
+    "specs": {
+      "diameter": "12mm",
+      "pitch": "3mm",
+      "lead": "12mm",
+      "starts": "4",
+      "threadType": "Trapezoidal (ACME)",
+      "material": "304 Stainless Steel"
+    },
+    "stockSizes": [
+      {
+        "label": "100mm",
+        "dimensions": { "length": 100 },
+        "approximatePrice": 6
+      },
+      {
+        "label": "150mm",
+        "dimensions": { "length": 150 },
+        "approximatePrice": 7
+      },
+      {
+        "label": "200mm",
+        "dimensions": { "length": 200 },
+        "approximatePrice": 8
+      },
+      {
+        "label": "250mm",
+        "dimensions": { "length": 250 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "300mm",
+        "dimensions": { "length": 300 },
+        "approximatePrice": 10
+      },
+      {
+        "label": "350mm",
+        "dimensions": { "length": 350 },
+        "approximatePrice": 11
+      },
+      {
+        "label": "400mm",
+        "dimensions": { "length": 400 },
+        "approximatePrice": 13
+      },
+      {
+        "label": "450mm",
+        "dimensions": { "length": 450 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "500mm",
+        "dimensions": { "length": 500 },
+        "approximatePrice": 15
+      }
+    ],
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 10
+      }
+    ],
+    "designNotes": "Fast-travel T12 variant (12mm per revolution — 50% faster than T8x8). NOT self-locking — load will back-drive the screw when motor is unpowered. Requires a brake or holding current. Use anti-backlash nut for precision. Stiffer than T8 due to larger diameter. Good for CNC Z-axes requiring both speed and rigidity.",
+    "tags": [
+      "T12",
+      "lead-screw",
+      "trapezoidal",
+      "ACME",
+      "12mm",
+      "4-start",
+      "fast-travel",
+      "cnc",
+      "Tr12x12"
+    ]
+  },
+  {
+    "name": "T12 Anti-Backlash Brass Flange Nut",
+    "description": "T12 anti-backlash brass flange nut for 12mm trapezoidal lead screw, spring-loaded, 4x M4 mounting holes, compatible with Tr12x2 and Tr12x12 lead screws",
+    "categorySlug": "lead-screws",
+    "entryType": "component",
+    "dimensions": {
+      "width": 28,
+      "height": 14,
+      "depth": 40,
+      "weight": 25
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": { "boreDiameter": 12, "pitch": 3 }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "boltSize": 4,
+          "boltCount": 4,
+          "spacingX": 22,
+          "spacingY": 22
+        }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "12mm (Tr12 trapezoidal)",
+      "material": "Brass",
+      "mountingPattern": "4x M4, 22x22mm",
+      "antiBacklash": "Spring-loaded preload"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 5
+      }
+    ],
+    "designNotes": "Anti-backlash nut for T12 lead screws. Verify pitch/lead compatibility — T12 screws come in multiple configurations (2mm, 3mm pitch). Mount with M4 SHCS. Larger and heavier than T8 anti-backlash nuts. UNVERIFIED: Exact mounting pattern dimensions vary by manufacturer — measure before designing housing.",
+    "tags": [
+      "T12",
+      "anti-backlash",
+      "nut",
+      "brass",
+      "spring-loaded",
+      "lead-screw",
+      "cnc"
+    ]
+  },
+  {
+    "name": "5mm to 8mm Flexible Shaft Coupling",
+    "description": "5mm to 8mm aluminum flexible shaft coupling, 19mm OD, 25mm length, helical beam type, for connecting NEMA 17 stepper motor (5mm shaft) to T8 lead screw (8mm shaft), compensates angular and axial misalignment",
+    "categorySlug": "shaft-couplings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 19,
+      "length": 25,
+      "weight": 9
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5 }
+      },
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      }
+    ],
+    "specs": {
+      "bore1": "5mm",
+      "bore2": "8mm",
+      "outerDiameter": "19mm",
+      "length": "25mm",
+      "material": "Aluminum 6061",
+      "couplingType": "Helical beam (flexible)",
+      "clampType": "Set screw (M3)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0711RDLTB",
+        "approximatePrice": 3.5,
+        "url": "https://www.amazon.com/OESS-Flexible-Couplings-Aluminum-Connector/dp/B0711RDLTB"
+      }
+    ],
+    "designNotes": "The most common coupling for 3D printer Z-axis: NEMA 17 motor (5mm D-shaft) to T8 lead screw (8mm shaft). The helical cut provides flexibility to compensate for angular and axial misalignment — this is critical for lead screw assemblies. Tighten M3 set screws against the shaft flat. Do NOT use rigid couplings for lead screws — any misalignment will cause binding. Ensure the lead screw can float axially (support with a radial bearing, not a thrust bearing at the coupling end).",
+    "tags": [
+      "5x8",
+      "5mm-8mm",
+      "coupling",
+      "flexible",
+      "shaft-coupler",
+      "NEMA-17",
+      "T8",
+      "3d-printer",
+      "z-axis",
+      "helical"
+    ]
+  },
+  {
+    "name": "5mm to 5mm Flexible Shaft Coupling",
+    "description": "5mm to 5mm aluminum flexible shaft coupling, 19mm OD, 25mm length, helical beam type, for connecting two 5mm shafts, compensates angular and axial misalignment",
+    "categorySlug": "shaft-couplings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 19,
+      "length": 25,
+      "weight": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5 }
+      },
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5 }
+      }
+    ],
+    "specs": {
+      "bore1": "5mm",
+      "bore2": "5mm",
+      "outerDiameter": "19mm",
+      "length": "25mm",
+      "material": "Aluminum 6061",
+      "couplingType": "Helical beam (flexible)",
+      "clampType": "Set screw (M3)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 3.5
+      }
+    ],
+    "designNotes": "For connecting two 5mm shafts (e.g., NEMA 17 motor to 5mm lead screw or encoder shaft). Same construction as 5x8 coupling. Tighten M3 set screws against shaft flats.",
+    "tags": [
+      "5x5",
+      "5mm-5mm",
+      "coupling",
+      "flexible",
+      "shaft-coupler",
+      "helical"
+    ]
+  },
+  {
+    "name": "6.35mm to 8mm Flexible Shaft Coupling",
+    "description": "6.35mm (1/4 inch) to 8mm aluminum flexible shaft coupling, 19mm OD, 25mm length, helical beam type, for connecting 1/4\" imperial shaft to 8mm metric shaft, compensates angular and axial misalignment",
+    "categorySlug": "shaft-couplings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 19,
+      "length": 25,
+      "weight": 9
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6.35 }
+      },
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      }
+    ],
+    "specs": {
+      "bore1": "6.35mm (1/4\")",
+      "bore2": "8mm",
+      "outerDiameter": "19mm",
+      "length": "25mm",
+      "material": "Aluminum 6061",
+      "couplingType": "Helical beam (flexible)",
+      "clampType": "Set screw (M3)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 3.5
+      }
+    ],
+    "designNotes": "Imperial-to-metric coupling. Common for connecting NEMA 23 motors (1/4\" shaft) to 8mm lead screws, or for retrofitting imperial motors to metric hardware. 6.35mm = 1/4 inch exactly. Verify your motor shaft — NEMA 17 is usually 5mm (metric), NEMA 23 can be 1/4\" (6.35mm) or 8mm.",
+    "tags": [
+      "6.35x8",
+      "1/4-to-8mm",
+      "coupling",
+      "flexible",
+      "shaft-coupler",
+      "NEMA-23",
+      "imperial-metric",
+      "helical"
+    ]
+  }
+]

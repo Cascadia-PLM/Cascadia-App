@@ -1,0 +1,1645 @@
+[
+  {
+    "name": "Silicone Tubing -- 3mm ID x 5mm OD (1mm wall)",
+    "description": "Platinum-cured silicone tubing, 3mm (1/8\") inner diameter, 5mm outer diameter, 1mm wall thickness, 60A Shore hardness, FDA food-grade, autoclavable, -60C to 200C service range, translucent/clear, flexible medical/food-grade hose, ~1 bar max working pressure, sold per meter or per foot",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 5,
+      "weight": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 3,
+          "outerDiameter": 5
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 3,
+      "outerDiameter_mm": 5,
+      "wallThickness_mm": 1,
+      "material": "Platinum-Cured Silicone",
+      "shoreHardness": "60A",
+      "tempRange": "-60C to 200C",
+      "maxPressure_bar": 1,
+      "foodGrade": true,
+      "autoclavable": true,
+      "color": "Translucent/Clear",
+      "chemicalResistance": "Good -- resists water, dilute acids/bases, alcohols; poor with hydrocarbons and strong solvents"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5236K82",
+        "approximatePrice": 0.52,
+        "url": "https://www.mcmaster.com/5236K82"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07QH41LFV",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B07QH41LFV"
+      },
+      {
+        "name": "US Plastics",
+        "approximatePrice": 0.6,
+        "url": "https://www.usplastic.com"
+      }
+    ],
+    "designNotes": "Fits 3mm barb fittings. Thin 1mm wall provides flexibility but lower burst pressure -- suitable for gravity-fed or low-pressure peristaltic pump applications. Secure with small zip ties or worm-drive clamps for pressurized use. Can be autoclaved at 134C. For higher pressure, use the 1.5mm wall variant (3mm ID x 6mm OD). Minimum bend radius ~10mm.",
+    "tags": [
+      "silicone",
+      "food-grade",
+      "medical",
+      "flexible",
+      "peristaltic",
+      "autoclavable",
+      "3mm",
+      "FDA",
+      "platinum-cured",
+      "clear"
+    ]
+  },
+  {
+    "name": "Silicone Tubing -- 3mm ID x 6mm OD (1.5mm wall)",
+    "description": "Platinum-cured silicone tubing, 3mm (1/8\") inner diameter, 6mm outer diameter, 1.5mm wall thickness, 60A Shore hardness, FDA food-grade, autoclavable, -60C to 200C service range, translucent/clear, flexible medical/food-grade hose, ~1.5 bar max working pressure, sold per meter or per foot",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6,
+      "weight": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 3,
+          "outerDiameter": 6
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 3,
+      "outerDiameter_mm": 6,
+      "wallThickness_mm": 1.5,
+      "material": "Platinum-Cured Silicone",
+      "shoreHardness": "60A",
+      "tempRange": "-60C to 200C",
+      "maxPressure_bar": 1.5,
+      "foodGrade": true,
+      "autoclavable": true,
+      "color": "Translucent/Clear",
+      "chemicalResistance": "Good -- resists water, dilute acids/bases, alcohols; poor with hydrocarbons and strong solvents"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5236K83",
+        "approximatePrice": 0.65,
+        "url": "https://www.mcmaster.com/5236K83"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/s?k=3mm+ID+6mm+OD+silicone+tubing"
+      },
+      {
+        "name": "US Plastics",
+        "approximatePrice": 0.7,
+        "url": "https://www.usplastic.com"
+      }
+    ],
+    "designNotes": "Thicker wall than 5mm OD variant provides better pressure rating and kink resistance for 3mm ID bore. Fits 3mm barb fittings. Good for peristaltic pumps where wall recovery is important. Secure with zip ties or small hose clamps. Minimum bend radius ~12mm.",
+    "tags": [
+      "silicone",
+      "food-grade",
+      "medical",
+      "flexible",
+      "peristaltic",
+      "autoclavable",
+      "3mm",
+      "FDA",
+      "platinum-cured",
+      "clear"
+    ]
+  },
+  {
+    "name": "Silicone Tubing -- 4mm ID x 6mm OD (1mm wall)",
+    "description": "Platinum-cured silicone tubing, 4mm inner diameter, 6mm outer diameter, 1mm wall thickness, 60A Shore hardness, FDA food-grade, autoclavable, -60C to 200C service range, translucent/clear, flexible medical/food-grade hose, ~1 bar max working pressure, sold per meter or per foot",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 4,
+          "outerDiameter": 6
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 4,
+      "outerDiameter_mm": 6,
+      "wallThickness_mm": 1,
+      "material": "Platinum-Cured Silicone",
+      "shoreHardness": "60A",
+      "tempRange": "-60C to 200C",
+      "maxPressure_bar": 1,
+      "foodGrade": true,
+      "autoclavable": true,
+      "color": "Translucent/Clear",
+      "chemicalResistance": "Good -- resists water, dilute acids/bases, alcohols; poor with hydrocarbons and strong solvents"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5236K84",
+        "approximatePrice": 0.56,
+        "url": "https://www.mcmaster.com/5236K84"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 9,
+        "url": "https://www.amazon.com/s?k=4mm+ID+6mm+OD+silicone+tubing"
+      },
+      {
+        "name": "US Plastics",
+        "approximatePrice": 0.62,
+        "url": "https://www.usplastic.com"
+      }
+    ],
+    "designNotes": "Fits 4mm barb fittings. Thin wall keeps OD small for tight routing. Lower burst pressure than thicker wall variants -- use for gravity or low-pressure applications. Good for aquarium, lab, and food dispensing. Minimum bend radius ~12mm.",
+    "tags": [
+      "silicone",
+      "food-grade",
+      "medical",
+      "flexible",
+      "autoclavable",
+      "4mm",
+      "FDA",
+      "platinum-cured",
+      "clear",
+      "lab"
+    ]
+  },
+  {
+    "name": "Silicone Tubing -- 4mm ID x 7mm OD (1.5mm wall)",
+    "description": "Platinum-cured silicone tubing, 4mm inner diameter, 7mm outer diameter, 1.5mm wall thickness, 60A Shore hardness, FDA food-grade, autoclavable, -60C to 200C service range, translucent/clear, flexible medical/food-grade hose, ~1.5 bar max working pressure, sold per meter or per foot",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 7,
+      "weight": 15
+    },
+    "mountingFeatures": [
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 4,
+          "outerDiameter": 7
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 4,
+      "outerDiameter_mm": 7,
+      "wallThickness_mm": 1.5,
+      "material": "Platinum-Cured Silicone",
+      "shoreHardness": "60A",
+      "tempRange": "-60C to 200C",
+      "maxPressure_bar": 1.5,
+      "foodGrade": true,
+      "autoclavable": true,
+      "color": "Translucent/Clear",
+      "chemicalResistance": "Good -- resists water, dilute acids/bases, alcohols; poor with hydrocarbons and strong solvents"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5236K85",
+        "approximatePrice": 0.72,
+        "url": "https://www.mcmaster.com/5236K85"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 11,
+        "url": "https://www.amazon.com/s?k=4mm+ID+7mm+OD+silicone+tubing"
+      },
+      {
+        "name": "US Plastics",
+        "approximatePrice": 0.78,
+        "url": "https://www.usplastic.com"
+      }
+    ],
+    "designNotes": "Good balance of flexibility and pressure resistance for 4mm bore. Fits 4mm barb fittings. Preferred over 1mm wall for peristaltic pump rollers -- thicker wall recovers better. Secure with small worm-drive clamps on barb fittings. Minimum bend radius ~14mm.",
+    "tags": [
+      "silicone",
+      "food-grade",
+      "medical",
+      "flexible",
+      "peristaltic",
+      "autoclavable",
+      "4mm",
+      "FDA",
+      "platinum-cured",
+      "clear"
+    ]
+  },
+  {
+    "name": "Silicone Tubing -- 6mm ID x 8mm OD (1mm wall)",
+    "description": "Platinum-cured silicone tubing, 6mm (approx 1/4\") inner diameter, 8mm outer diameter, 1mm wall thickness, 60A Shore hardness, FDA food-grade, autoclavable, -60C to 200C service range, translucent/clear, flexible medical/food-grade hose, ~1 bar max working pressure, sold per meter or per foot",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "weight": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 6,
+          "outerDiameter": 8
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 6,
+      "outerDiameter_mm": 8,
+      "wallThickness_mm": 1,
+      "material": "Platinum-Cured Silicone",
+      "shoreHardness": "60A",
+      "tempRange": "-60C to 200C",
+      "maxPressure_bar": 1,
+      "foodGrade": true,
+      "autoclavable": true,
+      "color": "Translucent/Clear",
+      "chemicalResistance": "Good -- resists water, dilute acids/bases, alcohols; poor with hydrocarbons and strong solvents"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5236K501",
+        "approximatePrice": 0.65,
+        "url": "https://www.mcmaster.com/5236K501"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07TXNW7TK",
+        "approximatePrice": 9,
+        "url": "https://www.amazon.com/dp/B07TXNW7TK"
+      },
+      {
+        "name": "US Plastics",
+        "approximatePrice": 0.7,
+        "url": "https://www.usplastic.com"
+      }
+    ],
+    "designNotes": "Popular size for aquarium, lab, and beverage dispensing. Fits 6mm / 1/4\" barb fittings. Thin wall gives maximum flexibility but lower pressure rating. For pressurized use, consider 9mm or 10mm OD variants. Minimum bend radius ~16mm.",
+    "tags": [
+      "silicone",
+      "food-grade",
+      "medical",
+      "flexible",
+      "autoclavable",
+      "6mm",
+      "1/4-inch",
+      "FDA",
+      "platinum-cured",
+      "clear",
+      "aquarium"
+    ]
+  },
+  {
+    "name": "Silicone Tubing -- 6mm ID x 9mm OD (1.5mm wall)",
+    "description": "Platinum-cured silicone tubing, 6mm (approx 1/4\") inner diameter, 9mm outer diameter, 1.5mm wall thickness, 60A Shore hardness, FDA food-grade, autoclavable, -60C to 200C service range, translucent/clear, flexible medical/food-grade hose, ~1.5 bar max working pressure, sold per meter or per foot",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 9,
+      "weight": 18
+    },
+    "mountingFeatures": [
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 6,
+          "outerDiameter": 9
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 6,
+      "outerDiameter_mm": 9,
+      "wallThickness_mm": 1.5,
+      "material": "Platinum-Cured Silicone",
+      "shoreHardness": "60A",
+      "tempRange": "-60C to 200C",
+      "maxPressure_bar": 1.5,
+      "foodGrade": true,
+      "autoclavable": true,
+      "color": "Translucent/Clear",
+      "chemicalResistance": "Good -- resists water, dilute acids/bases, alcohols; poor with hydrocarbons and strong solvents"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5236K502",
+        "approximatePrice": 0.82,
+        "url": "https://www.mcmaster.com/5236K502"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 11,
+        "url": "https://www.amazon.com/s?k=6mm+ID+9mm+OD+silicone+tubing"
+      },
+      {
+        "name": "US Plastics",
+        "approximatePrice": 0.88,
+        "url": "https://www.usplastic.com"
+      }
+    ],
+    "designNotes": "Good mid-range option for 6mm bore applications. Better kink resistance than 1mm wall variant. Works well with peristaltic pumps and gravity-fed dispensing. Fits 6mm barb fittings. Minimum bend radius ~18mm.",
+    "tags": [
+      "silicone",
+      "food-grade",
+      "medical",
+      "flexible",
+      "peristaltic",
+      "autoclavable",
+      "6mm",
+      "1/4-inch",
+      "FDA",
+      "platinum-cured",
+      "clear"
+    ]
+  },
+  {
+    "name": "Silicone Tubing -- 6mm ID x 10mm OD (2mm wall)",
+    "description": "Platinum-cured silicone tubing, 6mm (approx 1/4\") inner diameter, 10mm outer diameter, 2mm wall thickness, 60A Shore hardness, FDA food-grade, autoclavable, -60C to 200C service range, translucent/clear, flexible medical/food-grade hose, ~2 bar max working pressure, sold per meter or per foot",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "weight": 25
+    },
+    "mountingFeatures": [
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 6,
+          "outerDiameter": 10
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 6,
+      "outerDiameter_mm": 10,
+      "wallThickness_mm": 2,
+      "material": "Platinum-Cured Silicone",
+      "shoreHardness": "60A",
+      "tempRange": "-60C to 200C",
+      "maxPressure_bar": 2,
+      "foodGrade": true,
+      "autoclavable": true,
+      "color": "Translucent/Clear",
+      "chemicalResistance": "Good -- resists water, dilute acids/bases, alcohols; poor with hydrocarbons and strong solvents"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5236K503",
+        "approximatePrice": 1.05,
+        "url": "https://www.mcmaster.com/5236K503"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B01LZ5ZKH4",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B01LZ5ZKH4"
+      },
+      {
+        "name": "US Plastics",
+        "approximatePrice": 1.1,
+        "url": "https://www.usplastic.com"
+      }
+    ],
+    "designNotes": "Thick wall provides best pressure and kink resistance for 6mm bore. Ideal for peristaltic pump heads -- excellent wall recovery after compression. Also good for pressurized fluid transfer up to 2 bar. Fits 6mm barb fittings; use worm-drive clamps for pressure. Minimum bend radius ~22mm.",
+    "tags": [
+      "silicone",
+      "food-grade",
+      "medical",
+      "flexible",
+      "peristaltic",
+      "autoclavable",
+      "6mm",
+      "1/4-inch",
+      "FDA",
+      "platinum-cured",
+      "clear",
+      "thick-wall"
+    ]
+  },
+  {
+    "name": "Silicone Tubing -- 8mm ID x 10mm OD (1mm wall)",
+    "description": "Platinum-cured silicone tubing, 8mm (approx 5/16\") inner diameter, 10mm outer diameter, 1mm wall thickness, 60A Shore hardness, FDA food-grade, autoclavable, -60C to 200C service range, translucent/clear, flexible medical/food-grade hose, ~0.8 bar max working pressure, sold per meter or per foot",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "weight": 15
+    },
+    "mountingFeatures": [
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 8,
+          "outerDiameter": 10
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 8,
+      "outerDiameter_mm": 10,
+      "wallThickness_mm": 1,
+      "material": "Platinum-Cured Silicone",
+      "shoreHardness": "60A",
+      "tempRange": "-60C to 200C",
+      "maxPressure_bar": 0.8,
+      "foodGrade": true,
+      "autoclavable": true,
+      "color": "Translucent/Clear",
+      "chemicalResistance": "Good -- resists water, dilute acids/bases, alcohols; poor with hydrocarbons and strong solvents"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5236K504",
+        "approximatePrice": 0.78,
+        "url": "https://www.mcmaster.com/5236K504"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/s?k=8mm+ID+10mm+OD+silicone+tubing"
+      },
+      {
+        "name": "US Plastics",
+        "approximatePrice": 0.85,
+        "url": "https://www.usplastic.com"
+      }
+    ],
+    "designNotes": "Thin wall version for 8mm bore -- very flexible but low pressure rating. Use for gravity-fed applications, overflow lines, or vent tubes. Prone to kinking on tight bends. For any pressurized use, choose the 12mm OD (2mm wall) variant. Fits 8mm barb fittings. Minimum bend radius ~20mm.",
+    "tags": [
+      "silicone",
+      "food-grade",
+      "medical",
+      "flexible",
+      "autoclavable",
+      "8mm",
+      "5/16-inch",
+      "FDA",
+      "platinum-cured",
+      "clear",
+      "thin-wall"
+    ]
+  },
+  {
+    "name": "Silicone Tubing -- 8mm ID x 12mm OD (2mm wall)",
+    "description": "Platinum-cured silicone tubing, 8mm (approx 5/16\") inner diameter, 12mm outer diameter, 2mm wall thickness, 60A Shore hardness, FDA food-grade, autoclavable, -60C to 200C service range, translucent/clear, flexible medical/food-grade hose, ~2 bar max working pressure, sold per meter or per foot",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "weight": 31
+    },
+    "mountingFeatures": [
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 8,
+          "outerDiameter": 12
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 8,
+      "outerDiameter_mm": 12,
+      "wallThickness_mm": 2,
+      "material": "Platinum-Cured Silicone",
+      "shoreHardness": "60A",
+      "tempRange": "-60C to 200C",
+      "maxPressure_bar": 2,
+      "foodGrade": true,
+      "autoclavable": true,
+      "color": "Translucent/Clear",
+      "chemicalResistance": "Good -- resists water, dilute acids/bases, alcohols; poor with hydrocarbons and strong solvents"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5236K505",
+        "approximatePrice": 1.15,
+        "url": "https://www.mcmaster.com/5236K505"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B00E6BC9C6",
+        "approximatePrice": 13,
+        "url": "https://www.amazon.com/dp/B00E6BC9C6"
+      },
+      {
+        "name": "US Plastics",
+        "approximatePrice": 1.2,
+        "url": "https://www.usplastic.com"
+      }
+    ],
+    "designNotes": "Workhorse size for 8mm bore applications. Thick wall gives good kink resistance and pressure capability. Works well for homebrew, food processing, and lab fluid transfer. Fits 8mm / 5/16\" barb fittings. Use stainless worm-drive clamps for secure connection. Minimum bend radius ~25mm.",
+    "tags": [
+      "silicone",
+      "food-grade",
+      "medical",
+      "flexible",
+      "peristaltic",
+      "autoclavable",
+      "8mm",
+      "5/16-inch",
+      "FDA",
+      "platinum-cured",
+      "clear",
+      "thick-wall",
+      "homebrew"
+    ]
+  },
+  {
+    "name": "Silicone Tubing -- 10mm ID x 14mm OD (2mm wall)",
+    "description": "Platinum-cured silicone tubing, 10mm (approx 3/8\") inner diameter, 14mm outer diameter, 2mm wall thickness, 60A Shore hardness, FDA food-grade, autoclavable, -60C to 200C service range, translucent/clear, flexible medical/food-grade hose, ~1.8 bar max working pressure, sold per meter or per foot",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 14,
+      "weight": 38
+    },
+    "mountingFeatures": [
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 10,
+          "outerDiameter": 14
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 10,
+      "outerDiameter_mm": 14,
+      "wallThickness_mm": 2,
+      "material": "Platinum-Cured Silicone",
+      "shoreHardness": "60A",
+      "tempRange": "-60C to 200C",
+      "maxPressure_bar": 1.8,
+      "foodGrade": true,
+      "autoclavable": true,
+      "color": "Translucent/Clear",
+      "chemicalResistance": "Good -- resists water, dilute acids/bases, alcohols; poor with hydrocarbons and strong solvents"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5236K507",
+        "approximatePrice": 1.3,
+        "url": "https://www.mcmaster.com/5236K507"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 14,
+        "url": "https://www.amazon.com/s?k=10mm+ID+14mm+OD+silicone+tubing"
+      },
+      {
+        "name": "US Plastics",
+        "approximatePrice": 1.35,
+        "url": "https://www.usplastic.com"
+      }
+    ],
+    "designNotes": "Large bore for high-flow applications. Fits 10mm / 3/8\" barb fittings. Good for cooling loops, beverage dispensing, and industrial fluid transfer. Use stainless hose clamps -- zip ties may not provide adequate clamping force at this size. Minimum bend radius ~30mm.",
+    "tags": [
+      "silicone",
+      "food-grade",
+      "medical",
+      "flexible",
+      "autoclavable",
+      "10mm",
+      "3/8-inch",
+      "FDA",
+      "platinum-cured",
+      "clear",
+      "high-flow"
+    ]
+  },
+  {
+    "name": "Silicone Tubing -- 12mm ID x 16mm OD (2mm wall)",
+    "description": "Platinum-cured silicone tubing, 12mm (approx 1/2\") inner diameter, 16mm outer diameter, 2mm wall thickness, 60A Shore hardness, FDA food-grade, autoclavable, -60C to 200C service range, translucent/clear, flexible medical/food-grade hose, ~1.5 bar max working pressure, sold per meter or per foot",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 16,
+      "weight": 44
+    },
+    "mountingFeatures": [
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 12,
+          "outerDiameter": 16
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 12,
+      "outerDiameter_mm": 16,
+      "wallThickness_mm": 2,
+      "material": "Platinum-Cured Silicone",
+      "shoreHardness": "60A",
+      "tempRange": "-60C to 200C",
+      "maxPressure_bar": 1.5,
+      "foodGrade": true,
+      "autoclavable": true,
+      "color": "Translucent/Clear",
+      "chemicalResistance": "Good -- resists water, dilute acids/bases, alcohols; poor with hydrocarbons and strong solvents"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5236K508",
+        "approximatePrice": 1.5,
+        "url": "https://www.mcmaster.com/5236K508"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 15,
+        "url": "https://www.amazon.com/s?k=12mm+ID+16mm+OD+silicone+tubing"
+      },
+      {
+        "name": "US Plastics",
+        "approximatePrice": 1.55,
+        "url": "https://www.usplastic.com"
+      }
+    ],
+    "designNotes": "Largest standard metric silicone size in this range. Fits 12mm / 1/2\" barb fittings. Use for high-flow coolant loops, brewing, and large peristaltic pumps. At this size, always use stainless worm-drive or T-bolt clamps for secure connection. Heavier and stiffer than smaller sizes -- plan routing carefully. Minimum bend radius ~35mm.",
+    "tags": [
+      "silicone",
+      "food-grade",
+      "medical",
+      "flexible",
+      "autoclavable",
+      "12mm",
+      "1/2-inch",
+      "FDA",
+      "platinum-cured",
+      "clear",
+      "high-flow",
+      "brewing"
+    ]
+  },
+  {
+    "name": "PU Pneumatic Tubing -- 4mm OD x 2.5mm ID (Metric)",
+    "description": "Polyurethane pneumatic tubing, 4mm outer diameter, 2.5mm inner diameter, 0.75mm wall, Shore 95A-98A, push-fit compatible with M4 pneumatic fittings, -40C to 70C, rated ~10 bar (145 psi), flexible semi-rigid, sold in 10m/25m/50m/100m rolls, blue/clear/black available",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 4,
+      "weight": 7
+    },
+    "mountingFeatures": [
+      {
+        "type": "push_fit",
+        "specs": {
+          "outerDiameter": 4,
+          "innerDiameter": 2.5
+        }
+      },
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 2.5,
+          "outerDiameter": 4
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 2.5,
+      "outerDiameter_mm": 4,
+      "wallThickness_mm": 0.75,
+      "material": "Polyurethane (PU)",
+      "shoreHardness": "95A-98A",
+      "tempRange": "-40C to 70C",
+      "maxPressure_bar": 10,
+      "maxPressure_psi": 145,
+      "pushFitCompatible": true,
+      "color": "Blue (also available: Clear, Black)",
+      "bendRadius_mm": 8
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5648K71",
+        "approximatePrice": 0.32,
+        "url": "https://www.mcmaster.com/5648K71"
+      },
+      {
+        "name": "SMC (via distributor)",
+        "partNumber": "TU0425BU-20",
+        "approximatePrice": 12,
+        "url": "https://www.smcpneumatics.com"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/s?k=4mm+OD+pneumatic+PU+tubing"
+      }
+    ],
+    "designNotes": "Smallest standard metric pneumatic size. Used for compact pneumatic circuits, small grippers, and light-duty actuators. Compatible with M4 push-to-connect (one-touch) fittings from SMC, Festo, and generic brands. Cut square with a sharp blade or tubing cutter for reliable push-fit seal. Minimum bend radius ~8mm. Low flow rate due to small ID -- not suitable for high-volume air delivery.",
+    "tags": [
+      "pneumatic",
+      "polyurethane",
+      "PU",
+      "push-fit",
+      "one-touch",
+      "4mm",
+      "metric",
+      "compressed-air",
+      "SMC",
+      "Festo",
+      "actuator"
+    ]
+  },
+  {
+    "name": "PU Pneumatic Tubing -- 6mm OD x 4mm ID (Metric)",
+    "description": "Polyurethane pneumatic tubing, 6mm outer diameter, 4mm inner diameter, 1mm wall, Shore 95A-98A, push-fit compatible with M6 pneumatic fittings, most common metric pneumatic tube size, -40C to 70C, rated ~10 bar (145 psi), flexible semi-rigid, sold in 10m/25m/50m/100m rolls, blue/clear/black available",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6,
+      "weight": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "push_fit",
+        "specs": {
+          "outerDiameter": 6,
+          "innerDiameter": 4
+        }
+      },
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 4,
+          "outerDiameter": 6
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 4,
+      "outerDiameter_mm": 6,
+      "wallThickness_mm": 1,
+      "material": "Polyurethane (PU)",
+      "shoreHardness": "95A-98A",
+      "tempRange": "-40C to 70C",
+      "maxPressure_bar": 10,
+      "maxPressure_psi": 145,
+      "pushFitCompatible": true,
+      "color": "Blue (also available: Clear, Black)",
+      "bendRadius_mm": 13
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5648K82",
+        "approximatePrice": 0.4,
+        "url": "https://www.mcmaster.com/5648K82"
+      },
+      {
+        "name": "SMC (via distributor)",
+        "partNumber": "TU0604BU-20",
+        "approximatePrice": 14,
+        "url": "https://www.smcpneumatics.com"
+      },
+      {
+        "name": "Festo (via distributor)",
+        "partNumber": "PUN-6x1-BL",
+        "approximatePrice": 18,
+        "url": "https://www.festo.com"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B09BN6GT6D",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B09BN6GT6D"
+      }
+    ],
+    "designNotes": "THE most common metric pneumatic tubing size. Default choice for most pneumatic circuits, cylinders, solenoid valves, and grippers. Compatible with 6mm push-to-connect fittings (one-touch). Widely stocked by SMC, Festo, and generic brands. Good balance of flow, flexibility, and compact size. Cut square for reliable push-fit connection. Color-code circuits: blue for supply, black for exhaust, clear for visibility. Minimum bend radius ~13mm.",
+    "tags": [
+      "pneumatic",
+      "polyurethane",
+      "PU",
+      "push-fit",
+      "one-touch",
+      "6mm",
+      "metric",
+      "compressed-air",
+      "SMC",
+      "Festo",
+      "most-common",
+      "actuator",
+      "solenoid"
+    ]
+  },
+  {
+    "name": "PU Pneumatic Tubing -- 8mm OD x 5mm ID (Metric)",
+    "description": "Polyurethane pneumatic tubing, 8mm outer diameter, 5mm inner diameter, 1.5mm wall, Shore 95A-98A, push-fit compatible with M8 pneumatic fittings, -40C to 70C, rated ~10 bar (145 psi), flexible semi-rigid, sold in 10m/25m/50m/100m rolls, blue/clear/black available",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "weight": 19
+    },
+    "mountingFeatures": [
+      {
+        "type": "push_fit",
+        "specs": {
+          "outerDiameter": 8,
+          "innerDiameter": 5
+        }
+      },
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 5,
+          "outerDiameter": 8
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 5,
+      "outerDiameter_mm": 8,
+      "wallThickness_mm": 1.5,
+      "material": "Polyurethane (PU)",
+      "shoreHardness": "95A-98A",
+      "tempRange": "-40C to 70C",
+      "maxPressure_bar": 10,
+      "maxPressure_psi": 145,
+      "pushFitCompatible": true,
+      "color": "Blue (also available: Clear, Black)",
+      "bendRadius_mm": 18
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5648K83",
+        "approximatePrice": 0.5,
+        "url": "https://www.mcmaster.com/5648K83"
+      },
+      {
+        "name": "SMC (via distributor)",
+        "partNumber": "TU0805BU-20",
+        "approximatePrice": 18,
+        "url": "https://www.smcpneumatics.com"
+      },
+      {
+        "name": "Festo (via distributor)",
+        "partNumber": "PUN-8x1.5-BL",
+        "approximatePrice": 22,
+        "url": "https://www.festo.com"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 14,
+        "url": "https://www.amazon.com/s?k=8mm+OD+pneumatic+PU+tubing"
+      }
+    ],
+    "designNotes": "Mid-size metric pneumatic tube. Good for larger cylinders and higher flow requirements. Compatible with 8mm push-to-connect fittings. Use when 6mm is too restrictive for flow but 10mm is unnecessarily large. Minimum bend radius ~18mm.",
+    "tags": [
+      "pneumatic",
+      "polyurethane",
+      "PU",
+      "push-fit",
+      "one-touch",
+      "8mm",
+      "metric",
+      "compressed-air",
+      "SMC",
+      "Festo",
+      "actuator"
+    ]
+  },
+  {
+    "name": "PU Pneumatic Tubing -- 10mm OD x 6.5mm ID (Metric)",
+    "description": "Polyurethane pneumatic tubing, 10mm outer diameter, 6.5mm inner diameter, 1.75mm wall, Shore 95A-98A, push-fit compatible with M10 pneumatic fittings, -40C to 70C, rated ~10 bar (145 psi), flexible semi-rigid, sold in 10m/25m/50m/100m rolls, blue/clear/black available",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "weight": 28
+    },
+    "mountingFeatures": [
+      {
+        "type": "push_fit",
+        "specs": {
+          "outerDiameter": 10,
+          "innerDiameter": 6.5
+        }
+      },
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 6.5,
+          "outerDiameter": 10
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 6.5,
+      "outerDiameter_mm": 10,
+      "wallThickness_mm": 1.75,
+      "material": "Polyurethane (PU)",
+      "shoreHardness": "95A-98A",
+      "tempRange": "-40C to 70C",
+      "maxPressure_bar": 10,
+      "maxPressure_psi": 145,
+      "pushFitCompatible": true,
+      "color": "Blue (also available: Clear, Black)",
+      "bendRadius_mm": 25
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5648K84",
+        "approximatePrice": 0.62,
+        "url": "https://www.mcmaster.com/5648K84"
+      },
+      {
+        "name": "SMC (via distributor)",
+        "partNumber": "TU1065BU-20",
+        "approximatePrice": 22,
+        "url": "https://www.smcpneumatics.com"
+      },
+      {
+        "name": "Festo (via distributor)",
+        "partNumber": "PUN-10x1.75-BL",
+        "approximatePrice": 28,
+        "url": "https://www.festo.com"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 18,
+        "url": "https://www.amazon.com/s?k=10mm+OD+pneumatic+PU+tubing"
+      }
+    ],
+    "designNotes": "Large metric pneumatic tube for high-flow circuits. Compatible with 10mm push-to-connect fittings. Used for main supply lines, large bore cylinders, and pneumatic tools. Stiffer than smaller sizes -- needs more space for routing. Minimum bend radius ~25mm.",
+    "tags": [
+      "pneumatic",
+      "polyurethane",
+      "PU",
+      "push-fit",
+      "one-touch",
+      "10mm",
+      "metric",
+      "compressed-air",
+      "SMC",
+      "Festo",
+      "high-flow"
+    ]
+  },
+  {
+    "name": "PU Pneumatic Tubing -- 12mm OD x 8mm ID (Metric)",
+    "description": "Polyurethane pneumatic tubing, 12mm outer diameter, 8mm inner diameter, 2mm wall, Shore 95A-98A, push-fit compatible with M12 pneumatic fittings, -40C to 70C, rated ~10 bar (145 psi), semi-rigid, sold in 10m/25m/50m/100m rolls, blue/clear/black available",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "weight": 37
+    },
+    "mountingFeatures": [
+      {
+        "type": "push_fit",
+        "specs": {
+          "outerDiameter": 12,
+          "innerDiameter": 8
+        }
+      },
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 8,
+          "outerDiameter": 12
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 8,
+      "outerDiameter_mm": 12,
+      "wallThickness_mm": 2,
+      "material": "Polyurethane (PU)",
+      "shoreHardness": "95A-98A",
+      "tempRange": "-40C to 70C",
+      "maxPressure_bar": 10,
+      "maxPressure_psi": 145,
+      "pushFitCompatible": true,
+      "color": "Blue (also available: Clear, Black)",
+      "bendRadius_mm": 30
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5648K85",
+        "approximatePrice": 0.78,
+        "url": "https://www.mcmaster.com/5648K85"
+      },
+      {
+        "name": "SMC (via distributor)",
+        "partNumber": "TU1208BU-20",
+        "approximatePrice": 26,
+        "url": "https://www.smcpneumatics.com"
+      },
+      {
+        "name": "Festo (via distributor)",
+        "partNumber": "PUN-12x2-BL",
+        "approximatePrice": 32,
+        "url": "https://www.festo.com"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 22,
+        "url": "https://www.amazon.com/s?k=12mm+OD+pneumatic+PU+tubing"
+      }
+    ],
+    "designNotes": "Largest common metric pneumatic size. For main supply headers, high-flow circuits, and large actuators. Compatible with 12mm push-to-connect fittings. Relatively stiff -- use elbow fittings rather than tight bends. Minimum bend radius ~30mm. Consider using a manifold rather than daisy-chaining at this size.",
+    "tags": [
+      "pneumatic",
+      "polyurethane",
+      "PU",
+      "push-fit",
+      "one-touch",
+      "12mm",
+      "metric",
+      "compressed-air",
+      "SMC",
+      "Festo",
+      "high-flow",
+      "supply-header"
+    ]
+  },
+  {
+    "name": "PU Pneumatic Tubing -- 1/8\" OD x 1/16\" ID (Imperial)",
+    "description": "Polyurethane pneumatic tubing, 1/8\" (3.175mm) outer diameter, 1/16\" (1.588mm) inner diameter, 1/32\" (0.794mm) wall, Shore 95A-98A, push-fit compatible with 1/8\" imperial pneumatic fittings, -40C to 70C, rated ~10 bar (145 psi), micro pneumatic, sold per foot or 100ft rolls",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 3.175,
+      "weight": 4
+    },
+    "mountingFeatures": [
+      {
+        "type": "push_fit",
+        "specs": {
+          "outerDiameter": 3.175,
+          "innerDiameter": 1.588
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 1.588,
+      "innerDiameter_in": "1/16\"",
+      "outerDiameter_mm": 3.175,
+      "outerDiameter_in": "1/8\"",
+      "wallThickness_mm": 0.794,
+      "material": "Polyurethane (PU)",
+      "shoreHardness": "95A-98A",
+      "tempRange": "-40C to 70C",
+      "maxPressure_bar": 10,
+      "maxPressure_psi": 145,
+      "pushFitCompatible": true,
+      "color": "Clear (also available: Blue, Black)",
+      "bendRadius_mm": 6
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5648K11",
+        "approximatePrice": 0.3,
+        "url": "https://www.mcmaster.com/5648K11"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/s?k=1/8+OD+pneumatic+PU+tubing"
+      }
+    ],
+    "designNotes": "Micro pneumatic tubing for very tight spaces and low-flow applications. Compatible with 1/8\" push-to-connect fittings. Used in miniature pneumatic circuits, medical device prototypes, and panel indicators. Very low flow capacity due to tiny 1/16\" bore. Minimum bend radius ~6mm.",
+    "tags": [
+      "pneumatic",
+      "polyurethane",
+      "PU",
+      "push-fit",
+      "1/8-inch",
+      "imperial",
+      "micro",
+      "compressed-air",
+      "miniature"
+    ]
+  },
+  {
+    "name": "PU Pneumatic Tubing -- 5/32\" OD x 3/32\" ID (Imperial)",
+    "description": "Polyurethane pneumatic tubing, 5/32\" (3.97mm) outer diameter, 3/32\" (2.38mm) inner diameter, 1/32\" (0.794mm) wall, Shore 95A-98A, push-fit compatible with 5/32\" imperial pneumatic fittings, -40C to 70C, rated ~10 bar (145 psi), sold per foot or 100ft rolls",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 3.97,
+      "weight": 5
+    },
+    "mountingFeatures": [
+      {
+        "type": "push_fit",
+        "specs": {
+          "outerDiameter": 3.97,
+          "innerDiameter": 2.38
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 2.38,
+      "innerDiameter_in": "3/32\"",
+      "outerDiameter_mm": 3.97,
+      "outerDiameter_in": "5/32\"",
+      "wallThickness_mm": 0.794,
+      "material": "Polyurethane (PU)",
+      "shoreHardness": "95A-98A",
+      "tempRange": "-40C to 70C",
+      "maxPressure_bar": 10,
+      "maxPressure_psi": 145,
+      "pushFitCompatible": true,
+      "color": "Clear (also available: Blue, Black)",
+      "bendRadius_mm": 9
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5648K12",
+        "approximatePrice": 0.32,
+        "url": "https://www.mcmaster.com/5648K12"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 9,
+        "url": "https://www.amazon.com/s?k=5/32+OD+pneumatic+PU+tubing"
+      }
+    ],
+    "designNotes": "Small imperial pneumatic size. Compatible with 5/32\" push-to-connect fittings. Used for compact pneumatic circuits and instrument air. Close to metric 4mm OD -- verify fitting compatibility (4mm and 5/32\" are NOT interchangeable in push-fit fittings). Minimum bend radius ~9mm.",
+    "tags": [
+      "pneumatic",
+      "polyurethane",
+      "PU",
+      "push-fit",
+      "5/32-inch",
+      "imperial",
+      "compact",
+      "compressed-air"
+    ]
+  },
+  {
+    "name": "PU Pneumatic Tubing -- 1/4\" OD x 5/32\" ID (Imperial)",
+    "description": "Polyurethane pneumatic tubing, 1/4\" (6.35mm) outer diameter, 5/32\" (3.97mm) inner diameter, 3/64\" (1.19mm) wall, Shore 95A-98A, push-fit compatible with 1/4\" imperial pneumatic fittings, most common imperial pneumatic size, -40C to 70C, rated ~10 bar (145 psi), sold per foot or 100ft rolls, blue/clear/black",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6.35,
+      "weight": 14
+    },
+    "mountingFeatures": [
+      {
+        "type": "push_fit",
+        "specs": {
+          "outerDiameter": 6.35,
+          "innerDiameter": 3.97
+        }
+      },
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 3.97,
+          "outerDiameter": 6.35
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 3.97,
+      "innerDiameter_in": "5/32\"",
+      "outerDiameter_mm": 6.35,
+      "outerDiameter_in": "1/4\"",
+      "wallThickness_mm": 1.19,
+      "material": "Polyurethane (PU)",
+      "shoreHardness": "95A-98A",
+      "tempRange": "-40C to 70C",
+      "maxPressure_bar": 10,
+      "maxPressure_psi": 145,
+      "pushFitCompatible": true,
+      "color": "Blue (also available: Clear, Black)",
+      "bendRadius_mm": 16
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5648K24",
+        "approximatePrice": 0.42,
+        "url": "https://www.mcmaster.com/5648K24"
+      },
+      {
+        "name": "SMC (via distributor)",
+        "partNumber": "TIUB07BU-20",
+        "approximatePrice": 16,
+        "url": "https://www.smcpneumatics.com"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B08HGTXFYC",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B08HGTXFYC"
+      }
+    ],
+    "designNotes": "THE most common imperial pneumatic tubing size. Default for most US pneumatic systems. Compatible with 1/4\" push-to-connect fittings. Close in size to metric 6mm OD but NOT interchangeable in push-fit fittings -- verify whether your fittings are metric or imperial. Very widely available from all pneumatic suppliers. Color-code circuits for easy troubleshooting. Minimum bend radius ~16mm.",
+    "tags": [
+      "pneumatic",
+      "polyurethane",
+      "PU",
+      "push-fit",
+      "one-touch",
+      "1/4-inch",
+      "imperial",
+      "most-common",
+      "compressed-air",
+      "SMC",
+      "actuator",
+      "solenoid"
+    ]
+  },
+  {
+    "name": "PU Pneumatic Tubing -- 5/16\" OD x 13/64\" ID (Imperial)",
+    "description": "Polyurethane pneumatic tubing, 5/16\" (7.94mm) outer diameter, 13/64\" (5.16mm) inner diameter, 11/64\" (1.39mm) wall, Shore 95A-98A, push-fit compatible with 5/16\" imperial pneumatic fittings, -40C to 70C, rated ~10 bar (145 psi), sold per foot or 100ft rolls",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 7.94,
+      "weight": 20
+    },
+    "mountingFeatures": [
+      {
+        "type": "push_fit",
+        "specs": {
+          "outerDiameter": 7.94,
+          "innerDiameter": 5.16
+        }
+      },
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 5.16,
+          "outerDiameter": 7.94
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 5.16,
+      "innerDiameter_in": "13/64\"",
+      "outerDiameter_mm": 7.94,
+      "outerDiameter_in": "5/16\"",
+      "wallThickness_mm": 1.39,
+      "material": "Polyurethane (PU)",
+      "shoreHardness": "95A-98A",
+      "tempRange": "-40C to 70C",
+      "maxPressure_bar": 10,
+      "maxPressure_psi": 145,
+      "pushFitCompatible": true,
+      "color": "Blue (also available: Clear, Black)",
+      "bendRadius_mm": 20
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5648K25",
+        "approximatePrice": 0.54,
+        "url": "https://www.mcmaster.com/5648K25"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 15,
+        "url": "https://www.amazon.com/s?k=5/16+OD+pneumatic+PU+tubing"
+      }
+    ],
+    "designNotes": "Mid-size imperial pneumatic tube. Compatible with 5/16\" push-to-connect fittings. Close to metric 8mm OD but NOT interchangeable. Used for larger cylinders and higher flow imperial systems. Minimum bend radius ~20mm.",
+    "tags": [
+      "pneumatic",
+      "polyurethane",
+      "PU",
+      "push-fit",
+      "5/16-inch",
+      "imperial",
+      "compressed-air"
+    ]
+  },
+  {
+    "name": "PU Pneumatic Tubing -- 3/8\" OD x 1/4\" ID (Imperial)",
+    "description": "Polyurethane pneumatic tubing, 3/8\" (9.525mm) outer diameter, 1/4\" (6.35mm) inner diameter, 1/16\" (1.588mm) wall, Shore 95A-98A, push-fit compatible with 3/8\" imperial pneumatic fittings, -40C to 70C, rated ~10 bar (145 psi), semi-rigid, sold per foot or 100ft rolls, blue/clear/black",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 9.525,
+      "weight": 26
+    },
+    "mountingFeatures": [
+      {
+        "type": "push_fit",
+        "specs": {
+          "outerDiameter": 9.525,
+          "innerDiameter": 6.35
+        }
+      },
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 6.35,
+          "outerDiameter": 9.525
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 6.35,
+      "innerDiameter_in": "1/4\"",
+      "outerDiameter_mm": 9.525,
+      "outerDiameter_in": "3/8\"",
+      "wallThickness_mm": 1.588,
+      "material": "Polyurethane (PU)",
+      "shoreHardness": "95A-98A",
+      "tempRange": "-40C to 70C",
+      "maxPressure_bar": 10,
+      "maxPressure_psi": 145,
+      "pushFitCompatible": true,
+      "color": "Blue (also available: Clear, Black)",
+      "bendRadius_mm": 25
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5648K26",
+        "approximatePrice": 0.68,
+        "url": "https://www.mcmaster.com/5648K26"
+      },
+      {
+        "name": "SMC (via distributor)",
+        "partNumber": "TIUB11BU-20",
+        "approximatePrice": 22,
+        "url": "https://www.smcpneumatics.com"
+      },
+      {
+        "name": "Amazon",
+        "approximatePrice": 18,
+        "url": "https://www.amazon.com/s?k=3/8+OD+pneumatic+PU+tubing"
+      }
+    ],
+    "designNotes": "Largest common imperial pneumatic size. For main supply lines, large actuators, and pneumatic tool feeds. Compatible with 3/8\" push-to-connect fittings. Close to metric 10mm OD but NOT interchangeable. Good 1/4\" bore provides substantial flow. Relatively stiff -- use elbow fittings for direction changes. Minimum bend radius ~25mm.",
+    "tags": [
+      "pneumatic",
+      "polyurethane",
+      "PU",
+      "push-fit",
+      "3/8-inch",
+      "imperial",
+      "compressed-air",
+      "high-flow",
+      "supply-line",
+      "SMC"
+    ]
+  },
+  {
+    "name": "PTFE Tubing -- 2mm ID x 4mm OD (Bowden Tube, Standard)",
+    "description": "PTFE (Teflon) tubing, 2mm inner diameter, 4mm outer diameter, 1mm wall, standard Bowden tube for 1.75mm 3D printer filament, -200C to 260C service range, ultralow friction coefficient 0.04, white/natural color, chemically inert, push-fit compatible with PC4-M6/M10 pneumatic couplers, sold per meter",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 4,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "push_fit",
+        "specs": {
+          "outerDiameter": 4,
+          "innerDiameter": 2
+        }
+      },
+      {
+        "type": "compression",
+        "specs": {
+          "outerDiameter": 4,
+          "innerDiameter": 2
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 2,
+      "outerDiameter_mm": 4,
+      "wallThickness_mm": 1,
+      "material": "PTFE / Teflon",
+      "tempRange": "-200C to 260C",
+      "maxPressure_bar": 5,
+      "frictionCoefficient": 0.04,
+      "chemicalResistance": "Excellent -- inert to nearly all chemicals including acids, bases, and solvents",
+      "color": "White/Natural",
+      "dielectricStrength": "High -- excellent electrical insulator"
+    },
+    "suppliers": [
+      {
+        "name": "Capricorn (Premium XS)",
+        "partNumber": "TL-CR-DF-1",
+        "approximatePrice": 6.5,
+        "url": "https://www.captubes.com"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5239K13",
+        "approximatePrice": 1.8,
+        "url": "https://www.mcmaster.com/5239K13"
+      },
+      {
+        "name": "Amazon (Capricorn)",
+        "partNumber": "B079P92HN9",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B079P92HN9"
+      },
+      {
+        "name": "Amazon (Generic)",
+        "partNumber": "B07V1Y9X5G",
+        "approximatePrice": 4,
+        "url": "https://www.amazon.com/dp/B07V1Y9X5G"
+      }
+    ],
+    "designNotes": "THE standard Bowden tube for 1.75mm filament 3D printers (Creality Ender 3, CR-10, etc.). 2mm ID provides ~0.25mm clearance around 1.75mm filament. Capricorn XS is the premium option with tighter 1.9mm ID tolerance and lower friction -- reduces stringing and improves retraction response. Generic PTFE works fine for PLA/PETG but Capricorn recommended for TPU and flexible filaments. Connects with PC4-M6 (hotend) and PC4-M10 (extruder) pneumatic push-fit couplers. Replace every 6-12 months or when retraction performance degrades. DO NOT exceed 260C -- PTFE decomposes above this temperature, releasing toxic fumes. Use all-metal hotend for high-temp filaments.",
+    "tags": [
+      "PTFE",
+      "Teflon",
+      "Bowden",
+      "3D-printer",
+      "1.75mm-filament",
+      "Capricorn",
+      "Creality",
+      "Ender-3",
+      "hotend",
+      "extruder",
+      "low-friction",
+      "push-fit"
+    ]
+  },
+  {
+    "name": "PTFE Tubing -- 3mm ID x 4mm OD (Bowden Tube, Tight Fit)",
+    "description": "PTFE (Teflon) tubing, 3mm inner diameter, 4mm outer diameter, 0.5mm wall, tight-fit variant for 3mm filament printers or snug 1.75mm guide, -200C to 260C service range, ultralow friction coefficient 0.04, white/natural color, chemically inert, thin wall, push-fit compatible with 4mm pneumatic couplers, sold per meter",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 4,
+      "weight": 5
+    },
+    "mountingFeatures": [
+      {
+        "type": "push_fit",
+        "specs": {
+          "outerDiameter": 4,
+          "innerDiameter": 3
+        }
+      },
+      {
+        "type": "compression",
+        "specs": {
+          "outerDiameter": 4,
+          "innerDiameter": 3
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 3,
+      "outerDiameter_mm": 4,
+      "wallThickness_mm": 0.5,
+      "material": "PTFE / Teflon",
+      "tempRange": "-200C to 260C",
+      "maxPressure_bar": 3,
+      "frictionCoefficient": 0.04,
+      "chemicalResistance": "Excellent -- inert to nearly all chemicals including acids, bases, and solvents",
+      "color": "White/Natural",
+      "dielectricStrength": "High -- excellent electrical insulator"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5239K14",
+        "approximatePrice": 1.6,
+        "url": "https://www.mcmaster.com/5239K14"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07FSFBMXF",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/dp/B07FSFBMXF"
+      }
+    ],
+    "designNotes": "Thin-wall variant with 3mm bore and 4mm OD. Used as Bowden tube for 3mm filament printers (older Ultimaker, Lulzbot) or as a loose guide for 1.75mm filament with more clearance. Thin 0.5mm wall is flexible but less durable -- avoid tight bend radii. Also useful for chemical transfer lines where low friction and chemical inertness are needed. Fits 4mm push-fit couplers. Lower pressure rating than 2mm ID variant due to thinner wall. Minimum bend radius ~10mm.",
+    "tags": [
+      "PTFE",
+      "Teflon",
+      "Bowden",
+      "3D-printer",
+      "3mm-filament",
+      "thin-wall",
+      "chemical-transfer",
+      "low-friction",
+      "push-fit",
+      "Ultimaker"
+    ]
+  },
+  {
+    "name": "PTFE Tubing -- 4mm ID x 6mm OD (Chemical Transfer / 3mm Filament)",
+    "description": "PTFE (Teflon) tubing, 4mm inner diameter, 6mm outer diameter, 1mm wall, -200C to 260C service range, ultralow friction coefficient 0.04, white/natural color, chemically inert to nearly all chemicals, suitable for 3mm filament Bowden or general chemical/solvent transfer, push-fit compatible with 6mm pneumatic fittings, sold per meter",
+    "categorySlug": "tubing",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6,
+      "weight": 14
+    },
+    "mountingFeatures": [
+      {
+        "type": "push_fit",
+        "specs": {
+          "outerDiameter": 6,
+          "innerDiameter": 4
+        }
+      },
+      {
+        "type": "compression",
+        "specs": {
+          "outerDiameter": 6,
+          "innerDiameter": 4
+        }
+      },
+      {
+        "type": "barb",
+        "specs": {
+          "innerDiameter": 4,
+          "outerDiameter": 6
+        }
+      }
+    ],
+    "specs": {
+      "innerDiameter_mm": 4,
+      "outerDiameter_mm": 6,
+      "wallThickness_mm": 1,
+      "material": "PTFE / Teflon",
+      "tempRange": "-200C to 260C",
+      "maxPressure_bar": 5,
+      "frictionCoefficient": 0.04,
+      "chemicalResistance": "Excellent -- inert to nearly all chemicals including acids, bases, and solvents",
+      "color": "White/Natural",
+      "dielectricStrength": "High -- excellent electrical insulator"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5239K15",
+        "approximatePrice": 2.4,
+        "url": "https://www.mcmaster.com/5239K15"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07WRQNZ2Y",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B07WRQNZ2Y"
+      }
+    ],
+    "designNotes": "Versatile PTFE tube for chemical transfer, solvent dispensing, or as Bowden tube for 3mm filament printers. 4mm bore provides generous clearance for 3mm/2.85mm filament. PTFE is inert to virtually all chemicals -- safe for aggressive solvents, acids, and fuming. Also used for pneumatic circuits where chemical resistance is needed. Compatible with 6mm push-fit fittings or 4mm barb fittings. Stiffer than PU or silicone tubing -- PTFE does not stretch or deform. Minimum bend radius ~20mm. Avoid repeated flexing at the same point -- PTFE can develop stress cracks over time.",
+    "tags": [
+      "PTFE",
+      "Teflon",
+      "chemical-transfer",
+      "3D-printer",
+      "3mm-filament",
+      "solvent-resistant",
+      "low-friction",
+      "push-fit",
+      "compression",
+      "lab",
+      "inert"
+    ]
+  }
+]

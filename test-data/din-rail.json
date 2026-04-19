@@ -1,0 +1,702 @@
+[
+  {
+    "name": "TS-35 Standard DIN Rail, Steel, Slotted, 1m (Weidmuller 0514510000)",
+    "description": "35mm top-hat DIN rail, TS 35x7.5 profile per EN 60715 / IEC 60715, zinc-plated steel, slotted (6.2mm x 15mm oblong mounting holes at 25mm pitch), 1 meter length, 1.0mm material thickness, for panel-mounting terminal blocks, contactors, relays, and circuit breakers",
+    "categorySlug": "din-rail",
+    "entryType": "component",
+    "dimensions": {
+      "width": 35,
+      "height": 7.5,
+      "length": 1000,
+      "weight": 460
+    },
+    "mountingFeatures": [
+      {
+        "type": "slot",
+        "specs": {
+          "slotWidth": 6.2,
+          "slotLength": 15,
+          "slotPitch": 25,
+          "mountingScrewSize": 6,
+          "slotCount": 39
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "profile": "TS 35x7.5",
+      "standard": "EN 60715 / IEC 60715",
+      "material": "Zinc-plated steel",
+      "materialThickness": 1.0,
+      "finish": "Zinc-plated",
+      "railWidth": 35,
+      "railDepth": 7.5,
+      "cuttable": true
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "0514510000",
+        "approximatePrice": 12,
+        "url": "https://www.digikey.com/en/products/detail/weidmuller/0514510000/6587893"
+      },
+      {
+        "name": "AutomationDirect",
+        "partNumber": "DN-R35S1-2",
+        "approximatePrice": 4.5,
+        "url": "https://www.automationdirect.com/adc/shopping/catalog/wiring_solutions/din_rail/din_rail/dn-r35s1-2"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8961K15",
+        "approximatePrice": 26,
+        "url": "https://www.mcmaster.com/8961K15"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The universal standard for industrial control panel mounting. Cut to length with hacksaw or angle grinder. Pre-drill or use slotted holes for #10 or M5 pan-head screws to mount to panel — use at least 2 screws per 300mm run. Available in 1m and 2m standard lengths. Also available in aluminum (lighter, non-magnetic) and 35x15mm deep profile for heavier components. All standard DIN rail terminal blocks, contactors, MCBs, and DIN-mount enclosures snap directly onto this rail. Use CLIPFIX 35 end stops to prevent lateral movement of components. For outdoor/corrosive environments, use stainless steel variant.",
+    "tags": [
+      "DIN rail",
+      "top hat rail",
+      "TS35",
+      "TS-35",
+      "35mm DIN rail",
+      "omega rail",
+      "hat rail",
+      "mounting rail",
+      "panel rail",
+      "EN 60715",
+      "IEC 60715",
+      "control panel",
+      "industrial rail",
+      "G rail",
+      "Hutschiene"
+    ]
+  },
+  {
+    "name": "Phoenix Contact UK 2.5 N Feed-Through Terminal Block (3003347)",
+    "description": "2-wire screw-connection DIN rail feed-through terminal block, 5.2mm width, 24A rated, 800V, 0.2-4mm2 (AWG 30-12) wire range, polyamide PA 66 V0, gray, mounts on TS 35/7.5 and TS 35/15 DIN rail, Phoenix Contact UK series",
+    "categorySlug": "din-rail",
+    "entryType": "component",
+    "dimensions": {
+      "width": 5.2,
+      "height": 47,
+      "depth": 42.5,
+      "weight": 9
+    },
+    "mountingFeatures": [
+      {
+        "type": "din_rail_clip",
+        "specs": {
+          "railProfile": "TS 35x7.5 / TS 35x15",
+          "mountingMethod": "snap-on"
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "connectionCount": 2,
+          "wireRangeMin_mm2": 0.2,
+          "wireRangeMax_mm2": 4,
+          "wireRangeAWG": "30-12",
+          "screwSize": "M2.5",
+          "stripLength": 7
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "800V",
+      "current": "24A",
+      "power": null,
+      "interface": "Screw connection",
+      "pinout": "2-wire feed-through: wire in left, wire out right"
+    },
+    "specs": {
+      "series": "UK",
+      "connectionType": "Screw",
+      "conductorCount": 2,
+      "wireRangeMin_mm2": 0.2,
+      "wireRangeMax_mm2": 4,
+      "wireRangeAWG": "30-12",
+      "ratedVoltage": 800,
+      "ratedCurrent": 24,
+      "material": "Polyamide PA 66",
+      "flammabilityRating": "UL 94 V0",
+      "color": "Gray",
+      "operatingTempMin": -60,
+      "operatingTempMax": 110,
+      "atexCertified": true
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "277-1016-ND",
+        "approximatePrice": 2.5,
+        "url": "https://www.digikey.com/en/products/detail/phoenix-contact/3003347/308304"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "651-3003347",
+        "approximatePrice": 2.5,
+        "url": "https://www.mouser.com/ProductDetail/Phoenix-Contact/3003347"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The workhorse terminal block for signal and low-power wiring. At 5.2mm wide, it's the most space-efficient Phoenix Contact screw terminal. Use blue variant (UK 2.5 N BU, 3003362) for neutral conductors and green/yellow (UK 2.5-PE, 3003923) for ground. Pair with end covers D-UK 4/10 (3003020) for finished ends. Bridge multiple terminals with FBS 2-5 (3030161) plug-in jumpers. For higher current, step up to UK 5 N (32A) or UK 10 N (57A). Accepts ferrule-terminated or bare stranded/solid wire. Torque spec: 0.5 Nm.",
+    "tags": [
+      "terminal block",
+      "DIN terminal",
+      "screw terminal",
+      "feed-through",
+      "UK 2.5",
+      "Phoenix Contact",
+      "wire connector",
+      "rail terminal",
+      "Reihenklemme",
+      "wiring block",
+      "junction block"
+    ]
+  },
+  {
+    "name": "Phoenix Contact UK 5 N Feed-Through Terminal Block (3004362)",
+    "description": "2-wire screw-connection DIN rail feed-through terminal block, 6.2mm width, 32A rated, 800V, 0.2-6mm2 (AWG 24-10) wire range, polyamide PA 66 V0, gray, mounts on TS 35/7.5 and TS 35/15 DIN rail, Phoenix Contact UK series",
+    "categorySlug": "din-rail",
+    "entryType": "component",
+    "dimensions": {
+      "width": 6.2,
+      "height": 47,
+      "depth": 42.5,
+      "weight": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "din_rail_clip",
+        "specs": {
+          "railProfile": "TS 35x7.5 / TS 35x15",
+          "mountingMethod": "snap-on"
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "connectionCount": 2,
+          "wireRangeMin_mm2": 0.2,
+          "wireRangeMax_mm2": 6,
+          "wireRangeAWG": "24-10",
+          "screwSize": "M3",
+          "stripLength": 8
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "800V",
+      "current": "32A",
+      "power": null,
+      "interface": "Screw connection",
+      "pinout": "2-wire feed-through: wire in left, wire out right"
+    },
+    "specs": {
+      "series": "UK",
+      "connectionType": "Screw",
+      "conductorCount": 2,
+      "wireRangeMin_mm2": 0.2,
+      "wireRangeMax_mm2": 6,
+      "wireRangeAWG": "24-10",
+      "ratedVoltage": 800,
+      "ratedCurrent": 32,
+      "material": "Polyamide PA 66",
+      "flammabilityRating": "UL 94 V0",
+      "color": "Gray",
+      "operatingTempMin": -60,
+      "operatingTempMax": 110,
+      "atexCertified": true
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "277-1144-ND",
+        "approximatePrice": 2.5,
+        "url": "https://www.digikey.com/en/products/detail/phoenix-contact/3004362/950836"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "651-3004362",
+        "approximatePrice": 2.5,
+        "url": "https://www.mouser.com/ProductDetail/Phoenix-Contact/3004362"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Mid-range terminal block for power distribution up to 32A. Good default choice for motor power wiring, branch circuits, and 120V/240V mains connections. At 6.2mm width, only 1mm wider than the UK 2.5 N. Use blue variant for neutral (UK 5 N BU, 3004379), green/yellow for ground (UK 5-PE, 3004388). Bridge with FBS 2-6 plug-in jumpers. For 3-wire connections in same footprint, use UT 4-TWIN instead. Torque spec: 0.6 Nm.",
+    "tags": [
+      "terminal block",
+      "DIN terminal",
+      "screw terminal",
+      "feed-through",
+      "UK 5",
+      "Phoenix Contact",
+      "wire connector",
+      "rail terminal",
+      "power terminal",
+      "32A terminal"
+    ]
+  },
+  {
+    "name": "Phoenix Contact UK 10 N Feed-Through Terminal Block (3005073)",
+    "description": "2-wire screw-connection DIN rail feed-through terminal block, 10.2mm width, 57A rated, 800V, 0.5-16mm2 (AWG 20-6) wire range, polyamide PA 66 V0, gray, mounts on TS 35/7.5 and TS 35/15 DIN rail, Phoenix Contact UK series, large gauge power distribution",
+    "categorySlug": "din-rail",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.2,
+      "height": 47.3,
+      "depth": 42.5,
+      "weight": 18
+    },
+    "mountingFeatures": [
+      {
+        "type": "din_rail_clip",
+        "specs": {
+          "railProfile": "TS 35x7.5 / TS 35x15",
+          "mountingMethod": "snap-on"
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "connectionCount": 2,
+          "wireRangeMin_mm2": 0.5,
+          "wireRangeMax_mm2": 16,
+          "wireRangeAWG": "20-6",
+          "screwSize": "M4",
+          "stripLength": 10
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "800V",
+      "current": "57A",
+      "power": null,
+      "interface": "Screw connection",
+      "pinout": "2-wire feed-through: wire in left, wire out right"
+    },
+    "specs": {
+      "series": "UK",
+      "connectionType": "Screw",
+      "conductorCount": 2,
+      "wireRangeMin_mm2": 0.5,
+      "wireRangeMax_mm2": 16,
+      "wireRangeAWG": "20-6",
+      "ratedVoltage": 800,
+      "ratedCurrent": 57,
+      "material": "Polyamide PA 66",
+      "flammabilityRating": "UL 94 V0",
+      "color": "Gray",
+      "operatingTempMin": -60,
+      "operatingTempMax": 110,
+      "atexCertified": true
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "277-1175-ND",
+        "approximatePrice": 4.5,
+        "url": "https://www.digikey.com/en/products/detail/phoenix-contact/3005073/950867"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "651-3005073",
+        "approximatePrice": 4.5,
+        "url": "https://www.mouser.com/ProductDetail/Phoenix-Contact/3005073"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Heavy-duty terminal for main power feeds, motor branch circuits, and high-current distribution. Handles up to 6 AWG / 16mm2 wire at 57A. Use for incoming mains connections, VFD power wiring, and large motor leads. Blue variant (UK 10 N BU) for neutral, green/yellow (UK 10-PE) for ground. Bridge with FBS 2-10 plug-in jumpers. For currents above 57A, step up to UK 16 N (76A) or UK 35 N (125A). Torque spec: 1.2 Nm. Requires larger screwdriver (blade width ~4mm).",
+    "tags": [
+      "terminal block",
+      "DIN terminal",
+      "screw terminal",
+      "feed-through",
+      "UK 10",
+      "Phoenix Contact",
+      "wire connector",
+      "rail terminal",
+      "power terminal",
+      "57A terminal",
+      "high current terminal",
+      "6 AWG"
+    ]
+  },
+  {
+    "name": "Phoenix Contact UT 2.5-TWIN 3-Wire Terminal Block (3044513)",
+    "description": "3-wire screw-connection DIN rail feed-through terminal block, 5.2mm width, 24A rated, 500V, 0.14-4mm2 (AWG 26-12) wire range, 3 connection points in single-width body, polyamide PA 66 V0, gray, mounts on TS 35/7.5 and TS 35/15 DIN rail, Phoenix Contact UT TWIN series",
+    "categorySlug": "din-rail",
+    "entryType": "component",
+    "dimensions": {
+      "width": 5.2,
+      "height": 46.9,
+      "depth": 42.5,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "din_rail_clip",
+        "specs": {
+          "railProfile": "TS 35x7.5 / TS 35x15",
+          "mountingMethod": "snap-on"
+        }
+      },
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "connectionCount": 3,
+          "wireRangeMin_mm2": 0.14,
+          "wireRangeMax_mm2": 4,
+          "wireRangeAWG": "26-12",
+          "screwSize": "M2.5",
+          "stripLength": 7
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "500V",
+      "current": "24A",
+      "power": null,
+      "interface": "Screw connection",
+      "pinout": "3-wire feed-through: 3 independent connection points internally joined"
+    },
+    "specs": {
+      "series": "UT TWIN",
+      "connectionType": "Screw",
+      "conductorCount": 3,
+      "wireRangeMin_mm2": 0.14,
+      "wireRangeMax_mm2": 4,
+      "wireRangeAWG": "26-12",
+      "ratedVoltage": 500,
+      "ratedCurrent": 24,
+      "material": "Polyamide PA 66",
+      "flammabilityRating": "UL 94 V0",
+      "color": "Gray",
+      "operatingTempMin": -60,
+      "operatingTempMax": 110
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "277-14556-ND",
+        "approximatePrice": 3,
+        "url": "https://www.digikey.com/en/products/detail/phoenix-contact/3044513/5516043"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "651-3044513",
+        "approximatePrice": 3,
+        "url": "https://www.mouser.com/ProductDetail/Phoenix-Contact/3044513"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Space-saving 3-wire terminal in a 5.2mm single-width body. All 3 connection points are internally connected — use for distributing a single signal or power rail to 2 destinations, or for T-junctions in wiring. Note the lower voltage rating (500V vs 800V for UK series) due to reduced clearance between 3 connections. For higher wire gauge with 3-wire, use UT 4-TWIN (3044364, 6.2mm width, 32A, 0.14-6mm2). End cover: D-UT 2.5/10-TWIN. Torque spec: 0.5 Nm.",
+    "tags": [
+      "terminal block",
+      "3-wire terminal",
+      "DIN terminal",
+      "screw terminal",
+      "feed-through",
+      "UT TWIN",
+      "Phoenix Contact",
+      "triple terminal",
+      "T-junction",
+      "distribution terminal",
+      "rail terminal"
+    ]
+  },
+  {
+    "name": "WAGO 280-901 2-Conductor Terminal Block, CAGE CLAMP (280-901)",
+    "description": "2-wire CAGE CLAMP spring-connection DIN rail feed-through terminal block, 5mm width, 24A rated, 800V, 0.08-2.5mm2 (AWG 28-12) wire range, tool-operated spring clamp, polyamide PA 6.6, gray, mounts on TS 35/7.5 and TS 35/15 DIN rail, WAGO 280 series",
+    "categorySlug": "din-rail",
+    "entryType": "component",
+    "dimensions": {
+      "width": 5,
+      "height": 28,
+      "depth": 53,
+      "weight": 7
+    },
+    "mountingFeatures": [
+      {
+        "type": "din_rail_clip",
+        "specs": {
+          "railProfile": "TS 35x7.5 / TS 35x15",
+          "mountingMethod": "snap-on"
+        }
+      },
+      {
+        "type": "spring_terminal",
+        "specs": {
+          "connectionCount": 2,
+          "wireRangeMin_mm2": 0.08,
+          "wireRangeMax_mm2": 2.5,
+          "wireRangeAWG": "28-12",
+          "connectionType": "CAGE CLAMP (tool-operated spring)",
+          "stripLength": 8.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "800V",
+      "current": "24A",
+      "power": null,
+      "interface": "CAGE CLAMP spring connection",
+      "pinout": "2-wire feed-through: wire in left, wire out right"
+    },
+    "specs": {
+      "series": "280",
+      "connectionType": "CAGE CLAMP (spring)",
+      "conductorCount": 2,
+      "wireRangeMin_mm2": 0.08,
+      "wireRangeMax_mm2": 2.5,
+      "wireRangeAWG": "28-12",
+      "ratedVoltage": 800,
+      "ratedCurrent": 24,
+      "material": "Polyamide PA 6.6",
+      "flammabilityRating": "UL 94 V0",
+      "color": "Gray",
+      "operatingTempMin": -60,
+      "operatingTempMax": 100
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "2946-280-901-ND",
+        "approximatePrice": 5,
+        "url": "https://www.digikey.com/en/products/detail/wago-corporation/280-901/13549602"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "198-280-901",
+        "approximatePrice": 5,
+        "url": "https://www.mouser.com/ProductDetail/WAGO/280-901"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "CAGE CLAMP connection is faster and more vibration-resistant than screw terminals — wire is held by a spring, opened with a screwdriver or WAGO operating tool. No torque setting needed, no re-torquing. Preferred for high-vibration environments and high-density wiring. At 5mm width, slightly narrower than Phoenix Contact UK 2.5 N (5.2mm). Blue variant (280-904) for neutral wiring. For 3-conductor version, use WAGO 280-681. WAGO operating tool: 280-432 (included in some packs). Compatible with WAGO jumper bars for bridging multiple terminals.",
+    "tags": [
+      "terminal block",
+      "CAGE CLAMP",
+      "spring terminal",
+      "DIN terminal",
+      "WAGO",
+      "280 series",
+      "tool-free terminal",
+      "vibration resistant",
+      "rail terminal",
+      "feed-through",
+      "Federkraftklemme"
+    ]
+  },
+  {
+    "name": "WAGO 280-681 3-Conductor Terminal Block, CAGE CLAMP (280-681)",
+    "description": "3-wire CAGE CLAMP spring-connection DIN rail feed-through terminal block, 5mm width, 24A rated, 800V, 0.08-2.5mm2 (AWG 28-12) wire range, tool-operated spring clamp, polyamide PA 6.6, gray, mounts on TS 35/7.5 and TS 35/15 DIN rail, WAGO 280 series, 3 connection points",
+    "categorySlug": "din-rail",
+    "entryType": "component",
+    "dimensions": {
+      "width": 5,
+      "height": 28,
+      "depth": 64,
+      "weight": 9
+    },
+    "mountingFeatures": [
+      {
+        "type": "din_rail_clip",
+        "specs": {
+          "railProfile": "TS 35x7.5 / TS 35x15",
+          "mountingMethod": "snap-on"
+        }
+      },
+      {
+        "type": "spring_terminal",
+        "specs": {
+          "connectionCount": 3,
+          "wireRangeMin_mm2": 0.08,
+          "wireRangeMax_mm2": 2.5,
+          "wireRangeAWG": "28-12",
+          "connectionType": "CAGE CLAMP (tool-operated spring)",
+          "stripLength": 8.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "800V",
+      "current": "24A",
+      "power": null,
+      "interface": "CAGE CLAMP spring connection",
+      "pinout": "3-wire feed-through: 3 internally connected conductors"
+    },
+    "specs": {
+      "series": "280",
+      "connectionType": "CAGE CLAMP (spring)",
+      "conductorCount": 3,
+      "wireRangeMin_mm2": 0.08,
+      "wireRangeMax_mm2": 2.5,
+      "wireRangeAWG": "28-12",
+      "ratedVoltage": 800,
+      "ratedCurrent": 24,
+      "material": "Polyamide PA 6.6",
+      "flammabilityRating": "UL 94 V0",
+      "color": "Gray",
+      "operatingTempMin": -60,
+      "operatingTempMax": 100
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "2946-280-681-ND",
+        "approximatePrice": 2,
+        "url": "https://www.digikey.com/en/products/detail/wago-corporation/280-681/13549430"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "198-280-681",
+        "approximatePrice": 2,
+        "url": "https://www.mouser.com/ProductDetail/WAGO/280-681"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "3-conductor version of the WAGO 280 series — all 3 connection points internally joined. Same 5mm width as the 2-conductor 280-901 but 11mm deeper (64mm vs 53mm). Use for T-junction wiring, power distribution to 2 downstream devices from 1 source, or any 3-way connection point. Same CAGE CLAMP advantages: vibration-resistant, no torque setting, fast installation. For screw-type 3-wire equivalent, see Phoenix Contact UT 2.5-TWIN. WAGO operating tool: 280-432.",
+    "tags": [
+      "terminal block",
+      "3-wire terminal",
+      "CAGE CLAMP",
+      "spring terminal",
+      "DIN terminal",
+      "WAGO",
+      "280 series",
+      "triple terminal",
+      "T-junction",
+      "distribution terminal",
+      "rail terminal"
+    ]
+  },
+  {
+    "name": "DIN Rail Mounting Clip, Steel, 25mm (Winford DINM23)",
+    "description": "Nickel-plated steel DIN rail mounting clip, 25mm width, 2x M4 threaded mounting holes, lift-and-pivot release, for mounting custom PCBs, brackets, and enclosures onto 35mm TS DIN rail, RoHS compliant",
+    "categorySlug": "din-rail",
+    "entryType": "component",
+    "dimensions": {
+      "width": 25,
+      "height": 14,
+      "depth": 40,
+      "weight": 20
+    },
+    "mountingFeatures": [
+      {
+        "type": "din_rail_clip",
+        "specs": {
+          "railProfile": "TS 35x7.5",
+          "mountingMethod": "lift-and-pivot snap-on"
+        }
+      },
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "threadSize": 4,
+          "threadPitch": 0.7,
+          "holeCount": 2,
+          "holeSpacing": 15
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "material": "Nickel-plated steel",
+      "releaseType": "Lift and pivot",
+      "threadSize": "M4 x 0.7mm",
+      "mountingHoleCount": 2,
+      "rohs": true
+    },
+    "suppliers": [
+      {
+        "name": "Winford Engineering",
+        "partNumber": "DINM23",
+        "approximatePrice": 3.5,
+        "url": "https://www.winford.com/products/dinm23.php"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Use to mount custom PCBs, 3D-printed enclosures, or brackets onto DIN rail. Attach your item to the clip using M4x6 or M4x8 pan-head machine screws through the threaded holes. For M3 thread variant, use DINM23T3. For latch-release (more secure grip) variant, use DINM23LR. For wider items, use DINM24 (52mm, 6 holes) or DINM20/DINM21 (44.2mm). Pair with M4x6 SHCS or pan-head screws and M4 washers. The 25mm width matches common small PCB and module sizes.",
+    "tags": [
+      "DIN clip",
+      "DIN mount",
+      "mounting clip",
+      "DIN rail adapter",
+      "rail clip",
+      "panel mount",
+      "DIN bracket",
+      "PCB DIN mount",
+      "Hutschienen clip",
+      "snap-on bracket"
+    ]
+  },
+  {
+    "name": "Phoenix Contact CLIPFIX 35 End Stop (3022218)",
+    "description": "Snap-on DIN rail end stop / end clamp, 9.5mm width, polyamide PA V2, gray, for TS 35/7.5 and TS 35/15 DIN rails, prevents lateral movement of terminal blocks and components, Phoenix Contact CLIPFIX series",
+    "categorySlug": "din-rail",
+    "entryType": "component",
+    "dimensions": {
+      "width": 9.5,
+      "height": 35,
+      "depth": 48.5,
+      "weight": 5
+    },
+    "mountingFeatures": [
+      {
+        "type": "din_rail_clip",
+        "specs": {
+          "railProfile": "TS 35x7.5 / TS 35/15",
+          "mountingMethod": "snap-on"
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "series": "CLIPFIX",
+      "material": "Polyamide PA",
+      "flammabilityRating": "UL 94 V2",
+      "color": "Gray",
+      "compatibleRails": "TS 35/7.5, TS 35/15, NS 32",
+      "operatingTempMin": -40,
+      "operatingTempMax": 100
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "277-1291-ND",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/phoenix-contact/3022218/349871"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "651-3022218",
+        "approximatePrice": 1,
+        "url": "https://www.mouser.com/ProductDetail/Phoenix-Contact/3022218"
+      },
+      {
+        "name": "AutomationDirect",
+        "partNumber": "DN-EC35",
+        "approximatePrice": 0.5,
+        "url": "https://www.automationdirect.com/adc/shopping/catalog/wiring_solutions/din_rail/din_rail_accessories/dn-ec35"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Essential accessory — always use 2 end stops per DIN rail run (one at each end) to prevent terminal blocks from sliding. Snaps on without tools and grips the rail firmly. Place against the outermost terminal block on each side. For narrower profile (5.15mm), use CLIPFIX 35-5 (3022276) which also has a parking slot for Phoenix Contact FBS jumper bars. Order in bulk — typically sold in packs of 50 (minimum order from Phoenix Contact), but distributors often sell individually. White variant available (0802723) for aesthetic preference.",
+    "tags": [
+      "end stop",
+      "end clamp",
+      "end bracket",
+      "DIN rail stop",
+      "CLIPFIX",
+      "Phoenix Contact",
+      "rail end",
+      "terminal stop",
+      "Endhalter",
+      "end plate"
+    ]
+  }
+]

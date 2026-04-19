@@ -1,0 +1,1005 @@
+[
+  {
+    "name": "0.91\" 128×32 OLED Display Module (SSD1306, I2C)",
+    "description": "0.91 inch monochrome OLED display module, 128×32 pixel resolution, SSD1306 driver, I2C interface (address 0x3C default), 3.3-5V operating voltage, 22.38×5.58mm active area, 4-pin header (GND/VCC/SCL/SDA), white/blue/yellow variants, ultra-compact form factor for status readouts",
+    "categorySlug": "displays",
+    "entryType": "component",
+    "dimensions": {
+      "width": 38.0,
+      "height": 12.0,
+      "depth": 3.3,
+      "weight": 2.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 4,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 4,
+          "headerType": "through-hole male",
+          "pinout": "GND, VCC, SCL, SDA"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V",
+      "current": "8-12mA typical",
+      "power": "0.06W typical",
+      "interface": "I2C",
+      "pinout": "4-pin: GND, VCC, SCL, SDA"
+    },
+    "specs": {
+      "resolution": "128×32",
+      "displayType": "OLED monochrome",
+      "driverChip": "SSD1306",
+      "interface": "I2C",
+      "i2cAddress": "0x3C (some 0x3D)",
+      "activeAreaWidth": 22.38,
+      "activeAreaHeight": 5.58,
+      "pixelPitch": 0.175,
+      "contrastRatio": "2000:1",
+      "viewingAngle": 160
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00O2LLT30",
+        "approximatePrice": 4,
+        "url": "https://www.amazon.com/dp/B00O2LLT30"
+      },
+      {
+        "name": "Adafruit",
+        "partNumber": "4440",
+        "approximatePrice": 13,
+        "url": "https://www.adafruit.com/product/4440"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Smallest common OLED — good for single-line status displays, small dashboards. Use Adafruit SSD1306 or U8g2 library. I2C address is 0x3C by default; some modules have solder jumper for 0x3D to allow two displays on one bus. Pin order varies by manufacturer (some swap GND/VCC) — always verify before wiring. No mounting holes on most modules — use double-sided tape, adhesive standoffs, or design a clip/cradle. 3.3V logic native but most modules include onboard regulator for 5V MCUs. Very low current draw makes it ideal for battery projects.",
+    "tags": [
+      "OLED",
+      "SSD1306",
+      "I2C display",
+      "0.91 inch",
+      "128x32",
+      "monochrome display",
+      "small OLED",
+      "status display",
+      "128×32 OLED"
+    ]
+  },
+  {
+    "name": "0.96\" 128×64 OLED Display Module (SSD1306, I2C)",
+    "description": "0.96 inch monochrome OLED display module, 128×64 pixel resolution, SSD1306 driver, I2C interface (address 0x3C default), 3.3-5V operating voltage, 21.74×10.86mm active area, 4-pin header (GND/VCC/SCL/SDA), white/blue/yellow-blue dual-color variants, most popular small OLED for Arduino and ESP32 projects",
+    "categorySlug": "displays",
+    "entryType": "component",
+    "dimensions": {
+      "width": 27.3,
+      "height": 27.8,
+      "depth": 3.7,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 4,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 4,
+          "headerType": "through-hole male",
+          "pinout": "GND, VCC, SCL, SDA"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V",
+      "current": "10-20mA typical",
+      "power": "0.08W typical",
+      "interface": "I2C",
+      "pinout": "4-pin: GND, VCC, SCL, SDA"
+    },
+    "specs": {
+      "resolution": "128×64",
+      "displayType": "OLED monochrome",
+      "driverChip": "SSD1306",
+      "interface": "I2C",
+      "i2cAddress": "0x3C (some 0x3D)",
+      "activeAreaWidth": 21.74,
+      "activeAreaHeight": 10.86,
+      "pixelPitch": 0.17,
+      "contrastRatio": "2000:1",
+      "viewingAngle": 160
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "326",
+        "approximatePrice": 18,
+        "url": "https://www.adafruit.com/product/326"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B09T6SJBV5",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/dp/B09T6SJBV5"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "1528-4741-ND",
+        "approximatePrice": 18,
+        "url": "https://www.digikey.com/en/products/detail/adafruit-industries-llc/326/7241428"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The most popular small OLED display for maker projects. Use Adafruit SSD1306 library or U8g2. I2C address 0x3C default; solder jumper on some boards selects 0x3D for dual-display setups. Pin order is NOT standardized — verify GND/VCC order on your specific module before wiring. Adafruit version has mounting holes; most generic modules do not. Works great with ESP32, Arduino Nano, Raspberry Pi Pico. Some generic modules come in yellow-blue dual-color variant (top 16 rows yellow, bottom 48 rows blue — not software controllable, it's the OLED material). For SPI version (faster updates), see SPI variant.",
+    "tags": [
+      "OLED",
+      "SSD1306",
+      "I2C display",
+      "0.96 inch",
+      "128x64",
+      "monochrome display",
+      "Arduino display",
+      "ESP32 display",
+      "128×64 OLED"
+    ]
+  },
+  {
+    "name": "0.96\" 128×64 OLED Display Module (SSD1306, SPI)",
+    "description": "0.96 inch monochrome OLED display module, 128×64 pixel resolution, SSD1306 driver, SPI interface (4-wire with DC pin), 3.3-5V operating voltage, 21.74×10.86mm active area, 7-pin header (GND/VCC/D0/D1/RES/DC/CS), faster refresh than I2C variant, up to 10MHz SPI clock",
+    "categorySlug": "displays",
+    "entryType": "component",
+    "dimensions": {
+      "width": 27.3,
+      "height": 28.0,
+      "depth": 3.7,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 7,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 7,
+          "headerType": "through-hole male",
+          "pinout": "GND, VCC, D0(SCK), D1(MOSI), RES, DC, CS"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V",
+      "current": "10-20mA typical",
+      "power": "0.08W typical",
+      "interface": "SPI",
+      "pinout": "7-pin: GND, VCC, D0(SCK), D1(MOSI), RES, DC, CS"
+    },
+    "specs": {
+      "resolution": "128×64",
+      "displayType": "OLED monochrome",
+      "driverChip": "SSD1306",
+      "interface": "SPI (4-wire)",
+      "spiClockMax": 10,
+      "activeAreaWidth": 21.74,
+      "activeAreaHeight": 10.86,
+      "contrastRatio": "2000:1",
+      "viewingAngle": 160
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "326",
+        "approximatePrice": 18,
+        "url": "https://www.adafruit.com/product/326"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B01N1LZQA8",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/dp/B01N1LZQA8"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "SPI variant of the popular 0.96\" OLED — faster screen updates than I2C at the cost of more GPIO pins (7 vs 4). Use when refresh rate matters (animations, fast-updating data). Adafruit 326 supports both I2C and SPI via solder jumper. SPI clock up to 10MHz. Uses more GPIO than I2C — consider I2C version if pins are scarce. Same libraries work (Adafruit SSD1306, U8g2) with SPI constructor.",
+    "tags": [
+      "OLED",
+      "SSD1306",
+      "SPI display",
+      "0.96 inch",
+      "128x64",
+      "monochrome display",
+      "SPI OLED",
+      "fast display"
+    ]
+  },
+  {
+    "name": "1.3\" 128×64 OLED Display Module (SH1106, I2C)",
+    "description": "1.3 inch monochrome OLED display module, 128×64 pixel resolution, SH1106 driver chip, I2C interface (address 0x3C), 3.3-5V operating voltage, 29.42×14.70mm active area, 4-pin header, white or blue variants, larger readable display area than 0.96 inch OLED, 132×64 internal RAM with 2-column offset",
+    "categorySlug": "displays",
+    "entryType": "component",
+    "dimensions": {
+      "width": 35.0,
+      "height": 33.5,
+      "depth": 3.5,
+      "weight": 5.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeDiameter": 2.0,
+          "pattern": "diagonal corners"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 4,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 4,
+          "headerType": "through-hole male",
+          "pinout": "GND, VCC, SCL, SDA"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V",
+      "current": "15-25mA typical",
+      "power": "0.1W typical",
+      "interface": "I2C",
+      "pinout": "4-pin: GND, VCC, SCL, SDA"
+    },
+    "specs": {
+      "resolution": "128×64",
+      "displayType": "OLED monochrome",
+      "driverChip": "SH1106",
+      "interface": "I2C",
+      "i2cAddress": "0x3C",
+      "internalRam": "132×64 (2-column offset each side)",
+      "activeAreaWidth": 29.42,
+      "activeAreaHeight": 14.7,
+      "contrastRatio": "2000:1",
+      "viewingAngle": 160
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B09C5K91H7",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B09C5K91H7"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Larger and more readable than 0.96\" OLED at the same 128×64 resolution. IMPORTANT: SH1106 is NOT the same as SSD1306 — it has 132×64 internal RAM with a 2-column offset, so SSD1306 libraries will show shifted content. Use U8g2 (with SH1106 constructor) or Adafruit SH110X library. Some 1.3\" modules are mislabeled and actually contain SSD1306 — test with both libraries if display looks wrong. Most generic modules have 2 mounting holes at diagonal corners. Good upgrade path from 0.96\" OLED when readability is needed without changing code much.",
+    "tags": [
+      "OLED",
+      "SH1106",
+      "I2C display",
+      "1.3 inch",
+      "128x64",
+      "monochrome display",
+      "large OLED",
+      "SH110X"
+    ]
+  },
+  {
+    "name": "1.3\" 128×64 OLED Display Module (SH1106, SPI)",
+    "description": "1.3 inch monochrome OLED display module, 128×64 pixel resolution, SH1106 driver chip, SPI interface (4-wire with DC pin), 3.3-5V operating voltage, 29.42×14.70mm active area, 7-pin header (GND/VCC/CLK/MOSI/RES/DC/CS), faster refresh than I2C variant, up to 8MHz SPI clock",
+    "categorySlug": "displays",
+    "entryType": "component",
+    "dimensions": {
+      "width": 35.0,
+      "height": 33.5,
+      "depth": 3.5,
+      "weight": 5.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeDiameter": 2.0,
+          "pattern": "diagonal corners"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 7,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 7,
+          "headerType": "through-hole male",
+          "pinout": "GND, VCC, CLK, MOSI, RES, DC, CS"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V",
+      "current": "15-25mA typical",
+      "power": "0.1W typical",
+      "interface": "SPI",
+      "pinout": "7-pin: GND, VCC, CLK, MOSI, RES, DC, CS"
+    },
+    "specs": {
+      "resolution": "128×64",
+      "displayType": "OLED monochrome",
+      "driverChip": "SH1106",
+      "interface": "SPI (4-wire)",
+      "spiClockMax": 8,
+      "internalRam": "132×64 (2-column offset each side)",
+      "activeAreaWidth": 29.42,
+      "activeAreaHeight": 14.7,
+      "contrastRatio": "2000:1",
+      "viewingAngle": 160
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B09C5K91H7",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B09C5K91H7"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "SPI variant of the 1.3\" SH1106 OLED — faster updates than I2C at cost of more pins. Same driver chip caveats apply: SH1106 has 132×64 RAM with 2-column offset, must use SH1106-specific library or constructor. Less common than the I2C version. SPI clock up to ~8MHz. Use U8g2 with SH1106 SPI constructor or Adafruit SH110X library with SPI.",
+    "tags": [
+      "OLED",
+      "SH1106",
+      "SPI display",
+      "1.3 inch",
+      "128x64",
+      "monochrome display",
+      "SPI OLED",
+      "SH110X"
+    ]
+  },
+  {
+    "name": "16×2 Character LCD with I2C Backpack (HD44780 + PCF8574)",
+    "description": "16 character × 2 line character LCD module with I2C backpack, HD44780 compatible controller, PCF8574T I2C expander (address 0x27 or 0x3F), 5V operation, 80×36mm PCB, 64.5×16mm viewable area, 5×8 dot matrix characters, adjustable contrast potentiometer, LED backlight (green-yellow or blue-white), 4 mounting holes on 75×31mm pattern",
+    "categorySlug": "displays",
+    "entryType": "component",
+    "dimensions": {
+      "width": 80.0,
+      "height": 36.0,
+      "depth": 15.0,
+      "weight": 32
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeDiameter": 2.5,
+          "holeSpacingX": 75.0,
+          "holeSpacingY": 31.0,
+          "pattern": "rectangular corners"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 4,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 4,
+          "headerType": "through-hole male",
+          "pinout": "GND, VCC, SDA, SCL"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V",
+      "current": "1-2mA LCD, 20-80mA with backlight",
+      "power": "0.4W max with backlight",
+      "interface": "I2C",
+      "pinout": "4-pin via backpack: GND, VCC, SDA, SCL"
+    },
+    "specs": {
+      "resolution": "16×2 characters",
+      "displayType": "Character LCD (STN)",
+      "driverChip": "HD44780 + PCF8574T",
+      "interface": "I2C (via PCF8574 backpack)",
+      "i2cAddress": "0x27 (PCF8574T) or 0x3F (PCF8574AT)",
+      "characterMatrix": "5×8 dots",
+      "viewableAreaWidth": 64.5,
+      "viewableAreaHeight": 16.0,
+      "backlightType": "LED",
+      "contrastAdjustment": "potentiometer on backpack"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "181",
+        "approximatePrice": 10,
+        "url": "https://www.adafruit.com/product/181"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07S7PJYM6",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B07S7PJYM6"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "LCD-16396",
+        "approximatePrice": 23,
+        "url": "https://www.sparkfun.com/products/16396"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The classic Arduino display. I2C backpack reduces wiring from 12+ wires to 4 (GND/VCC/SDA/SCL). Requires 5V — most 3.3V MCUs need level shifting or a 5V supply. I2C address is usually 0x27 (PCF8574T) but some modules use 0x3F (PCF8574AT) — run I2C scanner if display doesn't respond. Contrast potentiometer on backpack must be adjusted physically — if display appears blank, turn the pot. Use LiquidCrystal_I2C library for Arduino. Four M2.5 mounting holes at corners (75×31mm spacing). Backlight draws significant current — can be disabled via solder jumper on backpack for battery projects. Not suitable for 3.3V-only systems without level shifting.",
+    "tags": [
+      "LCD",
+      "character LCD",
+      "1602",
+      "HD44780",
+      "I2C LCD",
+      "16x2 LCD",
+      "PCF8574",
+      "text display",
+      "Arduino LCD",
+      "alphanumeric display"
+    ]
+  },
+  {
+    "name": "20×4 Character LCD with I2C Backpack (HD44780 + PCF8574)",
+    "description": "20 character × 4 line character LCD module with I2C backpack, HD44780 compatible controller, PCF8574T I2C expander (address 0x27 or 0x3F), 5V operation, 98×60mm PCB, 77×25.2mm viewable area, 5×8 dot matrix characters, adjustable contrast potentiometer, LED backlight, 4 mounting holes on 93×55mm pattern",
+    "categorySlug": "displays",
+    "entryType": "component",
+    "dimensions": {
+      "width": 98.0,
+      "height": 60.0,
+      "depth": 15.0,
+      "weight": 58
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeDiameter": 2.5,
+          "holeSpacingX": 93.0,
+          "holeSpacingY": 55.0,
+          "pattern": "rectangular corners"
+        }
+      },
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 4,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 4,
+          "headerType": "through-hole male",
+          "pinout": "GND, VCC, SDA, SCL"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V",
+      "current": "2-3mA LCD, 80-120mA with backlight",
+      "power": "0.6W max with backlight",
+      "interface": "I2C",
+      "pinout": "4-pin via backpack: GND, VCC, SDA, SCL"
+    },
+    "specs": {
+      "resolution": "20×4 characters",
+      "displayType": "Character LCD (STN)",
+      "driverChip": "HD44780 + PCF8574T",
+      "interface": "I2C (via PCF8574 backpack)",
+      "i2cAddress": "0x27 (PCF8574T) or 0x3F (PCF8574AT)",
+      "characterMatrix": "5×8 dots",
+      "viewableAreaWidth": 77.0,
+      "viewableAreaHeight": 25.2,
+      "backlightType": "LED",
+      "contrastAdjustment": "potentiometer on backpack"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "198",
+        "approximatePrice": 18,
+        "url": "https://www.adafruit.com/product/198"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0C1G9GBRZ",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B0C1G9GBRZ"
+      },
+      {
+        "name": "SparkFun",
+        "partNumber": "LCD-16398",
+        "approximatePrice": 29,
+        "url": "https://www.sparkfun.com/products/16398"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Larger version of the 16×2 LCD — 4 lines of 20 characters allows for menus, status dashboards, and data logging displays. Same I2C backpack and library as 16×2 (LiquidCrystal_I2C). Requires 5V. Address detection: run I2C scanner sketch. Backlight draws significant current (~100mA). Mount with M2.5 screws through corner holes (93×55mm pattern). Line addressing is non-contiguous: line 0 starts at 0x00, line 1 at 0x40, line 2 at 0x14, line 3 at 0x54 — most libraries handle this automatically. Good for enclosure front panels — standard industry size with well-defined mounting.",
+    "tags": [
+      "LCD",
+      "character LCD",
+      "2004",
+      "HD44780",
+      "I2C LCD",
+      "20x4 LCD",
+      "PCF8574",
+      "text display",
+      "menu display",
+      "alphanumeric display"
+    ]
+  },
+  {
+    "name": "1.8\" 128×160 TFT Display Module (ST7735, SPI)",
+    "description": "1.8 inch color TFT LCD display module, 128×160 pixel resolution, 65K colors (RGB565), ST7735S/ST7735R driver chip, SPI interface with DC pin, 3.3-5V operating voltage, 28.03×35.04mm active area, 8 or 11 pin header (some include SD card slot), LED backlight with PWM control, compact full-color display for embedded projects",
+    "categorySlug": "displays",
+    "entryType": "component",
+    "dimensions": {
+      "width": 34.0,
+      "height": 55.0,
+      "depth": 6.0,
+      "weight": 12
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 8,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 8,
+          "headerType": "through-hole male",
+          "pinout": "GND, VCC, SCL, SDA, RES, DC, CS, BLK"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V",
+      "current": "20-40mA with backlight",
+      "power": "0.2W typical",
+      "interface": "SPI",
+      "pinout": "8-pin: GND, VCC, SCL, SDA(MOSI), RES, DC, CS, BLK"
+    },
+    "specs": {
+      "resolution": "128×160",
+      "displayType": "TFT LCD",
+      "colorDepth": "65K (RGB565, 16-bit)",
+      "driverChip": "ST7735S",
+      "interface": "SPI (4-wire with DC)",
+      "spiClockMax": 15,
+      "activeAreaWidth": 28.03,
+      "activeAreaHeight": 35.04,
+      "backlightType": "LED (PWM controllable)",
+      "sdCardSlot": "some modules include microSD slot"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "358",
+        "approximatePrice": 20,
+        "url": "https://www.adafruit.com/product/358"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07BFV69HZ",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/dp/B07BFV69HZ"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The smallest practical full-color TFT. Use Adafruit ST7735 library or TFT_eSPI (faster, more configurable). ST7735 has multiple sub-variants (ST7735S, ST7735R, green/black/red tab) — wrong initialization causes offset or inverted colors. TFT_eSPI lets you configure the exact variant. SPI clock up to 15-20MHz for fast updates. Backlight pin (BLK) can be PWM-controlled for brightness adjustment or tied to VCC for always-on. Some modules include microSD card slot (additional pins for MISO, SD_CS). Good balance of size, color capability, and pin count. Pairs well with ESP32 or Arduino Nano for compact color UI.",
+    "tags": [
+      "TFT",
+      "color display",
+      "ST7735",
+      "SPI display",
+      "1.8 inch",
+      "128x160",
+      "LCD",
+      "full color",
+      "RGB display",
+      "small TFT"
+    ]
+  },
+  {
+    "name": "2.4\" 240×320 TFT Display Module (ILI9341, SPI)",
+    "description": "2.4 inch color TFT LCD display module, 240×320 pixel resolution (QVGA), 262K colors, ILI9341 driver chip, SPI interface with DC pin, 3.3-5V operating voltage, 36.72×48.96mm active area, 9-14 pin header, optional XPT2046 resistive touchscreen, LED backlight, popular mid-size color display for dashboards and GUIs",
+    "categorySlug": "displays",
+    "entryType": "component",
+    "dimensions": {
+      "width": 42.5,
+      "height": 77.0,
+      "depth": 7.0,
+      "weight": 25
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 9,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 9,
+          "headerType": "through-hole male",
+          "pinout": "VCC, GND, CS, RESET, DC, SDI(MOSI), SCK, LED, SDO(MISO)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V",
+      "current": "40-80mA with backlight",
+      "power": "0.4W typical",
+      "interface": "SPI",
+      "pinout": "9-pin display + 5-pin touch (T_CLK, T_CS, T_DIN, T_DO, T_IRQ)"
+    },
+    "specs": {
+      "resolution": "240×320",
+      "displayType": "TFT LCD",
+      "colorDepth": "262K (RGB666 native, RGB565 over SPI)",
+      "driverChip": "ILI9341",
+      "interface": "SPI (4-wire with DC)",
+      "spiClockMax": 10,
+      "activeAreaWidth": 36.72,
+      "activeAreaHeight": 48.96,
+      "backlightType": "LED",
+      "touchController": "XPT2046 (on touch versions)",
+      "touchType": "resistive"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "1770",
+        "approximatePrice": 30,
+        "url": "https://www.adafruit.com/product/1770"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B073R7BH1B",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B073R7BH1B"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The workhorse mid-size TFT — good resolution, fast SPI, great library support. Use TFT_eSPI library for best performance (DMA support on ESP32). ILI9341 supports RGB565 over SPI (unlike ILI9488), making it faster than the 3.5\" version for full-screen updates. Touch versions include XPT2046 controller on separate SPI — shares MOSI/SCK but needs its own CS pin. Needs 6+ GPIO minimum (CS, DC, RST, MOSI, SCK, LED) plus 2 more for touch (T_CS, T_IRQ). ESP32 is the ideal MCU pairing — enough pins and fast SPI. Full screen refresh at 10MHz SPI takes ~50ms. For LVGL GUI framework, this is the recommended display size.",
+    "tags": [
+      "TFT",
+      "color display",
+      "ILI9341",
+      "SPI display",
+      "2.4 inch",
+      "240x320",
+      "QVGA",
+      "touchscreen",
+      "XPT2046",
+      "GUI display",
+      "LVGL"
+    ]
+  },
+  {
+    "name": "3.5\" 320×480 TFT Display Module (ILI9488, SPI)",
+    "description": "3.5 inch color TFT LCD display module, 320×480 pixel resolution (HVGA), 262K colors (RGB666), ILI9488 driver chip, SPI interface, 3.3-5V operating voltage, 48.96×73.44mm active area, optional XPT2046 resistive touchscreen, LED backlight, large color display for embedded GUIs and dashboards, RGB666 required over SPI (no RGB565 support)",
+    "categorySlug": "displays",
+    "entryType": "component",
+    "dimensions": {
+      "width": 55.0,
+      "height": 93.0,
+      "depth": 8.0,
+      "weight": 42
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 14,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 14,
+          "headerType": "through-hole male",
+          "pinout": "VCC, GND, CS, RESET, DC, MOSI, SCK, LED, MISO + touch pins"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3-5V",
+      "current": "80-150mA with backlight",
+      "power": "0.75W typical",
+      "interface": "SPI",
+      "pinout": "9-pin display + 5-pin touch (T_CLK, T_CS, T_DIN, T_DO, T_IRQ)"
+    },
+    "specs": {
+      "resolution": "320×480",
+      "displayType": "TFT LCD",
+      "colorDepth": "262K (RGB666 only, no RGB565 over SPI)",
+      "driverChip": "ILI9488",
+      "interface": "SPI (4-wire with DC)",
+      "spiClockMax": 20,
+      "activeAreaWidth": 48.96,
+      "activeAreaHeight": 73.44,
+      "backlightType": "LED",
+      "touchController": "XPT2046 (on touch versions)",
+      "touchType": "resistive"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "2050",
+        "approximatePrice": 40,
+        "url": "https://www.adafruit.com/product/2050"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07QJ1278S",
+        "approximatePrice": 14,
+        "url": "https://www.amazon.com/dp/B07QJ1278S"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "CRITICAL: ILI9488 does NOT support RGB565 (16-bit) over SPI — it requires RGB666 (18-bit, 3 bytes per pixel). This makes SPI communication ~33% slower than the 2.4\" ILI9341 for full-screen updates despite the higher max SPI clock. Full screen refresh is noticeably slower. For fast updates, consider 8-bit parallel interface (shield form factor) or the 2.4\" ILI9341 instead. TFT_eSPI library supports ILI9488 but must be configured for RGB666. Adafruit 2050 actually uses HX8357D driver (not ILI9488) — verify your specific module's driver chip. Backlight draws significant current (~100-150mA). Best paired with ESP32-S3 for sufficient pins and DMA SPI. Good for LVGL-based touch GUIs where readability matters more than refresh speed.",
+    "tags": [
+      "TFT",
+      "color display",
+      "ILI9488",
+      "SPI display",
+      "3.5 inch",
+      "320x480",
+      "HVGA",
+      "touchscreen",
+      "XPT2046",
+      "large display",
+      "HX8357D",
+      "LVGL"
+    ]
+  },
+  {
+    "name": "1.54\" 200×200 E-Paper Display Module (SPI, Waveshare Compatible)",
+    "description": "1.54 inch e-paper (e-ink) display module, 200×200 pixel resolution, bi-color black/white, SSD1681 driver chip, SPI interface with BUSY pin, 3.3V operating voltage, 27.6×27.6mm active area, 8-pin header (VCC/GND/DIN/CLK/CS/DC/RST/BUSY), ultra-low power static display, ~2 second full refresh, partial refresh supported, 180° viewing angle, sunlight readable",
+    "categorySlug": "displays",
+    "entryType": "component",
+    "dimensions": {
+      "width": 33.0,
+      "height": 48.0,
+      "depth": 1.2,
+      "weight": 6
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 8,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 8,
+          "headerType": "through-hole male",
+          "pinout": "VCC, GND, DIN(MOSI), CLK(SCK), CS, DC, RST, BUSY"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3V",
+      "current": "5-10mA during refresh, <0.01mA static",
+      "power": "0.03W during refresh, ~0W static",
+      "interface": "SPI",
+      "pinout": "8-pin: VCC, GND, DIN, CLK, CS, DC, RST, BUSY"
+    },
+    "specs": {
+      "resolution": "200×200",
+      "displayType": "E-paper (E-Ink)",
+      "colorDepth": "Bi-color (black/white)",
+      "driverChip": "SSD1681",
+      "interface": "SPI (4-wire + BUSY)",
+      "activeAreaWidth": 27.6,
+      "activeAreaHeight": 27.6,
+      "fullRefreshTime": 2.0,
+      "partialRefreshTime": 0.3,
+      "viewingAngle": 180,
+      "operatingTemp": "0-50°C",
+      "fpcConnector": "24-pin FPC"
+    },
+    "suppliers": [
+      {
+        "name": "Waveshare",
+        "partNumber": "12955",
+        "approximatePrice": 13,
+        "url": "https://www.waveshare.com/1.54inch-e-Paper-Module.htm"
+      },
+      {
+        "name": "Adafruit",
+        "partNumber": "4868",
+        "approximatePrice": 18,
+        "url": "https://www.adafruit.com/product/4868"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0728BJTZC",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B0728BJTZC"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "E-paper retains image with zero power — ideal for battery-powered displays, price tags, badges. BUSY pin MUST be monitored — sending commands while display is refreshing will corrupt it. Full refresh takes ~2 seconds with visible flicker; partial refresh is faster (~0.3s) but can cause ghosting after many partial updates — do a full refresh periodically. NOT suitable for animations or fast-updating data. Waveshare has gone through multiple hardware revisions (V1/V2/V3) with different driver chips — code for V1 may not work on V3. Use GxEPD2 library (Arduino) or Waveshare's Python examples (RPi). Operating temperature limited to 0-50°C — display may not update in cold environments. Tri-color (red/black/white) variant available but has ~15 second refresh time.",
+    "tags": [
+      "e-paper",
+      "e-ink",
+      "eink",
+      "epaper",
+      "1.54 inch",
+      "200x200",
+      "Waveshare",
+      "low power display",
+      "SSD1681",
+      "bistable display",
+      "sunlight readable"
+    ]
+  },
+  {
+    "name": "2.13\" 250×122 E-Paper Display Module (SPI, Waveshare Compatible)",
+    "description": "2.13 inch e-paper (e-ink) display module, 250×122 pixel resolution, bi-color black/white, SSD1680 driver chip, SPI interface with BUSY pin, 3.3V operating voltage, 48.55×23.71mm active area, 8-pin header, ultra-low power static display, ~2 second full refresh, partial refresh supported, 180° viewing angle, sunlight readable, popular size for name badges and IoT labels",
+    "categorySlug": "displays",
+    "entryType": "component",
+    "dimensions": {
+      "width": 29.2,
+      "height": 59.2,
+      "depth": 1.2,
+      "weight": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 8,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 8,
+          "headerType": "through-hole male",
+          "pinout": "VCC, GND, DIN(MOSI), CLK(SCK), CS, DC, RST, BUSY"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3V",
+      "current": "5-15mA during refresh, <0.01mA static",
+      "power": "0.05W during refresh, ~0W static",
+      "interface": "SPI",
+      "pinout": "8-pin: VCC, GND, DIN, CLK, CS, DC, RST, BUSY"
+    },
+    "specs": {
+      "resolution": "250×122",
+      "displayType": "E-paper (E-Ink)",
+      "colorDepth": "Bi-color (black/white)",
+      "driverChip": "SSD1680",
+      "interface": "SPI (4-wire + BUSY)",
+      "activeAreaWidth": 48.55,
+      "activeAreaHeight": 23.71,
+      "fullRefreshTime": 2.0,
+      "partialRefreshTime": 0.3,
+      "viewingAngle": 180,
+      "operatingTemp": "0-50°C",
+      "fpcConnector": "24-pin FPC"
+    },
+    "suppliers": [
+      {
+        "name": "Waveshare",
+        "partNumber": "12915",
+        "approximatePrice": 13,
+        "url": "https://www.waveshare.com/2.13inch-e-Paper-HAT.htm"
+      },
+      {
+        "name": "Adafruit",
+        "partNumber": "4687",
+        "approximatePrice": 23,
+        "url": "https://www.adafruit.com/product/4687"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B071S8HT76",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B071S8HT76"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Popular e-paper size — good for name badges, IoT sensors, shelf labels. Same usage caveats as all e-paper: monitor BUSY pin, periodic full refresh to prevent ghosting, 0-50°C operating range. Waveshare has multiple hardware revisions (V1/V2/V3/V4) with different driver chips (SSD1675→SSD1680→UC8151) — always check PCB version marking and use matching library initialization. LILYGO T5 2.13\" integrates this display with an ESP32 for a complete IoT e-paper solution. Use GxEPD2 library for Arduino/ESP32 or Waveshare Python library for RPi. HAT version plugs directly onto Raspberry Pi GPIO header. Partial refresh works well on V2+ for frequently updated elements (clock, sensor readings).",
+    "tags": [
+      "e-paper",
+      "e-ink",
+      "eink",
+      "epaper",
+      "2.13 inch",
+      "250x122",
+      "Waveshare",
+      "low power display",
+      "SSD1680",
+      "badge display",
+      "IoT display",
+      "name badge"
+    ]
+  },
+  {
+    "name": "2.9\" 296×128 E-Paper Display Module (SPI, Waveshare Compatible)",
+    "description": "2.9 inch e-paper (e-ink) display module, 296×128 pixel resolution, bi-color black/white, SSD1680 driver chip, SPI interface with BUSY pin, 3.3V operating voltage, 66.89×29.06mm active area, 8-pin header, ultra-low power static display, ~2 second full refresh, partial refresh supported, 180° viewing angle, sunlight readable, largest common small e-paper size for dashboards and shelf labels",
+    "categorySlug": "displays",
+    "entryType": "component",
+    "dimensions": {
+      "width": 36.7,
+      "height": 79.0,
+      "depth": 1.2,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 8,
+          "pinPitch": 2.54,
+          "rows": 1,
+          "pinsPerRow": 8,
+          "headerType": "through-hole male",
+          "pinout": "VCC, GND, DIN(MOSI), CLK(SCK), CS, DC, RST, BUSY"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.3V",
+      "current": "5-15mA during refresh, <0.01mA static",
+      "power": "0.05W during refresh, ~0W static",
+      "interface": "SPI",
+      "pinout": "8-pin: VCC, GND, DIN, CLK, CS, DC, RST, BUSY"
+    },
+    "specs": {
+      "resolution": "296×128",
+      "displayType": "E-paper (E-Ink)",
+      "colorDepth": "Bi-color (black/white)",
+      "driverChip": "SSD1680",
+      "interface": "SPI (4-wire + BUSY)",
+      "activeAreaWidth": 66.89,
+      "activeAreaHeight": 29.06,
+      "fullRefreshTime": 2.0,
+      "partialRefreshTime": 0.5,
+      "viewingAngle": 180,
+      "operatingTemp": "0-50°C",
+      "fpcConnector": "24-pin FPC"
+    },
+    "suppliers": [
+      {
+        "name": "Waveshare",
+        "partNumber": "12956",
+        "approximatePrice": 15,
+        "url": "https://www.waveshare.com/2.9inch-e-Paper-Module.htm"
+      },
+      {
+        "name": "Adafruit",
+        "partNumber": "4262",
+        "approximatePrice": 25,
+        "url": "https://www.adafruit.com/product/4262"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B072J2LCR6",
+        "approximatePrice": 14,
+        "url": "https://www.amazon.com/dp/B072J2LCR6"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Largest of the common small e-paper sizes — enough resolution for multi-line text, simple charts, QR codes. Same caveats as smaller e-papers: BUSY pin monitoring, periodic full refresh, 0-50°C range. Adafruit 4262 is a 4-level grayscale variant — richer visuals but different library initialization. Waveshare HAT version (SKU 12872) plugs directly onto Raspberry Pi. Multiple hardware revisions exist — check PCB version. Good for: shelf price tags, room signs, weather stations, IoT dashboards. Use GxEPD2 for Arduino/ESP32. The wider aspect ratio (roughly 2.3:1) is good for horizontal text layouts. Tri-color variant (red/black/white) available but has ~15 second refresh.",
+    "tags": [
+      "e-paper",
+      "e-ink",
+      "eink",
+      "epaper",
+      "2.9 inch",
+      "296x128",
+      "Waveshare",
+      "low power display",
+      "SSD1680",
+      "shelf label",
+      "dashboard display",
+      "IoT display"
+    ]
+  }
+]

@@ -1,0 +1,1046 @@
+[
+  {
+    "name": "Glass Cartridge Fuse 5×20mm 0.5A Slow-Blow",
+    "description": "Littelfuse 0218.500MXP 5×20mm glass cartridge fuse, 0.5A 250VAC slow-blow time-delay, 35A breaking capacity, for transformer and motor inrush tolerance",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "diameter": 5, "length": 20, "weight": 1 },
+    "mountingFeatures": [
+      {
+        "type": "cartridge",
+        "specs": {
+          "diameter": 5,
+          "length": 20,
+          "holderType": "5×20mm fuse holder"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250VAC",
+      "current": "0.5A",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "0.5A",
+      "voltageRating": "250VAC",
+      "type": "slow-blow",
+      "breakingCapacity": "35A at 250VAC",
+      "package": "5×20mm glass cartridge"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "0218.500MXP",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/0218.500MXP/1009122"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Time-delay fuse for transformer/motor inrush tolerance. Requires fuse holder.",
+    "tags": [
+      "fuse",
+      "glass-cartridge",
+      "5x20mm",
+      "slow-blow",
+      "time-delay",
+      "250VAC",
+      "0.5A",
+      "through-hole",
+      "protection"
+    ]
+  },
+  {
+    "name": "Glass Cartridge Fuse 5×20mm 1A Slow-Blow",
+    "description": "Littelfuse 0218001.MXP 5×20mm glass cartridge fuse, 1A 250VAC slow-blow time-delay, 35A breaking capacity, for transformer and motor inrush tolerance",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "diameter": 5, "length": 20, "weight": 1 },
+    "mountingFeatures": [
+      {
+        "type": "cartridge",
+        "specs": {
+          "diameter": 5,
+          "length": 20,
+          "holderType": "5×20mm fuse holder"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250VAC",
+      "current": "1A",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "1A",
+      "voltageRating": "250VAC",
+      "type": "slow-blow",
+      "breakingCapacity": "35A at 250VAC",
+      "package": "5×20mm glass cartridge"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "0218001.MXP",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/0218001.MXP/762525"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Time-delay fuse for transformer/motor inrush tolerance. Requires fuse holder.",
+    "tags": [
+      "fuse",
+      "glass-cartridge",
+      "5x20mm",
+      "slow-blow",
+      "time-delay",
+      "250VAC",
+      "1A",
+      "through-hole",
+      "protection"
+    ]
+  },
+  {
+    "name": "Glass Cartridge Fuse 5×20mm 2A Fast-Blow",
+    "description": "Littelfuse 0217002.MXP 5×20mm glass cartridge fuse, 2A 250VAC fast-acting, 35A breaking capacity, for semiconductor and circuit protection",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "diameter": 5, "length": 20, "weight": 1 },
+    "mountingFeatures": [
+      {
+        "type": "cartridge",
+        "specs": {
+          "diameter": 5,
+          "length": 20,
+          "holderType": "5×20mm fuse holder"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250VAC",
+      "current": "2A",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "2A",
+      "voltageRating": "250VAC",
+      "type": "fast-blow",
+      "breakingCapacity": "35A at 250VAC",
+      "package": "5×20mm glass cartridge"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "0217002.MXP",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/0217002.MXP/762478"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Fast-acting for semiconductor protection. Requires fuse holder.",
+    "tags": [
+      "fuse",
+      "glass-cartridge",
+      "5x20mm",
+      "fast-blow",
+      "fast-acting",
+      "250VAC",
+      "2A",
+      "through-hole",
+      "protection"
+    ]
+  },
+  {
+    "name": "Glass Cartridge Fuse 5×20mm 3A Fast-Blow",
+    "description": "Littelfuse 0217003.MXP 5×20mm glass cartridge fuse, 3A 250VAC fast-acting, 35A breaking capacity, for semiconductor and circuit protection",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "diameter": 5, "length": 20, "weight": 1 },
+    "mountingFeatures": [
+      {
+        "type": "cartridge",
+        "specs": {
+          "diameter": 5,
+          "length": 20,
+          "holderType": "5×20mm fuse holder"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250VAC",
+      "current": "3A",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "3A",
+      "voltageRating": "250VAC",
+      "type": "fast-blow",
+      "breakingCapacity": "35A at 250VAC",
+      "package": "5×20mm glass cartridge"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "0217003.MXP",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/0217003.MXP/762479"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Fast-acting for semiconductor protection. Requires fuse holder.",
+    "tags": [
+      "fuse",
+      "glass-cartridge",
+      "5x20mm",
+      "fast-blow",
+      "fast-acting",
+      "250VAC",
+      "3A",
+      "through-hole",
+      "protection"
+    ]
+  },
+  {
+    "name": "Glass Cartridge Fuse 5×20mm 5A Fast-Blow",
+    "description": "Littelfuse 0217005.MXP 5×20mm glass cartridge fuse, 5A 250VAC fast-acting, 35A breaking capacity, for semiconductor and circuit protection",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "diameter": 5, "length": 20, "weight": 1 },
+    "mountingFeatures": [
+      {
+        "type": "cartridge",
+        "specs": {
+          "diameter": 5,
+          "length": 20,
+          "holderType": "5×20mm fuse holder"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250VAC",
+      "current": "5A",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "5A",
+      "voltageRating": "250VAC",
+      "type": "fast-blow",
+      "breakingCapacity": "35A at 250VAC",
+      "package": "5×20mm glass cartridge"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "0217005.MXP",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/0217005.MXP/762481"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Fast-acting for semiconductor protection. Requires fuse holder.",
+    "tags": [
+      "fuse",
+      "glass-cartridge",
+      "5x20mm",
+      "fast-blow",
+      "fast-acting",
+      "250VAC",
+      "5A",
+      "through-hole",
+      "protection"
+    ]
+  },
+  {
+    "name": "Glass Cartridge Fuse 5×20mm 10A Fast-Blow",
+    "description": "Littelfuse 0217010.MXP 5×20mm glass cartridge fuse, 10A 250VAC fast-acting, 35A breaking capacity, for semiconductor and circuit protection",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "diameter": 5, "length": 20, "weight": 1 },
+    "mountingFeatures": [
+      {
+        "type": "cartridge",
+        "specs": {
+          "diameter": 5,
+          "length": 20,
+          "holderType": "5×20mm fuse holder"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250VAC",
+      "current": "10A",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "10A",
+      "voltageRating": "250VAC",
+      "type": "fast-blow",
+      "breakingCapacity": "35A at 250VAC",
+      "package": "5×20mm glass cartridge"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "0217010.MXP",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/0217010.MXP/762486"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Fast-acting for semiconductor protection. Requires fuse holder.",
+    "tags": [
+      "fuse",
+      "glass-cartridge",
+      "5x20mm",
+      "fast-blow",
+      "fast-acting",
+      "250VAC",
+      "10A",
+      "through-hole",
+      "protection"
+    ]
+  },
+  {
+    "name": "Automotive Blade Fuse ATC/ATO 5A Tan",
+    "description": "Littelfuse 0287005.PXCN ATC/ATO standard automotive blade fuse, 5A 32VDC fast-blow, tan color per SAE J1284, for 12V/24V automotive and DC circuits",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "width": 19.1, "height": 18.5, "depth": 5.1, "weight": 3 },
+    "mountingFeatures": [
+      {
+        "type": "blade",
+        "specs": {
+          "standard": "ATC/ATO",
+          "width": 19.1,
+          "height": 18.5,
+          "holderType": "ATC/ATO blade fuse holder"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "32VDC",
+      "current": "5A",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "5A",
+      "voltageRating": "32VDC",
+      "type": "fast-blow",
+      "package": "ATC/ATO standard blade",
+      "color": "Tan"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "0287005.PXCN",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/0287005.PXCN/1014944"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard automotive blade fuse for 12V/24V DC. Color-coded per SAE J1284. Use with inline blade fuse holder.",
+    "tags": [
+      "fuse",
+      "automotive",
+      "blade",
+      "ATC",
+      "ATO",
+      "fast-blow",
+      "32VDC",
+      "5A",
+      "tan",
+      "SAE-J1284",
+      "protection"
+    ]
+  },
+  {
+    "name": "Automotive Blade Fuse ATC/ATO 10A Red",
+    "description": "Littelfuse 0287010.PXCN ATC/ATO standard automotive blade fuse, 10A 32VDC fast-blow, red color per SAE J1284, for 12V/24V automotive and DC circuits",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "width": 19.1, "height": 18.5, "depth": 5.1, "weight": 3 },
+    "mountingFeatures": [
+      {
+        "type": "blade",
+        "specs": {
+          "standard": "ATC/ATO",
+          "width": 19.1,
+          "height": 18.5,
+          "holderType": "ATC/ATO blade fuse holder"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "32VDC",
+      "current": "10A",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "10A",
+      "voltageRating": "32VDC",
+      "type": "fast-blow",
+      "package": "ATC/ATO standard blade",
+      "color": "Red"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "0287010.PXCN",
+        "approximatePrice": 1.0,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/0287010.PXCN/1014949"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard automotive blade fuse for 12V/24V DC. Color-coded per SAE J1284. Use with inline blade fuse holder.",
+    "tags": [
+      "fuse",
+      "automotive",
+      "blade",
+      "ATC",
+      "ATO",
+      "fast-blow",
+      "32VDC",
+      "10A",
+      "red",
+      "SAE-J1284",
+      "protection"
+    ]
+  },
+  {
+    "name": "Automotive Blade Fuse ATC/ATO 15A Blue",
+    "description": "Littelfuse 0287015.PXCN ATC/ATO standard automotive blade fuse, 15A 32VDC fast-blow, blue color per SAE J1284, for 12V/24V automotive and DC circuits",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "width": 19.1, "height": 18.5, "depth": 5.1, "weight": 3 },
+    "mountingFeatures": [
+      {
+        "type": "blade",
+        "specs": {
+          "standard": "ATC/ATO",
+          "width": 19.1,
+          "height": 18.5,
+          "holderType": "ATC/ATO blade fuse holder"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "32VDC",
+      "current": "15A",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "15A",
+      "voltageRating": "32VDC",
+      "type": "fast-blow",
+      "package": "ATC/ATO standard blade",
+      "color": "Blue"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "0287015.PXCN",
+        "approximatePrice": 1.0,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/0287015.PXCN/1014950"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard automotive blade fuse for 12V/24V DC. Color-coded per SAE J1284. Use with inline blade fuse holder.",
+    "tags": [
+      "fuse",
+      "automotive",
+      "blade",
+      "ATC",
+      "ATO",
+      "fast-blow",
+      "32VDC",
+      "15A",
+      "blue",
+      "SAE-J1284",
+      "protection"
+    ]
+  },
+  {
+    "name": "Automotive Blade Fuse ATC/ATO 20A Yellow",
+    "description": "Littelfuse 0287020.PXCN ATC/ATO standard automotive blade fuse, 20A 32VDC fast-blow, yellow color per SAE J1284, for 12V/24V automotive and DC circuits",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "width": 19.1, "height": 18.5, "depth": 5.1, "weight": 3 },
+    "mountingFeatures": [
+      {
+        "type": "blade",
+        "specs": {
+          "standard": "ATC/ATO",
+          "width": 19.1,
+          "height": 18.5,
+          "holderType": "ATC/ATO blade fuse holder"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "32VDC",
+      "current": "20A",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "20A",
+      "voltageRating": "32VDC",
+      "type": "fast-blow",
+      "package": "ATC/ATO standard blade",
+      "color": "Yellow"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "0287020.PXCN",
+        "approximatePrice": 1.0,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/0287020.PXCN/1014951"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard automotive blade fuse for 12V/24V DC. Color-coded per SAE J1284. Use with inline blade fuse holder.",
+    "tags": [
+      "fuse",
+      "automotive",
+      "blade",
+      "ATC",
+      "ATO",
+      "fast-blow",
+      "32VDC",
+      "20A",
+      "yellow",
+      "SAE-J1284",
+      "protection"
+    ]
+  },
+  {
+    "name": "Automotive Blade Fuse ATC/ATO 25A Clear",
+    "description": "Littelfuse 0287025.PXCN ATC/ATO standard automotive blade fuse, 25A 32VDC fast-blow, clear color per SAE J1284, for 12V/24V automotive and DC circuits",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "width": 19.1, "height": 18.5, "depth": 5.1, "weight": 3 },
+    "mountingFeatures": [
+      {
+        "type": "blade",
+        "specs": {
+          "standard": "ATC/ATO",
+          "width": 19.1,
+          "height": 18.5,
+          "holderType": "ATC/ATO blade fuse holder"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "32VDC",
+      "current": "25A",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "25A",
+      "voltageRating": "32VDC",
+      "type": "fast-blow",
+      "package": "ATC/ATO standard blade",
+      "color": "Clear"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "0287025.PXCN",
+        "approximatePrice": 1.0,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/0287025.PXCN/1014952"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard automotive blade fuse for 12V/24V DC. Color-coded per SAE J1284. Use with inline blade fuse holder.",
+    "tags": [
+      "fuse",
+      "automotive",
+      "blade",
+      "ATC",
+      "ATO",
+      "fast-blow",
+      "32VDC",
+      "25A",
+      "clear",
+      "SAE-J1284",
+      "protection"
+    ]
+  },
+  {
+    "name": "Automotive Blade Fuse ATC/ATO 30A Green",
+    "description": "Littelfuse 0287030.PXCN ATC/ATO standard automotive blade fuse, 30A 32VDC fast-blow, green color per SAE J1284, for 12V/24V automotive and DC circuits",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "width": 19.1, "height": 18.5, "depth": 5.1, "weight": 3 },
+    "mountingFeatures": [
+      {
+        "type": "blade",
+        "specs": {
+          "standard": "ATC/ATO",
+          "width": 19.1,
+          "height": 18.5,
+          "holderType": "ATC/ATO blade fuse holder"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "32VDC",
+      "current": "30A",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "30A",
+      "voltageRating": "32VDC",
+      "type": "fast-blow",
+      "package": "ATC/ATO standard blade",
+      "color": "Green"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "0287030.PXCN",
+        "approximatePrice": 1.0,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/0287030.PXCN/1014953"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard automotive blade fuse for 12V/24V DC. Color-coded per SAE J1284. Use with inline blade fuse holder.",
+    "tags": [
+      "fuse",
+      "automotive",
+      "blade",
+      "ATC",
+      "ATO",
+      "fast-blow",
+      "32VDC",
+      "30A",
+      "green",
+      "SAE-J1284",
+      "protection"
+    ]
+  },
+  {
+    "name": "PTC Resettable Fuse 0.5A Hold",
+    "description": "Littelfuse RXEF050 radial through-hole PTC resettable fuse, 0.5A hold / 1.0A trip, 60V, 40A breaking capacity, self-resetting overcurrent protection for USB and speaker circuits",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "diameter": 9, "thickness": 4, "weight": 2 },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": { "leadCount": 2, "leadSpacing": 7.5, "leadDiameter": 0.6 }
+      }
+    ],
+    "electrical": {
+      "voltage": "60V",
+      "current": "0.5A hold",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "0.5A",
+      "tripCurrent": "1.0A",
+      "voltageRating": "60V",
+      "type": "PTC",
+      "breakingCapacity": "40A",
+      "package": "radial through-hole"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "RXEF050",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/RXEF050/389398"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Self-resetting overcurrent protection. Slower than glass fuses (seconds). Use for USB port protection, speaker protection. Resets after fault clears and cools.",
+    "tags": [
+      "fuse",
+      "PTC",
+      "resettable",
+      "through-hole",
+      "0.5A",
+      "60V",
+      "USB-protection",
+      "speaker-protection",
+      "overcurrent",
+      "protection"
+    ]
+  },
+  {
+    "name": "PTC Resettable Fuse 1.1A Hold",
+    "description": "Littelfuse RXEF110 radial through-hole PTC resettable fuse, 1.1A hold / 2.2A trip, 60V, 40A breaking capacity, self-resetting overcurrent protection for USB and speaker circuits",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "diameter": 9, "thickness": 4, "weight": 2 },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": { "leadCount": 2, "leadSpacing": 7.5, "leadDiameter": 0.6 }
+      }
+    ],
+    "electrical": {
+      "voltage": "60V",
+      "current": "1.1A hold",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "1.1A",
+      "tripCurrent": "2.2A",
+      "voltageRating": "60V",
+      "type": "PTC",
+      "breakingCapacity": "40A",
+      "package": "radial through-hole"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "RXEF110",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/RXEF110/389401"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Self-resetting overcurrent protection. Slower than glass fuses (seconds). Use for USB port protection, speaker protection. Resets after fault clears and cools.",
+    "tags": [
+      "fuse",
+      "PTC",
+      "resettable",
+      "through-hole",
+      "1.1A",
+      "60V",
+      "USB-protection",
+      "speaker-protection",
+      "overcurrent",
+      "protection"
+    ]
+  },
+  {
+    "name": "PTC Resettable Fuse 2.0A Hold",
+    "description": "Littelfuse RXEF200 radial through-hole PTC resettable fuse, 2.0A hold / 4.0A trip, 60V, 40A breaking capacity, self-resetting overcurrent protection for USB and speaker circuits",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "diameter": 9, "thickness": 4, "weight": 2 },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": { "leadCount": 2, "leadSpacing": 7.5, "leadDiameter": 0.6 }
+      }
+    ],
+    "electrical": {
+      "voltage": "60V",
+      "current": "2.0A hold",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "currentRating": "2.0A",
+      "tripCurrent": "4.0A",
+      "voltageRating": "60V",
+      "type": "PTC",
+      "breakingCapacity": "40A",
+      "package": "radial through-hole"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "RXEF200",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/RXEF200/389404"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Self-resetting overcurrent protection. Slower than glass fuses (seconds). Use for USB port protection, speaker protection. Resets after fault clears and cools.",
+    "tags": [
+      "fuse",
+      "PTC",
+      "resettable",
+      "through-hole",
+      "2.0A",
+      "60V",
+      "USB-protection",
+      "speaker-protection",
+      "overcurrent",
+      "protection"
+    ]
+  },
+  {
+    "name": "Panel Mount Fuse Holder 5×20mm",
+    "description": "Schurter 0031.8201 panel mount fuse holder for 5×20mm glass cartridge fuses, 10A 250VAC, 12.5mm panel cutout, screw-cap replacement, for AC mains and bench power supplies",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "width": 30, "height": 30, "depth": 25, "weight": 10 },
+    "mountingFeatures": [
+      {
+        "type": "panel_mount",
+        "specs": { "holeDiameter": 12.5, "fuseSize": "5×20mm" }
+      }
+    ],
+    "electrical": {
+      "voltage": "250VAC",
+      "current": "10A max",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "fuseSize": "5×20mm",
+      "mountType": "panel",
+      "maxCurrent": "10A",
+      "maxVoltage": "250VAC"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "486-2050-ND",
+        "approximatePrice": 2.0,
+        "url": "https://www.digikey.com/en/products/detail/schurter/0031-8201/352597"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Panel mount holder for 5×20mm glass fuses. Unscrew cap to replace fuse.",
+    "tags": [
+      "fuse-holder",
+      "panel-mount",
+      "5x20mm",
+      "250VAC",
+      "10A",
+      "Schurter",
+      "enclosure",
+      "protection"
+    ]
+  },
+  {
+    "name": "Inline Blade Fuse Holder ATC/ATO",
+    "description": "Littelfuse FHAC0002ZXJ inline wire-lead fuse holder for ATC/ATO standard automotive blade fuses, 30A 32VDC, 12-18 AWG wire, weatherproof cap, for automotive and DC power circuits",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "length": 80, "width": 20, "height": 15, "weight": 15 },
+    "mountingFeatures": [
+      {
+        "type": "inline",
+        "specs": { "wireGauge": "12-18 AWG", "fuseType": "ATC/ATO blade" }
+      }
+    ],
+    "electrical": {
+      "voltage": "32VDC",
+      "current": "30A max",
+      "power": null,
+      "interface": null,
+      "pinout": null
+    },
+    "specs": {
+      "fuseType": "ATC/ATO blade",
+      "mountType": "inline",
+      "maxCurrent": "30A",
+      "maxVoltage": "32VDC",
+      "wireConnection": "crimp or solder"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "F2050-ND",
+        "approximatePrice": 2.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/FHAC0002ZXJ/1646532"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Inline holder with wire leads for automotive blade fuses. Weatherproof cap.",
+    "tags": [
+      "fuse-holder",
+      "inline",
+      "ATC",
+      "ATO",
+      "blade",
+      "automotive",
+      "32VDC",
+      "30A",
+      "weatherproof",
+      "wire-lead",
+      "protection"
+    ]
+  },
+  {
+    "name": "TVS Diode P6KE6.8A 5.8V",
+    "description": "Littelfuse P6KE6.8A DO-15 unidirectional TVS diode, 5.8V standoff / 6.8V breakdown / 10.5V clamping, 600W peak pulse, axial through-hole, transient voltage suppression for 5V rails",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "length": 7, "diameter": 2.5, "weight": 1 },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": { "leadCount": 2, "leadSpacing": 10.16, "leadDiameter": 0.6 }
+      }
+    ],
+    "electrical": {
+      "voltage": "5.8V standoff",
+      "current": "57A peak pulse",
+      "power": "600W peak pulse",
+      "interface": null,
+      "pinout": "anode-cathode (cathode band)"
+    },
+    "specs": {
+      "workingVoltage": "5.8V",
+      "breakdownVoltage": "6.8V",
+      "clampingVoltage": "10.5V",
+      "peakPulsePower": "600W",
+      "peakPulseCurrent": "57A",
+      "package": "DO-15",
+      "direction": "unidirectional"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "P6KE6.8AGOS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/P6KE6.8A/285903"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Place at power input, cathode to positive rail. Responds in nanoseconds. Use P6KE6.8A for 5V, P6KE15A for 12V, P6KE30A for 24V rails.",
+    "tags": [
+      "TVS",
+      "transient-voltage-suppressor",
+      "DO-15",
+      "through-hole",
+      "5V",
+      "6.8V",
+      "600W",
+      "ESD-protection",
+      "overvoltage",
+      "protection",
+      "unidirectional"
+    ]
+  },
+  {
+    "name": "TVS Diode P6KE15A 12.8V",
+    "description": "Littelfuse P6KE15A DO-15 unidirectional TVS diode, 12.8V standoff / 15V breakdown / 21.7V clamping, 600W peak pulse, axial through-hole, transient voltage suppression for 12V rails",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "length": 7, "diameter": 2.5, "weight": 1 },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": { "leadCount": 2, "leadSpacing": 10.16, "leadDiameter": 0.6 }
+      }
+    ],
+    "electrical": {
+      "voltage": "12.8V standoff",
+      "current": "27.6A peak pulse",
+      "power": "600W peak pulse",
+      "interface": null,
+      "pinout": "anode-cathode (cathode band)"
+    },
+    "specs": {
+      "workingVoltage": "12.8V",
+      "breakdownVoltage": "15V",
+      "clampingVoltage": "21.7V",
+      "peakPulsePower": "600W",
+      "peakPulseCurrent": "27.6A",
+      "package": "DO-15",
+      "direction": "unidirectional"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "P6KE15AGOS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/P6KE15A/285912"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Place at power input, cathode to positive rail. Responds in nanoseconds. Use P6KE6.8A for 5V, P6KE15A for 12V, P6KE30A for 24V rails.",
+    "tags": [
+      "TVS",
+      "transient-voltage-suppressor",
+      "DO-15",
+      "through-hole",
+      "12V",
+      "15V",
+      "600W",
+      "ESD-protection",
+      "overvoltage",
+      "protection",
+      "unidirectional"
+    ]
+  },
+  {
+    "name": "TVS Diode P6KE30A 25.6V",
+    "description": "Littelfuse P6KE30A DO-15 unidirectional TVS diode, 25.6V standoff / 30V breakdown / 43.5V clamping, 600W peak pulse, axial through-hole, transient voltage suppression for 24V rails",
+    "categorySlug": "protection-components",
+    "entryType": "component",
+    "dimensions": { "length": 7, "diameter": 2.5, "weight": 1 },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": { "leadCount": 2, "leadSpacing": 10.16, "leadDiameter": 0.6 }
+      }
+    ],
+    "electrical": {
+      "voltage": "25.6V standoff",
+      "current": "13.8A peak pulse",
+      "power": "600W peak pulse",
+      "interface": null,
+      "pinout": "anode-cathode (cathode band)"
+    },
+    "specs": {
+      "workingVoltage": "25.6V",
+      "breakdownVoltage": "30V",
+      "clampingVoltage": "43.5V",
+      "peakPulsePower": "600W",
+      "peakPulseCurrent": "13.8A",
+      "package": "DO-15",
+      "direction": "unidirectional"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "P6KE30AGOS-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse/P6KE30A/285920"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Place at power input, cathode to positive rail. Responds in nanoseconds. Use P6KE6.8A for 5V, P6KE15A for 12V, P6KE30A for 24V rails.",
+    "tags": [
+      "TVS",
+      "transient-voltage-suppressor",
+      "DO-15",
+      "through-hole",
+      "24V",
+      "30V",
+      "600W",
+      "ESD-protection",
+      "overvoltage",
+      "protection",
+      "unidirectional"
+    ]
+  }
+]

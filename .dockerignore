@@ -1,0 +1,48 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist
+.output
+.vinxi
+.vite
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+.nyc_output
+
+# Documentation
+*.md
+!README.md
+
+# Scripts and configs
+drizzle
+*.sql
+reset-db.js
+list-tables.js
+
+# Temp files
+*.log
+tmp
+temp

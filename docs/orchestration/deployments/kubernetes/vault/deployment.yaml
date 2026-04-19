@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cascadia-vault
+  namespace: cascadia
+  labels:
+    app: cascadia
+    component: vault
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cascadia
+      component: vault
+  template:
+    metadata:
+      labels:
+        app: cascadia
+        component: vault
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+
+      containers:
+        - name: vault
+          image: cascadia/vault:latest
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 3001
+              protocol: TCP
+
+          env:
+            # From ConfigMap
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: cascadia-config
+                  key: NODE_ENV
+
+            # From Secrets
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cascadia-secrets
+                  key: database-url
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cascadia-secrets
+                  key: session-secret
+
+          resources:
+            requests:
+              cpu: '125m'
+              memory: '128Mi'
+            limits:
+              cpu: '500m'
+              memory: '512Mi'
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          volumeMounts:
+            - name: vault-storage
+              mountPath: /app/vault-storage
+
+      volumes:
+        - name: vault-storage
+          persistentVolumeClaim:
+            claimName: cascadia-vault-pvc
+
+---
+# Persistent Volume Claim for vault file storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cascadia-vault-pvc
+  namespace: cascadia
+  labels:
+    app: cascadia
+    component: vault
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: standard

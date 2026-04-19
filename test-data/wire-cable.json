@@ -1,0 +1,362 @@
+[
+  {
+    "name": "18 AWG Silicone Hookup Wire",
+    "description": "18 AWG silicone-insulated stranded hookup wire, 150 strands of 0.08mm tinned copper, 2.3mm outer diameter, 0.823mm2 conductor area, 16A chassis wiring capacity, 600V rated, -60C to +200C, ultra-flexible silicone rubber insulation, available in 11+ colors",
+    "categorySlug": "wire-cable",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 2.3,
+      "weight": 9.5
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "600V",
+      "current": "16A (chassis wiring)",
+      "pinout": "Single conductor, stranded"
+    },
+    "specs": {
+      "gauge": 18,
+      "conductorDiameter": 1.024,
+      "outerDiameter": 2.3,
+      "strandCount": 150,
+      "strandDiameter": 0.08,
+      "conductorArea": 0.823,
+      "conductorMaterial": "Tinned copper",
+      "insulationMaterial": "Silicone rubber",
+      "ratedVoltage": 600,
+      "ratedTemperature": "-60C to +200C",
+      "chassisWiringCurrent": 16,
+      "powerTransmissionCurrent": 2.3,
+      "availableColors": "Red, Black, Blue, Yellow, Green, White, Brown, Gray, Purple, Orange, Pink"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "BNTECHGO",
+        "approximatePrice": 19,
+        "url": "https://www.amazon.com/stores/BNTECHGO/page/1B33B82D-E0B2-4A53-8E2E-F5E8B6A5B6C3"
+      },
+      {
+        "name": "BNTECHGO",
+        "partNumber": "18AWG-100FT",
+        "approximatePrice": 19
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Highest current capacity in this range. Use for motor power leads (steppers, DC motors), main power distribution, battery connections. Standard for 3D printer heated bed wiring (10-15A). Stiff but manageable. Compatible connectors: JST-XH (max), screw terminals (all sizes). Too thick for JST-PH, JST-GH, or JST-SH.. Silicone insulation is heat-resistant (200C) — ideal near hot ends, heated beds, and soldering areas. More flexible than PVC-insulated wire. Available in 25ft (as 2-color kit), 50ft, and 100ft single-color spools from BNTECHGO. Strip with automatic wire strippers set to 18 AWG.",
+    "tags": [
+      "18 AWG",
+      "18AWG",
+      "18 gauge",
+      "silicone wire",
+      "hookup wire",
+      "stranded wire",
+      "tinned copper",
+      "BNTECHGO",
+      "flexible wire",
+      "high temp wire",
+      "3D printer wire",
+      "robotics wire"
+    ]
+  },
+  {
+    "name": "20 AWG Silicone Hookup Wire",
+    "description": "20 AWG silicone-insulated stranded hookup wire, 100 strands of 0.08mm tinned copper, 1.8mm outer diameter, 0.519mm2 conductor area, 11A chassis wiring capacity, 600V rated, -60C to +200C, ultra-flexible silicone rubber insulation, available in 11+ colors",
+    "categorySlug": "wire-cable",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 1.8,
+      "weight": 6
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "600V",
+      "current": "11A (chassis wiring)",
+      "pinout": "Single conductor, stranded"
+    },
+    "specs": {
+      "gauge": 20,
+      "conductorDiameter": 0.813,
+      "outerDiameter": 1.8,
+      "strandCount": 100,
+      "strandDiameter": 0.08,
+      "conductorArea": 0.519,
+      "conductorMaterial": "Tinned copper",
+      "insulationMaterial": "Silicone rubber",
+      "ratedVoltage": 600,
+      "ratedTemperature": "-60C to +200C",
+      "chassisWiringCurrent": 11,
+      "powerTransmissionCurrent": 1.5,
+      "availableColors": "Red, Black, Blue, Yellow, Green, White, Brown, Gray, Purple, Orange, Pink"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "BNTECHGO",
+        "approximatePrice": 15,
+        "url": "https://www.amazon.com/stores/BNTECHGO/page/1B33B82D-E0B2-4A53-8E2E-F5E8B6A5B6C3"
+      },
+      {
+        "name": "BNTECHGO",
+        "partNumber": "20AWG-100FT",
+        "approximatePrice": 15
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Good balance of current capacity and flexibility. Use for stepper motor wiring (2-3A), LED strip power feeds, 12V distribution. Standard for 3D printer stepper motor and fan wiring. Compatible connectors: JST-XH, screw terminals (all sizes). Too thick for JST-PH or smaller.. Silicone insulation is heat-resistant (200C) — ideal near hot ends, heated beds, and soldering areas. More flexible than PVC-insulated wire. Available in 25ft (as 2-color kit), 50ft, and 100ft single-color spools from BNTECHGO. Strip with automatic wire strippers set to 20 AWG.",
+    "tags": [
+      "20 AWG",
+      "20AWG",
+      "20 gauge",
+      "silicone wire",
+      "hookup wire",
+      "stranded wire",
+      "tinned copper",
+      "BNTECHGO",
+      "flexible wire",
+      "high temp wire",
+      "3D printer wire",
+      "robotics wire"
+    ]
+  },
+  {
+    "name": "22 AWG Silicone Hookup Wire",
+    "description": "22 AWG silicone-insulated stranded hookup wire, 60 strands of 0.08mm tinned copper, 1.7mm outer diameter, 0.327mm2 conductor area, 7A chassis wiring capacity, 600V rated, -60C to +200C, ultra-flexible silicone rubber insulation, available in 11+ colors",
+    "categorySlug": "wire-cable",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 1.7,
+      "weight": 3.8
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "600V",
+      "current": "7A (chassis wiring)",
+      "pinout": "Single conductor, stranded"
+    },
+    "specs": {
+      "gauge": 22,
+      "conductorDiameter": 0.645,
+      "outerDiameter": 1.7,
+      "strandCount": 60,
+      "strandDiameter": 0.08,
+      "conductorArea": 0.327,
+      "conductorMaterial": "Tinned copper",
+      "insulationMaterial": "Silicone rubber",
+      "ratedVoltage": 600,
+      "ratedTemperature": "-60C to +200C",
+      "chassisWiringCurrent": 7,
+      "powerTransmissionCurrent": 0.92,
+      "availableColors": "Red, Black, Blue, Yellow, Green, White, Brown, Gray, Purple, Orange, Pink"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "BNTECHGO",
+        "approximatePrice": 13,
+        "url": "https://www.amazon.com/stores/BNTECHGO/page/1B33B82D-E0B2-4A53-8E2E-F5E8B6A5B6C3"
+      },
+      {
+        "name": "BNTECHGO",
+        "partNumber": "22AWG-100FT",
+        "approximatePrice": 13
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The general-purpose hookup wire. Suitable for most signal and moderate-power connections (sensors, control signals, low-power motors, LED strips). Fits comfortably in JST-XH and screw terminals. Most popular gauge for electronics prototyping. Compatible connectors: JST-XH (standard), 5.08mm screw terminals. At the edge of JST-PH spec.. Silicone insulation is heat-resistant (200C) — ideal near hot ends, heated beds, and soldering areas. More flexible than PVC-insulated wire. Available in 25ft (as 2-color kit), 50ft, and 100ft single-color spools from BNTECHGO. Strip with automatic wire strippers set to 22 AWG.",
+    "tags": [
+      "22 AWG",
+      "22AWG",
+      "22 gauge",
+      "silicone wire",
+      "hookup wire",
+      "stranded wire",
+      "tinned copper",
+      "BNTECHGO",
+      "flexible wire",
+      "high temp wire",
+      "3D printer wire",
+      "robotics wire"
+    ]
+  },
+  {
+    "name": "24 AWG Silicone Hookup Wire",
+    "description": "24 AWG silicone-insulated stranded hookup wire, 40 strands of 0.08mm tinned copper, 1.6mm outer diameter, 0.205mm2 conductor area, 3.5A chassis wiring capacity, 600V rated, -60C to +200C, ultra-flexible silicone rubber insulation, available in 11+ colors",
+    "categorySlug": "wire-cable",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 1.6,
+      "weight": 2.4
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "600V",
+      "current": "3.5A (chassis wiring)",
+      "pinout": "Single conductor, stranded"
+    },
+    "specs": {
+      "gauge": 24,
+      "conductorDiameter": 0.511,
+      "outerDiameter": 1.6,
+      "strandCount": 40,
+      "strandDiameter": 0.08,
+      "conductorArea": 0.205,
+      "conductorMaterial": "Tinned copper",
+      "insulationMaterial": "Silicone rubber",
+      "ratedVoltage": 600,
+      "ratedTemperature": "-60C to +200C",
+      "chassisWiringCurrent": 3.5,
+      "powerTransmissionCurrent": 0.577,
+      "availableColors": "Red, Black, Blue, Yellow, Green, White, Brown, Gray, Purple, Orange, Pink"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "BNTECHGO",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/stores/BNTECHGO/page/1B33B82D-E0B2-4A53-8E2E-F5E8B6A5B6C3"
+      },
+      {
+        "name": "BNTECHGO",
+        "partNumber": "24AWG-100FT",
+        "approximatePrice": 12
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Ideal for signal-level connections. Use with JST-PH and JST-XH connectors. Good for I2C, SPI, UART, button wiring, LED data lines. Flexible and easy to route through tight spaces. Compatible connectors: JST-PH (standard), JST-XH, all screw terminals. Standard for most JST connectors.. Silicone insulation is heat-resistant (200C) — ideal near hot ends, heated beds, and soldering areas. More flexible than PVC-insulated wire. Available in 25ft (as 2-color kit), 50ft, and 100ft single-color spools from BNTECHGO. Strip with automatic wire strippers set to 24 AWG.",
+    "tags": [
+      "24 AWG",
+      "24AWG",
+      "24 gauge",
+      "silicone wire",
+      "hookup wire",
+      "stranded wire",
+      "tinned copper",
+      "BNTECHGO",
+      "flexible wire",
+      "high temp wire",
+      "3D printer wire",
+      "robotics wire"
+    ]
+  },
+  {
+    "name": "26 AWG Silicone Hookup Wire",
+    "description": "26 AWG silicone-insulated stranded hookup wire, 30 strands of 0.08mm tinned copper, 1.5mm outer diameter, 0.128mm2 conductor area, 2.2A chassis wiring capacity, 600V rated, -60C to +200C, ultra-flexible silicone rubber insulation, available in 11+ colors",
+    "categorySlug": "wire-cable",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 1.5,
+      "weight": 1.5
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "600V",
+      "current": "2.2A (chassis wiring)",
+      "pinout": "Single conductor, stranded"
+    },
+    "specs": {
+      "gauge": 26,
+      "conductorDiameter": 0.404,
+      "outerDiameter": 1.5,
+      "strandCount": 30,
+      "strandDiameter": 0.08,
+      "conductorArea": 0.128,
+      "conductorMaterial": "Tinned copper",
+      "insulationMaterial": "Silicone rubber",
+      "ratedVoltage": 600,
+      "ratedTemperature": "-60C to +200C",
+      "chassisWiringCurrent": 2.2,
+      "powerTransmissionCurrent": 0.361,
+      "availableColors": "Red, Black, Blue, Yellow, Green, White, Brown, Gray, Purple, Orange, Pink"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "BNTECHGO",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/stores/BNTECHGO/page/1B33B82D-E0B2-4A53-8E2E-F5E8B6A5B6C3"
+      },
+      {
+        "name": "BNTECHGO",
+        "partNumber": "26AWG-100FT",
+        "approximatePrice": 12
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Fine signal wire. Use with JST-GH and JST-PH connectors. Suitable for low-current sensor connections, interrupt lines, and dense wiring harnesses. More flexible than 24 AWG. Compatible connectors: JST-GH (standard), JST-PH, JST-XH. Good general-purpose signal wire.. Silicone insulation is heat-resistant (200C) — ideal near hot ends, heated beds, and soldering areas. More flexible than PVC-insulated wire. Available in 25ft (as 2-color kit), 50ft, and 100ft single-color spools from BNTECHGO. Strip with automatic wire strippers set to 26 AWG.",
+    "tags": [
+      "26 AWG",
+      "26AWG",
+      "26 gauge",
+      "silicone wire",
+      "hookup wire",
+      "stranded wire",
+      "tinned copper",
+      "BNTECHGO",
+      "flexible wire",
+      "high temp wire",
+      "3D printer wire",
+      "robotics wire"
+    ]
+  },
+  {
+    "name": "28 AWG Silicone Hookup Wire",
+    "description": "28 AWG silicone-insulated stranded hookup wire, 16 strands of 0.08mm tinned copper, 1.2mm outer diameter, 0.08mm2 conductor area, 1.4A chassis wiring capacity, 600V rated, -60C to +200C, ultra-flexible silicone rubber insulation, available in 11+ colors",
+    "categorySlug": "wire-cable",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 1.2,
+      "weight": 0.9
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "600V",
+      "current": "1.4A (chassis wiring)",
+      "pinout": "Single conductor, stranded"
+    },
+    "specs": {
+      "gauge": 28,
+      "conductorDiameter": 0.32,
+      "outerDiameter": 1.2,
+      "strandCount": 16,
+      "strandDiameter": 0.08,
+      "conductorArea": 0.08,
+      "conductorMaterial": "Tinned copper",
+      "insulationMaterial": "Silicone rubber",
+      "ratedVoltage": 600,
+      "ratedTemperature": "-60C to +200C",
+      "chassisWiringCurrent": 1.4,
+      "powerTransmissionCurrent": 0.226,
+      "availableColors": "Red, Black, Blue, Yellow, Green, White, Brown, Gray, Purple, Orange, Pink"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "BNTECHGO",
+        "approximatePrice": 11,
+        "url": "https://www.amazon.com/stores/BNTECHGO/page/1B33B82D-E0B2-4A53-8E2E-F5E8B6A5B6C3"
+      },
+      {
+        "name": "BNTECHGO",
+        "partNumber": "28AWG-100FT",
+        "approximatePrice": 11
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Finest practical hookup wire. Use with JST-SH and JST-GH connectors. For very low-current signals only — sensor data lines, I2C buses in tight spaces. Fragile — handle with care and use strain relief. Compatible connectors: JST-SH (standard), JST-GH, JST-PH. Too thin for screw terminals or power.. Silicone insulation is heat-resistant (200C) — ideal near hot ends, heated beds, and soldering areas. More flexible than PVC-insulated wire. Available in 25ft (as 2-color kit), 50ft, and 100ft single-color spools from BNTECHGO. Strip with automatic wire strippers set to 28 AWG.",
+    "tags": [
+      "28 AWG",
+      "28AWG",
+      "28 gauge",
+      "silicone wire",
+      "hookup wire",
+      "stranded wire",
+      "tinned copper",
+      "BNTECHGO",
+      "flexible wire",
+      "high temp wire",
+      "3D printer wire",
+      "robotics wire"
+    ]
+  }
+]

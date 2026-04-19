@@ -1,0 +1,145 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cascadia-app
+  namespace: cascadia
+  labels:
+    app: cascadia-app
+    component: web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cascadia-app
+  template:
+    metadata:
+      labels:
+        app: cascadia-app
+        component: web
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+
+      containers:
+        - name: app
+          image: cascadia/app:latest
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+
+          env:
+            # From ConfigMap
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: cascadia-config
+                  key: NODE_ENV
+            - name: BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cascadia-config
+                  key: BASE_URL
+            - name: VAULT_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: cascadia-config
+                  key: VAULT_MODE
+            - name: VAULT_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: cascadia-config
+                  key: VAULT_TYPE
+            - name: JOBS_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: cascadia-config
+                  key: JOBS_MODE
+
+            # From Secrets
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cascadia-secrets
+                  key: database-url
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cascadia-secrets
+                  key: session-secret
+
+            # S3 credentials (if using)
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cascadia-secrets
+                  key: s3-access-key
+                  optional: true
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cascadia-secrets
+                  key: s3-secret-key
+                  optional: true
+
+          resources:
+            requests:
+              cpu: '250m'
+              memory: '512Mi'
+            limits:
+              cpu: '1000m'
+              memory: '1Gi'
+
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          volumeMounts:
+            - name: vault-storage
+              mountPath: /app/vault
+            - name: app-storage
+              mountPath: /app/storage
+
+      volumes:
+        - name: vault-storage
+          emptyDir: {} # Use PVC for persistence
+        - name: app-storage
+          emptyDir: {} # Use PVC for persistence
+
+      # For cloud SQL proxy sidecar (GCP)
+      # - name: cloudsql-proxy
+      #   image: gcr.io/cloudsql-docker/gce-proxy
+      #   command: ["/cloud_sql_proxy", "-instances=project:region:instance=tcp:5432"]
+
+---
+# Persistent Volume Claims (optional, for local storage)
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: cascadia-vault-pvc
+#   namespace: cascadia
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 50Gi
+#   storageClassName: standard

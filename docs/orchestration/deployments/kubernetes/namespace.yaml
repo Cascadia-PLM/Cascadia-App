@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cascadia
+  labels:
+    name: cascadia
+    app.kubernetes.io/name: cascadia-plm

@@ -1,0 +1,95 @@
+# Distributed Deployment - Jobs Server
+# Run on dedicated job processing server(s)
+
+services:
+  # General purpose workers
+  worker:
+    image: cascadia/jobs:${JOBS_VERSION:-latest}
+    # Or build locally:
+    # build:
+    #   context: ../../../../
+    #   dockerfile: workers/node/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+
+      # Database (on infrastructure server)
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+
+      # RabbitMQ (on infrastructure server)
+      RABBITMQ_URL: ${RABBITMQ_URL:?RABBITMQ_URL is required}
+
+      # File access via S3/MinIO
+      S3_BUCKET: ${S3_BUCKET:-cascadia-vault}
+      S3_ENDPOINT: ${S3_ENDPOINT:?S3_ENDPOINT is required}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY is required}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY is required}
+      S3_FORCE_PATH_STYLE: 'true'
+
+      # Worker configuration
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+      JOB_TYPES: ${JOB_TYPES:-*}
+      JOB_TIMEOUT: ${JOB_TIMEOUT:-300000}
+
+    deploy:
+      replicas: ${WORKER_REPLICAS:-2}
+
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3002/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+    networks:
+      - cascadia-jobs
+
+  # Specialized: CAD conversion workers (optional)
+  # Uncomment if you have dedicated conversion hardware
+  # worker-cad:
+  #   image: cascadia/jobs:${JOBS_VERSION:-latest}
+  #   restart: unless-stopped
+  #   environment:
+  #     NODE_ENV: production
+  #     DATABASE_URL: ${DATABASE_URL}
+  #     RABBITMQ_URL: ${RABBITMQ_URL}
+  #     S3_BUCKET: ${S3_BUCKET}
+  #     S3_ENDPOINT: ${S3_ENDPOINT}
+  #     S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+  #     S3_SECRET_KEY: ${S3_SECRET_KEY}
+  #     S3_FORCE_PATH_STYLE: "true"
+  #     WORKER_CONCURRENCY: 2
+  #     JOB_TYPES: conversion.cad
+  #   deploy:
+  #     replicas: 1
+  #   networks:
+  #     - cascadia-jobs
+
+  # Specialized: Report generation workers (optional)
+  # worker-reports:
+  #   image: cascadia/jobs:${JOBS_VERSION:-latest}
+  #   restart: unless-stopped
+  #   environment:
+  #     NODE_ENV: production
+  #     DATABASE_URL: ${DATABASE_URL}
+  #     RABBITMQ_URL: ${RABBITMQ_URL}
+  #     S3_BUCKET: ${S3_BUCKET}
+  #     S3_ENDPOINT: ${S3_ENDPOINT}
+  #     S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+  #     S3_SECRET_KEY: ${S3_SECRET_KEY}
+  #     S3_FORCE_PATH_STYLE: "true"
+  #     WORKER_CONCURRENCY: 3
+  #     JOB_TYPES: reports
+  #   deploy:
+  #     replicas: 1
+  #   networks:
+  #     - cascadia-jobs
+
+networks:
+  cascadia-jobs:
+    driver: bridge

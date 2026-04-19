@@ -1,0 +1,5 @@
+/* Reversed dash animation for React Flow edges in bottom-to-top graph layouts */
+.react-flow__edge-animated-reverse .react-flow__edge-path {
+  stroke-dasharray: 5;
+  animation: dashdraw 0.5s linear infinite reverse;
+}

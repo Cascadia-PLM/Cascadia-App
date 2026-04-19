@@ -1,0 +1,4643 @@
+[
+  {
+    "name": "Voltaic P124 1.2W 6V Solar Panel (ETFE)",
+    "description": "1.2W 6V monocrystalline solar panel, SunPower cells 22% efficiency, 66x113x2.6mm, 32g, Voc 7.09V, Vmp 6.07V, Imp 200mA, Isc 220mA, ETFE matte coating, IP67 waterproof, PCB substrate, solder pad connection, ideal for IoT and sensor projects",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 66,
+      "height": 113,
+      "depth": 2.6,
+      "weight": 32
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "6V (Vmp 6.07V, Voc 7.09V)",
+      "current": "200mA (Imp), 220mA (Isc)",
+      "power": "1.2W",
+      "interface": "solder pads",
+      "pinout": "2x solder pads (+ / -)"
+    },
+    "specs": {
+      "watts": 1.2,
+      "openCircuitVoltage": 7.09,
+      "maxPowerVoltage": 6.07,
+      "shortCircuitCurrent": 0.22,
+      "maxPowerCurrent": 0.2,
+      "cellType": "monocrystalline SunPower",
+      "cellEfficiency": 22,
+      "cellCount": 10,
+      "coating": "ETFE matte",
+      "ipRating": "IP67",
+      "substrate": "1.5mm double-sided PCB"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "5368",
+        "approximatePrice": 15,
+        "url": "https://www.adafruit.com/product/5368"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "P124",
+        "approximatePrice": 14,
+        "url": "https://www.digikey.com/en/products/detail/voltaic-systems/P124/12352797"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Smallest Voltaic panel — no mounting holes, must bond or bracket-mount. Solder pad connection only (no cable/connector). Best for low-power IoT sensors, GPS trackers. Pair with TP4056 for single-cell Li-ion charging or Adafruit solar charger. Produces ~200mA in direct sun — not enough for continuous high-draw loads. Use with a LiPo buffer battery for intermittent operation.",
+    "tags": [
+      "solar panel",
+      "photovoltaic",
+      "PV",
+      "solar cell",
+      "6V solar",
+      "1W solar",
+      "small solar",
+      "ETFE",
+      "Voltaic",
+      "IoT power",
+      "solar charger",
+      "outdoor power"
+    ]
+  },
+  {
+    "name": "Voltaic P126 2W 6V Solar Panel (ETFE)",
+    "description": "2W 6V monocrystalline solar panel, SunPower cells 22% efficiency, 112x136x2.7mm, 79g, Voc 8.51V, Vmp 7.28V, Imp 330mA, Isc 360mA, ETFE matte coating, IP67 waterproof, 3.5x1.1mm DC jack connector, ideal for battery charging and IoT",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 112,
+      "height": 136,
+      "depth": 2.7,
+      "weight": 79
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "6V (Vmp 7.28V, Voc 8.51V)",
+      "current": "330mA (Imp), 360mA (Isc)",
+      "power": "2W",
+      "interface": "3.5x1.1mm DC jack",
+      "pinout": "center positive DC barrel jack"
+    },
+    "specs": {
+      "watts": 2.0,
+      "openCircuitVoltage": 8.51,
+      "maxPowerVoltage": 7.28,
+      "shortCircuitCurrent": 0.36,
+      "maxPowerCurrent": 0.33,
+      "cellType": "monocrystalline SunPower",
+      "cellEfficiency": 22,
+      "cellCount": 12,
+      "coating": "ETFE matte",
+      "ipRating": "IP67",
+      "substrate": "1.5mm double-sided PCB",
+      "cableLength": 260
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "5366",
+        "approximatePrice": 21,
+        "url": "https://www.adafruit.com/product/5366"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Good balance of size and output for single-cell Li-ion charging. Pair with TP4056 module for direct Li-ion charging — the Vmp of 7.28V provides enough headroom. 3.5x1.1mm DC jack is Voltaic's standard connector — use matching pigtail or cut and solder. No mounting holes on ETFE variant — use VHB tape, cable ties through edge holes, or custom bracket.",
+    "tags": [
+      "solar panel",
+      "photovoltaic",
+      "PV",
+      "2W solar",
+      "6V solar",
+      "ETFE",
+      "Voltaic",
+      "battery charger",
+      "solar charger",
+      "IoT power",
+      "small solar"
+    ]
+  },
+  {
+    "name": "Voltaic P105 5.5W 6V Solar Panel (ETFE)",
+    "description": "5.5W 6V monocrystalline solar panel, SunPower cells 20-22% efficiency, 137x222x4mm, 188g, Voc 7.13V, Vmp 6.12V, Imp 940mA, Isc 990mA, ETFE matte coating, IP67 waterproof, 6 mounting holes, 3.5x1.1mm DC jack, 50cm cable, USB charging capable",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 137,
+      "height": 222,
+      "depth": 4,
+      "weight": 188
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 6,
+          "holeType": "mounting"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "6V (Vmp 6.12V, Voc 7.13V)",
+      "current": "940mA (Imp), 990mA (Isc)",
+      "power": "5.5W",
+      "interface": "3.5x1.1mm DC jack",
+      "pinout": "center positive DC barrel jack, 50cm cable"
+    },
+    "specs": {
+      "watts": 5.5,
+      "openCircuitVoltage": 7.13,
+      "maxPowerVoltage": 6.12,
+      "shortCircuitCurrent": 0.99,
+      "maxPowerCurrent": 0.94,
+      "cellType": "monocrystalline SunPower",
+      "cellEfficiency": 22,
+      "cellCount": 10,
+      "coating": "ETFE matte",
+      "ipRating": "IP67",
+      "substrate": "2.0mm FR4",
+      "cableLength": 500
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "5367",
+        "approximatePrice": 35,
+        "url": "https://www.adafruit.com/product/5367"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Best Voltaic panel for USB device charging — nearly 1A at 6V in direct sun. Pair with Adafruit USB/Solar charger or TP4056 for Li-ion charging. 6 mounting holes allow secure bracket attachment. Can charge a 2000mAh LiPo in ~3 hours of direct sun. Not suitable for 12V battery charging — use P108 (18V) variant for that.",
+    "tags": [
+      "solar panel",
+      "photovoltaic",
+      "PV",
+      "5W solar",
+      "6V solar",
+      "ETFE",
+      "Voltaic",
+      "USB solar",
+      "solar charger",
+      "portable solar",
+      "camping solar"
+    ]
+  },
+  {
+    "name": "Solarland SLP005-12U 5W 12V Solar Panel",
+    "description": "5W 12V multicrystalline solar panel, glass/aluminum frame, 222x250x18mm, 749g, Voc 21.6V, Vmp 17.0V, Imp 290mA, Isc 340mA, tempered low-iron glass, anodized aluminum frame, junction box with screw terminals, for 12V battery charging",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 222,
+      "height": 250,
+      "depth": 18,
+      "weight": 749
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeType": "frame mounting",
+          "frameType": "anodized aluminum"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V nominal (Vmp 17.0V, Voc 21.6V)",
+      "current": "290mA (Imp), 340mA (Isc)",
+      "power": "5W",
+      "interface": "junction box screw terminals",
+      "pinout": "positive and negative screw terminals"
+    },
+    "specs": {
+      "watts": 5,
+      "openCircuitVoltage": 21.6,
+      "maxPowerVoltage": 17.0,
+      "shortCircuitCurrent": 0.34,
+      "maxPowerCurrent": 0.29,
+      "cellType": "multicrystalline silicon",
+      "construction": "tempered low-iron glass, EVA encapsulation, aluminum frame"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "SLP005-12U",
+        "approximatePrice": 23,
+        "url": "https://www.amazon.com/dp/B00513MKU4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Traditional framed 12V panel for SLA or LiFePO4 battery maintenance charging. Requires PWM or MPPT charge controller — do NOT connect directly to battery. At 290mA, this is a trickle charger for 12V 7-35Ah batteries. Mount at optimal tilt angle facing south (northern hemisphere). Junction box terminals accept 14-18AWG wire.",
+    "tags": [
+      "solar panel",
+      "12V solar",
+      "5W solar",
+      "framed solar",
+      "Solarland",
+      "battery charger",
+      "trickle charger",
+      "SLA charger",
+      "off-grid"
+    ]
+  },
+  {
+    "name": "Voltaic P108 9W 18V Solar Panel (ETFE)",
+    "description": "9W 18V monocrystalline solar panel, 20% efficiency, 223x274x4mm, 328g, Voc 20.45V, Vmp 17.34V, Imp 570mA, Isc 610mA, ETFE matte coating, IP67, 6 mounting holes, 3.5x1.1mm DC jack, 50cm cable, for 12V battery charging",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 223,
+      "height": 274,
+      "depth": 4,
+      "weight": 328
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 6,
+          "holeType": "mounting"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "18V (Vmp 17.34V, Voc 20.45V)",
+      "current": "570mA (Imp), 610mA (Isc)",
+      "power": "9W",
+      "interface": "3.5x1.1mm DC jack",
+      "pinout": "center positive DC barrel jack, 50cm cable"
+    },
+    "specs": {
+      "watts": 9,
+      "openCircuitVoltage": 20.45,
+      "maxPowerVoltage": 17.34,
+      "shortCircuitCurrent": 0.61,
+      "maxPowerCurrent": 0.57,
+      "cellType": "monocrystalline",
+      "cellEfficiency": 20,
+      "coating": "ETFE matte",
+      "ipRating": "IP67",
+      "substrate": "2.0mm FR4",
+      "cableLength": 500
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B085W96KC4",
+        "approximatePrice": 45,
+        "url": "https://www.amazon.com/dp/B085W96KC4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Same physical panel as Voltaic P110 (6V) but wired for 18V output — use this for 12V lead-acid or LiFePO4 battery charging. Requires charge controller (PWM or MPPT). Lightweight ETFE construction (328g vs 1.2kg for framed 10W panels). 3.5x1.1mm DC jack — cut and connect to charge controller input. At 570mA, suitable for maintaining 12V 7-18Ah batteries.",
+    "tags": [
+      "solar panel",
+      "18V solar",
+      "12V charger",
+      "9W solar",
+      "10W solar",
+      "ETFE",
+      "Voltaic",
+      "lightweight solar",
+      "portable solar",
+      "off-grid"
+    ]
+  },
+  {
+    "name": "Voltaic P110 10W 6V Solar Panel (ETFE)",
+    "description": "10W 6V monocrystalline solar panel, SunPower cells 20% efficiency, 223x274x4mm, 328g, Voc 6.94V, Vmp 5.71V, Imp 1670mA, Isc 1980mA, ETFE matte coating, IP67, 6 mounting holes, 3.5x1.1mm DC jack, 50cm cable, high current 5V/6V output",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 223,
+      "height": 274,
+      "depth": 4,
+      "weight": 328
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 6,
+          "holeType": "mounting"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "6V (Vmp 5.71V, Voc 6.94V)",
+      "current": "1670mA (Imp), 1980mA (Isc)",
+      "power": "10W",
+      "interface": "3.5x1.1mm DC jack",
+      "pinout": "center positive DC barrel jack, 50cm cable"
+    },
+    "specs": {
+      "watts": 10,
+      "openCircuitVoltage": 6.94,
+      "maxPowerVoltage": 5.71,
+      "shortCircuitCurrent": 1.98,
+      "maxPowerCurrent": 1.67,
+      "cellType": "monocrystalline SunPower",
+      "cellEfficiency": 20,
+      "cellCount": 10,
+      "coating": "ETFE matte",
+      "ipRating": "IP67",
+      "substrate": "2.0mm FR4",
+      "cableLength": 500
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "5369",
+        "approximatePrice": 65,
+        "url": "https://www.adafruit.com/product/5369"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Highest-power small 6V panel from Voltaic. Nearly 2A in direct sun — can charge USB devices and large LiPo packs quickly. Same physical size as P108 (18V variant). Wire two in parallel for ~20W at 6V. Pair with Adafruit PowerBoost for regulated 5V USB output from LiPo. For 12V battery charging, use P108 instead.",
+    "tags": [
+      "solar panel",
+      "photovoltaic",
+      "PV",
+      "10W solar",
+      "6V solar",
+      "ETFE",
+      "Voltaic",
+      "USB solar",
+      "high current solar",
+      "portable solar"
+    ]
+  },
+  {
+    "name": "Renogy 10W 12V Monocrystalline Solar Panel",
+    "description": "10W 12V monocrystalline solar panel, 21% efficiency, 270x341x25mm aluminum frame, 1200g, Voc 21.6V, Vmp 17.5V, Imp 570mA, Isc 620mA, tempered glass, MC4 connectors, pre-drilled mounting holes, for 12V battery charging",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 270,
+      "height": 341,
+      "depth": 25,
+      "weight": 1200
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeType": "pre-drilled frame mounting",
+          "frameType": "anodized aluminum"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V nominal (Vmp 17.5V, Voc 21.6V)",
+      "current": "570mA (Imp), 620mA (Isc)",
+      "power": "10W",
+      "interface": "MC4 connectors",
+      "pinout": "MC4 male (+) and MC4 female (-)"
+    },
+    "specs": {
+      "watts": 10,
+      "openCircuitVoltage": 21.6,
+      "maxPowerVoltage": 17.5,
+      "shortCircuitCurrent": 0.62,
+      "maxPowerCurrent": 0.57,
+      "cellType": "monocrystalline",
+      "cellEfficiency": 21,
+      "construction": "tempered glass, EVA, aluminum frame",
+      "maxSystemVoltage": 600
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00JXPE7IO",
+        "approximatePrice": 30,
+        "url": "https://www.amazon.com/dp/B00JXPE7IO"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Entry-level framed 12V panel from Renogy. Requires PWM or MPPT charge controller. MC4 connectors are industry standard — use MC4 to bare wire adapters or MC4 branch connectors for parallel wiring. Pre-drilled frame holes accept standard Z-brackets or L-brackets. Good for 12V 7-12Ah SLA or LiFePO4 battery maintenance. For faster charging, step up to 20W or 50W panels.",
+    "tags": [
+      "solar panel",
+      "12V solar",
+      "10W solar",
+      "Renogy",
+      "monocrystalline",
+      "MC4",
+      "framed solar",
+      "aluminum frame",
+      "battery charger",
+      "off-grid"
+    ]
+  },
+  {
+    "name": "Renogy 20W 12V Monocrystalline Solar Panel",
+    "description": "20W 12V monocrystalline solar panel, 340x429x25mm aluminum frame, 2177g, Voc 21.6V, Vmp 17.5V, Imp 1.14A, Isc 1.23A, tempered glass, MC4 connectors, pre-drilled mounting holes, for 12V battery systems",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 340,
+      "height": 429,
+      "depth": 25,
+      "weight": 2177
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeType": "pre-drilled frame mounting",
+          "frameType": "anodized aluminum"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V nominal (Vmp 17.5V, Voc 21.6V)",
+      "current": "1.14A (Imp), 1.23A (Isc)",
+      "power": "20W",
+      "interface": "MC4 connectors",
+      "pinout": "MC4 male (+) and MC4 female (-)"
+    },
+    "specs": {
+      "watts": 20,
+      "openCircuitVoltage": 21.6,
+      "maxPowerVoltage": 17.5,
+      "shortCircuitCurrent": 1.23,
+      "maxPowerCurrent": 1.14,
+      "cellType": "monocrystalline",
+      "construction": "tempered glass, EVA, aluminum frame",
+      "maxSystemVoltage": 600
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00LXLJJS4",
+        "approximatePrice": 35,
+        "url": "https://www.amazon.com/dp/B00LXLJJS4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Good mid-range panel for 12V systems. At 1.14A, can charge a 12V 12Ah SLA in ~12 hours of sun, or maintain larger 18-35Ah batteries. Requires 10A+ PWM or MPPT charge controller. Wire two in parallel (40W) for faster charging on larger battery banks. MC4 connectors, standard Z-bracket mounting. Wind rating 2400Pa, snow 5400Pa.",
+    "tags": [
+      "solar panel",
+      "12V solar",
+      "20W solar",
+      "Renogy",
+      "monocrystalline",
+      "MC4",
+      "framed solar",
+      "off-grid",
+      "RV solar",
+      "boat solar"
+    ]
+  },
+  {
+    "name": "Renogy 50W 12V Monocrystalline Solar Panel",
+    "description": "50W 12V monocrystalline solar panel, 582x508x30mm aluminum frame, 3500g, Voc 22.3V, Vmp 18.6V, Imp 2.69A, Isc 2.94A, anti-reflective tempered glass, anodized aluminum frame, MC4 connectors IP67, pre-drilled mounting holes, 25-year output warranty",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 508,
+      "height": 582,
+      "depth": 30,
+      "weight": 3500
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 4,
+          "holeType": "pre-drilled frame mounting",
+          "frameType": "anodized aluminum"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V nominal (Vmp 18.6V, Voc 22.3V)",
+      "current": "2.69A (Imp), 2.94A (Isc)",
+      "power": "50W",
+      "interface": "MC4 connectors (IP67)",
+      "pinout": "MC4 male (+) and MC4 female (-), 14AWG leads"
+    },
+    "specs": {
+      "watts": 50,
+      "openCircuitVoltage": 22.3,
+      "maxPowerVoltage": 18.6,
+      "shortCircuitCurrent": 2.94,
+      "maxPowerCurrent": 2.69,
+      "cellType": "monocrystalline",
+      "construction": "anti-reflective tempered glass, EVA, TPT backsheet, aluminum frame",
+      "maxSystemVoltage": 600,
+      "windRating": 2400,
+      "snowRating": 5400
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "RNG-050D",
+        "approximatePrice": 55,
+        "url": "https://www.amazon.com/Renogy-Watts-Monocrystalline-Solar-Panel/dp/B009Z6CW7O"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Most popular small off-grid panel. At 2.69A, can charge a 12V 35Ah battery in ~13 hours of direct sun. Use 10A+ charge controller (PWM or MPPT). MPPT controller extracts 10-30% more energy in partial shade. Wire two in series (24V system) or parallel (12V, higher current). Standard Z-bracket or pole mount. 10-year workmanship warranty, 25-year 80% output guarantee.",
+    "tags": [
+      "solar panel",
+      "12V solar",
+      "50W solar",
+      "Renogy",
+      "monocrystalline",
+      "MC4",
+      "framed solar",
+      "off-grid",
+      "RV solar",
+      "boat solar",
+      "cabin solar"
+    ]
+  },
+  {
+    "name": "Samsung 30Q 18650 Li-ion Cell (INR18650-30Q)",
+    "description": "Samsung INR18650-30Q high-drain 18650 lithium-ion cell, 3000mAh, 3.6V nominal, 15A continuous discharge, 4.2V charge, NCA chemistry, 18.33mm diameter, 64.85mm height, 48g, flat top unprotected, for power tools and battery packs",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 18.33,
+      "length": 64.85,
+      "weight": 48
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "3.6V nominal (4.2V max, 2.5V cutoff)",
+      "current": "15A continuous discharge",
+      "power": "10.8Wh",
+      "interface": "cell terminals",
+      "pinout": "positive button top, negative flat bottom"
+    },
+    "specs": {
+      "capacity": 3000,
+      "nominalVoltage": 3.6,
+      "maxChargeVoltage": 4.2,
+      "dischargeCutoff": 2.5,
+      "maxContinuousDischargeCurrent": 15,
+      "standardChargeCurrent": 1.5,
+      "maxChargeCurrent": 4.0,
+      "chemistry": "NCA",
+      "internalResistance": 26,
+      "cellFormat": "18650",
+      "terminalType": "flat top, unprotected",
+      "cycleLife": 250
+    },
+    "suppliers": [
+      {
+        "name": "18650BatteryStore",
+        "partNumber": "SAMSUNG-30Q",
+        "approximatePrice": 7,
+        "url": "https://www.18650batterystore.com/products/samsung-30q"
+      },
+      {
+        "name": "IMRBatteries",
+        "partNumber": "samsung-30q-18650",
+        "approximatePrice": 6,
+        "url": "https://imrbatteries.com/products/samsung-30q-18650-3000mah-15a-battery"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "One of the most popular 18650 cells. 3000mAh with 15A continuous — good balance of capacity and discharge rate. Flat top unprotected — MUST use with BMS/protection circuit. Use spot welder for pack building (never solder directly to cells). For higher discharge, use LG HG2 (20A). For lower-drain applications, Samsung 35E offers 3500mAh at 8A. Charge at 1.5A standard, 4A max with CC/CV to 4.2V.",
+    "tags": [
+      "18650",
+      "Samsung 30Q",
+      "INR18650-30Q",
+      "lithium ion",
+      "li-ion",
+      "rechargeable battery",
+      "high drain",
+      "battery cell",
+      "NCA",
+      "power tool battery",
+      "vape battery",
+      "ebike battery"
+    ]
+  },
+  {
+    "name": "Sony/Murata VTC6 18650 Li-ion Cell (US18650VTC6)",
+    "description": "Sony Murata US18650VTC6 high-drain 18650 lithium-ion cell, 3000mAh, 3.6V nominal, 15A continuous 30A pulse discharge, 4.2V charge, hybrid NCA/NMC chemistry, 18.5mm diameter, 65.2mm height, 46.6g, flat top unprotected",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 18.5,
+      "length": 65.2,
+      "weight": 46.6
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "3.6V nominal (4.2V max, 2.0V cutoff)",
+      "current": "15A continuous, 30A pulse",
+      "power": "10.8Wh",
+      "interface": "cell terminals",
+      "pinout": "positive button top, negative flat bottom"
+    },
+    "specs": {
+      "capacity": 3000,
+      "nominalVoltage": 3.6,
+      "maxChargeVoltage": 4.2,
+      "dischargeCutoff": 2.0,
+      "maxContinuousDischargeCurrent": 15,
+      "maxPulseDischargeCurrent": 30,
+      "chemistry": "hybrid NCA/NMC",
+      "cellFormat": "18650",
+      "terminalType": "flat top, unprotected",
+      "cycleLife": 300
+    },
+    "suppliers": [
+      {
+        "name": "18650BatteryStore",
+        "partNumber": "US18650VTC6",
+        "approximatePrice": 6,
+        "url": "https://www.18650batterystore.com/products/sony-vtc6"
+      },
+      {
+        "name": "IMRBatteries",
+        "partNumber": "sony-murata-vtc6",
+        "approximatePrice": 6,
+        "url": "https://imrbatteries.com/products/sony-murata-vtc6-18650-3000mah-15a-battery"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Lightest of the big three 3000mAh 18650 cells at 46.6g. 30A pulse capability is useful for motor startup and transient loads. Lower discharge cutoff (2.0V vs 2.5V) extracts slightly more capacity but stresses the cell more — set BMS cutoff to 2.5V for longer cycle life. Previously 'Sony VTC6', now manufactured by Murata (acquired Sony's battery division). Spot weld for pack building.",
+    "tags": [
+      "18650",
+      "Sony VTC6",
+      "Murata VTC6",
+      "US18650VTC6",
+      "lithium ion",
+      "li-ion",
+      "rechargeable battery",
+      "high drain",
+      "battery cell",
+      "high pulse"
+    ]
+  },
+  {
+    "name": "LG HG2 18650 Li-ion Cell (INR18650HG2)",
+    "description": "LG INR18650HG2 high-drain 18650 lithium-ion cell, 3000mAh, 3.6V nominal, 20A continuous discharge, 4.2V charge, INR chemistry, 18.3mm diameter, 65.0mm height, 48g, flat top unprotected, highest continuous discharge of the 3000mAh 18650 cells",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 18.3,
+      "length": 65.0,
+      "weight": 48
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "3.6V nominal (4.2V max, 2.5V cutoff)",
+      "current": "20A continuous discharge",
+      "power": "10.8Wh",
+      "interface": "cell terminals",
+      "pinout": "positive button top, negative flat bottom"
+    },
+    "specs": {
+      "capacity": 3000,
+      "nominalVoltage": 3.6,
+      "maxChargeVoltage": 4.2,
+      "dischargeCutoff": 2.5,
+      "maxContinuousDischargeCurrent": 20,
+      "standardChargeCurrent": 1.5,
+      "maxChargeCurrent": 4.0,
+      "chemistry": "INR (nickel manganese)",
+      "internalResistance": 20,
+      "cellFormat": "18650",
+      "terminalType": "flat top, unprotected",
+      "operatingTempDischarge": "-20 to 75C",
+      "operatingTempCharge": "0 to 50C"
+    },
+    "suppliers": [
+      {
+        "name": "Battery Bro",
+        "partNumber": "lg-hg2",
+        "approximatePrice": 6,
+        "url": "https://batterybro.com/products/lg-hg2-inr18650hg2-3000mah-20a"
+      },
+      {
+        "name": "Voltaplex",
+        "partNumber": "lg18650hg2",
+        "approximatePrice": 6,
+        "url": "https://voltaplex.com/lg-hg2-18650-battery-lg18650hg2"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Best 18650 for high-current applications — 20A continuous at 3000mAh. Preferred for ebike packs, power tool replacements, and high-draw devices. 5A more continuous discharge than Samsung 30Q and VTC6 at the same capacity. Use 20A+ BMS for pack building. Spot weld with nickel strips — never solder directly. For even higher discharge (25-30A), consider Samsung 25R or Sony VTC5A (lower capacity).",
+    "tags": [
+      "18650",
+      "LG HG2",
+      "INR18650HG2",
+      "lithium ion",
+      "li-ion",
+      "rechargeable battery",
+      "high drain",
+      "20A",
+      "battery cell",
+      "ebike battery",
+      "power tool",
+      "LG Chem"
+    ]
+  },
+  {
+    "name": "Keystone 1043 18650 Battery Holder (1-Cell, Through-Hole)",
+    "description": "Keystone 1043 single 18650 battery holder, through-hole PCB mount, PC pin terminals, 77x20.7x14.9mm, nylon UL 94V-0, tin-nickel plated stainless steel contacts, for unprotected flat-top 18650 cells",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20.65,
+      "height": 14.86,
+      "depth": 77.05,
+      "weight": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "pinCount": 2,
+          "pinType": "PC pin",
+          "pinDiameter": 0.8,
+          "mountType": "through-hole PCB"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.6-4.2V (single cell)",
+      "current": "rated for cell discharge current",
+      "interface": "PC pin terminals"
+    },
+    "specs": {
+      "cellCount": 1,
+      "cellType": "18650",
+      "configuration": "1S",
+      "material": "nylon, UL 94V-0",
+      "contactMaterial": "stainless steel, tin-nickel plated",
+      "operatingTemp": "-50 to 145C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "36-1043-ND",
+        "approximatePrice": 2,
+        "url": "https://www.digikey.com/en/products/detail/keystone-electronics/1043/2745669"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "534-1043",
+        "approximatePrice": 2,
+        "url": "https://www.mouser.com/ProductDetail/Keystone-Electronics/1043"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard PCB-mount 18650 holder from Keystone. Through-hole PC pins for easy soldering. Sized for unprotected flat-top 18650 cells (65mm). Protected cells with button top may be too long — use 1043P (polarized, longer) variant for those. Spring contact provides reliable connection. For SMT mounting, use Keystone 1042 instead. For multi-cell, use MPD BK-18650-PC series (3-4 cells) or Keystone 1049 (2 cells).",
+    "tags": [
+      "18650 holder",
+      "battery holder",
+      "Keystone",
+      "1043",
+      "PCB mount",
+      "through-hole",
+      "single cell holder",
+      "18650 cradle"
+    ]
+  },
+  {
+    "name": "Keystone 1049P 18650 Battery Holder (2-Cell Series, Through-Hole)",
+    "description": "Keystone 1049P dual 18650 battery holder, 2-cell series (7.2-8.4V), through-hole PCB mount, polarized PC pin terminals, 77x39.8x14.9mm, nylon UL 94V-0, side-by-side configuration",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 39.78,
+      "height": 14.85,
+      "depth": 77.06,
+      "weight": 14
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "pinCount": 4,
+          "pinType": "PC pin, polarized",
+          "pinDiameter": 0.8,
+          "mountType": "through-hole PCB"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "7.2-8.4V (2S series)",
+      "current": "rated for cell discharge current",
+      "interface": "PC pin terminals"
+    },
+    "specs": {
+      "cellCount": 2,
+      "cellType": "18650",
+      "configuration": "2S (series)",
+      "material": "nylon, UL 94V-0",
+      "contactMaterial": "stainless steel, tin-nickel plated",
+      "operatingTemp": "-50 to 145C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "36-1049P-ND",
+        "approximatePrice": 3.5,
+        "url": "https://www.digikey.com/en/products/detail/keystone-electronics/1049P/4499390"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "534-1049P",
+        "approximatePrice": 3.5,
+        "url": "https://www.mouser.com/ProductDetail/Keystone-Electronics/1049P"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Side-by-side dual 18650 holder for 2S packs. Polarized terminals prevent reverse insertion. Use with 2S BMS for protection. For parallel (2P) configuration, wire two 1043 holders in parallel instead. Through-hole PC pins for easy hand soldering. For 3-cell or 4-cell series, switch to MPD BK-18650-PC6 or BK-18650-PC8.",
+    "tags": [
+      "18650 holder",
+      "battery holder",
+      "Keystone",
+      "1049P",
+      "2-cell",
+      "2S",
+      "dual 18650",
+      "PCB mount",
+      "series holder"
+    ]
+  },
+  {
+    "name": "MPD BK-18650-PC6 18650 Battery Holder (3-Cell Series, Through-Hole)",
+    "description": "MPD Memory Protection Devices BK-18650-PC6 triple 18650 battery holder, 3-cell series (10.8-12.6V), through-hole PCB mount, nickel-plated stainless steel contacts, PBT glass-fill UL 94V-0, 22mm height above PCB",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 62,
+      "height": 22.04,
+      "depth": 75,
+      "weight": 18
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "pinCount": 2,
+          "pinType": "PC pin blade",
+          "mountType": "through-hole PCB"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "10.8-12.6V (3S series)",
+      "current": "rated for cell discharge current",
+      "interface": "PC pin blade terminals"
+    },
+    "specs": {
+      "cellCount": 3,
+      "cellType": "18650",
+      "configuration": "3S (series)",
+      "material": "PBT glass-fill, UL 94V-0",
+      "contactMaterial": "nickel-plated stainless steel",
+      "operatingTemp": "-40 to 180C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "BK-18650-PC6-ND",
+        "approximatePrice": 3.5,
+        "url": "https://www.digikey.com/en/products/detail/mpd-memory-protection-devices/BK-18650-PC6/2330514"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard 3-cell 18650 holder for 3S (11.1V nominal) packs. Pair with 3S BMS (20A recommended) for protected operation. Cells held by spring pressure contacts — suitable for prototyping but not high-vibration applications. For production, spot-weld cells and use a proper BMS board. PBT glass-fill body withstands higher temperatures than nylon.",
+    "tags": [
+      "18650 holder",
+      "battery holder",
+      "MPD",
+      "BK-18650-PC6",
+      "3-cell",
+      "3S",
+      "triple 18650",
+      "PCB mount",
+      "Memory Protection Devices"
+    ]
+  },
+  {
+    "name": "MPD BK-18650-PC8 18650 Battery Holder (4-Cell Series, Through-Hole)",
+    "description": "MPD Memory Protection Devices BK-18650-PC8 quad 18650 battery holder, 4-cell series (14.4-16.8V), through-hole PCB mount, nickel-plated stainless steel contacts, PBT glass-fill UL 94V-0, 22mm height above PCB",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 82,
+      "height": 22,
+      "depth": 75,
+      "weight": 22
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "pinCount": 2,
+          "pinType": "PC pin blade",
+          "mountType": "through-hole PCB"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "14.4-16.8V (4S series)",
+      "current": "rated for cell discharge current",
+      "interface": "PC pin blade terminals"
+    },
+    "specs": {
+      "cellCount": 4,
+      "cellType": "18650",
+      "configuration": "4S (series)",
+      "material": "PBT glass-fill, UL 94V-0",
+      "contactMaterial": "nickel-plated stainless steel",
+      "operatingTemp": "-40 to 180C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "BK-18650-PC8-ND",
+        "approximatePrice": 4,
+        "url": "https://www.digikey.com/en/products/detail/mpd-memory-protection-devices/BK-18650-PC8/2330515"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "4-cell series 18650 holder for 4S (14.8V nominal) packs. Pair with 4S Li-ion BMS (30A recommended). 4S 18650 packs are common in power tools and robotics — provides ~43Wh with 3000mAh cells. For 2S2P configuration (7.4V, 6000mAh), use BatterySpace #5601 holder with integrated PCM instead.",
+    "tags": [
+      "18650 holder",
+      "battery holder",
+      "MPD",
+      "BK-18650-PC8",
+      "4-cell",
+      "4S",
+      "quad 18650",
+      "PCB mount",
+      "Memory Protection Devices"
+    ]
+  },
+  {
+    "name": "Adafruit 1S 3.7V 500mAh LiPo Battery (JST-PH)",
+    "description": "3.7V 500mAh lithium polymer battery, JST-PH 2-pin connector, built-in overcharge/overdischarge/short-circuit protection, 36x29x4.75mm, 10.5g, 1C discharge, ideal for wearables and small IoT devices",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 29,
+      "height": 4.75,
+      "depth": 36,
+      "weight": 10.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "connectorType": "JST-PH 2-pin",
+          "pinPitch": 2.0,
+          "pinCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.7V nominal (4.2V max, 3.0V cutoff)",
+      "current": "500mA max discharge (1C)",
+      "power": "1.85Wh",
+      "interface": "JST-PH 2-pin",
+      "pinout": "JST-PH: red (+), black (-)"
+    },
+    "specs": {
+      "capacity": 500,
+      "nominalVoltage": 3.7,
+      "maxChargeVoltage": 4.2,
+      "dischargeCutoff": 3.0,
+      "cellType": "lithium polymer",
+      "configuration": "1S",
+      "protectionCircuit": true,
+      "connector": "JST-PH 2-pin"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "1578",
+        "approximatePrice": 8,
+        "url": "https://www.adafruit.com/product/1578"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Compact LiPo with Adafruit's standard JST-PH connector — plug-and-play with Adafruit Feather boards, Micro-Lipo charger, and PowerBoost. Built-in protection circuit handles overcharge, overdischarge, and short circuit. Charge with TP4056 or MCP73831-based charger at 500mA max. Good for GPS trackers, wearables, and low-power IoT. For higher capacity in similar form factor, step up to 1200mAh (#258).",
+    "tags": [
+      "LiPo",
+      "lithium polymer",
+      "3.7V",
+      "500mAh",
+      "JST-PH",
+      "Adafruit",
+      "rechargeable",
+      "1S",
+      "protected",
+      "Feather battery",
+      "wearable battery"
+    ]
+  },
+  {
+    "name": "Adafruit 1S 3.7V 1200mAh LiPo Battery (JST-PH)",
+    "description": "3.7V 1200mAh lithium polymer battery, JST-PH 2-pin connector, built-in protection circuit, 62x34x5mm, 23g, for Arduino, Raspberry Pi, and maker projects",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 34,
+      "height": 5,
+      "depth": 62,
+      "weight": 23
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "connectorType": "JST-PH 2-pin",
+          "pinPitch": 2.0,
+          "pinCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.7V nominal (4.2V max, 3.0V cutoff)",
+      "current": "2A max discharge (cable rated)",
+      "power": "4.44Wh",
+      "interface": "JST-PH 2-pin",
+      "pinout": "JST-PH: red (+), black (-)"
+    },
+    "specs": {
+      "capacity": 1200,
+      "nominalVoltage": 3.7,
+      "maxChargeVoltage": 4.2,
+      "dischargeCutoff": 3.0,
+      "cellType": "lithium polymer",
+      "configuration": "1S",
+      "protectionCircuit": true,
+      "connector": "JST-PH 2-pin"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "258",
+        "approximatePrice": 10,
+        "url": "https://www.adafruit.com/product/258"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Most popular Adafruit LiPo. Good capacity-to-size ratio for portable projects. Charge with Adafruit Micro-Lipo, TP4056, or any MCP73831-based charger. 2A cable-rated discharge supports most microcontroller projects. Compatible with all Adafruit Feather and Circuit Playground boards. Fits in many 3D-printed enclosures.",
+    "tags": [
+      "LiPo",
+      "lithium polymer",
+      "3.7V",
+      "1200mAh",
+      "JST-PH",
+      "Adafruit",
+      "rechargeable",
+      "1S",
+      "protected",
+      "Arduino battery",
+      "Raspberry Pi battery"
+    ]
+  },
+  {
+    "name": "Adafruit 1S 3.7V 2500mAh LiPo Battery (JST-PH)",
+    "description": "3.7V 2500mAh lithium polymer battery, JST-PH 2-pin connector, built-in protection circuit, 60x50x7.3mm, 50g, for extended-runtime portable projects and robotics",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 50,
+      "height": 7.3,
+      "depth": 60,
+      "weight": 50
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "connectorType": "JST-PH 2-pin",
+          "pinPitch": 2.0,
+          "pinCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.7V nominal (4.2V max, 3.0V cutoff)",
+      "current": "1.2A max charge",
+      "power": "9.25Wh",
+      "interface": "JST-PH 2-pin",
+      "pinout": "JST-PH: red (+), black (-)"
+    },
+    "specs": {
+      "capacity": 2500,
+      "nominalVoltage": 3.7,
+      "maxChargeVoltage": 4.2,
+      "dischargeCutoff": 3.0,
+      "cellType": "lithium polymer",
+      "configuration": "1S",
+      "protectionCircuit": true,
+      "connector": "JST-PH 2-pin"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "328",
+        "approximatePrice": 15,
+        "url": "https://www.adafruit.com/product/328"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Large-capacity 1S LiPo for extended runtime. At 9.25Wh, runs an ESP32 in deep sleep for weeks or WiFi-active for 10+ hours. Charge at 1A with TP4056 — full charge takes ~3 hours. Pair with PowerBoost 1000C for simultaneous charge and 5V output. Slightly thick at 7.3mm — verify enclosure clearance.",
+    "tags": [
+      "LiPo",
+      "lithium polymer",
+      "3.7V",
+      "2500mAh",
+      "JST-PH",
+      "Adafruit",
+      "rechargeable",
+      "1S",
+      "protected",
+      "large capacity",
+      "portable power"
+    ]
+  },
+  {
+    "name": "Gens Ace 2200mAh 2S 7.4V 60C LiPo Pack (XT60)",
+    "description": "7.4V 2200mAh 2S lithium polymer RC battery pack, 60C continuous 100C burst discharge, XT60 discharge connector, JST-XH balance connector, 87x34x20mm, 130g, for RC cars, drones, and robotics",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 34,
+      "height": 20,
+      "depth": 87,
+      "weight": 130
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "dischargeConnector": "XT60",
+          "balanceConnector": "JST-XH 3-pin"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "7.4V nominal (8.4V max, 6.0V cutoff)",
+      "current": "132A continuous (60C), 220A burst (100C)",
+      "power": "16.3Wh",
+      "interface": "XT60 + JST-XH balance",
+      "pinout": "XT60: positive/negative; JST-XH: cell 1 / cell 2 / ground"
+    },
+    "specs": {
+      "capacity": 2200,
+      "nominalVoltage": 7.4,
+      "maxChargeVoltage": 8.4,
+      "cellCount": 2,
+      "configuration": "2S1P",
+      "cellType": "lithium polymer",
+      "continuousCRating": 60,
+      "burstCRating": 100,
+      "maxContinuousDischargeCurrent": 132,
+      "chargeRate": "1-2C",
+      "connector": "XT60"
+    },
+    "suppliers": [
+      {
+        "name": "Gens Ace",
+        "partNumber": "GEA222S60X6GT",
+        "approximatePrice": 27,
+        "url": "https://genstattu.com/gens-ace-2200mah-2s-60c-7-4v-g-tech-lipo-battery-pack-with-xt60-plug/"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "GEA222S60X6GT",
+        "approximatePrice": 27,
+        "url": "https://www.amazon.com/dp/B0BXJYY5TQ"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard RC 2S LiPo. 60C continuous provides massive current for motors and servos. MUST use LiPo-capable balance charger — NEVER charge with a simple CC/CV charger. Store at 3.8V/cell (storage voltage) when not in use. Use LiPo fire-safe bag for charging and storage. XT60 connector handles up to 60A continuous. For lower-power applications, a 20C pack is lighter and cheaper.",
+    "tags": [
+      "LiPo",
+      "lithium polymer",
+      "7.4V",
+      "2S",
+      "2200mAh",
+      "60C",
+      "RC battery",
+      "XT60",
+      "Gens Ace",
+      "drone battery",
+      "RC car battery",
+      "robotics battery"
+    ]
+  },
+  {
+    "name": "Gens Ace 2200mAh 3S 11.1V 60C LiPo Pack (XT60)",
+    "description": "11.1V 2200mAh 3S lithium polymer RC battery pack, 60C continuous 100C burst discharge, XT60 discharge connector, JST-XH balance connector, 107x34x23mm, 185g, for RC planes, drones, and robotics",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 34,
+      "height": 23,
+      "depth": 107,
+      "weight": 185
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "dischargeConnector": "XT60",
+          "balanceConnector": "JST-XH 4-pin"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "11.1V nominal (12.6V max, 9.0V cutoff)",
+      "current": "132A continuous (60C), 220A burst (100C)",
+      "power": "24.4Wh",
+      "interface": "XT60 + JST-XH balance",
+      "pinout": "XT60: positive/negative; JST-XH: cell 1 / cell 2 / cell 3 / ground"
+    },
+    "specs": {
+      "capacity": 2200,
+      "nominalVoltage": 11.1,
+      "maxChargeVoltage": 12.6,
+      "cellCount": 3,
+      "configuration": "3S1P",
+      "cellType": "lithium polymer",
+      "continuousCRating": 60,
+      "burstCRating": 100,
+      "maxContinuousDischargeCurrent": 132,
+      "chargeRate": "1-2C",
+      "connector": "XT60"
+    },
+    "suppliers": [
+      {
+        "name": "Gens Ace",
+        "partNumber": "GEA223S60X6GT",
+        "approximatePrice": 35,
+        "url": "https://genstattu.com/gens-ace-2200mah-3s-60c-11-1v-g-tech-adventure-lipo-battery-pack-with-xt60-plug-for-rc-crawler/"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Most popular 3S LiPo size for RC and robotics. 11.1V nominal is close to 12V — works with many 12V devices via buck converter. MUST use 3S-capable balance charger. Store at 3.8V/cell. LiPo fire-safe bag required for charging. 60C continuous is overkill for most robotics — consider 25-30C packs for weight savings. For higher capacity in same form factor, 5000mAh packs are available but heavier (355g).",
+    "tags": [
+      "LiPo",
+      "lithium polymer",
+      "11.1V",
+      "3S",
+      "2200mAh",
+      "60C",
+      "RC battery",
+      "XT60",
+      "Gens Ace",
+      "drone battery",
+      "RC plane battery",
+      "robotics"
+    ]
+  },
+  {
+    "name": "Duracell Coppertop AA Alkaline Battery (MN1500)",
+    "description": "1.5V AA LR6 alkaline primary battery, Duracell Coppertop MN1500, 14.5mm diameter x 50.5mm height, 23g, ~2800mAh at 25mA drain, ~1200mAh at 500mA drain, 10-year shelf life, non-rechargeable",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 14.5,
+      "length": 50.5,
+      "weight": 23
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "1.5V nominal (0.8V cutoff)",
+      "current": "varies by load (see specs)",
+      "power": "~4.2Wh at low drain",
+      "interface": "cell terminals",
+      "pinout": "positive nub top, flat negative bottom"
+    },
+    "specs": {
+      "nominalVoltage": 1.5,
+      "cutoffVoltage": 0.8,
+      "typicalCapacity25mA": 2800,
+      "typicalCapacity100mA": 2400,
+      "typicalCapacity500mA": 1200,
+      "cellType": "alkaline (zinc-manganese dioxide)",
+      "iecDesignation": "LR6",
+      "ansiDesignation": "15A",
+      "shelfLife": "10 years",
+      "rechargeable": false
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B000I1V0GQ",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/dp/B000I1V0GQ"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Most common battery size worldwide. Capacity varies dramatically with load — ~2800mAh at 25mA but only ~1200mAh at 500mA. Voltage drops steadily during discharge (not flat like NiMH). For rechargeable alternative, use Eneloop NiMH (1.2V nominal — verify electronics work at lower voltage). Do not mix with NiMH in same holder. Price shown is per-cell from bulk pack.",
+    "tags": [
+      "AA",
+      "alkaline",
+      "1.5V",
+      "LR6",
+      "Duracell",
+      "Coppertop",
+      "primary cell",
+      "disposable battery",
+      "AA battery",
+      "double A"
+    ]
+  },
+  {
+    "name": "Duracell Coppertop AAA Alkaline Battery (MN2400)",
+    "description": "1.5V AAA LR03 alkaline primary battery, Duracell Coppertop MN2400, 10.5mm diameter x 44.5mm height, 11.5g, ~1200mAh at 10mA drain, ~600mAh at 250mA drain, 10-year shelf life, non-rechargeable",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10.5,
+      "length": 44.5,
+      "weight": 11.5
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "1.5V nominal (0.8V cutoff)",
+      "current": "varies by load",
+      "power": "~1.8Wh at low drain",
+      "interface": "cell terminals",
+      "pinout": "positive nub top, flat negative bottom"
+    },
+    "specs": {
+      "nominalVoltage": 1.5,
+      "cutoffVoltage": 0.8,
+      "typicalCapacity10mA": 1200,
+      "typicalCapacity100mA": 850,
+      "typicalCapacity250mA": 600,
+      "cellType": "alkaline (zinc-manganese dioxide)",
+      "iecDesignation": "LR03",
+      "ansiDesignation": "24A",
+      "shelfLife": "10 years",
+      "rechargeable": false
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B000I1W2JO",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/dp/B000I1W2JO"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Roughly 40% the capacity of AA at same voltage. Use when size/weight matters more than runtime. Same voltage-drop behavior as AA alkaline. For rechargeable alternative, use Eneloop AAA (800mAh NiMH, 1.2V). Price shown is per-cell from bulk pack.",
+    "tags": [
+      "AAA",
+      "alkaline",
+      "1.5V",
+      "LR03",
+      "Duracell",
+      "Coppertop",
+      "primary cell",
+      "disposable battery",
+      "AAA battery",
+      "triple A"
+    ]
+  },
+  {
+    "name": "Duracell Coppertop 9V Alkaline Battery (MN1604)",
+    "description": "9V PP3 6LR61 alkaline primary battery, Duracell Coppertop MN1604, 26.5x17.5x48.5mm, 46g, ~550mAh at 10mA drain, ~250mAh at 100mA drain, snap terminal connector, for smoke detectors and instruments",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 17.5,
+      "height": 48.5,
+      "depth": 26.5,
+      "weight": 46
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "terminalType": "snap connector",
+          "terminalSpacing": 12.7,
+          "positiveTerminal": "male snap (smaller)",
+          "negativeTerminal": "female snap (larger)"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "9V nominal (4.8V cutoff)",
+      "current": "varies by load",
+      "power": "~4.95Wh at low drain",
+      "interface": "snap terminals",
+      "pinout": "smaller snap = positive, larger snap = negative"
+    },
+    "specs": {
+      "nominalVoltage": 9,
+      "cutoffVoltage": 4.8,
+      "typicalCapacity10mA": 550,
+      "typicalCapacity50mA": 400,
+      "typicalCapacity100mA": 250,
+      "cellType": "alkaline (6 cells in series)",
+      "iecDesignation": "6LR61",
+      "ansiDesignation": "1604A",
+      "shelfLife": "5 years",
+      "rechargeable": false
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B000K2NW08",
+        "approximatePrice": 4,
+        "url": "https://www.amazon.com/dp/B000K2NW08"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "6 alkaline cells in series — capacity is very limited (~550mAh at low drain). Poor choice for high-current applications. Best for smoke detectors, multimeters, guitar pedals, and other low-drain devices. Connect with standard 9V snap connector (Keystone 232/233). For rechargeable alternative, 9V NiMH (7.2V nominal, ~200mAh) or 9V lithium (longer shelf life).",
+    "tags": [
+      "9V",
+      "PP3",
+      "alkaline",
+      "6LR61",
+      "Duracell",
+      "Coppertop",
+      "primary cell",
+      "9V battery",
+      "snap terminal",
+      "smoke detector battery"
+    ]
+  },
+  {
+    "name": "Energizer CR2032 3V Lithium Coin Cell",
+    "description": "3V CR2032 lithium manganese dioxide coin cell, 20mm diameter x 3.2mm height, 3.0g, 225-240mAh capacity, 10-year shelf life, for RTC backup, key fobs, and low-power electronics",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 20,
+      "height": 3.2,
+      "weight": 3
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "3.0V nominal (2.0V cutoff)",
+      "current": "3-5mA recommended max continuous",
+      "power": "0.72Wh",
+      "interface": "coin cell terminals",
+      "pinout": "positive case (top), negative plate (bottom)"
+    },
+    "specs": {
+      "nominalVoltage": 3.0,
+      "cutoffVoltage": 2.0,
+      "typicalCapacity": 235,
+      "cellType": "lithium manganese dioxide (Li/MnO2)",
+      "iecDesignation": "CR2032",
+      "shelfLife": "10 years",
+      "maxContinuousDrain": 5,
+      "operatingTemp": "-30 to 60C",
+      "rechargeable": false
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "N033-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/energizer-battery-company/CR2032/704851"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B004U429FQ",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/dp/B004U429FQ"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Most common coin cell. Use with Keystone 3002 (horizontal PCB) or 3034 (vertical PCB) holders. Current-limited — do not use for LED driving or motors. Ideal for RTC backup, BIOS batteries, key fobs, BLE beacons. CR2025 fits same diameter but is 0.7mm thinner (lower capacity 165mAh) — NOT interchangeable in height-sensitive holders. Avoid buying from no-name sellers — counterfeits are common.",
+    "tags": [
+      "CR2032",
+      "coin cell",
+      "button cell",
+      "3V",
+      "lithium",
+      "RTC battery",
+      "BIOS battery",
+      "key fob battery",
+      "watch battery",
+      "Energizer"
+    ]
+  },
+  {
+    "name": "Energizer CR2025 3V Lithium Coin Cell",
+    "description": "3V CR2025 lithium manganese dioxide coin cell, 20mm diameter x 2.5mm height, 2.5g, 160-170mAh capacity, 10-year shelf life, thinner alternative to CR2032",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 20,
+      "height": 2.5,
+      "weight": 2.5
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "3.0V nominal (2.0V cutoff)",
+      "current": "2-3mA recommended max continuous",
+      "power": "0.51Wh",
+      "interface": "coin cell terminals",
+      "pinout": "positive case (top), negative plate (bottom)"
+    },
+    "specs": {
+      "nominalVoltage": 3.0,
+      "cutoffVoltage": 2.0,
+      "typicalCapacity": 165,
+      "cellType": "lithium manganese dioxide (Li/MnO2)",
+      "iecDesignation": "CR2025",
+      "shelfLife": "10 years",
+      "maxContinuousDrain": 3,
+      "rechargeable": false
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "N681-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/energizer-battery-company/CR2025/704853"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "658-CR2025",
+        "approximatePrice": 1.5,
+        "url": "https://www.mouser.com/ProductDetail/Energizer/CR2025"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Same 20mm diameter as CR2032 but 0.7mm thinner. Lower capacity (165mAh vs 235mAh). A CR2025 will technically fit in a CR2032 holder but may have poor contact due to the height gap — not recommended. Use when space is very tight. Same holders as CR2032 won't work reliably — use CR2025-specific holders or spring-contact holders that accommodate both.",
+    "tags": [
+      "CR2025",
+      "coin cell",
+      "button cell",
+      "3V",
+      "lithium",
+      "thin coin cell",
+      "Energizer"
+    ]
+  },
+  {
+    "name": "Energizer CR123A 3V Lithium Battery",
+    "description": "3V CR123A lithium manganese dioxide battery, 17mm diameter x 34.5mm height, 17g, 1500mAh capacity, 1.5A max pulse, 10-year shelf life, for flashlights, cameras, and security devices",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 17,
+      "length": 34.5,
+      "weight": 17
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "3.0V nominal (2.0V cutoff)",
+      "current": "1.5A max pulse",
+      "power": "4.5Wh",
+      "interface": "cell terminals",
+      "pinout": "positive nub top, flat negative bottom"
+    },
+    "specs": {
+      "nominalVoltage": 3.0,
+      "cutoffVoltage": 2.0,
+      "typicalCapacity": 1500,
+      "cellType": "lithium manganese dioxide (Li/MnO2)",
+      "iecDesignation": "CR17345",
+      "commonNames": "CR123A, DL123A, EL123AP",
+      "shelfLife": "10 years",
+      "rechargeable": false
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "N107-ND",
+        "approximatePrice": 3,
+        "url": "https://www.digikey.com/en/products/detail/energizer-battery-company/EL123AP/704870"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B000IZPNR4",
+        "approximatePrice": 2.5,
+        "url": "https://www.amazon.com/dp/B000IZPNR4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-energy primary cell for flashlights, cameras, security sensors, and military devices. Two in series = 6V (common for tactical flashlights). High pulse current capability for camera flashes. Rechargeable alternatives exist (RCR123A, 3.7V Li-ion, 16340 format) but are NOT voltage-compatible — 3.7V vs 3.0V. Do not mix rechargeable and primary CR123A in multi-cell devices.",
+    "tags": [
+      "CR123A",
+      "DL123A",
+      "3V lithium",
+      "photo battery",
+      "flashlight battery",
+      "security battery",
+      "Energizer",
+      "primary cell",
+      "CR17345",
+      "16340"
+    ]
+  },
+  {
+    "name": "Panasonic Eneloop AA NiMH Rechargeable Battery (BK-3MCCA)",
+    "description": "1.2V AA NiMH rechargeable battery, Panasonic Eneloop 4th gen, 2000mAh typical capacity, 2100 cycle life, 14.5mm diameter x 50.5mm height, 27g, retains 70% charge after 10 years, low self-discharge, the gold standard NiMH cell",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 14.5,
+      "length": 50.5,
+      "weight": 27
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "1.2V nominal",
+      "current": "rated for moderate discharge",
+      "power": "2.4Wh",
+      "interface": "cell terminals",
+      "pinout": "positive nub top, flat negative bottom"
+    },
+    "specs": {
+      "nominalVoltage": 1.2,
+      "typicalCapacity": 2000,
+      "minimumCapacity": 1900,
+      "cellType": "NiMH (nickel-metal hydride)",
+      "cycleLife": 2100,
+      "selfDischargeRate": "retains 70% after 10 years, 90% after 1 year",
+      "internalResistance": 25,
+      "standardCharge": "200mA x 16h",
+      "rechargeable": true,
+      "generation": "4th gen"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00JHKSMJU",
+        "approximatePrice": 3,
+        "url": "https://www.amazon.com/dp/B00JHKSMJU"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The de facto standard rechargeable AA. 1.2V nominal vs 1.5V alkaline — most devices work fine but verify voltage-sensitive circuits. 2100 cycles at 60% retention is exceptional. Ultra-low self-discharge makes these the best choice for devices that sit unused (remotes, emergency flashlights). Use NiMH-specific charger (Panasonic BQ-CC55 recommended). Do not charge with alkaline or Li-ion chargers. Price per cell from 4-pack.",
+    "tags": [
+      "Eneloop",
+      "NiMH",
+      "AA",
+      "rechargeable",
+      "1.2V",
+      "2000mAh",
+      "Panasonic",
+      "low self-discharge",
+      "BK-3MCCA",
+      "rechargeable AA",
+      "green battery"
+    ]
+  },
+  {
+    "name": "Panasonic Eneloop Pro AA NiMH Rechargeable Battery (BK-3HCCA)",
+    "description": "1.2V AA NiMH rechargeable battery, Panasonic Eneloop Pro, 2550mAh typical capacity, 500 cycle life, 14.5mm diameter x 50.5mm height, 30g, retains 85% charge after 1 year, high capacity variant",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 14.5,
+      "length": 50.5,
+      "weight": 30
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "1.2V nominal",
+      "current": "rated for moderate to high discharge",
+      "power": "3.06Wh",
+      "interface": "cell terminals",
+      "pinout": "positive nub top, flat negative bottom"
+    },
+    "specs": {
+      "nominalVoltage": 1.2,
+      "typicalCapacity": 2550,
+      "minimumCapacity": 2450,
+      "cellType": "NiMH (nickel-metal hydride)",
+      "cycleLife": 500,
+      "selfDischargeRate": "retains 85% after 1 year",
+      "internalResistance": 20,
+      "rechargeable": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00JHKSN5I",
+        "approximatePrice": 4,
+        "url": "https://www.amazon.com/dp/B00JHKSN5I"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Higher capacity than standard Eneloop (2550mAh vs 2000mAh) but 1/4 the cycle life (500 vs 2100 cycles). Worth it for high-drain devices like camera flashes and game controllers where runtime matters more than cycle count. Slightly heavier at 30g vs 27g. Self-discharge is higher than standard Eneloop but still excellent vs generic NiMH. Same charger as standard Eneloop. Price per cell from 4-pack.",
+    "tags": [
+      "Eneloop Pro",
+      "NiMH",
+      "AA",
+      "rechargeable",
+      "1.2V",
+      "2550mAh",
+      "Panasonic",
+      "high capacity",
+      "BK-3HCCA",
+      "camera battery"
+    ]
+  },
+  {
+    "name": "Panasonic Eneloop AAA NiMH Rechargeable Battery (BK-4MCCA)",
+    "description": "1.2V AAA NiMH rechargeable battery, Panasonic Eneloop 4th gen, 800mAh typical capacity, 2100 cycle life, 10.5mm diameter x 44.5mm height, 13g, retains 70% charge after 10 years, low self-discharge",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10.5,
+      "length": 44.5,
+      "weight": 13
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "1.2V nominal",
+      "current": "rated for moderate discharge",
+      "power": "0.96Wh",
+      "interface": "cell terminals",
+      "pinout": "positive nub top, flat negative bottom"
+    },
+    "specs": {
+      "nominalVoltage": 1.2,
+      "typicalCapacity": 800,
+      "minimumCapacity": 750,
+      "cellType": "NiMH (nickel-metal hydride)",
+      "cycleLife": 2100,
+      "selfDischargeRate": "retains 70% after 10 years",
+      "rechargeable": true,
+      "generation": "4th gen"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00JHKSMIG",
+        "approximatePrice": 2.5,
+        "url": "https://www.amazon.com/dp/B00JHKSMIG"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Same excellent Eneloop qualities in AAA form factor. 800mAh typical vs ~1200mAh alkaline AAA at low drain — less capacity but rechargeable for 2100 cycles. Same charger as Eneloop AA. Use NiMH-specific charger. Price per cell from 4-pack.",
+    "tags": [
+      "Eneloop",
+      "NiMH",
+      "AAA",
+      "rechargeable",
+      "1.2V",
+      "800mAh",
+      "Panasonic",
+      "low self-discharge",
+      "BK-4MCCA",
+      "rechargeable AAA"
+    ]
+  },
+  {
+    "name": "Tenergy 7.2V 3800mAh NiMH Sub-C Battery Pack (Tamiya)",
+    "description": "7.2V 3800mAh NiMH battery pack, 6x Sub-C cells in series, Tamiya connector, ~340g, for RC cars, boats, and robotics, flat pack configuration",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 46,
+      "height": 23,
+      "depth": 135,
+      "weight": 340
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "connectorType": "Tamiya standard",
+          "pinCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "7.2V nominal (6 cells x 1.2V)",
+      "current": "rated for moderate discharge",
+      "power": "27.4Wh",
+      "interface": "Tamiya connector",
+      "pinout": "Tamiya standard 2-pin"
+    },
+    "specs": {
+      "capacity": 3800,
+      "nominalVoltage": 7.2,
+      "cellCount": 6,
+      "cellType": "NiMH Sub-C",
+      "configuration": "6S flat pack",
+      "connector": "Tamiya standard",
+      "rechargeable": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B001AEIRCE",
+        "approximatePrice": 18,
+        "url": "https://www.amazon.com/dp/B001AEIRCE"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard RC NiMH pack. NiMH is safer and more forgiving than LiPo — no fire risk, no balancing needed, simple CC/CV charging. Lower energy density than LiPo but good for beginners and cost-sensitive projects. Tamiya connector handles ~15A — upgrade to Deans/XT60 for higher current applications. Charge with NiMH peak-detect charger. Do not charge with LiPo charger. Available in Deans (T-plug) connector variant.",
+    "tags": [
+      "NiMH",
+      "Sub-C",
+      "7.2V",
+      "RC battery",
+      "Tamiya",
+      "Tenergy",
+      "rechargeable",
+      "RC car",
+      "robotics battery",
+      "NiMH pack"
+    ]
+  },
+  {
+    "name": "Keystone 2462 AA Battery Holder (2-Cell Series, Wire Leads)",
+    "description": "2x AA battery holder, series connection (3V alkaline / 2.4V NiMH), wire leads 150mm 26AWG, 58x31x15mm, Keystone 2462, open frame design, for prototyping and portable devices",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 31,
+      "height": 15,
+      "depth": 58,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "connectionType": "wire leads",
+          "wireLength": 150,
+          "wireGauge": 26
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.0V (alkaline) / 2.4V (NiMH)",
+      "interface": "wire leads",
+      "pinout": "red wire (+), black wire (-)"
+    },
+    "specs": {
+      "cellCount": 2,
+      "cellType": "AA",
+      "configuration": "series",
+      "material": "polypropylene",
+      "connectionType": "150mm wire leads, 26AWG"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "36-2462-ND",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/keystone-electronics/2462/303816"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "534-2462",
+        "approximatePrice": 1,
+        "url": "https://www.mouser.com/ProductDetail/Keystone-Electronics/2462"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Keystone's standard 2xAA holder. Wire leads are most versatile — solder to PCB, add a connector, or use in breadboard with jumper wire adapters. For snap connector version (9V-style), use Keystone 2463. Open frame design — no cover or switch. Mount with double-sided tape, screws through base slots, or hot glue. Accepts both alkaline AA (1.5V) and NiMH AA (1.2V).",
+    "tags": [
+      "AA holder",
+      "battery holder",
+      "Keystone",
+      "2462",
+      "2-cell",
+      "2xAA",
+      "3V",
+      "wire leads"
+    ]
+  },
+  {
+    "name": "Keystone 2468 AA Battery Holder (4-Cell Series, Wire Leads)",
+    "description": "4x AA battery holder, series connection (6V alkaline / 4.8V NiMH), wire leads 150mm 26AWG, 62x58x15mm, Keystone 2468, flat 1x4 configuration, common for 5V and 6V portable devices",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 58,
+      "height": 15,
+      "depth": 62,
+      "weight": 16
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "connectionType": "wire leads",
+          "wireLength": 150,
+          "wireGauge": 26
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "6.0V (alkaline) / 4.8V (NiMH)",
+      "interface": "wire leads",
+      "pinout": "red wire (+), black wire (-)"
+    },
+    "specs": {
+      "cellCount": 4,
+      "cellType": "AA",
+      "configuration": "series (1x4 flat)",
+      "material": "polypropylene",
+      "connectionType": "150mm wire leads, 26AWG"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "36-2468-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/keystone-electronics/2468/303822"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "534-2468",
+        "approximatePrice": 1.5,
+        "url": "https://www.mouser.com/ProductDetail/Keystone-Electronics/2468"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Most popular AA holder for Arduino/microcontroller projects. 6V with alkaline feeds a 5V regulator or directly powers 5V-tolerant boards. 4.8V with NiMH is marginal for 5V logic — use LDO regulator or accept lower voltage. Flat 1x4 layout is easy to mount. For 2x2 compact layout, use Keystone 2476 (same voltage, smaller footprint but thicker). Switch variant available (2468SW).",
+    "tags": [
+      "AA holder",
+      "battery holder",
+      "Keystone",
+      "2468",
+      "4-cell",
+      "4xAA",
+      "6V",
+      "wire leads",
+      "Arduino battery"
+    ]
+  },
+  {
+    "name": "Keystone 2470 AAA Battery Holder (4-Cell Series, Wire Leads)",
+    "description": "4x AAA battery holder, series connection (6V alkaline / 4.8V NiMH), wire leads 150mm 26AWG, 51x51x12mm, Keystone 2470, compact for space-constrained designs",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 51,
+      "height": 12,
+      "depth": 51,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "connectionType": "wire leads",
+          "wireLength": 150,
+          "wireGauge": 26
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "6.0V (alkaline) / 4.8V (NiMH)",
+      "interface": "wire leads",
+      "pinout": "red wire (+), black wire (-)"
+    },
+    "specs": {
+      "cellCount": 4,
+      "cellType": "AAA",
+      "configuration": "series (2x2)",
+      "material": "polypropylene",
+      "connectionType": "150mm wire leads, 26AWG"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "36-2470-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/keystone-electronics/2470/303824"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "534-2470",
+        "approximatePrice": 1.5,
+        "url": "https://www.mouser.com/ProductDetail/Keystone-Electronics/2470"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Compact 4xAAA holder in 2x2 configuration. Smaller and lighter than 4xAA but ~1/3 the capacity. Good for remote controls, small handheld devices, and weight-sensitive projects. Same voltage as 4xAA holder but less runtime.",
+    "tags": [
+      "AAA holder",
+      "battery holder",
+      "Keystone",
+      "2470",
+      "4-cell",
+      "4xAAA",
+      "6V",
+      "wire leads",
+      "compact holder"
+    ]
+  },
+  {
+    "name": "Keystone 232 9V Snap Connector (I-Type)",
+    "description": "9V battery snap connector, I-type inline design, 150mm wire leads 26AWG, Keystone 232, for connecting to standard 9V PP3 batteries, 12.7mm terminal spacing",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 12,
+      "height": 5,
+      "depth": 18,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "terminalType": "snap",
+          "terminalSpacing": 12.7,
+          "connectionType": "wire leads",
+          "wireLength": 150,
+          "wireGauge": 26
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "9V",
+      "interface": "snap terminals + wire leads",
+      "pinout": "red wire (+), black wire (-)"
+    },
+    "specs": {
+      "connectorType": "I-type (inline)",
+      "terminalSpacing": 12.7,
+      "wireLength": 150,
+      "wireGauge": 26
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "36-232-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/keystone-electronics/232/303538"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "534-232",
+        "approximatePrice": 0.5,
+        "url": "https://www.mouser.com/ProductDetail/Keystone-Electronics/232"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard 9V battery snap connector. I-type (inline) is the most common — T-type (Keystone 233) is for right-angle applications. Mates with standard 9V battery terminals. Wire leads are thin (26AWG) — suitable for low-current applications only. For heavy-duty, use Keystone 234 with thicker leads.",
+    "tags": [
+      "9V connector",
+      "battery snap",
+      "Keystone",
+      "232",
+      "9V clip",
+      "PP3 connector",
+      "9V battery connector"
+    ]
+  },
+  {
+    "name": "Keystone 3034 CR2032 Battery Holder (Vertical, Through-Hole)",
+    "description": "CR2032 coin cell battery holder, vertical mount, through-hole PCB, Keystone 3034, 23.3x5.6x24.8mm above PCB, 21.97mm pin spacing, phosphor bronze tin-plated contacts, for RTC modules and low-power circuits",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 23.3,
+      "height": 24.8,
+      "depth": 5.6,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "pinCount": 2,
+          "pinSpacing": 21.97,
+          "pinDiameter": 0.8,
+          "mountType": "through-hole PCB",
+          "orientation": "vertical"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.0V (with CR2032 cell)",
+      "interface": "through-hole PCB pins"
+    },
+    "specs": {
+      "cellType": "CR2032",
+      "orientation": "vertical (cell stands upright)",
+      "contactMaterial": "phosphor bronze, tin plated",
+      "operatingTemp": "-40 to 60C",
+      "pinSpacing": 21.97
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "36-3034-ND",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/keystone-electronics/3034/4291562"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "534-3034",
+        "approximatePrice": 1,
+        "url": "https://www.mouser.com/ProductDetail/Keystone-Electronics/3034"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Vertical mount saves PCB area but is taller (24.8mm above PCB). Smallest PCB footprint of CR2032 holders. For horizontal (low-profile) mount, use Keystone 3002 (through-hole) or 3001 (SMD). Cell slides in from the side. Fits only CR2032 (3.2mm thick) — CR2025 (2.5mm) will have poor contact. Use for RTC backup, BIOS battery, and other low-current applications.",
+    "tags": [
+      "CR2032 holder",
+      "coin cell holder",
+      "Keystone",
+      "3034",
+      "vertical mount",
+      "PCB mount",
+      "through-hole",
+      "battery holder"
+    ]
+  },
+  {
+    "name": "Keystone 3002 CR2032 Battery Holder (Horizontal, Through-Hole)",
+    "description": "CR2032 coin cell battery holder, horizontal mount with retainer clip, through-hole PCB, Keystone 3002, 24x22.9x5.4mm above PCB, 20.32mm pin spacing, low-profile design, phosphor bronze tin-plated contacts",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 22.9,
+      "height": 5.4,
+      "depth": 24,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "pinCount": 2,
+          "pinSpacing": 20.32,
+          "pinDiameter": 1.0,
+          "mountType": "through-hole PCB",
+          "orientation": "horizontal"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3.0V (with CR2032 cell)",
+      "interface": "through-hole PCB pins"
+    },
+    "specs": {
+      "cellType": "CR2032",
+      "orientation": "horizontal (cell lies flat)",
+      "retainerClip": true,
+      "contactMaterial": "phosphor bronze, tin plated",
+      "operatingTemp": "-40 to 60C",
+      "pinSpacing": 20.32
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "36-3002-ND",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/keystone-electronics/3002/2745732"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "534-3002",
+        "approximatePrice": 1,
+        "url": "https://www.mouser.com/ProductDetail/Keystone-Electronics/3002"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Low-profile horizontal mount — only 5.4mm above PCB. Retainer clip holds cell securely. Most popular CR2032 holder for production PCBs. Press-fit retainer allows tool-free battery replacement. For SMD variant, use Keystone 3001. Larger PCB footprint than vertical 3034 but much lower profile.",
+    "tags": [
+      "CR2032 holder",
+      "coin cell holder",
+      "Keystone",
+      "3002",
+      "horizontal mount",
+      "PCB mount",
+      "through-hole",
+      "low profile",
+      "battery holder"
+    ]
+  },
+  {
+    "name": "Mighty Max ML7-12 Sealed Lead Acid Battery (12V 7.2Ah)",
+    "description": "12V 7.2Ah sealed lead acid AGM battery, 150x64x99mm, 2.04kg, F1 terminals (4.8mm), 17mOhm internal resistance, maintenance-free, for UPS, alarm systems, emergency lighting, and solar backup",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 64,
+      "height": 99,
+      "depth": 150,
+      "weight": 2040
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "terminalType": "F1 faston (4.8mm / 0.187in)",
+          "terminalCount": 2,
+          "terminalSpacing": 48
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V nominal",
+      "current": "varies by application",
+      "power": "86.4Wh",
+      "interface": "F1 faston terminals",
+      "pinout": "positive (+) and negative (-) faston tabs"
+    },
+    "specs": {
+      "nominalVoltage": 12,
+      "capacity": 7.2,
+      "internalResistance": 17,
+      "terminalType": "F1 (4.8mm)",
+      "cellType": "sealed lead acid (AGM)",
+      "floatChargeVoltage": 13.6,
+      "cycleChargeVoltage": 14.7,
+      "selfDischargeRate": "3% per month at 25C",
+      "operatingTemp": "-20 to 50C",
+      "designLife": "3-5 years"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00K8V30D0",
+        "approximatePrice": 16,
+        "url": "https://www.amazon.com/dp/B00K8V30D0"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The most common SLA battery size — used in UPS, alarm panels, and small solar systems. F1 terminals (4.8mm) accept standard female spade connectors. Float charge at 13.5-13.8V, cycle charge at 14.5-14.9V. Do not deep discharge below 10.5V — reduces cycle life dramatically. Mount upright (valve-regulated, technically can operate on side but upright preferred). Recycle at battery recycler. For longer life/lighter weight, consider LiFePO4 12V 6Ah drop-in replacement.",
+    "tags": [
+      "SLA",
+      "sealed lead acid",
+      "AGM",
+      "12V",
+      "7Ah",
+      "UPS battery",
+      "alarm battery",
+      "emergency lighting",
+      "Mighty Max",
+      "ML7-12",
+      "lead acid"
+    ]
+  },
+  {
+    "name": "Mighty Max ML5-12 Sealed Lead Acid Battery (12V 5Ah)",
+    "description": "12V 5Ah sealed lead acid AGM battery, 90x70x107mm, 1.57kg, F1 terminals (4.8mm), maintenance-free, compact SLA for alarm panels, UPS, and small backup power",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 70,
+      "height": 107,
+      "depth": 90,
+      "weight": 1570
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "terminalType": "F1 faston (4.8mm / 0.187in)",
+          "terminalCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V nominal",
+      "power": "60Wh",
+      "interface": "F1 faston terminals"
+    },
+    "specs": {
+      "nominalVoltage": 12,
+      "capacity": 5,
+      "terminalType": "F1 (4.8mm)",
+      "cellType": "sealed lead acid (AGM)",
+      "floatChargeVoltage": 13.6,
+      "cycleChargeVoltage": 14.7,
+      "selfDischargeRate": "3% per month at 25C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B079ZCJYP3",
+        "approximatePrice": 14,
+        "url": "https://www.amazon.com/dp/B079ZCJYP3"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Compact 12V SLA for space-constrained applications. Same chemistry and care as ML7-12 but smaller footprint (90x70mm vs 150x64mm). F1 terminals. Float charge at 13.5-13.8V. Good for small alarm panels and access control backup. For same footprint with more capacity, the 12V 9Ah shares the 150x65x94mm form factor with the 7Ah.",
+    "tags": [
+      "SLA",
+      "sealed lead acid",
+      "AGM",
+      "12V",
+      "5Ah",
+      "compact SLA",
+      "alarm battery",
+      "Mighty Max",
+      "ML5-12"
+    ]
+  },
+  {
+    "name": "Mighty Max ML9-12 Sealed Lead Acid Battery (12V 9Ah)",
+    "description": "12V 9Ah sealed lead acid AGM battery, 151x65x94mm, 2.31kg, F2 terminals (6.3mm), same footprint as 7Ah but higher capacity, for UPS and solar backup systems",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 65,
+      "height": 94,
+      "depth": 151,
+      "weight": 2310
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "terminalType": "F2 faston (6.3mm / 0.250in)",
+          "terminalCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V nominal",
+      "power": "108Wh",
+      "interface": "F2 faston terminals"
+    },
+    "specs": {
+      "nominalVoltage": 12,
+      "capacity": 9,
+      "terminalType": "F2 (6.3mm)",
+      "cellType": "sealed lead acid (AGM)",
+      "floatChargeVoltage": 13.6,
+      "cycleChargeVoltage": 14.7,
+      "selfDischargeRate": "3% per month at 25C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00K8V2Y8W",
+        "approximatePrice": 20,
+        "url": "https://www.amazon.com/dp/B00K8V2Y8W"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Same 151x65x94mm footprint as the 12V 7Ah — drop-in upgrade. Note F2 terminals (6.3mm) vs F1 (4.8mm) on the 7Ah — may need different spade connectors. 9Ah provides ~29% more capacity than 7Ah in the same box. Common in medium UPS units and solar backup. Float charge at 13.5-13.8V.",
+    "tags": [
+      "SLA",
+      "sealed lead acid",
+      "AGM",
+      "12V",
+      "9Ah",
+      "UPS battery",
+      "Mighty Max",
+      "ML9-12",
+      "F2 terminal"
+    ]
+  },
+  {
+    "name": "Mighty Max ML12-12 Sealed Lead Acid Battery (12V 12Ah)",
+    "description": "12V 12Ah sealed lead acid AGM battery, 151x98x95mm, 3.59kg, F2 terminals (6.3mm), wider body for increased capacity, for UPS, solar backup, and mobility scooters",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 98,
+      "height": 95,
+      "depth": 151,
+      "weight": 3590
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "terminalType": "F2 faston (6.3mm / 0.250in)",
+          "terminalCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V nominal",
+      "power": "144Wh",
+      "interface": "F2 faston terminals"
+    },
+    "specs": {
+      "nominalVoltage": 12,
+      "capacity": 12,
+      "terminalType": "F2 (6.3mm)",
+      "cellType": "sealed lead acid (AGM)",
+      "floatChargeVoltage": 13.6,
+      "cycleChargeVoltage": 14.7,
+      "selfDischargeRate": "3% per month at 25C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00K8I758O",
+        "approximatePrice": 24,
+        "url": "https://www.amazon.com/dp/B00K8I758O"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Mid-capacity SLA. Wider body (98mm) than the 7/9Ah batteries (65mm) — verify mounting space. Good balance of capacity, weight, and cost for small solar systems. At 3.6kg, still hand-portable. Float charge at 13.5-13.8V. Pair with 10-20A PWM solar charge controller for small off-grid setups.",
+    "tags": [
+      "SLA",
+      "sealed lead acid",
+      "AGM",
+      "12V",
+      "12Ah",
+      "UPS battery",
+      "solar battery",
+      "Mighty Max",
+      "ML12-12"
+    ]
+  },
+  {
+    "name": "Mighty Max ML18-12 Sealed Lead Acid Battery (12V 18Ah)",
+    "description": "12V 18Ah sealed lead acid AGM battery, 181x76x165mm, 5.44kg, nut and bolt terminals, for solar off-grid, backup power, electric scooters, and robotics",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 76,
+      "height": 165,
+      "depth": 181,
+      "weight": 5440
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "terminalType": "nut and bolt (NB)",
+          "terminalCount": 2,
+          "boltSize": 5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V nominal",
+      "power": "216Wh",
+      "interface": "nut and bolt terminals"
+    },
+    "specs": {
+      "nominalVoltage": 12,
+      "capacity": 18,
+      "terminalType": "nut and bolt (M5)",
+      "cellType": "sealed lead acid (AGM)",
+      "floatChargeVoltage": 13.6,
+      "cycleChargeVoltage": 14.7,
+      "selfDischargeRate": "3% per month at 25C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00K8E4WAW",
+        "approximatePrice": 32,
+        "url": "https://www.amazon.com/dp/B00K8E4WAW"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Nut and bolt terminals handle higher current than faston tabs — better for solar and motor applications. At 5.4kg, starting to get heavy for portable use. Good for stationary solar backup, electric scooters, and robotics platforms. Pair with 20A+ charge controller for solar. Two in series = 24V 18Ah for larger systems. Taller form factor (165mm) — verify enclosure height.",
+    "tags": [
+      "SLA",
+      "sealed lead acid",
+      "AGM",
+      "12V",
+      "18Ah",
+      "solar battery",
+      "backup power",
+      "scooter battery",
+      "Mighty Max",
+      "ML18-12",
+      "nut and bolt"
+    ]
+  },
+  {
+    "name": "Mighty Max ML35-12 Sealed Lead Acid Battery (12V 35Ah)",
+    "description": "12V 35Ah sealed lead acid AGM battery, 195x130x155mm, 11.8kg, nut and bolt terminals (M6), for solar off-grid systems, wheelchairs, golf carts, and large backup power",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 130,
+      "height": 155,
+      "depth": 195,
+      "weight": 11800
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "terminalType": "nut and bolt (NB)",
+          "terminalCount": 2,
+          "boltSize": 6
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V nominal",
+      "power": "420Wh",
+      "interface": "nut and bolt terminals (M6)"
+    },
+    "specs": {
+      "nominalVoltage": 12,
+      "capacity": 35,
+      "terminalType": "nut and bolt (M6)",
+      "cellType": "sealed lead acid (AGM)",
+      "floatChargeVoltage": 13.6,
+      "cycleChargeVoltage": 14.7,
+      "selfDischargeRate": "3% per month at 25C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00K8E4LR6",
+        "approximatePrice": 60,
+        "url": "https://www.amazon.com/dp/B00K8E4LR6"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Largest common SLA size before switching to deep-cycle marine batteries. At 11.8kg, not portable — this is a stationary battery. M6 bolt terminals for high-current connections. Use with 30A+ solar charge controller. A 50W panel charges this in ~8 hours of direct sun. For same capacity at 1/3 the weight, consider LiFePO4 12V 50Ah (though 3-5x the cost). Common in wheelchairs and mobility devices.",
+    "tags": [
+      "SLA",
+      "sealed lead acid",
+      "AGM",
+      "12V",
+      "35Ah",
+      "solar battery",
+      "wheelchair battery",
+      "deep cycle",
+      "Mighty Max",
+      "ML35-12",
+      "large SLA"
+    ]
+  },
+  {
+    "name": "Power-Sonic PS-640 Sealed Lead Acid Battery (6V 4.5Ah)",
+    "description": "6V 4.5Ah sealed lead acid AGM battery, 70x47x100mm, 0.65kg, F1 terminals (4.8mm), for emergency lighting, scales, and small backup power systems",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 47,
+      "height": 100,
+      "depth": 70,
+      "weight": 650
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "terminalType": "F1 faston (4.8mm / 0.187in)",
+          "terminalCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "6V nominal",
+      "power": "27Wh",
+      "interface": "F1 faston terminals"
+    },
+    "specs": {
+      "nominalVoltage": 6,
+      "capacity": 4.5,
+      "internalResistance": 27,
+      "terminalType": "F1 (4.8mm)",
+      "cellType": "sealed lead acid (AGM)",
+      "floatChargeVoltage": 6.8,
+      "cycleChargeVoltage": 7.35,
+      "selfDischargeRate": "3% per month at 25C"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "PS-640",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B001GC56QQ"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Common 6V SLA for emergency lighting and small backup systems. Two in series = 12V 4.5Ah. Float charge at 6.75-6.90V, cycle charge at 7.20-7.50V. Light at 650g — one of the lightest SLA batteries. F1 faston terminals. For higher capacity in similar form factor, the 6V 7Ah (PS-670) is slightly larger.",
+    "tags": [
+      "SLA",
+      "sealed lead acid",
+      "AGM",
+      "6V",
+      "4.5Ah",
+      "emergency lighting",
+      "Power-Sonic",
+      "PS-640",
+      "6V battery"
+    ]
+  },
+  {
+    "name": "Power-Sonic PS-670 Sealed Lead Acid Battery (6V 7Ah)",
+    "description": "6V 7Ah sealed lead acid AGM battery, 151x34x94mm, 1.0kg, F1 terminals (4.8mm), for emergency lighting, scales, ride-on toys, and backup power",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 34,
+      "height": 94,
+      "depth": 151,
+      "weight": 1000
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "terminalType": "F1 faston (4.8mm / 0.187in)",
+          "terminalCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "6V nominal",
+      "power": "42Wh",
+      "interface": "F1 faston terminals"
+    },
+    "specs": {
+      "nominalVoltage": 6,
+      "capacity": 7,
+      "internalResistance": 17,
+      "terminalType": "F1 (4.8mm)",
+      "cellType": "sealed lead acid (AGM)",
+      "floatChargeVoltage": 6.8,
+      "cycleChargeVoltage": 7.35
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "PS-670",
+        "approximatePrice": 14,
+        "url": "https://www.amazon.com/dp/B001NJ3H2W"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Larger 6V SLA. Slim profile (34mm wide). Two in series = 12V 7Ah. Common replacement for kids' ride-on toy batteries and emergency exit signs. Float charge at 6.75-6.90V.",
+    "tags": [
+      "SLA",
+      "sealed lead acid",
+      "AGM",
+      "6V",
+      "7Ah",
+      "Power-Sonic",
+      "PS-670",
+      "ride-on toy battery",
+      "emergency lighting"
+    ]
+  },
+  {
+    "name": "LiTime 12V 6Ah LiFePO4 Battery",
+    "description": "12.8V 6Ah lithium iron phosphate battery, drop-in SLA replacement, 151x65x94mm, 0.8kg, 6A continuous discharge, built-in 6A BMS, 4000 cycle life, F2 bolt terminals, IP65 ABS enclosure, UL-1973 certified",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 65,
+      "height": 94,
+      "depth": 151,
+      "weight": 800
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "terminalType": "F2 bolt",
+          "terminalCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12.8V nominal (14.6V charge, 10V cutoff)",
+      "current": "6A continuous discharge",
+      "power": "76.8Wh",
+      "interface": "F2 bolt terminals"
+    },
+    "specs": {
+      "nominalVoltage": 12.8,
+      "capacity": 6,
+      "maxContinuousDischargeCurrent": 6,
+      "chargeVoltage": 14.6,
+      "dischargeCutoff": 10.0,
+      "cellType": "LiFePO4 (lithium iron phosphate)",
+      "bmsIncluded": true,
+      "bmsRating": "6A",
+      "cycleLife": 4000,
+      "ipRating": "IP65",
+      "certifications": "UL-1973, FCC, CE, RoHS, UN38.3"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0BNKZ731Q",
+        "approximatePrice": 40,
+        "url": "https://www.amazon.com/dp/B0BNKZ731Q"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Drop-in replacement for 12V 7Ah SLA — same 151x65x94mm form factor at 1/3 the weight (0.8kg vs 2.2kg). 4000 cycle life vs ~300 for SLA makes it cheaper long-term. REQUIRES LiFePO4-compatible charge controller — standard SLA float charger will undercharge (14.6V vs 13.8V float). 12.8V nominal vs 12.0V SLA — verify electronics work at slightly higher voltage. Built-in BMS handles protection. For higher discharge current, step up to the 10Ah or 20Ah variants.",
+    "tags": [
+      "LiFePO4",
+      "lithium iron phosphate",
+      "12V",
+      "6Ah",
+      "LiTime",
+      "SLA replacement",
+      "drop-in",
+      "rechargeable",
+      "deep cycle",
+      "solar battery",
+      "LFP"
+    ]
+  },
+  {
+    "name": "ExpertPower EP1210 12V 10Ah LiFePO4 Battery",
+    "description": "12.8V 10Ah lithium iron phosphate battery, drop-in SLA replacement, 152x66x94mm, 1.22kg, 10A continuous 15A max discharge, built-in BMS, 2500-7000 cycle life, F2 terminals, for fish finders, solar, and security cameras",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 66,
+      "height": 94,
+      "depth": 152,
+      "weight": 1220
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "terminalType": "F2 faston (6.3mm)",
+          "terminalCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12.8V nominal (14.6V charge)",
+      "current": "10A continuous, 15A max",
+      "power": "128Wh",
+      "interface": "F2 faston terminals"
+    },
+    "specs": {
+      "nominalVoltage": 12.8,
+      "capacity": 10,
+      "maxContinuousDischargeCurrent": 10,
+      "maxDischargeCurrent": 15,
+      "maxChargeCurrent": 5,
+      "chargeVoltage": 14.6,
+      "cellType": "LiFePO4 (lithium iron phosphate)",
+      "bmsIncluded": true,
+      "cycleLife100DOD": 2500,
+      "cycleLife50DOD": 7000
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07X3Y3LS5",
+        "approximatePrice": 60,
+        "url": "https://www.amazon.com/dp/B07X3Y3LS5"
+      },
+      {
+        "name": "ExpertPower",
+        "partNumber": "EP1210",
+        "approximatePrice": 60,
+        "url": "https://www.expertpower.us/products/ep1210-10ah"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Same footprint as 12V 7-9Ah SLA at half the weight with more usable capacity (100% DOD vs 50% recommended for SLA). F2 faston terminals — same connectors as SLA 9Ah. Charge at 5A max with LiFePO4-specific charger to 14.6V. BMS provides full protection. 2500 cycles at 100% DOD — roughly 7 years of daily cycling. Great for fish finders, security cameras, and small solar systems.",
+    "tags": [
+      "LiFePO4",
+      "lithium iron phosphate",
+      "12V",
+      "10Ah",
+      "ExpertPower",
+      "EP1210",
+      "SLA replacement",
+      "deep cycle",
+      "solar battery",
+      "LFP"
+    ]
+  },
+  {
+    "name": "ExpertPower EP1220 12V 20Ah LiFePO4 Battery",
+    "description": "12.8V 20Ah lithium iron phosphate battery, 180x77x168mm, 2.27kg, 20A continuous discharge, built-in BMS, 2500-7000 cycle life, M5 bolt terminals, for solar off-grid, marine, and RV applications",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 77,
+      "height": 168,
+      "depth": 180,
+      "weight": 2270
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "terminalType": "M5 bolt",
+          "terminalCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12.8V nominal (14.6V charge)",
+      "current": "20A continuous discharge",
+      "power": "256Wh",
+      "interface": "M5 bolt terminals"
+    },
+    "specs": {
+      "nominalVoltage": 12.8,
+      "capacity": 20,
+      "maxContinuousDischargeCurrent": 20,
+      "chargeVoltage": 14.6,
+      "cellType": "LiFePO4 (lithium iron phosphate)",
+      "bmsIncluded": true,
+      "cycleLife100DOD": 2500,
+      "cycleLife50DOD": 7000
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07X523S96",
+        "approximatePrice": 130,
+        "url": "https://www.amazon.com/dp/B07X523S96"
+      },
+      {
+        "name": "ExpertPower",
+        "partNumber": "EP1220",
+        "approximatePrice": 130,
+        "url": "https://www.expertpower.us/products/ep1220-20ah"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Mid-range LiFePO4 pack. 256Wh at 2.27kg — equivalent to two 12V 12Ah SLA batteries (288Wh, 7.2kg combined) at 1/3 the weight. M5 bolt terminals for solid connections. Pair with 20W-50W solar panel and MPPT controller for off-grid setups. LiFePO4 has flat discharge curve — voltage stays near 12.8V until nearly empty, which is better for sensitive electronics than SLA's gradual voltage drop.",
+    "tags": [
+      "LiFePO4",
+      "lithium iron phosphate",
+      "12V",
+      "20Ah",
+      "ExpertPower",
+      "EP1220",
+      "deep cycle",
+      "solar battery",
+      "marine battery",
+      "RV battery",
+      "LFP"
+    ]
+  },
+  {
+    "name": "LiTime 12V 50Ah LiFePO4 Battery",
+    "description": "12.8V 50Ah lithium iron phosphate battery, 195x166x172mm, 5.25kg, 50A continuous discharge, built-in 50A BMS, 4000+ cycle life, M6 bolt terminals, UL-1973 certified, for solar off-grid, RV, marine, and large backup systems",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 166,
+      "height": 172,
+      "depth": 195,
+      "weight": 5250
+    },
+    "mountingFeatures": [
+      {
+        "type": "threaded_hole",
+        "specs": {
+          "terminalType": "M6 bolt",
+          "terminalCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12.8V nominal (14.6V charge)",
+      "current": "50A continuous discharge",
+      "power": "640Wh",
+      "interface": "M6 bolt terminals"
+    },
+    "specs": {
+      "nominalVoltage": 12.8,
+      "capacity": 50,
+      "maxContinuousDischargeCurrent": 50,
+      "chargeVoltage": 14.6,
+      "cellType": "LiFePO4 (lithium iron phosphate)",
+      "bmsIncluded": true,
+      "bmsRating": "50A",
+      "cycleLife": 4000,
+      "certifications": "UL-1973, FCC, CE, RoHS, UN38.3"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0BRQDRRM9",
+        "approximatePrice": 180,
+        "url": "https://www.amazon.com/dp/B0BRQDRRM9"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-capacity LiFePO4 pack. 640Wh at 5.25kg replaces a 12V 35Ah SLA (420Wh, 11.8kg) with 50% more energy at half the weight. 50A continuous supports running multiple loads simultaneously. Wire in parallel for more capacity, in series (with compatible BMS) for 24V or 48V systems. Pair with 50W+ solar panel and 20A+ MPPT controller. LiFePO4 is the safest lithium chemistry — no thermal runaway risk. 4000 cycles = 10+ years of daily use.",
+    "tags": [
+      "LiFePO4",
+      "lithium iron phosphate",
+      "12V",
+      "50Ah",
+      "LiTime",
+      "deep cycle",
+      "solar battery",
+      "RV battery",
+      "marine battery",
+      "off-grid",
+      "LFP",
+      "large battery"
+    ]
+  },
+  {
+    "name": "IFR32700 3.2V 6000mAh LiFePO4 Cell",
+    "description": "3.2V 6000mAh IFR32700 LiFePO4 cylindrical cell, 32.2mm diameter x 70.5mm height, 140g, 18A continuous discharge (3C), 60A pulse (10C), 8mOhm internal resistance, 2000+ cycle life, for DIY battery pack building",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 32.2,
+      "length": 70.5,
+      "weight": 140
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "3.2V nominal (3.65V charge, 2.0V cutoff)",
+      "current": "18A continuous (3C), 60A pulse (10C)",
+      "power": "19.2Wh",
+      "interface": "cell terminals",
+      "pinout": "positive nub top, flat negative bottom"
+    },
+    "specs": {
+      "capacity": 6000,
+      "nominalVoltage": 3.2,
+      "maxChargeVoltage": 3.65,
+      "dischargeCutoff": 2.0,
+      "maxContinuousDischargeCurrent": 18,
+      "maxPulseDischargeCurrent": 60,
+      "internalResistance": 8,
+      "cellType": "LiFePO4 (lithium iron phosphate)",
+      "cellFormat": "32700",
+      "cycleLife": 2000,
+      "rechargeable": true
+    },
+    "suppliers": [
+      {
+        "name": "BatterySpace",
+        "partNumber": "LFP-32700",
+        "approximatePrice": 12,
+        "url": "https://www.batteryspace.com/lifepo4-32700-rechargeable-cell-3-2v-6000-mah-19-2wh---un-38-3-passed.aspx"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Best value LiFePO4 cell for DIY pack building. Four in series = 12.8V 6Ah pack (76.8Wh, 560g) — competitive with commercial 12V LiFePO4 packs at lower cost. 18A continuous is enough for most applications. Requires 4S LiFePO4 BMS (NOT Li-ion BMS — different voltage cutoffs). Spot-weld with nickel strips for pack building. Flat top — compatible with standard cylindrical cell holders. Larger than 18650 or 26650 — verify holder compatibility.",
+    "tags": [
+      "IFR32700",
+      "32700",
+      "LiFePO4",
+      "3.2V",
+      "6000mAh",
+      "LFP cell",
+      "cylindrical cell",
+      "DIY battery",
+      "battery building",
+      "lithium iron phosphate"
+    ]
+  },
+  {
+    "name": "IFR26650 3.2V 3500mAh LiFePO4 Cell",
+    "description": "3.2V 3500mAh IFR26650 LiFePO4 cylindrical cell, 26mm diameter x 65mm height, 85g, 1.75A continuous (0.5C), 7A pulse (2C), 2000+ cycle life, safer chemistry for DIY battery projects",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 26,
+      "length": 65,
+      "weight": 85
+    },
+    "mountingFeatures": [],
+    "electrical": {
+      "voltage": "3.2V nominal (3.65V charge, 2.0V cutoff)",
+      "current": "1.75A continuous (0.5C), 7A pulse (2C)",
+      "power": "11.2Wh",
+      "interface": "cell terminals",
+      "pinout": "positive nub top, flat negative bottom"
+    },
+    "specs": {
+      "capacity": 3500,
+      "nominalVoltage": 3.2,
+      "maxChargeVoltage": 3.65,
+      "dischargeCutoff": 2.0,
+      "maxContinuousDischargeCurrent": 1.75,
+      "maxPulseDischargeCurrent": 7,
+      "cellType": "LiFePO4 (lithium iron phosphate)",
+      "cellFormat": "26650",
+      "cycleLife": 2000,
+      "rechargeable": true
+    },
+    "suppliers": [
+      {
+        "name": "BatterySpace",
+        "partNumber": "2385",
+        "approximatePrice": 10,
+        "url": "https://www.batteryspace.com/lifepo4-26650-rechargeable-cell-3-2v-3300-mah-19-8a-rate-10wh---un38-3-passed-ndgr.aspx"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Lower capacity and discharge rate than IFR32700 but more commonly available in holders. 26650 holders are widely available from Keystone and others. Low discharge rate (0.5C continuous) limits this to low-power applications — for high-drain use, prefer IFR32700 (18A continuous). Four in series = 12.8V 3.5Ah pack. Same LiFePO4 safety advantages — no thermal runaway. UNVERIFIED: exact max discharge current varies significantly by manufacturer.",
+    "tags": [
+      "IFR26650",
+      "26650",
+      "LiFePO4",
+      "3.2V",
+      "3500mAh",
+      "LFP cell",
+      "cylindrical cell",
+      "DIY battery",
+      "lithium iron phosphate"
+    ]
+  },
+  {
+    "name": "TP4056 Li-Ion Charger Module with Protection (USB-C)",
+    "description": "TP4056 single-cell lithium-ion charger module with DW01A protection, USB-C input, 1A charge current, 4.2V CC/CV charging, overcharge/overdischarge/overcurrent/short-circuit protection, 26-28x17mm, for 18650 and LiPo charging",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 17,
+      "height": 4,
+      "depth": 27,
+      "weight": 1.6
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "padCount": 6,
+          "padLabels": "IN+, IN-, BAT+, BAT-, OUT+, OUT-",
+          "padType": "solder pads"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.5-6V input, 4.2V charge output",
+      "current": "1A charge (adjustable via Rprog)",
+      "power": "4.2W max charge",
+      "interface": "USB-C input",
+      "pinout": "IN+/IN- (USB power), BAT+/BAT- (battery), OUT+/OUT- (protected output)"
+    },
+    "specs": {
+      "chargerIC": "TP4056 / TC4056A",
+      "protectionIC": "DW01A + FS8205A dual MOSFET",
+      "chargeCurrent": 1.0,
+      "chargeVoltage": 4.2,
+      "chargeAccuracy": 1.5,
+      "overchargeDetection": 4.3,
+      "overdischargeDetection": 2.4,
+      "overcurrentProtection": 3.0,
+      "trickleChargeThreshold": 2.9,
+      "inputConnector": "USB-C",
+      "chemistry": "Li-ion / LiPo (single cell)"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07PKND8KG",
+        "approximatePrice": 2.5,
+        "url": "https://www.amazon.com/dp/B07PKND8KG"
+      },
+      {
+        "name": "Addicore",
+        "partNumber": "AD310-USBC",
+        "approximatePrice": 1.5,
+        "url": "https://www.addicore.com/products/tp4056-tc4056a-lithium-battery-charger-and-protection-module"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The go-to single-cell Li-ion charger. USB-C variant is recommended over Micro-USB for new designs. Protection circuit (DW01A + FS8205A) is essential — do NOT use the version without protection unless you have an external BMS. Connect battery to BAT+/BAT-, load to OUT+/OUT- (not BAT). Charging LED: red = charging, blue/green = done. Default 1A charge current — reduce by changing Rprog resistor for smaller cells (e.g., 10K for 130mA). Can charge from solar panel (5-6V) connected to IN+/IN- instead of USB.",
+    "tags": [
+      "TP4056",
+      "Li-ion charger",
+      "LiPo charger",
+      "USB-C charger",
+      "single cell charger",
+      "battery charger module",
+      "18650 charger",
+      "DW01A",
+      "charging module"
+    ]
+  },
+  {
+    "name": "Adafruit Micro-Lipo USB-C Charger (MCP73831)",
+    "description": "Adafruit Micro-Lipo USB-C charger breakout, MCP73831 IC, 100/500mA selectable charge current, JST-PH 2-pin battery connector, 24x19x7.2mm, charge LED indicator, for Adafruit LiPo batteries and Feather boards",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 19,
+      "height": 7.2,
+      "depth": 24,
+      "weight": 4
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "batteryConnector": "JST-PH 2-pin",
+          "pinPitch": 2.0,
+          "usbConnector": "USB-C"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5V USB input, 4.2V charge output",
+      "current": "100mA or 500mA (solder jumper selectable)",
+      "power": "2.1W max",
+      "interface": "USB-C input, JST-PH output",
+      "pinout": "USB-C (power in), JST-PH (battery), charge status LED"
+    },
+    "specs": {
+      "chargerIC": "MCP73831",
+      "chargeCurrent": "100mA default, 500mA via jumper",
+      "chargeVoltage": 4.2,
+      "inputConnector": "USB-C",
+      "outputConnector": "JST-PH 2-pin",
+      "chemistry": "Li-ion / LiPo (single cell)",
+      "chargeIndicator": "red LED (charging), green LED (done)"
+    },
+    "suppliers": [
+      {
+        "name": "Adafruit",
+        "partNumber": "4410",
+        "approximatePrice": 7,
+        "url": "https://www.adafruit.com/product/4410"
+      },
+      {
+        "name": "DigiKey",
+        "partNumber": "1528-4410-ND",
+        "approximatePrice": 7,
+        "url": "https://www.digikey.com/en/products/detail/adafruit-industries-llc/4410/11501666"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Premium single-cell charger from Adafruit. JST-PH connector matches all Adafruit LiPo batteries — plug and play. No protection circuit on this board — relies on protection built into Adafruit batteries. If using unprotected cells, add external DW01A protection or use TP4056 with protection instead. 100mA default is safe for all Adafruit LiPos down to 150mAh. Solder jumper to switch to 500mA for 1000mAh+ cells.",
+    "tags": [
+      "MCP73831",
+      "Li-ion charger",
+      "LiPo charger",
+      "USB-C charger",
+      "Adafruit",
+      "Micro-Lipo",
+      "JST-PH",
+      "Feather charger",
+      "single cell charger"
+    ]
+  },
+  {
+    "name": "3S 20A Li-Ion BMS Protection Board",
+    "description": "3S 11.1V 20A lithium-ion BMS protection board, 12.6V charge voltage, overcharge/overdischarge/overcurrent/short-circuit protection, passive balancing ~60mA, 54x20x3.4mm, for 3S 18650 and LiPo pack building",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20,
+      "height": 3.4,
+      "depth": 54,
+      "weight": 5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "padCount": 7,
+          "padLabels": "B-, B1, B2, B3/P+, P-, C-",
+          "padType": "solder pads"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "11.1V nominal (12.6V charge)",
+      "current": "20A continuous discharge",
+      "interface": "solder pads",
+      "pinout": "B- (cell negative), B1/B2 (balance taps), B3/P+ (cell positive/pack positive), P- (pack negative)"
+    },
+    "specs": {
+      "cellCount": 3,
+      "chemistry": "Li-ion (NMC/NCA)",
+      "configuration": "3S",
+      "continuousDischarge": 20,
+      "chargeVoltage": 12.6,
+      "overchargePerCell": 4.28,
+      "overdischargePerCell": 2.55,
+      "balanceCurrent": 60,
+      "balanceType": "passive"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B09MLXFH81",
+        "approximatePrice": 2,
+        "url": "https://www.amazon.com/dp/B09MLXFH81"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Essential for any 3S Li-ion pack. Provides cell-level overcharge/overdischarge protection and pack-level overcurrent/short-circuit protection. Passive balancing at 60mA is slow — cells should be capacity-matched before assembly. Wire B- to first cell negative, B1 between cell 1-2, B2 between cell 2-3, B3 to last cell positive. P- is the protected output negative. For higher current, use 40A variant. NOT suitable for LiFePO4 — use LiFePO4-specific BMS with different voltage cutoffs.",
+    "tags": [
+      "BMS",
+      "battery management system",
+      "3S",
+      "11.1V",
+      "20A",
+      "Li-ion protection",
+      "18650 BMS",
+      "LiPo BMS",
+      "battery protection",
+      "balance board"
+    ]
+  },
+  {
+    "name": "4S 30A Li-Ion BMS Protection Board",
+    "description": "4S 14.8V 30A lithium-ion BMS protection board, 16.8V charge voltage, overcharge/overdischarge/overcurrent/short-circuit protection, passive balancing ~60mA, 56x45x3mm, for 4S 18650 and LiPo pack building",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 45,
+      "height": 3,
+      "depth": 56,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "padCount": 9,
+          "padLabels": "B-, B1, B2, B3, B4/P+, P-, C-",
+          "padType": "solder pads"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "14.8V nominal (16.8V charge)",
+      "current": "30A continuous discharge",
+      "interface": "solder pads"
+    },
+    "specs": {
+      "cellCount": 4,
+      "chemistry": "Li-ion (NMC/NCA)",
+      "configuration": "4S",
+      "continuousDischarge": 30,
+      "chargeVoltage": 16.8,
+      "overchargePerCell": 4.28,
+      "overdischargePerCell": 2.55,
+      "balanceCurrent": 60,
+      "balanceType": "passive"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07X28845M",
+        "approximatePrice": 3,
+        "url": "https://www.amazon.com/dp/B07X28845M"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard BMS for 4S Li-ion packs. 30A is enough for most applications with 3000mAh 18650 cells. Wire balance taps in order (B- to B4) connecting between each cell junction. Match cell capacity within 5% for best balancing results. For power tool replacement packs, consider 40A variant. NOT for LiFePO4 — voltage cutoffs are wrong (4.28V per cell vs 3.65V for LFP).",
+    "tags": [
+      "BMS",
+      "battery management system",
+      "4S",
+      "14.8V",
+      "30A",
+      "Li-ion protection",
+      "18650 BMS",
+      "LiPo BMS",
+      "battery protection"
+    ]
+  },
+  {
+    "name": "4S 30A LiFePO4 BMS Protection Board",
+    "description": "4S 12.8V 30A LiFePO4 BMS protection board, 14.6V charge voltage, overcharge 3.75V/cell, overdischarge 2.1V/cell, passive balancing ~60-110mA, 60x45x7mm, for 12V LiFePO4 battery pack building",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 45,
+      "height": 7,
+      "depth": 60,
+      "weight": 15
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "padCount": 9,
+          "padLabels": "B-, B1, B2, B3, B4/P+, P-, C-",
+          "padType": "solder pads"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12.8V nominal (14.6V charge)",
+      "current": "30A continuous discharge",
+      "interface": "solder pads"
+    },
+    "specs": {
+      "cellCount": 4,
+      "chemistry": "LiFePO4",
+      "configuration": "4S",
+      "continuousDischarge": 30,
+      "chargeVoltage": 14.6,
+      "overchargePerCell": 3.75,
+      "overdischargePerCell": 2.1,
+      "balanceCurrent": 80,
+      "balanceType": "passive"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0872L7ZRS",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B0872L7ZRS"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "CRITICAL: This is a LiFePO4-specific BMS — do NOT use with standard Li-ion cells. Voltage cutoffs are completely different: 3.75V overcharge (vs 4.28V for Li-ion), 2.1V overdischarge (vs 2.55V). Use with four IFR32700 or IFR26650 cells in series for a DIY 12.8V pack. Pair with LiFePO4-compatible charge controller that targets 14.6V. 30A continuous is suitable for most 12V applications. For higher current (solar inverters, RV), use 100A Daly BMS.",
+    "tags": [
+      "BMS",
+      "battery management system",
+      "4S",
+      "12.8V",
+      "LiFePO4",
+      "LFP BMS",
+      "30A",
+      "iron phosphate",
+      "battery protection",
+      "Daly"
+    ]
+  },
+  {
+    "name": "Daly 4S 100A LiFePO4 BMS",
+    "description": "Daly 4S 12.8V 100A LiFePO4 BMS, 14.6V charge, active cell balancing 100mA, overcharge/overdischarge/overcurrent/short-circuit/temperature protection, ~200x100x40mm, for large 12V LiFePO4 battery banks and solar systems",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 100,
+      "height": 40,
+      "depth": 200,
+      "weight": 200
+    },
+    "mountingFeatures": [
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalType": "heavy duty screw terminals",
+          "wireGauge": "8-2 AWG"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12.8V nominal (14.6V charge)",
+      "current": "100A continuous discharge, ~50A charge",
+      "interface": "screw terminals + balance wire harness"
+    },
+    "specs": {
+      "cellCount": 4,
+      "chemistry": "LiFePO4",
+      "configuration": "4S",
+      "continuousDischarge": 100,
+      "chargeVoltage": 14.6,
+      "overchargePerCell": 3.75,
+      "overdischargePerCell": 2.1,
+      "balanceCurrent": 100,
+      "balanceType": "active transfer",
+      "temperatureProtection": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08JBV1X28",
+        "approximatePrice": 55,
+        "url": "https://www.amazon.com/dp/B08JBV1X28"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Industrial-grade BMS for large LiFePO4 battery banks. 100A continuous handles solar inverters, RV systems, and marine applications. Screw terminals accept heavy gauge wire. Smart variant (B08PFQ43GQ) adds UART/Bluetooth for monitoring via app. Active balancing at 100mA is much faster than passive 30A boards. Temperature sensor included — mount to cell surface. Daly is the most popular brand for DIY LiFePO4 packs in the 50-500A range.",
+    "tags": [
+      "BMS",
+      "Daly",
+      "4S",
+      "12.8V",
+      "LiFePO4",
+      "100A",
+      "high current BMS",
+      "solar BMS",
+      "RV BMS",
+      "active balancing",
+      "smart BMS"
+    ]
+  },
+  {
+    "name": "Renogy Wanderer 10A PWM Solar Charge Controller",
+    "description": "Renogy Wanderer 10A PWM solar charge controller, 12V/24V auto-detect, 25V max PV input, backlit LCD, 4-stage charging (bulk/boost/float/equalization), sealed/gel/flooded/lithium battery support, 119x75x27.5mm, 122g, USB ports",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 75,
+      "height": 27.5,
+      "depth": 119,
+      "weight": 122
+    },
+    "mountingFeatures": [
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalGroups": 3,
+          "terminalLabels": "PV input, Battery, Load",
+          "terminalSize": "up to 10AWG"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V/24V auto-detect system",
+      "current": "10A charge / 10A load",
+      "power": "130W (12V) / 260W (24V) max PV",
+      "interface": "screw terminals + USB ports",
+      "pinout": "PV+/PV-, BAT+/BAT-, LOAD+/LOAD-, 2x USB 5V"
+    },
+    "specs": {
+      "controllerType": "PWM",
+      "ratedCurrent": 10,
+      "systemVoltage": "12V/24V auto",
+      "maxPVInputVoltage": 25,
+      "chargingStages": "4-stage (bulk, boost, float, equalization)",
+      "batteryTypes": "sealed, gel, flooded, lithium",
+      "selfConsumption": "8mA",
+      "operatingTemp": "-35 to 45C",
+      "display": "backlit LCD"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "RNG-CTRL-WND10",
+        "approximatePrice": 22,
+        "url": "https://www.amazon.com/dp/B07NPDWZJ7"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Entry-level solar charge controller. PWM is simpler and cheaper than MPPT but 15-30% less efficient in partial shade. Suitable for panels up to 130W (12V system). Connect: PV panel to PV terminals, battery to BAT terminals, optional loads to LOAD terminals. ALWAYS connect battery FIRST, then solar panel. Disconnect in reverse order. For lithium batteries, select lithium profile in settings. USB ports provide 5V for phone charging. For higher efficiency, upgrade to Victron MPPT.",
+    "tags": [
+      "solar charge controller",
+      "PWM",
+      "Renogy",
+      "Wanderer",
+      "10A",
+      "12V",
+      "24V",
+      "solar controller",
+      "battery charger",
+      "off-grid"
+    ]
+  },
+  {
+    "name": "ALLPOWERS 20A PWM Solar Charge Controller",
+    "description": "ALLPOWERS 20A PWM solar charge controller, 12V/24V auto-detect, LCD display, 5V/3A USB output, overcharge protection, sealed/gel/flooded battery support, 150x78x35mm, budget controller for medium solar systems",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 78,
+      "height": 35,
+      "depth": 150,
+      "weight": 150
+    },
+    "mountingFeatures": [
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalGroups": 3,
+          "terminalLabels": "PV input, Battery, Load"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V/24V auto-detect system",
+      "current": "20A charge / 20A load",
+      "power": "260W (12V) / 520W (24V) max PV",
+      "interface": "screw terminals + USB",
+      "pinout": "PV+/PV-, BAT+/BAT-, LOAD+/LOAD-, USB 5V/3A"
+    },
+    "specs": {
+      "controllerType": "PWM",
+      "ratedCurrent": 20,
+      "systemVoltage": "12V/24V auto",
+      "overchargeProtection": 14.4,
+      "batteryTypes": "sealed, gel, flooded",
+      "display": "LCD"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B01MU0WMGT",
+        "approximatePrice": 18,
+        "url": "https://www.amazon.com/dp/B01MU0WMGT"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Budget 20A PWM controller. Does NOT support lithium batteries — use Renogy Wanderer Li for that. Good for simple SLA solar charging systems. 20A handles up to 260W of panels at 12V. LCD shows basic charging info. ALLPOWERS makes decent budget controllers but lacks Renogy's lithium battery profiles and RS232 connectivity. Always connect battery first, then solar.",
+    "tags": [
+      "solar charge controller",
+      "PWM",
+      "ALLPOWERS",
+      "20A",
+      "12V",
+      "24V",
+      "solar controller",
+      "budget",
+      "SLA charger"
+    ]
+  },
+  {
+    "name": "Victron SmartSolar MPPT 75/15 Charge Controller",
+    "description": "Victron Energy SmartSolar MPPT 75|15 solar charge controller, 15A, 12V/24V auto, 75V max PV Voc, 98% peak efficiency, built-in Bluetooth, VE.Direct data port, 100x113x50mm, 500g, IP43, programmable for all battery types including lithium",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 113,
+      "height": 50,
+      "depth": 100,
+      "weight": 500
+    },
+    "mountingFeatures": [
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalGroups": 3,
+          "terminalLabels": "PV input, Battery, Load",
+          "terminalSize": "up to 6mm2 / 10AWG"
+        }
+      },
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeType": "wall mounting",
+          "mountType": "vertical wall mount"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V/24V auto system",
+      "current": "15A charge",
+      "power": "220W (12V) / 440W (24V) max PV",
+      "interface": "screw terminals + VE.Direct + Bluetooth",
+      "pinout": "PV+/PV-, BAT+/BAT-, LOAD+/LOAD-"
+    },
+    "specs": {
+      "controllerType": "MPPT",
+      "ratedCurrent": 15,
+      "systemVoltage": "12V/24V auto",
+      "maxPVVoc": 75,
+      "peakEfficiency": 98,
+      "batteryTypes": "all lead-acid, LiFePO4, Li-ion (fully programmable)",
+      "bluetooth": true,
+      "dataPort": "VE.Direct",
+      "ipRating": "IP43",
+      "selfConsumption": "10mA",
+      "operatingTemp": "-30 to 60C",
+      "warranty": "5 years"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "SCC075015060R",
+        "approximatePrice": 79,
+        "url": "https://www.amazon.com/dp/B075STMKWF"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Premium MPPT controller — 15-30% more energy harvest than PWM, especially in partial shade and with higher-voltage panels. Built-in Bluetooth connects to VictronConnect app for monitoring, configuration, and firmware updates. VE.Direct port connects to GX devices for system monitoring. Fully programmable charge profiles for any battery chemistry. 75V PV input allows series-wired panels. Compact and reliable — Victron is the industry standard for off-grid solar. 5-year warranty. For 20A version, get SCC110020160R (100V PV input).",
+    "tags": [
+      "MPPT",
+      "solar charge controller",
+      "Victron",
+      "SmartSolar",
+      "15A",
+      "Bluetooth",
+      "12V",
+      "24V",
+      "off-grid",
+      "solar controller",
+      "VE.Direct",
+      "premium"
+    ]
+  },
+  {
+    "name": "Victron SmartSolar MPPT 100/20 Charge Controller",
+    "description": "Victron Energy SmartSolar MPPT 100|20 solar charge controller, 20A, 12V/24V/48V, 100V max PV Voc, 98% peak efficiency, built-in Bluetooth, VE.Direct, 100x113x60mm, 650g, IP43, for medium off-grid solar systems",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 113,
+      "height": 60,
+      "depth": 100,
+      "weight": 650
+    },
+    "mountingFeatures": [
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalGroups": 3,
+          "terminalLabels": "PV input, Battery, Load",
+          "terminalSize": "up to 6mm2 / 10AWG"
+        }
+      },
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeType": "wall mounting"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V/24V/48V auto system",
+      "current": "20A charge",
+      "power": "290W (12V) / 580W (24V) / 1160W (48V) max PV",
+      "interface": "screw terminals + VE.Direct + Bluetooth"
+    },
+    "specs": {
+      "controllerType": "MPPT",
+      "ratedCurrent": 20,
+      "systemVoltage": "12V/24V/48V auto",
+      "maxPVVoc": 100,
+      "peakEfficiency": 98,
+      "batteryTypes": "all lead-acid, LiFePO4, Li-ion (fully programmable)",
+      "bluetooth": true,
+      "dataPort": "VE.Direct",
+      "ipRating": "IP43",
+      "warranty": "5 years"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "SCC110020160R",
+        "approximatePrice": 90,
+        "url": "https://www.amazon.com/dp/B07543Q2TN"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Step-up from the 75/15 — adds 48V system support, 20A rating, and 100V PV input. The 100V PV input is key — allows 2-3 panels in series, which means thinner wire and less voltage drop on long runs. Same Bluetooth app monitoring and programmability. 20A at 12V = 290W of panels — enough for a small cabin or RV. For larger systems, Victron makes 30A, 50A, and 100A MPPT controllers.",
+    "tags": [
+      "MPPT",
+      "solar charge controller",
+      "Victron",
+      "SmartSolar",
+      "20A",
+      "100V",
+      "Bluetooth",
+      "12V",
+      "24V",
+      "48V",
+      "off-grid",
+      "RV solar",
+      "cabin solar"
+    ]
+  },
+  {
+    "name": "Epever Tracer 1210AN 10A MPPT Solar Charge Controller",
+    "description": "Epever Tracer1210AN 10A MPPT solar charge controller, 12V/24V auto, 100V max PV Voc, 98% conversion efficiency, 99.5% tracking efficiency, LCD display, RS485 port, temperature sensor included, 172x139x44mm, 570g, budget MPPT option",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 139,
+      "height": 44,
+      "depth": 172,
+      "weight": 570
+    },
+    "mountingFeatures": [
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "terminalGroups": 3,
+          "terminalLabels": "PV input, Battery, Load"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "12V/24V auto system",
+      "current": "10A charge",
+      "power": "130W (12V) / 260W (24V) max PV",
+      "interface": "screw terminals + RS485 + RJ45 (temp sensor)"
+    },
+    "specs": {
+      "controllerType": "MPPT",
+      "ratedCurrent": 10,
+      "systemVoltage": "12V/24V auto",
+      "maxPVVoc": 100,
+      "peakConversionEfficiency": 98,
+      "trackingEfficiency": 99.5,
+      "batteryTypes": "sealed, gel, flooded, lithium",
+      "display": "LCD with backlight",
+      "communicationPort": "RS485",
+      "temperatureSensor": "included"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B077P4RFJB",
+        "approximatePrice": 50,
+        "url": "https://www.amazon.com/dp/B077P4RFJB"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Budget MPPT controller with good features. 100V PV input at 10A output — same panel flexibility as the Victron 100/20 but at 10A. RS485 port allows remote monitoring (optional MT50 display or WiFi adapter). Temperature sensor improves charge accuracy. Good entry point for MPPT technology at a lower price than Victron. Lithium battery profile available. Epever (also sold as EPSolar) is a well-known Chinese solar brand with decent quality control.",
+    "tags": [
+      "MPPT",
+      "solar charge controller",
+      "Epever",
+      "EPSolar",
+      "Tracer",
+      "10A",
+      "budget MPPT",
+      "12V",
+      "24V",
+      "RS485",
+      "solar controller"
+    ]
+  },
+  {
+    "name": "LM7805 5V 1.5A Linear Voltage Regulator (TO-220)",
+    "description": "LM7805 5V 1.5A fixed positive linear voltage regulator, TO-220-3 package, 7-35V input, 2V dropout, 5°C/W junction-to-case thermal resistance, for regulated 5V from 7V+ sources, industry standard 3-terminal regulator",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.16,
+      "height": 15.24,
+      "depth": 4.57,
+      "weight": 2.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "mountingHole": 3.53,
+          "package": "TO-220-3"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "7-35V input, 5V output",
+      "current": "1.5A max",
+      "power": "dissipates (Vin-5V) × Iout as heat",
+      "interface": "3-pin TO-220",
+      "pinout": "pin 1: Input, pin 2: Ground, pin 3: Output"
+    },
+    "specs": {
+      "outputVoltage": 5.0,
+      "outputAccuracy": 4,
+      "maxOutputCurrent": 1.5,
+      "inputVoltageRange": "7-35V",
+      "dropoutVoltage": 2.0,
+      "thermalResistanceJC": 5,
+      "thermalResistanceJA": 65,
+      "quiescentCurrent": 6,
+      "package": "TO-220-3"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "497-1443-5-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/stmicroelectronics/L7805CV/585964"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "511-L7805CV",
+        "approximatePrice": 0.5,
+        "url": "https://www.mouser.com/ProductDetail/STMicroelectronics/L7805CV"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The classic 5V regulator — simple, cheap, and reliable but INEFFICIENT. All excess voltage is dissipated as heat: at 12V in, 1A out, it wastes 7W as heat and needs a heatsink. Add 0.1µF ceramic on input and 0.1µF on output (minimum). For efficiency at >0.5A, use a switching regulator (LM2596 or MP1584 buck module) instead. Still useful for low-current (<200mA) applications where simplicity matters. Mounting hole allows bolting to heatsink. Use thermal paste between tab and heatsink.",
+    "tags": [
+      "LM7805",
+      "7805",
+      "voltage regulator",
+      "5V regulator",
+      "linear regulator",
+      "TO-220",
+      "L7805CV",
+      "3-terminal regulator",
+      "power supply"
+    ]
+  },
+  {
+    "name": "LM7812 12V 1.5A Linear Voltage Regulator (TO-220)",
+    "description": "LM7812 12V 1.5A fixed positive linear voltage regulator, TO-220-3 package, 14-35V input, 2V dropout, 5°C/W junction-to-case thermal resistance, for regulated 12V from 14V+ sources",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.16,
+      "height": 15.24,
+      "depth": 4.57,
+      "weight": 2.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "mountingHole": 3.53,
+          "package": "TO-220-3"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "14-35V input, 12V output",
+      "current": "1.5A max",
+      "power": "dissipates (Vin-12V) × Iout as heat",
+      "interface": "3-pin TO-220",
+      "pinout": "pin 1: Input, pin 2: Ground, pin 3: Output"
+    },
+    "specs": {
+      "outputVoltage": 12.0,
+      "outputAccuracy": 4,
+      "maxOutputCurrent": 1.5,
+      "inputVoltageRange": "14-35V",
+      "dropoutVoltage": 2.0,
+      "thermalResistanceJC": 5,
+      "thermalResistanceJA": 65,
+      "quiescentCurrent": 6,
+      "package": "TO-220-3"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "497-1445-5-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/stmicroelectronics/L7812CV/585972"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "511-L7812CV",
+        "approximatePrice": 0.5,
+        "url": "https://www.mouser.com/ProductDetail/STMicroelectronics/L7812CV"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "12V linear regulator. Requires 14V+ input due to 2V dropout. Same heat dissipation concerns as LM7805 — use switching regulator for high-current applications. Useful for creating clean 12V rail from noisy or variable higher-voltage sources. Add 0.33µF ceramic on input and 0.1µF on output. Common in automotive aftermarket electronics where 14V battery feeds 12V-sensitive devices.",
+    "tags": [
+      "LM7812",
+      "7812",
+      "voltage regulator",
+      "12V regulator",
+      "linear regulator",
+      "TO-220",
+      "L7812CV",
+      "3-terminal regulator"
+    ]
+  },
+  {
+    "name": "LM317 Adjustable 1.5A Linear Voltage Regulator (TO-220)",
+    "description": "LM317 adjustable positive linear voltage regulator, TO-220-3 package, 1.25-37V output, 3-40V input, 1.5A max, output set by two external resistors, Vout = 1.25 × (1 + R2/R1), industry standard adjustable regulator",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10.16,
+      "height": 15.24,
+      "depth": 4.57,
+      "weight": 2.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "mountingHole": 3.53,
+          "package": "TO-220-3"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "3-40V input, 1.25-37V output (adjustable)",
+      "current": "1.5A max",
+      "interface": "3-pin TO-220",
+      "pinout": "pin 1: Adjust, pin 2: Output, pin 3: Input"
+    },
+    "specs": {
+      "outputVoltageRange": "1.25-37V",
+      "maxOutputCurrent": 1.5,
+      "inputVoltageRange": "3-40V",
+      "maxInputOutputDifferential": 40,
+      "dropoutVoltage": 2.0,
+      "referenceVoltage": 1.25,
+      "lineRegulation": 0.01,
+      "loadRegulation": 0.1,
+      "thermalResistanceJC": 5,
+      "package": "TO-220-3",
+      "outputFormula": "Vout = 1.25 × (1 + R2/R1), R1 typically 240Ω"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "LM317T/NOPB-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/texas-instruments/LM317T-NOPB/3529"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "926-LM317T/NOPB",
+        "approximatePrice": 0.5,
+        "url": "https://www.mouser.com/ProductDetail/Texas-Instruments/LM317T-NOPB"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Classic adjustable regulator. Set output with two resistors: R1 (240Ω typical) from Output to Adjust pin, R2 from Adjust to ground. Vout = 1.25 × (1 + R2/R1). Common values: 3.3V (R2=396Ω), 5V (R2=720Ω), 9V (R2=1.49kΩ), 12V (R2=2.07kΩ). Same pinout caveat: pin 1 is Adjust (not Input like 78xx). Add 0.1µF ceramic on input, 1µF on output, and protection diodes for inductive loads. Same heat dissipation issue as fixed regulators — heatsink needed at high currents.",
+    "tags": [
+      "LM317",
+      "adjustable regulator",
+      "voltage regulator",
+      "linear regulator",
+      "TO-220",
+      "variable voltage",
+      "3-terminal regulator",
+      "power supply"
+    ]
+  },
+  {
+    "name": "AMS1117-3.3 LDO Voltage Regulator Breakout Board",
+    "description": "AMS1117-3.3 low-dropout 3.3V 1A voltage regulator breakout board, SOT-223 IC on PCB with capacitors, 4.5-12V input, 1V dropout, 13x10x5mm board, pin header connections, for ESP32, ESP8266, and 3.3V logic level conversion",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10,
+      "height": 5,
+      "depth": 13,
+      "weight": 1
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "pinLabels": "VIN, VOUT, GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.5-12V input, 3.3V output",
+      "current": "1A max (with adequate cooling)",
+      "power": "3.3W output max",
+      "interface": "pin header",
+      "pinout": "VIN, VOUT, GND"
+    },
+    "specs": {
+      "outputVoltage": 3.3,
+      "maxOutputCurrent": 1.0,
+      "inputVoltageRange": "4.5-12V",
+      "dropoutVoltage": 1.0,
+      "regulatorIC": "AMS1117-3.3",
+      "package": "SOT-223 on breakout PCB",
+      "onboardCapacitors": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08CDMZMDN",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/dp/B08CDMZMDN"
+      },
+      {
+        "name": "Adafruit",
+        "partNumber": "4683",
+        "approximatePrice": 1.5,
+        "url": "https://www.adafruit.com/product/4683"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Cheap and simple way to get 3.3V from 5V. The 1V dropout means minimum 4.3V input for stable 3.3V output. Onboard capacitors make this ready to use — just connect power. 1A is the IC limit but the tiny PCB can't dissipate much heat — derate to 500mA for sustained use without airflow. For 5V→3.3V at low current (<500mA) this is ideal. For higher current or wider input range, use a switching regulator.",
+    "tags": [
+      "AMS1117",
+      "3.3V",
+      "LDO",
+      "voltage regulator",
+      "breakout board",
+      "SOT-223",
+      "ESP32 power",
+      "ESP8266 power",
+      "3.3V regulator",
+      "level conversion"
+    ]
+  },
+  {
+    "name": "AMS1117-5.0 LDO Voltage Regulator Breakout Board",
+    "description": "AMS1117-5.0 low-dropout 5V 1A voltage regulator breakout board, SOT-223 IC on PCB with capacitors, 6.5-12V input, 1V dropout, 13x10x5mm board, pin header connections, for Arduino and 5V logic power",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 10,
+      "height": 5,
+      "depth": 13,
+      "weight": 1
+    },
+    "mountingFeatures": [
+      {
+        "type": "pin_header",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 2.54,
+          "pinLabels": "VIN, VOUT, GND"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "6.5-12V input, 5V output",
+      "current": "1A max",
+      "power": "5W output max",
+      "interface": "pin header",
+      "pinout": "VIN, VOUT, GND"
+    },
+    "specs": {
+      "outputVoltage": 5.0,
+      "maxOutputCurrent": 1.0,
+      "inputVoltageRange": "6.5-12V",
+      "dropoutVoltage": 1.0,
+      "regulatorIC": "AMS1117-5.0",
+      "package": "SOT-223 on breakout PCB",
+      "onboardCapacitors": true
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07CP4P5P6",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/dp/B07CP4P5P6"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "5V version of the AMS1117 breakout. Needs at least 6V input for stable 5V output. Useful for getting clean 5V from a 2S LiPo (7.4V) or 9V battery. Same thermal limitations as the 3.3V variant — derate for sustained high current. For regulated 5V from 12V at >500mA, use an LM2596 or MP1584 switching module instead.",
+    "tags": [
+      "AMS1117",
+      "5V",
+      "LDO",
+      "voltage regulator",
+      "breakout board",
+      "SOT-223",
+      "5V regulator",
+      "Arduino power"
+    ]
+  },
+  {
+    "name": "LM2596 Adjustable DC-DC Buck Converter Module",
+    "description": "LM2596-based adjustable step-down DC-DC buck converter module, 4-40V input, 1.25-37V output, 3A max (2A recommended sustained), 150kHz switching, trimpot adjustment, 43x21x14mm, LED indicator, the ubiquitous blue buck converter module",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 21,
+      "height": 14,
+      "depth": 43,
+      "weight": 8
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeSize": 2.5,
+          "holeSpacing": 37,
+          "padLabels": "IN+, IN-, OUT+, OUT-"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4-40V input, 1.25-37V output",
+      "current": "3A peak, 2A recommended sustained",
+      "power": "up to ~25W practical",
+      "interface": "screw terminals or solder pads",
+      "pinout": "IN+/IN- (input), OUT+/OUT- (output)"
+    },
+    "specs": {
+      "topology": "buck (step-down)",
+      "regulatorIC": "LM2596S-ADJ",
+      "inputVoltageRange": "4-40V",
+      "outputVoltageRange": "1.25-37V",
+      "maxCurrent": 3.0,
+      "recommendedCurrent": 2.0,
+      "switchingFrequency": 150,
+      "efficiency": "73-92% (load dependent)",
+      "outputRipple": 30,
+      "adjustmentMethod": "multi-turn trimpot",
+      "ledIndicator": true,
+      "mountingHoles": 2
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B07VVXF7YX",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com/dp/B07VVXF7YX"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "The most common DC-DC converter module in the maker world. Set output voltage with trimpot — measure with multimeter before connecting load. 2A sustained is realistic; 3A only in short bursts with good airflow. Efficiency is decent (85-90% typical) but the LM2596 is an older design. For better efficiency and smaller size, use MP1584 module. Two M2.5 mounting holes for secure installation. Good for converting 12V to 5V, 24V to 12V, etc. Common gotcha: trimpot can vibrate loose — secure with thread-lock or hot glue after setting voltage.",
+    "tags": [
+      "LM2596",
+      "buck converter",
+      "step-down",
+      "DC-DC",
+      "voltage converter",
+      "adjustable power supply",
+      "blue module",
+      "switching regulator",
+      "12V to 5V"
+    ]
+  },
+  {
+    "name": "MP1584 Mini DC-DC Buck Converter Module",
+    "description": "MP1584EN-based mini adjustable step-down DC-DC buck converter module, 4.5-28V input, 0.8-20V output, 3A peak 2A sustained, up to 1.5MHz switching, trimpot adjustment, 22x17x4mm ultra-compact, much smaller than LM2596 module",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 17,
+      "height": 4,
+      "depth": 22,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "padLabels": "IN+, IN-, OUT+, OUT-",
+          "padType": "solder pads/pin holes"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "4.5-28V input, 0.8-20V output",
+      "current": "3A peak, 2A sustained",
+      "power": "up to ~15W practical",
+      "interface": "solder pads",
+      "pinout": "IN+/IN- (input), OUT+/OUT- (output)"
+    },
+    "specs": {
+      "topology": "buck (step-down)",
+      "regulatorIC": "MP1584EN",
+      "inputVoltageRange": "4.5-28V",
+      "outputVoltageRange": "0.8-20V",
+      "maxCurrent": 3.0,
+      "recommendedCurrent": 2.0,
+      "switchingFrequency": "300-500kHz (module)",
+      "efficiency": "up to 92%",
+      "outputRipple": 20,
+      "adjustmentMethod": "multi-turn trimpot"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B01MQGMOKI",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com/dp/B01MQGMOKI"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "60% smaller board area and 88% less volume than LM2596 module. Higher switching frequency means smaller inductor and lower ripple. Better efficiency (up to 92% vs 90% for LM2596). Preferred for space-constrained designs. Narrower input range (28V max vs 40V) — verify your source voltage. No mounting holes — mount with double-sided tape or solder to carrier board. Same trimpot adjustment — set voltage before connecting load.",
+    "tags": [
+      "MP1584",
+      "buck converter",
+      "step-down",
+      "DC-DC",
+      "mini converter",
+      "compact",
+      "switching regulator",
+      "MPS",
+      "Monolithic Power"
+    ]
+  },
+  {
+    "name": "MT3608 Adjustable DC-DC Boost Converter Module",
+    "description": "MT3608-based adjustable step-up DC-DC boost converter module, 2-24V input, 5-28V output, 2A switch current limit, 1.2MHz switching, trimpot adjustment, 36x17x6mm, for boosting 3.3V/5V to higher voltages",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 17,
+      "height": 6,
+      "depth": 36,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "padLabels": "IN+, IN-, OUT+, OUT-",
+          "padType": "solder pads/pin holes"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "2-24V input, 5-28V output",
+      "current": "2A switch limit (actual output current depends on Vin/Vout ratio)",
+      "power": "varies with conversion ratio",
+      "interface": "solder pads",
+      "pinout": "IN+/IN- (input), OUT+/OUT- (output)"
+    },
+    "specs": {
+      "topology": "boost (step-up)",
+      "regulatorIC": "MT3608",
+      "inputVoltageRange": "2-24V",
+      "outputVoltageRange": "5-28V",
+      "maxSwitchCurrent": 2.0,
+      "switchingFrequency": 1200,
+      "efficiency": "up to 93%",
+      "adjustmentMethod": "multi-turn trimpot"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B089JZYLMC",
+        "approximatePrice": 1.5,
+        "url": "https://www.amazon.com/dp/B089JZYLMC"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "IMPORTANT: The '2A' rating is the IC's internal switch current, NOT the output current. Actual output current depends on boost ratio — at 5V in / 12V out, expect ~600-800mA output. At 3.3V in / 5V out, ~1.5A is achievable. Efficiency drops dramatically at high boost ratios. Output is NOT short-circuit protected — add a fuse. Good for boosting single LiPo cell (3.7V) to 5V or 12V for LED strips. Cannot step down — output is always higher than input.",
+    "tags": [
+      "MT3608",
+      "boost converter",
+      "step-up",
+      "DC-DC",
+      "voltage booster",
+      "switching regulator",
+      "3.7V to 5V",
+      "5V to 12V"
+    ]
+  },
+  {
+    "name": "XL6009 Adjustable DC-DC Buck-Boost Converter Module",
+    "description": "XL6009E1-based adjustable buck-boost DC-DC converter module, 5-32V input, 1.25-35V output, 4A peak switch current, 400kHz switching, trimpot adjustment, 43x21x14mm, step up AND step down capability",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 21,
+      "height": 14,
+      "depth": 43,
+      "weight": 10
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holeCount": 2,
+          "holeSize": 2.5,
+          "padLabels": "IN+, IN-, OUT+, OUT-"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "5-32V input, 1.25-35V output",
+      "current": "4A peak switch (2-3A practical continuous)",
+      "power": "up to ~35W practical",
+      "interface": "screw terminals or solder pads",
+      "pinout": "IN+/IN- (input), OUT+/OUT- (output)"
+    },
+    "specs": {
+      "topology": "buck-boost (step-up and step-down)",
+      "regulatorIC": "XL6009E1",
+      "inputVoltageRange": "5-32V",
+      "outputVoltageRange": "1.25-35V",
+      "maxSwitchCurrent": 4.0,
+      "practicalCurrent": 2.5,
+      "switchingFrequency": 400,
+      "efficiency": "up to 94%",
+      "adjustmentMethod": "multi-turn trimpot",
+      "mountingHoles": 2
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00HV59922",
+        "approximatePrice": 3,
+        "url": "https://www.amazon.com/dp/B00HV59922"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "CAUTION: Many 'XL6009 buck-boost' modules sold online are actually boost-only circuits. True buck-boost requires a SEPIC or inverting topology with different inductor arrangement. Verify your module can actually step down by testing: set output to 5V, apply 12V input — if output stays at 12V, it's boost-only. Same physical size as LM2596 module. When it works as designed, this is the most versatile converter — handles variable inputs like solar panels where voltage can swing above and below target. 2-3A practical continuous.",
+    "tags": [
+      "XL6009",
+      "buck-boost",
+      "step-up step-down",
+      "DC-DC",
+      "SEPIC",
+      "adjustable converter",
+      "switching regulator",
+      "universal converter",
+      "solar regulator"
+    ]
+  },
+  {
+    "name": "Phoenix Contact 1729018 Screw Terminal Block (2-Position, 5mm Pitch)",
+    "description": "2-position PCB screw terminal block, 5.0mm pitch, Phoenix Contact 1729018, 10.16x7.5x10mm, 12-30AWG wire range, 300V/10A rated, green, through-hole mount, for PCB power and signal connections",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 7.5,
+      "height": 10,
+      "depth": 10.16,
+      "weight": 2
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "pinCount": 2,
+          "pinPitch": 5.0,
+          "wireGaugeRange": "12-30 AWG",
+          "mountType": "through-hole PCB"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "300V rated",
+      "current": "10A rated",
+      "interface": "screw terminal",
+      "pinout": "2 positions, 5mm pitch"
+    },
+    "specs": {
+      "positions": 2,
+      "pitch": 5.0,
+      "wireRange": "12-30 AWG",
+      "voltageRating": 300,
+      "currentRating": 10,
+      "color": "green",
+      "material": "PA66 (nylon)",
+      "screwType": "slotted"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "277-1247-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/phoenix-contact/1729018/260574"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "651-1729018",
+        "approximatePrice": 0.5,
+        "url": "https://www.mouser.com/ProductDetail/Phoenix-Contact/1729018"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard PCB screw terminal for power connections. 5mm pitch is the most common. Rated 10A but derate for thin traces — PCB traces must handle the current too. Available in 2, 3, 4, 6, 8+ position variants (same series, different part numbers). Can be ganged together by sliding side-by-side. Use for power input, motor connections, speaker outputs, and any removable wire connection. Green is standard; also available in blue and black.",
+    "tags": [
+      "terminal block",
+      "screw terminal",
+      "PCB terminal",
+      "Phoenix Contact",
+      "5mm pitch",
+      "2-position",
+      "wire connector",
+      "power connector"
+    ]
+  },
+  {
+    "name": "Phoenix Contact 1729128 Screw Terminal Block (3-Position, 5mm Pitch)",
+    "description": "3-position PCB screw terminal block, 5.0mm pitch, Phoenix Contact 1729128, 15.24x7.5x10mm, 12-30AWG wire range, 300V/10A rated, green, through-hole mount",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 7.5,
+      "height": 10,
+      "depth": 15.24,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "pinCount": 3,
+          "pinPitch": 5.0,
+          "wireGaugeRange": "12-30 AWG",
+          "mountType": "through-hole PCB"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "300V rated",
+      "current": "10A rated",
+      "interface": "screw terminal",
+      "pinout": "3 positions, 5mm pitch"
+    },
+    "specs": {
+      "positions": 3,
+      "pitch": 5.0,
+      "wireRange": "12-30 AWG",
+      "voltageRating": 300,
+      "currentRating": 10,
+      "color": "green"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "277-1248-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/phoenix-contact/1729128/260575"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "651-1729128",
+        "approximatePrice": 0.5,
+        "url": "https://www.mouser.com/ProductDetail/Phoenix-Contact/1729128"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "3-position variant — common for power+ground+signal or V+/GND/V- connections. Same series as the 2-position (1729018). Can be ganged with 2-position blocks for custom configurations.",
+    "tags": [
+      "terminal block",
+      "screw terminal",
+      "PCB terminal",
+      "Phoenix Contact",
+      "5mm pitch",
+      "3-position",
+      "wire connector"
+    ]
+  },
+  {
+    "name": "Inline ATC/ATO Blade Fuse Holder",
+    "description": "Inline automotive ATC/ATO blade fuse holder, 10-16AWG wire leads 150mm, 32V DC rated, 30A max, weatherproof variants available, 65x20x15mm holder body, for inline circuit protection in 12V/24V systems",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20,
+      "height": 15,
+      "depth": 65,
+      "weight": 15
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "connectionType": "wire leads",
+          "wireLength": 150,
+          "wireGauge": "14-16 AWG"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "32V DC rated",
+      "current": "up to 30A (depends on fuse)",
+      "interface": "inline wire leads",
+      "pinout": "input wire, output wire (series connection)"
+    },
+    "specs": {
+      "fuseType": "ATC/ATO standard automotive blade",
+      "fuseDimensions": "19.1x18.5x5.1mm",
+      "voltageRating": 32,
+      "maxCurrentRating": 30,
+      "wireGauge": "14-16 AWG leads"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "F2118-ND",
+        "approximatePrice": 2,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse-inc/02980900Z/826538"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07B9B22H4",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/dp/B07B9B22H4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Essential for protecting 12V wiring — always fuse the positive wire close to the battery. Standard ATC/ATO blade fuses are available from 1A to 30A in color-coded ratings. Splice into the positive wire between battery and load. For outdoor/marine use, get waterproof variant with rubber boot. The fuse rating should be based on wire gauge, not load current — 14AWG wire should use 15A fuse max even if load only draws 5A. Keeps fuses inexpensive and universally available at any auto parts store.",
+    "tags": [
+      "fuse holder",
+      "blade fuse",
+      "ATC",
+      "ATO",
+      "inline fuse",
+      "automotive fuse",
+      "circuit protection",
+      "12V fuse",
+      "Littelfuse"
+    ]
+  },
+  {
+    "name": "ATC/ATO Blade Fuse Assortment (Standard Automotive)",
+    "description": "Standard automotive ATC/ATO blade fuse assortment, includes 1A through 30A ratings, 19.1x18.5x5.1mm standard blade size, color-coded by amperage, 32V DC rated, zinc alloy element, for automotive and 12V/24V DC circuit protection",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 18.5,
+      "height": 5.1,
+      "depth": 19.1,
+      "weight": 1.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "tab",
+        "specs": {
+          "bladeWidth": 9.5,
+          "bladeSpacing": 12.7,
+          "insertionType": "push-fit into ATC fuse holder"
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "32V DC rated",
+      "current": "1A-30A (rated by fuse color)",
+      "interface": "blade terminals"
+    },
+    "specs": {
+      "fuseType": "ATC/ATO standard automotive blade",
+      "availableRatings": "1A (black), 2A (gray), 3A (violet), 5A (tan), 7.5A (brown), 10A (red), 15A (blue), 20A (yellow), 25A (clear), 30A (green)",
+      "voltageRating": 32,
+      "element": "zinc alloy",
+      "colorCoded": true
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "F992-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/littelfuse-inc/0ATO010-V/826531"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07BQQZ3H1",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B07BQQZ3H1"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Keep an assortment on hand — they blow for a reason and you'll need replacements. Color coding is standardized (SAE J1284): red=10A, blue=15A, yellow=20A are the most common. Always replace with same amperage — never upsize a fuse to stop it from blowing (fix the root cause instead). Available at every auto parts store, gas station, and Walmart. Assortment kits (100-120 fuses, all ratings) are ~$8-10 on Amazon. Price shown is per fuse from DigiKey, per assortment kit from Amazon.",
+    "tags": [
+      "blade fuse",
+      "ATC fuse",
+      "ATO fuse",
+      "automotive fuse",
+      "circuit protection",
+      "Littelfuse",
+      "fuse assortment",
+      "color coded fuse",
+      "12V fuse",
+      "car fuse"
+    ]
+  },
+  {
+    "name": "Marathon 1512SC 12-Position Power Distribution Terminal Strip",
+    "description": "Marathon 1512SC 12-position power distribution terminal strip / bus bar, ~150x20x3mm, dual-row screw terminals, 30A per position, 600V rated, for power distribution in control panels and solar systems",
+    "categorySlug": "power",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20,
+      "height": 20,
+      "depth": 150,
+      "weight": 80
+    },
+    "mountingFeatures": [
+      {
+        "type": "screw_terminal",
+        "specs": {
+          "positions": 12,
+          "rows": 2,
+          "screwSize": "#6-32",
+          "wireGaugeRange": "14-6 AWG",
+          "mountingHoles": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "600V rated",
+      "current": "30A per position",
+      "interface": "screw terminals"
+    },
+    "specs": {
+      "positions": 12,
+      "rows": 2,
+      "currentRating": 30,
+      "voltageRating": 600,
+      "material": "copper bus bar, thermoplastic base",
+      "screwType": "#6-32"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "7527K23",
+        "approximatePrice": 8,
+        "url": "https://www.mcmaster.com/7527K23"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07C3PGXJH",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B07C3PGXJH"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Clean way to distribute power to multiple circuits from a single source. All 12 positions are connected internally by a copper bus bar. Use one position for power input, remaining 11 for individual circuit outputs. Add inline fuses on each output for proper protection. Common in solar panel junction boxes, control panels, and audio installations. Dual mounting holes for panel or DIN rail mounting. For fewer positions, Marathon 1506SC (6-position) is available.",
+    "tags": [
+      "bus bar",
+      "terminal strip",
+      "power distribution",
+      "Marathon",
+      "1512SC",
+      "screw terminal",
+      "distribution block",
+      "control panel",
+      "solar distribution"
+    ]
+  }
+]

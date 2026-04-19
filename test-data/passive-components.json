@@ -1,0 +1,4101 @@
+[
+  {
+    "name": "1/4W Metal Film Resistor 0Ω Jumper (MFR-25FBF52-0R)",
+    "description": "Zero-ohm jumper resistor, 1/4W 0R 0 ohm axial through-hole metal film resistor, PCB trace bridge, wire jumper, 6.3mm body length, 2.3mm diameter, 10.16mm lead spacing, Yageo MFR-25FBF52-0R, 250V max, axial lead, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "0Ω",
+      "resistanceOhms": 0,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-0R",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-0R/9138010"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-0R",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-0R"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Zero-ohm jumper for PCB trace bridging, allows routing flexibility on single-layer or double-layer PCBs without actual resistance",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "zero-ohm",
+      "jumper",
+      "0R",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 10Ω (MFR-25FBF52-10R)",
+    "description": "10 ohm 1/4W metal film axial through-hole resistor, 1% tolerance, 10R 10ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-10R, low value current sense, speaker crossover, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "10Ω",
+      "resistanceOhms": 10,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-10R",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-10R/9138014"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-10R",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-10R"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Current sensing, low-value limiting, speaker crossover networks; useful where minimal voltage drop is needed with some current control",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "10 ohm",
+      "10R",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 22Ω (MFR-25FBF52-22R)",
+    "description": "22 ohm 1/4W metal film axial through-hole resistor, 1% tolerance, 22R 22ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-22R, USB signal termination, LED current limiting, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "22Ω",
+      "resistanceOhms": 22,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-22R",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-22R/9138018"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-22R",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-22R"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "USB signal termination (D+/D- lines), LED current limiting at higher supply voltages; also used as series damping resistors",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "22 ohm",
+      "22R",
+      "USB termination",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 47Ω (MFR-25FBF52-47R)",
+    "description": "47 ohm 1/4W metal film axial through-hole resistor, 1% tolerance, 47R 47ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-47R, video termination, transmission line matching, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "47Ω",
+      "resistanceOhms": 47,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-47R",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-47R/9138022"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-47R",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-47R"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Video signal termination (combines with 75Ω source to give effective 75Ω), transmission line matching, oscilloscope probe compensation",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "47 ohm",
+      "47R",
+      "video termination",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 100Ω (MFR-25FBF52-100R)",
+    "description": "100 ohm 1/4W metal film axial through-hole resistor, 1% tolerance, 100R 100ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-100R, Ethernet termination, LED current limiting 12-24V, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "100Ω",
+      "resistanceOhms": 100,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-100R",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-100R/9138026"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-100R",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-100R"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Ethernet termination, current limiting for LEDs at 12-24V supply, current sense in low-power circuits",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "100 ohm",
+      "100R",
+      "Ethernet",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 220Ω (MFR-25FBF52-220R)",
+    "description": "220 ohm 1/4W metal film axial through-hole resistor, 1% tolerance, 220R 220ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-220R, LED current limiting 5V, gate resistor, transistor biasing, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "220Ω",
+      "resistanceOhms": 220,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-220R",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-220R/9138030"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-220R",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-220R"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "LED current limiting for 5V supply (red/yellow LEDs ~10mA), MOSFET/BJT gate resistor, transistor base biasing",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "220 ohm",
+      "220R",
+      "LED",
+      "gate resistor",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 330Ω (MFR-25FBF52-330R)",
+    "description": "330 ohm 1/4W metal film axial through-hole resistor, 1% tolerance, 330R 330ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-330R, LED current limiting green blue 5V, NeoPixel data line, WS2812, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "330Ω",
+      "resistanceOhms": 330,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-330R",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-330R/9138034"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-330R",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-330R"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "LED current limiting for 5V supply (standard 10mA for green/blue LEDs), NeoPixel/WS2812 data line series resistor to reduce ringing",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "330 ohm",
+      "330R",
+      "LED",
+      "NeoPixel",
+      "WS2812",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 470Ω (MFR-25FBF52-470R)",
+    "description": "470 ohm 1/4W metal film axial through-hole resistor, 1% tolerance, 470R 470ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-470R, LED current limiting lower brightness, WS2812 data line, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "470Ω",
+      "resistanceOhms": 470,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-470R",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-470R/9138038"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-470R",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-470R"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "LED current limiting for 5V at lower brightness levels (~5mA), WS2812/NeoPixel data line series resistor, general signal conditioning",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "470 ohm",
+      "470R",
+      "LED",
+      "WS2812",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 1kΩ (MFR-25FBF52-1K)",
+    "description": "1 kilohm 1/4W metal film axial through-hole resistor, 1% tolerance, 1K 1000 ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-1K, general purpose current limiting, BJT base resistor, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "1kΩ",
+      "resistanceOhms": 1000,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-1K",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-1K/9138042"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-1K",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-1K"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "General-purpose current limiting, base resistor for BJT switching circuits, pull-up/pull-down in 3.3V/5V logic",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "1k ohm",
+      "1K",
+      "1000 ohm",
+      "BJT",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 2.2kΩ (MFR-25FBF52-2K2)",
+    "description": "2.2 kilohm 1/4W metal film axial through-hole resistor, 1% tolerance, 2K2 2200 ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-2K2, I2C pull-up 400kHz fast mode, transistor biasing, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "2.2kΩ",
+      "resistanceOhms": 2200,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-2K2",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-2K2/9138046"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-2K2",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-2K2"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "I2C pull-up for 400kHz fast mode operation, transistor biasing, voltage dividers, feedback networks in op-amp circuits",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "2.2k ohm",
+      "2K2",
+      "2200 ohm",
+      "I2C",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 3.3kΩ (MFR-25FBF52-3K3)",
+    "description": "3.3 kilohm 1/4W metal film axial through-hole resistor, 1% tolerance, 3K3 3300 ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-3K3, voltage divider, pull-up resistor, transistor biasing, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "3.3kΩ",
+      "resistanceOhms": 3300,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-3K3",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-3K3/9138050"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-3K3",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-3K3"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Voltage divider networks, general pull-up resistor for logic signals, transistor base biasing, between I2C fast mode (2.2k) and standard (4.7k)",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "3.3k ohm",
+      "3K3",
+      "3300 ohm",
+      "voltage divider",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 4.7kΩ (MFR-25FBF52-4K7)",
+    "description": "4.7 kilohm 1/4W metal film axial through-hole resistor, 1% tolerance, 4K7 4700 ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-4K7, I2C standard mode pull-up 100kHz, logic level pull-up, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "4.7kΩ",
+      "resistanceOhms": 4700,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-4K7",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-4K7/9138054"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-4K7",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-4K7"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Standard I2C pull-up for 100kHz standard mode, general logic level pull-up for open-collector/open-drain outputs, switch debouncing",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "4.7k ohm",
+      "4K7",
+      "4700 ohm",
+      "I2C",
+      "pull-up",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 10kΩ (MFR-25FBF52-10K)",
+    "description": "10 kilohm 1/4W metal film axial through-hole resistor, 1% tolerance, 10K 10000 ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-10K, universal pull-up pull-down, I2C pull-up, voltage divider, analog input, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "10kΩ",
+      "resistanceOhms": 10000,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-10K",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-10K/9138058"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-10K",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-10K"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Universal pull-up/pull-down resistor, I2C pull-up, voltage dividers for analog input scaling, most common value in digital electronics design",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "10k ohm",
+      "10K",
+      "10000 ohm",
+      "pull-up",
+      "pull-down",
+      "voltage divider",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 22kΩ (MFR-25FBF52-22K)",
+    "description": "22 kilohm 1/4W metal film axial through-hole resistor, 1% tolerance, 22K 22000 ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-22K, voltage divider, high impedance pull-up, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "22kΩ",
+      "resistanceOhms": 22000,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-22K",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-22K/9138062"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-22K",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-22K"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Voltage dividers for battery monitoring, high-impedance pull-ups where minimal current drain is needed, RC filter time constants",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "22k ohm",
+      "22K",
+      "22000 ohm",
+      "voltage divider",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 47kΩ (MFR-25FBF52-47K)",
+    "description": "47 kilohm 1/4W metal film axial through-hole resistor, 1% tolerance, 47K 47000 ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-47K, high impedance circuit, op-amp feedback network, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "47kΩ",
+      "resistanceOhms": 47000,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-47K",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-47K/9138066"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-47K",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-47K"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-impedance circuits, op-amp feedback networks for gain setting, anti-aliasing RC filters, pull-ups for low-power MCU GPIO",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "47k ohm",
+      "47K",
+      "47000 ohm",
+      "op-amp",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 100kΩ (MFR-25FBF52-100K)",
+    "description": "100 kilohm 1/4W metal film axial through-hole resistor, 1% tolerance, 100K 100000 ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-100K, high impedance pull-up, op-amp feedback, sensor biasing, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "100kΩ",
+      "resistanceOhms": 100000,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-100K",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-100K/9138070"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-100K",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-100K"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-impedance pull-ups, op-amp feedback resistor for high gain, sensor biasing (thermistors, LDRs), voltage reference dividers",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "100k ohm",
+      "100K",
+      "100000 ohm",
+      "op-amp",
+      "sensor",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 220kΩ (MFR-25FBF52-220K)",
+    "description": "220 kilohm 1/4W metal film axial through-hole resistor, 1% tolerance, 220K 220000 ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-220K, touch sensing, high impedance voltage divider, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "220kΩ",
+      "resistanceOhms": 220000,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-220K",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-220K/9138074"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-220K",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-220K"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Touch sensing circuits (capacitive touch charge-discharge), high-impedance voltage dividers for battery/mains monitoring, RC time constants for slow timers",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "220k ohm",
+      "220K",
+      "220000 ohm",
+      "touch sensing",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 470kΩ (MFR-25FBF52-470K)",
+    "description": "470 kilohm 1/4W metal film axial through-hole resistor, 1% tolerance, 470K 470000 ohm, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-470K, very high impedance, electret mic biasing, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "470kΩ",
+      "resistanceOhms": 470000,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-470K",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-470K/9138078"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-470K",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-470K"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Very high impedance circuits, electret microphone FET gate biasing, long RC time constants, high-gain amplifier feedback",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "470k ohm",
+      "470K",
+      "470000 ohm",
+      "electret mic",
+      "E12"
+    ]
+  },
+  {
+    "name": "1/4W Metal Film Resistor 1MΩ (MFR-25FBF52-1M)",
+    "description": "1 megohm 1/4W metal film axial through-hole resistor, 1% tolerance, 1M 1000000 ohm 1000K, 6.3mm body, 2.3mm diameter, 10.16mm lead pitch, 250V max, ±100ppm/°C, Yageo MFR-25FBF52-1M, input protection, ESD bleed, op-amp input bias, E12 series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 6.3,
+      "diameter": 2.3,
+      "weight": 0.3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 10.16,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "250V max",
+      "current": null,
+      "power": "0.25W",
+      "interface": null,
+      "pinout": "2-lead axial"
+    },
+    "specs": {
+      "resistance": "1MΩ",
+      "resistanceOhms": 1000000,
+      "tolerance": "1%",
+      "power": "0.25W",
+      "package": "axial through-hole",
+      "tempCoefficient": "±100ppm/°C",
+      "series": "E12"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "MFR-25FBF52-1M",
+        "approximatePrice": 0.1,
+        "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-1M/9138082"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "MFR-25FBF52-1M",
+        "approximatePrice": 0.1,
+        "url": "https://www.mouser.com/ProductDetail/Yageo/MFR-25FBF52-1M"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Highest standard E12 value; input protection resistors, ESD charge bleed paths, op-amp non-inverting input bias, very slow RC timer circuits",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "metal film",
+      "1/4W",
+      "axial",
+      "1M ohm",
+      "1M",
+      "1 megohm",
+      "1000K",
+      "ESD",
+      "op-amp",
+      "E12"
+    ]
+  },
+  {
+    "name": "4.7kΩ SIP Resistor Network 8-pin Bussed (Bourns 4608X-101-472LF)",
+    "description": "4.7 kilohm bussed SIP resistor network, 8-pin through-hole single in-line package, 1 common pin + 7 resistors, 4608X-101-472LF, 2.54mm pin pitch, 0.5W total, bus pull-up network, LED segment display, data bus pull-up, 472 code, Bourns",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 20.32,
+      "diameter": 3,
+      "weight": 0.8
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 2.54,
+          "leadCount": 8
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "50V max",
+      "current": null,
+      "power": "0.5W total (0.063W per element)",
+      "interface": null,
+      "pinout": "8-pin SIP: pin 1 common bus, pins 2-8 independent"
+    },
+    "specs": {
+      "resistance": "4.7kΩ per element",
+      "resistanceOhms": 4700,
+      "tolerance": "2%",
+      "power": "0.5W total",
+      "package": "8-pin SIP through-hole bussed",
+      "tempCoefficient": "±200ppm/°C",
+      "series": "bussed",
+      "elements": 7,
+      "pinCount": 8,
+      "pinPitch": 2.54
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "4608X-101-472LF",
+        "approximatePrice": 0.35,
+        "url": "https://www.digikey.com/en/products/detail/bourns-inc/4608X-101-472LF/1089337"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "4608X-101-472LF",
+        "approximatePrice": 0.35,
+        "url": "https://www.mouser.com/ProductDetail/Bourns/4608X-101-472LF"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "8-bit data bus pull-up (saves 7 discrete resistors), LED segment display current limiting, I/O port pull-up for microcontroller buses, keyboard matrix pull-up",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "SIP",
+      "resistor network",
+      "bussed",
+      "4.7k",
+      "4700 ohm",
+      "8-pin",
+      "bus pull-up",
+      "Bourns",
+      "4608X"
+    ]
+  },
+  {
+    "name": "10kΩ SIP Resistor Network 8-pin Bussed (Bourns 4608X-101-103LF)",
+    "description": "10 kilohm bussed SIP resistor network, 8-pin through-hole single in-line package, 1 common pin + 7 resistors, 4608X-101-103LF, 2.54mm pin pitch, 0.5W total, bus pull-up network, data bus pull-up, 103 code, Bourns, low power pull-up array",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 20.32,
+      "diameter": 3,
+      "weight": 0.8
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 2.54,
+          "leadCount": 8
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "50V max",
+      "current": null,
+      "power": "0.5W total (0.063W per element)",
+      "interface": null,
+      "pinout": "8-pin SIP: pin 1 common bus, pins 2-8 independent"
+    },
+    "specs": {
+      "resistance": "10kΩ per element",
+      "resistanceOhms": 10000,
+      "tolerance": "2%",
+      "power": "0.5W total",
+      "package": "8-pin SIP through-hole bussed",
+      "tempCoefficient": "±200ppm/°C",
+      "series": "bussed",
+      "elements": 7,
+      "pinCount": 8,
+      "pinPitch": 2.54
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "4608X-101-103LF",
+        "approximatePrice": 0.35,
+        "url": "https://www.digikey.com/en/products/detail/bourns-inc/4608X-101-103LF/1089338"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "4608X-101-103LF",
+        "approximatePrice": 0.35,
+        "url": "https://www.mouser.com/ProductDetail/Bourns/4608X-101-103LF"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "8-bit data bus pull-up with low power consumption, microcontroller I/O port pull-up array, parallel bus termination, replaces 7 discrete 10k pull-up resistors",
+    "tags": [
+      "resistor",
+      "through-hole",
+      "SIP",
+      "resistor network",
+      "bussed",
+      "10k",
+      "10000 ohm",
+      "8-pin",
+      "bus pull-up",
+      "Bourns",
+      "4608X"
+    ]
+  },
+  {
+    "name": "10kΩ Linear Panel Potentiometer (Alpha RV16AF B10K)",
+    "description": "Alpha RV16AF series 16mm panel mount potentiometer, 10kΩ linear taper (B10K), 6mm D-flat knurled shaft, 3 solder lugs. Single-turn rotary pot for general-purpose analog control in audio, sensor, and voltage divider applications.",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "bodyDiameter": 16,
+      "bodyDepth": 17,
+      "shaftDiameter": 6,
+      "shaftLength": 9,
+      "unit": "mm"
+    },
+    "mountingFeatures": [
+      {
+        "type": "shaft",
+        "shaftDiameter": 6,
+        "shaftLength": 9,
+        "shaftType": "D-flat knurled"
+      },
+      {
+        "type": "panel_mount",
+        "holeDiameter": 7,
+        "nutSize": "10mm hex"
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": null,
+      "power": "0.1W",
+      "interface": null,
+      "pinout": "Lug 1: CW end, Lug 2: wiper, Lug 3: CCW end"
+    },
+    "specs": {
+      "resistance": "10kΩ",
+      "resistanceOhms": 10000,
+      "taper": "linear",
+      "turns": 1,
+      "tolerance": "±20%",
+      "power": "0.1W",
+      "shaftDiameter": 6,
+      "bodySize": "16mm",
+      "package": "panel mount"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "RV16AF-10-15R1-B10K-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/alpha-taiwan/RV16AF-10-15R1-B10K/5415780"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "General-purpose control: sensor tuning, voltage dividers, threshold adjustment. Linear taper = uniform change per rotation angle. Connect outer lugs to rail/ground, wiper to ADC input.",
+    "tags": [
+      "potentiometer",
+      "panel-mount",
+      "linear",
+      "10k",
+      "alpha",
+      "rv16af",
+      "rotary",
+      "analog",
+      "through-hole",
+      "passive"
+    ]
+  },
+  {
+    "name": "100kΩ Linear Panel Potentiometer (Alpha RV16AF B100K)",
+    "description": "Alpha RV16AF series 16mm panel mount potentiometer, 100kΩ linear taper (B100K), 6mm D-flat knurled shaft, 3 solder lugs. Single-turn rotary pot for high-impedance voltage divider and analog control applications.",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "bodyDiameter": 16,
+      "bodyDepth": 17,
+      "shaftDiameter": 6,
+      "shaftLength": 9,
+      "unit": "mm"
+    },
+    "mountingFeatures": [
+      {
+        "type": "shaft",
+        "shaftDiameter": 6,
+        "shaftLength": 9,
+        "shaftType": "D-flat knurled"
+      },
+      {
+        "type": "panel_mount",
+        "holeDiameter": 7,
+        "nutSize": "10mm hex"
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": null,
+      "power": "0.1W",
+      "interface": null,
+      "pinout": "Lug 1: CW end, Lug 2: wiper, Lug 3: CCW end"
+    },
+    "specs": {
+      "resistance": "100kΩ",
+      "resistanceOhms": 100000,
+      "taper": "linear",
+      "turns": 1,
+      "tolerance": "±20%",
+      "power": "0.1W",
+      "shaftDiameter": 6,
+      "bodySize": "16mm",
+      "package": "panel mount"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "RV16AF-10-15R1-B100K-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/alpha-taiwan/RV16AF-10-15R1-B100K/5415782"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-impedance linear control suitable for op-amp input voltage dividers, bias adjustment, and low-current signal paths. Linear taper provides predictable output across full rotation. Connect outer lugs to rail/ground, wiper to high-impedance input.",
+    "tags": [
+      "potentiometer",
+      "panel-mount",
+      "linear",
+      "100k",
+      "alpha",
+      "rv16af",
+      "rotary",
+      "analog",
+      "through-hole",
+      "passive"
+    ]
+  },
+  {
+    "name": "10kΩ Audio Taper Panel Potentiometer (Alpha RV16AF A10K)",
+    "description": "Alpha RV16AF series 16mm panel mount potentiometer, 10kΩ audio/logarithmic taper (A10K), 6mm D-flat knurled shaft, 3 solder lugs. Single-turn rotary pot optimized for volume control and perceptually linear brightness/gain adjustment.",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "bodyDiameter": 16,
+      "bodyDepth": 17,
+      "shaftDiameter": 6,
+      "shaftLength": 9,
+      "unit": "mm"
+    },
+    "mountingFeatures": [
+      {
+        "type": "shaft",
+        "shaftDiameter": 6,
+        "shaftLength": 9,
+        "shaftType": "D-flat knurled"
+      },
+      {
+        "type": "panel_mount",
+        "holeDiameter": 7,
+        "nutSize": "10mm hex"
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": null,
+      "power": "0.1W",
+      "interface": null,
+      "pinout": "Lug 1: CW end, Lug 2: wiper, Lug 3: CCW end"
+    },
+    "specs": {
+      "resistance": "10kΩ",
+      "resistanceOhms": 10000,
+      "taper": "audio",
+      "turns": 1,
+      "tolerance": "±20%",
+      "power": "0.1W",
+      "shaftDiameter": 6,
+      "bodySize": "16mm",
+      "package": "panel mount"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "RV16AF-10-15R1-A10K-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/alpha-taiwan/RV16AF-10-15R1-A10K/5415779"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Volume/brightness control. Audio (logarithmic) taper matches human hearing perception — most change happens in last 30% of rotation. Wiper to amplifier input or PWM reference.",
+    "tags": [
+      "potentiometer",
+      "panel-mount",
+      "audio-taper",
+      "logarithmic",
+      "10k",
+      "alpha",
+      "rv16af",
+      "rotary",
+      "volume-control",
+      "analog",
+      "through-hole",
+      "passive"
+    ]
+  },
+  {
+    "name": "100kΩ Audio Taper Panel Potentiometer (Alpha RV16AF A100K)",
+    "description": "Alpha RV16AF series 16mm panel mount potentiometer, 100kΩ audio/logarithmic taper (A100K), 6mm D-flat knurled shaft, 3 solder lugs. Single-turn rotary pot for high-impedance volume control and logarithmic gain adjustment.",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "bodyDiameter": 16,
+      "bodyDepth": 17,
+      "shaftDiameter": 6,
+      "shaftLength": 9,
+      "unit": "mm"
+    },
+    "mountingFeatures": [
+      {
+        "type": "shaft",
+        "shaftDiameter": 6,
+        "shaftLength": 9,
+        "shaftType": "D-flat knurled"
+      },
+      {
+        "type": "panel_mount",
+        "holeDiameter": 7,
+        "nutSize": "10mm hex"
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": null,
+      "power": "0.1W",
+      "interface": null,
+      "pinout": "Lug 1: CW end, Lug 2: wiper, Lug 3: CCW end"
+    },
+    "specs": {
+      "resistance": "100kΩ",
+      "resistanceOhms": 100000,
+      "taper": "audio",
+      "turns": 1,
+      "tolerance": "±20%",
+      "power": "0.1W",
+      "shaftDiameter": 6,
+      "bodySize": "16mm",
+      "package": "panel mount"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "RV16AF-10-15R1-A100K-ND",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/alpha-taiwan/RV16AF-10-15R1-A100K/5415781"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-impedance logarithmic taper control for audio preamplifiers, tone controls, and perceptual brightness adjustment. Logarithmic response matches human perception. Wiper to high-impedance amplifier input or feedback network.",
+    "tags": [
+      "potentiometer",
+      "panel-mount",
+      "audio-taper",
+      "logarithmic",
+      "100k",
+      "alpha",
+      "rv16af",
+      "rotary",
+      "volume-control",
+      "analog",
+      "through-hole",
+      "passive"
+    ]
+  },
+  {
+    "name": "10kΩ Precision Trimmer Potentiometer (Bourns 3296W-1-103LF)",
+    "description": "Bourns 3296W series 25-turn precision cermet trimmer potentiometer, 10kΩ (code 103), through-hole, top-adjust screwdriver slot. Sealed construction for reliable set-and-forget calibration in PCB-mounted applications.",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 9.5,
+      "width": 9.5,
+      "height": 4.8,
+      "unit": "mm"
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "leadCount": 3,
+        "leadSpacing": 2.54,
+        "leadDiameter": 0.5
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": null,
+      "power": "0.5W",
+      "interface": null,
+      "pinout": "Pin 1: CW end, Pin 2: wiper, Pin 3: CCW end"
+    },
+    "specs": {
+      "resistance": "10kΩ",
+      "resistanceOhms": 10000,
+      "taper": "linear",
+      "turns": 25,
+      "tolerance": "±10%",
+      "power": "0.5W",
+      "shaftDiameter": null,
+      "bodySize": "9.5mm × 9.5mm",
+      "package": "through-hole trimmer"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "3296W-1-103LF-ND",
+        "approximatePrice": 2,
+        "url": "https://www.digikey.com/en/products/detail/bourns-inc/3296W-1-103LF/1088083"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "652-3296W-1-103LF",
+        "approximatePrice": 2,
+        "url": "https://www.mouser.com/ProductDetail/Bourns/3296W-1-103LF"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "25-turn precision trimmer for set-and-forget calibration. Use for LM317 output voltage adjustment, op-amp offset null, comparator threshold. Cermet element provides thermal stability. Small screwdriver access from top.",
+    "tags": [
+      "potentiometer",
+      "trimmer",
+      "trimpot",
+      "precision",
+      "multi-turn",
+      "25-turn",
+      "10k",
+      "bourns",
+      "3296w",
+      "cermet",
+      "through-hole",
+      "calibration",
+      "passive"
+    ]
+  },
+  {
+    "name": "100kΩ Precision Trimmer Potentiometer (Bourns 3296W-1-104LF)",
+    "description": "Bourns 3296W series 25-turn precision cermet trimmer potentiometer, 100kΩ (code 104), through-hole, top-adjust screwdriver slot. Sealed construction for reliable set-and-forget calibration in high-impedance PCB-mounted applications.",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 9.5,
+      "width": 9.5,
+      "height": 4.8,
+      "unit": "mm"
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "leadCount": 3,
+        "leadSpacing": 2.54,
+        "leadDiameter": 0.5
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": null,
+      "power": "0.5W",
+      "interface": null,
+      "pinout": "Pin 1: CW end, Pin 2: wiper, Pin 3: CCW end"
+    },
+    "specs": {
+      "resistance": "100kΩ",
+      "resistanceOhms": 100000,
+      "taper": "linear",
+      "turns": 25,
+      "tolerance": "±10%",
+      "power": "0.5W",
+      "shaftDiameter": null,
+      "bodySize": "9.5mm × 9.5mm",
+      "package": "through-hole trimmer"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "3296W-1-104LF-ND",
+        "approximatePrice": 2,
+        "url": "https://www.digikey.com/en/products/detail/bourns-inc/3296W-1-104LF/1088084"
+      },
+      {
+        "name": "Mouser",
+        "partNumber": "652-3296W-1-104LF",
+        "approximatePrice": 2,
+        "url": "https://www.mouser.com/ProductDetail/Bourns/3296W-1-104LF"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "High-impedance 25-turn precision trimmer for set-and-forget calibration in op-amp circuits, filter tuning, and reference voltage adjustment. Cermet element provides thermal stability and long-term reliability. Small screwdriver access from top.",
+    "tags": [
+      "potentiometer",
+      "trimmer",
+      "trimpot",
+      "precision",
+      "multi-turn",
+      "25-turn",
+      "100k",
+      "bourns",
+      "3296w",
+      "cermet",
+      "through-hole",
+      "calibration",
+      "passive"
+    ]
+  },
+  {
+    "name": "Ceramic Disc Capacitor 100pF 50V C0G/NP0 (K101J15C0GF53H5)",
+    "description": "100pF 50V through-hole ceramic disc capacitor, C0G/NP0 dielectric, ±5% tolerance, 5mm body diameter, 5.08mm lead spacing, radial through-hole, Vishay K101J15C0GF53H5, RF bypass, crystal oscillator load, high-frequency noise filter, stable capacitance over temperature, non-polarized",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 5,
+      "depth": 3,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 5.08,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "50V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial"
+    },
+    "specs": {
+      "capacitance": "100pF",
+      "capacitanceFarads": 1e-10,
+      "voltage": 50,
+      "type": "ceramic",
+      "dielectric": "C0G/NP0",
+      "tolerance": "±5%",
+      "package": "radial through-hole",
+      "tempRange": "-55°C to +125°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "K101J15C0GF53H5",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/vishay-beyschlag-draloric-bc-components/K101J15C0GF53H5/286538"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "RF bypass and high-frequency noise filtering. Ideal as crystal oscillator load capacitor (typically 12-22pF range — verify against crystal datasheet). C0G/NP0 dielectric provides near-zero capacitance drift with temperature, making it essential for timing circuits. Non-polarized — no orientation needed.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "ceramic",
+      "disc",
+      "through-hole",
+      "C0G",
+      "NP0",
+      "100pF",
+      "RF",
+      "bypass",
+      "filter",
+      "oscillator",
+      "load-cap",
+      "passive"
+    ]
+  },
+  {
+    "name": "Ceramic Disc Capacitor 1nF 50V C0G/NP0 (K102K15X7RF53H5)",
+    "description": "1nF 50V through-hole ceramic disc capacitor, C0G/NP0 dielectric, ±10% tolerance, 5mm body diameter, 5.08mm lead spacing, radial through-hole, Vishay K102K15X7RF53H5, signal coupling, noise filtering, snubber network, non-polarized, stable low-loss capacitor",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 5,
+      "depth": 3,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 5.08,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "50V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial"
+    },
+    "specs": {
+      "capacitance": "1nF",
+      "capacitanceFarads": 1e-9,
+      "voltage": 50,
+      "type": "ceramic",
+      "dielectric": "C0G/NP0",
+      "tolerance": "±10%",
+      "package": "radial through-hole",
+      "tempRange": "-55°C to +125°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "K102K15X7RF53H5",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/vishay-beyschlag-draloric-bc-components/K102K15X7RF53H5/286554"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "General purpose ceramic disc in the low-nF range. Used in RC timing circuits, signal coupling, high-frequency bypass, and snubber networks. C0G/NP0 dielectric offers excellent stability — preferred over X7R when capacitance accuracy matters. Non-polarized — no orientation needed.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "ceramic",
+      "disc",
+      "through-hole",
+      "C0G",
+      "NP0",
+      "1nF",
+      "bypass",
+      "filter",
+      "timing",
+      "snubber",
+      "passive"
+    ]
+  },
+  {
+    "name": "Ceramic Disc Capacitor 10nF 50V X7R (K103K15X7RF53H5)",
+    "description": "10nF 50V through-hole ceramic disc capacitor, X7R dielectric, ±10% tolerance, 5mm body diameter, 5.08mm lead spacing, radial through-hole, Vishay K103K15X7RF53H5, bypass decoupling, RC filter, timing circuit, general purpose, non-polarized",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 5,
+      "depth": 3,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 5.08,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "50V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial"
+    },
+    "specs": {
+      "capacitance": "10nF",
+      "capacitanceFarads": 1e-8,
+      "voltage": 50,
+      "type": "ceramic",
+      "dielectric": "X7R",
+      "tolerance": "±10%",
+      "package": "radial through-hole",
+      "tempRange": "-55°C to +125°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "K103K15X7RF53H5",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/vishay-beyschlag-draloric-bc-components/K103K15X7RF53H5/286562"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Mid-range ceramic disc for bypass, RC filters, and coupling applications. X7R dielectric is stable enough for most general-purpose use across -55°C to +125°C. Bridges the gap between precision NP0 values and bulk 100nF decoupling. Non-polarized — no orientation needed.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "ceramic",
+      "disc",
+      "through-hole",
+      "X7R",
+      "10nF",
+      "bypass",
+      "decoupling",
+      "filter",
+      "RC",
+      "passive"
+    ]
+  },
+  {
+    "name": "Ceramic Disc Capacitor 100nF 50V X7R (K104K15X7RF53H5)",
+    "description": "100nF 0.1µF 50V through-hole ceramic disc capacitor, X7R dielectric, ±20% tolerance, 5mm body diameter, 5.08mm lead spacing, radial through-hole, Vishay K104K15X7RF53H5, THE standard IC decoupling bypass capacitor, non-polarized, bulk power supply filter",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 5,
+      "depth": 3,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 5.08,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "50V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial"
+    },
+    "specs": {
+      "capacitance": "100nF",
+      "capacitanceFarads": 1e-7,
+      "voltage": 50,
+      "type": "ceramic",
+      "dielectric": "X7R",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-55°C to +125°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "K104K15X7RF53H5",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/vishay-beyschlag-draloric-bc-components/K104K15X7RF53H5/286568"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "THE standard decoupling capacitor. Place one within 10mm of every IC's VCC pin. Use in parallel with a larger electrolytic (e.g., 100µF) for bulk+bypass filtering — the ceramic handles high-frequency noise while the electrolytic handles bulk current. X7R dielectric performs well from -55°C to +125°C. Non-polarized — no orientation needed. Buy in bulk; you'll use hundreds.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "ceramic",
+      "disc",
+      "through-hole",
+      "X7R",
+      "100nF",
+      "0.1uF",
+      "decoupling",
+      "bypass",
+      "filter",
+      "IC-bypass",
+      "power-supply",
+      "passive"
+    ]
+  },
+  {
+    "name": "Ceramic Disc Capacitor 1µF 50V X7R (FG18X7R1H105KRT06)",
+    "description": "1µF 50V through-hole ceramic disc capacitor, X7R dielectric, ±10% tolerance, 5mm body diameter, 5.08mm lead spacing, radial through-hole, TDK FG18X7R1H105KRT06, bulk bypass decoupling, voltage regulator stabilization, non-polarized ceramic",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 5,
+      "depth": 3,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 5.08,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "50V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial"
+    },
+    "specs": {
+      "capacitance": "1µF",
+      "capacitanceFarads": 0.000001,
+      "voltage": 50,
+      "type": "ceramic",
+      "dielectric": "X7R",
+      "tolerance": "±10%",
+      "package": "radial through-hole",
+      "tempRange": "-55°C to +125°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "FG18X7R1H105KRT06",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/tdk-corporation/FG18X7R1H105KRT06/5812521"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Larger ceramic disc useful for LDO output stabilization and mid-frequency decoupling. Bridges the gap between 100nF bypass ceramics and electrolytic bulk capacitors. Non-polarized — unlike electrolytics, can be placed in any orientation. Preferred over electrolytic when low ESR and temperature stability matter.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "ceramic",
+      "disc",
+      "through-hole",
+      "X7R",
+      "1uF",
+      "decoupling",
+      "bypass",
+      "filter",
+      "LDO",
+      "non-polarized",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 1µF 50V Radial (Nichicon UVR1H010MDD)",
+    "description": "1µF 50V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 5mm diameter × 11mm height, 2mm lead spacing, polarized, general purpose, timing circuit, signal coupling, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 5,
+      "depth": 11,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 2,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "50V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "1µF",
+      "capacitanceFarads": 0.000001,
+      "voltage": 50,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1H010MDD",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1H010MDD/588879"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Small electrolytic for timing circuits and coupling. POLARIZED — the white stripe on the body marks the NEGATIVE lead; the longer lead is POSITIVE. Apply reverse voltage and the capacitor can vent or rupture. Consider ceramic disc 1µF where non-polarity and lower ESR are needed.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "1uF",
+      "50V",
+      "polarized",
+      "timing",
+      "coupling",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 10µF 25V Radial (Nichicon UVR1E100MDD)",
+    "description": "10µF 25V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 5mm diameter × 11mm height, 2mm lead spacing, polarized, general purpose bypass, signal coupling, audio coupling, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 5,
+      "depth": 11,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 2,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "25V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "10µF",
+      "capacitanceFarads": 0.00001,
+      "voltage": 25,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1E100MDD",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1E100MDD/588875"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Common small electrolytic for local bypass and low-frequency coupling. POLARIZED — white stripe = negative lead, longer lead = positive. Suitable for 3.3V and 5V rail decoupling. Pair with 100nF ceramic for broad-spectrum filtering.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "10uF",
+      "25V",
+      "polarized",
+      "bypass",
+      "decoupling",
+      "coupling",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 10µF 50V Radial (Nichicon UVR1H100MDD)",
+    "description": "10µF 50V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 6.3mm diameter × 11mm height, 2.5mm lead spacing, polarized, bypass decoupling, 12V rail filtering, signal coupling, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6.3,
+      "depth": 11,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 2.5,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "50V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "10µF",
+      "capacitanceFarads": 0.00001,
+      "voltage": 50,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1H100MDD",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1H100MDD/588879"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "10µF at 50V — suitable for 12V and 24V rail local decoupling. POLARIZED — white stripe = negative lead, longer lead = positive. Slightly larger body (6.3mm) than the 25V version due to higher voltage rating. Pair with 100nF ceramic for full-spectrum bypass.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "10uF",
+      "50V",
+      "polarized",
+      "bypass",
+      "decoupling",
+      "12V",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 22µF 25V Radial (Nichicon UVR1E220MDD)",
+    "description": "22µF 25V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 5mm diameter × 11mm height, 2mm lead spacing, polarized, general purpose bypass, LDO output, audio coupling, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 5,
+      "depth": 11,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 2,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "25V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "22µF",
+      "capacitanceFarads": 0.000022,
+      "voltage": 25,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1E220MDD",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1E220MDD/588877"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "22µF is a common LDO regulator output capacitor value. POLARIZED — white stripe = negative lead, longer lead = positive. Check LDO datasheet for minimum output capacitance and ESR requirements — some LDOs specify tantalum or low-ESR types for stability.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "22uF",
+      "25V",
+      "polarized",
+      "bypass",
+      "LDO",
+      "output-cap",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 47µF 25V Radial (Nichicon UVR1E470MDD)",
+    "description": "47µF 25V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 6.3mm diameter × 11mm height, 2.5mm lead spacing, polarized, bulk bypass, power supply filtering, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6.3,
+      "depth": 11,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 2.5,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "25V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "47µF",
+      "capacitanceFarads": 0.000047,
+      "voltage": 25,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1E470MDD",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1E470MDD/589027"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Good mid-size bulk cap for 5V and 12V rail filtering. POLARIZED — white stripe = negative, longer lead = positive. Use near voltage regulators and motor drivers to handle instantaneous current demands. Combine with 100nF ceramic for bypass across the full frequency range.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "47uF",
+      "25V",
+      "polarized",
+      "bulk",
+      "bypass",
+      "filter",
+      "power-supply",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 47µF 50V Radial (Nichicon UVR1H470MDD)",
+    "description": "47µF 50V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 8mm diameter × 11.5mm height, 3.5mm lead spacing, polarized, 12V and 24V bulk decoupling, motor driver supply, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "depth": 11.5,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 3.5,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "50V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "47µF",
+      "capacitanceFarads": 0.000047,
+      "voltage": 50,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1H470MDD",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1H470MDD/589033"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "47µF at 50V for 24V system local decoupling and motor driver bypass. POLARIZED — white stripe = negative, longer lead = positive. Larger body than 25V version — verify PCB footprint. Useful near H-bridge motor drivers to suppress voltage spikes from motor back-EMF.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "47uF",
+      "50V",
+      "polarized",
+      "bulk",
+      "bypass",
+      "filter",
+      "motor-driver",
+      "24V",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 100µF 16V Radial (Nichicon UVR1C101MDD)",
+    "description": "100µF 16V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 6.3mm diameter × 11mm height, 2.5mm lead spacing, polarized, 5V and 12V bulk power filtering, voltage regulator output, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6.3,
+      "depth": 11,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 2.5,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "16V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "100µF",
+      "capacitanceFarads": 0.0001,
+      "voltage": 16,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1C101MDD",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1C101MDD/588884"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "100µF bulk cap rated for 5V systems (16V gives 3× derating margin). POLARIZED — white stripe = negative, longer lead = positive. Typical usage: 7805 linear regulator output, 5V logic rail bulk decoupling. Pair with 100nF ceramic in parallel for full-spectrum filtering. Do NOT use on 12V rails — insufficient voltage margin.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "100uF",
+      "16V",
+      "polarized",
+      "bulk",
+      "bypass",
+      "filter",
+      "5V",
+      "power-supply",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 100µF 25V Radial (Nichicon UVR1E101MDD)",
+    "description": "100µF 25V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 6.3mm diameter × 11mm height, 2.5mm lead spacing, polarized, 5V and 12V bulk power filtering, linear regulator, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 6.3,
+      "depth": 11,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.5,
+          "leadSpacing": 2.5,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "25V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "100µF",
+      "capacitanceFarads": 0.0001,
+      "voltage": 25,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1E101MDD",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1E101MDD/588887"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Bulk power supply filtering, voltage regulator input/output capacitor. POLARIZED — observe stripe marking for negative lead. Common choice for 5V and 12V rails with comfortable derating margin. Use one at regulator input, one at output. Pair with 100nF ceramic for bypass across full frequency range.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "100uF",
+      "25V",
+      "polarized",
+      "bulk",
+      "bypass",
+      "filter",
+      "power-supply",
+      "5V",
+      "12V",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 100µF 50V Radial (Nichicon UVR1H101MDD)",
+    "description": "100µF 50V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 8mm diameter × 11.5mm height, 3.5mm lead spacing, polarized, 24V bulk decoupling, motor driver supply, high-voltage rail filter, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "depth": 11.5,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 3.5,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "50V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "100µF",
+      "capacitanceFarads": 0.0001,
+      "voltage": 50,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1H101MDD",
+        "approximatePrice": 0.75,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1H101MDD/588893"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "100µF at 50V for 24V and 36V system bulk filtering. POLARIZED — white stripe = negative, longer lead = positive. Use near motor controllers and H-bridge drivers to absorb regenerative voltage spikes. Larger footprint (8mm dia, 3.5mm pitch) than lower-voltage variants — plan PCB layout accordingly.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "100uF",
+      "50V",
+      "polarized",
+      "bulk",
+      "bypass",
+      "filter",
+      "24V",
+      "motor-driver",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 220µF 16V Radial (Nichicon UVR1C221MDD)",
+    "description": "220µF 16V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 8mm diameter × 11.5mm height, 3.5mm lead spacing, polarized, 5V rail bulk filtering, microcontroller power supply, audio amplifier supply, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "depth": 11.5,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 3.5,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "16V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "220µF",
+      "capacitanceFarads": 0.00022,
+      "voltage": 16,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1C221MDD",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1C221MDD/589043"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Large bulk cap for 5V digital supply rails. POLARIZED — white stripe = negative, longer lead = positive. Good for microcontroller boards with USB or wireless ICs that draw intermittent high current. Use in combination with 100nF ceramics at each IC for complete power filtering strategy.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "220uF",
+      "16V",
+      "polarized",
+      "bulk",
+      "filter",
+      "5V",
+      "power-supply",
+      "microcontroller",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 220µF 25V Radial (Nichicon UVR1E221MDD)",
+    "description": "220µF 25V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 8mm diameter × 11.5mm height, 3.5mm lead spacing, polarized, 12V rail bulk decoupling, linear regulator, power supply filter, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "depth": 11.5,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 3.5,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "25V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "220µF",
+      "capacitanceFarads": 0.00022,
+      "voltage": 25,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1E221MDD",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1E221MDD/589046"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "220µF at 25V for 12V rail bulk decoupling and power supply filtering. POLARIZED — white stripe = negative, longer lead = positive. Common at the output of 12V linear regulators and switching supplies. Use multiple in parallel for lower effective ESR in noise-sensitive applications.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "220uF",
+      "25V",
+      "polarized",
+      "bulk",
+      "filter",
+      "12V",
+      "power-supply",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 470µF 16V Radial (Nichicon UVR1C471MDD)",
+    "description": "470µF 16V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 8mm diameter × 11.5mm height, 3.5mm lead spacing, polarized, 5V heavy bulk filtering, motor driver supply, high-current digital rail, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "depth": 11.5,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 3.5,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "16V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "470µF",
+      "capacitanceFarads": 0.00047,
+      "voltage": 16,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1C471MDD",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1C471MDD/589058"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Large bulk cap for 5V rails with high instantaneous current demand (servo controllers, WiFi modules, camera systems). POLARIZED — white stripe = negative, longer lead = positive. Place close to connector or regulator output. At 16V rating, do not use on rails above ~5V to maintain adequate derating margin.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "470uF",
+      "16V",
+      "polarized",
+      "bulk",
+      "filter",
+      "5V",
+      "high-current",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 470µF 25V Radial (Nichicon UVR1E471MDD)",
+    "description": "470µF 25V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 10mm diameter × 12.5mm height, 5mm lead spacing, polarized, 12V heavy bulk filtering, motor power supply, H-bridge supply decoupling, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "depth": 12.5,
+      "weight": 1
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 5,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "25V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "470µF",
+      "capacitanceFarads": 0.00047,
+      "voltage": 25,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1E471MDD",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1E471MDD/589062"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "470µF at 25V for 12V bulk supply filtering and motor driver bypass. POLARIZED — white stripe = negative, longer lead = positive. 10mm diameter — larger footprint than smaller caps; allocate space accordingly on PCB. Place near H-bridge power pins to absorb motor back-EMF voltage spikes.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "470uF",
+      "25V",
+      "polarized",
+      "bulk",
+      "filter",
+      "12V",
+      "motor-driver",
+      "H-bridge",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 1000µF 16V Radial (Nichicon UVR1C102MDD)",
+    "description": "1000µF 1mF 16V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 10mm diameter × 16mm height, 5mm lead spacing, polarized, heavy bulk power filtering, motor power supply, audio supply reservoir, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "depth": 16,
+      "weight": 2
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 5,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "16V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "1000µF",
+      "capacitanceFarads": 0.001,
+      "voltage": 16,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1C102MDD",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1C102MDD/589076"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Heavy bulk filtering for power supplies, motor driver supply rails. Essential near high-current loads such as DC motors, stepper drivers, and solenoids. POLARIZED — white stripe = negative, longer lead = positive. At 16V, use on 5V rails only. Significant physical size — plan board clearance. Consider mounting with lead support if subject to vibration.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "1000uF",
+      "1mF",
+      "16V",
+      "polarized",
+      "bulk",
+      "filter",
+      "power-supply",
+      "motor",
+      "high-current",
+      "passive"
+    ]
+  },
+  {
+    "name": "Electrolytic Capacitor 1000µF 25V Radial (Nichicon UVR1E102MDD)",
+    "description": "1000µF 1mF 25V through-hole radial electrolytic capacitor, aluminum electrolytic, ±20% tolerance, 10mm diameter × 20mm height, 5mm lead spacing, polarized, 12V heavy bulk filtering, motor driver power supply, switching regulator input, Nichicon UVR series",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "depth": 20,
+      "weight": 2
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadDiameter": 0.6,
+          "leadSpacing": 5,
+          "leadCount": 2
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": "25V",
+      "current": null,
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial, negative stripe"
+    },
+    "specs": {
+      "capacitance": "1000µF",
+      "capacitanceFarads": 0.001,
+      "voltage": 25,
+      "type": "electrolytic",
+      "dielectric": "aluminum oxide",
+      "tolerance": "±20%",
+      "package": "radial through-hole",
+      "tempRange": "-40°C to +105°C"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "UVR1E102MDD",
+        "approximatePrice": 1.5,
+        "url": "https://www.digikey.com/en/products/detail/nichicon/UVR1E102MDD/589079"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Heavy bulk filtering for 12V power supplies and motor driver supply rails. Essential near high-current loads. POLARIZED — white stripe = negative, longer lead = positive. Tall profile (20mm) — verify board clearance and enclosure height. Input capacitor for switching regulators handling 12V rails; check ripple current rating against application. Consider mechanical support for vibration-prone applications.",
+    "tags": [
+      "capacitor",
+      "cap",
+      "electrolytic",
+      "aluminum",
+      "radial",
+      "through-hole",
+      "1000uF",
+      "1mF",
+      "25V",
+      "polarized",
+      "bulk",
+      "filter",
+      "12V",
+      "power-supply",
+      "motor",
+      "switching-regulator",
+      "high-current",
+      "passive"
+    ]
+  },
+  {
+    "name": "Inductor 10µH 3A Radial Drum-Core (Bourns RLB0914-100KL)",
+    "description": "10µH 3A radial drum-core through-hole inductor, ferrite drum core, ±10% tolerance, 10mm diameter × 12mm height, 5mm lead spacing, 0.03Ω DCR, Bourns RLB0914-100KL, buck/boost converter output filtering, LC low-pass filter, EMI suppression",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 12,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 2,
+          "leadSpacing": 5,
+          "leadDiameter": 0.6
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": "3A",
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial"
+    },
+    "specs": {
+      "inductance": "10µH",
+      "inductanceHenries": 0.00001,
+      "currentRating": "3A",
+      "dcResistance": "0.03Ω",
+      "tolerance": "±10%",
+      "package": "radial drum-core through-hole",
+      "coreType": "ferrite drum"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "RLB0914-100KL-ND",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/bourns-inc/RLB0914-100KL/1625970"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Radial drum-core inductor for buck/boost converter output filtering, LC low-pass filters, EMI suppression. Keep leads short. Verify saturation current vs rated RMS current from datasheet.",
+    "tags": [
+      "inductor",
+      "through-hole",
+      "radial",
+      "drum-core",
+      "ferrite",
+      "10uH",
+      "3A",
+      "power",
+      "filter",
+      "EMI",
+      "buck",
+      "boost",
+      "passive",
+      "Bourns",
+      "RLB0914"
+    ]
+  },
+  {
+    "name": "Inductor 22µH 2.5A Radial Drum-Core (Bourns RLB0914-220KL)",
+    "description": "22µH 2.5A radial drum-core through-hole inductor, ferrite drum core, ±10% tolerance, 10mm diameter × 12mm height, 5mm lead spacing, 0.04Ω DCR, Bourns RLB0914-220KL, buck/boost converter output filtering, LC low-pass filter, EMI suppression",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 12,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 2,
+          "leadSpacing": 5,
+          "leadDiameter": 0.6
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": "2.5A",
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial"
+    },
+    "specs": {
+      "inductance": "22µH",
+      "inductanceHenries": 0.000022,
+      "currentRating": "2.5A",
+      "dcResistance": "0.04Ω",
+      "tolerance": "±10%",
+      "package": "radial drum-core through-hole",
+      "coreType": "ferrite drum"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "RLB0914-220KL-ND",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/bourns-inc/RLB0914-220KL/1625971"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Radial drum-core inductor for buck/boost converter output filtering, LC low-pass filters, EMI suppression. Keep leads short. Verify saturation current vs rated RMS current from datasheet.",
+    "tags": [
+      "inductor",
+      "through-hole",
+      "radial",
+      "drum-core",
+      "ferrite",
+      "22uH",
+      "2.5A",
+      "power",
+      "filter",
+      "EMI",
+      "buck",
+      "boost",
+      "passive",
+      "Bourns",
+      "RLB0914"
+    ]
+  },
+  {
+    "name": "Inductor 47µH 2A Radial Drum-Core (Bourns RLB0914-470KL)",
+    "description": "47µH 2A radial drum-core through-hole inductor, ferrite drum core, ±10% tolerance, 10mm diameter × 12mm height, 5mm lead spacing, 0.07Ω DCR, Bourns RLB0914-470KL, buck/boost converter output filtering, LC low-pass filter, EMI suppression",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 12,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 2,
+          "leadSpacing": 5,
+          "leadDiameter": 0.6
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": "2A",
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial"
+    },
+    "specs": {
+      "inductance": "47µH",
+      "inductanceHenries": 0.000047,
+      "currentRating": "2A",
+      "dcResistance": "0.07Ω",
+      "tolerance": "±10%",
+      "package": "radial drum-core through-hole",
+      "coreType": "ferrite drum"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "RLB0914-470KL-ND",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/bourns-inc/RLB0914-470KL/1625972"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Radial drum-core inductor for buck/boost converter output filtering, LC low-pass filters, EMI suppression. Keep leads short. Verify saturation current vs rated RMS current from datasheet.",
+    "tags": [
+      "inductor",
+      "through-hole",
+      "radial",
+      "drum-core",
+      "ferrite",
+      "47uH",
+      "2A",
+      "power",
+      "filter",
+      "EMI",
+      "buck",
+      "boost",
+      "passive",
+      "Bourns",
+      "RLB0914"
+    ]
+  },
+  {
+    "name": "Inductor 100µH 1.5A Radial Drum-Core (Bourns RLB0914-101KL)",
+    "description": "100µH 1.5A radial drum-core through-hole inductor, ferrite drum core, ±10% tolerance, 10mm diameter × 12mm height, 5mm lead spacing, 0.12Ω DCR, Bourns RLB0914-101KL, buck/boost converter output filtering, LC low-pass filter, EMI suppression",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 12,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 2,
+          "leadSpacing": 5,
+          "leadDiameter": 0.6
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": "1.5A",
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial"
+    },
+    "specs": {
+      "inductance": "100µH",
+      "inductanceHenries": 0.0001,
+      "currentRating": "1.5A",
+      "dcResistance": "0.12Ω",
+      "tolerance": "±10%",
+      "package": "radial drum-core through-hole",
+      "coreType": "ferrite drum"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "RLB0914-101KL-ND",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/bourns-inc/RLB0914-101KL/1625973"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Radial drum-core inductor for buck/boost converter output filtering, LC low-pass filters, EMI suppression. Keep leads short. Verify saturation current vs rated RMS current from datasheet.",
+    "tags": [
+      "inductor",
+      "through-hole",
+      "radial",
+      "drum-core",
+      "ferrite",
+      "100uH",
+      "1.5A",
+      "power",
+      "filter",
+      "EMI",
+      "buck",
+      "boost",
+      "passive",
+      "Bourns",
+      "RLB0914"
+    ]
+  },
+  {
+    "name": "Inductor 220µH 1A Radial Drum-Core (Bourns RLB0914-221KL)",
+    "description": "220µH 1A radial drum-core through-hole inductor, ferrite drum core, ±10% tolerance, 10mm diameter × 12mm height, 5mm lead spacing, 0.25Ω DCR, Bourns RLB0914-221KL, buck/boost converter output filtering, LC low-pass filter, EMI suppression",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 12,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 2,
+          "leadSpacing": 5,
+          "leadDiameter": 0.6
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": "1A",
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial"
+    },
+    "specs": {
+      "inductance": "220µH",
+      "inductanceHenries": 0.00022,
+      "currentRating": "1A",
+      "dcResistance": "0.25Ω",
+      "tolerance": "±10%",
+      "package": "radial drum-core through-hole",
+      "coreType": "ferrite drum"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "RLB0914-221KL-ND",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/bourns-inc/RLB0914-221KL/1625974"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Radial drum-core inductor for buck/boost converter output filtering, LC low-pass filters, EMI suppression. Keep leads short. Verify saturation current vs rated RMS current from datasheet.",
+    "tags": [
+      "inductor",
+      "through-hole",
+      "radial",
+      "drum-core",
+      "ferrite",
+      "220uH",
+      "1A",
+      "power",
+      "filter",
+      "EMI",
+      "buck",
+      "boost",
+      "passive",
+      "Bourns",
+      "RLB0914"
+    ]
+  },
+  {
+    "name": "Inductor 470µH 0.7A Radial Drum-Core (Bourns RLB0914-471KL)",
+    "description": "470µH 0.7A radial drum-core through-hole inductor, ferrite drum core, ±10% tolerance, 12mm diameter × 14mm height, 5mm lead spacing, 0.50Ω DCR, Bourns RLB0914-471KL, buck/boost converter output filtering, LC low-pass filter, EMI suppression",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 12,
+      "height": 14,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 2,
+          "leadSpacing": 5,
+          "leadDiameter": 0.6
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": "0.7A",
+      "power": null,
+      "interface": null,
+      "pinout": "2-lead radial"
+    },
+    "specs": {
+      "inductance": "470µH",
+      "inductanceHenries": 0.00047,
+      "currentRating": "0.7A",
+      "dcResistance": "0.50Ω",
+      "tolerance": "±10%",
+      "package": "radial drum-core through-hole",
+      "coreType": "ferrite drum"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "RLB0914-471KL-ND",
+        "approximatePrice": 1,
+        "url": "https://www.digikey.com/en/products/detail/bourns-inc/RLB0914-471KL/1625975"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Radial drum-core inductor for buck/boost converter output filtering, LC low-pass filters, EMI suppression. Keep leads short. Verify saturation current vs rated RMS current from datasheet.",
+    "tags": [
+      "inductor",
+      "through-hole",
+      "radial",
+      "drum-core",
+      "ferrite",
+      "470uH",
+      "0.7A",
+      "power",
+      "filter",
+      "EMI",
+      "buck",
+      "boost",
+      "passive",
+      "Bourns",
+      "RLB0914"
+    ]
+  },
+  {
+    "name": "Crystal 8MHz HC-49S Through-Hole (ECS-80-20-4X)",
+    "description": "8MHz HC-49S through-hole crystal, 20pF load capacitance, ±30ppm tolerance, ~50Ω ESR, 11.4mm × 4.65mm × 3.5mm body, 4.88mm lead spacing, ECS-80-20-4X, microcontroller clock source, USB full-speed 12MHz multiple, AVR/PIC oscillator",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 11.4,
+      "width": 4.65,
+      "height": 3.5,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 2,
+          "leadSpacing": 4.88,
+          "leadDiameter": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": null,
+      "power": null,
+      "interface": "oscillator",
+      "pinout": "2-lead"
+    },
+    "specs": {
+      "frequency": "8MHz",
+      "loadCapacitance": "20pF",
+      "tolerance": "±30ppm",
+      "package": "HC-49S through-hole",
+      "esr": "50Ω",
+      "driveLevel": "200µW"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "ECS-80-20-4X",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/ecs-inc/ECS-80-20-4X/827575"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Pair with 2× 33pF C0G ceramic caps to ground for 20pF load (5pF stray assumed). Place crystal and caps within 10mm of MCU pins. 16MHz is standard Arduino/AVR clock.",
+    "tags": [
+      "crystal",
+      "oscillator",
+      "through-hole",
+      "HC-49S",
+      "8MHz",
+      "clock",
+      "MCU",
+      "AVR",
+      "PIC",
+      "timing",
+      "passive",
+      "ECS"
+    ]
+  },
+  {
+    "name": "Crystal 12MHz HC-49S Through-Hole (ECS-120-20-4X)",
+    "description": "12MHz HC-49S through-hole crystal, 20pF load capacitance, ±30ppm tolerance, ~50Ω ESR, 11.4mm × 4.65mm × 3.5mm body, 4.88mm lead spacing, ECS-120-20-4X, microcontroller clock source, USB full-speed, AVR/PIC oscillator",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 11.4,
+      "width": 4.65,
+      "height": 3.5,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 2,
+          "leadSpacing": 4.88,
+          "leadDiameter": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": null,
+      "power": null,
+      "interface": "oscillator",
+      "pinout": "2-lead"
+    },
+    "specs": {
+      "frequency": "12MHz",
+      "loadCapacitance": "20pF",
+      "tolerance": "±30ppm",
+      "package": "HC-49S through-hole",
+      "esr": "50Ω",
+      "driveLevel": "200µW"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "ECS-120-20-4X",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/ecs-inc/ECS-120-20-4X/827579"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Pair with 2× 33pF C0G ceramic caps to ground for 20pF load (5pF stray assumed). Place crystal and caps within 10mm of MCU pins. 16MHz is standard Arduino/AVR clock.",
+    "tags": [
+      "crystal",
+      "oscillator",
+      "through-hole",
+      "HC-49S",
+      "12MHz",
+      "clock",
+      "MCU",
+      "AVR",
+      "PIC",
+      "USB",
+      "timing",
+      "passive",
+      "ECS"
+    ]
+  },
+  {
+    "name": "Crystal 16MHz HC-49S Through-Hole (ECS-160-20-4X)",
+    "description": "16MHz HC-49S through-hole crystal, 20pF load capacitance, ±30ppm tolerance, ~50Ω ESR, 11.4mm × 4.65mm × 3.5mm body, 4.88mm lead spacing, ECS-160-20-4X, standard Arduino/AVR clock, ATmega328P, ATmega2560, microcontroller oscillator",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 11.4,
+      "width": 4.65,
+      "height": 3.5,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 2,
+          "leadSpacing": 4.88,
+          "leadDiameter": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": null,
+      "power": null,
+      "interface": "oscillator",
+      "pinout": "2-lead"
+    },
+    "specs": {
+      "frequency": "16MHz",
+      "loadCapacitance": "20pF",
+      "tolerance": "±30ppm",
+      "package": "HC-49S through-hole",
+      "esr": "50Ω",
+      "driveLevel": "200µW"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "ECS-160-20-4X",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/ecs-inc/ECS-160-20-4X/827583"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Pair with 2× 33pF C0G ceramic caps to ground for 20pF load (5pF stray assumed). Place crystal and caps within 10mm of MCU pins. 16MHz is standard Arduino/AVR clock.",
+    "tags": [
+      "crystal",
+      "oscillator",
+      "through-hole",
+      "HC-49S",
+      "16MHz",
+      "clock",
+      "MCU",
+      "AVR",
+      "Arduino",
+      "ATmega328P",
+      "timing",
+      "passive",
+      "ECS"
+    ]
+  },
+  {
+    "name": "Crystal 20MHz HC-49S Through-Hole (ECS-200-20-4X)",
+    "description": "20MHz HC-49S through-hole crystal, 20pF load capacitance, ±30ppm tolerance, ~50Ω ESR, 11.4mm × 4.65mm × 3.5mm body, 4.88mm lead spacing, ECS-200-20-4X, high-speed microcontroller clock, AVR/PIC oscillator",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "length": 11.4,
+      "width": 4.65,
+      "height": 3.5,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 2,
+          "leadSpacing": 4.88,
+          "leadDiameter": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": null,
+      "power": null,
+      "interface": "oscillator",
+      "pinout": "2-lead"
+    },
+    "specs": {
+      "frequency": "20MHz",
+      "loadCapacitance": "20pF",
+      "tolerance": "±30ppm",
+      "package": "HC-49S through-hole",
+      "esr": "50Ω",
+      "driveLevel": "200µW"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "ECS-200-20-4X",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/ecs-inc/ECS-200-20-4X/827587"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "Pair with 2× 33pF C0G ceramic caps to ground for 20pF load (5pF stray assumed). Place crystal and caps within 10mm of MCU pins. 16MHz is standard Arduino/AVR clock.",
+    "tags": [
+      "crystal",
+      "oscillator",
+      "through-hole",
+      "HC-49S",
+      "20MHz",
+      "clock",
+      "MCU",
+      "AVR",
+      "PIC",
+      "timing",
+      "passive",
+      "ECS"
+    ]
+  },
+  {
+    "name": "Crystal 32.768kHz RTC Cylindrical Through-Hole (Citizen CFS206-32.768KDZB-UB)",
+    "description": "32.768kHz RTC through-hole crystal, cylindrical package, 7pF load capacitance, ±20ppm tolerance, 2mm diameter × 6mm height, 2.54mm lead spacing, Citizen CFS206-32.768KDZB-UB, real-time clock, DS1307, DS3231, binary division to 1Hz",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 2,
+      "height": 6,
+      "weight": 0.2
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "leadCount": 2,
+          "leadSpacing": 2.54,
+          "leadDiameter": 0.5
+        }
+      }
+    ],
+    "electrical": {
+      "voltage": null,
+      "current": null,
+      "power": null,
+      "interface": "oscillator",
+      "pinout": "2-lead"
+    },
+    "specs": {
+      "frequency": "32.768kHz",
+      "loadCapacitance": "7pF",
+      "tolerance": "±20ppm",
+      "package": "cylindrical through-hole",
+      "esr": "70kΩ",
+      "driveLevel": "1µW"
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "CFS206-32.768KDZB-UB-ND",
+        "approximatePrice": 0.5,
+        "url": "https://www.digikey.com/en/products/detail/citizen-finedevice-co-ltd/CFS206-32-768KDZB-UB/1840464"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "2^15 Hz for binary division to 1Hz. Use with DS1307/DS3231 RTC. Pair with 2× 12pF caps (7pF load, 5pF stray). Extremely sensitive to stray capacitance.",
+    "tags": [
+      "crystal",
+      "oscillator",
+      "through-hole",
+      "cylindrical",
+      "32.768kHz",
+      "RTC",
+      "real-time-clock",
+      "DS1307",
+      "DS3231",
+      "timing",
+      "passive",
+      "Citizen"
+    ]
+  },
+  {
+    "name": "Protoboard 2×8cm FR-4 Single-Sided (Perfboard)",
+    "description": "2×8cm FR-4 perfboard, single-sided copper pads, 2.54mm pitch, 1mm holes, 1.6mm thick, approximately 126 holes, through-hole prototyping, breadboard-to-PCB migration, custom circuit layout",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "width": 20,
+      "height": 80,
+      "depth": 1.6,
+      "weight": 5
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holePitch": 2.54,
+          "holeDiameter": 1,
+          "leadCount": "varies"
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "width": 20,
+      "height": 80,
+      "holePitch": 2.54,
+      "holeDiameter": 1,
+      "material": "FR-4",
+      "platedThrough": false,
+      "mountingHoles": false,
+      "holeCount": 126
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "N/A",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/s?k=2x8cm+perfboard+FR4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "2.54mm pitch matches DIP ICs, pin headers, and through-hole components. Pair with 22AWG solid wire for jumpers, copper tape for power rails.",
+    "tags": [
+      "perfboard",
+      "protoboard",
+      "prototype",
+      "PCB",
+      "through-hole",
+      "FR-4",
+      "2x8cm",
+      "single-sided"
+    ]
+  },
+  {
+    "name": "Protoboard 3×7cm FR-4 Single-Sided (Perfboard)",
+    "description": "3×7cm FR-4 perfboard, single-sided copper pads, 2.54mm pitch, 1mm holes, 1.6mm thick, approximately 168 holes, through-hole prototyping, breadboard-to-PCB migration, custom circuit layout",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "width": 30,
+      "height": 70,
+      "depth": 1.6,
+      "weight": 6
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holePitch": 2.54,
+          "holeDiameter": 1,
+          "leadCount": "varies"
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "width": 30,
+      "height": 70,
+      "holePitch": 2.54,
+      "holeDiameter": 1,
+      "material": "FR-4",
+      "platedThrough": false,
+      "mountingHoles": false,
+      "holeCount": 168
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "N/A",
+        "approximatePrice": 0.75,
+        "url": "https://www.amazon.com/s?k=3x7cm+perfboard+FR4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "2.54mm pitch matches DIP ICs, pin headers, and through-hole components. Pair with 22AWG solid wire for jumpers, copper tape for power rails.",
+    "tags": [
+      "perfboard",
+      "protoboard",
+      "prototype",
+      "PCB",
+      "through-hole",
+      "FR-4",
+      "3x7cm",
+      "single-sided"
+    ]
+  },
+  {
+    "name": "Protoboard 4×6cm FR-4 Single-Sided (Perfboard)",
+    "description": "4×6cm FR-4 perfboard, single-sided copper pads, 2.54mm pitch, 1mm holes, 1.6mm thick, approximately 196 holes, through-hole prototyping, breadboard-to-PCB migration, custom circuit layout",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "width": 40,
+      "height": 60,
+      "depth": 1.6,
+      "weight": 7
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holePitch": 2.54,
+          "holeDiameter": 1,
+          "leadCount": "varies"
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "width": 40,
+      "height": 60,
+      "holePitch": 2.54,
+      "holeDiameter": 1,
+      "material": "FR-4",
+      "platedThrough": false,
+      "mountingHoles": false,
+      "holeCount": 196
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "N/A",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/s?k=4x6cm+perfboard+FR4"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "2.54mm pitch matches DIP ICs, pin headers, and through-hole components. Pair with 22AWG solid wire for jumpers, copper tape for power rails.",
+    "tags": [
+      "perfboard",
+      "protoboard",
+      "prototype",
+      "PCB",
+      "through-hole",
+      "FR-4",
+      "4x6cm",
+      "single-sided"
+    ]
+  },
+  {
+    "name": "Protoboard 5×7cm FR-4 Single-Sided with Mounting Holes (Perfboard)",
+    "description": "5×7cm FR-4 perfboard with corner mounting holes, single-sided copper pads, 2.54mm pitch, 1mm holes, 1.6mm thick, approximately 280 holes, 4× 3mm corner mounting holes, through-hole prototyping, enclosure mounting",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "width": 50,
+      "height": 70,
+      "depth": 1.6,
+      "weight": 9
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holePitch": 2.54,
+          "holeDiameter": 1,
+          "leadCount": "varies"
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "holeSize": 3,
+          "holeCount": 4,
+          "note": "corner mounting holes"
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "width": 50,
+      "height": 70,
+      "holePitch": 2.54,
+      "holeDiameter": 1,
+      "material": "FR-4",
+      "platedThrough": false,
+      "mountingHoles": true,
+      "holeCount": 280
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "N/A",
+        "approximatePrice": 1.25,
+        "url": "https://www.amazon.com/s?k=5x7cm+perfboard+FR4+mounting+holes"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "2.54mm pitch matches DIP ICs, pin headers, and through-hole components. Pair with 22AWG solid wire for jumpers, copper tape for power rails.",
+    "tags": [
+      "perfboard",
+      "protoboard",
+      "prototype",
+      "PCB",
+      "through-hole",
+      "FR-4",
+      "5x7cm",
+      "single-sided",
+      "mounting-holes"
+    ]
+  },
+  {
+    "name": "Protoboard 7×9cm FR-4 Single-Sided with Mounting Holes (Perfboard)",
+    "description": "7×9cm FR-4 perfboard with corner mounting holes, single-sided copper pads, 2.54mm pitch, 1mm holes, 1.6mm thick, approximately 504 holes, 4× 3mm corner mounting holes, through-hole prototyping, medium-sized enclosure mounting",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "width": 70,
+      "height": 90,
+      "depth": 1.6,
+      "weight": 15
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holePitch": 2.54,
+          "holeDiameter": 1,
+          "leadCount": "varies"
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "holeSize": 3,
+          "holeCount": 4,
+          "note": "corner mounting holes"
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "width": 70,
+      "height": 90,
+      "holePitch": 2.54,
+      "holeDiameter": 1,
+      "material": "FR-4",
+      "platedThrough": false,
+      "mountingHoles": true,
+      "holeCount": 504
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "N/A",
+        "approximatePrice": 1.75,
+        "url": "https://www.amazon.com/s?k=7x9cm+perfboard+FR4+mounting+holes"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "2.54mm pitch matches DIP ICs, pin headers, and through-hole components. Pair with 22AWG solid wire for jumpers, copper tape for power rails.",
+    "tags": [
+      "perfboard",
+      "protoboard",
+      "prototype",
+      "PCB",
+      "through-hole",
+      "FR-4",
+      "7x9cm",
+      "single-sided",
+      "mounting-holes"
+    ]
+  },
+  {
+    "name": "Protoboard 9×15cm FR-4 Single-Sided with Mounting Holes (Perfboard)",
+    "description": "9×15cm FR-4 perfboard with corner mounting holes, single-sided copper pads, 2.54mm pitch, 1mm holes, 1.6mm thick, approximately 1050 holes, 4× 3mm corner mounting holes, through-hole prototyping, full-sized enclosure mounting, complex circuit prototyping",
+    "categorySlug": "passive-components",
+    "entryType": "component",
+    "dimensions": {
+      "width": 90,
+      "height": 150,
+      "depth": 1.6,
+      "weight": 30
+    },
+    "mountingFeatures": [
+      {
+        "type": "through_hole",
+        "specs": {
+          "holePitch": 2.54,
+          "holeDiameter": 1,
+          "leadCount": "varies"
+        }
+      },
+      {
+        "type": "bolt_pattern",
+        "specs": {
+          "holeSize": 3,
+          "holeCount": 4,
+          "note": "corner mounting holes"
+        }
+      }
+    ],
+    "electrical": null,
+    "specs": {
+      "width": 90,
+      "height": 150,
+      "holePitch": 2.54,
+      "holeDiameter": 1,
+      "material": "FR-4",
+      "platedThrough": false,
+      "mountingHoles": true,
+      "holeCount": 1050
+    },
+    "suppliers": [
+      {
+        "name": "DigiKey",
+        "partNumber": "N/A",
+        "approximatePrice": 3,
+        "url": "https://www.amazon.com/s?k=9x15cm+perfboard+FR4+mounting+holes"
+      }
+    ],
+    "stockSizes": null,
+    "designNotes": "2.54mm pitch matches DIP ICs, pin headers, and through-hole components. Pair with 22AWG solid wire for jumpers, copper tape for power rails.",
+    "tags": [
+      "perfboard",
+      "protoboard",
+      "prototype",
+      "PCB",
+      "through-hole",
+      "FR-4",
+      "9x15cm",
+      "single-sided",
+      "mounting-holes"
+    ]
+  }
+]

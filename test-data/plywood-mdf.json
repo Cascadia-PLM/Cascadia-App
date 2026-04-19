@@ -1,0 +1,766 @@
+[
+  {
+    "name": "Baltic Birch Plywood \u2014 1/8\" (3mm)",
+    "description": "Baltic birch plywood, 3mm (1/8 inch) thick, laser-grade, void-free, 3-ply, B/BB grade, craft plywood, hardwood plywood, cabinet-grade, CNC-ready, engravable, tight core, no voids, Russian birch, European birch, multiplex, scroll saw, laser cutter material, fine woodworking, model making, jigsaw puzzle stock",
+    "categorySlug": "plywood-mdf",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 3,
+      "weight": 195
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Baltic Birch Plywood",
+      "grade": "B/BB",
+      "thickness_mm": 3,
+      "thickness_in": "1/8\"",
+      "plies": 3,
+      "voidFree": true,
+      "laserCompatible": true,
+      "density_kg_m3": "~680",
+      "fullSheetSize": "5' x 5' (1524mm x 1524mm)",
+      "origin": "Russia / Baltic States / Finland"
+    },
+    "suppliers": [
+      {
+        "name": "Woodpeckers Crafts",
+        "partNumber": "BB18-1212",
+        "approximatePrice": 4,
+        "url": "https://www.woodpeckerscrafts.com/baltic-birch-plywood"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0BG1VBBTZ",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/dp/B0BG1VBBTZ"
+      },
+      {
+        "name": "Ocooch Hardwoods",
+        "partNumber": "BB-3MM",
+        "approximatePrice": 4,
+        "url": "https://ocoochhardwoods.com/plywood/baltic-birch/"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "12\"x12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 4
+      },
+      {
+        "label": "12\"x20\"",
+        "dimensions": { "width": 305, "height": 508 },
+        "approximatePrice": 6
+      },
+      {
+        "label": "12\"x24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 7
+      },
+      {
+        "label": "24\"x24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 12
+      },
+      {
+        "label": "24\"x30\"",
+        "dimensions": { "width": 610, "height": 762 },
+        "approximatePrice": 15
+      },
+      {
+        "label": "24\"x48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 22
+      },
+      {
+        "label": "5'x5' (full sheet)",
+        "dimensions": { "width": 1524, "height": 1524 },
+        "approximatePrice": 30
+      }
+    ],
+    "designNotes": "Excellent for laser cutting and engraving. At 3mm this is the thinnest commonly available Baltic birch and cuts easily on 40W+ CO2 lasers (single pass at ~15mm/s, 80% power on 40W). Void-free core means clean edge quality with no burn-through spots. 3-ply construction provides good strength for its thickness. Popular for: ornaments, coasters, puzzles, box joints, living hinges, kerf-bent enclosures. For CNC routing, use a downcut spiral bit to minimize tearout on the face veneer. Edges can be left natural (attractive layered look) or finished with sanding sealer. Absorbs stain unevenly due to alternating grain direction in plies \u2014 use pre-stain conditioner or spray finishes. Store flat in climate-controlled space; warps easily at this thickness if exposed to humidity changes. Not rated for outdoor or wet environments.",
+    "tags": [
+      "baltic birch",
+      "plywood",
+      "laser plywood",
+      "1/8 plywood",
+      "3mm plywood",
+      "craft plywood",
+      "void-free",
+      "laser cutting",
+      "CNC",
+      "scroll saw",
+      "model making",
+      "birch plywood"
+    ]
+  },
+  {
+    "name": "Baltic Birch Plywood \u2014 1/4\" (6mm)",
+    "description": "Baltic birch plywood, 6mm (1/4 inch) thick, laser-grade, void-free, 5-ply, BB/BB grade, craft plywood, hardwood plywood, cabinet-grade, CNC-ready, engravable, tight core, no voids, Russian birch, European birch, multiplex, laser cutter material, enclosure stock, box material, shelf material",
+    "categorySlug": "plywood-mdf",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 6,
+      "weight": 390
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Baltic Birch Plywood",
+      "grade": "BB/BB",
+      "thickness_mm": 6,
+      "thickness_in": "1/4\"",
+      "plies": 5,
+      "voidFree": true,
+      "laserCompatible": true,
+      "density_kg_m3": "~680",
+      "fullSheetSize": "5' x 5' (1524mm x 1524mm)",
+      "origin": "Russia / Baltic States / Finland"
+    },
+    "suppliers": [
+      {
+        "name": "Woodpeckers Crafts",
+        "partNumber": "BB14-1212",
+        "approximatePrice": 6,
+        "url": "https://www.woodpeckerscrafts.com/baltic-birch-plywood"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0BG1WCMQJ",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B0BG1WCMQJ"
+      },
+      {
+        "name": "Ocooch Hardwoods",
+        "partNumber": "BB-6MM",
+        "approximatePrice": 6,
+        "url": "https://ocoochhardwoods.com/plywood/baltic-birch/"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "12\"x12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 6
+      },
+      {
+        "label": "12\"x20\"",
+        "dimensions": { "width": 305, "height": 508 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "12\"x24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 10
+      },
+      {
+        "label": "24\"x24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 18
+      },
+      {
+        "label": "24\"x30\"",
+        "dimensions": { "width": 610, "height": 762 },
+        "approximatePrice": 22
+      },
+      {
+        "label": "24\"x48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 34
+      },
+      {
+        "label": "5'x5' (full sheet)",
+        "dimensions": { "width": 1524, "height": 1524 },
+        "approximatePrice": 45
+      }
+    ],
+    "designNotes": "The most popular thickness for laser-cut projects and CNC work. Cuts on 40W CO2 lasers in 1-2 passes (~8mm/s, 100% power on 40W; single pass on 60W+). 5-ply void-free construction gives excellent edge quality and structural rigidity for enclosures and boxes. Ideal for: electronics enclosures, storage boxes with finger/box joints, drawer organizers, signage, prototyping structural components. Holds wood screws reasonably well in face but not in edges at this thickness \u2014 use tab-and-slot or glued joints instead. For CNC: downcut endmill prevents face tearout; climb cut on final pass for clean edges. Takes wood glue extremely well. Finishes: polyurethane, lacquer, or oil all work. Sanding to 220 grit before finishing recommended. BB/BB grade means both faces are clean with minimal patches. Store flat; less prone to warping than 3mm but still sensitive to humidity swings.",
+    "tags": [
+      "baltic birch",
+      "plywood",
+      "laser plywood",
+      "1/4 plywood",
+      "6mm plywood",
+      "craft plywood",
+      "void-free",
+      "laser cutting",
+      "CNC",
+      "enclosure",
+      "box material",
+      "birch plywood",
+      "maker plywood"
+    ]
+  },
+  {
+    "name": "Baltic Birch Plywood \u2014 1/2\" (12mm)",
+    "description": "Baltic birch plywood, 12mm (1/2 inch) thick, void-free, 9-ply, BB/BB grade, cabinet-grade plywood, CNC substrate, furniture-grade, structural plywood, hardwood plywood, jig stock, fixture plate, workbench top, drawer sides, European birch multiplex, shop furniture",
+    "categorySlug": "plywood-mdf",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 12,
+      "weight": 780
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Baltic Birch Plywood",
+      "grade": "BB/BB",
+      "thickness_mm": 12,
+      "thickness_in": "1/2\"",
+      "plies": 9,
+      "voidFree": true,
+      "laserCompatible": true,
+      "density_kg_m3": "~680",
+      "fullSheetSize": "5' x 5' (1524mm x 1524mm)",
+      "origin": "Russia / Baltic States / Finland"
+    },
+    "suppliers": [
+      {
+        "name": "Woodpeckers Crafts",
+        "partNumber": "BB12-1212",
+        "approximatePrice": 10,
+        "url": "https://www.woodpeckerscrafts.com/baltic-birch-plywood"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0BG1X9VKP",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B0BG1X9VKP"
+      },
+      {
+        "name": "Ocooch Hardwoods",
+        "partNumber": "BB-12MM",
+        "approximatePrice": 10,
+        "url": "https://ocoochhardwoods.com/plywood/baltic-birch/"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "12\"x12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 10
+      },
+      {
+        "label": "12\"x20\"",
+        "dimensions": { "width": 305, "height": 508 },
+        "approximatePrice": 15
+      },
+      {
+        "label": "12\"x24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 17
+      },
+      {
+        "label": "24\"x24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 30
+      },
+      {
+        "label": "24\"x30\"",
+        "dimensions": { "width": 610, "height": 762 },
+        "approximatePrice": 36
+      },
+      {
+        "label": "24\"x48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 55
+      },
+      {
+        "label": "5'x5' (full sheet)",
+        "dimensions": { "width": 1524, "height": 1524 },
+        "approximatePrice": 60
+      }
+    ],
+    "designNotes": "The workhorse thickness for CNC projects, jigs, and furniture. 9-ply void-free construction provides excellent screw-holding strength in both face and edge. Laser cutting is possible on 60W+ CO2 lasers but requires multiple slow passes and produces significant charring \u2014 CNC routing is preferred at this thickness. Ideal for: shelving, cabinet sides and dividers, drawer construction, CNC jigs and fixtures, speaker enclosures, tool totes, workbench components. Holds #8 wood screws well in both face and edge; pre-drill for edge screws to prevent splitting. For CNC: use compression bits for clean edges on both faces, or downcut for face-up quality. Takes dado joints beautifully \u2014 actual 12mm thickness is consistent (unlike domestic plywood). Excellent dimensional stability compared to solid wood. Can be edge-banded or left exposed for the distinctive layered look. Finish with polyurethane, lacquer, or Danish oil.",
+    "tags": [
+      "baltic birch",
+      "plywood",
+      "1/2 plywood",
+      "12mm plywood",
+      "cabinet plywood",
+      "void-free",
+      "CNC",
+      "furniture",
+      "jig stock",
+      "fixture",
+      "birch plywood",
+      "shop plywood"
+    ]
+  },
+  {
+    "name": "Baltic Birch Plywood \u2014 3/4\" (18mm)",
+    "description": "Baltic birch plywood, 18mm (3/4 inch) thick, void-free, 13-ply, BB/BB grade, cabinet-grade plywood, furniture-grade, structural plywood, workbench material, countertop substrate, CNC stock, European birch multiplex, heavy-duty shelving, shop furniture, drawer bottoms, jig plate",
+    "categorySlug": "plywood-mdf",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 18,
+      "weight": 1170
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Baltic Birch Plywood",
+      "grade": "BB/BB",
+      "thickness_mm": 18,
+      "thickness_in": "3/4\"",
+      "plies": 13,
+      "voidFree": true,
+      "laserCompatible": false,
+      "density_kg_m3": "~680",
+      "fullSheetSize": "5' x 5' (1524mm x 1524mm)",
+      "origin": "Russia / Baltic States / Finland"
+    },
+    "suppliers": [
+      {
+        "name": "Woodpeckers Crafts",
+        "partNumber": "BB34-1212",
+        "approximatePrice": 14,
+        "url": "https://www.woodpeckerscrafts.com/baltic-birch-plywood"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B0BG1Y3TPK",
+        "approximatePrice": 16,
+        "url": "https://www.amazon.com/dp/B0BG1Y3TPK"
+      },
+      {
+        "name": "Ocooch Hardwoods",
+        "partNumber": "BB-18MM",
+        "approximatePrice": 14,
+        "url": "https://ocoochhardwoods.com/plywood/baltic-birch/"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "12\"x12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "12\"x20\"",
+        "dimensions": { "width": 305, "height": 508 },
+        "approximatePrice": 20
+      },
+      {
+        "label": "12\"x24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 24
+      },
+      {
+        "label": "24\"x24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 42
+      },
+      {
+        "label": "24\"x30\"",
+        "dimensions": { "width": 610, "height": 762 },
+        "approximatePrice": 50
+      },
+      {
+        "label": "24\"x48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 75
+      },
+      {
+        "label": "5'x5' (full sheet)",
+        "dimensions": { "width": 1524, "height": 1524 },
+        "approximatePrice": 80
+      }
+    ],
+    "designNotes": "Premium structural thickness for furniture, cabinets, and heavy-duty shop fixtures. 13-ply void-free construction is the gold standard for CNC-cut furniture and cabinetry. NOT suitable for laser cutting \u2014 too thick for any practical laser. Ideal for: tabletops, workbenches, cabinet carcasses, heavy shelving, speaker cabinets, router table tops, CNC spoilboard, crosscut sled bases. Exceptional screw-holding strength in face and edge; can accept threaded inserts reliably. For CNC: compression bits recommended for clean edges on both faces; use climb cutting on final pass. Consistent 18mm actual thickness (domestic 3/4\" plywood is often 23/32\" or varies) makes it ideal for dado-based joinery with predictable fit. Weight is significant \u2014 a full 5'x5' sheet weighs ~27kg (60 lbs). Edge treatment options: iron-on birch edge banding, solid birch trim, or leave exposed for the signature layered look. Finish with conversion varnish for cabinets, polyurethane for shop use, or oil/wax for furniture.",
+    "tags": [
+      "baltic birch",
+      "plywood",
+      "3/4 plywood",
+      "18mm plywood",
+      "cabinet plywood",
+      "void-free",
+      "CNC",
+      "furniture",
+      "workbench",
+      "structural",
+      "birch plywood",
+      "countertop"
+    ]
+  },
+  {
+    "name": "MDF (Medium Density Fiberboard) \u2014 1/8\" (3mm)",
+    "description": "MDF medium density fiberboard, 3mm (1/8 inch) thick, smooth both sides, paintable, laser-cuttable, engineered wood panel, hardboard alternative, craft board, template stock, sign material, backer board, drawer bottom, cabinet back panel, uniform density, no grain direction",
+    "categorySlug": "plywood-mdf",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 3,
+      "weight": 217
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "MDF",
+      "thickness_mm": 3,
+      "thickness_in": "1/8\"",
+      "density_kg_m3": "~750",
+      "smoothBothSides": true,
+      "paintable": true,
+      "laserCompatible": "Yes, with ventilation \u2014 produces more smoke than plywood",
+      "grainDirection": "None (isotropic)",
+      "moistureSensitive": true,
+      "formaldehyde": "CARB Phase 2 compliant (most brands)",
+      "fullSheetSize": "4' x 8' (1219mm x 2438mm)"
+    },
+    "suppliers": [
+      {
+        "name": "Home Depot",
+        "partNumber": "562627",
+        "approximatePrice": 8,
+        "url": "https://www.homedepot.com/p/MDF-Panel/562627"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B08X4BCLX9",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B08X4BCLX9"
+      },
+      {
+        "name": "Lowe's",
+        "partNumber": "12196",
+        "approximatePrice": 8,
+        "url": "https://www.lowes.com/pd/MDF/12196"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "12\"x12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 2
+      },
+      {
+        "label": "12\"x24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "24\"x24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "24\"x48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 8
+      },
+      {
+        "label": "2'x4' (project panel)",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 6
+      },
+      {
+        "label": "4'x8' (full sheet)",
+        "dimensions": { "width": 1219, "height": 2438 },
+        "approximatePrice": 18
+      }
+    ],
+    "designNotes": "Thin MDF is excellent for laser cutting and engraving, producing clean edges without the grain variation of plywood. WARNING: MDF produces significantly more smoke and fine particulate when laser cut compared to plywood \u2014 ensure strong ventilation and air filtration. The resin binders can produce formaldehyde fumes when heated. On a 40W CO2 laser, 3mm MDF cuts cleanly in a single pass (~12mm/s, 90% power). No grain direction means uniform cutting and engraving in all orientations \u2014 ideal for templates, stencils, and signs. Paints beautifully with spray paint or brush-on (seal edges first as they absorb heavily). NOT suitable for structural loads at this thickness. Very moisture-sensitive: swells irreversibly when wet, do not use in humid environments or outdoors. Does not hold screws or nails well at 3mm \u2014 use adhesives. Edges are smooth but porous; seal with sanding sealer or shellac before painting. Dust from cutting/sanding is very fine and irritating \u2014 always wear a dust mask.",
+    "tags": [
+      "MDF",
+      "medium density fiberboard",
+      "1/8 MDF",
+      "3mm MDF",
+      "laser MDF",
+      "craft board",
+      "paintable",
+      "template",
+      "sign material",
+      "engineered wood",
+      "smooth board"
+    ]
+  },
+  {
+    "name": "MDF (Medium Density Fiberboard) \u2014 1/4\" (6mm)",
+    "description": "MDF medium density fiberboard, 6mm (1/4 inch) thick, smooth both sides, paintable, laser-cuttable with ventilation, engineered wood panel, craft board, sign material, cabinet backing, drawer bottom, CNC substrate, template stock, paint-grade panel, no grain direction, uniform density",
+    "categorySlug": "plywood-mdf",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 6,
+      "weight": 435
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "MDF",
+      "thickness_mm": 6,
+      "thickness_in": "1/4\"",
+      "density_kg_m3": "~750",
+      "smoothBothSides": true,
+      "paintable": true,
+      "laserCompatible": "Yes, with ventilation \u2014 produces more smoke than plywood",
+      "grainDirection": "None (isotropic)",
+      "moistureSensitive": true,
+      "formaldehyde": "CARB Phase 2 compliant (most brands)",
+      "fullSheetSize": "4' x 8' (1219mm x 2438mm)"
+    },
+    "suppliers": [
+      {
+        "name": "Home Depot",
+        "partNumber": "205591",
+        "approximatePrice": 10,
+        "url": "https://www.homedepot.com/p/MDF-Panel/205591"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07PNGLMLF",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B07PNGLMLF"
+      },
+      {
+        "name": "Lowe's",
+        "partNumber": "12197",
+        "approximatePrice": 10,
+        "url": "https://www.lowes.com/pd/MDF/12197"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5827T11",
+        "approximatePrice": 14,
+        "url": "https://www.mcmaster.com/5827T11"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "12\"x12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 3
+      },
+      {
+        "label": "12\"x24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "24\"x24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 8
+      },
+      {
+        "label": "24\"x48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 12
+      },
+      {
+        "label": "2'x4' (project panel)",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 8
+      },
+      {
+        "label": "4'x8' (full sheet)",
+        "dimensions": { "width": 1219, "height": 2438 },
+        "approximatePrice": 25
+      }
+    ],
+    "designNotes": "The most popular MDF thickness for laser cutting, CNC routing, and painted projects. Cuts on 40W CO2 lasers in 1-2 passes with strong ventilation required \u2014 MDF smoke contains formaldehyde and resin particulates. For CNC routing, MDF is the ideal material for painted parts: no grain means perfectly smooth surfaces after priming. Use straight or downcut bits; MDF does not chip like plywood but produces extremely fine dust. Excellent for: painted signs, display fixtures, cabinet door panels (paint-grade), router templates, jigs, speaker baffles, prototype housings. Holds brad nails and small screws in the face but splits easily with edge fasteners \u2014 always pre-drill for edge screws. Takes paint and primer beautifully; seal edges first (they absorb 3-5x more finish than faces). Not suitable for any moisture exposure \u2014 swells and crumbles irreversibly. Heavier than plywood of the same thickness. For structural applications, Baltic birch plywood is strongly preferred.",
+    "tags": [
+      "MDF",
+      "medium density fiberboard",
+      "1/4 MDF",
+      "6mm MDF",
+      "laser MDF",
+      "craft board",
+      "paintable",
+      "CNC",
+      "sign material",
+      "engineered wood",
+      "paint-grade",
+      "template"
+    ]
+  },
+  {
+    "name": "MDF (Medium Density Fiberboard) \u2014 1/2\" (12mm)",
+    "description": "MDF medium density fiberboard, 12mm (1/2 inch) thick, smooth both sides, paintable, CNC substrate, engineered wood panel, shelving, cabinet construction, furniture component, paint-grade panel, speaker baffle, router template, jig stock, uniform density, no grain direction",
+    "categorySlug": "plywood-mdf",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 12,
+      "weight": 870
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "MDF",
+      "thickness_mm": 12,
+      "thickness_in": "1/2\"",
+      "density_kg_m3": "~750",
+      "smoothBothSides": true,
+      "paintable": true,
+      "laserCompatible": "Not recommended \u2014 too thick for clean cuts, excessive smoke and charring",
+      "grainDirection": "None (isotropic)",
+      "moistureSensitive": true,
+      "formaldehyde": "CARB Phase 2 compliant (most brands)",
+      "fullSheetSize": "4' x 8' (1219mm x 2438mm)"
+    },
+    "suppliers": [
+      {
+        "name": "Home Depot",
+        "partNumber": "226834",
+        "approximatePrice": 28,
+        "url": "https://www.homedepot.com/p/MDF-Panel/226834"
+      },
+      {
+        "name": "Lowe's",
+        "partNumber": "12198",
+        "approximatePrice": 28,
+        "url": "https://www.lowes.com/pd/MDF/12198"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07FP13VGV",
+        "approximatePrice": 15,
+        "url": "https://www.amazon.com/dp/B07FP13VGV"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5827T14",
+        "approximatePrice": 32,
+        "url": "https://www.mcmaster.com/5827T14"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "12\"x12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 4
+      },
+      {
+        "label": "12\"x24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 7
+      },
+      {
+        "label": "24\"x24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 11
+      },
+      {
+        "label": "24\"x48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 18
+      },
+      {
+        "label": "2'x4' (project panel)",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "4'x8' (full sheet)",
+        "dimensions": { "width": 1219, "height": 2438 },
+        "approximatePrice": 28
+      }
+    ],
+    "designNotes": "CNC-only at this thickness \u2014 laser cutting is not practical. MDF at 12mm is the go-to paint-grade substrate for furniture components and cabinet parts. Machines extremely well on CNC routers with clean, fuzz-free edges. Use straight flute or compression bits; feed rates can be aggressive since MDF is consistent and predictable. Ideal for: painted shelving, cabinet components, speaker enclosures, painted furniture, prototype housings, router templates, CNC jigs and fixtures. Screw-holding is moderate in the face but poor in edges \u2014 use threaded inserts, dowels, or confirmat screws for edge-to-face joints. Biscuit joints work well. Takes paint and primer exceptionally; the perfectly smooth surface needs minimal prep. Edge sealing is critical before painting \u2014 use drywall compound, wood filler, or dedicated edge sealer. Heavier than comparable plywood: a 4'x8' sheet weighs ~26kg (57 lbs). Moisture is the enemy \u2014 even brief water exposure causes irreversible swelling. Consider moisture-resistant (MR) MDF for kitchen or bathroom applications.",
+    "tags": [
+      "MDF",
+      "medium density fiberboard",
+      "1/2 MDF",
+      "12mm MDF",
+      "CNC",
+      "cabinet",
+      "shelving",
+      "paintable",
+      "furniture",
+      "engineered wood",
+      "paint-grade",
+      "speaker baffle"
+    ]
+  },
+  {
+    "name": "MDF (Medium Density Fiberboard) \u2014 3/4\" (18mm)",
+    "description": "MDF medium density fiberboard, 18mm (3/4 inch) thick, smooth both sides, paintable, CNC substrate, engineered wood panel, shelving, cabinet carcass, furniture-grade, countertop substrate, speaker cabinet, paint-grade, workbench surface, bookcase, built-in, uniform density, no grain direction",
+    "categorySlug": "plywood-mdf",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 18,
+      "weight": 1305
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "MDF",
+      "thickness_mm": 18,
+      "thickness_in": "3/4\"",
+      "density_kg_m3": "~750",
+      "smoothBothSides": true,
+      "paintable": true,
+      "laserCompatible": "No \u2014 far too thick for laser cutting",
+      "grainDirection": "None (isotropic)",
+      "moistureSensitive": true,
+      "formaldehyde": "CARB Phase 2 compliant (most brands)",
+      "fullSheetSize": "4' x 8' (1219mm x 2438mm)"
+    },
+    "suppliers": [
+      {
+        "name": "Home Depot",
+        "partNumber": "202089068",
+        "approximatePrice": 37,
+        "url": "https://www.homedepot.com/p/MDF-Panel/202089068"
+      },
+      {
+        "name": "Lowe's",
+        "partNumber": "12199",
+        "approximatePrice": 38,
+        "url": "https://www.lowes.com/pd/MDF/12199"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07FPGHNF9",
+        "approximatePrice": 20,
+        "url": "https://www.amazon.com/dp/B07FPGHNF9"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "5827T17",
+        "approximatePrice": 42,
+        "url": "https://www.mcmaster.com/5827T17"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "12\"x12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "12\"x24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "24\"x24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 15
+      },
+      {
+        "label": "24\"x48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 24
+      },
+      {
+        "label": "2'x4' (project panel)",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 18
+      },
+      {
+        "label": "4'x8' (full sheet)",
+        "dimensions": { "width": 1219, "height": 2438 },
+        "approximatePrice": 37
+      }
+    ],
+    "designNotes": "The standard thickness for painted cabinets, built-ins, and furniture. CNC routing produces exceptionally smooth, paint-ready parts with no grain to telegraph through finish. MDF at 18mm is significantly cheaper than Baltic birch plywood of the same thickness, making it the budget choice for painted projects where edge appearance is covered. Ideal for: painted kitchen cabinets (with proper moisture precautions), bookcases, built-in shelving, entertainment centers, speaker cabinets, wainscoting, CNC-cut decorative panels, countertop substrate under laminate. Holds confirmat screws and threaded inserts well in the face; edge fastening requires pre-drilling and is still the weak point. Cam-lock hardware works reliably. For shelving: MDF sags more than plywood under load \u2014 limit unsupported spans to 24\" (610mm) for loaded shelves, or add a solid wood front edge for stiffness. A full 4'x8' sheet weighs ~39kg (86 lbs) \u2014 requires two people to handle safely. Edge treatment is essential for painted finish: sand to 220, apply sanding sealer or shellac to edges, sand again, then prime and paint. For speaker cabinets, MDF's density and lack of resonance make it superior to plywood. Always use dust collection and respiratory protection when machining.",
+    "tags": [
+      "MDF",
+      "medium density fiberboard",
+      "3/4 MDF",
+      "18mm MDF",
+      "CNC",
+      "cabinet",
+      "shelving",
+      "furniture",
+      "paintable",
+      "engineered wood",
+      "paint-grade",
+      "speaker cabinet",
+      "bookcase",
+      "built-in"
+    ]
+  }
+]

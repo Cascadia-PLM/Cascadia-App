@@ -1,0 +1,1366 @@
+[
+  {
+    "name": "623ZZ Shielded Ball Bearing (3x10x4)",
+    "description": "623ZZ miniature deep groove ball bearing, 3mm bore, 10mm OD, 4mm width, double metal shielded, chrome steel, ABEC-1, micro series 620",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 10,
+      "height": 4,
+      "weight": 1
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 3 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 10 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "3mm",
+      "outerDiameter": "10mm",
+      "width": "4mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "0.44 kN dynamic",
+      "maxRPM": "40000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0CG6BKC5Z",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/Groove-Bearing-Printers-Bearings-Pulley/dp/B0CG6BKC5Z"
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 3
+      }
+    ],
+    "designNotes": "Miniature bearing for light-duty applications. Common in V-slot wheel assemblies and small idler pulleys. Fits 3mm shafts. Press-fit or slip-fit into 10mm bores.",
+    "tags": [
+      "623",
+      "3mm-bore",
+      "miniature",
+      "micro-bearing",
+      "idler",
+      "v-wheel",
+      "deep-groove"
+    ]
+  },
+  {
+    "name": "624ZZ Shielded Ball Bearing (4x13x5)",
+    "description": "624ZZ miniature deep groove ball bearing, 4mm bore, 13mm OD, 5mm width, double metal shielded, chrome steel, ABEC-1, micro series 620",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 13,
+      "height": 5,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 4 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 13 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "4mm",
+      "outerDiameter": "13mm",
+      "width": "5mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "0.65 kN dynamic",
+      "maxRPM": "36000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 3
+      }
+    ],
+    "designNotes": "Common in small geared mechanisms and 3D printer idler assemblies. Fits 4mm shafts or M4 shoulder bolts.",
+    "tags": [
+      "624",
+      "4mm-bore",
+      "miniature",
+      "micro-bearing",
+      "idler",
+      "deep-groove"
+    ]
+  },
+  {
+    "name": "625ZZ Shielded Ball Bearing (5x16x5)",
+    "description": "625ZZ miniature deep groove ball bearing, 5mm bore, 16mm OD, 5mm width, double metal shielded, chrome steel, ABEC-1, common in V-slot wheel assemblies and 3D printers",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 16,
+      "height": 5,
+      "weight": 4
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 16 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "5mm",
+      "outerDiameter": "16mm",
+      "width": "5mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "1.14 kN dynamic",
+      "maxRPM": "32000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 3
+      }
+    ],
+    "designNotes": "Very common in V-wheel assemblies for V-slot and OpenBuilds linear motion systems. Fits 5mm shafts or M5 shoulder bolts. Also used in polycarbonate V-wheels and smooth idler pulleys.",
+    "tags": [
+      "625",
+      "5mm-bore",
+      "miniature",
+      "v-wheel",
+      "openbuilds",
+      "idler",
+      "deep-groove",
+      "3d-printer"
+    ]
+  },
+  {
+    "name": "626ZZ Shielded Ball Bearing (6x19x6)",
+    "description": "626ZZ miniature deep groove ball bearing, 6mm bore, 19mm OD, 6mm width, double metal shielded, chrome steel, ABEC-1",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 19,
+      "height": 6,
+      "weight": 7
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 19 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "6mm",
+      "outerDiameter": "19mm",
+      "width": "6mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "1.76 kN dynamic",
+      "maxRPM": "28000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 3.5
+      }
+    ],
+    "designNotes": "Fits 6mm shafts. Common in small gear trains and roller assemblies. M6 shoulder bolts can be used as axles.",
+    "tags": ["626", "6mm-bore", "miniature", "deep-groove"]
+  },
+  {
+    "name": "627ZZ Shielded Ball Bearing (7x22x7)",
+    "description": "627ZZ miniature deep groove ball bearing, 7mm bore, 22mm OD, 7mm width, double metal shielded, chrome steel, ABEC-1",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 22,
+      "height": 7,
+      "weight": 11
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 7 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 22 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "7mm",
+      "outerDiameter": "22mm",
+      "width": "7mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "2.24 kN dynamic",
+      "maxRPM": "26000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 4
+      }
+    ],
+    "designNotes": "Less common bore size. Same OD as 608ZZ (22mm) but different bore/width. Confirm bore size when specifying — 8mm bore (608ZZ) is far more common.",
+    "tags": ["627", "7mm-bore", "miniature", "deep-groove"]
+  },
+  {
+    "name": "628ZZ Shielded Ball Bearing (8x24x8)",
+    "description": "628ZZ miniature deep groove ball bearing, 8mm bore, 24mm OD, 8mm width, double metal shielded, chrome steel, ABEC-1, 620 micro series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 24,
+      "height": 8,
+      "weight": 15
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 24 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "8mm",
+      "outerDiameter": "24mm",
+      "width": "8mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "2.75 kN dynamic",
+      "maxRPM": "24000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 4.5
+      }
+    ],
+    "designNotes": "8mm bore like 608ZZ but wider (8mm vs 7mm) and larger OD (24mm vs 22mm). Higher load capacity than 608. Choose 608ZZ for most applications unless extra width/load is needed.",
+    "tags": ["628", "8mm-bore", "miniature", "deep-groove"]
+  },
+  {
+    "name": "629ZZ Shielded Ball Bearing (9x26x8)",
+    "description": "629ZZ miniature deep groove ball bearing, 9mm bore, 26mm OD, 8mm width, double metal shielded, chrome steel, ABEC-1, 620 micro series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 26,
+      "height": 8,
+      "weight": 17
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 9 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 26 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "9mm",
+      "outerDiameter": "26mm",
+      "width": "8mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "3.0 kN dynamic",
+      "maxRPM": "22000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 5
+      }
+    ],
+    "designNotes": "Largest of the 620 micro series. 9mm bore is uncommon — verify shaft diameter. Same OD as 6000ZZ (26mm) but different bore/width.",
+    "tags": ["629", "9mm-bore", "miniature", "deep-groove"]
+  },
+  {
+    "name": "608ZZ Shielded Ball Bearing (8x22x7)",
+    "description": "608ZZ deep groove ball bearing, 8mm bore, 22mm OD, 7mm width, double metal shielded, chrome steel, ABEC-1, the most common miniature bearing, used in skateboards, 3D printers, fidget spinners, V-wheels, and general machinery",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 22,
+      "height": 7,
+      "weight": 12.9
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 22 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "8mm",
+      "outerDiameter": "22mm",
+      "width": "7mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (SAE52100)",
+      "loadRating": "3.45 kN dynamic, 1.37 kN static",
+      "maxRPM": "26000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "57155K307",
+        "approximatePrice": 4
+      }
+    ],
+    "designNotes": "The most widely available miniature bearing worldwide. Standard for 3D printer idlers, skateboard wheels, and V-wheel assemblies. Use with 8mm shafts or M8 shoulder bolts. ZZ (shielded) variant is best for dry/clean environments. For wet or dirty environments, use 608-2RS (rubber sealed) instead.",
+    "tags": [
+      "608",
+      "8mm-bore",
+      "skateboard-bearing",
+      "3d-printer",
+      "v-wheel",
+      "fidget-spinner",
+      "deep-groove",
+      "ABEC-1"
+    ]
+  },
+  {
+    "name": "608-2RS Sealed Ball Bearing (8x22x7)",
+    "description": "608-2RS deep groove ball bearing, 8mm bore, 22mm OD, 7mm width, double rubber sealed, chrome steel, ABEC-1, sealed version of 608ZZ for dusty and wet environments",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 22,
+      "height": 7,
+      "weight": 12.9
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 22 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "8mm",
+      "outerDiameter": "22mm",
+      "width": "7mm",
+      "sealType": "2RS (double rubber seal)",
+      "material": "Chrome Steel (SAE52100)",
+      "loadRating": "3.45 kN dynamic, 1.37 kN static",
+      "maxRPM": "23000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 4.5
+      }
+    ],
+    "designNotes": "Rubber-sealed version of 608ZZ. Better contamination resistance but slightly more friction and lower max RPM. Preferred for applications exposed to dust, moisture, or coolant. Same dimensions and mounting as 608ZZ — direct drop-in replacement.",
+    "tags": [
+      "608",
+      "608RS",
+      "8mm-bore",
+      "sealed",
+      "rubber-seal",
+      "waterproof",
+      "dust-proof",
+      "deep-groove"
+    ]
+  },
+  {
+    "name": "693ZZ Shielded Ball Bearing (3x8x4)",
+    "description": "693ZZ miniature deep groove ball bearing, 3mm bore, 8mm OD, 4mm width, double metal shielded, chrome steel, ABEC-1, thin section 690 series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 8,
+      "height": 4,
+      "weight": 0.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 3 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 8 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "3mm",
+      "outerDiameter": "8mm",
+      "width": "4mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "0.34 kN dynamic",
+      "maxRPM": "50000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5
+      }
+    ],
+    "designNotes": "Thinner profile than 623ZZ (8mm OD vs 10mm OD) for the same 3mm bore. Use where space is very constrained. Lower load capacity than 623ZZ.",
+    "tags": [
+      "693",
+      "3mm-bore",
+      "miniature",
+      "thin-section",
+      "micro-bearing",
+      "deep-groove"
+    ]
+  },
+  {
+    "name": "694ZZ Shielded Ball Bearing (4x11x4)",
+    "description": "694ZZ miniature deep groove ball bearing, 4mm bore, 11mm OD, 4mm width, double metal shielded, chrome steel, ABEC-1, thin section 690 series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 11,
+      "height": 4,
+      "weight": 1
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 4 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 11 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "4mm",
+      "outerDiameter": "11mm",
+      "width": "4mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "0.52 kN dynamic",
+      "maxRPM": "45000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5
+      }
+    ],
+    "designNotes": "Thinner profile than 624ZZ (11mm OD vs 13mm OD). Suitable for compact mechanisms with 4mm shafts.",
+    "tags": [
+      "694",
+      "4mm-bore",
+      "miniature",
+      "thin-section",
+      "micro-bearing",
+      "deep-groove"
+    ]
+  },
+  {
+    "name": "695ZZ Shielded Ball Bearing (5x13x4)",
+    "description": "695ZZ miniature deep groove ball bearing, 5mm bore, 13mm OD, 4mm width, double metal shielded, chrome steel, ABEC-1, thin section 690 series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 13,
+      "height": 4,
+      "weight": 2
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 13 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "5mm",
+      "outerDiameter": "13mm",
+      "width": "4mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "0.88 kN dynamic",
+      "maxRPM": "40000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5
+      }
+    ],
+    "designNotes": "Thinner and smaller OD than 625ZZ (13mm vs 16mm). Common in compact 5mm shaft assemblies. F695ZZ flanged variant also widely available.",
+    "tags": ["695", "5mm-bore", "miniature", "thin-section", "deep-groove"]
+  },
+  {
+    "name": "696ZZ Shielded Ball Bearing (6x15x5)",
+    "description": "696ZZ miniature deep groove ball bearing, 6mm bore, 15mm OD, 5mm width, double metal shielded, chrome steel, ABEC-1, thin section 690 series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 15,
+      "height": 5,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 6 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 15 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "6mm",
+      "outerDiameter": "15mm",
+      "width": "5mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "1.32 kN dynamic",
+      "maxRPM": "36000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5
+      }
+    ],
+    "designNotes": "Compact bearing for 6mm shafts. Smaller OD than 626ZZ (15mm vs 19mm).",
+    "tags": ["696", "6mm-bore", "miniature", "thin-section", "deep-groove"]
+  },
+  {
+    "name": "697ZZ Shielded Ball Bearing (7x17x5)",
+    "description": "697ZZ miniature deep groove ball bearing, 7mm bore, 17mm OD, 5mm width, double metal shielded, chrome steel, ABEC-1, thin section 690 series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 17,
+      "height": 5,
+      "weight": 4
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 7 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 17 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "7mm",
+      "outerDiameter": "17mm",
+      "width": "5mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "1.55 kN dynamic",
+      "maxRPM": "34000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5
+      }
+    ],
+    "designNotes": "Uncommon 7mm bore size. Verify shaft diameter — 8mm bore (698ZZ) is much more common.",
+    "tags": ["697", "7mm-bore", "miniature", "thin-section", "deep-groove"]
+  },
+  {
+    "name": "698ZZ Shielded Ball Bearing (8x19x6)",
+    "description": "698ZZ miniature deep groove ball bearing, 8mm bore, 19mm OD, 6mm width, double metal shielded, chrome steel, ABEC-1, thin section 690 series, compact alternative to 608ZZ",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 19,
+      "height": 6,
+      "weight": 6
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 19 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "8mm",
+      "outerDiameter": "19mm",
+      "width": "6mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "2.09 kN dynamic",
+      "maxRPM": "30000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5
+      }
+    ],
+    "designNotes": "More compact than 608ZZ (19mm OD vs 22mm OD) for 8mm shafts. Lower load capacity. Choose 608ZZ for general use; 698ZZ when space is tight.",
+    "tags": [
+      "698",
+      "8mm-bore",
+      "miniature",
+      "thin-section",
+      "compact",
+      "deep-groove"
+    ]
+  },
+  {
+    "name": "699ZZ Shielded Ball Bearing (9x20x6)",
+    "description": "699ZZ miniature deep groove ball bearing, 9mm bore, 20mm OD, 6mm width, double metal shielded, chrome steel, ABEC-1, thin section 690 series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 20,
+      "height": 6,
+      "weight": 7
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 9 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 20 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "9mm",
+      "outerDiameter": "20mm",
+      "width": "6mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "2.24 kN dynamic",
+      "maxRPM": "28000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1
+      }
+    ],
+    "designNotes": "9mm bore is uncommon. Verify application — 10mm bore (6000ZZ) or 8mm bore (698ZZ) may be more appropriate.",
+    "tags": ["699", "9mm-bore", "miniature", "thin-section", "deep-groove"]
+  },
+  {
+    "name": "6000ZZ Shielded Ball Bearing (10x26x8)",
+    "description": "6000ZZ deep groove ball bearing, 10mm bore, 26mm OD, 8mm width, double metal shielded, chrome steel, ABEC-1, standard 6000 series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 26,
+      "height": 8,
+      "weight": 20
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 10 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 26 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "10mm",
+      "outerDiameter": "26mm",
+      "width": "8mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (SAE52100)",
+      "loadRating": "4.6 kN dynamic, 1.96 kN static",
+      "maxRPM": "28000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1.5
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 5
+      }
+    ],
+    "designNotes": "First size in the standard 6000 series. Good for 10mm shafts in medium-duty applications. Higher load capacity than micro series bearings.",
+    "tags": ["6000", "10mm-bore", "standard", "deep-groove", "motor-bearing"]
+  },
+  {
+    "name": "6001ZZ Shielded Ball Bearing (12x28x8)",
+    "description": "6001ZZ deep groove ball bearing, 12mm bore, 28mm OD, 8mm width, double metal shielded, chrome steel, ABEC-1, standard 6000 series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 28,
+      "height": 8,
+      "weight": 22
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 12 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 28 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "12mm",
+      "outerDiameter": "28mm",
+      "width": "8mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (SAE52100)",
+      "loadRating": "5.1 kN dynamic, 2.36 kN static",
+      "maxRPM": "26000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1.5
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 5
+      }
+    ],
+    "designNotes": "Standard bearing for 12mm shafts. Common in small motors and gearboxes.",
+    "tags": ["6001", "12mm-bore", "standard", "deep-groove", "motor-bearing"]
+  },
+  {
+    "name": "6002ZZ Shielded Ball Bearing (15x32x9)",
+    "description": "6002ZZ deep groove ball bearing, 15mm bore, 32mm OD, 9mm width, double metal shielded, chrome steel, ABEC-1, standard 6000 series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 32,
+      "height": 9,
+      "weight": 30
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 15 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 32 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "15mm",
+      "outerDiameter": "32mm",
+      "width": "9mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (SAE52100)",
+      "loadRating": "5.6 kN dynamic, 2.85 kN static",
+      "maxRPM": "22000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 6
+      }
+    ],
+    "designNotes": "Medium-duty bearing for 15mm shafts. Common in power tools, pumps, and larger motor assemblies.",
+    "tags": ["6002", "15mm-bore", "standard", "deep-groove", "motor-bearing"]
+  },
+  {
+    "name": "6003ZZ Shielded Ball Bearing (17x35x10)",
+    "description": "6003ZZ deep groove ball bearing, 17mm bore, 35mm OD, 10mm width, double metal shielded, chrome steel, ABEC-1, standard 6000 series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 35,
+      "height": 10,
+      "weight": 38
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 17 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 35 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "17mm",
+      "outerDiameter": "35mm",
+      "width": "10mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (SAE52100)",
+      "loadRating": "6.0 kN dynamic, 3.25 kN static",
+      "maxRPM": "20000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 6
+      }
+    ],
+    "designNotes": "For 17mm shafts. Suitable for gearbox inputs, tensioner pulleys, and medium-duty rotating assemblies.",
+    "tags": ["6003", "17mm-bore", "standard", "deep-groove", "motor-bearing"]
+  },
+  {
+    "name": "6004ZZ Shielded Ball Bearing (20x42x12)",
+    "description": "6004ZZ deep groove ball bearing, 20mm bore, 42mm OD, 12mm width, double metal shielded, chrome steel, ABEC-1, standard 6000 series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 42,
+      "height": 12,
+      "weight": 65
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 20 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 42 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "20mm",
+      "outerDiameter": "42mm",
+      "width": "12mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (SAE52100)",
+      "loadRating": "9.36 kN dynamic, 5.0 kN static",
+      "maxRPM": "17000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 3
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 7
+      }
+    ],
+    "designNotes": "For 20mm shafts. Significant step up in load capacity from 6003. Used in larger machinery, conveyor rollers, and industrial equipment.",
+    "tags": ["6004", "20mm-bore", "standard", "deep-groove", "industrial"]
+  },
+  {
+    "name": "6005ZZ Shielded Ball Bearing (25x47x12)",
+    "description": "6005ZZ deep groove ball bearing, 25mm bore, 47mm OD, 12mm width, double metal shielded, chrome steel, ABEC-1, standard 6000 series",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 47,
+      "height": 12,
+      "weight": 75
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 25 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 47 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "25mm",
+      "outerDiameter": "47mm",
+      "width": "12mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (SAE52100)",
+      "loadRating": "10.0 kN dynamic, 5.85 kN static",
+      "maxRPM": "15000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 3.5
+      },
+      {
+        "name": "McMaster-Carr",
+        "approximatePrice": 8
+      }
+    ],
+    "designNotes": "For 25mm shafts. Largest commonly stocked size in the 6000 series. For heavier loads, consider 6200 or 6300 series bearings with the same bore.",
+    "tags": ["6005", "25mm-bore", "standard", "deep-groove", "industrial"]
+  },
+  {
+    "name": "F8-16M Miniature Thrust Ball Bearing (8x16x5)",
+    "description": "F8-16M miniature thrust ball bearing, 8mm bore, 16mm OD, 5mm height, single-direction axial load only, includes shaft washer, housing washer, and ball cage assembly",
+    "categorySlug": "thrust-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 16,
+      "height": 5,
+      "weight": 3
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 16 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "8mm",
+      "outerDiameter": "16mm",
+      "height": "5mm",
+      "type": "Single-direction thrust",
+      "material": "Chrome Steel"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 1.5
+      }
+    ],
+    "designNotes": "Miniature thrust bearing for 8mm shafts. Handles axial load ONLY — no radial load capacity. Must be paired with a radial bearing (e.g., 608ZZ) to support both load types. Use flat, machined seating surfaces. Commonly used in small turntables and rotary platforms.",
+    "tags": ["F8-16M", "8mm-bore", "thrust", "axial", "miniature", "turntable"]
+  },
+  {
+    "name": "51100 Thrust Ball Bearing (10x24x9)",
+    "description": "51100 single-direction thrust ball bearing, 10mm bore, 24mm OD, 9mm height, chrome steel, includes shaft washer, housing washer, and ball cage, extra-light 511 series",
+    "categorySlug": "thrust-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 24,
+      "height": 9,
+      "weight": 18
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 10 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 24 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "10mm",
+      "outerDiameter": "24mm",
+      "height": "9mm",
+      "type": "Single-direction thrust",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "10.2 kN static"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0D7D5FJC3",
+        "approximatePrice": 2,
+        "url": "https://www.amazon.com/FSKLHXC-Bearing-10-35mm-24-52mm-10x24x9mm/dp/B0D7D5FJC3"
+      }
+    ],
+    "designNotes": "Standard thrust bearing for 10mm shafts. Handles axial load only — pair with radial bearing (e.g., 6000ZZ) for combined loading. Three-piece assembly: shaft washer (inner), housing washer (outer), and caged ball assembly. Requires flat, perpendicular seating surfaces.",
+    "tags": ["51100", "10mm-bore", "thrust", "axial", "511-series"]
+  },
+  {
+    "name": "51101 Thrust Ball Bearing (12x26x9)",
+    "description": "51101 single-direction thrust ball bearing, 12mm bore, 26mm OD, 9mm height, chrome steel, includes shaft washer, housing washer, and ball cage, extra-light 511 series",
+    "categorySlug": "thrust-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 26,
+      "height": 9,
+      "weight": 20
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 12 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 26 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "12mm",
+      "outerDiameter": "26mm",
+      "height": "9mm",
+      "type": "Single-direction thrust",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "11.2 kN static"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2.5
+      }
+    ],
+    "designNotes": "Thrust bearing for 12mm shafts. Pair with 6001ZZ for combined radial + axial loading. Same 9mm height as 51100 — fits similar stack-ups.",
+    "tags": ["51101", "12mm-bore", "thrust", "axial", "511-series"]
+  },
+  {
+    "name": "51102 Thrust Ball Bearing (15x28x9)",
+    "description": "51102 single-direction thrust ball bearing, 15mm bore, 28mm OD, 9mm height, chrome steel, includes shaft washer, housing washer, and ball cage, extra-light 511 series",
+    "categorySlug": "thrust-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 28,
+      "height": 9,
+      "weight": 22
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 15 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 28 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "15mm",
+      "outerDiameter": "28mm",
+      "height": "9mm",
+      "type": "Single-direction thrust",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "12.5 kN static"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 2.5
+      }
+    ],
+    "designNotes": "Thrust bearing for 15mm shafts. Pair with 6002ZZ for combined radial + axial loading. Same 9mm height as other 511-series bearings.",
+    "tags": ["51102", "15mm-bore", "thrust", "axial", "511-series"]
+  },
+  {
+    "name": "F623ZZ Flanged Ball Bearing (3x10x4, flange 11.5mm)",
+    "description": "F623ZZ flanged miniature deep groove ball bearing, 3mm bore, 10mm OD, 4mm width, 11.5mm flange diameter, 1mm flange thickness, double metal shielded, chrome steel",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 11.5,
+      "height": 4,
+      "weight": 1.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 3 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 10 }
+      },
+      {
+        "type": "flange",
+        "specs": { "flangeDiameter": 11.5, "flangeThickness": 1 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "3mm",
+      "outerDiameter": "10mm",
+      "width": "4mm",
+      "flangeDiameter": "11.5mm",
+      "flangeThickness": "1mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "maxRPM": "40000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B00UEZKFW4",
+        "approximatePrice": 0.5,
+        "url": "https://www.amazon.com/F623ZZ-Flanged-Miniature-Bearing-3x10x4/dp/B00UEZKFW4"
+      }
+    ],
+    "designNotes": "Flanged version of 623ZZ. The flange acts as a built-in shoulder, preventing the bearing from pushing through the bore — eliminates need for a snap ring or retaining shoulder on one side. Very common in 3D printers (Voron, etc.) for belt idler assemblies. Housing bore should be 10mm (flange sits on surface).",
+    "tags": [
+      "F623",
+      "F623ZZ",
+      "3mm-bore",
+      "flanged",
+      "miniature",
+      "3d-printer",
+      "voron",
+      "idler"
+    ]
+  },
+  {
+    "name": "F624ZZ Flanged Ball Bearing (4x13x5, flange 14.5mm)",
+    "description": "F624ZZ flanged miniature deep groove ball bearing, 4mm bore, 13mm OD, 5mm width, 14.5mm flange diameter, 1mm flange thickness, double metal shielded, chrome steel",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 14.5,
+      "height": 5,
+      "weight": 3.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 4 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 13 }
+      },
+      {
+        "type": "flange",
+        "specs": { "flangeDiameter": 14.5, "flangeThickness": 1 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "4mm",
+      "outerDiameter": "13mm",
+      "width": "5mm",
+      "flangeDiameter": "14.5mm",
+      "flangeThickness": "1mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "maxRPM": "36000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "approximatePrice": 0.5
+      }
+    ],
+    "designNotes": "Flanged version of 624ZZ. Housing bore should be 13mm. Use M4 shoulder bolts as shafts. Flange prevents axial walk-out in one direction.",
+    "tags": ["F624", "F624ZZ", "4mm-bore", "flanged", "miniature"]
+  },
+  {
+    "name": "F625ZZ Flanged Ball Bearing (5x16x5, flange 18mm)",
+    "description": "F625ZZ flanged miniature deep groove ball bearing, 5mm bore, 16mm OD, 5mm width, 18mm flange diameter, 1mm flange thickness, double metal shielded, chrome steel",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 18,
+      "height": 5,
+      "weight": 5
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 5 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 16 }
+      },
+      {
+        "type": "flange",
+        "specs": { "flangeDiameter": 18, "flangeThickness": 1 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "5mm",
+      "outerDiameter": "16mm",
+      "width": "5mm",
+      "flangeDiameter": "18mm",
+      "flangeThickness": "1mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "maxRPM": "32000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B002BBKJSE",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/Flanged-Bearing-Shielded-Miniature-Bearings/dp/B002BBKJSE"
+      }
+    ],
+    "designNotes": "Flanged version of 625ZZ. Housing bore should be 16mm. Common in V-wheel assemblies with flanged retention. Use M5 shoulder bolts as shafts.",
+    "tags": ["F625", "F625ZZ", "5mm-bore", "flanged", "miniature", "v-wheel"]
+  },
+  {
+    "name": "F688ZZ Flanged Ball Bearing (8x16x5, flange 18mm)",
+    "description": "F688ZZ flanged miniature deep groove ball bearing, 8mm bore, 16mm OD, 5mm width, 18mm flange diameter, 1.1mm flange thickness, double metal shielded, chrome steel, compact 8mm bore bearing",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 18,
+      "height": 5,
+      "weight": 4.5
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 16 }
+      },
+      {
+        "type": "flange",
+        "specs": { "flangeDiameter": 18, "flangeThickness": 1.1 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "8mm",
+      "outerDiameter": "16mm",
+      "width": "5mm",
+      "flangeDiameter": "18mm",
+      "flangeThickness": "1.1mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (GCr15)",
+      "loadRating": "1.25 kN dynamic, 0.59 kN static",
+      "maxRPM": "36000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0DF2SGKDP",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/Hihaha-F688ZZ-8x16x5mm-Flanged-Bearings/dp/B0DF2SGKDP"
+      }
+    ],
+    "designNotes": "Very compact flanged bearing for 8mm shafts. Much smaller OD than F608ZZ (16mm vs 22mm). Lower load capacity but fits tighter spaces. Common in 3D printer extruder assemblies (Voron, etc.). Housing bore should be 16mm.",
+    "tags": [
+      "F688",
+      "F688ZZ",
+      "MF688",
+      "8mm-bore",
+      "flanged",
+      "miniature",
+      "compact",
+      "3d-printer",
+      "voron",
+      "extruder"
+    ]
+  },
+  {
+    "name": "F608ZZ Flanged Ball Bearing (8x22x7, flange 25mm)",
+    "description": "F608ZZ flanged deep groove ball bearing, 8mm bore, 22mm OD, 7mm width, 25mm flange diameter, 1.5mm flange thickness, double metal shielded, chrome steel, flanged version of the ubiquitous 608ZZ",
+    "categorySlug": "ball-bearings",
+    "entryType": "component",
+    "dimensions": {
+      "diameter": 25,
+      "height": 7,
+      "weight": 14
+    },
+    "mountingFeatures": [
+      {
+        "type": "bore",
+        "specs": { "boreDiameter": 8 }
+      },
+      {
+        "type": "outer_race",
+        "specs": { "outerDiameter": 22 }
+      },
+      {
+        "type": "flange",
+        "specs": { "flangeDiameter": 25, "flangeThickness": 1.5 }
+      }
+    ],
+    "specs": {
+      "boreDiameter": "8mm",
+      "outerDiameter": "22mm",
+      "width": "7mm",
+      "flangeDiameter": "25mm",
+      "flangeThickness": "1.5mm",
+      "sealType": "ZZ (double metal shield)",
+      "material": "Chrome Steel (SAE52100)",
+      "loadRating": "3.45 kN dynamic, 1.37 kN static",
+      "maxRPM": "26000"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B0197SR8R8",
+        "approximatePrice": 1,
+        "url": "https://www.amazon.com/Flange-Bearing-F608ZZ-Metric-flanged/dp/B0197SR8R8"
+      }
+    ],
+    "designNotes": "Flanged version of 608ZZ. Same bore, OD, and load ratings. Flange adds 1.5mm shoulder on one side at 25mm diameter. Housing bore should be 22mm. Heavier flange than smaller flanged bearings — good for higher-load applications. Use with 8mm shafts or M8 shoulder bolts.",
+    "tags": [
+      "F608",
+      "F608ZZ",
+      "8mm-bore",
+      "flanged",
+      "deep-groove",
+      "3d-printer",
+      "robotics"
+    ]
+  }
+]

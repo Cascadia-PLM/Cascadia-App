@@ -1,0 +1,879 @@
+[
+  {
+    "name": "Aluminum Angle 1/2\"x1/2\"x1/16\", 6063-T52",
+    "description": "6063-T52 aluminum equal leg angle 1/2 inch legs 1/16 inch thick extruded structural L-angle bracket framing edge protection lightweight corrosion resistant",
+    "categorySlug": "aluminum-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 12.7, "height": 12.7, "depth": 1.59 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6063-T52 Aluminum",
+      "legSize": "1/2\"",
+      "wallThickness": "1/16\"",
+      "profile": "Equal Leg Angle",
+      "alloy": "6063-T52"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 6.0,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 2.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 4.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 6.0
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 8.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 12.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 16.0
+      }
+    ],
+    "designNotes": "Drill with HSS bits, cut with hacksaw/bandsaw/miter saw. Weldable with TIG using 4043 filler rod. Good for brackets, frames, and edge protection.",
+    "tags": [
+      "aluminum",
+      "angle",
+      "L-angle",
+      "6063",
+      "T52",
+      "equal-leg",
+      "structural",
+      "extruded",
+      "1/2-inch"
+    ]
+  },
+  {
+    "name": "Aluminum Angle 3/4\"x3/4\"x1/16\", 6063-T52",
+    "description": "6063-T52 aluminum equal leg angle 3/4 inch legs 1/16 inch thick extruded structural L-angle bracket framing edge protection lightweight corrosion resistant",
+    "categorySlug": "aluminum-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 19.05, "height": 19.05, "depth": 1.59 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6063-T52 Aluminum",
+      "legSize": "3/4\"",
+      "wallThickness": "1/16\"",
+      "profile": "Equal Leg Angle",
+      "alloy": "6063-T52"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 7.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 2.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 5.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 7.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 10.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 15.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 20.0
+      }
+    ],
+    "designNotes": "Drill with HSS bits, cut with hacksaw/bandsaw/miter saw. Weldable with TIG using 4043 filler rod. Good for brackets, frames, and edge protection.",
+    "tags": [
+      "aluminum",
+      "angle",
+      "L-angle",
+      "6063",
+      "T52",
+      "equal-leg",
+      "structural",
+      "extruded",
+      "3/4-inch"
+    ]
+  },
+  {
+    "name": "Aluminum Angle 3/4\"x3/4\"x1/8\", 6063-T52",
+    "description": "6063-T52 aluminum equal leg angle 3/4 inch legs 1/8 inch thick extruded structural L-angle bracket framing edge protection lightweight corrosion resistant",
+    "categorySlug": "aluminum-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 19.05, "height": 19.05, "depth": 3.18 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6063-T52 Aluminum",
+      "legSize": "3/4\"",
+      "wallThickness": "1/8\"",
+      "profile": "Equal Leg Angle",
+      "alloy": "6063-T52"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 10.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 7.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 10.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 14.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 21.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 28.0
+      }
+    ],
+    "designNotes": "Drill with HSS bits, cut with hacksaw/bandsaw/miter saw. Weldable with TIG using 4043 filler rod. Good for brackets, frames, and edge protection.",
+    "tags": [
+      "aluminum",
+      "angle",
+      "L-angle",
+      "6063",
+      "T52",
+      "equal-leg",
+      "structural",
+      "extruded",
+      "3/4-inch",
+      "1/8-thick"
+    ]
+  },
+  {
+    "name": "Aluminum Angle 1\"x1\"x1/8\", 6063-T52",
+    "description": "6063-T52 aluminum equal leg angle 1 inch legs 1/8 inch thick extruded structural L-angle bracket framing edge protection lightweight corrosion resistant",
+    "categorySlug": "aluminum-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 25.4, "height": 25.4, "depth": 3.18 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6063-T52 Aluminum",
+      "legSize": "1\"",
+      "wallThickness": "1/8\"",
+      "profile": "Equal Leg Angle",
+      "alloy": "6063-T52"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 13.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 4.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 9.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 13.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 18.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 27.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 36.0
+      }
+    ],
+    "designNotes": "Drill with HSS bits, cut with hacksaw/bandsaw/miter saw. Weldable with TIG using 4043 filler rod. Good for brackets, frames, and edge protection.",
+    "tags": [
+      "aluminum",
+      "angle",
+      "L-angle",
+      "6063",
+      "T52",
+      "equal-leg",
+      "structural",
+      "extruded",
+      "1-inch"
+    ]
+  },
+  {
+    "name": "Aluminum Angle 1-1/2\"x1-1/2\"x1/8\", 6063-T52",
+    "description": "6063-T52 aluminum equal leg angle 1-1/2 inch legs 1/8 inch thick extruded structural L-angle bracket framing edge protection lightweight corrosion resistant",
+    "categorySlug": "aluminum-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 38.1, "height": 38.1, "depth": 3.18 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6063-T52 Aluminum",
+      "legSize": "1-1/2\"",
+      "wallThickness": "1/8\"",
+      "profile": "Equal Leg Angle",
+      "alloy": "6063-T52"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 18.0,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 6.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 12.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 18.0
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 24.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 36.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 48.0
+      }
+    ],
+    "designNotes": "Drill with HSS bits, cut with hacksaw/bandsaw/miter saw. Weldable with TIG using 4043 filler rod. Good for brackets, frames, and edge protection.",
+    "tags": [
+      "aluminum",
+      "angle",
+      "L-angle",
+      "6063",
+      "T52",
+      "equal-leg",
+      "structural",
+      "extruded",
+      "1-1/2-inch"
+    ]
+  },
+  {
+    "name": "Aluminum Flat Bar 1/2\"x1/8\", 6061-T6",
+    "description": "6061-T6 aluminum flat bar 1/2 inch wide 1/8 inch thick rectangular bar stock CNC machinable structural spacer strap",
+    "categorySlug": "aluminum-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 12.7, "depth": 3.18 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "barWidth": "1/2\"",
+      "thickness": "1/8\"",
+      "profile": "Flat Bar",
+      "alloy": "6061-T6"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 5.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 2.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 7.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 11.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 14.0
+      }
+    ],
+    "designNotes": "CNC-friendly, drill/tap/mill easily. For bending use 5052-H32 instead (6061-T6 may crack on tight bends). Weldable with TIG but loses T6 temper in HAZ.",
+    "tags": [
+      "aluminum",
+      "flat-bar",
+      "rectangular-bar",
+      "6061",
+      "T6",
+      "structural",
+      "1/2-inch",
+      "1/8-thick"
+    ]
+  },
+  {
+    "name": "Aluminum Flat Bar 3/4\"x1/8\", 6061-T6",
+    "description": "6061-T6 aluminum flat bar 3/4 inch wide 1/8 inch thick rectangular bar stock CNC machinable structural spacer strap",
+    "categorySlug": "aluminum-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 19.05, "depth": 3.18 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "barWidth": "3/4\"",
+      "thickness": "1/8\"",
+      "profile": "Flat Bar",
+      "alloy": "6061-T6"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 6.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 2.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 4.5
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 6.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 9.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 13.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 18.0
+      }
+    ],
+    "designNotes": "CNC-friendly, drill/tap/mill easily. For bending use 5052-H32 instead (6061-T6 may crack on tight bends). Weldable with TIG but loses T6 temper in HAZ.",
+    "tags": [
+      "aluminum",
+      "flat-bar",
+      "rectangular-bar",
+      "6061",
+      "T6",
+      "structural",
+      "3/4-inch",
+      "1/8-thick"
+    ]
+  },
+  {
+    "name": "Aluminum Flat Bar 1\"x1/8\", 6061-T6",
+    "description": "6061-T6 aluminum flat bar 1 inch wide 1/8 inch thick rectangular bar stock CNC machinable structural spacer strap",
+    "categorySlug": "aluminum-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 25.4, "depth": 3.18 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "barWidth": "1\"",
+      "thickness": "1/8\"",
+      "profile": "Flat Bar",
+      "alloy": "6061-T6"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 7.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 2.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 5.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 7.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 10.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 15.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 20.0
+      }
+    ],
+    "designNotes": "CNC-friendly, drill/tap/mill easily. For bending use 5052-H32 instead (6061-T6 may crack on tight bends). Weldable with TIG but loses T6 temper in HAZ.",
+    "tags": [
+      "aluminum",
+      "flat-bar",
+      "rectangular-bar",
+      "6061",
+      "T6",
+      "structural",
+      "1-inch",
+      "1/8-thick"
+    ]
+  },
+  {
+    "name": "Aluminum Flat Bar 1\"x1/4\", 6061-T6",
+    "description": "6061-T6 aluminum flat bar 1 inch wide 1/4 inch thick rectangular bar stock CNC machinable structural spacer strap",
+    "categorySlug": "aluminum-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 25.4, "depth": 6.35 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "barWidth": "1\"",
+      "thickness": "1/4\"",
+      "profile": "Flat Bar",
+      "alloy": "6061-T6"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 13.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 4.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 9.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 13.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 18.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 27.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 36.0
+      }
+    ],
+    "designNotes": "CNC-friendly, drill/tap/mill easily. For bending use 5052-H32 instead (6061-T6 may crack on tight bends). Weldable with TIG but loses T6 temper in HAZ.",
+    "tags": [
+      "aluminum",
+      "flat-bar",
+      "rectangular-bar",
+      "6061",
+      "T6",
+      "structural",
+      "1-inch",
+      "1/4-thick"
+    ]
+  },
+  {
+    "name": "Aluminum Flat Bar 1-1/2\"x1/8\", 6061-T6",
+    "description": "6061-T6 aluminum flat bar 1-1/2 inch wide 1/8 inch thick rectangular bar stock CNC machinable structural spacer strap",
+    "categorySlug": "aluminum-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 38.1, "depth": 3.18 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "barWidth": "1-1/2\"",
+      "thickness": "1/8\"",
+      "profile": "Flat Bar",
+      "alloy": "6061-T6"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 10.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 7.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 10.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 14.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 21.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 28.0
+      }
+    ],
+    "designNotes": "CNC-friendly, drill/tap/mill easily. For bending use 5052-H32 instead (6061-T6 may crack on tight bends). Weldable with TIG but loses T6 temper in HAZ.",
+    "tags": [
+      "aluminum",
+      "flat-bar",
+      "rectangular-bar",
+      "6061",
+      "T6",
+      "structural",
+      "1-1/2-inch",
+      "1/8-thick"
+    ]
+  },
+  {
+    "name": "Aluminum Flat Bar 1-1/2\"x1/4\", 6061-T6",
+    "description": "6061-T6 aluminum flat bar 1-1/2 inch wide 1/4 inch thick rectangular bar stock CNC machinable structural spacer strap",
+    "categorySlug": "aluminum-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 38.1, "depth": 6.35 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "barWidth": "1-1/2\"",
+      "thickness": "1/4\"",
+      "profile": "Flat Bar",
+      "alloy": "6061-T6"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 19.5,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 6.5
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 13.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 19.5
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 26.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 39.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 52.0
+      }
+    ],
+    "designNotes": "CNC-friendly, drill/tap/mill easily. For bending use 5052-H32 instead (6061-T6 may crack on tight bends). Weldable with TIG but loses T6 temper in HAZ.",
+    "tags": [
+      "aluminum",
+      "flat-bar",
+      "rectangular-bar",
+      "6061",
+      "T6",
+      "structural",
+      "1-1/2-inch",
+      "1/4-thick"
+    ]
+  },
+  {
+    "name": "Aluminum Flat Bar 2\"x1/8\", 6061-T6",
+    "description": "6061-T6 aluminum flat bar 2 inch wide 1/8 inch thick rectangular bar stock CNC machinable structural spacer strap",
+    "categorySlug": "aluminum-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 50.8, "depth": 3.18 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "barWidth": "2\"",
+      "thickness": "1/8\"",
+      "profile": "Flat Bar",
+      "alloy": "6061-T6"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 12.0,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 4.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 8.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 12.0
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 16.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 24.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 32.0
+      }
+    ],
+    "designNotes": "CNC-friendly, drill/tap/mill easily. For bending use 5052-H32 instead (6061-T6 may crack on tight bends). Weldable with TIG but loses T6 temper in HAZ.",
+    "tags": [
+      "aluminum",
+      "flat-bar",
+      "rectangular-bar",
+      "6061",
+      "T6",
+      "structural",
+      "2-inch",
+      "1/8-thick"
+    ]
+  },
+  {
+    "name": "Aluminum Flat Bar 2\"x1/4\", 6061-T6",
+    "description": "6061-T6 aluminum flat bar 2 inch wide 1/4 inch thick rectangular bar stock CNC machinable structural spacer strap",
+    "categorySlug": "aluminum-profiles",
+    "entryType": "raw_stock",
+    "dimensions": { "width": 50.8, "depth": 6.35 },
+    "mountingFeatures": [],
+    "electrical": null,
+    "specs": {
+      "material": "6061-T6 Aluminum",
+      "barWidth": "2\"",
+      "thickness": "1/4\"",
+      "profile": "Flat Bar",
+      "alloy": "6061-T6"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "",
+        "approximatePrice": 24.0,
+        "url": ""
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "1 ft",
+        "dimensions": { "length": 305 },
+        "approximatePrice": 8.0
+      },
+      {
+        "label": "2 ft",
+        "dimensions": { "length": 610 },
+        "approximatePrice": 16.0
+      },
+      {
+        "label": "3 ft",
+        "dimensions": { "length": 914 },
+        "approximatePrice": 24.0
+      },
+      {
+        "label": "4 ft",
+        "dimensions": { "length": 1219 },
+        "approximatePrice": 32.0
+      },
+      {
+        "label": "6 ft",
+        "dimensions": { "length": 1829 },
+        "approximatePrice": 48.0
+      },
+      {
+        "label": "8 ft",
+        "dimensions": { "length": 2438 },
+        "approximatePrice": 64.0
+      }
+    ],
+    "designNotes": "CNC-friendly, drill/tap/mill easily. For bending use 5052-H32 instead (6061-T6 may crack on tight bends). Weldable with TIG but loses T6 temper in HAZ.",
+    "tags": [
+      "aluminum",
+      "flat-bar",
+      "rectangular-bar",
+      "6061",
+      "T6",
+      "structural",
+      "2-inch",
+      "1/4-thick"
+    ]
+  }
+]

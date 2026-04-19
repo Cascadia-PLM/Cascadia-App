@@ -1,0 +1,215 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:18-alpine
+    container_name: cascadia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cascadia}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cascadia}',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - cascadia-network
+
+  # Cascadia Application
+  app:
+    build:
+      context: .
+      dockerfile: docker/app.Dockerfile
+      target: production
+    container_name: cascadia-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-cascadia}
+      SESSION_SECRET: ${SESSION_SECRET:-change-this-to-a-random-32-char-string}
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+      FILE_STORAGE_PATH: ${FILE_STORAGE_PATH:-/app/storage/files}
+      VAULT_ROOT: ${VAULT_ROOT:-/app/vault}
+      VAULT_TYPE: ${VAULT_TYPE:-local}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-cascadia}:${RABBITMQ_PASSWORD:-cascadia}@rabbitmq:5672/${RABBITMQ_VHOST:-}
+    ports:
+      - '${APP_PORT:-3000}:3000'
+    volumes:
+      - app_storage:/app/storage
+      - app_vault:/app/vault
+    networks:
+      - cascadia-network
+    command: sh -c "npx drizzle-kit push --force && npm run serve"
+
+  # RabbitMQ for background jobs
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: cascadia-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-cascadia}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-cascadia}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    ports:
+      - '${RABBITMQ_PORT:-5672}:5672' # AMQP
+      - '${RABBITMQ_MGMT_PORT:-15672}:15672' # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - cascadia-network
+
+  # Jobs Worker (development mode - mounts source for live reload)
+  # NOTE: Uses host.docker.internal for database when postgres runs on host machine
+  jobs-worker-dev:
+    image: node:22-alpine
+    container_name: cascadia-jobs-worker-dev
+    restart: unless-stopped
+    profiles:
+      - dev
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      # Use host.docker.internal when postgres runs on Windows host, or postgres when using docker compose postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${POSTGRES_HOST:-host.docker.internal}:5432/${POSTGRES_DB:-cascadia}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-cascadia}:${RABBITMQ_PASSWORD:-cascadia}@cascadia-rabbitmq:5672
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+      JOB_TYPES: ${JOB_TYPES:-*}
+      JOB_TIMEOUT: ${JOB_TIMEOUT:-300000}
+    volumes:
+      - .:/app
+      - /app/node_modules # Use container's node_modules
+    working_dir: /app
+    networks:
+      - cascadia-network
+    command: sh -c "npm install && npx tsx watch src/jobs-worker.ts"
+
+  # CAD Converter Worker (Python - pythonocc-core for STEP/IGES → STL)
+  cad-converter-dev:
+    build:
+      context: ./workers/cad-converter
+    container_name: cascadia-cad-converter-dev
+    restart: unless-stopped
+    profiles:
+      - dev
+      - cad
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${POSTGRES_HOST:-host.docker.internal}:5432/${POSTGRES_DB:-cascadia}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-cascadia}:${RABBITMQ_PASSWORD:-cascadia}@cascadia-rabbitmq:5672
+      VAULT_ROOT: /vault
+      WORKER_CONCURRENCY: 2
+      HEALTH_PORT: 3003
+    volumes:
+      - ./vault:/vault
+    ports:
+      - '3003:3003'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost:3003/health')",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - cascadia-network
+
+  # Parametric CAD Generator Worker (Python - CadQuery for STEP generation)
+  cad-generator-dev:
+    build:
+      context: ./workers/cad-generator
+    container_name: cascadia-cad-generator-dev
+    restart: unless-stopped
+    profiles:
+      - dev
+      - cad
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${POSTGRES_HOST:-host.docker.internal}:5432/${POSTGRES_DB:-cascadia}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-cascadia}:${RABBITMQ_PASSWORD:-cascadia}@cascadia-rabbitmq:5672
+      VAULT_ROOT: /vault
+      WORKER_CONCURRENCY: 2
+      HEALTH_PORT: 3004
+    volumes:
+      - ./vault:/vault
+    ports:
+      - '3004:3004'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost:3004/health')",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - cascadia-network
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cascadia-pgadmin
+    restart: unless-stopped
+    profiles:
+      - tools
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@cascadia.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_LISTEN_PORT: 80
+    ports:
+      - '${PGADMIN_PORT:-5050}:80'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - cascadia-network
+
+volumes:
+  postgres_data:
+    driver: local
+  app_storage:
+    driver: local
+  app_vault:
+    driver: local
+  pgadmin_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+
+networks:
+  cascadia-network:
+    driver: bridge

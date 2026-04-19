@@ -1,0 +1,1959 @@
+[
+  {
+    "name": "Clear Cast Acrylic Sheet — 1/8\" (3mm)",
+    "description": "Clear transparent cast acrylic sheet 1/8 inch 3.175mm 3mm thick PMMA polymethyl methacrylate Plexiglas Plexiglass Lucite Acrylite optically clear 92% light transmission laser cutting CNC routing bending thermoforming display case enclosure window signage light guide LED diffuser aquarium divider picture frame glazing UV resistant weather resistant indoor outdoor",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 3.175,
+      "weight": 218
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Cast Acrylic",
+      "polymer": "PMMA (Polymethyl Methacrylate)",
+      "thickness_in": "1/8\"",
+      "thickness_mm": 3.175,
+      "color": "Clear",
+      "lightTransmission": "92%",
+      "density_g_cm3": 1.19,
+      "tensileStrength_MPa": 75,
+      "tensileStrength_psi": 10900,
+      "flexuralStrength_MPa": 115,
+      "impactStrength": "Moderate — shatters on hard impact",
+      "tempRange": "-40°C to 80°C (continuous), up to 95°C short-term",
+      "heatDeflection_C": 95,
+      "flammability": "UL94 HB",
+      "uvResistance": "Excellent — does not yellow",
+      "chemicalResistance": "Good — resists dilute acids, alcohols; attacked by acetone, MEK, chlorinated solvents",
+      "machinability": "Excellent — laser cuts, CNC routes, drills, saws cleanly",
+      "opticalClarity": "Glass-clear, superior to extruded"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B088KQ8MRH",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/dp/B088KQ8MRH"
+      },
+      {
+        "name": "TAP Plastics",
+        "partNumber": "CAST-CLEAR-125",
+        "approximatePrice": 5,
+        "url": "https://www.tapplastics.com/product/plastics/cut_to_size_background/cast_acrylic_background/702"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8560K239",
+        "approximatePrice": 6,
+        "url": "https://www.mcmaster.com/8560K239"
+      },
+      {
+        "name": "Delvie's Plastics",
+        "partNumber": "ACRY-CLR-125",
+        "approximatePrice": 4,
+        "url": "https://www.delviesplastics.com/Cast_Acrylic_Sheet.html"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 1.5
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 18
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 34
+      }
+    ],
+    "designNotes": "Cast acrylic is the gold standard for laser cutting — produces flame-polished edges with excellent clarity. Cuts best at 60W+ CO2 laser, 10-15mm/s for 1/8\". Always leave protective masking on during cutting. Can be bent with a strip heater at ~160°C (320°F) — cast acrylic has better thermoforming memory than extruded. Solvent-weld joints with Weld-On #4 (water-thin) or #16 (thickened) for invisible bonds. Drill with acrylic-specific bits or modified standard bits (0° rake) to prevent cracking. Do NOT use Windex or ammonia-based cleaners — causes crazing. Clean with mild soap and water or Novus plastic cleaner. Scratches can be buffed out with Novus #2 fine scratch remover. For outdoor signage, cast acrylic outlasts extruded with no yellowing for 10+ years.",
+    "tags": [
+      "acrylic",
+      "plexiglass",
+      "plexiglas",
+      "lucite",
+      "acrylite",
+      "PMMA",
+      "clear plastic",
+      "transparent sheet",
+      "laser cutting",
+      "cast acrylic",
+      "1/8 inch",
+      "3mm",
+      "display",
+      "signage",
+      "glazing"
+    ]
+  },
+  {
+    "name": "Clear Cast Acrylic Sheet — 1/4\" (6mm)",
+    "description": "Clear transparent cast acrylic sheet 1/4 inch 6.35mm 6mm thick PMMA polymethyl methacrylate Plexiglas Plexiglass Lucite Acrylite optically clear 92% light transmission laser cutting CNC routing bending thermoforming display case enclosure structural panel window guard signage aquarium panel protective barrier sneeze guard",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 6.35,
+      "weight": 436
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Cast Acrylic",
+      "polymer": "PMMA (Polymethyl Methacrylate)",
+      "thickness_in": "1/4\"",
+      "thickness_mm": 6.35,
+      "color": "Clear",
+      "lightTransmission": "92%",
+      "density_g_cm3": 1.19,
+      "tensileStrength_MPa": 75,
+      "tensileStrength_psi": 10900,
+      "flexuralStrength_MPa": 115,
+      "impactStrength": "Moderate — shatters on hard impact",
+      "tempRange": "-40°C to 80°C (continuous), up to 95°C short-term",
+      "heatDeflection_C": 95,
+      "flammability": "UL94 HB",
+      "uvResistance": "Excellent — does not yellow",
+      "chemicalResistance": "Good — resists dilute acids, alcohols; attacked by acetone, MEK, chlorinated solvents",
+      "machinability": "Excellent — laser cuts, CNC routes, drills, saws cleanly",
+      "opticalClarity": "Glass-clear, superior to extruded"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B088KR9JVB",
+        "approximatePrice": 9,
+        "url": "https://www.amazon.com/dp/B088KR9JVB"
+      },
+      {
+        "name": "TAP Plastics",
+        "partNumber": "CAST-CLEAR-250",
+        "approximatePrice": 9,
+        "url": "https://www.tapplastics.com/product/plastics/cut_to_size_background/cast_acrylic_background/702"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8560K265",
+        "approximatePrice": 11,
+        "url": "https://www.mcmaster.com/8560K265"
+      },
+      {
+        "name": "Delvie's Plastics",
+        "partNumber": "ACRY-CLR-250",
+        "approximatePrice": 8,
+        "url": "https://www.delviesplastics.com/Cast_Acrylic_Sheet.html"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 3
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 6
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 17
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 26
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 34
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 64
+      }
+    ],
+    "designNotes": "1/4\" cast acrylic is the most common thickness for structural projects — sneeze guards, display cases, machine guards, aquarium panels. Laser cuts well but requires higher power and slower speed (60W+ CO2 at 5-8mm/s, may need two passes). For thicker acrylic, CNC routing is often more practical than laser cutting. Use single-flute O-flute bits at high RPM (18,000+) with moderate feed rate. Tap with solvent cement (Weld-On #4 or #16) — mechanical fasteners create stress concentrations and may crack. When drilling, use step drills or brad-point bits with backing material to prevent exit chipping. Minimum bend radius is approximately 2× thickness for cold bending; heat bending allows tighter radii. For load-bearing applications, calculate deflection — acrylic flexural modulus is about 3,300 MPa.",
+    "tags": [
+      "acrylic",
+      "plexiglass",
+      "plexiglas",
+      "lucite",
+      "acrylite",
+      "PMMA",
+      "clear plastic",
+      "transparent sheet",
+      "laser cutting",
+      "cast acrylic",
+      "1/4 inch",
+      "6mm",
+      "sneeze guard",
+      "display case",
+      "structural"
+    ]
+  },
+  {
+    "name": "Black Cast Acrylic Sheet — 1/8\" (3mm)",
+    "description": "Black opaque cast acrylic sheet 1/8 inch 3.175mm 3mm thick PMMA polymethyl methacrylate Plexiglas Plexiglass matte finish 0% light transmission laser cutting CNC routing engraving panel base plate enclosure cover signage lettering display stand trophy base instrument panel",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 3.175,
+      "weight": 218
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Cast Acrylic",
+      "polymer": "PMMA (Polymethyl Methacrylate)",
+      "thickness_in": "1/8\"",
+      "thickness_mm": 3.175,
+      "color": "Black (Opaque)",
+      "lightTransmission": "0%",
+      "density_g_cm3": 1.19,
+      "tensileStrength_MPa": 75,
+      "tensileStrength_psi": 10900,
+      "flexuralStrength_MPa": 115,
+      "tempRange": "-40°C to 80°C (continuous), up to 95°C short-term",
+      "heatDeflection_C": 95,
+      "flammability": "UL94 HB",
+      "uvResistance": "Excellent",
+      "chemicalResistance": "Good — resists dilute acids, alcohols; attacked by acetone, MEK, chlorinated solvents",
+      "machinability": "Excellent — laser cuts, CNC routes, engraves cleanly",
+      "finish": "Glossy both sides"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08BZHCMPW",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/dp/B08BZHCMPW"
+      },
+      {
+        "name": "TAP Plastics",
+        "partNumber": "CAST-BLK-125",
+        "approximatePrice": 5,
+        "url": "https://www.tapplastics.com/product/plastics/cut_to_size_background/cast_acrylic_background/702"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8505K739",
+        "approximatePrice": 7,
+        "url": "https://www.mcmaster.com/8505K739"
+      },
+      {
+        "name": "Delvie's Plastics",
+        "partNumber": "ACRY-BLK-125",
+        "approximatePrice": 5,
+        "url": "https://www.delviesplastics.com/Black_Cast_Acrylic.html"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 1.5
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 18
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 34
+      }
+    ],
+    "designNotes": "Black acrylic is the standard for laser-engraved signs, nameplates, and control panels — the laser reveals a frosted white contrast against the glossy black surface. Excellent for instrument panel overlays, display stands, and trophy/award bases. Same cutting parameters as clear acrylic. The black pigment does not affect structural properties. Popular for 'reverse engraving' technique — engrave the back side, fill with paint, view through glossy front for a professional recessed look. Also used as a base material for edge-lit LED signs (opaque face with polished edges). Glossy surface shows fingerprints easily — consider matte black acrylic for high-touch applications.",
+    "tags": [
+      "acrylic",
+      "plexiglass",
+      "plexiglas",
+      "PMMA",
+      "black plastic",
+      "opaque sheet",
+      "laser engraving",
+      "cast acrylic",
+      "1/8 inch",
+      "3mm",
+      "sign making",
+      "panel",
+      "display stand",
+      "trophy base"
+    ]
+  },
+  {
+    "name": "Black Cast Acrylic Sheet — 1/4\" (6mm)",
+    "description": "Black opaque cast acrylic sheet 1/4 inch 6.35mm 6mm thick PMMA polymethyl methacrylate Plexiglas Plexiglass 0% light transmission laser cutting CNC routing structural panel machine guard enclosure side panel base plate instrument panel display stand thick signage",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 6.35,
+      "weight": 436
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Cast Acrylic",
+      "polymer": "PMMA (Polymethyl Methacrylate)",
+      "thickness_in": "1/4\"",
+      "thickness_mm": 6.35,
+      "color": "Black (Opaque)",
+      "lightTransmission": "0%",
+      "density_g_cm3": 1.19,
+      "tensileStrength_MPa": 75,
+      "tensileStrength_psi": 10900,
+      "flexuralStrength_MPa": 115,
+      "tempRange": "-40°C to 80°C (continuous), up to 95°C short-term",
+      "heatDeflection_C": 95,
+      "flammability": "UL94 HB",
+      "uvResistance": "Excellent",
+      "chemicalResistance": "Good — resists dilute acids, alcohols; attacked by acetone, MEK, chlorinated solvents",
+      "machinability": "Excellent — laser cuts, CNC routes, engraves cleanly",
+      "finish": "Glossy both sides"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08C2CJ32D",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B08C2CJ32D"
+      },
+      {
+        "name": "TAP Plastics",
+        "partNumber": "CAST-BLK-250",
+        "approximatePrice": 10,
+        "url": "https://www.tapplastics.com/product/plastics/cut_to_size_background/cast_acrylic_background/702"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8505K755",
+        "approximatePrice": 13,
+        "url": "https://www.mcmaster.com/8505K755"
+      },
+      {
+        "name": "Delvie's Plastics",
+        "partNumber": "ACRY-BLK-250",
+        "approximatePrice": 9,
+        "url": "https://www.delviesplastics.com/Black_Cast_Acrylic.html"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 3
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 6.5
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 10
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 18
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 28
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 36
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 68
+      }
+    ],
+    "designNotes": "1/4\" black acrylic is the standard for robust enclosure panels, machine guards, and structural display elements. Thick enough for tapped holes (use coarse thread or thread-forming screws). At this thickness, CNC routing is often preferred over laser cutting for production work — less charring and faster throughput. Use climb milling with single-flute O-flute bits for clean edges. Can be bent with a strip heater but requires longer soak time than 1/8\". Ideal thickness for awards, trophies, and architectural elements where rigidity matters. Solvent-weld with Weld-On #16 (thickened) for gap-filling bonds on thicker stock.",
+    "tags": [
+      "acrylic",
+      "plexiglass",
+      "plexiglas",
+      "PMMA",
+      "black plastic",
+      "opaque sheet",
+      "laser engraving",
+      "cast acrylic",
+      "1/4 inch",
+      "6mm",
+      "structural panel",
+      "machine guard",
+      "enclosure",
+      "display"
+    ]
+  },
+  {
+    "name": "White Cast Acrylic Sheet — 1/8\" (3mm)",
+    "description": "White opaque cast acrylic sheet 1/8 inch 3.175mm 3mm thick PMMA polymethyl methacrylate Plexiglas Plexiglass white diffuser approximately 50% light transmission translucent diffused LED light diffuser panel backlit sign laser cutting CNC routing enclosure panel cover clean room",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 3.175,
+      "weight": 218
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Cast Acrylic",
+      "polymer": "PMMA (Polymethyl Methacrylate)",
+      "thickness_in": "1/8\"",
+      "thickness_mm": 3.175,
+      "color": "White (Translucent / Diffused)",
+      "lightTransmission": "~50% (diffused)",
+      "density_g_cm3": 1.19,
+      "tensileStrength_MPa": 75,
+      "tensileStrength_psi": 10900,
+      "flexuralStrength_MPa": 115,
+      "tempRange": "-40°C to 80°C (continuous), up to 95°C short-term",
+      "heatDeflection_C": 95,
+      "flammability": "UL94 HB",
+      "uvResistance": "Excellent",
+      "chemicalResistance": "Good — resists dilute acids, alcohols; attacked by acetone, MEK, chlorinated solvents",
+      "machinability": "Excellent — laser cuts, CNC routes, engraves cleanly",
+      "diffusion": "Even light scattering, hides LED hotspots"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08BZJCNLL",
+        "approximatePrice": 5,
+        "url": "https://www.amazon.com/dp/B08BZJCNLL"
+      },
+      {
+        "name": "TAP Plastics",
+        "partNumber": "CAST-WHT-125",
+        "approximatePrice": 5,
+        "url": "https://www.tapplastics.com/product/plastics/cut_to_size_background/cast_acrylic_background/702"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8505K145",
+        "approximatePrice": 7,
+        "url": "https://www.mcmaster.com/8505K145"
+      },
+      {
+        "name": "Delvie's Plastics",
+        "partNumber": "ACRY-WHT-125",
+        "approximatePrice": 5,
+        "url": "https://www.delviesplastics.com/White_Cast_Acrylic.html"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 1.5
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 18
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 34
+      }
+    ],
+    "designNotes": "White translucent acrylic (sometimes called 'white opal' or 'white diffuser') transmits ~50% of light while scattering it evenly — the primary material for LED light panels, backlit signage, and light box faces. The diffusion hides individual LED hotspots, creating uniform illumination. Available in multiple opacity grades: 'White 2447' (more opaque, ~30% transmission) and 'White 7328' (more translucent, ~60% transmission) — specify by Rohm number when ordering from TAP Plastics. Same cutting and fabrication parameters as clear acrylic. For laser-cut backlit signs, cut letters from black acrylic and back with white diffuser. Clean white surface also works well for projection screens in small setups.",
+    "tags": [
+      "acrylic",
+      "plexiglass",
+      "plexiglas",
+      "PMMA",
+      "white plastic",
+      "diffuser",
+      "LED panel",
+      "light diffuser",
+      "cast acrylic",
+      "1/8 inch",
+      "3mm",
+      "backlit sign",
+      "light box",
+      "translucent"
+    ]
+  },
+  {
+    "name": "White Cast Acrylic Sheet — 1/4\" (6mm)",
+    "description": "White opaque cast acrylic sheet 1/4 inch 6.35mm 6mm thick PMMA polymethyl methacrylate Plexiglas Plexiglass white diffuser approximately 50% light transmission translucent diffused LED light panel backlit signage laser cutting CNC routing structural diffuser panel enclosure cover architectural lighting",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 6.35,
+      "weight": 436
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Cast Acrylic",
+      "polymer": "PMMA (Polymethyl Methacrylate)",
+      "thickness_in": "1/4\"",
+      "thickness_mm": 6.35,
+      "color": "White (Translucent / Diffused)",
+      "lightTransmission": "~50% (diffused)",
+      "density_g_cm3": 1.19,
+      "tensileStrength_MPa": 75,
+      "tensileStrength_psi": 10900,
+      "flexuralStrength_MPa": 115,
+      "tempRange": "-40°C to 80°C (continuous), up to 95°C short-term",
+      "heatDeflection_C": 95,
+      "flammability": "UL94 HB",
+      "uvResistance": "Excellent",
+      "chemicalResistance": "Good — resists dilute acids, alcohols; attacked by acetone, MEK, chlorinated solvents",
+      "machinability": "Excellent — laser cuts, CNC routes, engraves cleanly",
+      "diffusion": "Even light scattering, hides LED hotspots"
+    },
+    "suppliers": [
+      {
+        "name": "Amazon",
+        "partNumber": "B08C2BYPGV",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B08C2BYPGV"
+      },
+      {
+        "name": "TAP Plastics",
+        "partNumber": "CAST-WHT-250",
+        "approximatePrice": 10,
+        "url": "https://www.tapplastics.com/product/plastics/cut_to_size_background/cast_acrylic_background/702"
+      },
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8505K175",
+        "approximatePrice": 13,
+        "url": "https://www.mcmaster.com/8505K175"
+      },
+      {
+        "name": "Delvie's Plastics",
+        "partNumber": "ACRY-WHT-250",
+        "approximatePrice": 9,
+        "url": "https://www.delviesplastics.com/White_Cast_Acrylic.html"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 3
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 6.5
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 10
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 18
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 28
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 36
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 68
+      }
+    ],
+    "designNotes": "1/4\" white acrylic provides both structural rigidity and light diffusion — ideal for large light panels, architectural lighting features, and commercial backlit signage where the panel must span distances without sagging. The added thickness provides better diffusion uniformity for deeper LED light boxes (>50mm cavity depth). At this thickness, consider CNC routing for production quantities. Can be thermoformed into curved light diffuser shapes. For large LED panels (>300mm span), calculate deflection under gravity — 1/4\" is usually sufficient up to 600mm spans without additional support. Thicker white acrylic transmits slightly less light due to longer optical path through the pigment.",
+    "tags": [
+      "acrylic",
+      "plexiglass",
+      "plexiglas",
+      "PMMA",
+      "white plastic",
+      "diffuser",
+      "LED panel",
+      "light diffuser",
+      "cast acrylic",
+      "1/4 inch",
+      "6mm",
+      "backlit sign",
+      "architectural lighting",
+      "structural diffuser"
+    ]
+  },
+  {
+    "name": "Clear Polycarbonate Sheet — 1/16\" (1.5mm)",
+    "description": "Clear polycarbonate sheet 1/16 inch 1.588mm 1.5mm thick Lexan Makrolon virtually unbreakable 250x impact strength vs acrylic 88% light transmission high impact resistance safety glazing machine guard face shield visor protective barrier CNC routing bending cold forming",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 1.588,
+      "weight": 110
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Polycarbonate / Lexan",
+      "polymer": "Polycarbonate (PC)",
+      "thickness_in": "1/16\"",
+      "thickness_mm": 1.588,
+      "color": "Clear",
+      "lightTransmission": "88%",
+      "density_g_cm3": 1.2,
+      "tensileStrength_MPa": 65,
+      "tensileStrength_psi": 9500,
+      "flexuralStrength_MPa": 93,
+      "impactStrength": "250× acrylic — virtually unbreakable",
+      "izodImpact_J_m": 850,
+      "tempRange": "-40°C to 120°C (continuous), up to 135°C short-term",
+      "heatDeflection_C": 132,
+      "flammability": "UL94 V-2 (self-extinguishing)",
+      "uvResistance": "Moderate — yellows without UV coating; UV-stabilized grades available",
+      "chemicalResistance": "Moderate — attacked by many solvents including acetone, MEK, toluene, ammonia",
+      "machinability": "Good — CNC routes well, does NOT laser cut cleanly (browns/yellows)"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8574K121",
+        "approximatePrice": 5,
+        "url": "https://www.mcmaster.com/8574K121"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B09B7GXW8P",
+        "approximatePrice": 4,
+        "url": "https://www.amazon.com/dp/B09B7GXW8P"
+      },
+      {
+        "name": "TAP Plastics",
+        "partNumber": "PC-CLR-0625",
+        "approximatePrice": 5,
+        "url": "https://www.tapplastics.com/product/plastics/cut_to_size_background/polycarbonate_background/702"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 1.5
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 3.5
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 18
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 34
+      }
+    ],
+    "designNotes": "1/16\" polycarbonate is thin enough to be flexible — can be cold-bent by hand to moderate radii, making it ideal for curved face shields, visors, and protective covers. DO NOT LASER CUT polycarbonate — it produces toxic chlorine gas and leaves brown/yellow discolored edges. Use CNC routing, shearing, or scoring/snapping instead. For CNC, use high RPM (18,000+) with sharp tooling to avoid melting. Can be cold-formed (bent without heat) to radii as tight as 100× thickness. Polycarbonate is attacked by many common solvents — do NOT use acetone, MEK, or ammonia-based cleaners. Clean with isopropyl alcohol or mild soap and water. For bonding, use specialized PC adhesives (Weld-On #55 or structural epoxy) — solvent cements used for acrylic will craze and crack polycarbonate. Scratches more easily than acrylic but won't shatter.",
+    "tags": [
+      "polycarbonate",
+      "Lexan",
+      "Makrolon",
+      "PC",
+      "clear plastic",
+      "impact resistant",
+      "unbreakable",
+      "safety glazing",
+      "face shield",
+      "1/16 inch",
+      "1.5mm",
+      "flexible sheet",
+      "machine guard",
+      "visor"
+    ]
+  },
+  {
+    "name": "Clear Polycarbonate Sheet — 1/8\" (3mm)",
+    "description": "Clear polycarbonate sheet 1/8 inch 3.175mm 3mm thick Lexan Makrolon virtually unbreakable 250x impact strength vs acrylic 88% light transmission high impact resistance safety glazing machine guard protective barrier robot enclosure blast shield CNC routing bending",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 3.175,
+      "weight": 220
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Polycarbonate / Lexan",
+      "polymer": "Polycarbonate (PC)",
+      "thickness_in": "1/8\"",
+      "thickness_mm": 3.175,
+      "color": "Clear",
+      "lightTransmission": "88%",
+      "density_g_cm3": 1.2,
+      "tensileStrength_MPa": 65,
+      "tensileStrength_psi": 9500,
+      "flexuralStrength_MPa": 93,
+      "impactStrength": "250× acrylic — virtually unbreakable",
+      "izodImpact_J_m": 850,
+      "tempRange": "-40°C to 120°C (continuous), up to 135°C short-term",
+      "heatDeflection_C": 132,
+      "flammability": "UL94 V-2 (self-extinguishing)",
+      "uvResistance": "Moderate — yellows without UV coating; UV-stabilized grades available",
+      "chemicalResistance": "Moderate — attacked by many solvents including acetone, MEK, toluene, ammonia",
+      "machinability": "Good — CNC routes well, does NOT laser cut cleanly (toxic fumes)"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8574K261",
+        "approximatePrice": 8,
+        "url": "https://www.mcmaster.com/8574K261"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07TZMHF29",
+        "approximatePrice": 7,
+        "url": "https://www.amazon.com/dp/B07TZMHF29"
+      },
+      {
+        "name": "TAP Plastics",
+        "partNumber": "PC-CLR-125",
+        "approximatePrice": 7,
+        "url": "https://www.tapplastics.com/product/plastics/cut_to_size_background/polycarbonate_background/702"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 2.5
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 8
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 22
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 28
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 52
+      }
+    ],
+    "designNotes": "1/8\" polycarbonate is the workhorse thickness for safety glazing, machine guards, and robot cell enclosures. Where acrylic would shatter on impact, polycarbonate flexes and absorbs the energy. Mandatory for any application involving flying debris, projectile risk, or human safety barriers. DO NOT LASER CUT — releases toxic chlorine gas (hydrogen chloride). CNC route with single-flute O-flute or up-spiral bits, high RPM, moderate feed. Can be cold-bent to radii as tight as 300mm (100× thickness). For tighter bends, heat to 150°C with a strip heater. Polycarbonate is self-extinguishing (V-2 rated) — superior fire safety compared to acrylic. Withstands continuous use at 120°C. Bond with structural adhesive (3M DP-100, Loctite E-120HP) or Weld-On #55. Standard outdoor grades yellow within 5-10 years — specify UV-stabilized (hard-coated) grades for exterior applications. Abrasion resistance is lower than acrylic — consider hard-coated grades for high-traffic windows.",
+    "tags": [
+      "polycarbonate",
+      "Lexan",
+      "Makrolon",
+      "PC",
+      "clear plastic",
+      "impact resistant",
+      "unbreakable",
+      "safety glazing",
+      "machine guard",
+      "1/8 inch",
+      "3mm",
+      "robot enclosure",
+      "blast shield",
+      "protective barrier"
+    ]
+  },
+  {
+    "name": "Clear Polycarbonate Sheet — 1/4\" (6mm)",
+    "description": "Clear polycarbonate sheet 1/4 inch 6.35mm 6mm thick Lexan Makrolon virtually unbreakable 250x impact strength vs acrylic 88% light transmission high impact resistance bullet resistant glazing heavy machine guard structural safety barrier robot cell window blast shield CNC routing",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 6.35,
+      "weight": 440
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Polycarbonate / Lexan",
+      "polymer": "Polycarbonate (PC)",
+      "thickness_in": "1/4\"",
+      "thickness_mm": 6.35,
+      "color": "Clear",
+      "lightTransmission": "88%",
+      "density_g_cm3": 1.2,
+      "tensileStrength_MPa": 65,
+      "tensileStrength_psi": 9500,
+      "flexuralStrength_MPa": 93,
+      "impactStrength": "250× acrylic — virtually unbreakable",
+      "izodImpact_J_m": 850,
+      "tempRange": "-40°C to 120°C (continuous), up to 135°C short-term",
+      "heatDeflection_C": 132,
+      "flammability": "UL94 V-2 (self-extinguishing)",
+      "uvResistance": "Moderate — yellows without UV coating; UV-stabilized grades available",
+      "chemicalResistance": "Moderate — attacked by many solvents including acetone, MEK, toluene, ammonia",
+      "machinability": "Good — CNC routes well, does NOT laser cut (toxic fumes)"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8574K281",
+        "approximatePrice": 14,
+        "url": "https://www.mcmaster.com/8574K281"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07V1JD3C8",
+        "approximatePrice": 12,
+        "url": "https://www.amazon.com/dp/B07V1JD3C8"
+      },
+      {
+        "name": "TAP Plastics",
+        "partNumber": "PC-CLR-250",
+        "approximatePrice": 12,
+        "url": "https://www.tapplastics.com/product/plastics/cut_to_size_background/polycarbonate_background/702"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 4
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 25
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 38
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 50
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 95
+      }
+    ],
+    "designNotes": "1/4\" polycarbonate is heavy-duty safety glazing — used for industrial machine guards, robot cell windows, and ballistic-rated installations (UL752 Level 1 when laminated). At this thickness, it handles severe impacts that would destroy any other transparent plastic. CNC route only — never laser cut polycarbonate. Use climb milling with sharp carbide tooling at 15,000-18,000 RPM. Can be drilled with standard HSS bits but use slow feed to prevent melting. Cold-bend radius minimum ~600mm at this thickness; for tighter bends, heat to 150-160°C. For structural glazing applications, use proper gasket/channel mounting — do not over-tighten mechanical fasteners as PC expands/contracts more than metals (thermal expansion coefficient ~65 µm/m·°C). Weight is approximately 7.6 kg/m² — heavier than same-thickness acrylic. For multi-layer bullet-resistant glazing, bond PC layers with polyurethane interlayer. Specify hard-coated grades (e.g., Lexan MR10) for scratch-resistant applications.",
+    "tags": [
+      "polycarbonate",
+      "Lexan",
+      "Makrolon",
+      "PC",
+      "clear plastic",
+      "impact resistant",
+      "unbreakable",
+      "safety glazing",
+      "heavy machine guard",
+      "1/4 inch",
+      "6mm",
+      "bullet resistant",
+      "structural barrier",
+      "robot cell"
+    ]
+  },
+  {
+    "name": "Natural White HDPE Sheet — 1/8\" (3mm)",
+    "description": "Natural white HDPE sheet 1/8 inch 3.175mm 3mm thick high density polyethylene translucent white FDA food safe food grade chemical resistant cutting board material marine grade UV resistant moisture proof CNC routing laser does not cut well waterproof chemical tank liner",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 3.175,
+      "weight": 176
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "HDPE",
+      "polymer": "High Density Polyethylene (HDPE)",
+      "thickness_in": "1/8\"",
+      "thickness_mm": 3.175,
+      "color": "Natural White (translucent)",
+      "density_g_cm3": 0.96,
+      "tensileStrength_MPa": 27,
+      "tensileStrength_psi": 3900,
+      "flexuralStrength_MPa": 40,
+      "impactStrength": "Good — flexible, does not shatter",
+      "tempRange": "-50°C to 80°C (continuous), up to 120°C short-term",
+      "heatDeflection_C": 75,
+      "chemicalResistance": "Excellent — resists most acids, bases, solvents, oils, alcohols",
+      "fdaCompliant": true,
+      "foodContact": "FDA 21 CFR 177.1520 compliant",
+      "moistureAbsorption": "< 0.01%",
+      "uvResistance": "Good — UV-stabilized grades available for outdoor use",
+      "machinability": "Good — CNC routes, saws, drills; does NOT laser cut cleanly",
+      "weldability": "Excellent — hot air, extrusion, and ultrasonic welding"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8619K411",
+        "approximatePrice": 5,
+        "url": "https://www.mcmaster.com/8619K411"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07D4FVKN5",
+        "approximatePrice": 4,
+        "url": "https://www.amazon.com/dp/B07D4FVKN5"
+      },
+      {
+        "name": "US Plastic Corp",
+        "partNumber": "44200",
+        "approximatePrice": 4,
+        "url": "https://www.usplastic.com/catalog/item.aspx?itemid=44200"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 1.5
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 3
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 14
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 18
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 34
+      }
+    ],
+    "designNotes": "HDPE is the go-to material for food contact, chemical resistance, and outdoor/marine applications. FDA compliant for direct food contact — used for cutting boards, food processing equipment, and tank liners. Extremely chemical resistant (withstands acids, bases, alcohols, most organic solvents). Does NOT laser cut well — melts and produces poor edges. CNC route with sharp tooling at high RPM; use O-flute bits to clear chips (HDPE tends to weld chips back to the cut edge). Cannot be solvent-welded — bond with specialized polyolefin adhesives (3M DP-8005, Loctite 3035) or use hot-air/extrusion welding for structural joints. Mechanical fasteners work well but use washers to prevent pull-through in thin sheets. Very low friction coefficient (~0.29) — good for slides, chutes, and wear surfaces. Nearly zero moisture absorption makes it ideal for marine and wet environments. Available in FDA white, as well as colored HDPE for color-coded food prep (green, red, yellow, blue).",
+    "tags": [
+      "HDPE",
+      "polyethylene",
+      "food safe",
+      "FDA",
+      "chemical resistant",
+      "cutting board",
+      "natural white",
+      "1/8 inch",
+      "3mm",
+      "marine",
+      "waterproof",
+      "tank liner",
+      "food grade"
+    ]
+  },
+  {
+    "name": "Natural White HDPE Sheet — 1/4\" (6mm)",
+    "description": "Natural white HDPE sheet 1/4 inch 6.35mm 6mm thick high density polyethylene translucent white FDA food safe food grade chemical resistant cutting board marine grade UV resistant moisture proof CNC routing structural chemical tank liner wear plate slide chute",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 6.35,
+      "weight": 352
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "HDPE",
+      "polymer": "High Density Polyethylene (HDPE)",
+      "thickness_in": "1/4\"",
+      "thickness_mm": 6.35,
+      "color": "Natural White (translucent)",
+      "density_g_cm3": 0.96,
+      "tensileStrength_MPa": 27,
+      "tensileStrength_psi": 3900,
+      "flexuralStrength_MPa": 40,
+      "impactStrength": "Good — flexible, does not shatter",
+      "tempRange": "-50°C to 80°C (continuous), up to 120°C short-term",
+      "heatDeflection_C": 75,
+      "chemicalResistance": "Excellent — resists most acids, bases, solvents, oils, alcohols",
+      "fdaCompliant": true,
+      "foodContact": "FDA 21 CFR 177.1520 compliant",
+      "moistureAbsorption": "< 0.01%",
+      "uvResistance": "Good — UV-stabilized grades available for outdoor use",
+      "machinability": "Good — CNC routes, saws, drills; does NOT laser cut cleanly",
+      "weldability": "Excellent — hot air, extrusion, and ultrasonic welding"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8619K431",
+        "approximatePrice": 9,
+        "url": "https://www.mcmaster.com/8619K431"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07D4FHRPF",
+        "approximatePrice": 8,
+        "url": "https://www.amazon.com/dp/B07D4FHRPF"
+      },
+      {
+        "name": "US Plastic Corp",
+        "partNumber": "44202",
+        "approximatePrice": 7,
+        "url": "https://www.usplastic.com/catalog/item.aspx?itemid=44202"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 3
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 5.5
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 9
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 16
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 25
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 32
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 60
+      }
+    ],
+    "designNotes": "1/4\" HDPE is the standard thickness for commercial cutting boards and medium-duty structural applications. Rigid enough for flat panels but still flexible enough to absorb impact without cracking. Common for chemical tank liners, marine panels (boat interior surfaces, bait boards), laboratory bench surfaces, and industrial wear plates. CNC routing is the preferred cutting method — use sharp single-flute upcut spiral bits at 16,000-18,000 RPM with aggressive chip evacuation. For structural assemblies, plastic welding (hot-air gun with HDPE welding rod) produces the strongest joints. Tap holes with standard taps but be aware HDPE has lower thread engagement strength than engineering plastics — use inserts (Heli-Coil or press-in brass) for repeatedly fastened connections. HDPE floats in water (density 0.96) — useful for marine applications but means it won't sink for tank ballast.",
+    "tags": [
+      "HDPE",
+      "polyethylene",
+      "food safe",
+      "FDA",
+      "chemical resistant",
+      "cutting board",
+      "natural white",
+      "1/4 inch",
+      "6mm",
+      "marine",
+      "waterproof",
+      "tank liner",
+      "wear plate",
+      "structural"
+    ]
+  },
+  {
+    "name": "Natural White HDPE Sheet — 1/2\" (12.7mm)",
+    "description": "Natural white HDPE sheet 1/2 inch 12.7mm thick high density polyethylene translucent white FDA food safe food grade chemical resistant heavy duty cutting board marine grade UV resistant moisture proof CNC routing machinable structural chemical tank fabrication wear plate",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 12.7,
+      "weight": 703
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "HDPE",
+      "polymer": "High Density Polyethylene (HDPE)",
+      "thickness_in": "1/2\"",
+      "thickness_mm": 12.7,
+      "color": "Natural White (translucent)",
+      "density_g_cm3": 0.96,
+      "tensileStrength_MPa": 27,
+      "tensileStrength_psi": 3900,
+      "flexuralStrength_MPa": 40,
+      "impactStrength": "Good — flexible, does not shatter",
+      "tempRange": "-50°C to 80°C (continuous), up to 120°C short-term",
+      "heatDeflection_C": 75,
+      "chemicalResistance": "Excellent — resists most acids, bases, solvents, oils, alcohols",
+      "fdaCompliant": true,
+      "foodContact": "FDA 21 CFR 177.1520 compliant",
+      "moistureAbsorption": "< 0.01%",
+      "uvResistance": "Good — UV-stabilized grades available for outdoor use",
+      "machinability": "Good — CNC routes, saws, drills well; does NOT laser cut",
+      "weldability": "Excellent — hot air, extrusion, and ultrasonic welding"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8619K451",
+        "approximatePrice": 16,
+        "url": "https://www.mcmaster.com/8619K451"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B078SFS1ZY",
+        "approximatePrice": 14,
+        "url": "https://www.amazon.com/dp/B078SFS1ZY"
+      },
+      {
+        "name": "US Plastic Corp",
+        "partNumber": "44204",
+        "approximatePrice": 13,
+        "url": "https://www.usplastic.com/catalog/item.aspx?itemid=44204"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 5
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 10
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 16
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 29
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 44
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 58
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 110
+      }
+    ],
+    "designNotes": "1/2\" HDPE is heavy-duty stock for industrial fabrication — chemical tanks, thick cutting boards, dock fenders, playground equipment, and structural marine components. At this thickness, HDPE machines very well on CNC mills and lathes — treat it like a soft metal. Use sharp carbide tooling, moderate spindle speeds (8,000-12,000 RPM on router, lower on mill), and aggressive chip loads to prevent heat buildup and re-welding of chips. Thick HDPE can be butt-welded with a hot plate welder for tank fabrication — weld strength approaches parent material strength. For structural assemblies, consider extrusion welding for long seams. Tapped threads hold well at this thickness but use coarse thread (UNC) or buttress thread for repeated assembly. HDPE has high thermal expansion (~120 µm/m·°C) — allow for movement in large panels with slotted mounting holes. Weight is ~12.2 kg/m² — significantly lighter than equivalent thickness metals. Recyclable (resin code #2).",
+    "tags": [
+      "HDPE",
+      "polyethylene",
+      "food safe",
+      "FDA",
+      "chemical resistant",
+      "heavy duty cutting board",
+      "natural white",
+      "1/2 inch",
+      "12.7mm",
+      "marine",
+      "tank fabrication",
+      "dock fender",
+      "industrial",
+      "machinable"
+    ]
+  },
+  {
+    "name": "Black Delrin / Acetal Sheet — 1/8\" (3mm)",
+    "description": "Black Delrin acetal homopolymer sheet 1/8 inch 3.175mm 3mm thick POM polyoxymethylene DuPont Delrin 150 low friction self-lubricating bearing surface gear material wear resistant precision machinable CNC routing tight tolerances dimensionally stable low moisture absorption",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 3.175,
+      "weight": 259
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Delrin / Acetal Homopolymer",
+      "polymer": "POM (Polyoxymethylene) Homopolymer",
+      "thickness_in": "1/8\"",
+      "thickness_mm": 3.175,
+      "color": "Black",
+      "density_g_cm3": 1.41,
+      "tensileStrength_MPa": 70,
+      "tensileStrength_psi": 10200,
+      "flexuralStrength_MPa": 97,
+      "impactStrength": "Moderate — tough but not as impact-resistant as nylon or PC",
+      "izodImpact_J_m": 69,
+      "frictionCoefficient": "~0.20 (dry, on steel)",
+      "wearResistance": "Excellent — low wear rate under sliding contact",
+      "tempRange": "-40°C to 82°C (continuous), up to 100°C short-term",
+      "heatDeflection_C": 110,
+      "moistureAbsorption": "0.22% (very low — superior dimensional stability)",
+      "chemicalResistance": "Good — resists fuels, solvents, weak acids; attacked by strong acids and oxidizers",
+      "machinability": "Excellent — the best-machining engineering plastic, holds tight tolerances",
+      "fdaCompliant": true,
+      "foodContact": "FDA compliant (natural/white grades)"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8576K111",
+        "approximatePrice": 12,
+        "url": "https://www.mcmaster.com/8576K111"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07H9D8QLK",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B07H9D8QLK"
+      },
+      {
+        "name": "Online Metals",
+        "partNumber": "ACETAL-BLK-125",
+        "approximatePrice": 11,
+        "url": "https://www.onlinemetals.com/en/buy/plastic"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 4
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 8
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 12
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 22
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 34
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 44
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 84
+      }
+    ],
+    "designNotes": "Delrin (acetal homopolymer) is the premier engineering plastic for precision machined parts — gears, bushings, bearings, guides, cams, and any part requiring tight tolerances and low friction. It machines like butter on CNC — produces excellent surface finishes with sharp tooling. Use standard metal-cutting end mills (2-flute HSS or carbide) at moderate to high RPM. Holds tolerances to ±0.05mm on well-fixtured CNC work. The low friction coefficient (0.20 on steel) makes it self-lubricating — ideal for sliding contacts, drawer slides, and bearing surfaces that replace bronze or brass. Very low moisture absorption (0.22%) means parts stay dimensionally stable in humid environments — much better than nylon. Does NOT laser cut well — produces formaldehyde gas (toxic) and poor edge quality. Cannot be solvent-welded — use mechanical fasteners, press-fits, snap-fits, or structural adhesives (cyanoacrylate with primer, or epoxy with surface prep). Black Delrin has slightly higher UV resistance than natural white for outdoor applications.",
+    "tags": [
+      "Delrin",
+      "acetal",
+      "POM",
+      "polyoxymethylene",
+      "DuPont",
+      "engineering plastic",
+      "low friction",
+      "self-lubricating",
+      "bearing",
+      "gear",
+      "bushing",
+      "black",
+      "1/8 inch",
+      "3mm",
+      "CNC machinable",
+      "precision"
+    ]
+  },
+  {
+    "name": "Black Delrin / Acetal Sheet — 1/4\" (6mm)",
+    "description": "Black Delrin acetal homopolymer sheet 1/4 inch 6.35mm 6mm thick POM polyoxymethylene DuPont Delrin 150 low friction self-lubricating bearing surface gear blank wear plate precision machinable CNC milling tight tolerances dimensionally stable structural engineering plastic",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 6.35,
+      "weight": 517
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Delrin / Acetal Homopolymer",
+      "polymer": "POM (Polyoxymethylene) Homopolymer",
+      "thickness_in": "1/4\"",
+      "thickness_mm": 6.35,
+      "color": "Black",
+      "density_g_cm3": 1.41,
+      "tensileStrength_MPa": 70,
+      "tensileStrength_psi": 10200,
+      "flexuralStrength_MPa": 97,
+      "impactStrength": "Moderate — tough but not as impact-resistant as nylon or PC",
+      "izodImpact_J_m": 69,
+      "frictionCoefficient": "~0.20 (dry, on steel)",
+      "wearResistance": "Excellent — low wear rate under sliding contact",
+      "tempRange": "-40°C to 82°C (continuous), up to 100°C short-term",
+      "heatDeflection_C": 110,
+      "moistureAbsorption": "0.22% (very low — superior dimensional stability)",
+      "chemicalResistance": "Good — resists fuels, solvents, weak acids; attacked by strong acids and oxidizers",
+      "machinability": "Excellent — the best-machining engineering plastic, holds tight tolerances",
+      "fdaCompliant": true,
+      "foodContact": "FDA compliant (natural/white grades)"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8576K141",
+        "approximatePrice": 18,
+        "url": "https://www.mcmaster.com/8576K141"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07GZMX7G6",
+        "approximatePrice": 16,
+        "url": "https://www.amazon.com/dp/B07GZMX7G6"
+      },
+      {
+        "name": "Online Metals",
+        "partNumber": "ACETAL-BLK-250",
+        "approximatePrice": 17,
+        "url": "https://www.onlinemetals.com/en/buy/plastic"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 6
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 12
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 18
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 33
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 50
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 66
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 125
+      }
+    ],
+    "designNotes": "1/4\" black Delrin is the most popular thickness for CNC-machined functional parts — gear blanks, bearing plates, guide rails, structural brackets, and jig/fixture components. Thick enough for tapped holes with good thread engagement. Machines beautifully on CNC mills — 2-flute carbide end mills, 10,000-15,000 RPM, moderate feed rates produce mirror-like surface finishes. For gear cutting, Delrin's combination of low friction, dimensional stability, and machinability makes it the top choice for plastic spur gears running against steel or other Delrin gears. Design tip: Delrin has a relatively high thermal expansion coefficient (~110 µm/m·°C) — for precision assemblies, account for 0.1mm growth per 100mm per 10°C temperature change. For press-fit assemblies, interference of 0.5-1% of bore diameter works well. Snap-fit designs work exceptionally well in Delrin due to its spring-like memory and fatigue resistance.",
+    "tags": [
+      "Delrin",
+      "acetal",
+      "POM",
+      "polyoxymethylene",
+      "DuPont",
+      "engineering plastic",
+      "low friction",
+      "self-lubricating",
+      "bearing",
+      "gear blank",
+      "wear plate",
+      "black",
+      "1/4 inch",
+      "6mm",
+      "CNC machinable",
+      "structural"
+    ]
+  },
+  {
+    "name": "Black Delrin / Acetal Sheet — 1/2\" (12.7mm)",
+    "description": "Black Delrin acetal homopolymer sheet 1/2 inch 12.7mm thick POM polyoxymethylene DuPont Delrin 150 low friction self-lubricating heavy duty bearing block gear blank wear plate guide rail precision machinable CNC milling lathe turning structural engineering plastic jig fixture",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 12.7,
+      "weight": 1034
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Delrin / Acetal Homopolymer",
+      "polymer": "POM (Polyoxymethylene) Homopolymer",
+      "thickness_in": "1/2\"",
+      "thickness_mm": 12.7,
+      "color": "Black",
+      "density_g_cm3": 1.41,
+      "tensileStrength_MPa": 70,
+      "tensileStrength_psi": 10200,
+      "flexuralStrength_MPa": 97,
+      "impactStrength": "Moderate — tough but not as impact-resistant as nylon or PC",
+      "izodImpact_J_m": 69,
+      "frictionCoefficient": "~0.20 (dry, on steel)",
+      "wearResistance": "Excellent — low wear rate under sliding contact",
+      "tempRange": "-40°C to 82°C (continuous), up to 100°C short-term",
+      "heatDeflection_C": 110,
+      "moistureAbsorption": "0.22% (very low — superior dimensional stability)",
+      "chemicalResistance": "Good — resists fuels, solvents, weak acids; attacked by strong acids and oxidizers",
+      "machinability": "Excellent — the best-machining engineering plastic, holds tight tolerances",
+      "fdaCompliant": true,
+      "foodContact": "FDA compliant (natural/white grades)"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8576K171",
+        "approximatePrice": 32,
+        "url": "https://www.mcmaster.com/8576K171"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07H9C5Z9X",
+        "approximatePrice": 28,
+        "url": "https://www.amazon.com/dp/B07H9C5Z9X"
+      },
+      {
+        "name": "Online Metals",
+        "partNumber": "ACETAL-BLK-500",
+        "approximatePrice": 30,
+        "url": "https://www.onlinemetals.com/en/buy/plastic"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 10
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 21
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 32
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 58
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 88
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 116
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 220
+      }
+    ],
+    "designNotes": "1/2\" Delrin is heavy stock for machined functional components — bearing blocks, thick gear blanks, structural jig/fixture plates, guide rail supports, and cam followers. At this thickness, you can machine complex 3D parts on a CNC mill, similar to working with aluminum but at lower cutting forces. Use carbide tooling with positive rake angles, moderate chip loads. Delrin machines so cleanly that parts often require no post-processing — straight off the CNC with excellent surface finish. For bearing applications, Delrin running against hardened steel shafts provides 10× the wear life of nylon. Thick stock may have internal stress from the extrusion process — for critical flatness, rough-machine both sides, let the part relax overnight, then finish-machine to final dimensions. Do NOT use near open flame or in confined spaces with heat — Delrin decomposes to formaldehyde above 230°C. For high-load bearing applications, consider glass-filled Delrin (Delrin AF blend) for increased stiffness and reduced creep.",
+    "tags": [
+      "Delrin",
+      "acetal",
+      "POM",
+      "polyoxymethylene",
+      "DuPont",
+      "engineering plastic",
+      "low friction",
+      "self-lubricating",
+      "bearing block",
+      "gear blank",
+      "wear plate",
+      "black",
+      "1/2 inch",
+      "12.7mm",
+      "heavy duty",
+      "jig",
+      "fixture"
+    ]
+  },
+  {
+    "name": "Natural White Delrin / Acetal Sheet — 1/8\" (3mm)",
+    "description": "Natural white Delrin acetal homopolymer sheet 1/8 inch 3.175mm 3mm thick POM polyoxymethylene DuPont Delrin 150 natural white ivory low friction self-lubricating bearing surface gear material FDA food contact safe precision machinable CNC routing tight tolerances dimensionally stable",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 3.175,
+      "weight": 259
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Delrin / Acetal Homopolymer",
+      "polymer": "POM (Polyoxymethylene) Homopolymer",
+      "thickness_in": "1/8\"",
+      "thickness_mm": 3.175,
+      "color": "Natural White (Ivory)",
+      "density_g_cm3": 1.41,
+      "tensileStrength_MPa": 70,
+      "tensileStrength_psi": 10200,
+      "flexuralStrength_MPa": 97,
+      "impactStrength": "Moderate — tough but not as impact-resistant as nylon or PC",
+      "izodImpact_J_m": 69,
+      "frictionCoefficient": "~0.20 (dry, on steel)",
+      "wearResistance": "Excellent — low wear rate under sliding contact",
+      "tempRange": "-40°C to 82°C (continuous), up to 100°C short-term",
+      "heatDeflection_C": 110,
+      "moistureAbsorption": "0.22% (very low — superior dimensional stability)",
+      "chemicalResistance": "Good — resists fuels, solvents, weak acids; attacked by strong acids and oxidizers",
+      "machinability": "Excellent — the best-machining engineering plastic, holds tight tolerances",
+      "fdaCompliant": true,
+      "foodContact": "FDA 21 CFR 177.2480 compliant — approved for food contact"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8572K111",
+        "approximatePrice": 12,
+        "url": "https://www.mcmaster.com/8572K111"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07H9BY4JG",
+        "approximatePrice": 10,
+        "url": "https://www.amazon.com/dp/B07H9BY4JG"
+      },
+      {
+        "name": "Online Metals",
+        "partNumber": "ACETAL-NAT-125",
+        "approximatePrice": 11,
+        "url": "https://www.onlinemetals.com/en/buy/plastic"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 4
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 8
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 12
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 22
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 34
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 44
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 84
+      }
+    ],
+    "designNotes": "Natural white (ivory) Delrin is the FDA food-contact-safe grade — required for food processing equipment, beverage dispensing components, and pharmaceutical machinery where direct product contact occurs. Mechanically identical to black Delrin but with FDA compliance for food/pharma applications. Same excellent machinability and dimensional stability. Natural Delrin has slightly lower UV resistance than black — for outdoor applications, choose black or add UV stabilizer. The natural color makes it easy to visually inspect for contamination in clean-room and food processing environments. Note: while natural Delrin is FDA compliant, the material is NOT autoclavable (melts at ~175°C, autoclave is 121-134°C — close to the danger zone for sustained exposure). For sterilizable applications, consider PEEK or stainless steel instead. Natural Delrin can be dyed with commercial plastic dyes for color coding.",
+    "tags": [
+      "Delrin",
+      "acetal",
+      "POM",
+      "polyoxymethylene",
+      "DuPont",
+      "engineering plastic",
+      "low friction",
+      "self-lubricating",
+      "bearing",
+      "gear",
+      "FDA",
+      "food safe",
+      "natural white",
+      "1/8 inch",
+      "3mm",
+      "CNC machinable",
+      "food processing"
+    ]
+  },
+  {
+    "name": "Natural White Delrin / Acetal Sheet — 1/4\" (6mm)",
+    "description": "Natural white Delrin acetal homopolymer sheet 1/4 inch 6.35mm 6mm thick POM polyoxymethylene DuPont Delrin 150 natural white ivory low friction self-lubricating FDA food contact safe gear blank bearing plate guide rail precision machinable CNC milling structural engineering plastic",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 6.35,
+      "weight": 517
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Delrin / Acetal Homopolymer",
+      "polymer": "POM (Polyoxymethylene) Homopolymer",
+      "thickness_in": "1/4\"",
+      "thickness_mm": 6.35,
+      "color": "Natural White (Ivory)",
+      "density_g_cm3": 1.41,
+      "tensileStrength_MPa": 70,
+      "tensileStrength_psi": 10200,
+      "flexuralStrength_MPa": 97,
+      "impactStrength": "Moderate — tough but not as impact-resistant as nylon or PC",
+      "izodImpact_J_m": 69,
+      "frictionCoefficient": "~0.20 (dry, on steel)",
+      "wearResistance": "Excellent — low wear rate under sliding contact",
+      "tempRange": "-40°C to 82°C (continuous), up to 100°C short-term",
+      "heatDeflection_C": 110,
+      "moistureAbsorption": "0.22% (very low — superior dimensional stability)",
+      "chemicalResistance": "Good — resists fuels, solvents, weak acids; attacked by strong acids and oxidizers",
+      "machinability": "Excellent — the best-machining engineering plastic, holds tight tolerances",
+      "fdaCompliant": true,
+      "foodContact": "FDA 21 CFR 177.2480 compliant — approved for food contact"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8572K141",
+        "approximatePrice": 18,
+        "url": "https://www.mcmaster.com/8572K141"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07GZN8WYK",
+        "approximatePrice": 15,
+        "url": "https://www.amazon.com/dp/B07GZN8WYK"
+      },
+      {
+        "name": "Online Metals",
+        "partNumber": "ACETAL-NAT-250",
+        "approximatePrice": 17,
+        "url": "https://www.onlinemetals.com/en/buy/plastic"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 6
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 12
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 18
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 33
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 50
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 66
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 125
+      }
+    ],
+    "designNotes": "1/4\" natural Delrin is the standard stock for food-processing machinery components — conveyor guides, bottle handling parts, packaging machine wear strips, and beverage dispenser mechanisms. FDA compliant and dimensionally stable in wet/humid environments (unlike nylon, which swells with moisture). For food-contact applications, specify 'virgin' material — not reground/recycled. Surface finish from CNC machining is typically smooth enough for food contact without additional polishing. For conveyor guide rails, Delrin's low friction allows products to slide freely without lubricants (important in food processing where lubricant contamination is a concern). When designing snap-fits for assembly, Delrin allows 5-6% strain at the snap — significantly more than most engineering plastics. Design living hinges are possible in Delrin but nylon is superior for that specific application. For gear pairs, natural Delrin vs. natural Delrin works but Delrin vs. steel or Delrin vs. nylon provides better wear performance.",
+    "tags": [
+      "Delrin",
+      "acetal",
+      "POM",
+      "polyoxymethylene",
+      "DuPont",
+      "engineering plastic",
+      "low friction",
+      "self-lubricating",
+      "bearing",
+      "gear blank",
+      "FDA",
+      "food safe",
+      "natural white",
+      "1/4 inch",
+      "6mm",
+      "CNC machinable",
+      "food processing",
+      "conveyor"
+    ]
+  },
+  {
+    "name": "Natural White Delrin / Acetal Sheet — 1/2\" (12.7mm)",
+    "description": "Natural white Delrin acetal homopolymer sheet 1/2 inch 12.7mm thick POM polyoxymethylene DuPont Delrin 150 natural white ivory low friction self-lubricating heavy duty FDA food contact bearing block gear blank structural machinable CNC milling lathe turning jig fixture food processing pharmaceutical",
+    "categorySlug": "plastic-sheet",
+    "entryType": "raw_stock",
+    "dimensions": {
+      "height": 12.7,
+      "weight": 1034
+    },
+    "mountingFeatures": [],
+    "specs": {
+      "material": "Delrin / Acetal Homopolymer",
+      "polymer": "POM (Polyoxymethylene) Homopolymer",
+      "thickness_in": "1/2\"",
+      "thickness_mm": 12.7,
+      "color": "Natural White (Ivory)",
+      "density_g_cm3": 1.41,
+      "tensileStrength_MPa": 70,
+      "tensileStrength_psi": 10200,
+      "flexuralStrength_MPa": 97,
+      "impactStrength": "Moderate — tough but not as impact-resistant as nylon or PC",
+      "izodImpact_J_m": 69,
+      "frictionCoefficient": "~0.20 (dry, on steel)",
+      "wearResistance": "Excellent — low wear rate under sliding contact",
+      "tempRange": "-40°C to 82°C (continuous), up to 100°C short-term",
+      "heatDeflection_C": 110,
+      "moistureAbsorption": "0.22% (very low — superior dimensional stability)",
+      "chemicalResistance": "Good — resists fuels, solvents, weak acids; attacked by strong acids and oxidizers",
+      "machinability": "Excellent — the best-machining engineering plastic, holds tight tolerances",
+      "fdaCompliant": true,
+      "foodContact": "FDA 21 CFR 177.2480 compliant — approved for food contact"
+    },
+    "suppliers": [
+      {
+        "name": "McMaster-Carr",
+        "partNumber": "8572K171",
+        "approximatePrice": 32,
+        "url": "https://www.mcmaster.com/8572K171"
+      },
+      {
+        "name": "Amazon",
+        "partNumber": "B07GZP1LQY",
+        "approximatePrice": 28,
+        "url": "https://www.amazon.com/dp/B07GZP1LQY"
+      },
+      {
+        "name": "Online Metals",
+        "partNumber": "ACETAL-NAT-500",
+        "approximatePrice": 30,
+        "url": "https://www.onlinemetals.com/en/buy/plastic"
+      }
+    ],
+    "stockSizes": [
+      {
+        "label": "6\"×6\"",
+        "dimensions": { "width": 152, "height": 152 },
+        "approximatePrice": 10
+      },
+      {
+        "label": "8\"×10\"",
+        "dimensions": { "width": 203, "height": 254 },
+        "approximatePrice": 21
+      },
+      {
+        "label": "12\"×12\"",
+        "dimensions": { "width": 305, "height": 305 },
+        "approximatePrice": 32
+      },
+      {
+        "label": "12\"×24\"",
+        "dimensions": { "width": 305, "height": 610 },
+        "approximatePrice": 58
+      },
+      {
+        "label": "18\"×24\"",
+        "dimensions": { "width": 457, "height": 610 },
+        "approximatePrice": 88
+      },
+      {
+        "label": "24\"×24\"",
+        "dimensions": { "width": 610, "height": 610 },
+        "approximatePrice": 116
+      },
+      {
+        "label": "24\"×48\"",
+        "dimensions": { "width": 610, "height": 1219 },
+        "approximatePrice": 220
+      }
+    ],
+    "designNotes": "1/2\" natural Delrin is premium heavy stock for machined food-processing and pharmaceutical components — thick bearing blocks, large gear blanks, pump components, valve seats, and heavy-duty conveyor parts. At this thickness, internal stress relief is important for dimensional accuracy: rough-machine to within 1mm of final dimensions, allow 24-48 hours stress relaxation at room temperature, then finish-machine. For food processing applications requiring frequent washdown, Delrin's low moisture absorption (0.22%) is a major advantage over nylon (which absorbs 1.5-2.5% and swells). Thick natural Delrin stock is also the preferred material for prototype injection mold cores and inserts — it machines fast, withstands moderate injection pressures, and can produce 50-100 shots in low-temperature thermoplastics. For pharmaceutical applications, note that Delrin is compatible with most common sanitizing agents (quaternary ammonium, peracetic acid) but NOT with strong oxidizers (concentrated bleach, hydrogen peroxide >30%).",
+    "tags": [
+      "Delrin",
+      "acetal",
+      "POM",
+      "polyoxymethylene",
+      "DuPont",
+      "engineering plastic",
+      "low friction",
+      "self-lubricating",
+      "bearing block",
+      "gear blank",
+      "FDA",
+      "food safe",
+      "natural white",
+      "1/2 inch",
+      "12.7mm",
+      "heavy duty",
+      "pharmaceutical",
+      "food processing",
+      "prototype mold"
+    ]
+  }
+]

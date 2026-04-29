@@ -47,6 +47,24 @@ Cascadia is a modern PLM system designed to replace traditional low-code PLM pla
 - **Testing**: Vitest + Playwright
 - **Containerization**: Docker, Docker Compose
 
+## Try the Demo
+
+The fastest way to see Cascadia is the bundled demo stack — a single command that brings up Postgres, RabbitMQ, the app (with embedded vault), and the CAD converter, pre-seeded with a real engineering dataset (TDJ-25 6-DOF robot arm: ~88 parts, 101 BOM relationships, ~79 STEP files with pre-converted GLB).
+
+```bash
+docker compose -f docker-compose.demo.yml up
+```
+
+Then open <http://localhost:3000> and log in with `admin@cascadia.local` / `Cascadia`. Navigate to **Programs → ROBOT-ARM → TDJ-25** to explore the BOM tree, click any part with CAD to see the 3D viewer, and check the ECO **Initial Release - TDJ-25 Robot Arm** to see the signature ECO-as-Branch workflow in its released state.
+
+Reset to a clean slate at any time:
+
+```bash
+docker compose -f docker-compose.demo.yml down -v
+```
+
+The demo's volumes are namespaced (`cascadia_demo_*`) and won't touch any local dev data.
+
 ## Quick Start
 
 ### Prerequisites

@@ -1,0 +1,1406 @@
+{
+  "metadata": {
+    "name": "TDJ-25 Robot Arm",
+    "designCode": "TDJ-25",
+    "programCode": "ROBOT-ARM",
+    "generatedAt": "2026-04-29T20:49:23.060Z",
+    "sourceFile": "TDJ-25-A-00000-MAIN-ASSEMBLY.step",
+    "totalParts": 88,
+    "totalAssemblies": 13,
+    "totalRelationships": 101,
+    "totalCadFiles": 79
+  },
+  "parts": [
+    {
+      "itemNumber": "217-3199-STEP",
+      "name": "42T x 18mm Wide VersaPulley Kit (HTD 5mm, VersaKeys) (217-3199)",
+      "description": "42T x 18mm Wide VersaPulley Kit (HTD 5mm, VersaKeys) (217-3199)",
+      "type": "assembly",
+      "partType": "Purchase",
+      "material": "Assembly",
+      "cadFileBase": "217-3199-STEP"
+    },
+    {
+      "itemNumber": "FALCON-MAX-PLANETARY-ASSY",
+      "name": "FALCON-MAX-PLANETARY-ASSY",
+      "description": "FALCON-SHORT-SHAFT v1",
+      "type": "assembly",
+      "partType": "Manufacture",
+      "material": "Assembly",
+      "cadFileBase": "FALCON-MAX-PLANETARY-ASSY"
+    },
+    {
+      "itemNumber": "MAXPlanetary 1-Stage",
+      "name": "MAXPlanetary 1-Stage (1)",
+      "description": "MAXPlanetary 1-Stage (1)",
+      "type": "assembly",
+      "partType": "Purchase",
+      "material": "Assembly",
+      "cadFileBase": "MAXPlanetary 1-Stage"
+    },
+    {
+      "itemNumber": "REV-25-2107_1-Stage",
+      "name": "REV-25-2107_1-Stage",
+      "description": "REV-25-2107_1-Stage",
+      "type": "assembly",
+      "partType": "Purchase",
+      "material": "Assembly",
+      "cadFileBase": "REV-25-2107_1-Stage"
+    },
+    {
+      "itemNumber": "REV-25-2109_1-Stage (No Shaft, For NEO)",
+      "name": "REV-25-2109_1-Stage (No Shaft, For NEO)",
+      "description": "REV-25-2109_1-Stage (No Shaft, For NEO)",
+      "type": "assembly",
+      "partType": "Purchase",
+      "material": "Assembly",
+      "cadFileBase": "REV-25-2109_1-Stage (No Shaft, For NEO)"
+    },
+    {
+      "itemNumber": "TDJ-25-A-00000-MAIN-ASSEMBLY",
+      "name": "Main Assembly",
+      "description": "TDJ-25-A-00000-MAIN-ASSEMBLY",
+      "type": "assembly",
+      "partType": "Manufacture",
+      "material": "Assembly",
+      "cadFileBase": "TDJ-25-A-00000-MAIN-ASSEMBLY"
+    },
+    {
+      "itemNumber": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "name": "Base Assembly",
+      "description": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "type": "assembly",
+      "partType": "Manufacture",
+      "material": "Assembly",
+      "cadFileBase": "TDJ-25-A-10000-BASE-ASSEMBLY"
+    },
+    {
+      "itemNumber": "TDJ-25-A-20000-SHOULDER-ASSEMBLY",
+      "name": "Shoulder Assembly",
+      "description": "TDJ-25-A-20000-SHOULDER-ASSEMBLY",
+      "type": "assembly",
+      "partType": "Manufacture",
+      "material": "Assembly",
+      "cadFileBase": "TDJ-25-A-20000-SHOULDER-ASSEMBLY"
+    },
+    {
+      "itemNumber": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "name": "Elbow Assembly",
+      "description": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "type": "assembly",
+      "partType": "Manufacture",
+      "material": "Assembly",
+      "cadFileBase": "TDJ-25-A-30000-ELBOW-ASSEMBLY"
+    },
+    {
+      "itemNumber": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "name": "Wrist Assembly",
+      "description": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "type": "assembly",
+      "partType": "Manufacture",
+      "material": "Assembly",
+      "cadFileBase": "TDJ-25-A-40000-WRIST-ASSEMBLY"
+    },
+    {
+      "itemNumber": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "name": "Ee Assembly",
+      "description": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "type": "assembly",
+      "partType": "Manufacture",
+      "material": "Assembly",
+      "cadFileBase": "TDJ-25-A-50000-EE-ASSEMBLY"
+    },
+    {
+      "itemNumber": "TDJ-25-P-40005-HTD-CUSTOM-PULLEY",
+      "name": "Htd Custom Pulley",
+      "description": "TDJ-25-P-40005-HTD-CUSTOM-PULLEY",
+      "type": "assembly",
+      "partType": "Manufacture",
+      "material": "Assembly",
+      "cadFileBase": "TDJ-25-P-40005-HTD-CUSTOM-PULLEY"
+    },
+    {
+      "itemNumber": "TDJ-25-P-40007-HTD-STEPPER-PULLEY",
+      "name": "Htd Stepper Pulley",
+      "description": "TDJ-25-P-40007-HTD-STEPPER-PULLEY",
+      "type": "assembly",
+      "partType": "Manufacture",
+      "material": "Assembly",
+      "cadFileBase": "TDJ-25-P-40007-HTD-STEPPER-PULLEY"
+    },
+    {
+      "itemNumber": "#10 Socket Head Cap Screws_0.500in Long",
+      "name": "#10 Socket Head Cap Screws_0.500in Long",
+      "description": "#10 Socket Head Cap Screws_0.500in Long",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "#10 Socket Head Cap Screws_0.500in Long"
+    },
+    {
+      "itemNumber": "#10 Socket Head Cap Screws_1.000in Long",
+      "name": "#10 Socket Head Cap Screws_1.000in Long",
+      "description": "#10 Socket Head Cap Screws_1.000in Long",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "#10 Socket Head Cap Screws_1.000in Long"
+    },
+    {
+      "itemNumber": "#10-32 Button Head Cap Screws_0.500in Long",
+      "name": "#10-32 Button Head Cap Screws_0.500in Long",
+      "description": "#10-32 Button Head Cap Screws_0.500in Long",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "#10-32 Button Head Cap Screws_0.500in Long"
+    },
+    {
+      "itemNumber": "17HS19-2004S1",
+      "name": "17HS19-2004S1",
+      "description": "17HS19-2004S1",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "17HS19-2004S1"
+    },
+    {
+      "itemNumber": "217-2592-001 Rev7",
+      "name": "1_2\\X2\\201D\\X0\\ Hex Bore Aluminum VersaHub (217-2592)",
+      "description": "1_2\\X2\\201D\\X0\\ Hex Bore Aluminum VersaHub (217-2592)",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "217-2592-001 Rev7"
+    },
+    {
+      "itemNumber": "217-3199-001 Rev4",
+      "name": "217-3199-001 Rev4",
+      "description": "217-3199-001 Rev4",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "217-3199-001 Rev4"
+    },
+    {
+      "itemNumber": "217-3199-002 Rev3",
+      "name": "217-3199-002 Rev3",
+      "description": "217-3199-002 Rev3",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "217-3199-002 Rev3"
+    },
+    {
+      "itemNumber": "217-3225-STEP",
+      "name": "217-3225-STEP",
+      "description": "18T x 9mm Wide Double Flange Aluminum Pulley (HTD 5mm, 1_2\\X2\\201D\\X0\\ Hex Bore) (217-3225) (1)",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "217-3225-STEP"
+    },
+    {
+      "itemNumber": "217-3875-STEP-20140818",
+      "name": "0.500 Hex ID x 1.125 OD x 0.313 WD (Flanged Bearing v2) (217-3875) (3)",
+      "description": "0.500 Hex ID x 1.125 OD x 0.313 WD (Flanged Bearing v2) (217-3875) (3)",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "217-3875-STEP-20140818"
+    },
+    {
+      "itemNumber": "217-7346 20200930",
+      "name": "217-7346 20200930",
+      "description": "10.25mm (3_8 ThunderHex) ID x 0.625 OD x 0.313 WD (Bronze Flanged Bushing) (217-7346) (1)",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "217-7346 20200930"
+    },
+    {
+      "itemNumber": "6627K402_Chemical-Resistant Dry-Running Flanged Sleeve Bearing",
+      "name": "6627K402_Chemical-Resistant Dry-Running Flanged Sleeve Bearing",
+      "description": "6627K402_Chemical-Resistant Dry-Running Flanged Sleeve Bearing",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "6627K402_Chemical-Resistant Dry-Running Flanged Sleeve Bearing"
+    },
+    {
+      "itemNumber": "97431A340_Side-Mount External Retaining Rings",
+      "name": "97431A340_Side-Mount External Retaining Rings (1)",
+      "description": "97431A340_Side-Mount External Retaining Rings (1)",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "97431A340_Side-Mount External Retaining Rings"
+    },
+    {
+      "itemNumber": "98398A134_Bowed Side-Mount External Retaining Rings",
+      "name": "98398A134_Bowed Side-Mount External Retaining Rings",
+      "description": "98398A134_Bowed Side-Mount External Retaining Rings",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "98398A134_Bowed Side-Mount External Retaining Rings"
+    },
+    {
+      "itemNumber": "BASE-ROTATION-HEX",
+      "name": "BASE-ROTATION-HEX",
+      "description": "BASE-ROTATION-HEX",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "BASE-ROTATION-HEX"
+    },
+    {
+      "itemNumber": "BHS JIS B 1111 - M2.2x6 Steel 4.6 Plain",
+      "name": "Binding Head Screw JIS B 1111 - M2.2x6 Steel 4.6 Plain",
+      "description": "Binding Head Screw JIS B 1111 - M2.2x6 Steel 4.6 Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "BHS JIS B 1111 - M2.2x6 Steel 4.6 Plain"
+    },
+    {
+      "itemNumber": "CBHMSN ANSI B18.6.3 - 10-32 Steel Grade 2H Plain",
+      "name": "CBHMSN ANSI B18.6.3 - 10-32 Steel Grade 2H Plain",
+      "description": "Chamfered Bottom Hex Machine Screw Nut ANSI B18.6.3 - 10-32 Steel Grade 2H Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "CBHMSN ANSI B18.6.3 - 10-32 Steel Grade 2H Plain"
+    },
+    {
+      "itemNumber": "DIN 7991 - M4x35 Steel 4.6 Plain",
+      "name": "Hexagon Socket Countersunk Head Cap Screw DIN 7991 - M4x35 Steel 4.6 Plain",
+      "description": "Hexagon Socket Countersunk Head Cap Screw DIN 7991 - M4x35 Steel 4.6 Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "DIN 7991 - M4x35 Steel 4.6 Plain"
+    },
+    {
+      "itemNumber": "EE",
+      "name": "3_8 Hex x .165 ID ThunderHex Stock (36) (217-5837)",
+      "description": "3_8 Hex x .165 ID ThunderHex Stock (36) (217-5837)",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "EE"
+    },
+    {
+      "itemNumber": "EE-SHAFT",
+      "name": "EE-SHAFT",
+      "description": "EE-SHAFT",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "EE-SHAFT"
+    },
+    {
+      "itemNumber": "ELBOW-SHAFT",
+      "name": "ELBOW-SHAFT",
+      "description": "ELBOW-SHAFT",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "ELBOW-SHAFT"
+    },
+    {
+      "itemNumber": "Falcon 500 v3, Powered by Talon FX (217-6515)",
+      "name": "Falcon 500, Powered by Talon FX (Rev 3) (217-6515)",
+      "description": "Falcon 500, Powered by Talon FX (Rev 3) (217-6515)",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "Falcon 500 v3, Powered by Talon FX (217-6515)"
+    },
+    {
+      "itemNumber": "Falcon Motor Short Shaft V2 (217-7944)",
+      "name": "Falcon Motor Short Shaft V2 (217-7944)",
+      "description": "Falcon Motor Short Shaft V2 (217-7944)",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "Falcon Motor Short Shaft V2 (217-7944)"
+    },
+    {
+      "itemNumber": "HMSN ANSI B18.2.2 - 10-32 Steel Grade 2H Plain",
+      "name": "Hex Machine Screw Nut ANSI B18.2.2 - 10-32 Steel Grade 2H Plain",
+      "description": "Hex Machine Screw Nut ANSI B18.2.2 - 10-32 Steel Grade 2H Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "HMSN ANSI B18.2.2 - 10-32 Steel Grade 2H Plain"
+    },
+    {
+      "itemNumber": "HMSN ANSI B18.2.2 - 8-36 Steel Grade 2H Plain",
+      "name": "Hex Machine Screw Nut ANSI B18.2.2 - 8-36 Steel Grade 2H Plain",
+      "description": "Hex Machine Screw Nut ANSI B18.2.2 - 8-36 Steel Grade 2H Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "HMSN ANSI B18.2.2 - 8-36 Steel Grade 2H Plain"
+    },
+    {
+      "itemNumber": "HORIZONTAL-HEX",
+      "name": "HORIZONTAL-HEX",
+      "description": "HORIZONTAL-HEX",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "HORIZONTAL-HEX"
+    },
+    {
+      "itemNumber": "HSBHCS ANSI B18.3 - #10-32 x 1 Steel Grade 2 Plain",
+      "name": "HSBHCS ANSI B18.3 - #10-32 x 1 Steel Grade 2 Plain",
+      "description": "Hexagon Socket Button Head Cap Screw ANSI B18.3 - #10-32 x 1 Steel Grade 2 Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "HSBHCS ANSI B18.3 - #10-32 x 1 Steel Grade 2 Plain"
+    },
+    {
+      "itemNumber": "HSBHCS ANSI B18.3 - #10-32 x 1/2 Steel Grade 2 Plain",
+      "name": "HSBHCS ANSI B18.3 - #10-32 x 1/2 Steel Grade 2 Plain",
+      "description": "Hexagon Socket Button Head Cap Screw ANSI B18.3 - #10-32 x 1/2 Steel Grade 2 Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various"
+    },
+    {
+      "itemNumber": "HSBHCS ANSI B18.3 - #10-32 x 1/4 Steel Grade 2 Plain",
+      "name": "HSBHCS ANSI B18.3 - #10-32 x 1/4 Steel Grade 2 Plain",
+      "description": "Hexagon Socket Button Head Cap Screw ANSI B18.3 - #10-32 x 1/4 Steel Grade 2 Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various"
+    },
+    {
+      "itemNumber": "HSBHCS ANSI B18.3 - #10-32 x 5/16 Steel Grade 2 Plain",
+      "name": "HSBHCS ANSI B18.3 - #10-32 x 5/16 Steel Grade 2 Plain",
+      "description": "Hexagon Socket Button Head Cap Screw ANSI B18.3 - #10-32 x 5/16 Steel Grade 2 Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various"
+    },
+    {
+      "itemNumber": "HSBHCS ANSI B18.3 - #10-32 x 5/8 Steel Grade 2 Plain",
+      "name": "HSBHCS ANSI B18.3 - #10-32 x 5/8 Steel Grade 2 Plain",
+      "description": "Hexagon Socket Button Head Cap Screw ANSI B18.3 - #10-32 x 5/8 Steel Grade 2 Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various"
+    },
+    {
+      "itemNumber": "HSHCS ANSI B18.3 - 10-32 UNF x 1 1/2 Steel Grade 2 Plain",
+      "name": "HSHCS ANSI B18.3 - 10-32 UNF x 1 1/2 Steel Grade 2 Plain",
+      "description": "Hexagon Socket Head Cap Screw ANSI B18.3 - 10-32 UNF x 1 1/2 Steel Grade 2 Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various"
+    },
+    {
+      "itemNumber": "HSHCS ANSI B18.3 - 8-32 UNC x 7/16 Steel Grade 2 Plain",
+      "name": "Hexagon Socket Head Cap Screw ANSI B18.3 - 8-32 UNC x 7/16 Steel Grade 2 Plain",
+      "description": "Hexagon Socket Head Cap Screw ANSI B18.3 - 8-32 UNC x 7/16 Steel Grade 2 Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various"
+    },
+    {
+      "itemNumber": "HSHCS ASME B18.3 - 10-24 UNC x 1 1/4 Steel Grade 2 Plain",
+      "name": "HSHCS ASME B18.3 - 10-24 UNC x 1 1/4 Steel Grade 2 Plain",
+      "description": "Hexagon Socket Head Cap Screw ASME B18.3 - 10-24 UNC x 1 1/4 Steel Grade 2 Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various"
+    },
+    {
+      "itemNumber": "HSHCS ASME B18.3 - 10-24 UNC x 1/2 Steel Grade 2 Plain",
+      "name": "Hexagon Socket Head Cap Screw ASME B18.3 - 10-24 UNC x 1/2 Steel Grade 2 Plain",
+      "description": "Hexagon Socket Head Cap Screw ASME B18.3 - 10-24 UNC x 1/2 Steel Grade 2 Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various"
+    },
+    {
+      "itemNumber": "HSHCS ASME B18.3 - 10-32 UNF x 1 1/2 Steel Grade 2 Plain",
+      "name": "HSHCS ASME B18.3 - 10-32 UNF x 1 1/2 Steel Grade 2 Plain",
+      "description": "Hexagon Socket Head Cap Screw ASME B18.3 - 10-32 UNF x 1 1/2 Steel Grade 2 Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various"
+    },
+    {
+      "itemNumber": "HSHCS ASME B18.3 - 10-32 UNF x 2 Steel Grade 2 Plain",
+      "name": "Hexagon Socket Head Cap Screw ASME B18.3 - 10-32 UNF x 2 Steel Grade 2 Plain",
+      "description": "Hexagon Socket Head Cap Screw ASME B18.3 - 10-32 UNF x 2 Steel Grade 2 Plain",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "HSHCS ASME B18.3 - 10-32 UNF x 2 Steel Grade 2 Plain"
+    },
+    {
+      "itemNumber": "Minion",
+      "name": "Minion",
+      "description": "Minion",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "Minion"
+    },
+    {
+      "itemNumber": "Pulley_HTD_5mm-12.0Tx9mm",
+      "name": "Pulley_HTD_5mm-12.0Tx9mm",
+      "description": "Pulley_HTD_5mm-12.0Tx9mm",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "Pulley_HTD_5mm-12.0Tx9mm"
+    },
+    {
+      "itemNumber": "Pulley_HTD_5mm-18.0Tx12mm",
+      "name": "Pulley_HTD_5mm-18.0Tx12mm",
+      "description": "Pulley_HTD_5mm-18.0Tx12mm",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "Pulley_HTD_5mm-18.0Tx12mm"
+    },
+    {
+      "itemNumber": "REV-21-2101",
+      "name": "REV-21-2101",
+      "description": "REV-21-2101",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "REV-21-2101"
+    },
+    {
+      "itemNumber": "REV-21-2104",
+      "name": "REV-21-2104",
+      "description": "REV-21-2104",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "REV-21-2104"
+    },
+    {
+      "itemNumber": "REV-21-2106",
+      "name": "REV-21-2106",
+      "description": "REV-21-2106",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "REV-21-2106"
+    },
+    {
+      "itemNumber": "REV-21-2108",
+      "name": "REV-21-2108",
+      "description": "REV-21-2108",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "REV-21-2108"
+    },
+    {
+      "itemNumber": "REV-21-2120",
+      "name": "REV-21-2120",
+      "description": "REV-21-2120",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "REV-21-2120"
+    },
+    {
+      "itemNumber": "SHOULDER-SHAFT",
+      "name": "SHOULDER-SHAFT",
+      "description": "SHOULDER-SHAFT",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "SHOULDER-SHAFT"
+    },
+    {
+      "itemNumber": "TDJ-25-P-10003-TUBE",
+      "name": "Tube",
+      "description": "TDJ-25-P-10003-TUBE",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-10003-TUBE"
+    },
+    {
+      "itemNumber": "TDJ-25-P-10004-FRAME-TUBE",
+      "name": "Frame Tube",
+      "description": "TDJ-25-P-10004-FRAME-TUBE",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-10004-FRAME-TUBE"
+    },
+    {
+      "itemNumber": "TDJ-25-P-20001-SHOULDER-BASE",
+      "name": "Shoulder Base",
+      "description": "TDJ-25-P-20001-SHOULDER-BASE",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-20001-SHOULDER-BASE"
+    },
+    {
+      "itemNumber": "TDJ-25-P-20002-PIVOT-SPACER",
+      "name": "Pivot Spacer",
+      "description": "TDJ-25-P-20002-PIVOT-SPACER",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-20002-PIVOT-SPACER"
+    },
+    {
+      "itemNumber": "TDJ-25-P-20003-STANCHION",
+      "name": "Stanchion",
+      "description": "TDJ-25-P-20003-STANCHION",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-20003-STANCHION"
+    },
+    {
+      "itemNumber": "TDJ-25-P-30002-SPACER",
+      "name": "Spacer",
+      "description": "TDJ-25-P-30002-SPACER",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-30002-SPACER"
+    },
+    {
+      "itemNumber": "TDJ-25-P-30003-ARM-TUBE",
+      "name": "Arm Tube",
+      "description": "TDJ-25-P-30003-ARM-TUBE",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-30003-ARM-TUBE"
+    },
+    {
+      "itemNumber": "TDJ-25-P-30005-OUTER-ARM-PLATE",
+      "name": "Outer Arm Plate",
+      "description": "TDJ-25-P-30005-OUTER-ARM-PLATE",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-30005-OUTER-ARM-PLATE"
+    },
+    {
+      "itemNumber": "TDJ-25-P-40001-WRIST-PLATE",
+      "name": "Wrist Plate",
+      "description": "TDJ-25-P-40001-WRIST-PLATE",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-40001-WRIST-PLATE"
+    },
+    {
+      "itemNumber": "TDJ-25-P-40002-WRIST-SPACER",
+      "name": "Wrist Spacer",
+      "description": "TDJ-25-P-40002-WRIST-SPACER",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-40002-WRIST-SPACER"
+    },
+    {
+      "itemNumber": "TDJ-25-P-40008-BEVEL-GEAR-PLATE",
+      "name": "Bevel Gear Plate",
+      "description": "TDJ-25-P-40008-BEVEL-GEAR-PLATE",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-40008-BEVEL-GEAR-PLATE"
+    },
+    {
+      "itemNumber": "TDJ-25-P-50002-EE-MOUNT",
+      "name": "Ee Mount",
+      "description": "TDJ-25-P-50002-EE-MOUNT",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-50002-EE-MOUNT"
+    },
+    {
+      "itemNumber": "TDJ-25-P-50003-EE-PLATE",
+      "name": "Ee Plate",
+      "description": "TDJ-25-P-50003-EE-PLATE",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-50003-EE-PLATE"
+    },
+    {
+      "itemNumber": "TDJ-25-P-50004-ARM-A",
+      "name": "Arm A",
+      "description": "TDJ-25-P-50004-ARM-A",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-50004-ARM-A"
+    },
+    {
+      "itemNumber": "TDJ-25-P-50005-ARM-B",
+      "name": "Arm B",
+      "description": "TDJ-25-P-50005-ARM-B",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-50005-ARM-B"
+    },
+    {
+      "itemNumber": "TDJ-25-P-50006-ARM-C",
+      "name": "Arm C",
+      "description": "TDJ-25-P-50006-ARM-C",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-50006-ARM-C"
+    },
+    {
+      "itemNumber": "TDJ-25-P-50007-EE-TOP-PLATE",
+      "name": "Ee Top Plate",
+      "description": "TDJ-25-P-50007-EE-TOP-PLATE",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-50007-EE-TOP-PLATE"
+    },
+    {
+      "itemNumber": "TDJ-25-P-50008-MOTOR-SPACER",
+      "name": "Motor Spacer",
+      "description": "TDJ-25-P-50008-MOTOR-SPACER",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-50008-MOTOR-SPACER"
+    },
+    {
+      "itemNumber": "TDJ-25-P-50009-SPACER",
+      "name": "Spacer",
+      "description": "TDJ-25-P-50009-SPACER",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-50009-SPACER"
+    },
+    {
+      "itemNumber": "TDJ-25-P-50010-GRIPPER",
+      "name": "Gripper",
+      "description": "TDJ-25-P-50010-GRIPPER",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-50010-GRIPPER"
+    },
+    {
+      "itemNumber": "TDJ-25-P-50011-STANCHION",
+      "name": "Stanchion",
+      "description": "TDJ-25-P-50011-STANCHION",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-P-50011-STANCHION"
+    },
+    {
+      "itemNumber": "TDJ-25-PM-10003-MOTOR-TUBE-MIR",
+      "name": "Motor Tube Mir",
+      "description": "TDJ-25-PM-10003-MOTOR-TUBE-MIR",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "TDJ-25-PM-10003-MOTOR-TUBE-MIR"
+    },
+    {
+      "itemNumber": "VERTICAL-HEX",
+      "name": "VERTICAL-HEX",
+      "description": "VERTICAL-HEX",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "VERTICAL-HEX"
+    },
+    {
+      "itemNumber": "WCP-0374",
+      "name": "WCP-0374",
+      "description": "WCP-0374",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "WCP-0374"
+    },
+    {
+      "itemNumber": "WCP-0683 Rev1",
+      "name": "WCP-0683 Rev1",
+      "description": "WCP-0683",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "WCP-0683 Rev1"
+    },
+    {
+      "itemNumber": "WCP-0752",
+      "name": "WCP-0752",
+      "description": "WCP-0752",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "WCP-0752"
+    },
+    {
+      "itemNumber": "WCP-0899 Rev1",
+      "name": "WCP-0899 Rev1",
+      "description": "WCP-0899 (1)",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "WCP-0899 Rev1"
+    },
+    {
+      "itemNumber": "WCP-0941",
+      "name": "WCP-0941",
+      "description": "WCP-0941",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "WCP-0941"
+    },
+    {
+      "itemNumber": "WCP-1017 Rev1",
+      "name": "WCP-1017 Rev1",
+      "description": "WCP-1017",
+      "type": "part",
+      "partType": "Purchase",
+      "material": "Various",
+      "cadFileBase": "WCP-1017 Rev1"
+    },
+    {
+      "itemNumber": "WRIST-SHAFT",
+      "name": "WRIST-SHAFT",
+      "description": "WRIST-SHAFT",
+      "type": "part",
+      "partType": "Manufacture",
+      "material": "Various",
+      "cadFileBase": "WRIST-SHAFT"
+    }
+  ],
+  "relationships": [
+    {
+      "parent": "TDJ-25-A-20000-SHOULDER-ASSEMBLY",
+      "child": "217-3875-STEP-20140818",
+      "quantity": 2,
+      "findNumber": 10
+    },
+    {
+      "parent": "TDJ-25-A-20000-SHOULDER-ASSEMBLY",
+      "child": "TDJ-25-P-20001-SHOULDER-BASE",
+      "quantity": 1,
+      "findNumber": 20
+    },
+    {
+      "parent": "TDJ-25-A-20000-SHOULDER-ASSEMBLY",
+      "child": "217-3225-STEP",
+      "quantity": 1,
+      "findNumber": 30
+    },
+    {
+      "parent": "TDJ-25-A-20000-SHOULDER-ASSEMBLY",
+      "child": "SHOULDER-SHAFT",
+      "quantity": 1,
+      "findNumber": 40
+    },
+    {
+      "parent": "TDJ-25-A-20000-SHOULDER-ASSEMBLY",
+      "child": "WCP-1017 Rev1",
+      "quantity": 1,
+      "findNumber": 50
+    },
+    {
+      "parent": "TDJ-25-A-20000-SHOULDER-ASSEMBLY",
+      "child": "TDJ-25-P-20003-STANCHION",
+      "quantity": 1,
+      "findNumber": 60
+    },
+    {
+      "parent": "TDJ-25-A-20000-SHOULDER-ASSEMBLY",
+      "child": "97431A340_Side-Mount External Retaining Rings",
+      "quantity": 2,
+      "findNumber": 70
+    },
+    {
+      "parent": "TDJ-25-A-20000-SHOULDER-ASSEMBLY",
+      "child": "WCP-0941",
+      "quantity": 1,
+      "findNumber": 80
+    },
+    {
+      "parent": "TDJ-25-A-20000-SHOULDER-ASSEMBLY",
+      "child": "HSBHCS ANSI B18.3 - #10-32 x 1 Steel Grade 2 Plain",
+      "quantity": 5,
+      "findNumber": 90
+    },
+    {
+      "parent": "TDJ-25-A-20000-SHOULDER-ASSEMBLY",
+      "child": "TDJ-25-P-20002-PIVOT-SPACER",
+      "quantity": 2,
+      "findNumber": 100
+    },
+    {
+      "parent": "REV-25-2107_1-Stage",
+      "child": "#10 Socket Head Cap Screws_0.500in Long",
+      "quantity": 2,
+      "findNumber": 10
+    },
+    {
+      "parent": "REV-25-2107_1-Stage",
+      "child": "#10 Socket Head Cap Screws_1.000in Long",
+      "quantity": 2,
+      "findNumber": 20
+    },
+    {
+      "parent": "REV-25-2107_1-Stage",
+      "child": "#10-32 Button Head Cap Screws_0.500in Long",
+      "quantity": 1,
+      "findNumber": 30
+    },
+    {
+      "parent": "REV-25-2109_1-Stage (No Shaft, For NEO)",
+      "child": "REV-21-2106",
+      "quantity": 1,
+      "findNumber": 10
+    },
+    {
+      "parent": "REV-25-2109_1-Stage (No Shaft, For NEO)",
+      "child": "REV-21-2104",
+      "quantity": 1,
+      "findNumber": 20
+    },
+    {
+      "parent": "REV-25-2109_1-Stage (No Shaft, For NEO)",
+      "child": "REV-25-2107_1-Stage",
+      "quantity": 1,
+      "findNumber": 30
+    },
+    {
+      "parent": "REV-25-2109_1-Stage (No Shaft, For NEO)",
+      "child": "REV-21-2108",
+      "quantity": 1,
+      "findNumber": 40
+    },
+    {
+      "parent": "MAXPlanetary 1-Stage",
+      "child": "REV-25-2109_1-Stage (No Shaft, For NEO)",
+      "quantity": 1,
+      "findNumber": 10
+    },
+    {
+      "parent": "MAXPlanetary 1-Stage",
+      "child": "REV-21-2101",
+      "quantity": 1,
+      "findNumber": 20
+    },
+    {
+      "parent": "FALCON-MAX-PLANETARY-ASSY",
+      "child": "Falcon Motor Short Shaft V2 (217-7944)",
+      "quantity": 1,
+      "findNumber": 10
+    },
+    {
+      "parent": "FALCON-MAX-PLANETARY-ASSY",
+      "child": "Falcon 500 v3, Powered by Talon FX (217-6515)",
+      "quantity": 1,
+      "findNumber": 20
+    },
+    {
+      "parent": "FALCON-MAX-PLANETARY-ASSY",
+      "child": "MAXPlanetary 1-Stage",
+      "quantity": 1,
+      "findNumber": 30
+    },
+    {
+      "parent": "217-3199-STEP",
+      "child": "217-3199-001 Rev4",
+      "quantity": 2,
+      "findNumber": 10
+    },
+    {
+      "parent": "217-3199-STEP",
+      "child": "217-3199-002 Rev3",
+      "quantity": 1,
+      "findNumber": 20
+    },
+    {
+      "parent": "217-3199-STEP",
+      "child": "217-2592-001 Rev7",
+      "quantity": 2,
+      "findNumber": 30
+    },
+    {
+      "parent": "217-3199-STEP",
+      "child": "HMSN ANSI B18.2.2 - 8-36 Steel Grade 2H Plain",
+      "quantity": 12,
+      "findNumber": 40
+    },
+    {
+      "parent": "TDJ-25-P-40005-HTD-CUSTOM-PULLEY",
+      "child": "Pulley_HTD_5mm-18.0Tx12mm",
+      "quantity": 2,
+      "findNumber": 10
+    },
+    {
+      "parent": "TDJ-25-P-40007-HTD-STEPPER-PULLEY",
+      "child": "Pulley_HTD_5mm-12.0Tx9mm",
+      "quantity": 2,
+      "findNumber": 10
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "FALCON-MAX-PLANETARY-ASSY",
+      "quantity": 1,
+      "findNumber": 10
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "REV-21-2120",
+      "quantity": 1,
+      "findNumber": 20
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "TDJ-25-P-10003-TUBE",
+      "quantity": 1,
+      "findNumber": 30
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "HORIZONTAL-HEX",
+      "quantity": 1,
+      "findNumber": 40
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "TDJ-25-PM-10003-MOTOR-TUBE-MIR",
+      "quantity": 1,
+      "findNumber": 50
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "VERTICAL-HEX",
+      "quantity": 1,
+      "findNumber": 60
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "217-3225-STEP",
+      "quantity": 1,
+      "findNumber": 70
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "TDJ-25-P-10004-FRAME-TUBE",
+      "quantity": 1,
+      "findNumber": 80
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "WCP-0374",
+      "quantity": 2,
+      "findNumber": 90
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "BASE-ROTATION-HEX",
+      "quantity": 1,
+      "findNumber": 100
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "217-3199-STEP",
+      "quantity": 1,
+      "findNumber": 110
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "217-3875-STEP-20140818",
+      "quantity": 1,
+      "findNumber": 120
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "97431A340_Side-Mount External Retaining Rings",
+      "quantity": 3,
+      "findNumber": 130
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "HSHCS ASME B18.3 - 10-24 UNC x 1 1/4 Steel Grade 2 Plain",
+      "quantity": 6,
+      "findNumber": 140
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "DIN 7991 - M4x35 Steel 4.6 Plain",
+      "quantity": 4,
+      "findNumber": 150
+    },
+    {
+      "parent": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "child": "HSHCS ASME B18.3 - 10-24 UNC x 1/2 Steel Grade 2 Plain",
+      "quantity": 6,
+      "findNumber": 160
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "TDJ-25-P-30003-ARM-TUBE",
+      "quantity": 1,
+      "findNumber": 10
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "217-2592-001 Rev7",
+      "quantity": 2,
+      "findNumber": 20
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "217-3875-STEP-20140818",
+      "quantity": 2,
+      "findNumber": 30
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "TDJ-25-P-30005-OUTER-ARM-PLATE",
+      "quantity": 2,
+      "findNumber": 40
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "WCP-0941",
+      "quantity": 1,
+      "findNumber": 50
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "217-3225-STEP",
+      "quantity": 1,
+      "findNumber": 60
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "WCP-1017 Rev1",
+      "quantity": 1,
+      "findNumber": 70
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "TDJ-25-P-30002-SPACER",
+      "quantity": 2,
+      "findNumber": 80
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "ELBOW-SHAFT",
+      "quantity": 1,
+      "findNumber": 90
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "HSHCS ASME B18.3 - 10-32 UNF x 1 1/2 Steel Grade 2 Plain",
+      "quantity": 4,
+      "findNumber": 100
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "HMSN ANSI B18.2.2 - 10-32 Steel Grade 2H Plain",
+      "quantity": 8,
+      "findNumber": 110
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "97431A340_Side-Mount External Retaining Rings",
+      "quantity": 2,
+      "findNumber": 120
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "HSHCS ASME B18.3 - 10-32 UNF x 2 Steel Grade 2 Plain",
+      "quantity": 4,
+      "findNumber": 130
+    },
+    {
+      "parent": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "child": "HSHCS ANSI B18.3 - 10-32 UNF x 1 1/2 Steel Grade 2 Plain",
+      "quantity": 4,
+      "findNumber": 140
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "217-2592-001 Rev7",
+      "quantity": 4,
+      "findNumber": 10
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "TDJ-25-P-40002-WRIST-SPACER",
+      "quantity": 2,
+      "findNumber": 20
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "TDJ-25-P-40001-WRIST-PLATE",
+      "quantity": 2,
+      "findNumber": 30
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "97431A340_Side-Mount External Retaining Rings",
+      "quantity": 2,
+      "findNumber": 40
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "TDJ-25-P-40005-HTD-CUSTOM-PULLEY",
+      "quantity": 2,
+      "findNumber": 50
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "WRIST-SHAFT",
+      "quantity": 2,
+      "findNumber": 60
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "17HS19-2004S1",
+      "quantity": 2,
+      "findNumber": 70
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "TDJ-25-P-40007-HTD-STEPPER-PULLEY",
+      "quantity": 2,
+      "findNumber": 80
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "WCP-0752",
+      "quantity": 3,
+      "findNumber": 90
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "TDJ-25-P-40008-BEVEL-GEAR-PLATE",
+      "quantity": 1,
+      "findNumber": 100
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "217-3875-STEP-20140818",
+      "quantity": 3,
+      "findNumber": 110
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "HSHCS ANSI B18.3 - 8-32 UNC x 7/16 Steel Grade 2 Plain",
+      "quantity": 8,
+      "findNumber": 120
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "HMSN ANSI B18.2.2 - 8-36 Steel Grade 2H Plain",
+      "quantity": 8,
+      "findNumber": 130
+    },
+    {
+      "parent": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "child": "BHS JIS B 1111 - M2.2x6 Steel 4.6 Plain",
+      "quantity": 8,
+      "findNumber": 140
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "Minion",
+      "quantity": 1,
+      "findNumber": 10
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "EE-SHAFT",
+      "quantity": 1,
+      "findNumber": 20
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "TDJ-25-P-50002-EE-MOUNT",
+      "quantity": 1,
+      "findNumber": 30
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "WCP-0899 Rev1",
+      "quantity": 1,
+      "findNumber": 40
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "TDJ-25-P-50004-ARM-A",
+      "quantity": 2,
+      "findNumber": 50
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "TDJ-25-P-50006-ARM-C",
+      "quantity": 2,
+      "findNumber": 60
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "TDJ-25-P-50005-ARM-B",
+      "quantity": 2,
+      "findNumber": 70
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "TDJ-25-P-50003-EE-PLATE",
+      "quantity": 1,
+      "findNumber": 80
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "WCP-0683 Rev1",
+      "quantity": 2,
+      "findNumber": 90
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "6627K402_Chemical-Resistant Dry-Running Flanged Sleeve Bearing",
+      "quantity": 4,
+      "findNumber": 100
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "TDJ-25-P-50007-EE-TOP-PLATE",
+      "quantity": 1,
+      "findNumber": 110
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "EE",
+      "quantity": 4,
+      "findNumber": 120
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "217-7346 20200930",
+      "quantity": 8,
+      "findNumber": 130
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "TDJ-25-P-50008-MOTOR-SPACER",
+      "quantity": 3,
+      "findNumber": 140
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "98398A134_Bowed Side-Mount External Retaining Rings",
+      "quantity": 8,
+      "findNumber": 150
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "TDJ-25-P-50009-SPACER",
+      "quantity": 2,
+      "findNumber": 160
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "HSBHCS ANSI B18.3 - #10-32 x 1/4 Steel Grade 2 Plain",
+      "quantity": 4,
+      "findNumber": 170
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "TDJ-25-P-50010-GRIPPER",
+      "quantity": 2,
+      "findNumber": 180
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "HSBHCS ANSI B18.3 - #10-32 x 5/8 Steel Grade 2 Plain",
+      "quantity": 2,
+      "findNumber": 190
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "CBHMSN ANSI B18.6.3 - 10-32 Steel Grade 2H Plain",
+      "quantity": 2,
+      "findNumber": 200
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "HSBHCS ANSI B18.3 - #10-32 x 1/2 Steel Grade 2 Plain",
+      "quantity": 3,
+      "findNumber": 210
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "TDJ-25-P-50011-STANCHION",
+      "quantity": 1,
+      "findNumber": 220
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "HSBHCS ANSI B18.3 - #10-32 x 5/16 Steel Grade 2 Plain",
+      "quantity": 2,
+      "findNumber": 230
+    },
+    {
+      "parent": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "child": "97431A340_Side-Mount External Retaining Rings",
+      "quantity": 2,
+      "findNumber": 240
+    },
+    {
+      "parent": "TDJ-25-A-00000-MAIN-ASSEMBLY",
+      "child": "TDJ-25-A-20000-SHOULDER-ASSEMBLY",
+      "quantity": 1,
+      "findNumber": 10
+    },
+    {
+      "parent": "TDJ-25-A-00000-MAIN-ASSEMBLY",
+      "child": "TDJ-25-A-10000-BASE-ASSEMBLY",
+      "quantity": 1,
+      "findNumber": 20
+    },
+    {
+      "parent": "TDJ-25-A-00000-MAIN-ASSEMBLY",
+      "child": "TDJ-25-A-30000-ELBOW-ASSEMBLY",
+      "quantity": 1,
+      "findNumber": 30
+    },
+    {
+      "parent": "TDJ-25-A-00000-MAIN-ASSEMBLY",
+      "child": "TDJ-25-A-40000-WRIST-ASSEMBLY",
+      "quantity": 1,
+      "findNumber": 40
+    },
+    {
+      "parent": "TDJ-25-A-00000-MAIN-ASSEMBLY",
+      "child": "TDJ-25-A-50000-EE-ASSEMBLY",
+      "quantity": 1,
+      "findNumber": 50
+    }
+  ]
+}

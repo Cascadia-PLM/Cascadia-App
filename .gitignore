@@ -15,6 +15,10 @@ todos.json
 /vault/
 /storage/
 .env.docker
+
+# Demo data: STEPs are build-time only (input to scripts/prepare-demo-cad.ts).
+# We ship GLB + thumbnails; STEPs are regenerated from the archive when refreshing.
+demo-data/robot-arm/step/
 html/
 .gcloudignore
 

@@ -44,12 +44,17 @@ function parseConnectionOptions(connStr: string) {
 const { connectionString: cleanConnString, options } =
   parseConnectionOptions(connectionString)
 
-// Enable SSL for production database connections
+// SSL configuration. By default, production NODE_ENV requires SSL. Self-hosted
+// deployments (including the bundled docker-compose.demo.yml) where the app
+// connects to a Postgres on a private network can opt out via DATABASE_SSL=disable.
 const isProduction = process.env.NODE_ENV === 'production'
+const sslMode = process.env.DATABASE_SSL // 'disable' | 'require' | undefined
 const sslOptions: Record<string, unknown> = {}
 
-if (isProduction && !options.host?.startsWith('/cloudsql/')) {
-  // Cloud SQL Unix sockets don't need SSL (already local)
+const sslDisabled =
+  sslMode === 'disable' || options.host?.startsWith('/cloudsql/')
+
+if (!sslDisabled && (sslMode === 'require' || isProduction)) {
   const caCertPath = process.env.DATABASE_CA_CERT_PATH
   if (caCertPath) {
     sslOptions.ssl = { ca: fs.readFileSync(caCertPath) }

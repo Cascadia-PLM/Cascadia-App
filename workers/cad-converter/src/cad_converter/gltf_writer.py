@@ -37,7 +37,8 @@ def _extract_face_triangles(
     explorer = TopExp_Explorer(shape, TopAbs_FACE)
     while explorer.More():
         face = topods.Face(explorer.Current())
-        face_hash = face.HashCode(2147483647)
+        # OCCT 7.8+ removed TopoDS_Shape.HashCode — use Python's hash().
+        face_hash = hash(face)
 
         # Determine color for this face
         face_color = color_map.get(face_hash, default_color)
@@ -47,11 +48,12 @@ def _extract_face_triangles(
             round(face_color.b, 4),
         )
 
-        # Get triangulation
-        _location_fn = getattr(BRep_Tool, 'Location_s', None) or BRep_Tool.Location
-        _triangulation_fn = getattr(BRep_Tool, 'Triangulation_s', None) or BRep_Tool.Triangulation
-        location = _location_fn(face)
-        triangulation = _triangulation_fn(face, location)
+        # Get triangulation. OCCT 7.8+ removed BRep_Tool.Location — pass an
+        # empty TopLoc_Location to BRep_Tool.Triangulation, which fills it
+        # in-place with the face's location while returning the triangulation.
+        from OCC.Core.TopLoc import TopLoc_Location
+        location = TopLoc_Location()
+        triangulation = BRep_Tool.Triangulation(face, location)
 
         if triangulation is None:
             explorer.Next()
@@ -127,7 +129,7 @@ def write_glb(
 
     Args:
         shape: Tessellated TopoDS_Shape.
-        color_map: Mapping from shape.HashCode() to PartColor.
+        color_map: Mapping from hash(shape) to PartColor.
         output_path: Path for the output .glb file.
         default_color: Fallback color for faces without color data.
 

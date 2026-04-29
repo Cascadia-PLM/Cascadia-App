@@ -82,7 +82,7 @@ def extract_shape_colors(
     """
     Extract colors for all shapes in an XDE document.
 
-    Returns a mapping from shape.HashCode() to PartColor.
+    Returns a mapping from hash(shape) to PartColor.
     Walks the assembly tree, trying direct color first, then inheriting from parent.
     """
     color_tool = _get_color_tool(doc)
@@ -111,7 +111,8 @@ def extract_shape_colors(
                         part_color = _get_parent_color(color_tool, shape_tool, label)
 
                     if part_color is not None:
-                        hash_code = shape.HashCode(2147483647)
+                        # OCCT 7.8+ removed TopoDS_Shape.HashCode — use Python's hash() (SWIG forwards to TShape::HashCode under the hood).
+                        hash_code = hash(shape)
                         color_map[hash_code] = part_color
 
                         # Also map sub-face colors
@@ -119,7 +120,7 @@ def extract_shape_colors(
                             explorer = TopExp_Explorer(shape, TopAbs_FACE)
                             while explorer.More():
                                 face = explorer.Current()
-                                face_hash = face.HashCode(2147483647)
+                                face_hash = hash(face)
                                 # Assign parent color by default; override if face has its own
                                 color_map[face_hash] = part_color
                                 explorer.Next()

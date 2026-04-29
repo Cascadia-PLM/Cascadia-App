@@ -8,7 +8,6 @@ from typing import Callable, Optional
 
 from OCC.Core.IFSelect import IFSelect_RetDone
 from OCC.Core.STEPCAFControl import STEPCAFControl_Reader
-from OCC.Core.TCollection import TCollection_ExtendedString
 from OCC.Core.TDF import TDF_Label, TDF_LabelSequence
 from OCC.Core.TDocStd import TDocStd_Document
 from OCC.Core.TopLoc import TopLoc_Location
@@ -66,7 +65,7 @@ def read_xde_shape_and_color(
 
     _get_app = getattr(XCAFApp_Application, 'GetApplication_s', None) or XCAFApp_Application.GetApplication
     app = _get_app()
-    doc = TDocStd_Document(TCollection_ExtendedString("MDTV-XCAF"))
+    doc = TDocStd_Document("MDTV-XCAF")
     app.InitDocument(doc)
 
     reader = STEPCAFControl_Reader()
@@ -139,7 +138,7 @@ def decompose_step_assembly(
     # Create XDE document
     _get_app = getattr(XCAFApp_Application, 'GetApplication_s', None) or XCAFApp_Application.GetApplication
     app = _get_app()
-    doc = TDocStd_Document(TCollection_ExtendedString("MDTV-XCAF"))
+    doc = TDocStd_Document("MDTV-XCAF")
     app.InitDocument(doc)
 
     # Read STEP with XDE reader
@@ -231,7 +230,8 @@ def decompose_step_assembly(
                     explorer = TopExp_Explorer(shape, TopAbs_FACE)
                     while explorer.More():
                         face = explorer.Current()
-                        face_hash = face.HashCode(2147483647)
+                        # OCCT 7.8+ removed TopoDS_Shape.HashCode — use Python's hash().
+                        face_hash = hash(face)
                         face_color_map[face_hash] = part_color
                         explorer.Next()
 

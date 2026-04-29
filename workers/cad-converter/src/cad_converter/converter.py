@@ -198,7 +198,6 @@ def _xde_glb_subprocess(
         from OCC.Core.BRep import BRep_Builder
         from OCC.Core.IFSelect import IFSelect_RetDone as _RetDone
         from OCC.Core.STEPCAFControl import STEPCAFControl_Reader
-        from OCC.Core.TCollection import TCollection_ExtendedString
         from OCC.Core.TDF import TDF_LabelSequence
         from OCC.Core.TDocStd import TDocStd_Document
         from OCC.Core.TopoDS import TopoDS_Compound
@@ -210,10 +209,12 @@ def _xde_glb_subprocess(
 
         quality = MeshQuality(quality_value)
 
-        # Create XDE document
+        # Create XDE document. NOTE: pythonocc / OCP expects a plain Python str
+        # for the storage format — wrapping it in TCollection_ExtendedString
+        # crashes with Standard_NullObject in the C++ constructor.
         _get_app = getattr(XCAFApp_Application, 'GetApplication_s', None) or XCAFApp_Application.GetApplication
         app = _get_app()
-        doc = TDocStd_Document(TCollection_ExtendedString("MDTV-XCAF"))
+        doc = TDocStd_Document("MDTV-XCAF")
         app.InitDocument(doc)
 
         reader = STEPCAFControl_Reader()

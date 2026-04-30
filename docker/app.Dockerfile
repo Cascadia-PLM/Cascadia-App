@@ -82,7 +82,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 # Labels for container identification
 LABEL org.opencontainers.image.title="Cascadia PLM - Core App"
 LABEL org.opencontainers.image.description="Core web application for Cascadia PLM"
-LABEL org.opencontainers.image.source="https://github.com/cascadia-plm/cascadia"
+LABEL org.opencontainers.image.source="https://github.com/Cascadia-PLM/Cascadia-App"
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]

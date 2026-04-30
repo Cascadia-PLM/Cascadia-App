@@ -4,7 +4,7 @@
 services:
   # General purpose workers
   worker:
-    image: cascadia/jobs:${JOBS_VERSION:-latest}
+    image: ghcr.io/cascadia-plm/cascadia-jobs-worker:${JOBS_VERSION:-latest}
     # Or build locally:
     # build:
     #   context: ../../../../
@@ -52,7 +52,7 @@ services:
   # Specialized: CAD conversion workers (optional)
   # Uncomment if you have dedicated conversion hardware
   # worker-cad:
-  #   image: cascadia/jobs:${JOBS_VERSION:-latest}
+  #   image: ghcr.io/cascadia-plm/cascadia-jobs-worker:${JOBS_VERSION:-latest}
   #   restart: unless-stopped
   #   environment:
   #     NODE_ENV: production
@@ -72,7 +72,7 @@ services:
 
   # Specialized: Report generation workers (optional)
   # worker-reports:
-  #   image: cascadia/jobs:${JOBS_VERSION:-latest}
+  #   image: ghcr.io/cascadia-plm/cascadia-jobs-worker:${JOBS_VERSION:-latest}
   #   restart: unless-stopped
   #   environment:
   #     NODE_ENV: production

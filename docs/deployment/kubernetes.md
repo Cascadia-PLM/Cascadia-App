@@ -222,7 +222,7 @@ commonLabels:
   app.kubernetes.io/name: cascadia-plm
   app.kubernetes.io/part-of: cascadia
 images:
-  - name: cascadia/app
+  - name: ghcr.io/cascadia-plm/cascadia-app
     newTag: latest
 ```
 
@@ -242,7 +242,7 @@ spec:
         fsGroup: 1001
       containers:
         - name: app
-          image: cascadia/app:latest
+          image: ghcr.io/cascadia-plm/cascadia-app:latest
           resources:
             requests:
               cpu: '250m'

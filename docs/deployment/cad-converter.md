@@ -92,7 +92,7 @@ The packed conda environment is extracted into `/venv` and added to PATH.
 
 ```bash
 cd workers/cad-converter/
-docker build -t cascadia/cad-converter .
+docker build -t ghcr.io/cascadia-plm/cascadia-cad-converter .
 ```
 
 Or from the project root using the development compose file:
@@ -186,7 +186,7 @@ docker run -d \
   -e WORKER_CONCURRENCY=2 \
   -v /path/to/vault:/vault \
   -p 3003:3003 \
-  cascadia/cad-converter
+  ghcr.io/cascadia-plm/cascadia-cad-converter
 ```
 
 ### In the Distributed Deployment
@@ -196,7 +196,7 @@ Add the CAD converter as an additional worker alongside the Node.js jobs workers
 ```yaml
 # Add to the jobs docker-compose.yml
 cad-converter:
-  image: cascadia/cad-converter:latest
+  image: ghcr.io/cascadia-plm/cascadia-cad-converter:latest
   restart: unless-stopped
   environment:
     DATABASE_URL: ${DATABASE_URL}
@@ -240,7 +240,7 @@ spec:
     spec:
       containers:
         - name: cad-converter
-          image: cascadia/cad-converter:latest
+          image: ghcr.io/cascadia-plm/cascadia-cad-converter:latest
           env:
             - name: DATABASE_URL
               valueFrom:

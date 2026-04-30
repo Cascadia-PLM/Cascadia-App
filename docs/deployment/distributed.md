@@ -280,7 +280,7 @@ Or uncomment the specialized worker sections in the jobs `docker-compose.yml`:
 
 ```yaml
 worker-cad:
-  image: cascadia/jobs:${JOBS_VERSION:-latest}
+  image: ghcr.io/cascadia-plm/cascadia-jobs-worker:${JOBS_VERSION:-latest}
   environment:
     WORKER_CONCURRENCY: 2
     JOB_TYPES: conversion.cad

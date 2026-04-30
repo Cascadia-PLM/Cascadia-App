@@ -32,9 +32,9 @@ commonLabels:
 
 # Image customization
 images:
-  - name: cascadia/app
+  - name: ghcr.io/cascadia-plm/cascadia-app
     newTag: latest
   # - name: cascadia/vault
   #   newTag: latest
-  # - name: cascadia/jobs
+  # - name: ghcr.io/cascadia-plm/cascadia-jobs-worker
   #   newTag: latest

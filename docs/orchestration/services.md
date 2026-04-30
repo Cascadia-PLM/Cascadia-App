@@ -6,9 +6,9 @@ This document describes each deployable service in the Cascadia PLM system.
 
 | Service          | Image                   | Purpose                | Required   |
 | ---------------- | ----------------------- | ---------------------- | ---------- |
-| `cascadia-app`   | `cascadia/app`          | Core web application   | Yes        |
+| `cascadia-app`   | `ghcr.io/cascadia-plm/cascadia-app`          | Core web application   | Yes        |
 | `cascadia-vault` | `cascadia/vault`        | File storage service   | Optional\* |
-| `cascadia-jobs`  | `cascadia/jobs`         | Background job workers | Optional   |
+| `cascadia-jobs`  | `ghcr.io/cascadia-plm/cascadia-jobs-worker`         | Background job workers | Optional   |
 | `postgres`       | `postgres:18-alpine`    | Database               | Yes        |
 | `rabbitmq`       | `rabbitmq:3-management` | Message broker         | With Jobs  |
 | `minio`          | `minio/minio`           | S3-compatible storage  | Optional   |
@@ -34,7 +34,7 @@ The main Cascadia application providing all PLM functionality.
 ### Image Build
 
 ```bash
-docker build -t cascadia/app -f docker/app.Dockerfile .
+docker build -t ghcr.io/cascadia-plm/cascadia-app -f docker/app.Dockerfile .
 ```
 
 ### Environment Variables
@@ -187,7 +187,7 @@ If running PostgreSQL in Docker too, set `POSTGRES_HOST=postgres` in `.env`.
 ### Image Build
 
 ```bash
-docker build -t cascadia/jobs -f workers/node/Dockerfile .
+docker build -t ghcr.io/cascadia-plm/cascadia-jobs-worker -f workers/node/Dockerfile .
 ```
 
 ### Environment Variables

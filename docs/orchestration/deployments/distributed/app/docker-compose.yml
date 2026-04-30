@@ -3,7 +3,7 @@
 
 services:
   app:
-    image: cascadia/app:${APP_VERSION:-latest}
+    image: ghcr.io/cascadia-plm/cascadia-app:${APP_VERSION:-latest}
     # Or build locally:
     # build:
     #   context: ../../../../

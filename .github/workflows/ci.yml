@@ -147,3 +147,19 @@ jobs:
         run: npm run build
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
+
+  compose-config:
+    name: Compose Config Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # `docker compose config` is a no-network, no-daemon-needed YAML/schema
+      # validation. Catches drift between docker-compose.demo.yml (image-only
+      # quickstart) and docker-compose.demo-with-build.yml (contributor build)
+      # before they break end-users pulling the file via curl.
+      - name: Validate quickstart compose
+        run: docker compose -f docker-compose.demo.yml config --quiet
+
+      - name: Validate contributor compose
+        run: docker compose -f docker-compose.demo-with-build.yml config --quiet

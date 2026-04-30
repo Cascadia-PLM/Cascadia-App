@@ -49,13 +49,14 @@ Cascadia is a modern PLM system designed to replace traditional low-code PLM pla
 
 ## Try the Demo
 
-The fastest way to see Cascadia is the bundled demo stack — a single command that brings up Postgres, RabbitMQ, the app (with embedded vault), and the CAD converter, pre-seeded with a real engineering dataset (TDJ-25 6-DOF robot arm: ~88 parts, 101 BOM relationships, ~79 STEP files with pre-converted GLB).
+The fastest way to see Cascadia is the bundled demo stack — Postgres, RabbitMQ, the app (with embedded vault), the CAD converter, and the jobs worker, pre-seeded with a real engineering dataset (TDJ-25 6-DOF robot arm: ~88 parts, 101 BOM relationships, 79 colored GLBs + STEPs). No clone required:
 
 ```bash
-docker compose -f docker-compose.demo.yml up
+curl -O https://raw.githubusercontent.com/Cascadia-PLM/Cascadia-App/main/docker-compose.demo.yml
+docker compose -f docker-compose.demo.yml up -d
 ```
 
-Then open <http://localhost:3000> and log in with `admin@cascadia.local` / `Cascadia`. Navigate to **Programs → ROBOT-ARM → TDJ-25** to explore the BOM tree, click any part with CAD to see the 3D viewer, and check the ECO **Initial Release - TDJ-25 Robot Arm** to see the signature ECO-as-Branch workflow in its released state.
+First run pulls ~1.2 GB of pre-built images from GitHub Container Registry (2-5 min on a typical connection) and seeds the database. When `docker compose -f docker-compose.demo.yml logs app` shows the server is listening, open <http://localhost:3000> and log in with `admin@cascadia.local` / `Cascadia`. Navigate to **Programs → ROBOT-ARM → TDJ-25** to explore the BOM tree, click any part with CAD to see the 3D viewer, and check the ECO **Initial Release - TDJ-25 Robot Arm** to see the signature ECO-as-Branch workflow in its released state.
 
 Reset to a clean slate at any time:
 
@@ -64,6 +65,8 @@ docker compose -f docker-compose.demo.yml down -v
 ```
 
 The demo's volumes are namespaced (`cascadia_demo_*`) and won't touch any local dev data.
+
+Working from a clone instead? Use [`docker-compose.demo-with-build.yml`](./docker-compose.demo-with-build.yml) to build images from your working tree.
 
 ## Quick Start
 

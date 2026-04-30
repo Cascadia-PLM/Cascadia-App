@@ -24,7 +24,7 @@ spec:
 
       containers:
         - name: app
-          image: cascadia/app:latest
+          image: ghcr.io/cascadia-plm/cascadia-app:latest
           imagePullPolicy: Always
 
           ports:

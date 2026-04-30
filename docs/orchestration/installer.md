@@ -189,7 +189,7 @@ kubectl apply -f ingress.yaml
 | Ingress Host     | Public hostname             | Required       |
 | Enable TLS       | Configure HTTPS             | `true`         |
 | TLS Secret       | Name of TLS secret          | `cascadia-tls` |
-| Image Repository | Container image             | `cascadia/app` |
+| Image Repository | Container image             | `ghcr.io/cascadia-plm/cascadia-app` |
 | Image Tag        | Container version           | `latest`       |
 | Replicas         | Initial pod count           | `2`            |
 | Database URL     | PostgreSQL connection       | Required       |

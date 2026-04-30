@@ -1,29 +1,34 @@
-# Cascadia PLM — One-command demo stack
+# Cascadia PLM — Quickstart demo (no clone, no build)
 #
-# Usage:
+# Usage (no repo clone required):
+#
+#   curl -O https://raw.githubusercontent.com/Cascadia-PLM/Cascadia-App/main/docker-compose.demo.yml
 #   docker compose -f docker-compose.demo.yml up -d
 #
 # Then open http://localhost:3000 and log in with:
 #   admin@cascadia.local / Cascadia
 #
-# The first boot pushes the schema, runs the minimal seed, then loads the
-# TDJ-25 robot-arm demo (88 parts, 101 BOM rows, ~79 STEP+GLB+thumb trios).
-# Subsequent boots are no-ops — the demo seed exits early when it sees the
-# ROBOT-ARM program already exists.
+# First run pulls ~1.2 GB of pre-built images from ghcr.io (2-5 min on a typical
+# connection) and seeds the database. Subsequent boots are no-ops — the demo
+# seed exits early when it sees the ROBOT-ARM program already exists.
 #
-# Reset everything (wipes only the demo's volumes — does not touch the dev
-# stack from docker-compose.yml):
+# Reset everything (wipes only this stack's volumes):
+#
 #   docker compose -f docker-compose.demo.yml down -v
 #
+# Pin to a specific image version (recommended for stable demos):
+#   replace `:latest` below with `:sha-<short>` from the GitHub Actions
+#   "publish-demo-images" workflow run output.
+#
 # Notes:
-#   * The cad-converter container handles STEP→GLB conversion at runtime for
-#     any user uploads. The seed ships pre-converted GLBs so first-load 3D
-#     viewer is instant; the converter is only exercised when you upload
-#     your own STEP files via the UI.
-#   * All volumes are namespaced cascadia_demo_* so they coexist safely with
-#     the dev compose's cascadia-* volumes.
-#   * The compose project is named cascadia-demo so commands here never reach
-#     into the dev compose's containers/volumes.
+#   * BETTER_AUTH_SECRET below is a hardcoded literal scoped to localhost.
+#     DO NOT reuse this compose file for any deployment past your laptop —
+#     rotate the secret first.
+#   * All volumes are namespaced cascadia_demo_* and the project is named
+#     cascadia-demo, so this stack does not conflict with the contributor
+#     compose (docker-compose.demo-with-build.yml) or the dev stack.
+#   * Working from a clone? Use docker-compose.demo-with-build.yml instead
+#     to build images from your working tree.
 
 name: cascadia-demo
 
@@ -64,19 +69,28 @@ services:
       start_period: 30s
     networks: [cascadia-demo]
 
+  # One-shot init container: copies the bundled demo dataset (~592 MB of
+  # STEPs/GLBs/thumbnails) from the cascadia-demo-data image into a named
+  # volume the app reads from. `cp -rn` is no-op on rerun, so restarts are
+  # cheap. The app depends on this completing successfully before booting.
+  demo-data-loader:
+    image: ghcr.io/cascadia-plm/cascadia-demo-data:latest
+    container_name: cascadia-demo-data-loader
+    volumes:
+      - cascadia_demo_app_data:/out
+    command: sh -c "cp -rn /demo-data/. /out/ && echo 'demo data loaded'"
+    networks: [cascadia-demo]
+
   app:
-    build:
-      context: .
-      dockerfile: docker/app.Dockerfile
-      target: production
+    image: ghcr.io/cascadia-plm/cascadia-app:latest
     container_name: cascadia-demo-app
     restart: unless-stopped
     depends_on:
       postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
+      demo-data-loader: { condition: service_completed_successfully }
     environment:
       NODE_ENV: production
-      # Demo Postgres is on a private compose network — no TLS available.
       DATABASE_SSL: disable
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cascadia
       BETTER_AUTH_SECRET: cascadia-demo-secret-replace-for-real-deploys
@@ -92,7 +106,20 @@ services:
     volumes:
       - cascadia_demo_app_storage:/app/storage
       - cascadia_demo_app_vault:/app/vault
-      - ./demo-data:/app/demo-data:ro
+      - cascadia_demo_app_data:/app/demo-data:ro
+    # First-boot seed (drizzle push + minimal seed + demo seed with vault
+    # ingest) takes 60-120s before the HTTP server starts. Override the
+    # Dockerfile HEALTHCHECK's start_period accordingly.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 180s
     networks: [cascadia-demo]
     # First boot: push schema → minimal seed → demo seed → serve.
     # All steps are idempotent so reboots are safe.
@@ -103,8 +130,7 @@ services:
       && npm run serve"
 
   cad-converter:
-    build:
-      context: ./workers/cad-converter
+    image: ghcr.io/cascadia-plm/cascadia-cad-converter:latest
     container_name: cascadia-demo-cad-converter
     restart: unless-stopped
     depends_on:
@@ -123,10 +149,7 @@ services:
     networks: [cascadia-demo]
 
   jobs-worker:
-    build:
-      context: .
-      dockerfile: workers/node/Dockerfile
-      target: production
+    image: ghcr.io/cascadia-plm/cascadia-jobs-worker:latest
     container_name: cascadia-demo-jobs-worker
     restart: unless-stopped
     depends_on:
@@ -147,6 +170,7 @@ volumes:
   cascadia_demo_rabbitmq_data:
   cascadia_demo_app_storage:
   cascadia_demo_app_vault:
+  cascadia_demo_app_data:
 
 networks:
   cascadia-demo:

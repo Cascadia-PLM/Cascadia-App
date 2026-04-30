@@ -6,25 +6,25 @@ Cascadia PLM ships as a set of Docker images built from a single monorepo. Each 
 
 | Image                    | Dockerfile                         | Base Image                                       | Purpose                         | Port |
 | ------------------------ | ---------------------------------- | ------------------------------------------------ | ------------------------------- | ---- |
-| `cascadia/app`           | `docker/app.Dockerfile`            | `node:20-alpine`                                 | Core web application (UI + API) | 3000 |
+| `ghcr.io/cascadia-plm/cascadia-app`           | `docker/app.Dockerfile`            | `node:20-alpine`                                 | Core web application (UI + API) | 3000 |
 | `cascadia/vault`         | `docker/vault.Dockerfile`          | `node:20-alpine`                                 | Standalone file storage service | 3001 |
-| `cascadia/jobs`          | `workers/node/Dockerfile`          | `node:20-alpine`                                 | Background job workers          | 3002 |
-| `cascadia/cad-converter` | `workers/cad-converter/Dockerfile` | `condaforge/miniforge3` + `debian:bookworm-slim` | STEP/IGES to STL/GLB conversion | 3003 |
+| `ghcr.io/cascadia-plm/cascadia-jobs-worker`          | `workers/node/Dockerfile`          | `node:20-alpine`                                 | Background job workers          | 3002 |
+| `ghcr.io/cascadia-plm/cascadia-cad-converter` | `workers/cad-converter/Dockerfile` | `condaforge/miniforge3` + `debian:bookworm-slim` | STEP/IGES to STL/GLB conversion | 3003 |
 
 ### Building Images
 
 ```bash
 # Core app
-docker build -t cascadia/app -f docker/app.Dockerfile .
+docker build -t ghcr.io/cascadia-plm/cascadia-app -f docker/app.Dockerfile .
 
 # Vault service
 docker build -t cascadia/vault -f docker/vault.Dockerfile .
 
 # Jobs server
-docker build -t cascadia/jobs -f workers/node/Dockerfile .
+docker build -t ghcr.io/cascadia-plm/cascadia-jobs-worker -f workers/node/Dockerfile .
 
 # CAD converter
-docker build -t cascadia/cad-converter -f workers/cad-converter/Dockerfile workers/cad-converter/
+docker build -t ghcr.io/cascadia-plm/cascadia-cad-converter -f workers/cad-converter/Dockerfile workers/cad-converter/
 ```
 
 ## Multi-Stage Dockerfile Builds
@@ -172,19 +172,19 @@ Production compose files use `image:` instead of `build:`:
 ```yaml
 services:
   app:
-    image: cascadia/app:${APP_VERSION:-latest}
+    image: ghcr.io/cascadia-plm/cascadia-app:${APP_VERSION:-latest}
 ```
 
 Before deploying, push your images to a registry or build them on each host:
 
 ```bash
 # Build and tag
-docker build -t cascadia/app:1.0.0 -f docker/app.Dockerfile .
-docker build -t cascadia/jobs:1.0.0 -f workers/node/Dockerfile .
+docker build -t ghcr.io/cascadia-plm/cascadia-app:1.0.0 -f docker/app.Dockerfile .
+docker build -t ghcr.io/cascadia-plm/cascadia-jobs-worker:1.0.0 -f workers/node/Dockerfile .
 
-# Push to registry
-docker tag cascadia/app:1.0.0 registry.example.com/cascadia/app:1.0.0
-docker push registry.example.com/cascadia/app:1.0.0
+# Push to a private registry (substitute your own host)
+docker tag ghcr.io/cascadia-plm/cascadia-app:1.0.0 registry.example.com/cascadia-app:1.0.0
+docker push registry.example.com/cascadia-app:1.0.0
 ```
 
 ## Volumes

@@ -393,7 +393,9 @@ if (SKIP_FILES) {
     }
 
     // GLB is always the primary cad_model — that's what the 3D viewer renders.
-    await ingest(glbFileId, glbSrc, `${part.cadFileBase}.glb`, 'cad_model', true, { units: 'mm' })
+    // hasColors=true tells the viewer to keep the embedded glTF materials
+    // instead of overriding with its uniform gray preset.
+    await ingest(glbFileId, glbSrc, `${part.cadFileBase}.glb`, 'cad_model', true, { units: 'mm', hasColors: true })
     // STEP secondary, only if developer kept it locally.
     if (stepFileId) {
       await ingest(stepFileId, stepSrc, `${part.cadFileBase}.step`, 'cad_model', false, { units: 'mm' })

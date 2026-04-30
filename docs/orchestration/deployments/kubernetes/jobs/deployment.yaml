@@ -25,7 +25,7 @@ spec:
 
       containers:
         - name: jobs
-          image: cascadia/jobs:latest
+          image: ghcr.io/cascadia-plm/cascadia-jobs-worker:latest
           imagePullPolicy: Always
 
           ports:

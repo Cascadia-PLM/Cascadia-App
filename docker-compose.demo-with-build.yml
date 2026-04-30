@@ -1,0 +1,160 @@
+# Cascadia PLM — Demo stack (CONTRIBUTOR variant: builds images from source)
+#
+# For end-users without the repo cloned, use docker-compose.demo.yml instead
+# (image-only, pulls pre-built images from ghcr.io/cascadia-plm/...).
+#
+# Use this file when you want to test local source changes against the demo
+# seed before pushing — every `up` rebuilds the app, cad-converter, and
+# jobs-worker images from your working tree.
+#
+# Usage:
+#   docker compose -f docker-compose.demo-with-build.yml up -d
+#
+# Then open http://localhost:3000 and log in with:
+#   admin@cascadia.local / Cascadia
+#
+# The first boot pushes the schema, runs the minimal seed, then loads the
+# TDJ-25 robot-arm demo (88 parts, 101 BOM rows, ~79 STEP+GLB+thumb trios).
+# Subsequent boots are no-ops — the demo seed exits early when it sees the
+# ROBOT-ARM program already exists.
+#
+# Reset everything (wipes only the demo's volumes — does not touch the dev
+# stack from docker-compose.yml):
+#   docker compose -f docker-compose.demo-with-build.yml down -v
+#
+# Notes:
+#   * Shares the project name `cascadia-demo` with docker-compose.demo.yml
+#     so volumes/containers don't duplicate if you switch between files.
+#   * The cad-converter container handles STEP→GLB conversion at runtime for
+#     any user uploads. The seed ships pre-converted GLBs so first-load 3D
+#     viewer is instant; the converter is only exercised when you upload
+#     your own STEP files via the UI.
+#   * All volumes are namespaced cascadia_demo_* so they coexist safely with
+#     the dev compose's cascadia-* volumes.
+
+name: cascadia-demo
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: cascadia-demo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cascadia
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - cascadia_demo_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d cascadia']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks: [cascadia-demo]
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: cascadia-demo-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: cascadia
+      RABBITMQ_DEFAULT_PASS: cascadia
+    volumes:
+      - cascadia_demo_rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks: [cascadia-demo]
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/app.Dockerfile
+      target: production
+    container_name: cascadia-demo-app
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    environment:
+      NODE_ENV: production
+      # Demo Postgres is on a private compose network — no TLS available.
+      DATABASE_SSL: disable
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cascadia
+      BETTER_AUTH_SECRET: cascadia-demo-secret-replace-for-real-deploys
+      BETTER_AUTH_URL: http://localhost:3000
+      BASE_URL: http://localhost:3000
+      FILE_STORAGE_PATH: /app/storage/files
+      VAULT_TYPE: local
+      VAULT_ROOT: /app/vault
+      RABBITMQ_URL: amqp://cascadia:cascadia@rabbitmq:5672
+      DEMO_DATA_DIR: /app/demo-data
+    ports:
+      - '${DEMO_APP_PORT:-3000}:3000'
+    volumes:
+      - cascadia_demo_app_storage:/app/storage
+      - cascadia_demo_app_vault:/app/vault
+      - ./demo-data:/app/demo-data:ro
+    networks: [cascadia-demo]
+    # First boot: push schema → minimal seed → demo seed → serve.
+    # All steps are idempotent so reboots are safe.
+    command: >
+      sh -c "npx drizzle-kit push --force
+      && npx tsx scripts/seed-minimal.ts
+      && npx tsx scripts/seed-demo-robot-arm.ts
+      && npm run serve"
+
+  cad-converter:
+    build:
+      context: ./workers/cad-converter
+    container_name: cascadia-demo-cad-converter
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cascadia
+      RABBITMQ_URL: amqp://cascadia:cascadia@rabbitmq:5672
+      VAULT_ROOT: /vault
+      WORKER_CONCURRENCY: 2
+      HEALTH_PORT: 3003
+    volumes:
+      # Share the app's vault volume so the converter can read user uploads
+      # and write STL/GLB outputs back to the same store the app sees.
+      - cascadia_demo_app_vault:/vault
+    networks: [cascadia-demo]
+
+  jobs-worker:
+    build:
+      context: .
+      dockerfile: workers/node/Dockerfile
+      target: production
+    container_name: cascadia-demo-jobs-worker
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    environment:
+      NODE_ENV: production
+      DATABASE_SSL: disable
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cascadia
+      RABBITMQ_URL: amqp://cascadia:cascadia@rabbitmq:5672
+      WORKER_CONCURRENCY: 5
+      JOB_TYPES: '*'
+      JOB_TIMEOUT: 300000
+    networks: [cascadia-demo]
+
+volumes:
+  cascadia_demo_postgres_data:
+  cascadia_demo_rabbitmq_data:
+  cascadia_demo_app_storage:
+  cascadia_demo_app_vault:
+
+networks:
+  cascadia-demo:
+    driver: bridge

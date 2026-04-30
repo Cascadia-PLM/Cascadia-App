@@ -206,7 +206,7 @@ The cloud-database compose file runs only the application container -- no databa
 ```yaml
 services:
   app:
-    image: cascadia/app:${APP_VERSION:-latest}
+    image: ghcr.io/cascadia-plm/cascadia-app:${APP_VERSION:-latest}
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-production}

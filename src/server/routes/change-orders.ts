@@ -121,12 +121,12 @@ app.get(
           }
 
           const paginatedIds = changeOrderIds.slice(offset, offset + limit)
-          const changeOrders = await Promise.all(
+          const records = await Promise.all(
             paginatedIds.map((id) => ItemService.findById(id)),
           )
 
           const response: Record<string, unknown> = {
-            changeOrders: changeOrders.filter(Boolean),
+            changeOrders: records.filter(Boolean),
             total: changeOrderIds.length,
           }
           if (includeCounts)
@@ -172,12 +172,12 @@ app.get(
           }
 
           const paginatedIds = changeOrderIds.slice(offset, offset + limit)
-          const changeOrders = await Promise.all(
+          const records = await Promise.all(
             paginatedIds.map((id) => ItemService.findById(id)),
           )
 
           const response: Record<string, unknown> = {
-            changeOrders: changeOrders.filter(Boolean),
+            changeOrders: records.filter(Boolean),
             total: changeOrderIds.length,
           }
           if (includeCounts)
@@ -211,11 +211,11 @@ app.get(
         const url = new URL(request.url)
         const designId = url.searchParams.get('designId') ?? undefined
 
-        const changeOrders = await ChangeOrderService.getEditableChangeOrders({
+        const editable = await ChangeOrderService.getEditableChangeOrders({
           designId,
         })
 
-        return { changeOrders }
+        return { changeOrders: editable }
       },
     ),
   ),
@@ -1804,9 +1804,9 @@ app.get(
     apiHandler(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
-        const designs = await ChangeOrderService.getEcoDesigns(params.id)
+        const ecoDesigns = await ChangeOrderService.getEcoDesigns(params.id)
 
-        return { designs }
+        return { designs: ecoDesigns }
       },
     ),
   ),
@@ -1915,7 +1915,7 @@ app.get(
         let versionContext: VersionContext
         if (
           ecoDesignAssoc?.mergeStatus === 'merged' &&
-          ecoDesignAssoc?.mergeCommitId
+          ecoDesignAssoc.mergeCommitId
         ) {
           // Released ECO - show historical snapshot at merge
           versionContext = {
@@ -2479,8 +2479,8 @@ app.get(
               })
               if (designInfo?.code || designInfo?.name) {
                 externalDesignMap.set(resolvedItem.id, {
-                  code: designInfo?.code,
-                  name: designInfo?.name,
+                  code: designInfo.code,
+                  name: designInfo.name,
                 })
               }
             }
@@ -3224,10 +3224,10 @@ app.put(
           )
         }
 
-        const body = (await request.json()) as {
+        const body = (await request.json()) as Partial<{
           states: Array<WorkflowState>
           transitions: Array<InstanceWorkflowTransition>
-        }
+        }>
 
         if (!body.states || !body.transitions) {
           throw new ValidationError('states and transitions are required')

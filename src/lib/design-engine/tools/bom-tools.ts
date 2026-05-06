@@ -297,7 +297,7 @@ export function createBomTools(
     outputSchema: z.object({
       tempId: z.string(),
     }),
-  }).server(async (input) => {
+  }).server((input) => {
     const tempId = crypto.randomUUID()
 
     const proposedPart: ProposedPart = {
@@ -382,7 +382,7 @@ export function createBomTools(
     outputSchema: z.object({
       tempId: z.string(),
     }),
-  }).server(async (input) => {
+  }).server((input) => {
     const tempId = crypto.randomUUID()
     const bomNode: BomNodeDraft = {
       tempId,
@@ -427,7 +427,7 @@ export function createBomTools(
     outputSchema: z.object({
       success: z.boolean(),
     }),
-  }).server(async (input) => {
+  }).server((input) => {
     const parent = state.nodes.get(input.parentTempId)
     const child = state.nodes.get(input.childTempId)
     if (!parent || !child) return { success: false }
@@ -455,7 +455,7 @@ export function createBomTools(
     outputSchema: z.object({
       linked: z.boolean(),
     }),
-  }).server(async (input) => {
+  }).server((input) => {
     const node = state.nodes.get(input.tempId)
     if (!node) return { linked: false }
 
@@ -476,7 +476,7 @@ export function createBomTools(
     outputSchema: z.object({
       acknowledged: z.boolean(),
     }),
-  }).server(async (input) => {
+  }).server((input) => {
     const questionId = crypto.randomUUID()
     onClarification(questionId, input.question, input.options)
     return { acknowledged: true }
@@ -533,7 +533,7 @@ export function createBomTools(
       success: z.boolean(),
       interfaceCount: z.number(),
     }),
-  }).server(async (input) => {
+  }).server((input) => {
     const node = state.nodes.get(input.tempId)
     if (!node) return { success: false, interfaceCount: 0 }
 
@@ -576,7 +576,7 @@ export function createBomTools(
       success: z.boolean(),
       mappingCount: z.number(),
     }),
-  }).server(async (input) => {
+  }).server((input) => {
     const node = state.nodes.get(input.tempId)
     if (!node) return { success: false, mappingCount: 0 }
 
@@ -681,7 +681,7 @@ export function createBomTools(
       success: z.boolean(),
       message: z.string().optional(),
     }),
-  }).server(async (input) => {
+  }).server((input) => {
     const node = state.nodes.get(input.tempId)
     if (!node) {
       return { success: false, message: `Node ${input.tempId} not found` }
@@ -733,7 +733,7 @@ export function createBomTools(
       message: z.string().optional(),
       computedMetadata: z.record(z.string(), z.unknown()).optional(),
     }),
-  }).server(async (input) => {
+  }).server((input) => {
     const node = state.nodes.get(input.tempId)
     if (!node) {
       return { success: false, message: `Node ${input.tempId} not found` }

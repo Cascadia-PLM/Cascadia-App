@@ -112,20 +112,19 @@ async function getAccessibleDesignIds(userId: string): Promise<Array<string>> {
  * Enrich items with design metadata
  */
 async function enrichWithDesignMetadata<T extends { designId?: string | null }>(
-  items: Array<T>,
+  rows: Array<T>,
   contextDesignId?: string,
 ) {
-  // Collect unique design IDs
   const designIds = [
     ...new Set(
-      items
+      rows
         .map((i) => i.designId)
         .filter((id): id is string => id !== null && id !== undefined),
     ),
   ]
 
   if (designIds.length === 0) {
-    return items.map((item) => ({
+    return rows.map((item) => ({
       ...item,
       designCode: null,
       designName: null,
@@ -133,7 +132,6 @@ async function enrichWithDesignMetadata<T extends { designId?: string | null }>(
     }))
   }
 
-  // Fetch design metadata
   const designsData = await db
     .select({ id: designs.id, code: designs.code, name: designs.name })
     .from(designs)
@@ -143,8 +141,7 @@ async function enrichWithDesignMetadata<T extends { designId?: string | null }>(
     designsData.map((d) => [d.id, { code: d.code, name: d.name }]),
   )
 
-  // Enrich items
-  return items.map((item) => {
+  return rows.map((item) => {
     const design = item.designId ? designMap.get(item.designId) : null
     return {
       ...item,
@@ -316,15 +313,14 @@ app.get(
           designIds = await getAccessibleDesignIds(user.id)
         }
 
-        const items = await ItemService.searchByItemNumber(q, {
+        const searchResults = await ItemService.searchByItemNumber(q, {
           limit,
           itemTypes,
           designIds,
         })
 
-        // Enrich with design metadata
         const enrichedItems = await enrichWithDesignMetadata(
-          items,
+          searchResults,
           contextDesignId,
         )
 
@@ -568,22 +564,20 @@ app.post(
         throw ValidationError.fromZodError(parseResult.error)
       }
 
-      const { items, bypassBranchProtection } = parseResult.data
+      const { items: requestItems, bypassBranchProtection } = parseResult.data
 
-      // Limit batch size to prevent abuse
-      if (items.length > 100) {
+      if (requestItems.length > 100) {
         throw new ValidationError('Batch size limited to 100 items')
       }
 
-      const created: Array<BaseItem> = []
+      const createdItems: Array<BaseItem> = []
       const errors: Array<{
         itemNumber: string
         error: string
         details?: string
       }> = []
 
-      // Process each item
-      for (const itemRequest of items) {
+      for (const itemRequest of requestItems) {
         try {
           const { itemType, data } = itemRequest
 
@@ -609,7 +603,7 @@ app.post(
               bypassBranchProtection,
             })
           }
-          created.push(createdItem)
+          createdItems.push(createdItem)
         } catch (error) {
           const itemData = itemRequest.data as { itemNumber?: string }
           errors.push({
@@ -621,17 +615,14 @@ app.post(
       }
 
       const response: BatchCreateResponse = {
-        created,
+        created: createdItems,
         errors,
       }
 
-      // Return 207 Multi-Status if there are both successes and errors
-      // Return 201 Created if all succeeded
-      // Return 400 Bad Request if all failed
       let status = 201
-      if (errors.length > 0 && created.length > 0) {
-        status = 207 // Multi-Status
-      } else if (errors.length > 0 && created.length === 0) {
+      if (errors.length > 0 && createdItems.length > 0) {
+        status = 207
+      } else if (errors.length > 0 && createdItems.length === 0) {
         status = 400
       }
 
@@ -742,18 +733,16 @@ app.post(
         throw ValidationError.fromZodError(parseResult.error)
       }
 
-      const { items, commitMessage } = parseResult.data
+      const { items: requestItems, commitMessage } = parseResult.data
 
-      // Limit batch size to prevent abuse
-      if (items.length > 100) {
+      if (requestItems.length > 100) {
         throw new ValidationError('Batch size limited to 100 items')
       }
 
       const updated: Array<BaseItem> = []
       const errors: Array<{ id: string; error: string; details?: string }> = []
 
-      // Process each item
-      for (const itemRequest of items) {
+      for (const itemRequest of requestItems) {
         try {
           const { id, data } = itemRequest
 
@@ -899,8 +888,8 @@ app.get(
       const limit = parseInt(url.searchParams.get('limit') || '100', 10)
       const offset = parseInt(url.searchParams.get('offset') || '0', 10)
       const sortField = url.searchParams.get('sortField') || undefined
-      const sortDirection =
-        (url.searchParams.get('sortDirection') as 'asc' | 'desc') || undefined
+      const sortDirection = (url.searchParams.get('sortDirection') ||
+        undefined) as 'asc' | 'desc' | undefined
       const includeCounts = url.searchParams.get('includeCounts') === 'true'
       const countStates = url.searchParams.get('countStates')
 
@@ -919,9 +908,6 @@ app.get(
       // Resolve programId to designIds when no specific designId is set
       let resolvedDesignIds: Array<string> | undefined
       if (programId && !designId) {
-        const { db } = await import('@/lib/db')
-        const { designs } = await import('@/lib/db/schema/designs')
-        const { eq } = await import('drizzle-orm')
         const programDesigns = await db
           .select({ id: designs.id })
           .from(designs)
@@ -2296,10 +2282,10 @@ app.get(
   adapt(
     apiHandler({}, async ({ params }) => {
       const { id } = params
-      const requirements =
+      const satisfiedRequirements =
         await RequirementService.getRequirementsSatisfiedBy(id)
 
-      return { requirements }
+      return { requirements: satisfiedRequirements }
     }),
   ),
 )

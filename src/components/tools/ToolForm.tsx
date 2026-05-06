@@ -48,7 +48,7 @@ export function ToolForm({
   isSubmitting,
 }: ToolFormProps) {
   const [capabilities, setCapabilities] = useState<Record<string, unknown>>(
-    (tool?.capabilities as Record<string, unknown>) ?? {},
+    tool?.capabilities ?? {},
   )
 
   const form = useForm({
@@ -77,7 +77,7 @@ export function ToolForm({
     onSubmit: async ({ value }) => {
       const submissionData = {
         ...value,
-        revision: value.revision?.trim() || 'A',
+        revision: value.revision.trim() || 'A',
         capabilities:
           Object.keys(capabilities).length > 0 ? capabilities : undefined,
       } as Tool
@@ -111,10 +111,10 @@ export function ToolForm({
         {(field) => (
           <FormField
             label="Name"
-            error={field.state.meta.errors?.[0] as string | undefined}
+            error={field.state.meta.errors[0] as string | undefined}
           >
             <Input
-              value={field.state.value ?? ''}
+              value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               onBlur={field.handleBlur}
               placeholder="e.g., Prusa MK4S"
@@ -128,7 +128,7 @@ export function ToolForm({
         {(field) => (
           <FormField
             label="Tool Type"
-            error={field.state.meta.errors?.[0] as string | undefined}
+            error={field.state.meta.errors[0] as string | undefined}
           >
             <Select
               value={field.state.value}
@@ -156,7 +156,7 @@ export function ToolForm({
         {(field) => (
           <FormField
             label="Subtype"
-            error={field.state.meta.errors?.[0] as string | undefined}
+            error={field.state.meta.errors[0] as string | undefined}
           >
             <SearchableSelect
               value={field.state.value}
@@ -175,10 +175,10 @@ export function ToolForm({
           {(field) => (
             <FormField
               label="Manufacturer"
-              error={field.state.meta.errors?.[0] as string | undefined}
+              error={field.state.meta.errors[0] as string | undefined}
             >
               <Input
-                value={field.state.value ?? ''}
+                value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
                 placeholder="e.g., Prusa Research"
@@ -191,10 +191,10 @@ export function ToolForm({
           {(field) => (
             <FormField
               label="Model"
-              error={field.state.meta.errors?.[0] as string | undefined}
+              error={field.state.meta.errors[0] as string | undefined}
             >
               <Input
-                value={field.state.value ?? ''}
+                value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
                 placeholder="e.g., MK4S"
@@ -210,7 +210,7 @@ export function ToolForm({
           {(field) => (
             <FormField
               label="Status"
-              error={field.state.meta.errors?.[0] as string | undefined}
+              error={field.state.meta.errors[0] as string | undefined}
             >
               <Select
                 value={field.state.value}
@@ -239,10 +239,10 @@ export function ToolForm({
           {(field) => (
             <FormField
               label="Location"
-              error={field.state.meta.errors?.[0] as string | undefined}
+              error={field.state.meta.errors[0] as string | undefined}
             >
               <Input
-                value={field.state.value ?? ''}
+                value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
                 placeholder="e.g., Workshop bench 3"
@@ -266,10 +266,10 @@ export function ToolForm({
         {(field) => (
           <FormField
             label="Notes"
-            error={field.state.meta.errors?.[0] as string | undefined}
+            error={field.state.meta.errors[0] as string | undefined}
           >
             <Textarea
-              value={field.state.value ?? ''}
+              value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               onBlur={field.handleBlur}
               placeholder="Free-form notes about this tool..."

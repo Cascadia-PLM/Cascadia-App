@@ -387,9 +387,7 @@ export function TransitionPropertiesPanel({
                             ? { fieldName: '', operator: 'is_not_empty' }
                             : value === 'user_role'
                               ? { requiredRoles: [] }
-                              : value === 'approval_count'
-                                ? { requiredCount: 1 }
-                                : { script: '' },
+                              : { requiredCount: 1 },
                       })
                     }
                   >
@@ -853,7 +851,7 @@ export function TransitionPropertiesPanel({
                               <Select
                                 value={
                                   (action.config as TransitionDrivenItemConfig)
-                                    ?.drivenLifecycleId || ''
+                                    .drivenLifecycleId || ''
                                 }
                                 onValueChange={(value) => {
                                   const config =
@@ -884,7 +882,7 @@ export function TransitionPropertiesPanel({
                                               'transition_driven_item' &&
                                             (
                                               a.config as TransitionDrivenItemConfig
-                                            )?.drivenLifecycleId ===
+                                            ).drivenLifecycleId ===
                                               lifecycle.id,
                                         )
                                       return !existingAction
@@ -906,14 +904,14 @@ export function TransitionPropertiesPanel({
 
                             {/* From State Selection */}
                             {(action.config as TransitionDrivenItemConfig)
-                              ?.drivenLifecycleId && (
+                              .drivenLifecycleId && (
                               <div className="space-y-1">
                                 <Label className="text-xs">From State</Label>
                                 <Select
                                   value={
                                     (
                                       action.config as TransitionDrivenItemConfig
-                                    )?.fromStateId || ''
+                                    ).fromStateId || ''
                                   }
                                   onValueChange={(value) => {
                                     const config =
@@ -933,7 +931,7 @@ export function TransitionPropertiesPanel({
                                           l.id ===
                                           (
                                             action.config as TransitionDrivenItemConfig
-                                          )?.drivenLifecycleId,
+                                          ).drivenLifecycleId,
                                       )
                                       ?.states.map((state) => (
                                         <SelectItem
@@ -953,14 +951,14 @@ export function TransitionPropertiesPanel({
 
                             {/* Target State Selection */}
                             {(action.config as TransitionDrivenItemConfig)
-                              ?.drivenLifecycleId && (
+                              .drivenLifecycleId && (
                               <div className="space-y-1">
                                 <Label className="text-xs">To State</Label>
                                 <Select
                                   value={
                                     (
                                       action.config as TransitionDrivenItemConfig
-                                    )?.targetStateId || ''
+                                    ).targetStateId || ''
                                   }
                                   onValueChange={(value) => {
                                     const config =
@@ -983,7 +981,7 @@ export function TransitionPropertiesPanel({
                                           l.id ===
                                           (
                                             action.config as TransitionDrivenItemConfig
-                                          )?.drivenLifecycleId,
+                                          ).drivenLifecycleId,
                                       )
                                       ?.states.map((state) => (
                                         <SelectItem
@@ -1008,7 +1006,7 @@ export function TransitionPropertiesPanel({
                                 id={`validateGates-${action.id}`}
                                 checked={
                                   (action.config as TransitionDrivenItemConfig)
-                                    ?.validateGates ?? true
+                                    .validateGates
                                 }
                                 onChange={(e) => {
                                   const config =

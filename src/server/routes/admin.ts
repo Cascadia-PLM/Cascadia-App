@@ -4,7 +4,7 @@ import { eq, isNull } from 'drizzle-orm'
 import { streamToText } from '@tanstack/ai'
 import { adapt } from '../adapter'
 import type { AIProviderConfig as AIProviderDBConfig } from '@/lib/db/schema/ai'
-import type { AIProviderConfig } from '@/lib/ai/adapters'
+import type { AIProviderConfig, ProviderType } from '@/lib/ai/adapters'
 import { apiHandler, parseQuery } from '@/lib/api/handler'
 import { db } from '@/lib/db'
 import { aiSettings } from '@/lib/db/schema/ai'
@@ -231,6 +231,9 @@ app.post(
       if (!effectiveApiKey && provider === 'anthropic') {
         effectiveApiKey = process.env.ANTHROPIC_API_KEY
       }
+      if (!effectiveApiKey && provider === 'gemini') {
+        effectiveApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
+      }
 
       // Ollama doesn't need an API key
       if (provider !== 'ollama' && !effectiveApiKey) {
@@ -245,33 +248,24 @@ app.post(
         )
       }
 
-      // Check for unimplemented providers
-      if (provider === 'gemini') {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'NOT_IMPLEMENTED',
-              message: 'Gemini adapter is not yet implemented',
-            },
-          }),
-          { status: 501, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
-
       if (provider === 'ollama') {
-        // For Ollama, just check if the server is reachable
-        const ollamaUrl = baseURL || 'http://localhost:11434'
+        // For Ollama, do a fast reachability check against /api/tags before
+        // running an actual chat round-trip. The user-facing baseURL may or
+        // may not include /v1 — strip it for the native tags endpoint.
+        const rawBase = (baseURL || 'http://localhost:11434').replace(
+          /\/+$/,
+          '',
+        )
+        const ollamaNativeUrl = rawBase.endsWith('/v1')
+          ? rawBase.slice(0, -3)
+          : rawBase
         try {
-          const response = await fetch(`${ollamaUrl}/api/tags`, {
+          const response = await fetch(`${ollamaNativeUrl}/api/tags`, {
             method: 'GET',
             signal: AbortSignal.timeout(5000),
           })
           if (!response.ok) {
             throw new Error(`Ollama returned status ${response.status}`)
-          }
-          return {
-            success: true,
-            message: 'Connected to Ollama successfully!',
           }
         } catch (ollamaError) {
           const err = ollamaError as Error
@@ -279,7 +273,7 @@ app.post(
             JSON.stringify({
               error: {
                 code: 'CONNECTION_ERROR',
-                message: `Failed to connect to Ollama at ${ollamaUrl}: ${err.message}`,
+                message: `Failed to connect to Ollama at ${ollamaNativeUrl}: ${err.message}`,
               },
             }),
             {
@@ -292,7 +286,7 @@ app.post(
 
       // Create config and adapter
       const config: AIProviderConfig = {
-        provider: provider as 'openai' | 'anthropic',
+        provider: provider as ProviderType,
         apiKey: effectiveApiKey,
         model,
         baseURL,
@@ -316,7 +310,11 @@ app.post(
             ? 'OpenAI'
             : provider === 'anthropic'
               ? 'Anthropic'
-              : provider
+              : provider === 'gemini'
+                ? 'Gemini'
+                : provider === 'ollama'
+                  ? 'Ollama'
+                  : provider
 
         return {
           success: true,

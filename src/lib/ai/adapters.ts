@@ -22,13 +22,23 @@ import { decrypt, isEncryptionConfigured } from '@/lib/crypto/encryption'
 export type { AIProviderConfig, ProviderType }
 
 /**
+ * Google's OpenAI-compatible Gemini endpoint. Accepts a Google AI Studio key
+ * as the bearer token and otherwise speaks the OpenAI chat-completions wire
+ * format, so we can reuse `createOpenaiChat` instead of a separate SDK.
+ */
+const GEMINI_OPENAI_BASE_URL =
+  'https://generativelanguage.googleapis.com/v1beta/openai/'
+
+const DEFAULT_OLLAMA_BASE_URL = 'http://localhost:11434/v1'
+
+/**
  * Default models for each provider
  */
 export const DEFAULT_MODELS: Record<ProviderType, string> = {
   openai: 'gpt-4.1',
   anthropic: 'claude-sonnet-4-6',
-  gemini: 'gemini-2.0-flash',
-  ollama: 'llama3.2',
+  gemini: 'gemini-2.5-flash',
+  ollama: 'llama3.3',
 }
 
 /**
@@ -72,11 +82,26 @@ export function getAdapter(config: AIProviderConfig) {
       return createAnthropicChat(model as any, config.apiKey)
     }
 
-    case 'gemini':
-      throw new Error('Gemini adapter not yet implemented')
+    case 'gemini': {
+      if (!config.apiKey) {
+        throw new Error('Gemini API key is required')
+      }
+      return createOpenaiChat(model as any, config.apiKey, {
+        baseURL: GEMINI_OPENAI_BASE_URL,
+      })
+    }
 
-    case 'ollama':
-      throw new Error('Ollama adapter not yet implemented')
+    case 'ollama': {
+      const rawBase = (config.baseURL || DEFAULT_OLLAMA_BASE_URL).replace(
+        /\/+$/,
+        '',
+      )
+      const baseURL = rawBase.endsWith('/v1') ? rawBase : `${rawBase}/v1`
+      // Ollama ignores the bearer token but the OpenAI SDK requires a non-empty string.
+      return createOpenaiChat(model as any, config.apiKey || 'ollama', {
+        baseURL,
+      })
+    }
 
     default:
       throw new Error(`Unknown provider: ${config.provider}`)
@@ -117,6 +142,8 @@ export async function loadProviderConfig(
   // Fall back to environment variables
   const openaiKey = process.env.OPENAI_API_KEY
   const anthropicKey = process.env.ANTHROPIC_API_KEY
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
+  const ollamaBaseURL = process.env.OLLAMA_BASE_URL
 
   if (openaiKey) {
     return {
@@ -135,8 +162,25 @@ export async function loadProviderConfig(
     }
   }
 
+  if (geminiKey) {
+    return {
+      provider: 'gemini',
+      apiKey: geminiKey,
+      model: process.env.GEMINI_MODEL || DEFAULT_MODELS.gemini,
+    }
+  }
+
+  if (ollamaBaseURL) {
+    return {
+      provider: 'ollama',
+      apiKey: '',
+      model: process.env.OLLAMA_MODEL || DEFAULT_MODELS.ollama,
+      baseURL: ollamaBaseURL,
+    }
+  }
+
   throw new Error(
-    'No AI provider configured. Set OPENAI_API_KEY or ANTHROPIC_API_KEY environment variable, or configure in AI settings.',
+    'No AI provider configured. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, or OLLAMA_BASE_URL environment variable, or configure in AI settings.',
   )
 }
 
@@ -165,7 +209,13 @@ export async function isAIEnabled(programId?: string): Promise<boolean> {
   }
 
   // Fall back to checking env vars
-  return !!(process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY)
+  return !!(
+    process.env.OPENAI_API_KEY ||
+    process.env.ANTHROPIC_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.OLLAMA_BASE_URL
+  )
 }
 
 /**
@@ -180,6 +230,14 @@ export function getAvailableProviders(): Array<ProviderType> {
 
   if (process.env.ANTHROPIC_API_KEY) {
     providers.push('anthropic')
+  }
+
+  if (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY) {
+    providers.push('gemini')
+  }
+
+  if (process.env.OLLAMA_BASE_URL) {
+    providers.push('ollama')
   }
 
   return providers

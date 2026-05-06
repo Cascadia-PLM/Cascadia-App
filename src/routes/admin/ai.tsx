@@ -47,29 +47,33 @@ interface AISettings {
 
 const DEFAULT_MODELS: Record<ProviderType, Array<string>> = {
   openai: [
+    'gpt-5',
+    'gpt-5-mini',
+    'gpt-5-nano',
     'gpt-4.1',
     'gpt-4.1-mini',
-    'gpt-4.1-nano',
-    'gpt-4o',
-    'gpt-4o-mini',
     'o3',
-    'o3-mini',
     'o4-mini',
   ],
   anthropic: [
-    'claude-opus-4-5-20251124',
-    'claude-sonnet-4-5-20250929',
-    'claude-haiku-4-5-20251001',
-    'claude-opus-4-20250514',
-    'claude-sonnet-4-20250514',
+    'claude-opus-4-7',
+    'claude-opus-4-6',
+    'claude-sonnet-4-6',
   ],
   gemini: [
+    'gemini-2.5-pro',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
     'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-1.5-pro',
-    'gemini-1.5-flash',
   ],
-  ollama: ['llama3.2', 'llama3.1', 'codellama', 'mistral', 'qwen2.5'],
+  ollama: [
+    'llama3.3',
+    'llama3.2',
+    'qwen2.5',
+    'qwen2.5-coder',
+    'mistral',
+    'codellama',
+  ],
 }
 
 const PROVIDER_LABELS: Record<ProviderType, string> = {
@@ -374,11 +378,6 @@ function AISettingsPage() {
                     ).map(([key, label]) => (
                       <SelectItem key={key} value={key}>
                         {label}
-                        {key === 'gemini' && (
-                          <span className="ml-2 text-slate-400">
-                            (Coming soon)
-                          </span>
-                        )}
                       </SelectItem>
                     ))}
                   </SelectContent>

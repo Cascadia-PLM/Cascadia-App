@@ -5,10 +5,13 @@ import { tagged } from '../adapter'
 import { apiHandler, created } from '@/lib/api/handler'
 import { AuthService } from '@/lib/auth/AuthService'
 import { SessionManager } from '@/lib/auth/session'
+import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { permissionService } from '@/lib/auth/permission-service'
 import { buildClearSessionCookie, buildSessionCookie } from '@/lib/auth/cookie'
 import { getSessionTokenFromRequest } from '@/lib/auth/server'
 import { getGitHubProvider } from '@/lib/auth/oauth'
+import { SettingKeys } from '@/lib/config/SettingKeys'
+import { SettingsService } from '@/lib/config/SettingsService'
 import {
   generateApiKey,
   getKeyPrefix,
@@ -96,6 +99,32 @@ app.get(
           return { authenticated: false }
         }
 
+        // Surface first-time-setup state alongside the session so the
+        // root route can decide whether to redirect to /setup without a
+        // second per-navigation fetch. Wrapped so a settings/role-check
+        // failure can't break login.
+        let setupStatus: {
+          completed: boolean
+          isGlobalAdmin: boolean
+        } = {
+          completed: true,
+          isGlobalAdmin: false,
+        }
+        try {
+          const [completedRaw, isGlobalAdmin] = await Promise.all([
+            SettingsService.getValue(SettingKeys.SETUP_COMPLETED),
+            AccessControlService.isGlobalAdmin(sessionData.user.id),
+          ])
+          setupStatus = {
+            completed: completedRaw === 'true',
+            isGlobalAdmin,
+          }
+        } catch {
+          // Default to "completed" so a transient failure doesn't lock
+          // an admin out into the wizard. The wizard is also reachable
+          // manually from the admin index.
+        }
+
         return {
           authenticated: true,
           user: {
@@ -103,6 +132,7 @@ app.get(
             email: sessionData.user.email,
             name: sessionData.user.name,
           },
+          setupStatus,
         }
       } catch {
         return { authenticated: false }

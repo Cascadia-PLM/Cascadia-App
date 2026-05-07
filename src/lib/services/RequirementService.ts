@@ -365,6 +365,19 @@ export class RequirementService {
       designId: childData.designId || parentRequirement.designId,
     }
 
+    // Defensive runtime check: callers may pass a wrongly-typed itemType via
+    // `as Requirement` casts despite the static `'Requirement'` constraint.
+    if (
+      derivedData.itemType &&
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- caller may bypass static type via cast
+      derivedData.itemType !== 'Requirement'
+    ) {
+      throw new ValidationError(
+        'Derived item must be a Requirement',
+        undefined,
+        { operation: 'deriveRequirement' },
+      )
+    }
 
     // Create the derived requirement
     const childRequirement = await ItemService.create(

@@ -116,17 +116,13 @@ export async function* runBomStage(
     clarifications: [],
     userMessages: [],
   }
-  // Backward compat
-  if (!artifacts.clarifications) artifacts.clarifications = []
-  if (!artifacts.userMessages) artifacts.userMessages = []
-
   const description = artifacts.description || session.description || ''
 
   // Build tool context — sessionId must be an ai_chat_sessions ID (for ai_usage_logs FK)
   const toolContext = {
     userId: session.userId,
     sessionId: session.aiChatSessionId ?? undefined,
-    programId: session.programId ?? undefined,
+    programId: session.programId,
     designId: session.designId ?? undefined,
   }
 
@@ -178,9 +174,7 @@ export async function* runBomStage(
 
   try {
     // Load AI provider
-    const providerConfig = await loadProviderConfig(
-      session.programId ?? undefined,
-    )
+    const providerConfig = await loadProviderConfig(session.programId)
     const adapter = getAdapter(providerConfig)
 
     // Build system prompt with clarification/user message context
@@ -347,7 +341,8 @@ export async function* runBomStage(
         yield result.value
       }
 
-      // If clarification was requested during continuation, pause
+      // If clarification was requested during continuation, pause.
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated via closure callback
       if (clarificationRef.requested && clarificationRef.data) {
         const clarData = clarificationRef.data as {
           questionId: string

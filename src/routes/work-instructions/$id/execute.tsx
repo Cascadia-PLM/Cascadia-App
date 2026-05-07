@@ -53,8 +53,6 @@ function ExecutionDataField({
       const numVal = value as number | ''
       const isOutOfRange =
         numVal !== '' &&
-        numVal !== undefined &&
-        numVal !== null &&
         ((block.fieldValidation?.min != null &&
           numVal < block.fieldValidation.min) ||
           (block.fieldValidation?.max != null &&
@@ -70,7 +68,7 @@ function ExecutionDataField({
           </label>
           <input
             type="number"
-            value={numVal ?? ''}
+            value={numVal}
             onChange={(e) =>
               onChange(e.target.value ? Number(e.target.value) : '')
             }
@@ -84,13 +82,13 @@ function ExecutionDataField({
             )}
             placeholder={
               block.fieldValidation?.min != null &&
-              block.fieldValidation?.max != null
+              block.fieldValidation.max != null
                 ? `${block.fieldValidation.min} – ${block.fieldValidation.max}`
                 : 'Enter value...'
             }
           />
           {block.fieldValidation?.min != null &&
-            block.fieldValidation?.max != null && (
+            block.fieldValidation.max != null && (
               <p className="text-sm text-slate-500">
                 Range: {block.fieldValidation.min} – {block.fieldValidation.max}
               </p>
@@ -252,19 +250,15 @@ function ExecutionStepBlockRenderer({
     )
   }
 
-  if (block.type === 'dataField') {
-    return (
-      <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-lg">
-        <ExecutionDataField
-          block={block}
-          value={fieldValues[block.id]}
-          onChange={(value) => onFieldChange(block.id, value)}
-        />
-      </div>
-    )
-  }
-
-  return null
+  return (
+    <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-lg">
+      <ExecutionDataField
+        block={block}
+        value={fieldValues[block.id]}
+        onChange={(value) => onFieldChange(block.id, value)}
+      />
+    </div>
+  )
 }
 
 function ExecutionModePage() {

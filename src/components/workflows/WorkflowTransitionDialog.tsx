@@ -271,7 +271,7 @@ export function WorkflowTransitionDialog({
                 </div>
               ) : releasePreview ? (
                 <div className="space-y-2 text-sm">
-                  {releasePreview.validationIssues?.length > 0 && (
+                  {releasePreview.validationIssues.length > 0 && (
                     <div className="space-y-1">
                       {releasePreview.validationIssues.map((issue, idx) => (
                         <div
@@ -289,11 +289,10 @@ export function WorkflowTransitionDialog({
                     </div>
                   )}
                   <div className="text-amber-800 dark:text-amber-200">
-                    {releasePreview.designs?.length ?? 0} design(s),{' '}
-                    {releasePreview.totalItems ?? 0} item(s) will be merged to
-                    main
+                    {releasePreview.designs.length} design(s),{' '}
+                    {releasePreview.totalItems} item(s) will be merged to main
                   </div>
-                  {releasePreview.designs?.map((design) => (
+                  {releasePreview.designs.map((design) => (
                     <div
                       key={design.designId}
                       className="ml-2 text-xs text-amber-700 dark:text-amber-300"
@@ -301,7 +300,7 @@ export function WorkflowTransitionDialog({
                       <span className="font-medium">{design.designName}</span>
                       {' — '}
                       {design.itemCount} item(s)
-                      {design.revisionsToAssign?.length > 0 && (
+                      {design.revisionsToAssign.length > 0 && (
                         <span>
                           , revisions:{' '}
                           {design.revisionsToAssign

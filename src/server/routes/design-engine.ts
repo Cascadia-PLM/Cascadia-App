@@ -97,7 +97,7 @@ function streamResponse(
           controller.enqueue(encoder.encode(sseData))
 
           // Persist artifacts on updates
-          if (event.type === 'artifact_update' && event.artifacts) {
+          if (event.type === 'artifact_update') {
             const current = await DesignSessionService.getById(sessionId)
             if (current?.artifacts) {
               const merged = {
@@ -416,7 +416,7 @@ app.post(
           const artifacts: DesignArtifacts = {
             ...current.artifacts,
             clarifications: [
-              ...(current.artifacts.clarifications ?? []),
+              ...current.artifacts.clarifications,
               {
                 questionId,
                 question:
@@ -429,7 +429,7 @@ app.post(
                 options: undefined,
               },
             ],
-            userMessages: current.artifacts.userMessages ?? [],
+            userMessages: current.artifacts.userMessages,
             pendingClarificationId: undefined,
           }
           await DesignSessionService.updateArtifacts(params.id, artifacts)
@@ -471,9 +471,9 @@ app.post(
         if (current?.artifacts) {
           const artifacts: DesignArtifacts = {
             ...current.artifacts,
-            clarifications: current.artifacts.clarifications ?? [],
+            clarifications: current.artifacts.clarifications,
             userMessages: [
-              ...(current.artifacts.userMessages ?? []),
+              ...current.artifacts.userMessages,
               {
                 id: crypto.randomUUID(),
                 text: message,
@@ -549,8 +549,8 @@ app.post(
           params.id,
           abortController.signal,
         )
-      } else if (action === 'resume') {
-        // Resume continues whatever stage was in progress
+      } else {
+        // 'resume' — continue whatever stage was in progress
         const currentStage = session.stage
         if (currentStage === 'requirements_drafting') {
           eventSource = designEngine.runRequirementsStage(
@@ -565,8 +565,6 @@ app.post(
         } else {
           throw new ValidationError(`Cannot resume from stage: ${currentStage}`)
         }
-      } else {
-        throw new ValidationError(`Unsupported streaming action: ${action}`)
       }
 
       return streamResponse(eventSource, params.id, request)

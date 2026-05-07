@@ -78,8 +78,10 @@ const statusVariant = (status: string) => {
 
 function subtypeLabel(subtype?: string): string {
   if (!subtype) return '-'
-  const known = TOOL_SUBTYPES[subtype as KnownToolSubtype]
-  return known?.label ?? subtype
+  const known = TOOL_SUBTYPES[subtype as KnownToolSubtype] as
+    | { label: string }
+    | undefined
+  return known ? known.label : subtype
 }
 
 const createEmptyTool = (): Tool => ({
@@ -127,15 +129,13 @@ export function ToolDetail({
   const [tool, setTool] = useState<Tool>(() => initialTool || createEmptyTool())
   const [isEditing, setIsEditing] = useState(isCreateMode)
   const [capabilities, setCapabilities] = useState<Record<string, unknown>>(
-    (initialTool?.capabilities as Record<string, unknown>) ?? {},
+    initialTool?.capabilities ?? {},
   )
 
   useEffect(() => {
     if (initialTool) {
       setTool(initialTool)
-      setCapabilities(
-        (initialTool.capabilities as Record<string, unknown>) ?? {},
-      )
+      setCapabilities(initialTool.capabilities ?? {})
     }
   }, [initialTool])
 
@@ -163,10 +163,8 @@ export function ToolDetail({
     if (isCreateMode) {
       onCancel()
     } else {
-      setTool(initialTool || createEmptyTool())
-      setCapabilities(
-        (initialTool?.capabilities as Record<string, unknown>) ?? {},
-      )
+      setTool(initialTool)
+      setCapabilities(initialTool.capabilities ?? {})
       setIsEditing(false)
     }
   }

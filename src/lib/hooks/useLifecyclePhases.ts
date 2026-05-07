@@ -29,7 +29,7 @@ function fetchLifecycle(itemType: string): Promise<LifecycleData | null> {
   if (existing) return existing
 
   const promise = apiFetch<{ data: LifecycleData }>(
-    `/api/lifecycles/by-item-type/${encodeURIComponent(itemType)}`,
+    `/api/v1/lifecycles/by-item-type/${encodeURIComponent(itemType)}`,
   )
     .then((res) => res.data)
     .catch(() => null)

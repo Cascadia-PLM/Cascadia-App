@@ -52,7 +52,7 @@ export function ApprovalDialog({
   const handleSubmit = async (vote: 'approved' | 'rejected') => {
     setSubmitting(true)
     try {
-      await apiFetch(`/api/change-orders/${changeOrderId}/approvals`, {
+      await apiFetch(`/api/v1/change-orders/${changeOrderId}/approvals`, {
         method: 'POST',
         body: JSON.stringify({
           vote,

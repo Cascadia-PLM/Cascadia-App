@@ -6,7 +6,7 @@
 - **Area**: API
 - **Description**: There is no `GET /api/work-instructions` (index/list) endpoint. Work instructions can only be listed through the generic ItemService search or by fetching individually by ID. Other item types typically have a dedicated list route. This may be intentional if listing is handled through the generic items search, but it is inconsistent with the pattern of having dedicated sub-resource routes for everything else in the module.
 - **Location**: `src/routes/api/work-instructions/` (missing `index.ts`)
-- **Suggestion**: Either add a list endpoint or document that listing uses the generic `/api/items?itemType=WorkInstruction` route.
+- **Suggestion**: Either add a list endpoint or document that listing uses the generic `/api/v1/items?itemType=WorkInstruction` route.
 
 ## `any` Type in Step Update Handler
 

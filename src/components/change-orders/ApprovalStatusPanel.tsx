@@ -54,7 +54,7 @@ export function ApprovalStatusPanel({
   const fetchApprovals = useCallback(async () => {
     try {
       const result = await apiFetch<{ data: ApprovalData }>(
-        `/api/change-orders/${changeOrderId}/approvals`,
+        `/api/v1/change-orders/${changeOrderId}/approvals`,
       )
       setData(result.data)
 

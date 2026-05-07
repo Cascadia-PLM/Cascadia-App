@@ -109,7 +109,7 @@ export function FileUploadZone({
     })
 
     try {
-      const response = await fetch(`/api/items/${itemId}/files/upload`, {
+      const response = await fetch(`/api/v1/items/${itemId}/files/upload`, {
         method: 'POST',
         body: formData,
       })

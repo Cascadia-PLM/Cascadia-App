@@ -90,7 +90,7 @@ export function CloneDesignDialog({
 
     const pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(`/api/jobs/${jobId}`)
+        const response = await fetch(`/api/v1/jobs/${jobId}`)
         if (!response.ok) {
           throw new Error('Failed to get job status')
         }
@@ -123,7 +123,7 @@ export function CloneDesignDialog({
     setError(null)
 
     try {
-      const response = await apiFetch(`/api/designs/${sourceDesignId}/clone`, {
+      const response = await apiFetch(`/api/v1/designs/${sourceDesignId}/clone`, {
         method: 'POST',
         body: JSON.stringify({
           code: code.toUpperCase(),

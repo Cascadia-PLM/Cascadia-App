@@ -171,7 +171,7 @@ export function EcoAffectedItemsPanel({
   const fetchDesigns = useCallback(async () => {
     try {
       const response = await apiFetch<{ data: { designs: Array<EcoDesign> } }>(
-        `/api/change-orders/${changeOrderId}/designs`,
+        `/api/v1/change-orders/${changeOrderId}/designs`,
       )
       setDesigns(response.data.designs)
     } catch {
@@ -183,7 +183,7 @@ export function EcoAffectedItemsPanel({
   const fetchAffectedItems = useCallback(async () => {
     try {
       const response = await fetch(
-        `/api/change-orders/${changeOrderId}/affected-items`,
+        `/api/v1/change-orders/${changeOrderId}/affected-items`,
       )
       if (response.ok) {
         const { data } = await response.json()
@@ -218,7 +218,7 @@ export function EcoAffectedItemsPanel({
       // Fetch ECO details if not already loaded
       let ecoData = ecoDetails
       if (!ecoData) {
-        const ecoResponse = await fetch(`/api/change-orders/${changeOrderId}`)
+        const ecoResponse = await fetch(`/api/v1/change-orders/${changeOrderId}`)
         if (ecoResponse.ok) {
           const { data } = await ecoResponse.json()
           ecoData = {
@@ -262,7 +262,7 @@ export function EcoAffectedItemsPanel({
               affectedItemIds: Array<string>
             }
           }>(
-            `/api/change-orders/${changeOrderId}/designs/${design.designId}/structure`,
+            `/api/v1/change-orders/${changeOrderId}/designs/${design.designId}/structure`,
           )
 
           const { roots } = response.data
@@ -413,7 +413,7 @@ export function EcoAffectedItemsPanel({
           releasedCount: number
         }
       }>(
-        `/api/change-orders/${changeOrderId}/items/${node.itemId}/ancestors?designId=${designId}`,
+        `/api/v1/change-orders/${changeOrderId}/items/${node.itemId}/ancestors?designId=${designId}`,
       )
 
       if (response.data.releasedCount > 0) {
@@ -475,7 +475,7 @@ export function EcoAffectedItemsPanel({
   const handleRemoveItem = async (itemId: string) => {
     try {
       const response = await fetch(
-        `/api/change-orders/${changeOrderId}/affected-items?itemId=${itemId}`,
+        `/api/v1/change-orders/${changeOrderId}/affected-items?itemId=${itemId}`,
         { method: 'DELETE' },
       )
 

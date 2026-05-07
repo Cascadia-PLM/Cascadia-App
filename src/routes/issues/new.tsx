@@ -21,7 +21,7 @@ export const Route = createFileRoute('/issues/new')({
   loader: async () => {
     try {
       const result = await apiFetch<{ data: { designs: Array<Design> } }>(
-        '/api/designs',
+        '/api/v1/designs',
       )
       return { designs: result.data.designs }
     } catch (error) {
@@ -45,7 +45,7 @@ function NewIssuePage() {
         ...issue,
         itemType: 'Issue',
       }
-      const result = await apiFetch<{ data: { item: Issue } }>('/api/items', {
+      const result = await apiFetch<{ data: { item: Issue } }>('/api/v1/items', {
         method: 'POST',
         body: JSON.stringify(payload),
       })

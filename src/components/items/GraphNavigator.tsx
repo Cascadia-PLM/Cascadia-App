@@ -87,7 +87,7 @@ export function GraphNavigator({
   const loadAvailableTypes = useCallback(async () => {
     try {
       // Load relationship types from itemRelationships table
-      const response = await fetch(`/api/items/${itemId}/relationships`)
+      const response = await fetch(`/api/v1/items/${itemId}/relationships`)
       const types = new Set<string>()
 
       if (response.ok) {
@@ -100,7 +100,7 @@ export function GraphNavigator({
       // Check if UsageOf relationships exist by fetching graph with usages enabled
       // This will tell us if the item is a usage or definition with usages
       const graphResponse = await fetch(
-        `/api/items/${itemId}/graph?depth=1&includeUsages=true`,
+        `/api/v1/items/${itemId}/graph?depth=1&includeUsages=true`,
       )
       if (graphResponse.ok) {
         const graphData = await graphResponse.json()
@@ -137,7 +137,7 @@ export function GraphNavigator({
       const usagesParam = `&includeUsages=${includeUsages}`
 
       const response = await fetch(
-        `/api/items/${itemId}/graph?depth=${depth}&direction=${direction}${typesParam}${usagesParam}`,
+        `/api/v1/items/${itemId}/graph?depth=${depth}&direction=${direction}${typesParam}${usagesParam}`,
       )
 
       if (!response.ok) {

@@ -68,7 +68,7 @@ export function InitialReleaseHelper({
       setLoading(true)
       try {
         const result = await apiFetch<{ data: DesignStatus }>(
-          `/api/designs/${designId}/status`,
+          `/api/v1/designs/${designId}/status`,
         )
         setStatus(result.data)
       } catch {

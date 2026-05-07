@@ -19,7 +19,7 @@ This guide covers the testing infrastructure, philosophy, and utilities for Casc
 
 | Category          | Examples                         | Why                              |
 | ----------------- | -------------------------------- | -------------------------------- |
-| **API Routes**    | `/api/parts`, `/api/documents`   | Just delegate to tested services |
+| **API Routes**    | `/api/v1/parts`, `/api/v1/documents`   | Just delegate to tested services |
 | **UI Components** | PartForm, DocumentList           | E2E tests cover user flows       |
 | **Utilities**     | formatDate, cn(), string helpers | Trivial code                     |
 | **Schemas/Types** | Zod schemas, TypeScript types    | Testing library code             |

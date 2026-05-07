@@ -1,8 +1,10 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { JobService } from '@/lib/jobs/JobService'
 import { apiHandler } from '@/lib/api/handler'
 import { NotFoundError } from '@/lib/errors'
+
+const adapt = tagged('Jobs')
 
 const app = new Hono()
 

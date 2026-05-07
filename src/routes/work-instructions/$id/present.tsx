@@ -16,10 +16,10 @@ export const Route = createFileRoute('/work-instructions/$id/present')({
     try {
       const [wiResult, opsResult] = await Promise.all([
         apiFetch<{ data: { workInstruction: WorkInstructionWithSteps } }>(
-          `/api/work-instructions/${params.id}`,
+          `/api/v1/work-instructions/${params.id}`,
         ),
         apiFetch<{ data: { operations: Array<WorkInstructionOperation> } }>(
-          `/api/work-instructions/${params.id}/operations`,
+          `/api/v1/work-instructions/${params.id}/operations`,
         ),
       ])
       return {
@@ -52,7 +52,7 @@ function StepBlockRenderer({ block }: { block: StepContentBlock }) {
         {block.fileId ? (
           <>
             <img
-              src={`/api/files/${block.fileId}`}
+              src={`/api/v1/files/${block.fileId}`}
               alt={block.alt || 'Step image'}
               className="max-w-full max-h-[50vh] rounded-lg shadow-lg"
             />
@@ -204,7 +204,7 @@ function PresentationModePage() {
     )
     if (!hasParametric) return
 
-    fetch(`/api/work-instructions/${workInstruction.id}/resolve-parametric`)
+    fetch(`/api/v1/work-instructions/${workInstruction.id}/resolve-parametric`)
       .then((r) => r.json())
       .then((data) => {
         if (data.data?.resolved) {

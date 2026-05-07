@@ -42,7 +42,7 @@ export function UpstreamChangesBanner({
     setError(null)
 
     try {
-      const response = await fetch(`/api/mbom/${designId}/upstream-changes`)
+      const response = await fetch(`/api/v1/mbom/${designId}/upstream-changes`)
       if (!response.ok) {
         throw new Error('Failed to load upstream changes')
       }

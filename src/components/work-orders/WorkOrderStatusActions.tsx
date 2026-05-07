@@ -19,7 +19,7 @@ export function WorkOrderStatusActions({
   const handleTransition = async (newStatus: WorkOrderStatus) => {
     setLoading(newStatus)
     try {
-      const response = await fetch(`/api/work-orders/${workOrderId}/status`, {
+      const response = await fetch(`/api/v1/work-orders/${workOrderId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),

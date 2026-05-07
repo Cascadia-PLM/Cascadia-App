@@ -64,7 +64,7 @@ export function ConvertToEcoDialog({
           itemsConverted: number
           workspaceDeleted: boolean
         }
-      }>(`/api/workspaces/${workspaceId}/convert-to-eco`, {
+      }>(`/api/v1/workspaces/${workspaceId}/convert-to-eco`, {
         method: 'POST',
         body: JSON.stringify({
           ecoTitle: ecoTitle.trim(),

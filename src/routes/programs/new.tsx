@@ -28,7 +28,7 @@ function NewProgramPage() {
     setIsSubmitting(true)
     try {
       const result = await apiFetch<{ data: { program: Program } }>(
-        '/api/programs',
+        '/api/v1/programs',
         {
           method: 'POST',
           body: JSON.stringify(data),

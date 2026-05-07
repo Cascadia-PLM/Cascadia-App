@@ -1,9 +1,11 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { VerificationService } from '@/lib/services/VerificationService'
 import { ValidationError } from '@/lib/errors'
 import { apiHandler, created } from '@/lib/api/handler'
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Test Cases')
 
 const app = new Hono()
 

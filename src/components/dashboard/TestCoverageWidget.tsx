@@ -65,10 +65,10 @@ export function TestCoverageWidget({
         // Fetch coverage and gaps in parallel
         const [coverageResponse, gapsResponse] = await Promise.all([
           apiFetch<{ data: { coverage: TestCoverage } }>(
-            `/api/designs/${designId}/test-coverage`,
+            `/api/v1/designs/${designId}/test-coverage`,
           ),
           apiFetch<{ data: { gaps: Array<VerificationGap> } }>(
-            `/api/designs/${designId}/verification-gaps`,
+            `/api/v1/designs/${designId}/verification-gaps`,
           ),
         ])
         setCoverage(coverageResponse.data.coverage)

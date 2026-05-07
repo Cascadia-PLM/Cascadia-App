@@ -14,7 +14,7 @@ export const Route = createFileRoute('/profile')({
   beforeLoad: async () => {
     // Check if user is authenticated
     try {
-      const response = await fetch('/api/auth/session')
+      const response = await fetch('/api/v1/auth/session')
       const data = await response.json()
       if (!data.data?.authenticated) {
         throw redirect({

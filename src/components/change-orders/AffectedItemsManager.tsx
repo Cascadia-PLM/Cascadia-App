@@ -86,7 +86,7 @@ export function AffectedItemsManager({
     setIsSearching(true)
     try {
       const response = await fetch(
-        `/api/items/search?q=${encodeURIComponent(query)}&types=Part,Document,Requirement`,
+        `/api/v1/items/search?q=${encodeURIComponent(query)}&types=Part,Document,Requirement`,
       )
       if (response.ok) {
         const { data } = await response.json()
@@ -143,7 +143,7 @@ export function AffectedItemsManager({
   const fetchAffectedItems = useCallback(async () => {
     try {
       const response = await fetch(
-        `/api/change-orders/${changeOrderId}/affected-items`,
+        `/api/v1/change-orders/${changeOrderId}/affected-items`,
       )
       if (response.ok) {
         const { data } = await response.json()
@@ -220,7 +220,7 @@ export function AffectedItemsManager({
 
     try {
       const response = await fetch(
-        `/api/change-orders/${changeOrderId}/affected-items`,
+        `/api/v1/change-orders/${changeOrderId}/affected-items`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -253,7 +253,7 @@ export function AffectedItemsManager({
   const handleRemove = async (itemId: string) => {
     try {
       const response = await fetch(
-        `/api/change-orders/${changeOrderId}/affected-items?itemId=${itemId}`,
+        `/api/v1/change-orders/${changeOrderId}/affected-items?itemId=${itemId}`,
         {
           method: 'DELETE',
         },

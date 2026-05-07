@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { eq, inArray, or } from 'drizzle-orm'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { ItemTypeRegistry } from '@/lib/items/registry'
 import { ValidationError } from '@/lib/errors'
@@ -10,6 +10,8 @@ import { ProgramService } from '@/lib/services/ProgramService'
 import { apiHandler } from '@/lib/api/handler'
 // Register item types (server-side version)
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Enterprise Search')
 
 /**
  * Get design IDs accessible to a user based on their program memberships

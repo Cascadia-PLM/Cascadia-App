@@ -89,7 +89,7 @@ Initial open-source release under AGPL v3.
 - **Docker Support** — Multi-stage Dockerfiles for app, vault, jobs worker, CAD converter, and CAD generator
 - **Docker Compose** — Development and production configurations
 - **Deployment Guides** — Single-server, distributed, cloud database, and Kubernetes documentation
-- **Health Check** — `/api/health` endpoint for load balancer integration
+- **Health Check** — `/api/v1/health` endpoint for load balancer integration
 
 #### Testing
 

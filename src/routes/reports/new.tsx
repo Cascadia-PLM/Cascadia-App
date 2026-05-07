@@ -19,7 +19,7 @@ function NewReportPage() {
   const handleSubmit = async (data: ReportCreateInput) => {
     setIsSubmitting(true)
     try {
-      const response = await fetch('/api/reports', {
+      const response = await fetch('/api/v1/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

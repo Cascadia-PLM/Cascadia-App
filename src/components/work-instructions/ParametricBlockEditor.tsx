@@ -46,7 +46,7 @@ export function ParametricBlockEditor({
   // Load selected part info if block already has a partId
   useEffect(() => {
     if (block.partId && !selectedPart) {
-      fetch(`/api/parts/${block.partId}`)
+      fetch(`/api/v1/parts/${block.partId}`)
         .then((r) => r.json())
         .then((data) => {
           const part = data.data?.part || data.data
@@ -71,7 +71,7 @@ export function ParametricBlockEditor({
     }
 
     setLoadingAttrs(true)
-    fetch(`/api/parts/${block.partId}/resolvable-attributes`)
+    fetch(`/api/v1/parts/${block.partId}/resolvable-attributes`)
       .then((r) => r.json())
       .then((data) => {
         setAttributes(data.data?.attributes || [])
@@ -101,7 +101,7 @@ export function ParametricBlockEditor({
       setSearching(true)
       try {
         const response = await fetch(
-          `/api/items/search?q=${encodeURIComponent(partSearch)}&type=Part&limit=10`,
+          `/api/v1/items/search?q=${encodeURIComponent(partSearch)}&type=Part&limit=10`,
         )
         const data = await response.json()
         setSearchResults(

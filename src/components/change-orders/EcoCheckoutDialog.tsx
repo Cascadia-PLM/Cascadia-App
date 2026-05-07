@@ -59,7 +59,7 @@ export function EcoCheckoutDialog({
       try {
         const response = await apiFetch<{
           data: { changeOrders: Array<ChangeOrder> }
-        }>('/api/change-orders/editable')
+        }>('/api/v1/change-orders/editable')
         const ecos = response.data.changeOrders
         setChangeOrders(ecos)
 
@@ -86,7 +86,7 @@ export function EcoCheckoutDialog({
     setIsSubmitting(true)
     setError(null)
     try {
-      await apiFetch(`/api/change-orders/${selectedEcoId}/checkout`, {
+      await apiFetch(`/api/v1/change-orders/${selectedEcoId}/checkout`, {
         method: 'POST',
         body: JSON.stringify({ itemId }),
       })

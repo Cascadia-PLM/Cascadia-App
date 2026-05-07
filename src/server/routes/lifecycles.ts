@@ -1,7 +1,9 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'
 import { LifecycleService } from '@/lib/services/LifecycleService'
+
+const adapt = tagged('Lifecycles')
 
 const app = new Hono()
 

@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { and, asc, desc, eq, inArray, like, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type {
   CommitGraphData,
   CommitGraphEdge,
@@ -49,6 +49,8 @@ import {
 import { users } from '@/lib/db/schema/users'
 import { designs } from '@/lib/db/schema/designs'
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Designs')
 
 // ============================================
 // Types

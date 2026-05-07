@@ -223,7 +223,7 @@ export function IssueDetail({
         }
 
         const response = await apiFetch<{ data: { item: Issue | null } }>(
-          `/api/items/${issue.id}/at-context?${queryString}`,
+          `/api/v1/items/${issue.id}/at-context?${queryString}`,
         )
         setDisplayedIssue(response.data.item || issue)
       } catch {

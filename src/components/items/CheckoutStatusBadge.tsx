@@ -59,7 +59,7 @@ export function CheckoutStatusBadge({
       setLoading(true)
       try {
         const response = await apiFetch<{ data: { status: CheckoutStatus } }>(
-          `/api/items/${itemId}/checkout?branchId=${branchId}`,
+          `/api/v1/items/${itemId}/checkout?branchId=${branchId}`,
         )
         setStatus(response.data.status)
         onStatusLoaded?.(response.data.status)
@@ -119,7 +119,7 @@ export function useCheckoutStatus(
     setLoading(true)
     try {
       const response = await apiFetch<{ data: { status: CheckoutStatus } }>(
-        `/api/items/${itemId}/checkout?branchId=${branchId}`,
+        `/api/v1/items/${itemId}/checkout?branchId=${branchId}`,
       )
       setStatus(response.data.status)
     } catch {

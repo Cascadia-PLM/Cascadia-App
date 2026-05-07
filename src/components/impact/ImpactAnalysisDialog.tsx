@@ -152,7 +152,7 @@ export function ImpactAnalysisDialog({
 
     try {
       const response = await apiFetch<{ data: ImpactAnalysisResult }>(
-        `/api/items/${itemId}/impact-analysis`,
+        `/api/v1/items/${itemId}/impact-analysis`,
         {
           method: 'POST',
           body: JSON.stringify({

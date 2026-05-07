@@ -8,11 +8,11 @@ Issues identified during API documentation review.
 
 **Endpoints affected:**
 
-- `/api/items` uses `limit: 100` as default
-- `/api/items/search` uses `limit: 50` as default
-- `/api/enterprise-search` uses `limit: 50` as default
-- `/api/workflows` uses `limit: 100` as default
-- `/api/files` uses `limit: 100` as default
+- `/api/v1/items` uses `limit: 100` as default
+- `/api/v1/items/search` uses `limit: 50` as default
+- `/api/v1/enterprise-search` uses `limit: 50` as default
+- `/api/v1/workflows` uses `limit: 100` as default
+- `/api/v1/files` uses `limit: 100` as default
 - `paginationSchema` defines default as `50`
 
 **Impact:** Clients may get different result counts depending on which endpoint they use, even without specifying a limit. The `paginationSchema` standard is 50, but several endpoints override this.

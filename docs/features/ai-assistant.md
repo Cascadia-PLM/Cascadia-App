@@ -342,13 +342,13 @@ This allows different programs to use different providers or models.
 
 ### Settings API
 
-The settings API (`/api/ai/settings`) manages provider configuration stored in the `ai_settings` table.
+The settings API (`/api/v1/ai/settings`) manages provider configuration stored in the `ai_settings` table.
 
 | Endpoint                         | Method | Permission           | Description              |
 | -------------------------------- | ------ | -------------------- | ------------------------ |
-| `/api/ai/settings?programId=...` | GET    | Authenticated        | Get settings for a scope |
-| `/api/ai/settings`               | POST   | `ai_settings:create` | Create settings          |
-| `/api/ai/settings`               | PUT    | `ai_settings:update` | Update settings          |
+| `/api/v1/ai/settings?programId=...` | GET    | Authenticated        | Get settings for a scope |
+| `/api/v1/ai/settings`               | POST   | `ai_settings:create` | Create settings          |
+| `/api/v1/ai/settings`               | PUT    | `ai_settings:update` | Update settings          |
 
 **Security**: API keys stored in the database are encrypted at rest using the `@/lib/crypto/encryption` module. The GET endpoint masks API keys in responses (returns `***` instead of the actual key). Keys with known provider prefixes (`sk-`, `key-`) are detected as plaintext and skipped during decryption.
 
@@ -408,7 +408,7 @@ The `context` object carries `userId`, `sessionId`, `programId`, and `designId` 
 ```
 Frontend (Browser)
   ChatPanel + useChat hook (@tanstack/ai-react)
-  fetchServerSentEvents('/api/ai/chat')
+  fetchServerSentEvents('/api/v1/ai/chat')
        |
        | SSE Stream
        v
@@ -511,15 +511,15 @@ The API sets `X-Session-Id` and `X-Request-Id` headers on the SSE response for t
 
 | Endpoint                        | Method | Auth                  | Description                             |
 | ------------------------------- | ------ | --------------------- | --------------------------------------- |
-| `/api/ai/chat`                  | POST   | Authenticated         | Send a chat message, receive SSE stream |
-| `/api/ai/sessions`              | GET    | Authenticated         | List user's sessions                    |
-| `/api/ai/sessions`              | POST   | Authenticated         | Create a new session                    |
-| `/api/ai/sessions/:id`          | GET    | Authenticated (owner) | Get session details                     |
-| `/api/ai/sessions/:id`          | DELETE | Authenticated (owner) | Delete session and messages             |
-| `/api/ai/sessions/:id/messages` | GET    | Authenticated (owner) | Get message history                     |
-| `/api/ai/settings`              | GET    | Authenticated         | Get AI settings                         |
-| `/api/ai/settings`              | POST   | `ai_settings:create`  | Create AI settings                      |
-| `/api/ai/settings`              | PUT    | `ai_settings:update`  | Update AI settings                      |
+| `/api/v1/ai/chat`                  | POST   | Authenticated         | Send a chat message, receive SSE stream |
+| `/api/v1/ai/sessions`              | GET    | Authenticated         | List user's sessions                    |
+| `/api/v1/ai/sessions`              | POST   | Authenticated         | Create a new session                    |
+| `/api/v1/ai/sessions/:id`          | GET    | Authenticated (owner) | Get session details                     |
+| `/api/v1/ai/sessions/:id`          | DELETE | Authenticated (owner) | Delete session and messages             |
+| `/api/v1/ai/sessions/:id/messages` | GET    | Authenticated (owner) | Get message history                     |
+| `/api/v1/ai/settings`              | GET    | Authenticated         | Get AI settings                         |
+| `/api/v1/ai/settings`              | POST   | `ai_settings:create`  | Create AI settings                      |
+| `/api/v1/ai/settings`              | PUT    | `ai_settings:update`  | Update AI settings                      |
 
 ---
 

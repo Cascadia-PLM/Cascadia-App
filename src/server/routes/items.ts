@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { and, asc, eq, inArray, isNull, like, or, sql } from 'drizzle-orm'
 import { ZodError } from 'zod'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { ResourceType } from '@/lib/auth/permissions'
 import type { BaseItem } from '@/lib/items/types/base'
 import { requirePermission } from '@/lib/auth/server'
@@ -52,6 +52,8 @@ import {
 import { designs } from '@/lib/db/schema/designs'
 // Register item types (server-side version)
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Items')
 
 // Map item types to permission resource types
 function getResourceType(itemType: string): ResourceType {

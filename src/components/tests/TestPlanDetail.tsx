@@ -190,7 +190,7 @@ export function TestPlanDetail({
         }
 
         const response = await apiFetch<{ data: { item: TestPlan | null } }>(
-          `/api/items/${testPlan.id}/at-context?${queryString}`,
+          `/api/v1/items/${testPlan.id}/at-context?${queryString}`,
         )
         setDisplayedTestPlan(response.data.item || testPlan)
       } catch {
@@ -211,7 +211,7 @@ export function TestPlanDetail({
       try {
         const response = await apiFetch<{
           data: { branch: { branchType: string } }
-        }>(`/api/branches/${context.branchId}`)
+        }>(`/api/v1/branches/${context.branchId}`)
         setIsWorkspaceContext(response.data.branch.branchType === 'workspace')
       } catch {
         setIsWorkspaceContext(false)
@@ -228,7 +228,7 @@ export function TestPlanDetail({
       try {
         const response = await apiFetch<{
           data: { testCases: Array<TestCase> }
-        }>(`/api/test-plans/${testPlan.id}/test-cases`)
+        }>(`/api/v1/test-plans/${testPlan.id}/test-cases`)
         setTestCases(response.data.testCases)
       } catch {
         setTestCases([])

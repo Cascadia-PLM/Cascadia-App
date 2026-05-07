@@ -318,7 +318,7 @@ Then mount the route in `src/server/index.ts`:
 ```typescript
 import widgets from './routes/widgets'
 
-app.route('/api/widgets', widgets)
+app.route('/api/v1/widgets', widgets)
 ```
 
 ## Step 8: Create Form Component

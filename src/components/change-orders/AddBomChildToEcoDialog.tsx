@@ -79,7 +79,7 @@ export function AddBomChildToEcoDialog({
         contextDesignId: currentDesignId,
       })
 
-      const response = await fetch(`/api/items/search?${params}`)
+      const response = await fetch(`/api/v1/items/search?${params}`)
       if (response.ok) {
         const data = await response.json()
         // Filter out the parent item itself
@@ -125,7 +125,7 @@ export function AddBomChildToEcoDialog({
 
     setLoading(true)
     try {
-      await apiFetch(`/api/change-orders/${ecoId}/bom-changes`, {
+      await apiFetch(`/api/v1/change-orders/${ecoId}/bom-changes`, {
         method: 'POST',
         body: JSON.stringify({
           parentItemId,

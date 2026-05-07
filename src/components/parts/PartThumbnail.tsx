@@ -38,7 +38,7 @@ export function PartThumbnail({
 
   return (
     <img
-      src={`/api/items/${itemId}/thumbnail`}
+      src={`/api/v1/items/${itemId}/thumbnail`}
       alt=""
       loading="lazy"
       className={cn(

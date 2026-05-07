@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { ChangeOrder } from '@/lib/items/types/change-order'
 import type { VersionContext } from '@/lib/services/VersionResolver'
 import type {
@@ -49,6 +49,8 @@ import { commits, itemVersions, tags } from '@/lib/db/schema/versioning'
 import { designs } from '@/lib/db/schema/designs'
 import { users } from '@/lib/db/schema/users'
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Change Orders')
 
 const app = new Hono()
 

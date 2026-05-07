@@ -50,8 +50,8 @@ export function VersionContextSelector({
       setIsLoading(true)
       try {
         const [branchesRes, tagsRes] = await Promise.all([
-          fetch(`/api/designs/${designId}/branches`),
-          fetch(`/api/designs/${designId}/tags`),
+          fetch(`/api/v1/designs/${designId}/branches`),
+          fetch(`/api/v1/designs/${designId}/tags`),
         ])
 
         if (branchesRes.ok) {

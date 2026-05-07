@@ -120,7 +120,7 @@ export function AddPartFromDesignDialog({
   const fetchAffectedItems = useCallback(async () => {
     try {
       const response = await fetch(
-        `/api/change-orders/${changeOrderId}/affected-items`,
+        `/api/v1/change-orders/${changeOrderId}/affected-items`,
       ).then((r) => (r.ok ? r.json() : { data: { affectedItems: [] } }))
       const ids = new Set<string>()
       for (const item of response.data?.affectedItems || []) {
@@ -147,7 +147,7 @@ export function AddPartFromDesignDialog({
       }
       const response = await apiFetch<{
         data: { items: Array<DesignItem>; total: number }
-      }>(`/api/designs/${designId}/items?${params}`)
+      }>(`/api/v1/designs/${designId}/items?${params}`)
       setPageItems(response.data.items)
       setTotalItems(response.data.total)
     } catch {
@@ -165,7 +165,7 @@ export function AddPartFromDesignDialog({
     try {
       const response = await apiFetch<{
         data: { items: Array<{ id: string }>; total: number }
-      }>(`/api/designs/${designId}/items?type=Part&limit=1000`)
+      }>(`/api/v1/designs/${designId}/items?type=Part&limit=1000`)
       existingDesignItemIdsRef.current = new Set(
         response.data.items.map((i) => i.id),
       )
@@ -230,7 +230,7 @@ export function AddPartFromDesignDialog({
         }
         params.set('contextDesignId', designId)
 
-        const response = await fetch(`/api/items/search?${params}`)
+        const response = await fetch(`/api/v1/items/search?${params}`)
         if (response.ok) {
           const data = await response.json()
           const items: Array<CrossDesignItem> = data.data?.items ?? []
@@ -337,7 +337,7 @@ export function AddPartFromDesignDialog({
         }
       })
 
-      await apiFetch(`/api/change-orders/${changeOrderId}/affected-items`, {
+      await apiFetch(`/api/v1/change-orders/${changeOrderId}/affected-items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: itemsPayload }),
@@ -373,7 +373,7 @@ export function AddPartFromDesignDialog({
           data: {
             items: Array<{ id: string; revision: string; state: string }>
           }
-        }>(`/api/designs/${designId}/items`, {
+        }>(`/api/v1/designs/${designId}/items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -400,7 +400,7 @@ export function AddPartFromDesignDialog({
           changeDescription: description || null,
         }))
 
-        await apiFetch(`/api/change-orders/${changeOrderId}/affected-items`, {
+        await apiFetch(`/api/v1/change-orders/${changeOrderId}/affected-items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items: itemsPayload }),

@@ -45,12 +45,12 @@ export const Route = createFileRoute('/')({
     try {
       const [partsResult, statsResult, chartResult] = await Promise.all([
         apiFetch<{ data: { items: Array<Part>; total: number } }>(
-          '/api/items?itemType=Part&limit=5',
+          '/api/v1/items?itemType=Part&limit=5',
         ).catch(() => ({ data: { items: [] as Array<Part>, total: 0 } })),
         apiFetch<{ data: { stats: typeof emptyStats } }>(
-          '/api/dashboard/stats',
+          '/api/v1/dashboard/stats',
         ).catch(() => ({ data: { stats: emptyStats } })),
-        apiFetch<{ data: typeof emptyCharts }>('/api/dashboard/charts').catch(
+        apiFetch<{ data: typeof emptyCharts }>('/api/v1/dashboard/charts').catch(
           () => ({ data: emptyCharts }),
         ),
       ])

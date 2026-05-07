@@ -11,7 +11,7 @@
  *   const client = createApiTestClient()
  *
  *   test('GET /api/parts returns parts list', async () => {
- *     const response = await client.get('/api/parts', { auth: mockSession })
+ *     const response = await client.get('/api/v1/parts', { auth: mockSession })
  *     expect(response.status).toBe(200)
  *
  *     const data = await response.json()

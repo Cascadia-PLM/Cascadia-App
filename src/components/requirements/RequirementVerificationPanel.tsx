@@ -52,7 +52,7 @@ export function RequirementVerificationPanel({
       try {
         const response = await apiFetch<{
           data: { tests: Array<VerifyingTest> }
-        }>(`/api/requirements/${requirementId}/verifying-tests`)
+        }>(`/api/v1/requirements/${requirementId}/verifying-tests`)
         setVerifyingTests(response.data.tests)
       } catch (error) {
         console.error('Failed to fetch verifying tests:', error)
@@ -80,7 +80,7 @@ export function RequirementVerificationPanel({
           designId,
         })
         const response = await apiFetch<{ data: { items: Array<TestCase> } }>(
-          `/api/items?${params}`,
+          `/api/v1/items?${params}`,
         )
         // Filter out already linked tests
         const linkedIds = new Set(verifyingTests.map((t) => t.id))
@@ -101,14 +101,14 @@ export function RequirementVerificationPanel({
   const handleLinkTest = async (testCaseId: string) => {
     setLinking(testCaseId)
     try {
-      await apiFetch(`/api/requirements/${requirementId}/verify`, {
+      await apiFetch(`/api/v1/requirements/${requirementId}/verify`, {
         method: 'POST',
         body: JSON.stringify({ testCaseIds: [testCaseId] }),
       })
       // Refresh the list
       const response = await apiFetch<{
         data: { tests: Array<VerifyingTest> }
-      }>(`/api/requirements/${requirementId}/verifying-tests`)
+      }>(`/api/v1/requirements/${requirementId}/verifying-tests`)
       setVerifyingTests(response.data.tests)
       setSearchQuery('')
       setSearchResults([])
@@ -123,7 +123,7 @@ export function RequirementVerificationPanel({
     setUnlinking(testCaseId)
     try {
       await apiFetch(
-        `/api/requirements/${requirementId}/verify?testCaseId=${testCaseId}`,
+        `/api/v1/requirements/${requirementId}/verify?testCaseId=${testCaseId}`,
         { method: 'DELETE' },
       )
       setVerifyingTests((prev) => prev.filter((t) => t.id !== testCaseId))

@@ -97,17 +97,17 @@ export const Route = createFileRoute('/documents/')({
         releasedCount,
       ] = await Promise.all([
         apiFetch<{ data: { items: Array<Document>; total: number } }>(
-          `/api/items?${params}`,
+          `/api/v1/items?${params}`,
         ),
-        apiFetch<{ data: { designs: Array<Design> } }>('/api/designs'),
+        apiFetch<{ data: { designs: Array<Design> } }>('/api/v1/designs'),
         apiFetch<{ data: { total: number } }>(
-          `/api/items?${countParams}&state=Draft`,
+          `/api/v1/items?${countParams}&state=Draft`,
         ).catch(() => ({ data: { total: 0 } })),
         apiFetch<{ data: { total: number } }>(
-          `/api/items?${countParams}&state=InReview`,
+          `/api/v1/items?${countParams}&state=InReview`,
         ).catch(() => ({ data: { total: 0 } })),
         apiFetch<{ data: { total: number } }>(
-          `/api/items?${countParams}&state=Released`,
+          `/api/v1/items?${countParams}&state=Released`,
         ).catch(() => ({ data: { total: 0 } })),
       ])
 
@@ -182,7 +182,7 @@ function DocumentsListPage() {
 
         const result = await apiFetch<{
           data: { items: Array<Document>; total: number }
-        }>(`/api/items?${qp}`)
+        }>(`/api/v1/items?${qp}`)
         setDocuments(result.data.items)
         setTotal(result.data.total)
       } catch (error) {
@@ -219,7 +219,7 @@ function DocumentsListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/documents/${document.id}`, {
+          await apiFetch(`/api/v1/documents/${document.id}`, {
             method: 'DELETE',
           })
 

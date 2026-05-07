@@ -26,7 +26,7 @@ function NewWorkOrderPage() {
   const handleSubmit = async (data: WorkOrderCreateInput) => {
     setIsSubmitting(true)
     try {
-      const response = await fetch('/api/work-orders', {
+      const response = await fetch('/api/v1/work-orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

@@ -170,7 +170,7 @@ export function TaskDetail({
         }
 
         const response = await apiFetch<{ data: { item: Task | null } }>(
-          `/api/items/${task.id}/at-context?${queryString}`,
+          `/api/v1/items/${task.id}/at-context?${queryString}`,
         )
         setDisplayedTask(response.data.item || task)
       } catch {

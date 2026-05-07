@@ -20,10 +20,10 @@ async function fetchDesign(
   id: string,
 ): Promise<{ design: Design; programs: Array<Program> }> {
   const [designResponse, programsResponse] = await Promise.all([
-    fetch(`/api/designs/${id}`, {
+    fetch(`/api/v1/designs/${id}`, {
       headers: { 'Content-Type': 'application/json' },
     }),
-    fetch('/api/programs', {
+    fetch('/api/v1/programs', {
       headers: { 'Content-Type': 'application/json' },
     }).catch(() => null),
   ])
@@ -59,7 +59,7 @@ function EditDesignPage() {
   const handleUpdateDesign = async (data: CreateDesignInput) => {
     setIsSubmitting(true)
     try {
-      await apiFetch(`/api/designs/${design.id}`, {
+      await apiFetch(`/api/v1/designs/${design.id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       })

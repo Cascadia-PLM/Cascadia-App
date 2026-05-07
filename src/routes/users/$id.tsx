@@ -30,8 +30,8 @@ export const Route = createFileRoute('/users/$id')({
     try {
       // Fetch user and roles in parallel
       const [userResult, rolesResult] = await Promise.all([
-        apiFetch<{ data: { user: any } }>(`/api/users/${params.id}`),
-        apiFetch<{ data: { roles: Array<Role>; total: number } }>('/api/roles'),
+        apiFetch<{ data: { user: any } }>(`/api/v1/users/${params.id}`),
+        apiFetch<{ data: { roles: Array<Role>; total: number } }>('/api/v1/roles'),
       ])
 
       return {
@@ -58,7 +58,7 @@ function UserDetailPage() {
   const handleEdit = async (data: any) => {
     setIsSubmitting(true)
     try {
-      await apiFetch(`/api/users/${user.id}`, {
+      await apiFetch(`/api/v1/users/${user.id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       })
@@ -82,7 +82,7 @@ function UserDetailPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/users/${user.id}`, {
+          await apiFetch(`/api/v1/users/${user.id}`, {
             method: 'DELETE',
           })
 
@@ -98,7 +98,7 @@ function UserDetailPage() {
 
   const handleToggleActive = async () => {
     try {
-      await apiFetch(`/api/users/${user.id}/activate`, {
+      await apiFetch(`/api/v1/users/${user.id}/activate`, {
         method: 'POST',
         body: JSON.stringify({ active: !user.active }),
       })
@@ -115,7 +115,7 @@ function UserDetailPage() {
 
   const handleAssignRoles = async (userId: string, roleIds: Array<string>) => {
     try {
-      await apiFetch(`/api/users/${userId}/roles`, {
+      await apiFetch(`/api/v1/users/${userId}/roles`, {
         method: 'PUT',
         body: JSON.stringify({ roleIds }),
       })
@@ -130,7 +130,7 @@ function UserDetailPage() {
 
   const handleChangePassword = async (userId: string, password: string) => {
     try {
-      await apiFetch(`/api/users/${userId}/password`, {
+      await apiFetch(`/api/v1/users/${userId}/password`, {
         method: 'PUT',
         body: JSON.stringify({ password }),
       })

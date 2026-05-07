@@ -593,46 +593,46 @@ The `upstreamChanges` table tracks when the source EBOM changes, allowing the MB
 
 | Method | Endpoint                          | Description                                                            |
 | ------ | --------------------------------- | ---------------------------------------------------------------------- |
-| GET    | `/api/items/:id/relationships`    | Get relationships for an item (optional `?type=BOM&branch=<id>`)       |
-| POST   | `/api/items/:id/relationships`    | Add a relationship                                                     |
-| PUT    | `/api/relationships/:id`          | Update relationship fields (quantity, findNumber, referenceDesignator) |
-| DELETE | `/api/relationships/:id`          | Remove a relationship                                                  |
-| POST   | `/api/relationships/batch-create` | Batch create up to 500 relationships                                   |
+| GET    | `/api/v1/items/:id/relationships`    | Get relationships for an item (optional `?type=BOM&branch=<id>`)       |
+| POST   | `/api/v1/items/:id/relationships`    | Add a relationship                                                     |
+| PUT    | `/api/v1/relationships/:id`          | Update relationship fields (quantity, findNumber, referenceDesignator) |
+| DELETE | `/api/v1/relationships/:id`          | Remove a relationship                                                  |
+| POST   | `/api/v1/relationships/batch-create` | Batch create up to 500 relationships                                   |
 
 ### Design Structure
 
 | Method | Endpoint                            | Description                                                                     |
 | ------ | ----------------------------------- | ------------------------------------------------------------------------------- |
-| GET    | `/api/designs/:id/structure`        | Get BOM tree (optional `?branch=<id>&tag=<id>&commit=<id>&expandExternal=true`) |
-| GET    | `/api/designs/:id/cross-references` | Get cross-design references                                                     |
+| GET    | `/api/v1/designs/:id/structure`        | Get BOM tree (optional `?branch=<id>&tag=<id>&commit=<id>&expandExternal=true`) |
+| GET    | `/api/v1/designs/:id/cross-references` | Get cross-design references                                                     |
 
 ### Graph / Where-Used
 
 | Method | Endpoint               | Description                                                                             |
 | ------ | ---------------------- | --------------------------------------------------------------------------------------- |
-| GET    | `/api/items/:id/graph` | Get relationship graph (optional `?depth=2&direction=all&types=BOM&includeUsages=true`) |
+| GET    | `/api/v1/items/:id/graph` | Get relationship graph (optional `?depth=2&direction=all&types=BOM&includeUsages=true`) |
 
 ### ECO BOM Changes
 
 | Method | Endpoint                                                 | Description                                       |
 | ------ | -------------------------------------------------------- | ------------------------------------------------- |
-| POST   | `/api/change-orders/:id/bom-changes`                     | Add/remove/modify BOM relationship in ECO context |
-| DELETE | `/api/change-orders/:id/bom-changes?relationshipId=<id>` | Remove BOM relationship by ID in ECO context      |
+| POST   | `/api/v1/change-orders/:id/bom-changes`                     | Add/remove/modify BOM relationship in ECO context |
+| DELETE | `/api/v1/change-orders/:id/bom-changes?relationshipId=<id>` | Remove BOM relationship by ID in ECO context      |
 
 ### Import
 
 | Method | Endpoint                | Description                         |
 | ------ | ----------------------- | ----------------------------------- |
-| POST   | `/api/import/parts`     | Import parts from spreadsheet       |
-| POST   | `/api/import/parts-bom` | Import parts with BOM relationships |
+| POST   | `/api/v1/import/parts`     | Import parts from spreadsheet       |
+| POST   | `/api/v1/import/parts-bom` | Import parts with BOM relationships |
 
 ### MBOM
 
 | Method | Endpoint                                          | Description               |
 | ------ | ------------------------------------------------- | ------------------------- |
-| POST   | `/api/mbom`                                       | Create MBOM from EBOM     |
-| GET    | `/api/mbom/:designId/upstream-changes`            | Get upstream EBOM changes |
-| POST   | `/api/mbom/:designId/upstream-changes/:id/review` | Review an upstream change |
+| POST   | `/api/v1/mbom`                                       | Create MBOM from EBOM     |
+| GET    | `/api/v1/mbom/:designId/upstream-changes`            | Get upstream EBOM changes |
+| POST   | `/api/v1/mbom/:designId/upstream-changes/:id/review` | Review an upstream change |
 
 ---
 

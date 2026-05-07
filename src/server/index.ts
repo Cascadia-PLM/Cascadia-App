@@ -1,5 +1,7 @@
 import { Hono } from 'hono'
 import { serveStatic } from '@hono/node-server/serve-static'
+import { openAPIRouteHandler } from 'hono-openapi'
+import { Scalar } from '@scalar/hono-api-reference'
 
 import admin from './routes/admin'
 import ai from './routes/ai'
@@ -41,44 +43,83 @@ import workspaces from './routes/workspaces'
 
 const app = new Hono()
 
-// Mount route groups
-app.route('/api/admin', admin)
-app.route('/api/ai', ai)
-app.route('/api/auth', auth)
-app.route('/api/branch-items', branchItems)
-app.route('/api/branches', branches)
-app.route('/api/change-orders', changeOrders)
-app.route('/api/commits', commits)
-app.route('/api/dashboard', dashboard)
-app.route('/api/design-engine', designEngine)
-app.route('/api/designs', designs)
-app.route('/api/documents', documents)
-app.route('/api/enterprise-search', enterpriseSearch)
-app.route('/api/files', files)
-app.route('/api/health', health)
-app.route('/api/import', importRoutes)
-app.route('/api/issues', issues)
-app.route('/api/items', items)
-app.route('/api/jobs', jobs)
-app.route('/api/lifecycles', lifecycles)
-app.route('/api/mbom', mbom)
-app.route('/api/parts', parts)
-app.route('/api/programs', programs)
-app.route('/api/relationships', relationships)
-app.route('/api/reports', reports)
-app.route('/api/requirements', requirements)
-app.route('/api/roles', roles)
-app.route('/api/sysml', sysml)
-app.route('/api/tags', tags)
-app.route('/api/tasks', tasks)
-app.route('/api/test-cases', testCases)
-app.route('/api/thread', thread)
-app.route('/api/tools', tools)
-app.route('/api/users', users)
-app.route('/api/work-instructions', workInstructions)
-app.route('/api/work-orders', workOrders)
-app.route('/api/workflows', workflows)
-app.route('/api/workspaces', workspaces)
+// Mount route groups under the v1 prefix. The OpenAPI document published at
+// /openapi.json is the frozen contract for v1; breaking changes bump to /api/v2.
+app.route('/api/v1/admin', admin)
+app.route('/api/v1/ai', ai)
+app.route('/api/v1/auth', auth)
+app.route('/api/v1/branch-items', branchItems)
+app.route('/api/v1/branches', branches)
+app.route('/api/v1/change-orders', changeOrders)
+app.route('/api/v1/commits', commits)
+app.route('/api/v1/dashboard', dashboard)
+app.route('/api/v1/design-engine', designEngine)
+app.route('/api/v1/designs', designs)
+app.route('/api/v1/documents', documents)
+app.route('/api/v1/enterprise-search', enterpriseSearch)
+app.route('/api/v1/files', files)
+app.route('/api/v1/health', health)
+app.route('/api/v1/import', importRoutes)
+app.route('/api/v1/issues', issues)
+app.route('/api/v1/items', items)
+app.route('/api/v1/jobs', jobs)
+app.route('/api/v1/lifecycles', lifecycles)
+app.route('/api/v1/mbom', mbom)
+app.route('/api/v1/parts', parts)
+app.route('/api/v1/programs', programs)
+app.route('/api/v1/relationships', relationships)
+app.route('/api/v1/reports', reports)
+app.route('/api/v1/requirements', requirements)
+app.route('/api/v1/roles', roles)
+app.route('/api/v1/sysml', sysml)
+app.route('/api/v1/tags', tags)
+app.route('/api/v1/tasks', tasks)
+app.route('/api/v1/test-cases', testCases)
+app.route('/api/v1/thread', thread)
+app.route('/api/v1/tools', tools)
+app.route('/api/v1/users', users)
+app.route('/api/v1/work-instructions', workInstructions)
+app.route('/api/v1/work-orders', workOrders)
+app.route('/api/v1/workflows', workflows)
+app.route('/api/v1/workspaces', workspaces)
+
+// Machine-readable OpenAPI 3.1 document, regenerated from `apiHandler({ openapi })`
+// metadata on every request. The committed snapshot lives at docs/api/openapi.v1.json.
+app.get(
+  '/openapi.json',
+  openAPIRouteHandler(app, {
+    documentation: {
+      info: {
+        title: 'Cascadia API',
+        version: '1.0.0',
+        description:
+          'Code-first PLM. ECO-as-Branch versioning. v1 surface is frozen; ' +
+          'additive changes only until v2 is cut.',
+      },
+      servers: [{ url: '/', description: 'This server' }],
+      components: {
+        securitySchemes: {
+          sessionCookie: {
+            type: 'apiKey',
+            in: 'cookie',
+            name: 'session',
+          },
+          apiKey: { type: 'http', scheme: 'bearer' },
+        },
+      },
+      security: [{ sessionCookie: [] }, { apiKey: [] }],
+    },
+  }),
+)
+
+// Human-readable docs UI at /api/docs.
+app.get(
+  '/api/docs',
+  Scalar({
+    url: '/openapi.json',
+    pageTitle: 'Cascadia API Reference',
+  }),
+)
 
 // In production, serve the Vite SPA build as static files
 if (process.env.NODE_ENV === 'production') {

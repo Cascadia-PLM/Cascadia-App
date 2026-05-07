@@ -27,7 +27,7 @@ interface ErrorHandlerOptions {
  *
  *   const handleSubmit = async () => {
  *     try {
- *       await apiFetch('/api/parts', { method: 'POST', body: data })
+ *       await apiFetch('/api/v1/parts', { method: 'POST', body: data })
  *       showSuccess('Part created', 'Your new part has been saved.')
  *     } catch (error) {
  *       handleError(error)

@@ -83,7 +83,7 @@ export function WorkspaceItemsPanel({
     try {
       const response = await apiFetch<{
         data: { items: Array<WorkspaceItem> }
-      }>(`/api/workspaces/${workspaceId}/items`)
+      }>(`/api/v1/workspaces/${workspaceId}/items`)
       setItems(response.data.items)
     } catch (error) {
       handleError(error, { title: 'Failed to load items' })
@@ -101,7 +101,7 @@ export function WorkspaceItemsPanel({
   // Handle remove from workspace (undo checkout)
   const handleRemove = async (itemId: string, itemNumber: string) => {
     try {
-      await apiFetch(`/api/items/${itemId}/cancel-checkout`, {
+      await apiFetch(`/api/v1/items/${itemId}/cancel-checkout`, {
         method: 'POST',
         body: JSON.stringify({ branchId: workspaceId }),
       })

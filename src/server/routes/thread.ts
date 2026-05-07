@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { ThreadDomain } from '@/lib/services/ThreadService'
 import { db } from '@/lib/db'
 import { items } from '@/lib/db/schema'
@@ -11,6 +11,8 @@ import {
   threadComparisonRequestSchema,
 } from '@/lib/services/ThreadComparisonService'
 import { apiHandler } from '@/lib/api/handler'
+
+const adapt = tagged('Thread')
 
 const app = new Hono()
 

@@ -17,7 +17,7 @@ export const Route = createFileRoute('/requirements/new')({
   loader: async () => {
     try {
       const result = await apiFetch<{ data: { designs: Array<Design> } }>(
-        '/api/designs',
+        '/api/v1/designs',
       )
       return { designs: result.data.designs }
     } catch (error) {
@@ -39,7 +39,7 @@ function NewRequirementPage() {
     try {
       const payload = { ...requirement, itemType: 'Requirement' }
       const result = await apiFetch<{ data: { item: Requirement } }>(
-        '/api/items',
+        '/api/v1/items',
         {
           method: 'POST',
           body: JSON.stringify(payload),

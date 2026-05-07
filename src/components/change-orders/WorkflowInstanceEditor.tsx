@@ -349,7 +349,7 @@ function WorkflowInstanceEditorInner({
       )
 
       const response = await fetch(
-        `/api/change-orders/${changeOrderId}/workflow/structure`,
+        `/api/v1/change-orders/${changeOrderId}/workflow/structure`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },

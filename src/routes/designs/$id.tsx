@@ -77,16 +77,16 @@ export const Route = createFileRoute('/designs/$id')({
       const [designResult, branchesResult, tagsResult, programsResult] =
         await Promise.all([
           apiFetch<{ data: { design: DesignWithDetails } }>(
-            `/api/designs/${params.id}`,
+            `/api/v1/designs/${params.id}`,
           ),
           apiFetch<{ data: { branches: Array<Branch> } }>(
-            `/api/designs/${params.id}/branches?includeArchived=true`,
+            `/api/v1/designs/${params.id}/branches?includeArchived=true`,
           ).catch(() => ({ data: { branches: [] as Array<Branch> } })),
           apiFetch<{ data: { tags: Array<TagItem> } }>(
-            `/api/designs/${params.id}/tags`,
+            `/api/v1/designs/${params.id}/tags`,
           ).catch(() => ({ data: { tags: [] as Array<TagItem> } })),
           apiFetch<{ data: { programs: Array<Program> } }>(
-            '/api/programs',
+            '/api/v1/programs',
           ).catch(() => ({ data: { programs: [] as Array<Program> } })),
         ])
 
@@ -203,7 +203,7 @@ function DesignDetailPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/designs/${design.id}`, {
+          await apiFetch(`/api/v1/designs/${design.id}`, {
             method: 'DELETE',
           })
 

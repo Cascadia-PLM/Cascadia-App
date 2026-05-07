@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { and, eq, isNull } from 'drizzle-orm'
 import { generateState } from 'arctic'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { apiHandler, created } from '@/lib/api/handler'
 import { AuthService } from '@/lib/auth/AuthService'
 import { SessionManager } from '@/lib/auth/session'
@@ -17,6 +17,8 @@ import {
 import { AuthenticationError, ValidationError } from '@/lib/errors'
 import { db } from '@/lib/db'
 import { apiKeys } from '@/lib/db/schema/api-keys'
+
+const adapt = tagged('Auth')
 
 const app = new Hono()
 

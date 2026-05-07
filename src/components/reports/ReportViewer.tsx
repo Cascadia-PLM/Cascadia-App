@@ -40,7 +40,7 @@ export function ReportViewer({ report }: ReportViewerProps) {
     setError(null)
 
     try {
-      const response = await fetch(`/api/reports/${report.id}/execute`, {
+      const response = await fetch(`/api/v1/reports/${report.id}/execute`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,7 +70,7 @@ export function ReportViewer({ report }: ReportViewerProps) {
 
   const handleExport = async () => {
     try {
-      const response = await fetch(`/api/reports/${report.id}/export`, {
+      const response = await fetch(`/api/v1/reports/${report.id}/export`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

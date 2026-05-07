@@ -1,10 +1,12 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { Tool } from '@/lib/items/types/tool'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { NotFoundError } from '@/lib/errors'
 import { apiHandler } from '@/lib/api/handler'
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Tools')
 
 const app = new Hono()
 

@@ -90,7 +90,7 @@ export function WorkflowTransitionDialog({
     let cancelled = false
     setLoadingPreview(true)
 
-    fetch(`/api/change-orders/${changeOrderId}/release`, {
+    fetch(`/api/v1/change-orders/${changeOrderId}/release`, {
       credentials: 'include',
     })
       .then((res) => res.json())

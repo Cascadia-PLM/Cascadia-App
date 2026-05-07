@@ -58,9 +58,9 @@ export const Route = createFileRoute('/designs/')({
 
       const [designsResult, programsResult] = await Promise.all([
         apiFetch<{ data: { designs: Array<Design> } }>(
-          `/api/designs?${designParams}`,
+          `/api/v1/designs?${designParams}`,
         ),
-        apiFetch<{ data: { programs: Array<ProgramInfo> } }>('/api/programs'),
+        apiFetch<{ data: { programs: Array<ProgramInfo> } }>('/api/v1/programs'),
       ])
 
       // Enrich designs with program info
@@ -127,7 +127,7 @@ function DesignsListPage() {
       if (searchParams.programId) qp.set('programId', searchParams.programId)
 
       const result = await apiFetch<{ data: { designs: Array<Design> } }>(
-        `/api/designs?${qp}`,
+        `/api/v1/designs?${qp}`,
       )
       // Enrich designs with program info
       const enrichedDesigns = result.data.designs.map((design: Design) => ({
@@ -164,7 +164,7 @@ function DesignsListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/designs/${design.id}/archive`, {
+          await apiFetch(`/api/v1/designs/${design.id}/archive`, {
             method: 'POST',
           })
 

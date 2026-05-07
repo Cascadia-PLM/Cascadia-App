@@ -824,33 +824,33 @@ A self-controlled lifecycle for issue tracking. Users can transition states dire
 
 | Method   | Endpoint                      | Description                                                                  |
 | -------- | ----------------------------- | ---------------------------------------------------------------------------- |
-| `GET`    | `/api/workflows`              | List all definitions (supports `?isActive=true&type=lifecycle`)              |
-| `POST`   | `/api/workflows`              | Create a new definition                                                      |
-| `GET`    | `/api/workflows/:id`          | Get a definition by ID                                                       |
-| `PUT`    | `/api/workflows/:id`          | Update a definition                                                          |
-| `DELETE` | `/api/workflows/:id`          | Delete a definition (blocked if active instances or item types reference it) |
-| `POST`   | `/api/workflows/:id/validate` | Validate a definition's structure                                            |
+| `GET`    | `/api/v1/workflows`              | List all definitions (supports `?isActive=true&type=lifecycle`)              |
+| `POST`   | `/api/v1/workflows`              | Create a new definition                                                      |
+| `GET`    | `/api/v1/workflows/:id`          | Get a definition by ID                                                       |
+| `PUT`    | `/api/v1/workflows/:id`          | Update a definition                                                          |
+| `DELETE` | `/api/v1/workflows/:id`          | Delete a definition (blocked if active instances or item types reference it) |
+| `POST`   | `/api/v1/workflows/:id/validate` | Validate a definition's structure                                            |
 
 ### Workflow Approvers
 
 | Method   | Endpoint                                                   | Description                              |
 | -------- | ---------------------------------------------------------- | ---------------------------------------- |
-| `GET`    | `/api/workflows/:id/approvers`                             | Get all state approvers for a definition |
-| `GET`    | `/api/workflows/:id/states/:stateId/approvers`             | Get approvers for a specific state       |
-| `PUT`    | `/api/workflows/:id/states/:stateId/approvers`             | Replace all approvers for a state        |
-| `POST`   | `/api/workflows/:id/states/:stateId/approvers`             | Add a single approver                    |
-| `PATCH`  | `/api/workflows/:id/states/:stateId/approvers/:approverId` | Update approver required status          |
-| `DELETE` | `/api/workflows/:id/states/:stateId/approvers/:approverId` | Remove an approver                       |
+| `GET`    | `/api/v1/workflows/:id/approvers`                             | Get all state approvers for a definition |
+| `GET`    | `/api/v1/workflows/:id/states/:stateId/approvers`             | Get approvers for a specific state       |
+| `PUT`    | `/api/v1/workflows/:id/states/:stateId/approvers`             | Replace all approvers for a state        |
+| `POST`   | `/api/v1/workflows/:id/states/:stateId/approvers`             | Add a single approver                    |
+| `PATCH`  | `/api/v1/workflows/:id/states/:stateId/approvers/:approverId` | Update approver required status          |
+| `DELETE` | `/api/v1/workflows/:id/states/:stateId/approvers/:approverId` | Remove an approver                       |
 
 ### Change Order Workflow
 
 | Method | Endpoint                                              | Description                              |
 | ------ | ----------------------------------------------------- | ---------------------------------------- |
-| `GET`  | `/api/change-orders/:id/workflow`                     | Get workflow instance for a change order |
-| `POST` | `/api/change-orders/:id/workflow`                     | Start a workflow for a change order      |
-| `GET`  | `/api/change-orders/:id/workflow/transition`          | Get available transitions                |
-| `POST` | `/api/change-orders/:id/workflow/transition`          | Execute a transition                     |
-| `POST` | `/api/change-orders/:id/workflow/validate-transition` | Validate a transition before executing   |
+| `GET`  | `/api/v1/change-orders/:id/workflow`                     | Get workflow instance for a change order |
+| `POST` | `/api/v1/change-orders/:id/workflow`                     | Start a workflow for a change order      |
+| `GET`  | `/api/v1/change-orders/:id/workflow/transition`          | Get available transitions                |
+| `POST` | `/api/v1/change-orders/:id/workflow/transition`          | Execute a transition                     |
+| `POST` | `/api/v1/change-orders/:id/workflow/validate-transition` | Validate a transition before executing   |
 
 ### Service Layer
 

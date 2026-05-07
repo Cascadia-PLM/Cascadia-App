@@ -91,7 +91,7 @@ export function DigitalThreadNavigator({
         domains: 'engineering,manufacturing',
       })
 
-      const response = await fetch(`/api/thread/${itemId}?${params}`)
+      const response = await fetch(`/api/v1/thread/${itemId}?${params}`)
 
       if (!response.ok) {
         throw new Error('Failed to load digital thread data')

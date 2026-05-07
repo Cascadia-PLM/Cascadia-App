@@ -113,7 +113,7 @@ export function ThreadComparisonDialog({
     if (open && !targets && !loadingTargets) {
       setLoadingTargets(true)
       apiFetch<{ data: ComparisonTargets }>(
-        `/api/thread/${itemId}/comparison-targets`,
+        `/api/v1/thread/${itemId}/comparison-targets`,
       )
         .then((response) => {
           setTargets(response.data)
@@ -148,7 +148,7 @@ export function ThreadComparisonDialog({
 
     try {
       const response = await apiFetch<{ data: ThreadComparison }>(
-        `/api/thread/${itemId}/compare`,
+        `/api/v1/thread/${itemId}/compare`,
         {
           method: 'POST',
           body: JSON.stringify({

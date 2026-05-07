@@ -17,7 +17,7 @@ export const Route = createFileRoute('/documents/new')({
   loader: async () => {
     try {
       const result = await apiFetch<{ data: { designs: Array<Design> } }>(
-        '/api/designs',
+        '/api/v1/designs',
       )
       return { designs: result.data.designs }
     } catch (error) {
@@ -43,7 +43,7 @@ function NewDocumentPage() {
         ...(branchId && { branchId }),
       }
       const result = await apiFetch<{ data: { item: Document } }>(
-        '/api/items',
+        '/api/v1/items',
         {
           method: 'POST',
           body: JSON.stringify(payload),

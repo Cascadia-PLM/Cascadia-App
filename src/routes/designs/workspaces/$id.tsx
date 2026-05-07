@@ -49,7 +49,7 @@ export const Route = createFileRoute('/designs/workspaces/$id')({
   loader: async ({ params }) => {
     try {
       const response = await apiFetch<{ data: WorkspaceData }>(
-        `/api/workspaces/${params.id}`,
+        `/api/v1/workspaces/${params.id}`,
       )
       return { workspace: response.data }
     } catch (error) {
@@ -95,7 +95,7 @@ function WorkspaceDetailPage() {
     setLoadingCommits(true)
     try {
       const response = await apiFetch<{ data: { commits: Array<any> } }>(
-        `/api/branches/${workspace.id}/commits`,
+        `/api/v1/branches/${workspace.id}/commits`,
       )
       setCommits(response.data.commits)
     } catch (error) {
@@ -127,7 +127,7 @@ function WorkspaceDetailPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/workspaces/${workspace.id}`, {
+          await apiFetch(`/api/v1/workspaces/${workspace.id}`, {
             method: 'DELETE',
           })
 

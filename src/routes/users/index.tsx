@@ -33,8 +33,8 @@ export const Route = createFileRoute('/users/')({
               byProvider: Record<string, number>
             }
           }
-        }>('/api/users'),
-        apiFetch<{ data: { roles: Array<Role>; total: number } }>('/api/roles'),
+        }>('/api/v1/users'),
+        apiFetch<{ data: { roles: Array<Role>; total: number } }>('/api/v1/roles'),
       ])
 
       return {
@@ -95,7 +95,7 @@ function UsersListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/users/${user.id}`, {
+          const response = await fetch(`/api/v1/users/${user.id}`, {
             method: 'DELETE',
           })
 
@@ -119,7 +119,7 @@ function UsersListPage() {
 
   const handleAssignRoles = async (userId: string, roleIds: Array<string>) => {
     try {
-      const response = await fetch(`/api/users/${userId}/roles`, {
+      const response = await fetch(`/api/v1/users/${userId}/roles`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roleIds }),
@@ -139,7 +139,7 @@ function UsersListPage() {
 
   const handleChangePassword = async (userId: string, password: string) => {
     try {
-      const response = await fetch(`/api/users/${userId}/password`, {
+      const response = await fetch(`/api/v1/users/${userId}/password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),

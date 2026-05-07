@@ -95,17 +95,17 @@ export const Route = createFileRoute('/parts/')({
         releasedCount,
       ] = await Promise.all([
         apiFetch<{ data: { items: Array<Part>; total: number } }>(
-          `/api/items?${params}`,
+          `/api/v1/items?${params}`,
         ),
-        apiFetch<{ data: { designs: Array<Design> } }>('/api/designs'),
+        apiFetch<{ data: { designs: Array<Design> } }>('/api/v1/designs'),
         apiFetch<{ data: { total: number } }>(
-          `/api/items?${countParams}&state=Draft`,
+          `/api/v1/items?${countParams}&state=Draft`,
         ).catch(() => ({ data: { total: 0 } })),
         apiFetch<{ data: { total: number } }>(
-          `/api/items?${countParams}&state=InReview`,
+          `/api/v1/items?${countParams}&state=InReview`,
         ).catch(() => ({ data: { total: 0 } })),
         apiFetch<{ data: { total: number } }>(
-          `/api/items?${countParams}&state=Released`,
+          `/api/v1/items?${countParams}&state=Released`,
         ).catch(() => ({ data: { total: 0 } })),
       ])
 
@@ -171,7 +171,7 @@ function PartsListPage() {
 
       const result = await apiFetch<{
         data: { items: Array<Part>; total: number }
-      }>(`/api/items?${qp}`)
+      }>(`/api/v1/items?${qp}`)
       return { items: result.data.items, total: result.data.total }
     },
     dependencies: {
@@ -206,7 +206,7 @@ function PartsListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/parts/${part.id}`, {
+          await apiFetch(`/api/v1/parts/${part.id}`, {
             method: 'DELETE',
           })
 

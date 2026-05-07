@@ -244,7 +244,7 @@ export function RequirementDetail({
         }
 
         const response = await apiFetch<{ data: { item: Requirement | null } }>(
-          `/api/items/${requirement.id}/at-context?${queryString}`,
+          `/api/v1/items/${requirement.id}/at-context?${queryString}`,
         )
         setDisplayedRequirement(response.data.item || requirement)
       } catch {
@@ -265,7 +265,7 @@ export function RequirementDetail({
       try {
         const response = await apiFetch<{
           data: { branch: { branchType: string } }
-        }>(`/api/branches/${context.branchId}`)
+        }>(`/api/v1/branches/${context.branchId}`)
         setIsWorkspaceContext(response.data.branch.branchType === 'workspace')
       } catch {
         setIsWorkspaceContext(false)

@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { BranchService } from '@/lib/services/BranchService'
 import { ProgramService } from '@/lib/services/ProgramService'
 import { DesignService } from '@/lib/services/DesignService'
@@ -9,6 +9,8 @@ import { NotFoundError, PermissionDeniedError } from '@/lib/errors'
 import { requireBranchAccess } from '@/lib/auth/access'
 import { apiHandler, parseQuery } from '@/lib/api/handler'
 import { itemListSchema } from '@/lib/api/schemas'
+
+const adapt = tagged('Branches')
 
 const app = new Hono()
 

@@ -46,7 +46,7 @@ export function WorkOrderForm({
   // Load part if defaultValues has partId
   useEffect(() => {
     if (defaultValues?.partId && !selectedPart) {
-      fetch(`/api/parts/${defaultValues.partId}`)
+      fetch(`/api/v1/parts/${defaultValues.partId}`)
         .then((r) => r.json())
         .then((data) => {
           const part = data.data?.part || data.data
@@ -73,7 +73,7 @@ export function WorkOrderForm({
       setSearching(true)
       try {
         const response = await fetch(
-          `/api/items/search?q=${encodeURIComponent(partSearch)}&type=Part&limit=10`,
+          `/api/v1/items/search?q=${encodeURIComponent(partSearch)}&type=Part&limit=10`,
         )
         const data = await response.json()
         setSearchResults(

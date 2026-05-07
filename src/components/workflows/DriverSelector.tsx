@@ -23,7 +23,7 @@ export function DriverSelector({
     const loadDrivingLifecycles = async () => {
       try {
         // Load all workflows and filter for Driving type
-        const response = await fetch('/api/workflows')
+        const response = await fetch('/api/v1/workflows')
         if (response.ok) {
           const { data } = await response.json()
           const workflows = data?.workflows || []

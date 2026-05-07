@@ -245,7 +245,7 @@ export function ChangeOrderDetail({
     async function fetchDesigns() {
       setLoadingDesigns(true)
       try {
-        const response = await fetch('/api/designs')
+        const response = await fetch('/api/v1/designs')
         if (response.ok) {
           const data = await response.json()
           setAvailableDesigns(data.data?.designs ?? [])
@@ -266,7 +266,7 @@ export function ChangeOrderDetail({
         return
       }
       try {
-        const response = await fetch(`/api/designs/${changeOrder.designId}`)
+        const response = await fetch(`/api/v1/designs/${changeOrder.designId}`)
         if (response.ok) {
           const design = await response.json()
           setMainBranchId(design.defaultBranchId)
@@ -288,7 +288,7 @@ export function ChangeOrderDetail({
       }
       try {
         const response = await fetch(
-          `/api/change-orders/${changeOrder.id}/workflow/structure`,
+          `/api/v1/change-orders/${changeOrder.id}/workflow/structure`,
         )
         if (response.ok) {
           const data = await response.json()
@@ -327,7 +327,7 @@ export function ChangeOrderDetail({
 
         const response = await apiFetch<{
           data: { item: ChangeOrder | null; existsAtContext: boolean }
-        }>(`/api/items/${changeOrder.id}/at-context?${queryString}`)
+        }>(`/api/v1/items/${changeOrder.id}/at-context?${queryString}`)
 
         if (response.data.item) {
           setDisplayedChangeOrder(response.data.item)

@@ -113,7 +113,7 @@ export function AddPartToDesignDialog({
         params.set('designIds', programDesignIds)
       }
 
-      const response = await fetch(`/api/items/search?${params}`)
+      const response = await fetch(`/api/v1/items/search?${params}`)
       if (response.ok) {
         const data = await response.json()
         // Filter out parts already in this design
@@ -143,7 +143,7 @@ export function AddPartToDesignDialog({
       setBranches([])
 
       // Fetch programs
-      fetch('/api/programs')
+      fetch('/api/v1/programs')
         .then((r) => r.json())
         .then((data) => setPrograms(data.data?.programs ?? data.data ?? []))
         .catch(() => setPrograms([]))
@@ -160,7 +160,7 @@ export function AddPartToDesignDialog({
     setBranches([])
 
     if (selectedProgramId) {
-      fetch(`/api/designs?programId=${selectedProgramId}`)
+      fetch(`/api/v1/designs?programId=${selectedProgramId}`)
         .then((r) => r.json())
         .then((data) => setDesigns(data.data?.designs ?? data.data ?? []))
         .catch(() => setDesigns([]))
@@ -175,7 +175,7 @@ export function AddPartToDesignDialog({
     setSelectedBranchId('')
 
     if (selectedDesignId) {
-      fetch(`/api/designs/${selectedDesignId}/branches`)
+      fetch(`/api/v1/designs/${selectedDesignId}/branches`)
         .then((r) => r.json())
         .then((data) => setBranches(data.data?.branches ?? data.data ?? []))
         .catch(() => setBranches([]))
@@ -221,7 +221,7 @@ export function AddPartToDesignDialog({
       // Add each selected part to the design
       const results = await Promise.allSettled(
         selectedItems.map((item) =>
-          apiFetch(`/api/designs/${designId}/items`, {
+          apiFetch(`/api/v1/designs/${designId}/items`, {
             method: 'POST',
             body: JSON.stringify({
               itemId: item.id,

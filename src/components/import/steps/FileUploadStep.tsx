@@ -100,7 +100,7 @@ export function FileUploadStep({
 
   const handleDownloadTemplate = async () => {
     try {
-      const templatePath = `/api/import/templates/${config.pluralLabel.toLowerCase()}`
+      const templatePath = `/api/v1/import/templates/${config.pluralLabel.toLowerCase()}`
       const response = await fetch(templatePath)
       if (!response.ok) throw new Error('Failed to download template')
 

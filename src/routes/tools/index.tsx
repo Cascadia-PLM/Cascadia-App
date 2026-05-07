@@ -32,7 +32,7 @@ export const Route = createFileRoute('/tools/')({
       })
       const result = await apiFetch<{
         data: { items: Array<Tool>; total: number }
-      }>(`/api/items?${params}`)
+      }>(`/api/v1/items?${params}`)
       return {
         tools: result.data.items,
         total: result.data.total,

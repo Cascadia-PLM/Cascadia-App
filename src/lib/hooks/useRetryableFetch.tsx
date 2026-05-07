@@ -38,7 +38,7 @@ interface UseRetryableFetchResult<T> {
  * ```tsx
  * function PartsList() {
  *   const { data, loading, error, canRetry, retry } = useRetryableFetch<Part[]>(
- *     '/api/parts',
+ *     '/api/v1/parts',
  *     { immediate: true }
  *   )
  *

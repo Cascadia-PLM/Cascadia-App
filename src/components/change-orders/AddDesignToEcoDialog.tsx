@@ -52,7 +52,7 @@ export function AddDesignToEcoDialog({
   const fetchDesigns = async () => {
     setFetching(true)
     try {
-      const response = await fetch('/api/designs')
+      const response = await fetch('/api/v1/designs')
       if (response.ok) {
         const data = await response.json()
         // Filter out designs already added to this ECO
@@ -96,7 +96,7 @@ export function AddDesignToEcoDialog({
       // Add each selected design to the ECO
       const results = await Promise.allSettled(
         selectedDesigns.map((design) =>
-          fetch(`/api/change-orders/${changeOrderId}/designs`, {
+          fetch(`/api/v1/change-orders/${changeOrderId}/designs`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ designId: design.id }),

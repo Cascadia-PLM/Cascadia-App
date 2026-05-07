@@ -30,7 +30,7 @@ export const Route = createFileRoute('/designs/workspaces/')({
   component: WorkspacesPage,
   loader: async () => {
     const result = await apiFetch<{ data: { workspaces: Array<Workspace> } }>(
-      '/api/workspaces',
+      '/api/v1/workspaces',
     )
     return { workspaces: result.data.workspaces }
   },
@@ -51,7 +51,7 @@ function WorkspacesPage() {
     let itemCount = 0
     try {
       const response = await apiFetch<{ data: { itemCount: number } }>(
-        `/api/workspaces/${workspace.id}`,
+        `/api/v1/workspaces/${workspace.id}`,
       )
       itemCount = response.data.itemCount
     } catch {
@@ -76,7 +76,7 @@ function WorkspacesPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/workspaces/${workspace.id}`, {
+          await apiFetch(`/api/v1/workspaces/${workspace.id}`, {
             method: 'DELETE',
           })
 

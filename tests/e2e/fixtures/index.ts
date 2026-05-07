@@ -307,7 +307,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   // Logout helper
   logout: async ({ page }, use) => {
     const logout = async () => {
-      await page.goto('/api/auth/logout', { waitUntil: 'networkidle' })
+      await page.goto('/api/v1/auth/logout', { waitUntil: 'networkidle' })
     }
 
     await use(logout)

@@ -171,7 +171,7 @@ export function GapAnalysisDialog({
 
     try {
       const response = await apiFetch<{ data: GapAnalysisResult }>(
-        `/api/designs/${designId}/gap-analysis`,
+        `/api/v1/designs/${designId}/gap-analysis`,
         {
           method: 'POST',
           body: JSON.stringify({

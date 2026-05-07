@@ -27,7 +27,7 @@ export function WorkspaceContextBanner({
       setLoading(true)
       try {
         const response = await apiFetch<{ data: WorkspaceInfo }>(
-          `/api/workspaces/${branchId}`,
+          `/api/v1/workspaces/${branchId}`,
         )
         setWorkspace(response.data)
       } catch {

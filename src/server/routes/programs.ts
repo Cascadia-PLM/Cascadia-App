@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { desc, inArray } from 'drizzle-orm'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type {
   CommitGraphEdge,
   CrossDesignEco,
@@ -24,6 +24,8 @@ import { branches, commits, tags } from '@/lib/db/schema/versioning'
 import { users } from '@/lib/db/schema/users'
 import { changeOrderDesigns, items } from '@/lib/db/schema/items'
 import { apiHandler, created } from '@/lib/api/handler'
+
+const adapt = tagged('Programs')
 
 // ============================================
 // Commit Consolidation (shared from design graph)

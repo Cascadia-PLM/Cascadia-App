@@ -69,7 +69,7 @@ export function WorkInstructionsForPartPanel({
 
   const loadWorkInstructions = useCallback(async () => {
     try {
-      const response = await fetch(`/api/parts/${partId}/work-instructions`)
+      const response = await fetch(`/api/v1/parts/${partId}/work-instructions`)
       if (!response.ok) {
         throw new Error('Failed to load work instructions')
       }

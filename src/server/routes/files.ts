@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { FileService } from '@/lib/vault/services/FileService'
 import { JobService } from '@/lib/jobs/JobService'
 import { apiHandler, jsonResponse } from '@/lib/api/handler'
@@ -13,6 +13,8 @@ import {
 } from '@/lib/api/schemas'
 import { db } from '@/lib/db'
 import { items } from '@/lib/db/schema'
+
+const adapt = tagged('Files')
 
 const CAD_EXTENSIONS = new Set(['.step', '.stp', '.iges', '.igs'])
 

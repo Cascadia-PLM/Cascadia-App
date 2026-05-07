@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { WorkOrderStatus } from '@/lib/items/types/work-order'
 import { WorkOrderService } from '@/lib/services/WorkOrderService'
 import { WorkInstructionExecutionService } from '@/lib/services/WorkInstructionExecutionService'
@@ -9,6 +9,8 @@ import {
 } from '@/lib/items/types/work-order'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { apiHandler, created } from '@/lib/api/handler'
+
+const adapt = tagged('Work Orders')
 
 const app = new Hono()
 

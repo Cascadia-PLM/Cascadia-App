@@ -64,16 +64,16 @@ export const Route = createFileRoute('/change-orders/')({
       const [result, draftCount, inReviewCount, releasedCount] =
         await Promise.all([
           apiFetch<{ data: { items: Array<ChangeOrder>; total: number } }>(
-            `/api/items?${params}`,
+            `/api/v1/items?${params}`,
           ),
           apiFetch<{ data: { total: number } }>(
-            `/api/items?${countParams}&state=Draft`,
+            `/api/v1/items?${countParams}&state=Draft`,
           ).catch(() => ({ data: { total: 0 } })),
           apiFetch<{ data: { total: number } }>(
-            `/api/items?${countParams}&state=InReview`,
+            `/api/v1/items?${countParams}&state=InReview`,
           ).catch(() => ({ data: { total: 0 } })),
           apiFetch<{ data: { total: number } }>(
-            `/api/items?${countParams}&state=Released`,
+            `/api/v1/items?${countParams}&state=Released`,
           ).catch(() => ({ data: { total: 0 } })),
         ])
       return {
@@ -134,7 +134,7 @@ function ChangeOrdersListPage() {
 
         const result = await apiFetch<{
           data: { items: Array<ChangeOrder>; total: number }
-        }>(`/api/items?${qp}`)
+        }>(`/api/v1/items?${qp}`)
         setChangeOrders(result.data.items)
         setTotal(result.data.total)
       } catch (error) {
@@ -164,7 +164,7 @@ function ChangeOrdersListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/change-orders/${changeOrder.id}`, {
+          await apiFetch(`/api/v1/change-orders/${changeOrder.id}`, {
             method: 'DELETE',
           })
 

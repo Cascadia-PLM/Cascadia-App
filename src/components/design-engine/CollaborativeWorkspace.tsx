@@ -111,7 +111,7 @@ export function CollaborativeWorkspace({
 
   const handleUpdateDescription = useCallback(
     async (description: string) => {
-      await fetch(`/api/design-engine/sessions/${sessionId}`, {
+      await fetch(`/api/v1/design-engine/sessions/${sessionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description }),
@@ -128,7 +128,7 @@ export function CollaborativeWorkspace({
       if (idx >= 0) {
         updated.requirements = [...updated.requirements]
         updated.requirements[idx] = { ...updated.requirements[idx], ...data }
-        await fetch(`/api/design-engine/sessions/${sessionId}`, {
+        await fetch(`/api/v1/design-engine/sessions/${sessionId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ artifacts: updated }),
@@ -146,7 +146,7 @@ export function CollaborativeWorkspace({
           (r) => r.tempId !== tempId,
         ),
       }
-      await fetch(`/api/design-engine/sessions/${sessionId}`, {
+      await fetch(`/api/v1/design-engine/sessions/${sessionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ artifacts: updated }),
@@ -172,7 +172,7 @@ export function CollaborativeWorkspace({
         ...stream.artifacts,
         requirements: [...stream.artifacts.requirements, newReq],
       }
-      await fetch(`/api/design-engine/sessions/${sessionId}`, {
+      await fetch(`/api/v1/design-engine/sessions/${sessionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ artifacts: updated }),
@@ -206,7 +206,7 @@ export function CollaborativeWorkspace({
     setIsLoadingPreview(true)
     try {
       const response = await fetch(
-        `/api/design-engine/sessions/${sessionId}/materialize`,
+        `/api/v1/design-engine/sessions/${sessionId}/materialize`,
       )
       if (response.ok) {
         const data = await response.json()
@@ -222,7 +222,7 @@ export function CollaborativeWorkspace({
     setMaterializationError(null)
     try {
       const response = await fetch(
-        `/api/design-engine/sessions/${sessionId}/materialize`,
+        `/api/v1/design-engine/sessions/${sessionId}/materialize`,
         { method: 'POST' },
       )
       if (response.ok) {

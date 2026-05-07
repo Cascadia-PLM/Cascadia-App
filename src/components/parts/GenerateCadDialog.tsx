@@ -92,7 +92,7 @@ export function GenerateCadDialog({
   async function runAssessment() {
     try {
       const response = await apiFetch<{ data: Assessment }>(
-        `/api/parts/${part.id}/generate-cad/assess`,
+        `/api/v1/parts/${part.id}/generate-cad/assess`,
         { method: 'POST' },
       )
       setAssessment(response.data)
@@ -111,7 +111,7 @@ export function GenerateCadDialog({
     pollRef.current = setInterval(async () => {
       try {
         const response = await apiFetch<{ data: JobStatus }>(
-          `/api/jobs/${jobId}`,
+          `/api/v1/jobs/${jobId}`,
         )
         const job = response.data
         setJobProgress(job.progress)
@@ -145,7 +145,7 @@ export function GenerateCadDialog({
       }
 
       const response = await apiFetch<{ data: { jobId: string } }>(
-        `/api/parts/${part.id}/generate-cad`,
+        `/api/v1/parts/${part.id}/generate-cad`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -169,7 +169,7 @@ export function GenerateCadDialog({
 
     try {
       const response = await apiFetch<{ data: { jobId: string } }>(
-        `/api/parts/${part.id}/generate-cad/convert`,
+        `/api/v1/parts/${part.id}/generate-cad/convert`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

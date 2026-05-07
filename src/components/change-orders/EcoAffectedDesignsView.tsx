@@ -49,7 +49,7 @@ export function EcoAffectedDesignsView({
     setLoading(true)
     try {
       const response = await apiFetch<{ data: { designs: Array<EcoDesign> } }>(
-        `/api/change-orders/${changeOrderId}/designs`,
+        `/api/v1/change-orders/${changeOrderId}/designs`,
       )
       setDesigns(response.data.designs)
     } catch {
@@ -83,7 +83,7 @@ export function EcoAffectedDesignsView({
           releasedCount: number
         }
       }>(
-        `/api/change-orders/${changeOrderId}/items/${node.itemId}/ancestors?designId=${designId}`,
+        `/api/v1/change-orders/${changeOrderId}/items/${node.itemId}/ancestors?designId=${designId}`,
       )
 
       if (response.data.releasedCount > 0) {

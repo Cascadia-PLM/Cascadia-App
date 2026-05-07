@@ -1,11 +1,13 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { Issue } from '@/lib/items/types/issue'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { NotFoundError } from '@/lib/errors'
 import { apiHandler } from '@/lib/api/handler'
 // Register item types (server-side version)
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Issues')
 
 const app = new Hono()
 

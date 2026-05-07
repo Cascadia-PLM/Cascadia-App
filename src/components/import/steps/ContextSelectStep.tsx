@@ -88,7 +88,7 @@ export function ContextSelectStep({
     const loadPrograms = async () => {
       try {
         const response = await apiFetch<{ data: { programs: Array<Program> } }>(
-          '/api/programs',
+          '/api/v1/programs',
         )
         setPrograms(response.data.programs)
       } catch (error) {
@@ -112,7 +112,7 @@ export function ContextSelectStep({
       setLoadingDesigns(true)
       try {
         const response = await apiFetch<{ data: { designs: Array<Design> } }>(
-          `/api/designs?programId=${selectedProgramId}`,
+          `/api/v1/designs?programId=${selectedProgramId}`,
         )
         setDesigns(response.data.designs)
 
@@ -144,10 +144,10 @@ export function ContextSelectStep({
       try {
         const [branchesRes, statusRes] = await Promise.all([
           apiFetch<{ data: { branches: Array<Branch> } }>(
-            `/api/designs/${selectedDesignId}/branches`,
+            `/api/v1/designs/${selectedDesignId}/branches`,
           ),
           apiFetch<{ data: DesignStatus }>(
-            `/api/designs/${selectedDesignId}/status`,
+            `/api/v1/designs/${selectedDesignId}/status`,
           ),
         ])
         setBranches(branchesRes.data.branches)

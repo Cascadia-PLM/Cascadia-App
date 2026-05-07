@@ -84,7 +84,7 @@ export function ChatPanel() {
     stop,
     setMessages,
   } = useChat({
-    connection: fetchServerSentEvents('/api/ai/chat', () => ({
+    connection: fetchServerSentEvents('/api/v1/ai/chat', () => ({
       body: {
         data: {
           sessionId: sessionIdRef.current, // Use ref for immediate access
@@ -108,7 +108,7 @@ export function ChatPanel() {
     async (message: string, mode: 'chat' | 'search') => {
       if (!sessionIdRef.current) {
         try {
-          const response = await fetch('/api/ai/sessions', {
+          const response = await fetch('/api/v1/ai/sessions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({}),
@@ -205,7 +205,7 @@ export function ChatPanel() {
   const loadSessions = async () => {
     setLoadingSessions(true)
     try {
-      const response = await fetch('/api/ai/sessions')
+      const response = await fetch('/api/v1/ai/sessions')
       if (response.ok) {
         const data = await response.json()
         setSessions(data.data?.sessions || [])
@@ -219,7 +219,7 @@ export function ChatPanel() {
 
   const loadSessionMessages = async (sessionId: string) => {
     try {
-      const response = await fetch(`/api/ai/sessions/${sessionId}/messages`)
+      const response = await fetch(`/api/v1/ai/sessions/${sessionId}/messages`)
       if (response.ok) {
         const data = await response.json()
         const msgs = data.data?.messages || []
@@ -284,7 +284,7 @@ export function ChatPanel() {
 
   const handleDeleteSession = async (sessionId: string) => {
     try {
-      await fetch(`/api/ai/sessions/${sessionId}`, { method: 'DELETE' })
+      await fetch(`/api/v1/ai/sessions/${sessionId}`, { method: 'DELETE' })
       if (sessionId === currentSessionId) {
         handleNewSession()
       }

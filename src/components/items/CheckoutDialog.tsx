@@ -72,7 +72,7 @@ export function CheckoutDialog({
       setLoading(true)
       try {
         const res = await apiFetch<{ data: { branches: Array<Branch> } }>(
-          `/api/designs/${designId}/branches`,
+          `/api/v1/designs/${designId}/branches`,
         )
         const activeBranches = res.data.branches.filter(
           (b) => !b.isArchived && !b.isLocked && b.branchType !== 'main',
@@ -100,7 +100,7 @@ export function CheckoutDialog({
           try {
             const response = await apiFetch<{
               data: { status: CheckoutStatus }
-            }>(`/api/items/${itemId}/checkout?branchId=${branch.id}`)
+            }>(`/api/v1/items/${itemId}/checkout?branchId=${branch.id}`)
             statuses.set(branch.id, response.data.status)
           } catch {
             // Silently fail - item may not be on this branch
@@ -131,7 +131,7 @@ export function CheckoutDialog({
 
     setIsSubmitting(true)
     try {
-      await apiFetch(`/api/items/${itemId}/checkout`, {
+      await apiFetch(`/api/v1/items/${itemId}/checkout`, {
         method: 'POST',
         body: JSON.stringify({ branchId: selectedBranchId }),
       })
@@ -169,7 +169,7 @@ export function CheckoutDialog({
     setSelectedBranchId(workspaceId)
     setIsSubmitting(true)
     try {
-      await apiFetch(`/api/items/${itemId}/checkout`, {
+      await apiFetch(`/api/v1/items/${itemId}/checkout`, {
         method: 'POST',
         body: JSON.stringify({ branchId: workspaceId }),
       })

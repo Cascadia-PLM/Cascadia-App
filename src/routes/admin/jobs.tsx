@@ -103,7 +103,7 @@ function JobsPage() {
     if (showLoading) setLoading(true)
     setError(null)
     try {
-      const response = await fetch('/api/admin/jobs?limit=500')
+      const response = await fetch('/api/v1/admin/jobs?limit=500')
       if (!response.ok) {
         const data = await response.json()
         throw new Error(data.error?.message || 'Failed to fetch jobs')
@@ -120,7 +120,7 @@ function JobsPage() {
   const fetchJobDetails = async (jobId: string) => {
     setLoadingLogs(true)
     try {
-      const response = await fetch(`/api/admin/jobs/${jobId}`)
+      const response = await fetch(`/api/v1/admin/jobs/${jobId}`)
       if (!response.ok) {
         throw new Error('Failed to fetch job details')
       }
@@ -142,7 +142,7 @@ function JobsPage() {
   const handleRetry = async (job: Job) => {
     setActionLoading(job.id)
     try {
-      const response = await fetch(`/api/admin/jobs/${job.id}/retry`, {
+      const response = await fetch(`/api/v1/admin/jobs/${job.id}/retry`, {
         method: 'POST',
       })
       if (!response.ok) {
@@ -162,7 +162,7 @@ function JobsPage() {
 
     setActionLoading(job.id)
     try {
-      const response = await fetch(`/api/admin/jobs/${job.id}/cancel`, {
+      const response = await fetch(`/api/v1/admin/jobs/${job.id}/cancel`, {
         method: 'POST',
       })
       if (!response.ok) {

@@ -11,7 +11,7 @@ import { CollaborativeWorkspace } from '@/components/design-engine/Collaborative
 export const Route = createFileRoute('/designs/collaborative/$sessionId')({
   loader: async ({ params }) => {
     const response = await fetch(
-      `/api/design-engine/sessions/${params.sessionId}`,
+      `/api/v1/design-engine/sessions/${params.sessionId}`,
     )
     if (!response.ok) {
       throw new Error('Failed to load design session')

@@ -34,7 +34,7 @@ function NewChangeOrderPage() {
         baselineName: changeOrder.baselineName?.trim() || undefined,
       }
       const result = await apiFetch<{ data: { item: ChangeOrder } }>(
-        '/api/items',
+        '/api/v1/items',
         {
           method: 'POST',
           body: JSON.stringify(payload),
@@ -47,7 +47,7 @@ function NewChangeOrderPage() {
       if (designIds && designIds.length > 0) {
         const designResults = await Promise.allSettled(
           designIds.map((designId) =>
-            fetch(`/api/change-orders/${createdId}/designs`, {
+            fetch(`/api/v1/change-orders/${createdId}/designs`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ designId }),

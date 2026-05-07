@@ -37,7 +37,7 @@ export const Route = createRootRoute({
 
     // Client-side auth check via API
     try {
-      const response = await fetch('/api/auth/session')
+      const response = await fetch('/api/v1/auth/session')
       const data = await response.json()
 
       if (!data.data?.authenticated) {

@@ -97,20 +97,20 @@ export const Route = createFileRoute('/issues/')({
         closedCount,
       ] = await Promise.all([
         apiFetch<{ data: { items: Array<Issue>; total: number } }>(
-          `/api/items?${params.toString()}`,
+          `/api/v1/items?${params.toString()}`,
         ),
-        apiFetch<{ data: { designs: Array<Design> } }>('/api/designs'),
+        apiFetch<{ data: { designs: Array<Design> } }>('/api/v1/designs'),
         apiFetch<{ data: { total: number } }>(
-          `/api/items?${countParams}&state=Open`,
+          `/api/v1/items?${countParams}&state=Open`,
         ).catch(() => ({ data: { total: 0 } })),
         apiFetch<{ data: { total: number } }>(
-          `/api/items?${countParams}&state=InProgress`,
+          `/api/v1/items?${countParams}&state=InProgress`,
         ).catch(() => ({ data: { total: 0 } })),
         apiFetch<{ data: { total: number } }>(
-          `/api/items?${countParams}&state=Resolved`,
+          `/api/v1/items?${countParams}&state=Resolved`,
         ).catch(() => ({ data: { total: 0 } })),
         apiFetch<{ data: { total: number } }>(
-          `/api/items?${countParams}&state=Closed`,
+          `/api/v1/items?${countParams}&state=Closed`,
         ).catch(() => ({ data: { total: 0 } })),
       ])
 
@@ -195,7 +195,7 @@ function IssuesListPage() {
 
         const result = await apiFetch<{
           data: { items: Array<Issue>; total: number }
-        }>(`/api/items?${params.toString()}`)
+        }>(`/api/v1/items?${params.toString()}`)
         setIssues(result.data.items)
         setTotal(result.data.total)
       } catch (error) {
@@ -231,7 +231,7 @@ function IssuesListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/issues/${issue.id}`, {
+          await apiFetch(`/api/v1/issues/${issue.id}`, {
             method: 'DELETE',
           })
 

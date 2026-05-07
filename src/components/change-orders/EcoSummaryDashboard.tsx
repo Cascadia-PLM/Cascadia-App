@@ -68,7 +68,7 @@ export function EcoSummaryDashboard({
     setError(null)
     try {
       const response = await fetch(
-        `/api/change-orders/${changeOrderId}/summary`,
+        `/api/v1/change-orders/${changeOrderId}/summary`,
       )
       if (!response.ok) {
         throw new Error('Failed to load ECO summary')

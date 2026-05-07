@@ -240,7 +240,7 @@ export function TestCaseDetail({
         }
 
         const response = await apiFetch<{ data: { item: TestCase | null } }>(
-          `/api/items/${testCase.id}/at-context?${queryString}`,
+          `/api/v1/items/${testCase.id}/at-context?${queryString}`,
         )
         setDisplayedTestCase(response.data.item || testCase)
       } catch {
@@ -261,7 +261,7 @@ export function TestCaseDetail({
       try {
         const response = await apiFetch<{
           data: { branch: { branchType: string } }
-        }>(`/api/branches/${context.branchId}`)
+        }>(`/api/v1/branches/${context.branchId}`)
         setIsWorkspaceContext(response.data.branch.branchType === 'workspace')
       } catch {
         setIsWorkspaceContext(false)
@@ -279,7 +279,7 @@ export function TestCaseDetail({
       }
       try {
         const response = await apiFetch<{ data: { item: TestPlan } }>(
-          `/api/items/${testCase.testPlanId}`,
+          `/api/v1/items/${testCase.testPlanId}`,
         )
         setTestPlan(response.data.item)
       } catch {
@@ -297,7 +297,7 @@ export function TestCaseDetail({
       try {
         const response = await apiFetch<{
           data: { executions: Array<TestExecution> }
-        }>(`/api/test-cases/${testCase.id}/executions`)
+        }>(`/api/v1/test-cases/${testCase.id}/executions`)
         setExecutions(response.data.executions)
       } catch {
         setExecutions([])
@@ -380,7 +380,7 @@ export function TestCaseDetail({
     if (!currentTestCase.id) return
     setExecutingTest(true)
     try {
-      await apiFetch(`/api/test-cases/${currentTestCase.id}/execute`, {
+      await apiFetch(`/api/v1/test-cases/${currentTestCase.id}/execute`, {
         method: 'POST',
         body: JSON.stringify({
           status: executionStatus,
@@ -391,11 +391,11 @@ export function TestCaseDetail({
       // Refresh execution history
       const response = await apiFetch<{
         data: { executions: Array<TestExecution> }
-      }>(`/api/test-cases/${currentTestCase.id}/executions`)
+      }>(`/api/v1/test-cases/${currentTestCase.id}/executions`)
       setExecutions(response.data.executions)
       // Refresh test case to get updated status
       const tcResponse = await apiFetch<{ data: { item: TestCase } }>(
-        `/api/items/${currentTestCase.id}`,
+        `/api/v1/items/${currentTestCase.id}`,
       )
       setTestCase(tcResponse.data.item)
       setDisplayedTestCase(tcResponse.data.item)

@@ -91,9 +91,9 @@ export function BranchSelector({
       // Fetch branches and status in parallel
       const [branchesRes, statusRes] = await Promise.all([
         apiFetch<{ data: { branches: Array<Branch> } }>(
-          `/api/designs/${designId}/branches`,
+          `/api/v1/designs/${designId}/branches`,
         ),
-        apiFetch<{ data: DesignStatus }>(`/api/designs/${designId}/status`),
+        apiFetch<{ data: DesignStatus }>(`/api/v1/designs/${designId}/status`),
       ])
       setBranches(branchesRes.data.branches)
       setIsProtected(statusRes.data.protection.isMainBranchProtected)
@@ -118,7 +118,7 @@ export function BranchSelector({
     setCreateError(null)
     try {
       const result = await apiFetch<{ data: { branch: Branch } }>(
-        `/api/designs/${designId}/branches`,
+        `/api/v1/designs/${designId}/branches`,
         {
           method: 'POST',
           body: JSON.stringify({

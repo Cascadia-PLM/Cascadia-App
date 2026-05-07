@@ -140,7 +140,7 @@ export function useDesignEngineStream({
 
       try {
         const response = await fetch(
-          `/api/design-engine/sessions/${sessionId}/stream`,
+          `/api/v1/design-engine/sessions/${sessionId}/stream`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -235,7 +235,7 @@ export function useDesignEngineStream({
 
         try {
           const response = await fetch(
-            `/api/design-engine/sessions/${sessionId}/stream`,
+            `/api/v1/design-engine/sessions/${sessionId}/stream`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

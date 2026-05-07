@@ -25,7 +25,7 @@ export function Header() {
 
   // Check authentication status on mount
   useEffect(() => {
-    fetch('/api/auth/session')
+    fetch('/api/v1/auth/session')
       .then((res) => res.json())
       .then((response) => {
         if (response.data?.authenticated) {
@@ -39,7 +39,7 @@ export function Header() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
+      await fetch('/api/v1/auth/logout', { method: 'POST' })
       setUser(null)
       navigate({ to: '/login' })
     } catch {

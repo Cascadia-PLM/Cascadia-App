@@ -18,7 +18,7 @@ export const Route = createFileRoute('/requirements/$id')({
   loader: async ({ params }) => {
     try {
       const result = await apiFetch<{ data: { requirement: Requirement } }>(
-        `/api/requirements/${params.id}`,
+        `/api/v1/requirements/${params.id}`,
       )
       return { requirement: result.data.requirement }
     } catch (error) {
@@ -38,7 +38,7 @@ function RequirementDetailPage() {
   const handleSave = async (updatedRequirement: Requirement) => {
     if (!requirement.id) return
 
-    await apiFetch(`/api/requirements/${requirement.id}`, {
+    await apiFetch(`/api/v1/requirements/${requirement.id}`, {
       method: 'PUT',
       body: JSON.stringify(updatedRequirement),
     })
@@ -53,7 +53,7 @@ function RequirementDetailPage() {
   const handleDelete = async () => {
     if (!requirement.id) return
 
-    await apiFetch(`/api/requirements/${requirement.id}`, {
+    await apiFetch(`/api/v1/requirements/${requirement.id}`, {
       method: 'DELETE',
     })
 

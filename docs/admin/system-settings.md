@@ -413,10 +413,10 @@ The thread cache stores precomputed data for performance. Admin endpoints are av
 
 | Endpoint                          | Method | Description              |
 | --------------------------------- | ------ | ------------------------ |
-| `/api/admin/thread-cache/stats`   | GET    | View cache statistics    |
-| `/api/admin/thread-cache/warm`    | POST   | Warm the cache           |
-| `/api/admin/thread-cache/clear`   | POST   | Clear all cached entries |
-| `/api/admin/thread-cache/cleanup` | POST   | Remove expired entries   |
+| `/api/v1/admin/thread-cache/stats`   | GET    | View cache statistics    |
+| `/api/v1/admin/thread-cache/warm`    | POST   | Warm the cache           |
+| `/api/v1/admin/thread-cache/clear`   | POST   | Clear all cached entries |
+| `/api/v1/admin/thread-cache/cleanup` | POST   | Remove expired entries   |
 
 ## Configuration Precedence
 

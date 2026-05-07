@@ -1,9 +1,11 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { WorkflowService } from '@/lib/workflows/WorkflowService'
 import { WorkflowApprovalService } from '@/lib/workflows/WorkflowApprovalService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { apiHandler, created } from '@/lib/api/handler'
+
+const adapt = tagged('Workflows')
 
 const app = new Hono()
 

@@ -89,7 +89,7 @@ function ItemTypesConfigPage() {
   const fetchConfigs = async () => {
     try {
       setError(null)
-      const response = await fetch('/api/admin/item-type-configs')
+      const response = await fetch('/api/v1/admin/item-type-configs')
       if (!response.ok) {
         const data = await response.json()
         throw new Error(
@@ -111,7 +111,7 @@ function ItemTypesConfigPage() {
     setSuccessMessage(null)
 
     try {
-      const response = await fetch('/api/admin/reload-config', {
+      const response = await fetch('/api/v1/admin/reload-config', {
         method: 'POST',
       })
 

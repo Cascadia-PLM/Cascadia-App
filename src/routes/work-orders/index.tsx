@@ -19,7 +19,7 @@ export const Route = createFileRoute('/work-orders/')({
   component: WorkOrdersListPage,
   loader: async () => {
     try {
-      const response = await fetch('/api/work-orders')
+      const response = await fetch('/api/v1/work-orders')
       if (!response.ok) return { workOrders: [], total: 0 }
       const data = await response.json()
       return {
@@ -67,7 +67,7 @@ function WorkOrdersListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/work-orders/${workOrder.id}`, {
+          const response = await fetch(`/api/v1/work-orders/${workOrder.id}`, {
             method: 'DELETE',
           })
           if (!response.ok) throw new Error('Failed to delete')

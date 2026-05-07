@@ -18,7 +18,7 @@ function NewTaskPage() {
     setIsSubmitting(true)
     try {
       const payload = { ...task, itemType: 'Task' }
-      const result = await apiFetch<{ data: { item: Task } }>('/api/items', {
+      const result = await apiFetch<{ data: { item: Task } }>('/api/v1/items', {
         method: 'POST',
         body: JSON.stringify(payload),
       })

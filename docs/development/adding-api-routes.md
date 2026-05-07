@@ -8,10 +8,10 @@ API routes are defined in `src/server/routes/`, one file per domain. Each file c
 
 | File                              | Mounted At                  |
 | --------------------------------- | --------------------------- |
-| `src/server/routes/parts.ts`      | `/api/parts`                |
-| `src/server/routes/programs.ts`   | `/api/programs`             |
-| `src/server/routes/designs.ts`    | `/api/designs`              |
-| `src/server/routes/change-orders.ts` | `/api/change-orders`     |
+| `src/server/routes/parts.ts`      | `/api/v1/parts`                |
+| `src/server/routes/programs.ts`   | `/api/v1/programs`             |
+| `src/server/routes/designs.ts`    | `/api/v1/designs`              |
+| `src/server/routes/change-orders.ts` | `/api/v1/change-orders`     |
 
 Route parameters use the `:param` naming convention (e.g., `/:id`, `/:designId/branches`).
 
@@ -82,7 +82,7 @@ Then mount the route in `src/server/index.ts`:
 ```typescript
 import widgets from './routes/widgets'
 
-app.route('/api/widgets', widgets)
+app.route('/api/v1/widgets', widgets)
 ```
 
 ## The adapt() Bridge
@@ -246,7 +246,7 @@ const itemListSchema = paginationSchema.merge(versionContextSchema).extend({
 
 ### URL Parameters
 
-URL parameters come from the `params` object. For a route at `/api/parts/:id`:
+URL parameters come from the `params` object. For a route at `/api/v1/parts/:id`:
 
 ```typescript
 app.get('/:id', adapt(
@@ -324,7 +324,7 @@ return createCollectionResponse(
 // Created with Location header
 return createCreatedResponse(widget, {
   resourceName: 'widget',
-  location: `/api/widgets/${widget.id}`,
+  location: `/api/v1/widgets/${widget.id}`,
 })
 ```
 
@@ -360,7 +360,7 @@ After creating a new route file, you must import and mount it in `src/server/ind
 import widgets from './routes/widgets'
 
 // ... other route mounts ...
-app.route('/api/widgets', widgets)
+app.route('/api/v1/widgets', widgets)
 ```
 
 ### Item Type Registration

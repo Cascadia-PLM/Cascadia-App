@@ -60,7 +60,7 @@ export function RequirementsCoverageWidget({
       setError(null)
       try {
         const response = await apiFetch<{ data: RequirementsCoverage }>(
-          `/api/designs/${designId}/requirements-coverage`,
+          `/api/v1/designs/${designId}/requirements-coverage`,
         )
         setCoverage(response.data)
       } catch (err) {

@@ -123,19 +123,19 @@ async function parseErrorResponse(
  * @example
  * ```typescript
  * // Simple GET request
- * const { data } = await apiFetch<{ data: Part[] }>('/api/parts')
+ * const { data } = await apiFetch<{ data: Part[] }>('/api/v1/parts')
  *
  * // POST with body
- * const { data } = await apiFetch<{ data: Part }>('/api/parts', {
+ * const { data } = await apiFetch<{ data: Part }>('/api/v1/parts', {
  *   method: 'POST',
  *   body: JSON.stringify({ name: 'New Part' }),
  * })
  *
  * // Disable retry
- * const { data } = await apiFetch('/api/parts', { retry: false })
+ * const { data } = await apiFetch('/api/v1/parts', { retry: false })
  *
  * // Custom retry config
- * const { data } = await apiFetch('/api/parts', {
+ * const { data } = await apiFetch('/api/v1/parts', {
  *   retry: { maxAttempts: 5, initialDelayMs: 2000 },
  * })
  * ```

@@ -120,22 +120,22 @@ Draft -> In Review -> Approved -> Released -> Obsolete
 
 | Method | Path                               | Description                                                            |
 | ------ | ---------------------------------- | ---------------------------------------------------------------------- |
-| GET    | `/api/items/search?itemType=Part`  | Search/list parts                                                      |
-| GET    | `/api/items/$id`                   | Get part by ID (with optional `?branch=`, `?commit=`, `?tag=` context) |
-| POST   | `/api/items/$id`                   | Create part                                                            |
-| PUT    | `/api/items/$id`                   | Update part                                                            |
-| DELETE | `/api/items/$id`                   | Delete part                                                            |
-| GET    | `/api/parts/$id`                   | Part-specific detail endpoint                                          |
-| GET    | `/api/parts/$id/validating-tests`  | Get test cases that validate this part                                 |
-| GET    | `/api/items/$id/history`           | Version history                                                        |
-| POST   | `/api/items/$id/checkin`           | Check in after editing                                                 |
-| POST   | `/api/items/$id/cancel-checkout`   | Cancel checkout                                                        |
-| GET    | `/api/items/$id/lock-status`       | Check lock status                                                      |
-| POST   | `/api/items/$id/unlock`            | Force unlock                                                           |
-| POST   | `/api/items/$itemId/files/upload`  | Upload file attachment (CAD model, drawing)                            |
-| GET    | `/api/items/$itemId/files`         | List attached files                                                    |
-| GET    | `/api/items/$itemId/files/primary` | Get primary CAD model                                                  |
-| GET    | `/api/items/$id/thumbnail`         | Get thumbnail image                                                    |
+| GET    | `/api/v1/items/search?itemType=Part`  | Search/list parts                                                      |
+| GET    | `/api/v1/items/$id`                   | Get part by ID (with optional `?branch=`, `?commit=`, `?tag=` context) |
+| POST   | `/api/v1/items/$id`                   | Create part                                                            |
+| PUT    | `/api/v1/items/$id`                   | Update part                                                            |
+| DELETE | `/api/v1/items/$id`                   | Delete part                                                            |
+| GET    | `/api/v1/parts/$id`                   | Part-specific detail endpoint                                          |
+| GET    | `/api/v1/parts/$id/validating-tests`  | Get test cases that validate this part                                 |
+| GET    | `/api/v1/items/$id/history`           | Version history                                                        |
+| POST   | `/api/v1/items/$id/checkin`           | Check in after editing                                                 |
+| POST   | `/api/v1/items/$id/cancel-checkout`   | Cancel checkout                                                        |
+| GET    | `/api/v1/items/$id/lock-status`       | Check lock status                                                      |
+| POST   | `/api/v1/items/$id/unlock`            | Force unlock                                                           |
+| POST   | `/api/v1/items/$itemId/files/upload`  | Upload file attachment (CAD model, drawing)                            |
+| GET    | `/api/v1/items/$itemId/files`         | List attached files                                                    |
+| GET    | `/api/v1/items/$itemId/files/primary` | Get primary CAD model                                                  |
+| GET    | `/api/v1/items/$id/thumbnail`         | Get thumbnail image                                                    |
 
 ### UI Pages
 
@@ -190,29 +190,29 @@ Draft -> In Review -> Approved -> Released -> Obsolete
 
 Documents integrate with the vault file system for version-controlled file storage. Files support:
 
-- **Check-out/check-in** workflow via `/api/files/$fileId/checkout` and `/api/files/$fileId/checkin`
-- **Version history** via `/api/files/$fileId/versions`
-- **Download** via `/api/files/$fileId/versions/$version/download`
-- **CAD conversion** via `/api/files/$fileId/convert` (STEP/IGES to STL/GLB)
-- **Metadata** via `/api/files/$fileId/metadata`
+- **Check-out/check-in** workflow via `/api/v1/files/$fileId/checkout` and `/api/v1/files/$fileId/checkin`
+- **Version history** via `/api/v1/files/$fileId/versions`
+- **Download** via `/api/v1/files/$fileId/versions/$version/download`
+- **CAD conversion** via `/api/v1/files/$fileId/convert` (STEP/IGES to STL/GLB)
+- **Metadata** via `/api/v1/files/$fileId/metadata`
 
 ### API Endpoints
 
 | Method | Path                                            | Description                        |
 | ------ | ----------------------------------------------- | ---------------------------------- |
-| GET    | `/api/items/search?itemType=Document`           | Search/list documents              |
-| GET    | `/api/items/$id`                                | Get document by ID                 |
-| POST   | `/api/items/$id`                                | Create document                    |
-| PUT    | `/api/items/$id`                                | Update document                    |
-| DELETE | `/api/items/$id`                                | Delete document                    |
-| GET    | `/api/documents/$id`                            | Document-specific detail endpoint  |
-| POST   | `/api/files`                                    | Upload a new file                  |
-| GET    | `/api/files/$fileId`                            | Get file metadata                  |
-| POST   | `/api/files/$fileId/checkout`                   | Check out file for editing         |
-| POST   | `/api/files/$fileId/checkin`                    | Check in edited file               |
-| GET    | `/api/files/$fileId/versions`                   | List file versions                 |
-| GET    | `/api/files/$fileId/versions/$version/download` | Download specific version          |
-| POST   | `/api/files/$fileId/convert`                    | Convert CAD file (STEP to STL/GLB) |
+| GET    | `/api/v1/items/search?itemType=Document`           | Search/list documents              |
+| GET    | `/api/v1/items/$id`                                | Get document by ID                 |
+| POST   | `/api/v1/items/$id`                                | Create document                    |
+| PUT    | `/api/v1/items/$id`                                | Update document                    |
+| DELETE | `/api/v1/items/$id`                                | Delete document                    |
+| GET    | `/api/v1/documents/$id`                            | Document-specific detail endpoint  |
+| POST   | `/api/v1/files`                                    | Upload a new file                  |
+| GET    | `/api/v1/files/$fileId`                            | Get file metadata                  |
+| POST   | `/api/v1/files/$fileId/checkout`                   | Check out file for editing         |
+| POST   | `/api/v1/files/$fileId/checkin`                    | Check in edited file               |
+| GET    | `/api/v1/files/$fileId/versions`                   | List file versions                 |
+| GET    | `/api/v1/files/$fileId/versions/$version/download` | Download specific version          |
+| POST   | `/api/v1/files/$fileId/convert`                    | Convert CAD file (STEP to STL/GLB) |
 
 ### UI Pages
 
@@ -323,33 +323,33 @@ The Change Order has several supporting tables beyond the main `change_orders` t
 
 | Method | Path                                                  | Description                            |
 | ------ | ----------------------------------------------------- | -------------------------------------- |
-| GET    | `/api/items/search?itemType=ChangeOrder`              | Search/list change orders              |
-| GET    | `/api/change-orders/$id`                              | Get change order with full details     |
-| POST   | `/api/items/$id`                                      | Create change order                    |
-| PUT    | `/api/items/$id`                                      | Update change order                    |
-| GET    | `/api/change-orders/$id/affected-items`               | List affected items                    |
-| POST   | `/api/change-orders/$id/affected-items`               | Add affected item                      |
-| POST   | `/api/change-orders/$id/checkout`                     | Checkout items to ECO branch           |
-| GET    | `/api/change-orders/$id/designs`                      | List designs affected by ECO           |
-| GET    | `/api/change-orders/$id/designs/$designId/structure`  | View BOM structure on ECO branch       |
-| POST   | `/api/change-orders/$id/impact-assessment`            | Run impact assessment                  |
-| GET    | `/api/change-orders/$id/risks`                        | List risk assessments                  |
-| GET    | `/api/change-orders/$id/conflicts`                    | Detect merge conflicts                 |
-| POST   | `/api/change-orders/$id/resolve-conflicts`            | Resolve merge conflicts                |
-| GET    | `/api/change-orders/$id/conflict-reviews`             | Review conflict resolutions            |
-| POST   | `/api/change-orders/$id/release`                      | Release (merge to main)                |
-| GET    | `/api/change-orders/$id/summary`                      | Get ECO summary                        |
-| GET    | `/api/change-orders/$id/bom-changes`                  | View BOM-level changes                 |
-| GET    | `/api/change-orders/$id/branch-history`               | View branch commit history             |
-| GET    | `/api/change-orders/$id/branch-history/graph`         | Visual commit graph                    |
-| POST   | `/api/change-orders/$id/workflow/transition`          | Transition workflow state              |
-| GET    | `/api/change-orders/$id/workflow/validate-transition` | Validate a transition before executing |
-| GET    | `/api/change-orders/$id/workflow/history`             | Workflow transition history            |
-| GET    | `/api/change-orders/$id/workflow/structure`           | Workflow definition structure          |
-| GET    | `/api/change-orders/$id/approvals`                    | List approval records                  |
-| GET    | `/api/change-orders/$id/approvals/can-approve`        | Check if current user can approve      |
-| POST   | `/api/change-orders/$id/approvals/$stateId`           | Submit approval/rejection              |
-| GET    | `/api/change-orders/editable`                         | List ECOs the user can edit            |
+| GET    | `/api/v1/items/search?itemType=ChangeOrder`              | Search/list change orders              |
+| GET    | `/api/v1/change-orders/$id`                              | Get change order with full details     |
+| POST   | `/api/v1/items/$id`                                      | Create change order                    |
+| PUT    | `/api/v1/items/$id`                                      | Update change order                    |
+| GET    | `/api/v1/change-orders/$id/affected-items`               | List affected items                    |
+| POST   | `/api/v1/change-orders/$id/affected-items`               | Add affected item                      |
+| POST   | `/api/v1/change-orders/$id/checkout`                     | Checkout items to ECO branch           |
+| GET    | `/api/v1/change-orders/$id/designs`                      | List designs affected by ECO           |
+| GET    | `/api/v1/change-orders/$id/designs/$designId/structure`  | View BOM structure on ECO branch       |
+| POST   | `/api/v1/change-orders/$id/impact-assessment`            | Run impact assessment                  |
+| GET    | `/api/v1/change-orders/$id/risks`                        | List risk assessments                  |
+| GET    | `/api/v1/change-orders/$id/conflicts`                    | Detect merge conflicts                 |
+| POST   | `/api/v1/change-orders/$id/resolve-conflicts`            | Resolve merge conflicts                |
+| GET    | `/api/v1/change-orders/$id/conflict-reviews`             | Review conflict resolutions            |
+| POST   | `/api/v1/change-orders/$id/release`                      | Release (merge to main)                |
+| GET    | `/api/v1/change-orders/$id/summary`                      | Get ECO summary                        |
+| GET    | `/api/v1/change-orders/$id/bom-changes`                  | View BOM-level changes                 |
+| GET    | `/api/v1/change-orders/$id/branch-history`               | View branch commit history             |
+| GET    | `/api/v1/change-orders/$id/branch-history/graph`         | Visual commit graph                    |
+| POST   | `/api/v1/change-orders/$id/workflow/transition`          | Transition workflow state              |
+| GET    | `/api/v1/change-orders/$id/workflow/validate-transition` | Validate a transition before executing |
+| GET    | `/api/v1/change-orders/$id/workflow/history`             | Workflow transition history            |
+| GET    | `/api/v1/change-orders/$id/workflow/structure`           | Workflow definition structure          |
+| GET    | `/api/v1/change-orders/$id/approvals`                    | List approval records                  |
+| GET    | `/api/v1/change-orders/$id/approvals/can-approve`        | Check if current user can approve      |
+| POST   | `/api/v1/change-orders/$id/approvals/$stateId`           | Submit approval/rejection              |
+| GET    | `/api/v1/change-orders/editable`                         | List ECOs the user can edit            |
 
 ### UI Pages
 
@@ -423,19 +423,19 @@ Requirements support formal verification tracking (common in aerospace and defen
 
 | Method | Path                                           | Description                                 |
 | ------ | ---------------------------------------------- | ------------------------------------------- |
-| GET    | `/api/items/search?itemType=Requirement`       | Search/list requirements                    |
-| GET    | `/api/items/$id`                               | Get requirement by ID                       |
-| POST   | `/api/items/$id`                               | Create requirement                          |
-| PUT    | `/api/items/$id`                               | Update requirement                          |
-| GET    | `/api/requirements/$id`                        | Requirement-specific detail                 |
-| POST   | `/api/requirements/$id/derive`                 | Create derived (child) requirement          |
-| GET    | `/api/requirements/$id/parent`                 | Get parent requirement                      |
-| POST   | `/api/requirements/$id/satisfy`                | Mark requirement as satisfied by a part     |
-| GET    | `/api/requirements/$id/verifying-tests`        | Get test cases that verify this requirement |
-| GET    | `/api/items/$id/satisfied-requirements`        | Get requirements satisfied by an item       |
-| GET    | `/api/designs/$designId/requirements-coverage` | Requirements coverage report                |
-| GET    | `/api/designs/$designId/verification-gaps`     | Find unverified requirements                |
-| GET    | `/api/designs/$designId/gap-analysis`          | Full gap analysis                           |
+| GET    | `/api/v1/items/search?itemType=Requirement`       | Search/list requirements                    |
+| GET    | `/api/v1/items/$id`                               | Get requirement by ID                       |
+| POST   | `/api/v1/items/$id`                               | Create requirement                          |
+| PUT    | `/api/v1/items/$id`                               | Update requirement                          |
+| GET    | `/api/v1/requirements/$id`                        | Requirement-specific detail                 |
+| POST   | `/api/v1/requirements/$id/derive`                 | Create derived (child) requirement          |
+| GET    | `/api/v1/requirements/$id/parent`                 | Get parent requirement                      |
+| POST   | `/api/v1/requirements/$id/satisfy`                | Mark requirement as satisfied by a part     |
+| GET    | `/api/v1/requirements/$id/verifying-tests`        | Get test cases that verify this requirement |
+| GET    | `/api/v1/items/$id/satisfied-requirements`        | Get requirements satisfied by an item       |
+| GET    | `/api/v1/designs/$designId/requirements-coverage` | Requirements coverage report                |
+| GET    | `/api/v1/designs/$designId/verification-gaps`     | Find unverified requirements                |
+| GET    | `/api/v1/designs/$designId/gap-analysis`          | Full gap analysis                           |
 
 ### UI Pages
 
@@ -496,11 +496,11 @@ Also: Cancelled
 
 | Method | Path                              | Description          |
 | ------ | --------------------------------- | -------------------- |
-| GET    | `/api/items/search?itemType=Task` | Search/list tasks    |
-| GET    | `/api/items/$id`                  | Get task by ID       |
-| POST   | `/api/items/$id`                  | Create task          |
-| PUT    | `/api/items/$id`                  | Update task          |
-| GET    | `/api/tasks/$id`                  | Task-specific detail |
+| GET    | `/api/v1/items/search?itemType=Task` | Search/list tasks    |
+| GET    | `/api/v1/items/$id`                  | Get task by ID       |
+| POST   | `/api/v1/items/$id`                  | Create task          |
+| PUT    | `/api/v1/items/$id`                  | Update task          |
+| GET    | `/api/v1/tasks/$id`                  | Task-specific detail |
 
 ### UI Pages
 
@@ -637,29 +637,29 @@ Draft -> In Review -> Approved -> Released -> Obsolete
 
 | Method | Path                                                          | Description                          |
 | ------ | ------------------------------------------------------------- | ------------------------------------ |
-| GET    | `/api/items/search?itemType=WorkInstruction`                  | Search/list work instructions        |
-| GET    | `/api/items/$id`                                              | Get work instruction by ID           |
-| POST   | `/api/items/$id`                                              | Create work instruction              |
-| PUT    | `/api/items/$id`                                              | Update work instruction              |
-| GET    | `/api/work-instructions/$id`                                  | Work instruction detail (with steps) |
-| GET    | `/api/work-instructions/$id/steps`                            | List steps                           |
-| POST   | `/api/work-instructions/$id/steps`                            | Add step                             |
-| PUT    | `/api/work-instructions/$id/steps/$stepId`                    | Update step                          |
-| DELETE | `/api/work-instructions/$id/steps/$stepId`                    | Delete step                          |
-| GET    | `/api/work-instructions/$id/operations`                       | List operations                      |
-| POST   | `/api/work-instructions/$id/operations`                       | Add operation                        |
-| PUT    | `/api/work-instructions/$id/operations/$operationId`          | Update operation                     |
-| DELETE | `/api/work-instructions/$id/operations/$operationId`          | Delete operation                     |
-| GET    | `/api/work-instructions/$id/parts`                            | List attached parts                  |
-| POST   | `/api/work-instructions/$id/parts`                            | Attach part                          |
-| DELETE | `/api/work-instructions/$id/parts`                            | Detach part                          |
-| GET    | `/api/work-instructions/$id/alerts`                           | List change alerts                   |
-| GET    | `/api/work-instructions/$id/resolve-parametric`               | Resolve parametric block values      |
-| GET    | `/api/work-instructions/$id/executions`                       | List execution records               |
-| POST   | `/api/work-instructions/$id/executions`                       | Start new execution                  |
-| GET    | `/api/work-instructions/$id/executions/$executionId`          | Get execution detail                 |
-| POST   | `/api/work-instructions/$id/executions/$executionId/complete` | Complete execution                   |
-| POST   | `/api/work-instructions/$id/executions/$executionId/sign-off` | Sign off execution                   |
+| GET    | `/api/v1/items/search?itemType=WorkInstruction`                  | Search/list work instructions        |
+| GET    | `/api/v1/items/$id`                                              | Get work instruction by ID           |
+| POST   | `/api/v1/items/$id`                                              | Create work instruction              |
+| PUT    | `/api/v1/items/$id`                                              | Update work instruction              |
+| GET    | `/api/v1/work-instructions/$id`                                  | Work instruction detail (with steps) |
+| GET    | `/api/v1/work-instructions/$id/steps`                            | List steps                           |
+| POST   | `/api/v1/work-instructions/$id/steps`                            | Add step                             |
+| PUT    | `/api/v1/work-instructions/$id/steps/$stepId`                    | Update step                          |
+| DELETE | `/api/v1/work-instructions/$id/steps/$stepId`                    | Delete step                          |
+| GET    | `/api/v1/work-instructions/$id/operations`                       | List operations                      |
+| POST   | `/api/v1/work-instructions/$id/operations`                       | Add operation                        |
+| PUT    | `/api/v1/work-instructions/$id/operations/$operationId`          | Update operation                     |
+| DELETE | `/api/v1/work-instructions/$id/operations/$operationId`          | Delete operation                     |
+| GET    | `/api/v1/work-instructions/$id/parts`                            | List attached parts                  |
+| POST   | `/api/v1/work-instructions/$id/parts`                            | Attach part                          |
+| DELETE | `/api/v1/work-instructions/$id/parts`                            | Detach part                          |
+| GET    | `/api/v1/work-instructions/$id/alerts`                           | List change alerts                   |
+| GET    | `/api/v1/work-instructions/$id/resolve-parametric`               | Resolve parametric block values      |
+| GET    | `/api/v1/work-instructions/$id/executions`                       | List execution records               |
+| POST   | `/api/v1/work-instructions/$id/executions`                       | Start new execution                  |
+| GET    | `/api/v1/work-instructions/$id/executions/$executionId`          | Get execution detail                 |
+| POST   | `/api/v1/work-instructions/$id/executions/$executionId/complete` | Complete execution                   |
+| POST   | `/api/v1/work-instructions/$id/executions/$executionId/sign-off` | Sign off execution                   |
 
 ### UI Pages
 
@@ -731,11 +731,11 @@ Also: Cancelled
 
 | Method | Path                               | Description           |
 | ------ | ---------------------------------- | --------------------- |
-| GET    | `/api/items/search?itemType=Issue` | Search/list issues    |
-| GET    | `/api/items/$id`                   | Get issue by ID       |
-| POST   | `/api/items/$id`                   | Create issue          |
-| PUT    | `/api/items/$id`                   | Update issue          |
-| GET    | `/api/issues/$id`                  | Issue-specific detail |
+| GET    | `/api/v1/items/search?itemType=Issue` | Search/list issues    |
+| GET    | `/api/v1/items/$id`                   | Get issue by ID       |
+| POST   | `/api/v1/items/$id`                   | Create issue          |
+| PUT    | `/api/v1/items/$id`                   | Update issue          |
+| GET    | `/api/v1/issues/$id`                  | Issue-specific detail |
 
 ### UI Pages
 
@@ -796,10 +796,10 @@ Users are granted access to programs through membership records.
 
 | Method | Path                                | Description                  |
 | ------ | ----------------------------------- | ---------------------------- |
-| GET    | `/api/programs/$id`                 | Get program details          |
-| PUT    | `/api/programs/$id`                 | Update program               |
-| GET    | `/api/programs/$id/members/$userId` | Get/manage member            |
-| GET    | `/api/programs/$id/history/graph`   | Program commit history graph |
+| GET    | `/api/v1/programs/$id`                 | Get program details          |
+| PUT    | `/api/v1/programs/$id`                 | Update program               |
+| GET    | `/api/v1/programs/$id/members/$userId` | Get/manage member            |
+| GET    | `/api/v1/programs/$id/history/graph`   | Program commit history graph |
 
 #### Program UI Pages
 
@@ -847,12 +847,12 @@ A Design is a version-controlled container for items within a program. Designs h
 
 | Method | Path                                           | Description                  |
 | ------ | ---------------------------------------------- | ---------------------------- |
-| GET    | `/api/designs/families`                        | List design families         |
-| GET    | `/api/designs/$designId/requirements-coverage` | Requirements coverage report |
-| GET    | `/api/designs/$designId/test-coverage`         | Test coverage report         |
-| GET    | `/api/designs/$designId/verification-gaps`     | Verification gap analysis    |
-| GET    | `/api/designs/$designId/gap-analysis`          | Full gap analysis            |
-| GET    | `/api/designs/$id/history/graph`               | Design commit history graph  |
+| GET    | `/api/v1/designs/families`                        | List design families         |
+| GET    | `/api/v1/designs/$designId/requirements-coverage` | Requirements coverage report |
+| GET    | `/api/v1/designs/$designId/test-coverage`         | Test coverage report         |
+| GET    | `/api/v1/designs/$designId/verification-gaps`     | Verification gap analysis    |
+| GET    | `/api/v1/designs/$designId/gap-analysis`          | Full gap analysis            |
+| GET    | `/api/v1/designs/$id/history/graph`               | Design commit history graph  |
 
 #### Design UI Pages
 
@@ -919,7 +919,7 @@ A Design is a version-controlled container for items within a program. Designs h
 
 **Test Executions** are stored in the `test_executions` table with status, duration, actual results, and notes.
 
-**API:** `/api/test-cases/$id/executions`
+**API:** `/api/v1/test-cases/$id/executions`
 
 ---
 
@@ -989,16 +989,16 @@ All item types share these common endpoints via the unified `ItemService`:
 
 | Method | Path                                    | Description                                                                    |
 | ------ | --------------------------------------- | ------------------------------------------------------------------------------ |
-| GET    | `/api/items/search`                     | Search items with filters (`itemType`, `designId`, `state`, `q`, pagination)   |
-| GET    | `/api/items/$id`                        | Get item by ID with optional version context (`?branch=`, `?commit=`, `?tag=`) |
-| POST   | `/api/items/$id`                        | Create item (type determined by `itemType` field in body)                      |
-| PUT    | `/api/items/$id`                        | Update item                                                                    |
-| DELETE | `/api/items/$id`                        | Soft-delete item                                                               |
-| GET    | `/api/items/$id/history`                | Version history across revisions                                               |
-| GET    | `/api/items/$id/available-contexts`     | List branches/commits where item exists                                        |
-| POST   | `/api/items/$id/checkin`                | Check in after editing                                                         |
-| POST   | `/api/items/$id/cancel-checkout`        | Cancel checkout                                                                |
-| GET    | `/api/items/$id/lock-status`            | Check lock status                                                              |
-| POST   | `/api/items/$id/unlock`                 | Force unlock                                                                   |
-| GET    | `/api/items/$id/impact-analysis`        | Run impact analysis on item                                                    |
-| GET    | `/api/items/$id/satisfied-requirements` | Requirements satisfied by this item                                            |
+| GET    | `/api/v1/items/search`                     | Search items with filters (`itemType`, `designId`, `state`, `q`, pagination)   |
+| GET    | `/api/v1/items/$id`                        | Get item by ID with optional version context (`?branch=`, `?commit=`, `?tag=`) |
+| POST   | `/api/v1/items/$id`                        | Create item (type determined by `itemType` field in body)                      |
+| PUT    | `/api/v1/items/$id`                        | Update item                                                                    |
+| DELETE | `/api/v1/items/$id`                        | Soft-delete item                                                               |
+| GET    | `/api/v1/items/$id/history`                | Version history across revisions                                               |
+| GET    | `/api/v1/items/$id/available-contexts`     | List branches/commits where item exists                                        |
+| POST   | `/api/v1/items/$id/checkin`                | Check in after editing                                                         |
+| POST   | `/api/v1/items/$id/cancel-checkout`        | Cancel checkout                                                                |
+| GET    | `/api/v1/items/$id/lock-status`            | Check lock status                                                              |
+| POST   | `/api/v1/items/$id/unlock`                 | Force unlock                                                                   |
+| GET    | `/api/v1/items/$id/impact-analysis`        | Run impact analysis on item                                                    |
+| GET    | `/api/v1/items/$id/satisfied-requirements` | Requirements satisfied by this item                                            |

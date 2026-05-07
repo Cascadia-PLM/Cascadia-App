@@ -29,7 +29,7 @@ function LifecyclesListPage() {
     const loadLifecycles = async () => {
       try {
         // Load all workflows (both lifecycles and workflows - now unified)
-        const response = await fetch('/api/workflows')
+        const response = await fetch('/api/v1/workflows')
         if (response.ok) {
           const { data } = await response.json()
           setLifecycles(data?.workflows || [])
@@ -70,7 +70,7 @@ function LifecyclesListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/workflows/${lifecycle.id}`, {
+          const response = await fetch(`/api/v1/workflows/${lifecycle.id}`, {
             method: 'DELETE',
           })
 

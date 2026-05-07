@@ -1,10 +1,12 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { UserService } from '@/lib/auth/UserService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { hashSessionToken } from '@/lib/auth/password'
 import { AuthService } from '@/lib/auth/AuthService'
 import { apiHandler, created } from '@/lib/api/handler'
+
+const adapt = tagged('Users')
 
 const app = new Hono()
 

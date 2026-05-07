@@ -21,7 +21,7 @@ export const Route = createFileRoute('/reports/')({
     try {
       const result = await apiFetch<{
         data: { reports: Array<Report>; total: number }
-      }>('/api/reports')
+      }>('/api/v1/reports')
       return { reports: result.data.reports }
     } catch (error) {
       console.error('Error loading reports:', error)
@@ -51,7 +51,7 @@ function ReportsListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/reports/${report.id}`, {
+          const response = await fetch(`/api/v1/reports/${report.id}`, {
             method: 'DELETE',
           })
 

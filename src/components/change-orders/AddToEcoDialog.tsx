@@ -54,7 +54,7 @@ export function AddToEcoDialog({
     try {
       const target = getTargetInfo(item.state, item.revision, changeAction)
 
-      await apiFetch(`/api/change-orders/${changeOrderId}/affected-items`, {
+      await apiFetch(`/api/v1/change-orders/${changeOrderId}/affected-items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

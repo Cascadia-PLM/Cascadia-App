@@ -10,7 +10,7 @@ export const Route = createFileRoute('/reports/$id/view')({
   loader: async ({ params }) => {
     try {
       const result = await apiFetch<{ data: { report: Report } }>(
-        `/api/reports/${params.id}`,
+        `/api/v1/reports/${params.id}`,
       )
       return { report: result.data.report }
     } catch (error) {

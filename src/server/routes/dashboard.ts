@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { and, eq, gte, isNull, or, sql } from 'drizzle-orm'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
@@ -8,6 +8,8 @@ import { ProgramService } from '@/lib/services/ProgramService'
 import { db } from '@/lib/db'
 import { items, parts, tasks } from '@/lib/db/schema'
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Dashboard')
 
 const app = new Hono()
 

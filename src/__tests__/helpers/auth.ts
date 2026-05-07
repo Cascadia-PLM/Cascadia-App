@@ -11,7 +11,7 @@
  * import { createMockRequest, createMockSession, mockAuth } from '@test/helpers/auth'
  *
  * // Create a mock authenticated request
- * const request = createMockRequest('/api/parts', {
+ * const request = createMockRequest('/api/v1/parts', {
  *   user: testUser,
  *   permissions: { parts: ['read', 'create'] }
  * })

@@ -171,7 +171,7 @@ export function LibraryItemsTab({
 
       const result = await apiFetch<{
         data: { items: Array<Item>; total: number }
-      }>(`/api/designs/${designId}/items?${queryParams.toString()}`)
+      }>(`/api/v1/designs/${designId}/items?${queryParams.toString()}`)
       return { items: result.data.items, total: result.data.total }
     },
     dependencies: {

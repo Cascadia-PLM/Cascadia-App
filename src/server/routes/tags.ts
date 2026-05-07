@@ -1,10 +1,12 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { DesignService } from '@/lib/services/DesignService'
 import { ProgramService } from '@/lib/services/ProgramService'
 import { permissionService } from '@/lib/auth/permission-service'
 import { NotFoundError, PermissionDeniedError } from '@/lib/errors'
 import { apiHandler } from '@/lib/api/handler'
+
+const adapt = tagged('Tags')
 
 const app = new Hono()
 

@@ -9,6 +9,7 @@ import {
   uploadLimiter,
 } from './rate-limit'
 import type { RateLimitConfig } from './rate-limit'
+import type { OpenApiMetadata } from './openapi-helpers'
 import type { z } from 'zod'
 import type { PermissionAction, ResourceType } from '@/lib/auth/permissions'
 import type { SessionUser } from '@/lib/auth/session'
@@ -151,7 +152,15 @@ interface HandlerOptions {
   public?: boolean
   /** Rate limit preset or custom config. Defaults to general API limiter. Set 'none' to disable. */
   rateLimit?: 'login' | 'upload' | 'none' | RateLimitConfig
+  /** Optional OpenAPI metadata; consumed by `adapt()` to attach a describeRoute middleware. */
+  openapi?: OpenApiMetadata
 }
+
+/** Augmented function shape returned by `apiHandler()`; carries openapi metadata for `adapt()`. */
+export type AnnotatedHandler<TParams = Record<string, string>> = ((args: {
+  params: TParams
+  request: Request
+}) => Promise<Response>) & { openapi?: OpenApiMetadata }
 
 interface HandlerContext<TParams = Record<string, string>> {
   request: Request
@@ -182,8 +191,8 @@ type HandlerFn<TParams = Record<string, string>> = (
 export function apiHandler<TParams = Record<string, string>>(
   options: HandlerOptions,
   handler: HandlerFn<TParams>,
-) {
-  return async ({ params, request }: { params: TParams; request: Request }) => {
+): AnnotatedHandler<TParams> {
+  const wrapped: AnnotatedHandler<TParams> = async ({ params, request }) => {
     const requestId = getRequestId(request)
     try {
       // Handle CORS preflight
@@ -352,6 +361,8 @@ export function apiHandler<TParams = Record<string, string>>(
       )
     }
   }
+  if (options.openapi) wrapped.openapi = options.openapi
+  return wrapped
 }
 
 /**

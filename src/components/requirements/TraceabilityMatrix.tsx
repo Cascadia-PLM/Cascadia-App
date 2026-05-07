@@ -85,21 +85,19 @@ export function TraceabilityMatrix({
         const reqResponse = await apiFetch<{
           data: { items: Array<Requirement> }
         }>(`/api/items/search?types=Requirement&designId=${designId}&limit=100`)
-        setRequirements(reqResponse.data.items || [])
+        setRequirements(reqResponse.data.items)
 
-        // Fetch parts and documents
         const itemsResponse = await apiFetch<{
           data: { items: Array<Item> }
         }>(
           `/api/items/search?types=Part,Document&designId=${designId}&limit=100`,
         )
-        setItems(itemsResponse.data.items || [])
+        setItems(itemsResponse.data.items)
 
-        // Fetch all SATISFIES relationships for requirements in this design
         const relResponse = await apiFetch<{
           data: { relationships: Array<Relationship> }
         }>(`/api/relationships?designId=${designId}&type=SATISFIES`)
-        setRelationships(relResponse.data.relationships || [])
+        setRelationships(relResponse.data.relationships)
       } catch (err) {
         setError('Failed to load traceability data')
       } finally {

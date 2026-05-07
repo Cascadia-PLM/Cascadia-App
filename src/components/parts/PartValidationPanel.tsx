@@ -55,7 +55,7 @@ export function PartValidationPanel({
         const response = await apiFetch<{
           data: { tests: Array<ValidatingTest> }
         }>(`/api/parts/${partId}/validating-tests`)
-        setValidatingTests(response.data.tests || [])
+        setValidatingTests(response.data.tests)
       } catch (error) {
         console.error('Failed to fetch validating tests:', error)
         setValidatingTests([])
@@ -87,7 +87,7 @@ export function PartValidationPanel({
         // Filter out already linked tests
         const linkedIds = new Set(validatingTests.map((t) => t.id))
         setSearchResults(
-          (response.data.items || []).filter((tc) => !linkedIds.has(tc.id)),
+          response.data.items.filter((tc) => !linkedIds.has(tc.id)),
         )
       } catch (error) {
         console.error('Failed to search test cases:', error)
@@ -111,7 +111,7 @@ export function PartValidationPanel({
       const response = await apiFetch<{
         data: { tests: Array<ValidatingTest> }
       }>(`/api/parts/${partId}/validating-tests`)
-      setValidatingTests(response.data.tests || [])
+      setValidatingTests(response.data.tests)
       setSearchQuery('')
       setSearchResults([])
     } catch (error) {

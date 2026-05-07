@@ -465,8 +465,7 @@ export function ImpactAssessmentPanel({
       const response = await apiFetch<{
         data: { impactReport: { reportData: ImpactData } }
       }>(`/api/change-orders/${changeOrderId}/impact-assessment`)
-      const reportData = response.data.impactReport?.reportData
-      setInternalImpactData(reportData ?? null)
+      setInternalImpactData(response.data.impactReport.reportData)
     } catch {
       // No existing report — that's fine, user can run one
       setInternalImpactData(null)
@@ -484,7 +483,7 @@ export function ImpactAssessmentPanel({
       }>(`/api/change-orders/${changeOrderId}/impact-assessment`, {
         method: 'POST',
       })
-      setInternalImpactData(response.data.impactAnalysis ?? null)
+      setInternalImpactData(response.data.impactAnalysis)
     } catch {
       setInternalImpactData(null)
     } finally {

@@ -511,6 +511,7 @@ app.post(
 app.get(
   '/templates/documents',
   adapt(
+    // eslint-disable-next-line @typescript-eslint/require-await -- apiHandler signature requires async
     apiHandler({ public: true }, async ({ request }) => {
       const url = new URL(request.url)
       const format = url.searchParams.get('format') || 'csv'
@@ -580,6 +581,7 @@ app.get(
 app.get(
   '/templates/issues',
   adapt(
+    // eslint-disable-next-line @typescript-eslint/require-await -- apiHandler signature requires async
     apiHandler({ public: true }, async ({ request }) => {
       const url = new URL(request.url)
       const format = url.searchParams.get('format') || 'csv'
@@ -649,6 +651,7 @@ app.get(
 app.get(
   '/templates/parts',
   adapt(
+    // eslint-disable-next-line @typescript-eslint/require-await -- apiHandler signature requires async
     apiHandler({ public: true }, async ({ request }) => {
       const url = new URL(request.url)
       const format = url.searchParams.get('format') || 'csv'

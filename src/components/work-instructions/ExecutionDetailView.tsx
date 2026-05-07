@@ -70,7 +70,7 @@ export function ExecutionDetailView({
   steps,
 }: ExecutionDetailViewProps) {
   const sortedSteps = [...steps].sort((a, b) => a.orderIndex - b.orderIndex)
-  const stepData = execution.stepData || {}
+  const stepData = execution.stepData
 
   return (
     <div className="space-y-6">
@@ -134,8 +134,9 @@ export function ExecutionDetailView({
 
       {/* Step-by-step data */}
       {sortedSteps.map((step, index) => {
-        const dataFields =
-          step.content?.blocks.filter((b) => b.type === 'dataField') || []
+        const dataFields = step.content.blocks.filter(
+          (b) => b.type === 'dataField',
+        )
         const capturedData = dataFields
           .map((block) => ({
             block,

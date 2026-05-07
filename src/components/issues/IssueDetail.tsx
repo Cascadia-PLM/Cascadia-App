@@ -172,9 +172,9 @@ export function IssueDetail({
   const [isEditing, setIsEditing] = useState(isCreateMode)
   const [attributes, setAttributes] = useState<Record<string, string>>(
     Object.fromEntries(
-      Object.entries(initialIssue?.attributes || {}).map(([key, value]) => [
+      Object.entries(initialIssue?.attributes ?? {}).map(([key, value]) => [
         key,
-        Array.isArray(value) ? value.join(', ') : String(value ?? ''),
+        Array.isArray(value) ? value.join(', ') : String(value),
       ]),
     ),
   )
@@ -191,9 +191,9 @@ export function IssueDetail({
       setDisplayedIssue(initialIssue)
       setAttributes(
         Object.fromEntries(
-          Object.entries(initialIssue.attributes || {}).map(([key, value]) => [
+          Object.entries(initialIssue.attributes ?? {}).map(([key, value]) => [
             key,
-            Array.isArray(value) ? value.join(', ') : String(value ?? ''),
+            Array.isArray(value) ? value.join(', ') : String(value),
           ]),
         ),
       )
@@ -265,9 +265,9 @@ export function IssueDetail({
       setIssue(currentIssue)
       setAttributes(
         Object.fromEntries(
-          Object.entries(currentIssue.attributes || {}).map(([key, value]) => [
+          Object.entries(currentIssue.attributes ?? {}).map(([key, value]) => [
             key,
-            Array.isArray(value) ? value.join(', ') : String(value ?? ''),
+            Array.isArray(value) ? value.join(', ') : String(value),
           ]),
         ),
       )

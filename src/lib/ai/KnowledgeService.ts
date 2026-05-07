@@ -122,7 +122,7 @@ export class KnowledgeService {
           pluralLabel: type.pluralLabel,
           icon: type.icon,
           fields,
-          relationships: type.relationships || [],
+          relationships: type.relationships,
           states,
           permissions: type.permissions,
           searchableFields: type.searchableFields,

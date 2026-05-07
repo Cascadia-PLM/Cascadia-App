@@ -130,17 +130,13 @@ export function useServerDataGrid<T>(
 
   // Update debounced search when URL search changes
   useEffect(() => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current)
-    }
+    clearTimeout(debounceTimerRef.current)
     debounceTimerRef.current = setTimeout(() => {
       setDebouncedSearch(urlState.search)
     }, searchDebounceMs)
 
     return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current)
-      }
+      clearTimeout(debounceTimerRef.current)
     }
   }, [urlState.search, searchDebounceMs])
 

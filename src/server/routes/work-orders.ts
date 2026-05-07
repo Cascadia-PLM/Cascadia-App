@@ -150,7 +150,7 @@ app.put(
       { permission: ['work_orders', 'update'] },
       async ({ params, request, user }) => {
         const body = await request.json()
-        const { status } = body as { status: WorkOrderStatus }
+        const { status } = body as Partial<{ status: WorkOrderStatus }>
 
         if (
           !status ||

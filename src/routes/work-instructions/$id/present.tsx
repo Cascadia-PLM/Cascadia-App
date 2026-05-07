@@ -92,29 +92,25 @@ function StepBlockRenderer({ block }: { block: StepContentBlock }) {
     )
   }
 
-  if (block.type === 'dataField') {
-    const fieldLabel = block.fieldLabel || 'Data Field'
-    const fieldType = block.fieldType || 'text'
-    const typeLabels: Record<string, string> = {
-      text: 'Text',
-      numeric: 'Numeric',
-      checkbox: 'Checkbox',
-      passFail: 'Pass/Fail',
-    }
-    return (
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded-md">
-        <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-          {fieldLabel}
-        </span>
-        <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-800 text-emerald-600 dark:text-emerald-300">
-          {typeLabels[fieldType] || fieldType}
-        </span>
-        {block.fieldRequired && <span className="text-xs text-red-500">*</span>}
-      </div>
-    )
+  const fieldLabel = block.fieldLabel || 'Data Field'
+  const fieldType = block.fieldType || 'text'
+  const typeLabels: Record<string, string> = {
+    text: 'Text',
+    numeric: 'Numeric',
+    checkbox: 'Checkbox',
+    passFail: 'Pass/Fail',
   }
-
-  return null
+  return (
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded-md">
+      <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+        {fieldLabel}
+      </span>
+      <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-800 text-emerald-600 dark:text-emerald-300">
+        {typeLabels[fieldType] || fieldType}
+      </span>
+      {block.fieldRequired && <span className="text-xs text-red-500">*</span>}
+    </div>
+  )
 }
 
 function PresentationModePage() {

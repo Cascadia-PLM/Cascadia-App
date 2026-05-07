@@ -1216,8 +1216,8 @@ export class ChangeOrderService {
     return results.map((r) => ({
       id: r.id,
       itemNumber: r.itemNumber,
-      name: r.name ?? '',
-      state: r.state ?? 'Draft',
+      name: r.name,
+      state: r.state,
       changeType: r.changeType,
     }))
   }

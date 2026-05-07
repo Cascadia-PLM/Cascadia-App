@@ -105,8 +105,9 @@ export function WorkOrderForm({
       notes: defaultValues?.notes ?? '',
       assignedTo: defaultValues?.assignedTo ?? ([] as Array<string>),
       requiresSignOff:
-        ((defaultValues as Record<string, unknown>)
-          ?.requiresSignOff as boolean) ?? false,
+        ((defaultValues as Record<string, unknown>).requiresSignOff as
+          | boolean
+          | undefined) ?? false,
     },
     onSubmit: async ({ value }) => {
       await onSubmit({

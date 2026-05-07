@@ -34,6 +34,7 @@ export const sessionCleanupHandler: JobHandler<
       expiredSessionsRemoved,
     })
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- aborted may change during cleanup
     if (context.signal.aborted) {
       throw new Error('Job was cancelled')
     }

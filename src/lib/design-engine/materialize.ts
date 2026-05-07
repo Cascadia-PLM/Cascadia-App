@@ -265,7 +265,7 @@ export class MaterializationService {
               },
             }
             // Extract cost from first supplier
-            const primarySupplier = catalogEntry.suppliers?.[0]
+            const primarySupplier = catalogEntry.suppliers[0]
             if (primarySupplier?.approximatePrice) {
               cost = primarySupplier.approximatePrice
             }

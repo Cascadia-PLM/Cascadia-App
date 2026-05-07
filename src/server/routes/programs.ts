@@ -360,9 +360,8 @@ async function buildProgramGraph(
     // Build nodes for this design
     for (const commit of designCommits) {
       const branch = designBranches.find((b) => b.id === commit.branchId)
-      const branchType =
-        (branch?.branchType as 'main' | 'eco' | 'workspace' | 'release') ||
-        'main'
+      const branchType = (branch?.branchType ||
+        'main') as 'main' | 'eco' | 'workspace' | 'release'
 
       allNodes.push({
         id: commit.id,
@@ -931,8 +930,8 @@ app.get(
       const limit = parseInt(url.searchParams.get('limit') || '50', 10)
       const offset = parseInt(url.searchParams.get('offset') || '0', 10)
       const sortField = url.searchParams.get('sortField') || undefined
-      const sortDirection =
-        (url.searchParams.get('sortDirection') as 'asc' | 'desc') || undefined
+      const sortDirection = (url.searchParams.get('sortDirection') ||
+        undefined) as 'asc' | 'desc' | undefined
       const includeCounts = url.searchParams.get('includeCounts') === 'true'
       const globalSearch = url.searchParams.get('globalSearch') || undefined
 

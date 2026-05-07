@@ -28,7 +28,7 @@ const statusConfig: Record<
 }
 
 export function WorkOrderStatusBadge({ status }: { status: WorkOrderStatus }) {
-  const config = statusConfig[status] || statusConfig['Not Started']
+  const config = statusConfig[status]
   return (
     <Badge variant="secondary" className={cn('font-medium', config.className)}>
       {config.label}

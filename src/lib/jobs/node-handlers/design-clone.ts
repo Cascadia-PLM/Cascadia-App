@@ -145,6 +145,7 @@ export const cloneDesignHandler: JobHandler<
     let filesReferenced = 0
 
     for (let i = 0; i < sourceItems.length; i += BATCH_SIZE) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- aborted may change between batches
       if (context.signal.aborted) throw new Error('Job cancelled')
 
       const batch = sourceItems.slice(i, i + BATCH_SIZE)

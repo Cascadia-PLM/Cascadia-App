@@ -579,6 +579,7 @@ function updatePartStatus(
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/require-await -- AsyncGenerator return type forces async
 async function* emitPartResult(
   result: CadGenerationResult,
   state: CadGenerationState,

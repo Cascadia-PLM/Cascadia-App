@@ -28,9 +28,7 @@ export class RateLimiter {
     // Periodically evict expired entries to prevent memory leaks
     this.cleanupTimer = setInterval(() => this.cleanup(), config.windowMs)
     // Allow the process to exit without waiting for this timer
-    if (this.cleanupTimer.unref) {
-      this.cleanupTimer.unref()
-    }
+    this.cleanupTimer.unref()
   }
 
   check(key: string): { allowed: boolean; retryAfterSeconds?: number } {

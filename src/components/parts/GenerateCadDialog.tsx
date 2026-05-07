@@ -114,7 +114,7 @@ export function GenerateCadDialog({
           `/api/jobs/${jobId}`,
         )
         const job = response.data
-        setJobProgress(job.progress ?? 0)
+        setJobProgress(job.progress)
         setJobMessage(job.progressMessage)
 
         if (job.status === 'completed' && job.result) {

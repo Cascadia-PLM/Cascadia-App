@@ -70,21 +70,19 @@ export function WorkOrderStatusActions({
           Complete
         </Button>
       )}
-      {(status === 'Not Started' || status === 'In Progress') && (
-        <Button
-          variant="outline"
-          onClick={() => handleTransition('Cancelled')}
-          disabled={loading !== null}
-          className="text-red-600 hover:text-red-700"
-        >
-          {loading === 'Cancelled' ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <XCircle className="h-4 w-4 mr-2" />
-          )}
-          Cancel
-        </Button>
-      )}
+      <Button
+        variant="outline"
+        onClick={() => handleTransition('Cancelled')}
+        disabled={loading !== null}
+        className="text-red-600 hover:text-red-700"
+      >
+        {loading === 'Cancelled' ? (
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        ) : (
+          <XCircle className="h-4 w-4 mr-2" />
+        )}
+        Cancel
+      </Button>
     </div>
   )
 }

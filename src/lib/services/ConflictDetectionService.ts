@@ -611,9 +611,7 @@ export class ConflictDetectionService {
       return conflicts
     }
 
-    const ourMasterIds = ourModifiedItems
-      .map((m) => m.branchItem.itemMasterId)
-      .filter((id): id is string => id !== null)
+    const ourMasterIds = ourModifiedItems.map((m) => m.branchItem.itemMasterId)
 
     if (ourMasterIds.length === 0) {
       return conflicts

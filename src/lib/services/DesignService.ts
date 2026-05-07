@@ -529,12 +529,7 @@ export class DesignService {
       for (const [columnId, filterValue] of Object.entries(
         criteria.columnFilters,
       )) {
-        if (
-          filterValue === undefined ||
-          filterValue === null ||
-          filterValue === ''
-        )
-          continue
+        if (filterValue === '') continue
 
         const columnCondition = this.buildColumnFilterCondition(
           columnId,

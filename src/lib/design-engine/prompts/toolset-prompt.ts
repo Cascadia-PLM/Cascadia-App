@@ -119,7 +119,7 @@ function formatToolsetSummary(toolset: DesignSessionToolset): string {
 
 function formatKeyCapabilities(tool: SessionTool): string {
   const caps = tool.capabilities
-  if (!caps || Object.keys(caps).length === 0) return ''
+  if (Object.keys(caps).length === 0) return ''
 
   const highlights: Array<string> = []
 

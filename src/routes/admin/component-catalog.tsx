@@ -292,8 +292,7 @@ function ComponentCatalogPage() {
                         {entry.suppliers.length > 0 ? (
                           <span className="text-slate-600 dark:text-slate-400">
                             {entry.suppliers[0].name}
-                            {entry.suppliers[0].approximatePrice != null &&
-                              ` ~$${entry.suppliers[0].approximatePrice}`}
+                            {` ~$${entry.suppliers[0].approximatePrice}`}
                             {entry.suppliers.length > 1 &&
                               ` +${entry.suppliers.length - 1}`}
                           </span>

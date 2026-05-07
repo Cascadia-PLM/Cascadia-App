@@ -126,7 +126,7 @@ export default defineConfig({
    * Uses the health endpoint via proxy to ensure both Vite AND Hono are ready. */
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3000/api/health',
+    url: 'http://localhost:3000/api/v1/health',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

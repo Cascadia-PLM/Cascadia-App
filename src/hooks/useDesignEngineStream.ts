@@ -74,9 +74,7 @@ export function useDesignEngineStream({
           newState.currentStage = event.stage
           break
         case 'artifact_update':
-          if (event.artifacts) {
-            newState.artifacts = { ...prev.artifacts, ...event.artifacts }
-          }
+          newState.artifacts = { ...prev.artifacts, ...event.artifacts }
           break
         case 'error':
           newState.error = event.message
@@ -164,7 +162,7 @@ export function useDesignEngineStream({
         const decoder = new TextDecoder()
         let buffer = ''
 
-        while (true) {
+        for (;;) {
           const { done, value } = await reader.read()
           if (done) break
 
@@ -335,8 +333,8 @@ export function useDesignEngineStream({
         ...prev,
         artifacts: {
           ...artifacts,
-          clarifications: artifacts.clarifications ?? [],
-          userMessages: artifacts.userMessages ?? [],
+          clarifications: artifacts.clarifications,
+          userMessages: artifacts.userMessages,
         },
         currentStage: stage,
       }))

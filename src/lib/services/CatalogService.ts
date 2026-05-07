@@ -682,13 +682,13 @@ function hydrateEntry(row: {
     },
     entryType: row.entry.entryType,
     dimensions: row.entry.dimensions,
-    mountingFeatures: row.entry.mountingFeatures ?? [],
+    mountingFeatures: row.entry.mountingFeatures,
     electrical: row.entry.electrical,
-    specs: row.entry.specs ?? {},
+    specs: row.entry.specs,
     stockSizes: row.entry.stockSizes,
-    suppliers: row.entry.suppliers ?? [],
+    suppliers: row.entry.suppliers,
     designNotes: row.entry.designNotes,
-    tags: row.entry.tags ?? [],
-    verified: row.entry.verified ?? false,
+    tags: row.entry.tags,
+    verified: row.entry.verified,
   }
 }

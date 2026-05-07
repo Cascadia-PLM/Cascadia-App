@@ -319,7 +319,6 @@ export class UsageService {
       .where(and(eq(items.id, itemId), notDeleted()))
       .limit(1)
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- array destructuring types `item` as non-undefined under current tsconfig (no noUncheckedIndexedAccess); an empty result set produces undefined at runtime
     if (!item) {
       return null
     }
@@ -356,7 +355,6 @@ export class UsageService {
       .where(and(eq(items.id, usageId), notDeleted()))
       .limit(1)
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- array destructuring types `usage` as non-undefined under current tsconfig (no noUncheckedIndexedAccess); an empty result set produces undefined at runtime
     if (!usage) {
       return null
     }
@@ -507,7 +505,6 @@ export class UsageService {
    */
   static getSysmlType(itemType: string, isUsage: boolean): string | null {
     const mapping = this.SYSML_TYPE_MAP[itemType]
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- record index access types `mapping` as non-undefined under current tsconfig (no noUncheckedIndexedAccess); an unknown key produces undefined at runtime
     if (!mapping) {
       return null
     }

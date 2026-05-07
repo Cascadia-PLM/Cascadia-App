@@ -26,7 +26,6 @@ export const cacheCleanupHandler: JobHandler<
       maxInvalidatedAgeHours,
     })
 
-    // Check for cancellation
     if (context.signal.aborted) {
       throw new Error('Job was cancelled')
     }
@@ -42,7 +41,7 @@ export const cacheCleanupHandler: JobHandler<
       expiredEntries: statsBefore.expiredEntries,
     })
 
-    // Check for cancellation
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- aborted may change between job steps
     if (context.signal.aborted) {
       throw new Error('Job was cancelled')
     }
@@ -59,7 +58,7 @@ export const cacheCleanupHandler: JobHandler<
 
     await context.log.info('Removed cache entries', { removed })
 
-    // Check for cancellation
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- aborted may change between job steps
     if (context.signal.aborted) {
       throw new Error('Job was cancelled')
     }

@@ -674,7 +674,6 @@ export class VersionResolver {
       for (const [columnId, filterValue] of Object.entries(
         filters.columnFilters,
       )) {
-        if (filterValue === undefined || filterValue === null) continue
 
         result = result.filter((item) => {
           const itemValue = this.getItemFieldValue(item, columnId)

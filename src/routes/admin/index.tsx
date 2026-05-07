@@ -111,7 +111,7 @@ function AdminPage() {
 
   // For local storage, check if the vault root is locked by env var
   const isVaultRootLocked =
-    vaultConfig?.type === 'local' && vaultConfig?.envVars.VAULT_ROOT
+    vaultConfig?.type === 'local' && vaultConfig.envVars.VAULT_ROOT
 
   const hasChanges =
     vaultConfig?.type === 'local' &&

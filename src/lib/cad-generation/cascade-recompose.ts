@@ -67,6 +67,7 @@ export function markAssembliesStale(
 /**
  * Generate events for stale assembly notification.
  */
+// eslint-disable-next-line @typescript-eslint/require-await -- AsyncGenerator return type forces async
 export async function* notifyStaleAssemblies(
   rootNode: BomNodeDraft,
   affectedTempIds: Array<string>,

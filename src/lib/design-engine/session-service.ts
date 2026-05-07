@@ -86,7 +86,7 @@ export class DesignSessionService {
       .where(eq(designSessions.id, id))
       .limit(1)
 
-    return (result[0] as DesignSession) ?? null
+    return result[0] as DesignSession | null
   }
 
   static async updateArtifacts(

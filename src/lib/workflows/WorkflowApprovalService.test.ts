@@ -34,7 +34,7 @@ describe('WorkflowApprovalService', () => {
   // Test prefix to avoid collisions
   let testPrefix: string
 
-  beforeAll(async () => {
+  beforeAll(() => {
     testDb.setup()
   })
 

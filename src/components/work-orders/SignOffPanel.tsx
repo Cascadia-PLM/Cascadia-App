@@ -113,7 +113,7 @@ export function SignOffPanel({
           <p>
             Data fields captured:{' '}
             <span className="font-medium">
-              {Object.keys(execution.stepData || {}).length}
+              {Object.keys(execution.stepData).length}
             </span>
           </p>
         </div>

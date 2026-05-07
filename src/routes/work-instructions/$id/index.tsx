@@ -221,7 +221,7 @@ function WorkInstructionDetailPage() {
   )
 
   const handleDeleteStep = useCallback(
-    async (stepId: string) => {
+    (stepId: string) => {
       confirm({
         title: 'Delete Step',
         description: 'Are you sure you want to delete this step?',

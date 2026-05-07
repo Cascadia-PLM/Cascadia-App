@@ -135,7 +135,7 @@ function ExecutionDetailPage() {
         <CardContent>
           <ExecutionDetailView
             execution={execution}
-            steps={workInstruction.steps || []}
+            steps={workInstruction.steps}
           />
         </CardContent>
       </Card>

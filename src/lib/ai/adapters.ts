@@ -125,7 +125,7 @@ export async function loadProviderConfig(
       where: eq(aiSettings.programId, programId),
     })
 
-    if (programSettings?.enabled && programSettings.config) {
+    if (programSettings?.enabled) {
       return decryptApiKey(programSettings.config)
     }
   }
@@ -135,7 +135,7 @@ export async function loadProviderConfig(
     where: isNull(aiSettings.programId),
   })
 
-  if (globalSettings?.enabled && globalSettings.config) {
+  if (globalSettings?.enabled) {
     return decryptApiKey(globalSettings.config)
   }
 

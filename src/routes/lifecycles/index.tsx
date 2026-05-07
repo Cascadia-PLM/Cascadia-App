@@ -46,10 +46,8 @@ function LifecyclesListPage() {
   // Helper to get lifecycle type with fallback for legacy data
   const getLifecycleType = (lifecycle: WorkflowDefinition): LifecycleType => {
     if (lifecycle.lifecycleType) return lifecycle.lifecycleType
-    // Legacy fallback
     if (lifecycle.definitionType === 'lifecycle') return 'Driven'
-    if (lifecycle.definitionType === 'workflow') return 'Driving'
-    return 'Free'
+    return 'Driving'
   }
 
   // Group lifecycles by type

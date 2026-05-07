@@ -136,6 +136,7 @@ app.get(
 app.get(
   '/github',
   adapt(
+    // eslint-disable-next-line @typescript-eslint/require-await -- apiHandler signature requires async
     apiHandler({ public: true }, async () => {
       const github = getGitHubProvider()
       const state = generateState()
@@ -323,7 +324,7 @@ app.post(
       const keyHash = hashApiKey(rawKey)
       const keyPrefix = getKeyPrefix(rawKey)
 
-      const [created] = await db
+      const [createdKey] = await db
         .insert(apiKeys)
         .values({
           userId: user.id,
@@ -346,7 +347,7 @@ app.post(
       return new Response(
         JSON.stringify({
           data: {
-            ...created,
+            ...createdKey,
             key: rawKey,
           },
         }),

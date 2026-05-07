@@ -396,8 +396,7 @@ export function validateBomDraft(
 
         // Check FDM segmentation
         if (
-          node.manufacturingConstraints?.fdm &&
-          node.manufacturingConstraints.fdm.buildVolume &&
+          node.manufacturingConstraints?.fdm?.buildVolume &&
           !node.manufacturingConstraints.fdm.segmentation?.needed
         ) {
           // We can't perfectly check if part exceeds build volume without geometry,

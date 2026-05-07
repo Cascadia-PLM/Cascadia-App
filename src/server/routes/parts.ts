@@ -78,12 +78,12 @@ app.post(
       }
 
       const body = await request.json()
-      const { method, template, parameters, units } = body as {
+      const { method, template, parameters, units } = body as Partial<{
         method: 'parametric' | 'zoo'
-        template?: string
-        parameters?: Record<string, number>
-        units?: 'mm' | 'in'
-      }
+        template: string
+        parameters: Record<string, number>
+        units: 'mm' | 'in'
+      }>
 
       if (!method || !['parametric', 'zoo'].includes(method)) {
         throw new ValidationError('method must be "parametric" or "zoo"')

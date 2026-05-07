@@ -178,7 +178,7 @@ export async function* runAssemblyCompositionStage(
           assemblyNode,
           childData,
           artifacts.description,
-          session.programId ?? undefined,
+          session.programId,
         )
 
         // Validate the plan

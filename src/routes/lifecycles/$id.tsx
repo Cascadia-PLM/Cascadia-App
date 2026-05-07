@@ -56,9 +56,7 @@ function EditLifecyclePage() {
           result.data.workflow.lifecycleType ||
           (result.data.workflow.definitionType === 'lifecycle'
             ? 'Driven'
-            : result.data.workflow.definitionType === 'workflow'
-              ? 'Driving'
-              : 'Free')
+            : 'Driving')
         setLifecycleType(loadedType)
         setDrivers(result.data.workflow.drivers || [])
       } catch (error) {

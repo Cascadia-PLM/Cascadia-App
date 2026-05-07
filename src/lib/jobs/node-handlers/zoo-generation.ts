@@ -45,6 +45,7 @@ export const zooGenerationHandler: JobHandler<
       'step',
     )
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- aborted may change during long Zoo job
     if (context.signal.aborted) throw new Error('Job cancelled')
 
     await context.updateProgress(80, 'Uploading STEP file to vault...')

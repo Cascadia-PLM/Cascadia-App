@@ -365,16 +365,6 @@ export class RequirementService {
       designId: childData.designId || parentRequirement.designId,
     }
 
-    // Validate that the child is a Requirement
-    if (derivedData.itemType && derivedData.itemType !== 'Requirement') {
-      throw new ValidationError(
-        'Derived item must be a Requirement',
-        undefined,
-        {
-          operation: 'deriveRequirement',
-        },
-      )
-    }
 
     // Create the derived requirement
     const childRequirement = await ItemService.create(

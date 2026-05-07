@@ -101,7 +101,7 @@ export function createRequirementsTools(
       tempId: z.string(),
       added: z.boolean(),
     }),
-  }).server(async (input) => {
+  }).server((input) => {
     const tempId = crypto.randomUUID()
     const requirement: RequirementDraft = {
       tempId,
@@ -132,7 +132,7 @@ export function createRequirementsTools(
     outputSchema: z.object({
       acknowledged: z.boolean(),
     }),
-  }).server(async (input) => {
+  }).server((input) => {
     const questionId = crypto.randomUUID()
     onClarification(questionId, input.question, input.options)
     return { acknowledged: true }

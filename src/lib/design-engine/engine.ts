@@ -251,7 +251,7 @@ export class CollaborativeDesignEngine implements DesignEngine {
       await DesignSessionService.updateStage(sessionId, 'materialization')
     } else if (stage === 'cad') {
       await DesignSessionService.updateStage(sessionId, 'assembly_composition')
-    } else if (stage === 'assembly') {
+    } else {
       await DesignSessionService.updateStage(sessionId, 'complete')
       await DesignSessionService.updateStatus(sessionId, 'completed')
     }

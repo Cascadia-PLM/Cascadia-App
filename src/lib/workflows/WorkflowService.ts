@@ -66,10 +66,8 @@ export class WorkflowService {
       // Legacy fallback: infer from definitionType
       if (input.definitionType === 'lifecycle') {
         lifecycleType = 'Driven'
-      } else if (input.definitionType === 'workflow') {
-        lifecycleType = 'Driving'
       } else {
-        lifecycleType = 'Free'
+        lifecycleType = 'Driving'
       }
     }
 

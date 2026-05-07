@@ -8,6 +8,7 @@ const app = new Hono()
 app.get(
   '/',
   adapt(
+    // eslint-disable-next-line @typescript-eslint/require-await -- apiHandler signature requires async
     apiHandler({ public: true }, async () => {
       return { status: 'ok', timestamp: new Date().toISOString() }
     }),

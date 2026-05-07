@@ -808,7 +808,7 @@ describe('ConflictDetectionService', () => {
       expect(result.fieldConflicts).toHaveLength(0)
     })
 
-    it('returns field conflicts when manual resolution required', async () => {
+    it('returns field conflicts when manual resolution required', () => {
       // Test the detectFieldConflicts static method directly for manual resolution scenario
       const baseItem = { name: 'Original Name', description: 'Original' }
       const ourItem = { name: 'Our Changed Name', description: 'Original' }

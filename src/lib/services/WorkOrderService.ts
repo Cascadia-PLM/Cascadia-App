@@ -16,15 +16,15 @@ export class WorkOrderService {
       .insert(workOrders)
       .values({
         workOrderNumber,
-        partId: data.partId ?? null,
-        quantity: data.quantity ?? 1,
-        priority: data.priority ?? 'Normal',
+        partId: data.partId,
+        quantity: data.quantity,
+        priority: data.priority,
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
         customerOrder: data.customerOrder ?? null,
         notes: data.notes ?? null,
-        assignedTo: data.assignedTo ?? [],
+        assignedTo: data.assignedTo,
         programId: data.programId ?? null,
-        requiresSignOff: data.requiresSignOff ?? false,
+        requiresSignOff: data.requiresSignOff,
         createdBy: userId,
         modifiedBy: userId,
       })
@@ -214,7 +214,7 @@ export class WorkOrderService {
       Cancelled: [],
     }
 
-    if (!validTransitions[currentStatus]?.includes(newStatus)) {
+    if (!validTransitions[currentStatus].includes(newStatus)) {
       throw new ValidationError(
         `Cannot transition from "${currentStatus}" to "${newStatus}"`,
       )

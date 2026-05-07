@@ -15,6 +15,7 @@ import {
   ValidationError,
 } from '@/lib/errors'
 import { aiSettings } from '@/lib/db/schema/ai'
+import { userRoles } from '@/lib/db/schema/users'
 import { db } from '@/lib/db'
 // Register item types for KnowledgeService
 import '@/lib/items/registerItemTypes.server'
@@ -55,10 +56,6 @@ interface SettingsRequest {
  */
 async function getUserRoles(userId: string): Promise<Array<string>> {
   try {
-    const { db } = await import('@/lib/db')
-    const { userRoles } = await import('@/lib/db/schema')
-    const { eq } = await import('drizzle-orm')
-
     const userRoleRecords = await db.query.userRoles.findMany({
       where: eq(userRoles.userId, userId),
       with: {
@@ -88,9 +85,8 @@ app.post(
       const designId = data?.designId
       const mode = data?.mode || 'chat'
 
-      // Get the latest user message from the client
-      const userMessages = clientMessages?.filter((m) => m.role === 'user')
-      const latestUserMessage = userMessages?.[userMessages.length - 1]
+      const userMessages = clientMessages.filter((m) => m.role === 'user')
+      const latestUserMessage = userMessages[userMessages.length - 1]
 
       if (!latestUserMessage?.content) {
         throw new ValidationError('Message is required')
@@ -145,8 +141,7 @@ app.post(
         session.designId || undefined,
       )
 
-      // Get user roles
-      const userRoles = await getUserRoles(user.id)
+      const roles = await getUserRoles(user.id)
 
       const promptContext = {
         schemaContext,
@@ -154,7 +149,7 @@ app.post(
           id: user.id,
           username: user.name || user.email,
           email: user.email,
-          roles: userRoles,
+          roles,
         },
         programName: session.program?.name,
         designName: session.design?.name,
@@ -533,7 +528,7 @@ app.put(
           .update(aiSettings)
           .set({
             provider: provider || existing.provider,
-            config: config || existing.config,
+            config,
             enabled: enabled !== undefined ? enabled : existing.enabled,
             updatedAt: new Date(),
           })

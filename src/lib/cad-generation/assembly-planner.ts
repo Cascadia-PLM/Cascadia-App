@@ -185,13 +185,10 @@ function parseAssemblyPlan(
           quantity: number
         }) => ({
           tempId: p.tempId,
-          partName: p.partName ?? '',
-          stepFileKey: p.stepFileKey ?? '',
-          transform: p.transform ?? {
-            translation: { x: 0, y: 0, z: 0 },
-            rotation: { x: 0, y: 0, z: 0 },
-          },
-          quantity: p.quantity ?? 1,
+          partName: p.partName,
+          stepFileKey: p.stepFileKey,
+          transform: p.transform,
+          quantity: p.quantity,
         }),
       ),
       kclCode: parsed.kclCode ?? '',

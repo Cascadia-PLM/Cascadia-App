@@ -37,10 +37,6 @@ export async function* runRequirementsStage(
     clarifications: [],
     userMessages: [],
   }
-  // Backward compat for sessions without these fields
-  if (!artifacts.clarifications) artifacts.clarifications = []
-  if (!artifacts.userMessages) artifacts.userMessages = []
-
   const description = artifacts.description || session.description || ''
 
   // Collect proposed requirements (start from existing for resume)
@@ -52,7 +48,7 @@ export async function* runRequirementsStage(
   const toolContext = {
     userId: session.userId,
     sessionId: session.aiChatSessionId ?? undefined,
-    programId: session.programId ?? undefined,
+    programId: session.programId,
     designId: session.designId ?? undefined,
   }
 
@@ -80,9 +76,7 @@ export async function* runRequirementsStage(
 
   try {
     // Load AI provider
-    const providerConfig = await loadProviderConfig(
-      session.programId ?? undefined,
-    )
+    const providerConfig = await loadProviderConfig(session.programId)
     const adapter = getAdapter(providerConfig)
 
     // Build system prompt with clarification/user message context

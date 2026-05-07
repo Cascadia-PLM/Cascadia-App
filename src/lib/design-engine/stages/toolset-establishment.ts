@@ -41,12 +41,8 @@ export async function* runToolsetEstablishmentStage(
     clarifications: [],
     userMessages: [],
   }
-  if (!artifacts.clarifications) artifacts.clarifications = []
-  if (!artifacts.userMessages) artifacts.userMessages = []
-
   const description = artifacts.description || session.description || ''
 
-  // Track latest toolset state
   let currentToolset: DesignSessionToolset = artifacts.toolset ?? {
     scope: 'unconstrained',
     tools: [],
@@ -64,7 +60,7 @@ export async function* runToolsetEstablishmentStage(
 
   // Create stage tools with callbacks
   const { tools } = createToolsetTools(
-    session.programId ?? undefined,
+    session.programId,
     (toolset) => {
       currentToolset = toolset
     },
@@ -76,9 +72,7 @@ export async function* runToolsetEstablishmentStage(
 
   try {
     // Load AI provider
-    const providerConfig = await loadProviderConfig(
-      session.programId ?? undefined,
-    )
+    const providerConfig = await loadProviderConfig(session.programId)
     const adapter = getAdapter(providerConfig)
 
     // Build system prompt

@@ -653,7 +653,7 @@ export class ImpactAssessmentService {
           relationshipType: 'definition_instance',
           relationshipLabel: `Instance of definition ${defDetails?.itemNumber ?? ''}`,
           targetItemId: usage.id,
-          targetItemNumber: usage.itemNumber ?? '',
+          targetItemNumber: usage.itemNumber,
           targetItemName: usage.name ?? '',
         })
       }
@@ -702,9 +702,9 @@ export class ImpactAssessmentService {
           changeAction: affected.changeAction ?? '',
           revision: details.revision ?? '',
           relationshipType: 'definition_source',
-          relationshipLabel: `Usage of ${definition.itemNumber ?? designInfo.code} from ${designInfo.code}`,
+          relationshipLabel: `Usage of ${definition.itemNumber} from ${designInfo.code}`,
           targetItemId: definition.id,
-          targetItemNumber: definition.itemNumber ?? '',
+          targetItemNumber: definition.itemNumber,
           targetItemName: definition.name ?? '',
         })
       }
@@ -769,7 +769,7 @@ export class ImpactAssessmentService {
             relationshipType: 'usage_cousin',
             relationshipLabel: `Sibling usage of ${relDetails?.itemNumber ?? ''}`,
             targetItemId: cousin.id,
-            targetItemNumber: cousin.itemNumber ?? '',
+            targetItemNumber: cousin.itemNumber,
             targetItemName: cousin.name ?? '',
           })
         }

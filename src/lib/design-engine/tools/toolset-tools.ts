@@ -203,14 +203,14 @@ export function createToolsetTools(
       const sessionTool: SessionTool = {
         id: sessionToolId,
         toolItemId: result.id,
-        toolItemNumber: result.itemNumber ?? undefined,
+        toolItemNumber: result.itemNumber,
         name:
           result.name ??
           (result.manufacturer && result.model ? result.manufacturer + ' ' + result.model : undefined) ??
           'Unknown Tool',
         toolType: result.toolType ?? 'manufacturing',
         toolSubtype: result.toolSubtype ?? 'other',
-        capabilities: (result.capabilities as Record<string, unknown>) ?? {},
+        capabilities: result.capabilities ?? {},
         source: input.source,
       }
 
@@ -260,7 +260,7 @@ export function createToolsetTools(
       acknowledged: z.boolean(),
       scope: z.string(),
     }),
-  }).server(async (input) => {
+  }).server((input) => {
     state.scope = input.scope
     emitUpdate()
     return { acknowledged: true, scope: input.scope }
@@ -284,7 +284,7 @@ export function createToolsetTools(
     outputSchema: z.object({
       acknowledged: z.boolean(),
     }),
-  }).server(async (input) => {
+  }).server((input) => {
     const questionId = crypto.randomUUID()
     onClarification(questionId, input.question, input.options)
     return { acknowledged: true }

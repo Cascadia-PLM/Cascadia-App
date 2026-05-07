@@ -56,9 +56,8 @@ app.get(
       let maskedSettings = null
       if (settings) {
         let maskedKey: string | undefined
-        if (settings.config?.apiKey) {
+        if (settings.config.apiKey) {
           try {
-            // Try to decrypt (encrypted keys are base64 with no prefix like "sk-")
             const decrypted =
               isEncryptionConfigured() &&
               !settings.config.apiKey.startsWith('sk-') &&
@@ -67,18 +66,15 @@ app.get(
                 : settings.config.apiKey
             maskedKey = `${decrypted.slice(0, 8)}...${decrypted.slice(-4)}`
           } catch {
-            // If decryption fails, mask as-is
             maskedKey = `${settings.config.apiKey.slice(0, 8)}...`
           }
         }
         maskedSettings = {
           ...settings,
-          config: settings.config
-            ? {
-                ...settings.config,
-                apiKey: maskedKey,
-              }
-            : null,
+          config: {
+            ...settings.config,
+            apiKey: maskedKey,
+          },
         }
       }
 
@@ -182,14 +178,12 @@ app.post(
       return {
         settings: {
           ...result,
-          config: result.config
-            ? {
-                ...result.config,
-                apiKey: result.config.apiKey
-                  ? `${result.config.apiKey.slice(0, 8)}...${result.config.apiKey.slice(-4)}`
-                  : undefined,
-              }
-            : null,
+          config: {
+            ...result.config,
+            apiKey: result.config.apiKey
+              ? `${result.config.apiKey.slice(0, 8)}...${result.config.apiKey.slice(-4)}`
+              : undefined,
+          },
         },
       }
     }),
@@ -320,7 +314,7 @@ app.post(
           success: true,
           message: `Connected to ${providerName} successfully!`,
           model: model,
-          responsePreview: response?.slice(0, 50) || '(empty)',
+          responsePreview: response.slice(0, 50) || '(empty)',
         }
       } catch (adapterError) {
         const err = adapterError as Error

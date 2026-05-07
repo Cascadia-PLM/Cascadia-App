@@ -205,7 +205,7 @@ export function FileList({
     }
   }
 
-  const handleForceUnlock = async (fileId: string) => {
+  const handleForceUnlock = (fileId: string) => {
     confirm({
       title: 'Force Unlock File',
       description:

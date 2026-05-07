@@ -32,7 +32,7 @@ export function ChangeOrderForm({
   isSubmitting,
 }: ChangeOrderFormProps) {
   const [attributes, setAttributes] = useState<Record<string, string>>(
-    (changeOrder?.attributes as Record<string, string>) ?? {},
+    changeOrder?.attributes ?? {},
   )
   const form = useForm({
     defaultValues: {

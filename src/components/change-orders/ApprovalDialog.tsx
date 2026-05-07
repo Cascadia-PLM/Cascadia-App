@@ -45,7 +45,7 @@ export function ApprovalDialog({
 
   // Determine approval options
   const canApproveAsUser = canApprove.asUser
-  const canApproveAsRoles = canApprove.asRoles || []
+  const canApproveAsRoles = canApprove.asRoles
   const hasMultipleOptions =
     (canApproveAsUser ? 1 : 0) + canApproveAsRoles.length > 1
 

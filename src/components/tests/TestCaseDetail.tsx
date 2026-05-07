@@ -298,7 +298,7 @@ export function TestCaseDetail({
         const response = await apiFetch<{
           data: { executions: Array<TestExecution> }
         }>(`/api/test-cases/${testCase.id}/executions`)
-        setExecutions(response.data.executions || [])
+        setExecutions(response.data.executions)
       } catch {
         setExecutions([])
       } finally {
@@ -392,7 +392,7 @@ export function TestCaseDetail({
       const response = await apiFetch<{
         data: { executions: Array<TestExecution> }
       }>(`/api/test-cases/${currentTestCase.id}/executions`)
-      setExecutions(response.data.executions || [])
+      setExecutions(response.data.executions)
       // Refresh test case to get updated status
       const tcResponse = await apiFetch<{ data: { item: TestCase } }>(
         `/api/items/${currentTestCase.id}`,

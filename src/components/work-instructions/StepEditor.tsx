@@ -290,15 +290,13 @@ function StepBlockEditor({
     )
   }
 
-  if (block.type === 'dataField') {
-    return (
-      <DataFieldBlockEditor
-        block={block}
-        onUpdate={onUpdate}
-        onDelete={onDelete}
-      />
-    )
-  }
+  return (
+    <DataFieldBlockEditor
+      block={block}
+      onUpdate={onUpdate}
+      onDelete={onDelete}
+    />
+  )
 
   return null
 }
@@ -349,7 +347,7 @@ function SingleStepEditor({
     setLocalTitle(step.title || '')
   }, [step.id])
 
-  const content: StepContent = step.content || { blocks: [] }
+  const content: StepContent = step.content
 
   const updateBlock = (blockIndex: number, updatedBlock: StepContentBlock) => {
     const newBlocks = [...content.blocks]

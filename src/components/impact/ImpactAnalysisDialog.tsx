@@ -188,14 +188,14 @@ export function ImpactAnalysisDialog({
   }, [selectedItemIds, itemId, navigate, onOpenChange])
 
   // Reset dialog state when closed
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
       setStep('configure')
       setResult(null)
       setError(null)
       setSelectedItemIds([])
     }
-    onOpenChange(open)
+    onOpenChange(nextOpen)
   }
 
   return (

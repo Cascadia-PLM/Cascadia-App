@@ -72,7 +72,7 @@ export function TestCoverageWidget({
           ),
         ])
         setCoverage(coverageResponse.data.coverage)
-        setGaps(gapsResponse.data.gaps || [])
+        setGaps(gapsResponse.data.gaps)
       } catch (err) {
         setError('Failed to load test coverage data')
       } finally {

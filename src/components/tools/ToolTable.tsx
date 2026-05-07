@@ -28,7 +28,9 @@ const STATUS_COLORS: Record<string, string> = {
 
 function subtypeLabel(subtype?: string): string {
   if (!subtype) return ''
-  const known = TOOL_SUBTYPES[subtype as KnownToolSubtype]
+  const known = TOOL_SUBTYPES[subtype as KnownToolSubtype] as
+    | { label: string }
+    | undefined
   return known?.label ?? subtype
 }
 

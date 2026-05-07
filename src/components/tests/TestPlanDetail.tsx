@@ -229,7 +229,7 @@ export function TestPlanDetail({
         const response = await apiFetch<{
           data: { testCases: Array<TestCase> }
         }>(`/api/test-plans/${testPlan.id}/test-cases`)
-        setTestCases(response.data.testCases || [])
+        setTestCases(response.data.testCases)
       } catch {
         setTestCases([])
       } finally {

@@ -30,7 +30,7 @@ export function IssueForm({
   isSubmitting,
 }: IssueFormProps) {
   const [attributes, setAttributes] = useState<Record<string, string>>(
-    (issue?.attributes as Record<string, string>) ?? {},
+    issue?.attributes ?? {},
   )
   const form = useForm({
     defaultValues: {

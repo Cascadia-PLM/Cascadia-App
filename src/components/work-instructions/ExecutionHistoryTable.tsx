@@ -156,9 +156,9 @@ export function ExecutionHistoryTable({
     {
       id: 'dataFields',
       header: 'Data Fields',
-      accessorFn: (row) => Object.keys(row.stepData || {}).length,
+      accessorFn: (row) => Object.keys(row.stepData).length,
       cell: ({ row }) => {
-        const count = Object.keys(row.original.stepData || {}).length
+        const count = Object.keys(row.original.stepData).length
         return count > 0 ? (
           <span className="text-sm font-medium text-emerald-600">
             {count} captured

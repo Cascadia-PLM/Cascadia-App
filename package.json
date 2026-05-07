@@ -32,7 +32,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:setup": "tsx scripts/e2e-setup.ts",
     "test:e2e:full": "npm run db:reset:seed && npm run test:e2e",
-    "lint": "eslint --max-warnings 89",
+    "lint": "eslint --max-warnings 54",
     "format": "prettier",
     "check": "prettier --write . && eslint --fix",
     "db:generate": "drizzle-kit generate",

@@ -61,7 +61,7 @@ export function TestCaseForm({
     testCase?.steps || [{ stepNumber: 1, action: '', expectedResult: '' }],
   )
   const [attributes, setAttributes] = useState<Record<string, string>>(
-    (testCase?.attributes as Record<string, string>) ?? {},
+    testCase?.attributes ?? {},
   )
 
   const form = useForm({
@@ -134,7 +134,7 @@ export function TestCaseForm({
         const result = await apiFetch<{ data: { items: Array<TestPlan> } }>(
           `/api/items?itemType=TestPlan&designId=${currentDesignId}`,
         )
-        setTestPlans(result.data.items || [])
+        setTestPlans(result.data.items)
       } catch {
         setTestPlans([])
       } finally {

@@ -195,11 +195,11 @@ export function RequirementsPanel({
                 <div className="flex items-center gap-1.5">
                   <Badge
                     variant={
-                      (PRIORITY_COLORS[req.priority] as
+                      (PRIORITY_COLORS[req.priority] ?? 'default') as
                         | 'default'
                         | 'destructive'
                         | 'warning'
-                        | 'secondary') ?? 'default'
+                        | 'secondary'
                     }
                     className="text-[10px] px-1.5 py-0"
                   >

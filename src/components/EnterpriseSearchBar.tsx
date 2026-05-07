@@ -62,7 +62,7 @@ function getShortcutHint(): string {
 
   // Check for Mac
   const isMac =
-    navigator.platform?.toLowerCase().includes('mac') ||
+    navigator.platform.toLowerCase().includes('mac') ||
     userAgent.includes('mac')
 
   return isMac ? ' (Cmd+K)' : ' (Ctrl+K)'
@@ -88,7 +88,7 @@ export function EnterpriseSearchBar() {
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       // Check for Cmd+K (Mac) or Ctrl+K (Windows/Linux)
-      const isMac = navigator.platform?.toLowerCase().includes('mac')
+      const isMac = navigator.platform.toLowerCase().includes('mac')
       const isShortcut = e.key === 'k' && (isMac ? e.metaKey : e.ctrlKey)
 
       if (isShortcut) {

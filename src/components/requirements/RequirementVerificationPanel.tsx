@@ -53,7 +53,7 @@ export function RequirementVerificationPanel({
         const response = await apiFetch<{
           data: { tests: Array<VerifyingTest> }
         }>(`/api/requirements/${requirementId}/verifying-tests`)
-        setVerifyingTests(response.data.tests || [])
+        setVerifyingTests(response.data.tests)
       } catch (error) {
         console.error('Failed to fetch verifying tests:', error)
         setVerifyingTests([])
@@ -85,7 +85,7 @@ export function RequirementVerificationPanel({
         // Filter out already linked tests
         const linkedIds = new Set(verifyingTests.map((t) => t.id))
         setSearchResults(
-          (response.data.items || []).filter((tc) => !linkedIds.has(tc.id)),
+          response.data.items.filter((tc) => !linkedIds.has(tc.id)),
         )
       } catch (error) {
         console.error('Failed to search test cases:', error)
@@ -109,7 +109,7 @@ export function RequirementVerificationPanel({
       const response = await apiFetch<{
         data: { tests: Array<VerifyingTest> }
       }>(`/api/requirements/${requirementId}/verifying-tests`)
-      setVerifyingTests(response.data.tests || [])
+      setVerifyingTests(response.data.tests)
       setSearchQuery('')
       setSearchResults([])
     } catch (error) {

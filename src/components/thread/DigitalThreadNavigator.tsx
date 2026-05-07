@@ -99,12 +99,9 @@ export function DigitalThreadNavigator({
 
       const { data } = (await response.json()) as { data: ThreadResponse }
 
-      // Store focal item info for comparison dialog
-      if (data.focalItem) {
-        setFocalItemNumber(data.focalItem.itemNumber)
-        setFocalItemName(data.focalItem.name)
-        setFocalDesignId(data.focalItem.designId)
-      }
+      setFocalItemNumber(data.focalItem.itemNumber)
+      setFocalItemName(data.focalItem.name)
+      setFocalDesignId(data.focalItem.designId)
 
       cachedThreadData.current = data
       applyLayout(data, directionRef.current)
@@ -136,10 +133,10 @@ export function DigitalThreadNavigator({
 
   // Count nodes by domain
   const engineeringCount = nodes.filter(
-    (n) => n.data?.domain === 'engineering',
+    (n) => n.data.domain === 'engineering',
   ).length
   const manufacturingCount = nodes.filter(
-    (n) => n.data?.domain === 'manufacturing',
+    (n) => n.data.domain === 'manufacturing',
   ).length
 
   return (

@@ -97,14 +97,12 @@ export function swimLaneLayout(
 
   engineeringNodes.forEach((node) => {
     const pos = engineeringGraph.node(node.id)
-    if (pos) {
-      if (isHorizontal) {
-        // LR: measure max X extent for side-by-side separation
-        engineeringExtent = Math.max(engineeringExtent, pos.x + nodeWidth / 2)
-      } else {
-        // TB: measure max Y extent for vertical stacking
-        engineeringExtent = Math.max(engineeringExtent, pos.y + nodeHeight / 2)
-      }
+    if (isHorizontal) {
+      // LR: measure max X extent for side-by-side separation
+      engineeringExtent = Math.max(engineeringExtent, pos.x + nodeWidth / 2)
+    } else {
+      // TB: measure max Y extent for vertical stacking
+      engineeringExtent = Math.max(engineeringExtent, pos.y + nodeHeight / 2)
     }
   })
 
@@ -120,43 +118,39 @@ export function swimLaneLayout(
 
   engineeringNodes.forEach((node) => {
     const pos = engineeringGraph.node(node.id)
-    if (pos) {
-      positionedNodes.push({
-        id: node.id,
-        type: 'threadNode',
-        sourcePosition: sourcePos,
-        targetPosition: targetPos,
-        position: {
-          x: pos.x - nodeWidth / 2,
-          y: pos.y - nodeHeight / 2 + DOMAIN_HEADER_HEIGHT,
-        },
-        data: node as unknown as NodeData,
-      })
-    }
+    positionedNodes.push({
+      id: node.id,
+      type: 'threadNode',
+      sourcePosition: sourcePos,
+      targetPosition: targetPos,
+      position: {
+        x: pos.x - nodeWidth / 2,
+        y: pos.y - nodeHeight / 2 + DOMAIN_HEADER_HEIGHT,
+      },
+      data: node as unknown as NodeData,
+    })
   })
 
   manufacturingNodes.forEach((node) => {
     const pos = manufacturingGraph.node(node.id)
-    if (pos) {
-      positionedNodes.push({
-        id: node.id,
-        type: 'threadNode',
-        sourcePosition: sourcePos,
-        targetPosition: targetPos,
-        position: {
-          x: isHorizontal
-            ? pos.x - nodeWidth / 2 + manufacturingOffset
-            : pos.x - nodeWidth / 2,
-          y: isHorizontal
-            ? pos.y - nodeHeight / 2 + DOMAIN_HEADER_HEIGHT
-            : pos.y -
-              nodeHeight / 2 +
-              DOMAIN_HEADER_HEIGHT +
-              manufacturingOffset,
-        },
-        data: node as unknown as NodeData,
-      })
-    }
+    positionedNodes.push({
+      id: node.id,
+      type: 'threadNode',
+      sourcePosition: sourcePos,
+      targetPosition: targetPos,
+      position: {
+        x: isHorizontal
+          ? pos.x - nodeWidth / 2 + manufacturingOffset
+          : pos.x - nodeWidth / 2,
+        y: isHorizontal
+          ? pos.y - nodeHeight / 2 + DOMAIN_HEADER_HEIGHT
+          : pos.y -
+            nodeHeight / 2 +
+            DOMAIN_HEADER_HEIGHT +
+            manufacturingOffset,
+      },
+      data: node as unknown as NodeData,
+    })
   })
 
   // Build edges with appropriate styling

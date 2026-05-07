@@ -90,7 +90,7 @@ function ProgramDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editProgram, setEditProgram] = useState<Program>(program)
   const [attributes, setAttributes] = useState<Record<string, string>>(
-    (program.attributes as Record<string, string>) || {},
+    (program.attributes ?? {}) as Record<string, string>,
   )
 
   const updateField = <TKey extends keyof Program>(
@@ -102,13 +102,13 @@ function ProgramDetailPage() {
 
   const handleEdit = () => {
     setEditProgram(program)
-    setAttributes((program.attributes as Record<string, string>) || {})
+    setAttributes((program.attributes ?? {}) as Record<string, string>)
     setIsEditing(true)
   }
 
   const handleCancelEdit = () => {
     setEditProgram(program)
-    setAttributes((program.attributes as Record<string, string>) || {})
+    setAttributes((program.attributes ?? {}) as Record<string, string>)
     setIsEditing(false)
   }
 

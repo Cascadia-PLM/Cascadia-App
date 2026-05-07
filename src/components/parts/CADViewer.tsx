@@ -468,12 +468,14 @@ function Model({
     }
     if (resources.gltfScene) {
       resources.gltfScene.traverse((child) => {
+        // Cast lies; runtime Three.js Object3D may or may not be a Mesh.
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- isMesh discriminates Mesh from generic Object3D at runtime
         if ((child as THREE.Mesh).isMesh) {
           const mesh = child as THREE.Mesh
-          mesh.geometry?.dispose()
+          mesh.geometry.dispose()
           if (Array.isArray(mesh.material)) {
             mesh.material.forEach((m) => m.dispose())
-          } else if (mesh.material) {
+          } else {
             mesh.material.dispose()
           }
         }

@@ -190,7 +190,7 @@ export function ChangeOrderDetail({
       Object.entries(initialChangeOrder?.attributes || {}).map(
         ([key, value]) => [
           key,
-          Array.isArray(value) ? value.join(', ') : String(value ?? ''),
+          Array.isArray(value) ? value.join(', ') : String(value),
         ],
       ),
     ),
@@ -230,7 +230,7 @@ export function ChangeOrderDetail({
           Object.entries(initialChangeOrder.attributes || {}).map(
             ([key, value]) => [
               key,
-              Array.isArray(value) ? value.join(', ') : String(value ?? ''),
+              Array.isArray(value) ? value.join(', ') : String(value),
             ],
           ),
         ),
@@ -400,7 +400,7 @@ export function ChangeOrderDetail({
           Object.entries(currentChangeOrder.attributes || {}).map(
             ([key, value]) => [
               key,
-              Array.isArray(value) ? value.join(', ') : String(value ?? ''),
+              Array.isArray(value) ? value.join(', ') : String(value),
             ],
           ),
         ),

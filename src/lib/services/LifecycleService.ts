@@ -391,9 +391,7 @@ export class LifecycleService {
       if (lifecycle.definitionType === 'lifecycle') {
         return 'Driven' // Old lifecycles are Driven (controlled by ECOs)
       }
-      if (lifecycle.definitionType === 'workflow') {
-        return 'Driving' // Old workflows are Driving (ECOs)
-      }
+      return 'Driving' // Old workflows are Driving (ECOs)
     }
 
     // Default fallback
@@ -416,7 +414,7 @@ export class LifecycleService {
       .limit(1)
 
     const row = result.at(0)
-    return (row?.drivers as Array<string>) ?? []
+    return row?.drivers ?? []
   }
 
   /**
@@ -520,7 +518,7 @@ export class LifecycleService {
       name: row.name,
       lifecycleType,
       states: def.states ?? [],
-      drivers: (row.drivers as Array<string>) ?? [],
+      drivers: row.drivers ?? [],
     }
   }
 }

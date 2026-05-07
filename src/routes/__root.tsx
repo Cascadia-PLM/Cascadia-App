@@ -36,9 +36,15 @@ export const Route = createRootRoute({
     }
 
     // Client-side auth check via API
+    let data: {
+      data?: {
+        authenticated: boolean
+        setupStatus?: { completed: boolean; isGlobalAdmin: boolean }
+      }
+    }
     try {
       const response = await fetch('/api/v1/auth/session')
-      const data = await response.json()
+      data = await response.json()
 
       if (!data.data?.authenticated) {
         throw redirect({
@@ -62,6 +68,28 @@ export const Route = createRootRoute({
       throw redirect({
         to: '/login',
       })
+    }
+
+    // First-time setup wizard redirect: a Global Admin landing on any
+    // authenticated page is bounced to /setup until either the admin
+    // finishes/skips the wizard or the SETUP_COMPLETED flag is otherwise
+    // set. /setup itself, /login, and /api/* are exempt; E2E tests opt
+    // out via the same localStorage key the existing tour uses.
+    const path = location.pathname
+    const isExempt =
+      path === '/login' || path === '/setup' || path.startsWith('/api/')
+    const isE2E =
+      typeof window !== 'undefined' &&
+      window.localStorage.getItem('cascadia-e2e-test') === 'true'
+    const setupStatus = data.data.setupStatus
+    if (
+      !isExempt &&
+      !isE2E &&
+      setupStatus &&
+      setupStatus.isGlobalAdmin &&
+      !setupStatus.completed
+    ) {
+      throw redirect({ to: '/setup' })
     }
   },
 
@@ -111,6 +139,10 @@ function RootLayout() {
   }, [])
 
   const isLoginPage = location.pathname === '/login'
+  // The setup wizard owns its viewport — no global header, sidebar
+  // margin, or chat panel chrome — same treatment as /login.
+  const isSetupPage = location.pathname === '/setup'
+  const isChromelessPage = isLoginPage || isSetupPage
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -121,8 +153,8 @@ function RootLayout() {
               <ChatPanelProvider>
                 <TourProvider>
                   <ErrorBoundary>
-                    {isMounted && !isLoginPage && <Header />}
-                    {isLoginPage ? (
+                    {isMounted && !isChromelessPage && <Header />}
+                    {isChromelessPage ? (
                       <Outlet />
                     ) : (
                       <MainContent isMounted={isMounted}>
@@ -131,8 +163,8 @@ function RootLayout() {
                     )}
                   </ErrorBoundary>
                   <ToastContainer />
-                  {/* AI Chat Panel - only show when authenticated */}
-                  {isMounted && !isLoginPage && (
+                  {/* AI Chat Panel - only show when authenticated and on a chromed page */}
+                  {isMounted && !isChromelessPage && (
                     <>
                       <ChatPanelButton />
                       <ChatPanel />

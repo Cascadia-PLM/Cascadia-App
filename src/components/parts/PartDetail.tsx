@@ -214,7 +214,7 @@ export function PartDetail({
   const [isImpactDialogOpen, setIsImpactDialogOpen] = useState(false)
   const [isGenerateCadOpen, setIsGenerateCadOpen] = useState(false)
   const [attributes, setAttributes] = useState<Record<string, string>>(
-    (initialPart?.attributes as Record<string, string>) ?? {},
+    initialPart?.attributes ?? {},
   )
 
   // Version context state (only for existing parts)
@@ -260,7 +260,7 @@ export function PartDetail({
     if (initialPart) {
       setPart(initialPart)
       setDisplayedPart(initialPart)
-      setAttributes((initialPart.attributes as Record<string, string>) ?? {})
+      setAttributes(initialPart.attributes ?? {})
     }
   }, [initialPart])
 
@@ -1237,10 +1237,7 @@ export function PartDetail({
                 <Card>
                   <Collapsible
                     defaultOpen={
-                      Object.keys(
-                        (currentPart.attributes as Record<string, string>) ??
-                          {},
-                      ).length > 0
+                      Object.keys(currentPart.attributes ?? {}).length > 0
                     }
                   >
                     <CardHeader className="pb-3">
@@ -1250,16 +1247,11 @@ export function PartDetail({
                     </CardHeader>
                     <CollapsibleContent>
                       <CardContent className="pt-0">
-                        {Object.keys(
-                          (currentPart.attributes as Record<string, string>) ??
-                            {},
-                        ).length > 0 ? (
+                        {Object.keys(currentPart.attributes ?? {}).length >
+                        0 ? (
                           <dl className="space-y-3">
                             {Object.entries(
-                              (currentPart.attributes as Record<
-                                string,
-                                string
-                              >) ?? {},
+                              currentPart.attributes ?? {},
                             ).map(([key, value]) => (
                               <div key={key} className="space-y-1">
                                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">

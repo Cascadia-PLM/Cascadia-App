@@ -603,16 +603,16 @@ async function buildCommitGraph(
       branchType = 'main'
     } else if (selectedBranch && commit.branchId === selectedBranch.id) {
       branchName = selectedBranch.name
-      branchType =
-        (selectedBranch.branchType as 'eco' | 'workspace' | 'release') || 'eco'
+      branchType = (selectedBranch.branchType ||
+        'eco') as 'eco' | 'workspace' | 'release'
     } else {
       // Look up from open ECO branches first, then historical branches
       const openEcoInfo = openEcoBranchInfo.get(commit.branchId)
       const histInfo = historicalBranchInfo.get(commit.branchId)
       const branchInfo = openEcoInfo || histInfo
       branchName = branchInfo?.name || 'Unknown Branch'
-      branchType =
-        (branchInfo?.branchType as 'eco' | 'workspace' | 'release') || 'eco'
+      branchType = (branchInfo?.branchType ||
+        'eco') as 'eco' | 'workspace' | 'release'
     }
 
     nodes.push({
@@ -816,8 +816,8 @@ app.get(
       const limit = parseInt(url.searchParams.get('limit') || '50', 10)
       const offset = parseInt(url.searchParams.get('offset') || '0', 10)
       const sortField = url.searchParams.get('sortField') || undefined
-      const sortDirection =
-        (url.searchParams.get('sortDirection') as 'asc' | 'desc') || undefined
+      const sortDirection = (url.searchParams.get('sortDirection') ||
+        undefined) as 'asc' | 'desc' | undefined
       const includeCounts = url.searchParams.get('includeCounts') === 'true'
       const globalSearch = url.searchParams.get('globalSearch') || undefined
 
@@ -1054,7 +1054,7 @@ app.get(
 
       await requireDesignAccess(user.id, params.id)
 
-      const [branches, tags, programs] = await Promise.all([
+      const [branchList, tagList, programs] = await Promise.all([
         DesignService.getBranches(params.id).catch((err) => {
           serviceLogger.error(
             { err, designId: params.id },
@@ -1106,8 +1106,8 @@ app.get(
           program,
           parentDesign,
         },
-        branches,
-        tags,
+        branches: branchList,
+        tags: tagList,
         programs,
       }
     }),

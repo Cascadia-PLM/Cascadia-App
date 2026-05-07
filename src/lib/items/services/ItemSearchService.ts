@@ -149,7 +149,6 @@ export class ItemSearchService {
       for (const [columnId, filterValue] of Object.entries(
         criteria.columnFilters,
       )) {
-        if (filterValue === undefined || filterValue === null) continue
 
         // Map column IDs to actual database columns
         const columnCondition = this.buildColumnFilterCondition(
@@ -521,14 +520,14 @@ export class ItemSearchService {
     }
 
     // Range filter (>= min AND <= max)
-    if (typeof filterValue === 'object' && filterValue !== null) {
+    if (typeof filterValue === 'object') {
       const { min, max } = filterValue
       const rangeConditions: Array<SQL<unknown>> = []
 
-      if (min !== undefined && min !== null) {
+      if (min !== undefined) {
         rangeConditions.push(gte(column, min))
       }
-      if (max !== undefined && max !== null) {
+      if (max !== undefined) {
         rangeConditions.push(lte(column, max))
       }
 

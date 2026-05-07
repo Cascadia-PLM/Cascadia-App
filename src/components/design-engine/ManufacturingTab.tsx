@@ -45,7 +45,9 @@ const SOURCE_LABELS: Record<string, string> = {
 }
 
 function subtypeLabel(subtype: string): string {
-  const known = TOOL_SUBTYPES[subtype as KnownToolSubtype]
+  const known = TOOL_SUBTYPES[subtype as KnownToolSubtype] as
+    | { label: string }
+    | undefined
   return known?.label ?? subtype
 }
 

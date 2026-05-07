@@ -185,7 +185,7 @@ function BomNodeRow({ node, depth }: { node: BomNodeDraft; depth: number }) {
                   Purchase: 'secondary' as const,
                   Software: 'success' as const,
                   Phantom: 'outline' as const,
-                }[node.partType] || 'default'
+                }[node.partType]
               }
               className="text-[10px] px-1.5 py-0"
             >

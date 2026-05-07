@@ -157,7 +157,7 @@ export function PartTable({
                 Purchase: 'secondary' as const,
                 Software: 'success' as const,
                 Phantom: 'outline' as const,
-              }[value] || 'default'
+              }[value]
             }
           >
             {value}

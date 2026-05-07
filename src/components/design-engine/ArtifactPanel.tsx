@@ -136,8 +136,11 @@ export function ArtifactPanel({
                 <span className="font-medium">{tool.name}</span>
                 <span className="text-slate-400 dark:text-slate-500">
                   (
-                  {TOOL_SUBTYPES[tool.toolSubtype as KnownToolSubtype]?.label ??
-                    tool.toolSubtype}
+                  {(
+                    TOOL_SUBTYPES[tool.toolSubtype as KnownToolSubtype] as
+                      | { label: string }
+                      | undefined
+                  )?.label ?? tool.toolSubtype}
                   )
                 </span>
               </div>

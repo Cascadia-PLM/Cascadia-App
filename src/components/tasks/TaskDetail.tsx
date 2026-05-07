@@ -376,7 +376,7 @@ export function TaskDetail({
                     {isEditing ? (
                       <ViewEditText
                         label="Tags (comma-separated)"
-                        value={(isEditing ? task.tags : currentTask.tags)?.join(
+                        value={(isEditing ? task.tags : currentTask.tags).join(
                           ', ',
                         )}
                         onChange={(v) =>

@@ -191,13 +191,13 @@ export function GapAnalysisDialog({
   }, [designId, includeTypes, includeDomains, includeSeverities])
 
   // Reset dialog state when closed
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
       setStep('configure')
       setResult(null)
       setError(null)
     }
-    onOpenChange(open)
+    onOpenChange(nextOpen)
   }
 
   // Select all types

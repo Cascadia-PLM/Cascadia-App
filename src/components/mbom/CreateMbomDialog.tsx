@@ -99,7 +99,7 @@ export function CreateMbomDialog({
     try {
       const response = await apiFetch(`/api/designs/${sourceDesignId}/tags`)
       const { data } = response as { data: { tags: Array<Tag> } }
-      setTags(data.tags || [])
+      setTags(data.tags)
       setStatus('idle')
     } catch (err) {
       console.error('Failed to load tags:', err)

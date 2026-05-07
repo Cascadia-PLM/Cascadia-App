@@ -30,7 +30,7 @@ export function TaskForm({
   isSubmitting,
 }: TaskFormProps) {
   const [attributes, setAttributes] = useState<Record<string, string>>(
-    (task?.attributes as Record<string, string>) ?? {},
+    task?.attributes ?? {},
   )
   const form = useForm({
     defaultValues: {

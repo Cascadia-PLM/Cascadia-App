@@ -175,7 +175,7 @@ function DataFieldPreview({ block }: { block: StepContentBlock }) {
           </span>
           <div className="px-3 py-1 border rounded bg-slate-50 dark:bg-slate-700 text-sm text-slate-400 min-w-[100px]">
             {block.fieldValidation?.min != null &&
-            block.fieldValidation?.max != null
+            block.fieldValidation.max != null
               ? `${block.fieldValidation.min} – ${block.fieldValidation.max}`
               : '0.00'}
           </div>

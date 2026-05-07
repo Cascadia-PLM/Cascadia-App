@@ -48,7 +48,7 @@ export function TestPlanForm({
   const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>()
   const [loadingStatus, setLoadingStatus] = useState(false)
   const [attributes, setAttributes] = useState<Record<string, string>>(
-    (testPlan?.attributes as Record<string, string>) ?? {},
+    testPlan?.attributes ?? {},
   )
 
   const form = useForm({

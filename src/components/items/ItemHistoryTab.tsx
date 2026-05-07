@@ -467,7 +467,7 @@ export function ItemHistoryTab({
                               (fc) => fc.fieldName === 'state',
                             ) &&
                             (() => {
-                              const stateChange = entry.fieldChanges?.find(
+                              const stateChange = entry.fieldChanges.find(
                                 (fc) => fc.fieldName === 'state',
                               )
                               if (!stateChange) return null

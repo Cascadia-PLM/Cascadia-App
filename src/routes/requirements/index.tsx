@@ -97,17 +97,17 @@ export const Route = createFileRoute('/requirements/')({
         releasedCount,
       ] = await Promise.all([
         apiFetch<{ data: { items: Array<Requirement>; total: number } }>(
-          `/api/items?${params.toString()}`,
+          `/api/v1/items?${params.toString()}`,
         ),
-        apiFetch<{ data: { designs: Array<Design> } }>('/api/designs'),
+        apiFetch<{ data: { designs: Array<Design> } }>('/api/v1/designs'),
         apiFetch<{ data: { total: number } }>(
-          `/api/items?${countParams}&state=Draft`,
+          `/api/v1/items?${countParams}&state=Draft`,
         ).catch(() => ({ data: { total: 0 } })),
         apiFetch<{ data: { total: number } }>(
-          `/api/items?${countParams}&state=InReview`,
+          `/api/v1/items?${countParams}&state=InReview`,
         ).catch(() => ({ data: { total: 0 } })),
         apiFetch<{ data: { total: number } }>(
-          `/api/items?${countParams}&state=Released`,
+          `/api/v1/items?${countParams}&state=Released`,
         ).catch(() => ({ data: { total: 0 } })),
       ])
 
@@ -187,7 +187,7 @@ function RequirementsListPage() {
 
         const result = await apiFetch<{
           data: { items: Array<Requirement>; total: number }
-        }>(`/api/items?${params.toString()}`)
+        }>(`/api/v1/items?${params.toString()}`)
         setRequirements(result.data.items)
         setTotal(result.data.total)
       } catch (error) {
@@ -224,7 +224,7 @@ function RequirementsListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/requirements/${requirement.id}`, {
+          await apiFetch(`/api/v1/requirements/${requirement.id}`, {
             method: 'DELETE',
           })
 

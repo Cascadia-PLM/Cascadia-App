@@ -49,7 +49,7 @@ export function StateApproversPanel({
     try {
       const result = await apiFetch<{
         data: { approvers: Array<StateApprover> }
-      }>(`/api/workflows/${workflowDefinitionId}/states/${stateId}/approvers`)
+      }>(`/api/v1/workflows/${workflowDefinitionId}/states/${stateId}/approvers`)
       setApprovers(result.data.approvers)
     } catch (error) {
       console.error('Failed to fetch approvers:', error)
@@ -63,9 +63,9 @@ export function StateApproversPanel({
     try {
       const [usersResult, rolesResult] = await Promise.all([
         apiFetch<{ data: { users: Array<UserOption> } }>(
-          '/api/users?active=true',
+          '/api/v1/users?active=true',
         ),
-        apiFetch<{ data: { roles: Array<RoleOption> } }>('/api/roles'),
+        apiFetch<{ data: { roles: Array<RoleOption> } }>('/api/v1/roles'),
       ])
       setUsers(usersResult.data.users)
       setRoles(rolesResult.data.roles)
@@ -86,7 +86,7 @@ export function StateApproversPanel({
     setSaving(true)
     try {
       await apiFetch(
-        `/api/workflows/${workflowDefinitionId}/states/${stateId}/approvers`,
+        `/api/v1/workflows/${workflowDefinitionId}/states/${stateId}/approvers`,
         {
           method: 'POST',
           body: JSON.stringify({
@@ -112,7 +112,7 @@ export function StateApproversPanel({
     setSaving(true)
     try {
       await apiFetch(
-        `/api/workflows/${workflowDefinitionId}/states/${stateId}/approvers/${approverId}`,
+        `/api/v1/workflows/${workflowDefinitionId}/states/${stateId}/approvers/${approverId}`,
         { method: 'DELETE' },
       )
       await fetchApprovers()
@@ -131,7 +131,7 @@ export function StateApproversPanel({
     setSaving(true)
     try {
       await apiFetch(
-        `/api/workflows/${workflowDefinitionId}/states/${stateId}/approvers/${approverId}`,
+        `/api/v1/workflows/${workflowDefinitionId}/states/${stateId}/approvers/${approverId}`,
         {
           method: 'PATCH',
           body: JSON.stringify({ isRequired }),

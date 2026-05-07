@@ -490,7 +490,7 @@ export function PartRelationshipsPanel({
         const branchParam = branchId ? `&branch=${branchId}` : ''
 
         const response = await fetch(
-          `/api/items/${actualItemId}/graph?depth=1&direction=${apiDirection}${typesParam}${branchParam}`,
+          `/api/v1/items/${actualItemId}/graph?depth=1&direction=${apiDirection}${typesParam}${branchParam}`,
         )
 
         if (!response.ok) {
@@ -652,8 +652,8 @@ export function PartRelationshipsPanel({
       const branchParam = branchId ? `?branch=${branchId}` : ''
       // Fetch relationships AND item details in parallel
       const [relResponse, itemResponse] = await Promise.all([
-        fetch(`/api/items/${itemId}/relationships${branchParam}`),
-        fetch(`/api/items/${itemId}`),
+        fetch(`/api/v1/items/${itemId}/relationships${branchParam}`),
+        fetch(`/api/v1/items/${itemId}`),
       ])
 
       if (relResponse.ok) {
@@ -699,7 +699,7 @@ export function PartRelationshipsPanel({
           : ''
       const branchParam = branchId ? `&branch=${branchId}` : ''
       const response = await fetch(
-        `/api/items/${itemId}/graph?depth=${graphDepth}&direction=${graphDirection}${typesParam}${branchParam}`,
+        `/api/v1/items/${itemId}/graph?depth=${graphDepth}&direction=${graphDirection}${typesParam}${branchParam}`,
       )
 
       if (!response.ok) {
@@ -830,7 +830,7 @@ export function PartRelationshipsPanel({
 
     try {
       // Fetch the current item details first
-      const itemResponse = await fetch(`/api/items/${itemId}`)
+      const itemResponse = await fetch(`/api/v1/items/${itemId}`)
       if (!itemResponse.ok) return
       const { data: currentItem } = await itemResponse.json()
 
@@ -859,7 +859,7 @@ export function PartRelationshipsPanel({
         // Fetch children (outgoing BOM relationships)
         const bomBranchParam = branchId ? `&branch=${branchId}` : ''
         const relResponse = await fetch(
-          `/api/items/${id}/relationships?type=BOM${bomBranchParam}`,
+          `/api/v1/items/${id}/relationships?type=BOM${bomBranchParam}`,
         )
         let children: Array<BOMTreeNode> = []
 
@@ -920,7 +920,7 @@ export function PartRelationshipsPanel({
   const loadWhereUsed = useCallback(async () => {
     setWhereUsedLoading(true)
     try {
-      const response = await fetch(`/api/items/${itemId}/where-used`)
+      const response = await fetch(`/api/v1/items/${itemId}/where-used`)
       if (response.ok) {
         const data = await response.json()
         setWhereUsedData(data.data?.whereUsed ?? [])
@@ -993,7 +993,7 @@ export function PartRelationshipsPanel({
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/relationships/${relationshipId}`, {
+          const response = await fetch(`/api/v1/relationships/${relationshipId}`, {
             method: 'DELETE',
           })
 

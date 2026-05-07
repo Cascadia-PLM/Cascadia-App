@@ -152,7 +152,7 @@ function ConflictCard({
     setResolving(true)
     try {
       await apiFetch(
-        `/api/branch-items/${conflict.ourBranchItemId}/pull-from-main`,
+        `/api/v1/branch-items/${conflict.ourBranchItemId}/pull-from-main`,
         {
           method: 'POST',
           body: JSON.stringify({
@@ -172,7 +172,7 @@ function ConflictCard({
   const handleMarkReviewed = async () => {
     setMarkingReviewed(true)
     try {
-      await apiFetch(`/api/change-orders/${ecoId}/conflict-reviews`, {
+      await apiFetch(`/api/v1/change-orders/${ecoId}/conflict-reviews`, {
         method: 'POST',
         body: JSON.stringify({
           itemMasterId: conflict.itemMasterId,
@@ -194,7 +194,7 @@ function ConflictCard({
     setMarkingReviewed(true)
     try {
       await apiFetch(
-        `/api/change-orders/${ecoId}/conflict-reviews?reviewId=${conflict.review.id}`,
+        `/api/v1/change-orders/${ecoId}/conflict-reviews?reviewId=${conflict.review.id}`,
         {
           method: 'DELETE',
         },
@@ -438,7 +438,7 @@ export function ConflictsList({
     try {
       const response = await apiFetch<{
         data: EnrichedConflictDetectionResult
-      }>(`/api/change-orders/${ecoId}/conflicts`)
+      }>(`/api/v1/change-orders/${ecoId}/conflicts`)
       setResult(response.data)
     } catch {
       setError('Failed to check for conflicts')
@@ -462,7 +462,7 @@ export function ConflictsList({
   ) => {
     setIsResolving(true)
     try {
-      await apiFetch(`/api/change-orders/${ecoId}/resolve-conflicts`, {
+      await apiFetch(`/api/v1/change-orders/${ecoId}/resolve-conflicts`, {
         method: 'POST',
         body: JSON.stringify({
           resolutions: resolutions.map((r) => ({

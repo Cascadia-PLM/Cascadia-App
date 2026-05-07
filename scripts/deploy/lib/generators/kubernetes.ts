@@ -256,12 +256,12 @@ function generateDeployment(config: KubernetesConfig): GeneratedFile {
                 limits: { cpu: '1000m', memory: '1Gi' },
               },
               livenessProbe: {
-                httpGet: { path: '/api/health', port: 'http' },
+                httpGet: { path: '/api/v1/health', port: 'http' },
                 initialDelaySeconds: 30,
                 periodSeconds: 10,
               },
               readinessProbe: {
-                httpGet: { path: '/api/health', port: 'http' },
+                httpGet: { path: '/api/v1/health', port: 'http' },
                 initialDelaySeconds: 5,
                 periodSeconds: 5,
               },

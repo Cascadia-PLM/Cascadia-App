@@ -596,40 +596,40 @@ ECO cancellation is handled through the workflow system. When an ECO transitions
 
 | Method | Path                                       | Purpose                               |
 | ------ | ------------------------------------------ | ------------------------------------- |
-| `GET`  | `/api/change-orders/:id`                   | Get change order details              |
-| `GET`  | `/api/change-orders/editable`              | List ECOs that can still accept items |
-| `GET`  | `/api/change-orders/:id/affected-items`    | List affected items                   |
-| `POST` | `/api/change-orders/:id/affected-items`    | Add affected item                     |
-| `GET`  | `/api/change-orders/:id/designs`           | List associated designs and branches  |
-| `GET`  | `/api/change-orders/:id/conflicts`         | Detect conflicts                      |
-| `POST` | `/api/change-orders/:id/resolve-conflicts` | Resolve conflicts (rebase/pull)       |
-| `GET`  | `/api/change-orders/:id/impact-assessment` | Run/get impact analysis               |
-| `GET`  | `/api/change-orders/:id/risks`             | Get identified risks                  |
-| `GET`  | `/api/change-orders/:id/release`           | Preview merge (dry run)               |
-| `GET`  | `/api/change-orders/:id/summary`           | Get ECO summary                       |
+| `GET`  | `/api/v1/change-orders/:id`                   | Get change order details              |
+| `GET`  | `/api/v1/change-orders/editable`              | List ECOs that can still accept items |
+| `GET`  | `/api/v1/change-orders/:id/affected-items`    | List affected items                   |
+| `POST` | `/api/v1/change-orders/:id/affected-items`    | Add affected item                     |
+| `GET`  | `/api/v1/change-orders/:id/designs`           | List associated designs and branches  |
+| `GET`  | `/api/v1/change-orders/:id/conflicts`         | Detect conflicts                      |
+| `POST` | `/api/v1/change-orders/:id/resolve-conflicts` | Resolve conflicts (rebase/pull)       |
+| `GET`  | `/api/v1/change-orders/:id/impact-assessment` | Run/get impact analysis               |
+| `GET`  | `/api/v1/change-orders/:id/risks`             | Get identified risks                  |
+| `GET`  | `/api/v1/change-orders/:id/release`           | Preview merge (dry run)               |
+| `GET`  | `/api/v1/change-orders/:id/summary`           | Get ECO summary                       |
 
 ### Workflow Endpoints
 
 | Method | Path                                                  | Purpose                                      |
 | ------ | ----------------------------------------------------- | -------------------------------------------- |
-| `GET`  | `/api/change-orders/:id/workflow`                     | Get workflow instance                        |
-| `GET`  | `/api/change-orders/:id/workflow/transition`          | Get available transitions                    |
-| `POST` | `/api/change-orders/:id/workflow/transition`          | Execute transition (submit, approve, reject) |
-| `GET`  | `/api/change-orders/:id/workflow/history`             | Get transition history                       |
-| `GET`  | `/api/change-orders/:id/workflow/validate-transition` | Validate a transition before executing       |
-| `GET`  | `/api/change-orders/:id/workflow/structure`           | Get effective workflow structure             |
+| `GET`  | `/api/v1/change-orders/:id/workflow`                     | Get workflow instance                        |
+| `GET`  | `/api/v1/change-orders/:id/workflow/transition`          | Get available transitions                    |
+| `POST` | `/api/v1/change-orders/:id/workflow/transition`          | Execute transition (submit, approve, reject) |
+| `GET`  | `/api/v1/change-orders/:id/workflow/history`             | Get transition history                       |
+| `GET`  | `/api/v1/change-orders/:id/workflow/validate-transition` | Validate a transition before executing       |
+| `GET`  | `/api/v1/change-orders/:id/workflow/structure`           | Get effective workflow structure             |
 
 ### Branch and History Endpoints
 
 | Method | Path                                                 | Purpose                             |
 | ------ | ---------------------------------------------------- | ----------------------------------- |
-| `GET`  | `/api/change-orders/:id/branch-history`              | Get commit history for ECO branches |
-| `GET`  | `/api/change-orders/:id/branch-history/graph`        | Get visual graph data               |
-| `GET`  | `/api/change-orders/:id/designs/:designId/structure` | Get design structure on ECO branch  |
-| `GET`  | `/api/change-orders/:id/checkout`                    | Get checkout status                 |
-| `POST` | `/api/change-orders/:id/checkout`                    | Checkout item to ECO branch         |
-| `GET`  | `/api/change-orders/:id/bom-changes`                 | Get BOM changes on ECO branch       |
-| `GET`  | `/api/change-orders/:id/items/:itemId/ancestors`     | Get ancestor chain for an item      |
+| `GET`  | `/api/v1/change-orders/:id/branch-history`              | Get commit history for ECO branches |
+| `GET`  | `/api/v1/change-orders/:id/branch-history/graph`        | Get visual graph data               |
+| `GET`  | `/api/v1/change-orders/:id/designs/:designId/structure` | Get design structure on ECO branch  |
+| `GET`  | `/api/v1/change-orders/:id/checkout`                    | Get checkout status                 |
+| `POST` | `/api/v1/change-orders/:id/checkout`                    | Checkout item to ECO branch         |
+| `GET`  | `/api/v1/change-orders/:id/bom-changes`                 | Get BOM changes on ECO branch       |
+| `GET`  | `/api/v1/change-orders/:id/items/:itemId/ancestors`     | Get ancestor chain for an item      |
 
 ---
 

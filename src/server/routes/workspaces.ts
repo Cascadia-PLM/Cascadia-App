@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { and, eq, inArray } from 'drizzle-orm'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { ChangeOrder } from '@/lib/items/types/change-order'
 import { db } from '@/lib/db'
 import { branchItems, branches, items } from '@/lib/db/schema'
@@ -14,6 +14,8 @@ import {
   PermissionDeniedError,
   ValidationError,
 } from '@/lib/errors'
+
+const adapt = tagged('Workspaces')
 
 const app = new Hono()
 

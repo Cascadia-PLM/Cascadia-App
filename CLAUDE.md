@@ -238,11 +238,12 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 ### API Route Pattern
 
-API routes live in `src/server/routes/` as Hono modules. Each uses `adapt()` to bridge Hono's context to the `apiHandler()` signature:
+API routes live in `src/server/routes/` as Hono modules. Every module mounts under `/api/v1/` and uses the `tagged()` factory so all its handlers carry a consistent OpenAPI tag:
 
 ```typescript
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
+const adapt = tagged('Parts') // Tag this file's handlers as "Parts"
 import { apiHandler } from '@/lib/api/handler'
 
 const app = new Hono()
@@ -252,7 +253,15 @@ app.get(
   '/:id',
   adapt(
     apiHandler(
-      { permission: ['parts', 'read'] },
+      {
+        permission: ['parts', 'read'],
+        // Optional OpenAPI metadata. Errors (400/401/403/404/500) are added automatically.
+        openapi: {
+          summary: 'Get a part by ID',
+          request: { params: z.object({ id: z.string().uuid() }) },
+          responses: { 200: { schema: z.object({ part: partResponseSchema }) } },
+        },
+      },
       async ({ params, request, user }) => {
         // Return an object → auto-wrapped as { data: { ... } }
         return { example: 'value' }
@@ -264,9 +273,11 @@ app.get(
 export default app
 ```
 
-Mount new route modules in `src/server/index.ts` via `app.route('/api/example', example)`.
+Mount new route modules in `src/server/index.ts` via `app.route('/api/v1/example', example)`.
 
 For responses needing custom status codes or headers (201 Created, Set-Cookie), return a raw `Response` from within the handler. Use `parseQuery(request, zodSchema)` for validated query parameters. Use `requireDesignAccess`/`requireBranchAccess` from `@/lib/auth/access` for design/branch access checks.
+
+The OpenAPI document is regenerated from these annotations at request time (`/openapi.json`) and served as Scalar UI at `/api/docs`. The committed snapshot at `docs/api/openapi.v1.json` is the frozen v1 contract — `npm run openapi:check` enforces it in CI. Run `npm run openapi:snapshot` whenever you change a route signature, then commit the regenerated JSON. See [`docs/api/README.md`](./docs/api/README.md) for the versioning policy.
 
 ## Common Tasks
 
@@ -282,11 +293,14 @@ For responses needing custom status codes or headers (201 Created, Set-Cookie), 
 ### Adding an API Route
 
 1. Add handlers to an existing domain file in `src/server/routes/` or create a new one
-2. Use `adapt(apiHandler(options, fn))` to define each route handler
-3. Declare auth in options: `{ permission: ['resource', 'action'] }`, `{}` (auth-only), or `{ public: true }`
-4. Call service layer methods; throw typed errors (`NotFoundError`, `ValidationError`) on failure
-5. Return a plain object — it auto-wraps as `{ data: { ... } }` with JSON Content-Type
-6. If new file, mount it in `src/server/index.ts` via `app.route('/api/newroute', newroute)`
+2. If new file, declare the tag at the top: `const adapt = tagged('YourResource')` (replaces plain `adapt` import)
+3. Use `adapt(apiHandler(options, fn))` to define each route handler
+4. Declare auth in options: `{ permission: ['resource', 'action'] }`, `{}` (auth-only), or `{ public: true }`
+5. Call service layer methods; throw typed errors (`NotFoundError`, `ValidationError`) on failure
+6. Return a plain object — it auto-wraps as `{ data: { ... } }` with JSON Content-Type
+7. If new file, mount it in `src/server/index.ts` via `app.route('/api/v1/newroute', newroute)`
+8. Optional but encouraged: add `openapi: { summary, request, responses }` to the handler options to enrich the spec
+9. Run `npm run openapi:snapshot` and commit the updated `docs/api/openapi.v1.json`
 
 ### Adding a Background Job Type
 

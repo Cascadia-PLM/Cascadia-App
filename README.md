@@ -158,7 +158,7 @@ All item types extend `BaseItem` and register via `ItemTypeRegistry`:
 - User and role management with RBAC
 - Lifecycle and workflow configuration
 - Background jobs dashboard with monitoring
-- Health check endpoint (`/api/health`)
+- Health check endpoint (`/api/v1/health`)
 
 ### Service Layer
 

@@ -82,7 +82,7 @@ export function NewRelationshipTypeDialog({
         limit: '20',
       })
 
-      const response = await fetch(`/api/items/search?${params}`)
+      const response = await fetch(`/api/v1/items/search?${params}`)
       if (response.ok) {
         const data = await response.json()
         setSearchResults(data.data.items ?? [])
@@ -115,7 +115,7 @@ export function NewRelationshipTypeDialog({
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/items/${itemId}/relationships`, {
+      const response = await fetch(`/api/v1/items/${itemId}/relationships`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

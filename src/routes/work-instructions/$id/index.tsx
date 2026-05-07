@@ -59,10 +59,10 @@ export const Route = createFileRoute('/work-instructions/$id/')({
     try {
       const [wiResult, opsResult] = await Promise.all([
         apiFetch<{ data: { workInstruction: WorkInstructionWithSteps } }>(
-          `/api/work-instructions/${params.id}`,
+          `/api/v1/work-instructions/${params.id}`,
         ),
         apiFetch<{ data: { operations: Array<WorkInstructionOperation> } }>(
-          `/api/work-instructions/${params.id}/operations`,
+          `/api/v1/work-instructions/${params.id}/operations`,
         ),
       ])
       return {
@@ -112,7 +112,7 @@ function WorkInstructionDetailPage() {
   // Fetch pending alert count
   useEffect(() => {
     if (!workInstruction.id) return
-    fetch(`/api/work-instructions/${workInstruction.id}/alerts`)
+    fetch(`/api/v1/work-instructions/${workInstruction.id}/alerts`)
       .then((r) => r.json())
       .then((data) => {
         setPendingAlertCount(data.data?.counts?.pending ?? 0)
@@ -136,7 +136,7 @@ function WorkInstructionDetailPage() {
     if (!workInstruction.id) return
     setIsSubmitting(true)
     try {
-      await apiFetch(`/api/work-instructions/${workInstruction.id}`, {
+      await apiFetch(`/api/v1/work-instructions/${workInstruction.id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       })
@@ -165,7 +165,7 @@ function WorkInstructionDetailPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/work-instructions/${workInstruction.id}`, {
+          await apiFetch(`/api/v1/work-instructions/${workInstruction.id}`, {
             method: 'DELETE',
           })
 
@@ -186,7 +186,7 @@ function WorkInstructionDetailPage() {
     async (stepData: Partial<WorkInstructionStep>) => {
       try {
         const result = await apiFetch<{ data: { step: WorkInstructionStep } }>(
-          `/api/work-instructions/${workInstruction.id}/steps`,
+          `/api/v1/work-instructions/${workInstruction.id}/steps`,
           {
             method: 'POST',
             body: JSON.stringify(stepData),
@@ -204,7 +204,7 @@ function WorkInstructionDetailPage() {
     async (stepId: string, data: Partial<WorkInstructionStep>) => {
       try {
         const result = await apiFetch<{ data: { step: WorkInstructionStep } }>(
-          `/api/work-instructions/${workInstruction.id}/steps/${stepId}`,
+          `/api/v1/work-instructions/${workInstruction.id}/steps/${stepId}`,
           {
             method: 'PUT',
             body: JSON.stringify(data),
@@ -231,7 +231,7 @@ function WorkInstructionDetailPage() {
         onConfirm: async () => {
           try {
             await apiFetch(
-              `/api/work-instructions/${workInstruction.id}/steps/${stepId}`,
+              `/api/v1/work-instructions/${workInstruction.id}/steps/${stepId}`,
               { method: 'DELETE' },
             )
             setSteps((prev) => prev.filter((s) => s.id !== stepId))
@@ -250,7 +250,7 @@ function WorkInstructionDetailPage() {
       try {
         const result = await apiFetch<{
           data: { steps: Array<WorkInstructionStep> }
-        }>(`/api/work-instructions/${workInstruction.id}/steps`, {
+        }>(`/api/v1/work-instructions/${workInstruction.id}/steps`, {
           method: 'PUT',
           body: JSON.stringify({ steps: reorderedSteps }),
         })
@@ -405,7 +405,7 @@ function WorkInstructionDetailPage() {
                       const result = await apiFetch<{
                         data: { operation: WorkInstructionOperation }
                       }>(
-                        `/api/work-instructions/${workInstruction.id}/operations`,
+                        `/api/v1/work-instructions/${workInstruction.id}/operations`,
                         {
                           method: 'POST',
                           body: JSON.stringify({
@@ -589,7 +589,7 @@ function ExecutionsTab({ workInstructionId }: { workInstructionId: string }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`/api/work-instructions/${workInstructionId}/executions`)
+    fetch(`/api/v1/work-instructions/${workInstructionId}/executions`)
       .then((r) => r.json())
       .then((data) => {
         setExecutions(data.data?.executions || [])

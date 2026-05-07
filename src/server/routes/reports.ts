@@ -1,9 +1,11 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { ReportService } from '@/lib/reports/ReportService'
 import { reportExecutionOptionsSchema, reportSchema } from '@/lib/reports/types'
 import { NotFoundError } from '@/lib/errors'
 import { apiHandler, created } from '@/lib/api/handler'
+
+const adapt = tagged('Reports')
 
 const app = new Hono()
 

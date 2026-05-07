@@ -71,7 +71,7 @@ export function MembersTab({
     try {
       const response = await apiFetch<{
         data: { members: Array<MemberDesign> }
-      }>(`/api/designs/${designId}/members`)
+      }>(`/api/v1/designs/${designId}/members`)
       setMembers(response.data.members)
     } catch {
       setMembers([])
@@ -95,7 +95,7 @@ export function MembersTab({
       onConfirm: async () => {
         try {
           await apiFetch(
-            `/api/designs/${designId}/members?designId=${memberId}`,
+            `/api/v1/designs/${designId}/members?designId=${memberId}`,
             {
               method: 'DELETE',
             },

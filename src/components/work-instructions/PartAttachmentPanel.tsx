@@ -62,7 +62,7 @@ export function PartAttachmentPanel({
   const loadAttachments = useCallback(async () => {
     try {
       const response = await fetch(
-        `/api/work-instructions/${workInstructionId}/parts`,
+        `/api/v1/work-instructions/${workInstructionId}/parts`,
       )
       if (!response.ok) {
         throw new Error('Failed to load attachments')
@@ -91,7 +91,7 @@ export function PartAttachmentPanel({
       setSearching(true)
       try {
         const response = await fetch(
-          `/api/items/search?q=${encodeURIComponent(searchQuery)}&types=Part&limit=10`,
+          `/api/v1/items/search?q=${encodeURIComponent(searchQuery)}&types=Part&limit=10`,
         )
         if (response.ok) {
           const data = await response.json()
@@ -116,7 +116,7 @@ export function PartAttachmentPanel({
     setAttaching(part.id)
     try {
       const response = await fetch(
-        `/api/work-instructions/${workInstructionId}/parts`,
+        `/api/v1/work-instructions/${workInstructionId}/parts`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -160,7 +160,7 @@ export function PartAttachmentPanel({
   const handleToggleInherit = async (attachment: PartAttachment) => {
     try {
       const response = await fetch(
-        `/api/work-instructions/${workInstructionId}/parts`,
+        `/api/v1/work-instructions/${workInstructionId}/parts`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -196,7 +196,7 @@ export function PartAttachmentPanel({
   const handleDetach = async (attachment: PartAttachment) => {
     try {
       const response = await fetch(
-        `/api/work-instructions/${workInstructionId}/parts?partId=${attachment.partId}`,
+        `/api/v1/work-instructions/${workInstructionId}/parts?partId=${attachment.partId}`,
         { method: 'DELETE' },
       )
 

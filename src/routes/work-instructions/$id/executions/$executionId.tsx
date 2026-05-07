@@ -25,13 +25,13 @@ export const Route = createFileRoute(
   loader: async ({ params }) => {
     const [wiResult, opsResult, execResult] = await Promise.all([
       apiFetch<{ data: { workInstruction: WorkInstructionWithSteps } }>(
-        `/api/work-instructions/${params.id}`,
+        `/api/v1/work-instructions/${params.id}`,
       ),
       apiFetch<{ data: { operations: Array<any> } }>(
-        `/api/work-instructions/${params.id}/operations`,
+        `/api/v1/work-instructions/${params.id}/operations`,
       ),
       apiFetch<{ data: { execution: WorkInstructionExecution } }>(
-        `/api/work-instructions/${params.id}/executions/${params.executionId}`,
+        `/api/v1/work-instructions/${params.id}/executions/${params.executionId}`,
       ),
     ])
 
@@ -59,7 +59,7 @@ function ExecutionDetailPage() {
     comments?: string,
   ) => {
     const response = await fetch(
-      `/api/work-instructions/${workInstruction.id}/executions/${execution.id}/sign-off`,
+      `/api/v1/work-instructions/${workInstruction.id}/executions/${execution.id}/sign-off`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

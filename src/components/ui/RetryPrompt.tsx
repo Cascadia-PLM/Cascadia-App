@@ -20,7 +20,7 @@ interface RetryPromptProps {
  * @example
  * ```tsx
  * function MyComponent() {
- *   const { error, canRetry, retry, retrying } = useRetryableFetch('/api/data')
+ *   const { error, canRetry, retry, retrying } = useRetryableFetch('/api/v1/data')
  *
  *   if (error && canRetry) {
  *     return <RetryPrompt message={error.message} onRetry={retry} retrying={retrying} />

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type {
   DesignArtifacts,
   DesignSessionStage,
@@ -21,6 +21,8 @@ import {
   designArtifactsPatchSchema,
   designSessionStageSchema,
 } from '@/lib/design-engine/types'
+
+const adapt = tagged('Design Engine')
 
 const createSessionSchema = z.object({
   description: z.string().min(1, 'Description is required'),

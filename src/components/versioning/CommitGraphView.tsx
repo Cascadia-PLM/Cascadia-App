@@ -69,7 +69,7 @@ function CommitGraphViewInner({
         params.set('limit', '50')
 
         const response = await apiFetch<CommitGraphResponse>(
-          `/api/designs/${designId}/history/graph?${params.toString()}`,
+          `/api/v1/designs/${designId}/history/graph?${params.toString()}`,
         )
 
         setGraphData(response.data)

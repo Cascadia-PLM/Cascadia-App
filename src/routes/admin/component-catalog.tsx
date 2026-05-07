@@ -65,7 +65,7 @@ function ComponentCatalogPage() {
 
   const loadCategories = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/component-catalog/categories')
+      const res = await fetch('/api/v1/admin/component-catalog/categories')
       if (res.ok) {
         const data = await res.json()
         setCategories(data.data?.categories ?? [])
@@ -86,7 +86,7 @@ function ComponentCatalogPage() {
       params.set('limit', String(pageSize))
 
       const res = await fetch(
-        `/api/admin/component-catalog?${params.toString()}`,
+        `/api/v1/admin/component-catalog?${params.toString()}`,
       )
       if (res.ok) {
         const data = await res.json()
@@ -111,7 +111,7 @@ function ComponentCatalogPage() {
   const handleDeleteEntry = async (id: string) => {
     if (!confirm('Delete this catalog entry?')) return
     try {
-      await fetch(`/api/admin/component-catalog/${id}`, { method: 'DELETE' })
+      await fetch(`/api/v1/admin/component-catalog/${id}`, { method: 'DELETE' })
       loadEntries()
     } catch (err) {
       console.error('Failed to delete entry:', err)
@@ -532,8 +532,8 @@ function EntryDialog({
       }
 
       const url = isEditing
-        ? `/api/admin/component-catalog/${entry.id}`
-        : '/api/admin/component-catalog'
+        ? `/api/v1/admin/component-catalog/${entry.id}`
+        : '/api/v1/admin/component-catalog'
       const method = isEditing ? 'PUT' : 'POST'
 
       const res = await fetch(url, {
@@ -825,7 +825,7 @@ function ImportDialog({
         if (!Array.isArray(parsed)) {
           throw new Error('JSON must be an array of entries')
         }
-        const res = await fetch('/api/admin/component-catalog/import', {
+        const res = await fetch('/api/v1/admin/component-catalog/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ rows: parsed }),
@@ -1072,7 +1072,7 @@ function CategoryDialog({
     setError('')
 
     try {
-      const res = await fetch('/api/admin/component-catalog/categories', {
+      const res = await fetch('/api/v1/admin/component-catalog/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

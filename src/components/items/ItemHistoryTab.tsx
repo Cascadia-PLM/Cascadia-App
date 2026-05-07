@@ -299,7 +299,7 @@ export function ItemHistoryTab({
           try {
             const branchesResponse = await apiFetch<{
               data: { branches: Array<{ id: string; branchType: string }> }
-            }>(`/api/designs/${designId}/branches`)
+            }>(`/api/v1/designs/${designId}/branches`)
             const mainBranch = branchesResponse.data.branches.find(
               (b) => b.branchType === 'main',
             )
@@ -313,7 +313,7 @@ export function ItemHistoryTab({
         }
 
         const queryString = params.toString()
-        const url = `/api/items/${itemId}/history${queryString ? `?${queryString}` : ''}`
+        const url = `/api/v1/items/${itemId}/history${queryString ? `?${queryString}` : ''}`
 
         const response = await apiFetch<{
           data: { history: Array<HistoryEntry> }

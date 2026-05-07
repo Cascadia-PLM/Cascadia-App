@@ -27,7 +27,7 @@ export const Route = createFileRoute('/change-orders/$id')({
   loader: async ({ params }) => {
     try {
       const result = await apiFetch<{ data: { changeOrder: ChangeOrder } }>(
-        `/api/change-orders/${params.id}`,
+        `/api/v1/change-orders/${params.id}`,
       )
       return { changeOrder: result.data.changeOrder }
     } catch (error) {
@@ -50,7 +50,7 @@ function ChangeOrderDetailPage() {
   ) => {
     if (!changeOrder.id) return
 
-    await apiFetch(`/api/change-orders/${changeOrder.id}`, {
+    await apiFetch(`/api/v1/change-orders/${changeOrder.id}`, {
       method: 'PUT',
       body: JSON.stringify(updatedChangeOrder),
     })
@@ -65,7 +65,7 @@ function ChangeOrderDetailPage() {
   const handleDelete = async () => {
     if (!changeOrder.id) return
 
-    await apiFetch(`/api/change-orders/${changeOrder.id}`, {
+    await apiFetch(`/api/v1/change-orders/${changeOrder.id}`, {
       method: 'DELETE',
     })
 

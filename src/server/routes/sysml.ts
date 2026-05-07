@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { SysMLElement } from '@/lib/sysml'
 import type { VersionContext } from '@/lib/services/VersionResolver'
 import { DesignService } from '@/lib/services/DesignService'
@@ -13,6 +13,8 @@ import { requireDesignAccess } from '@/lib/auth/access'
 import { apiHandler, created } from '@/lib/api/handler'
 // Register item types
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('SysML')
 
 const app = new Hono()
 

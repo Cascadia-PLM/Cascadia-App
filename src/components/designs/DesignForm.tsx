@@ -122,7 +122,7 @@ export function DesignForm({
       setLoadingFamilies(true)
       try {
         const params = programId ? `?programId=${programId}` : ''
-        const response = await fetch(`/api/designs/families${params}`)
+        const response = await fetch(`/api/v1/designs/families${params}`)
         if (response.ok) {
           const { data } = await response.json()
           setFamilies(data?.families || [])

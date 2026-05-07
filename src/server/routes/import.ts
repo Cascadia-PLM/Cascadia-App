@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { BaseItem } from '@/lib/items/types/base'
 import type { BomImportResult, ImportResult } from '@/lib/import'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -18,6 +18,8 @@ import {
 import { requireBranchAccess, requireDesignAccess } from '@/lib/auth/access'
 import { requireRole } from '@/lib/auth/server'
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Import')
 
 const app = new Hono()
 

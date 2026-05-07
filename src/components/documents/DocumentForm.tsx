@@ -83,7 +83,7 @@ export function DocumentForm({
       setLoadingStatus(true)
       try {
         const result = await apiFetch<{ data: DesignStatus }>(
-          `/api/designs/${currentDesignId}/status`,
+          `/api/v1/designs/${currentDesignId}/status`,
         )
         setDesignStatus(result.data)
         // Clear branch selection when design changes

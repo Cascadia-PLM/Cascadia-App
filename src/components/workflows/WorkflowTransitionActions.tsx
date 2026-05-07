@@ -75,7 +75,7 @@ export function WorkflowTransitionActions({
       try {
         // Get workflow instance and definition
         const workflowData = await apiFetch<WorkflowDataResponse>(
-          `/api/change-orders/${itemId}/workflow`,
+          `/api/v1/change-orders/${itemId}/workflow`,
         )
 
         if (!workflowData.data.instance) {
@@ -91,7 +91,7 @@ export function WorkflowTransitionActions({
 
         // Get available transitions
         const transitionsData = await apiFetch<TransitionsResponse>(
-          `/api/change-orders/${itemId}/workflow/transition`,
+          `/api/v1/change-orders/${itemId}/workflow/transition`,
         )
         setAvailableTransitions(transitionsData.data.transitions)
       } catch {
@@ -108,7 +108,7 @@ export function WorkflowTransitionActions({
     setIsSubmitting(true)
     try {
       const data = await apiFetch<TransitionResultResponse>(
-        `/api/change-orders/${itemId}/workflow/transition`,
+        `/api/v1/change-orders/${itemId}/workflow/transition`,
         {
           method: 'POST',
           body: JSON.stringify({ toStateId, comments }),

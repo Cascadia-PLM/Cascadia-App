@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { eq, isNull } from 'drizzle-orm'
 import { streamToText } from '@tanstack/ai'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { AIProviderConfig as AIProviderDBConfig } from '@/lib/db/schema/ai'
 import type { AIProviderConfig, ProviderType } from '@/lib/ai/adapters'
 import { apiHandler, parseQuery } from '@/lib/api/handler'
@@ -29,6 +29,8 @@ import { SettingsService } from '@/lib/config/SettingsService'
 import { ThreadCacheService } from '@/lib/services/ThreadCacheService'
 import { StorageFactory } from '@/lib/vault/storage/storage-factory'
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Admin')
 
 const app = new Hono()
 

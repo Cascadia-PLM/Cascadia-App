@@ -29,7 +29,7 @@ function NewWorkInstructionPage() {
     try {
       const payload = { ...data, itemType: 'WorkInstruction' }
       const result = await apiFetch<{ data: { item: WorkInstruction } }>(
-        '/api/items',
+        '/api/v1/items',
         {
           method: 'POST',
           body: JSON.stringify(payload),

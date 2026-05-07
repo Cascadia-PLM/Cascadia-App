@@ -116,7 +116,7 @@ export function TestCaseForm({
       setLoadingStatus(true)
       try {
         const result = await apiFetch<{ data: DesignStatus }>(
-          `/api/designs/${currentDesignId}/status`,
+          `/api/v1/designs/${currentDesignId}/status`,
         )
         setDesignStatus(result.data)
         // Clear branch selection when design changes
@@ -132,7 +132,7 @@ export function TestCaseForm({
       setLoadingTestPlans(true)
       try {
         const result = await apiFetch<{ data: { items: Array<TestPlan> } }>(
-          `/api/items?itemType=TestPlan&designId=${currentDesignId}`,
+          `/api/v1/items?itemType=TestPlan&designId=${currentDesignId}`,
         )
         setTestPlans(result.data.items)
       } catch {

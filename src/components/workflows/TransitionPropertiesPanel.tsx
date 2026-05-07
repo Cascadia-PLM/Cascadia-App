@@ -111,7 +111,7 @@ export function TransitionPropertiesPanel({
     const fetchUsers = async () => {
       setLoadingUsers(true)
       try {
-        const response = await fetch('/api/users')
+        const response = await fetch('/api/v1/users')
         if (response.ok) {
           const data = await response.json()
           setUsers(data.data?.users || [])
@@ -126,7 +126,7 @@ export function TransitionPropertiesPanel({
     const fetchRoles = async () => {
       setLoadingRoles(true)
       try {
-        const response = await fetch('/api/roles')
+        const response = await fetch('/api/v1/roles')
         if (response.ok) {
           const data = await response.json()
           setRoles(data.roles || [])
@@ -149,7 +149,7 @@ export function TransitionPropertiesPanel({
   useEffect(() => {
     const fetchDrivenLifecycles = async () => {
       try {
-        const response = await fetch('/api/workflows?type=lifecycle')
+        const response = await fetch('/api/v1/workflows?type=lifecycle')
         if (response.ok) {
           const data = await response.json()
           const lifecycles = data.data?.workflows || []

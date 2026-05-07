@@ -15,7 +15,7 @@ export const Route = createFileRoute('/tools/$id')({
   loader: async ({ params }) => {
     try {
       const { data } = await apiFetch<{ data: { tool: Tool } }>(
-        `/api/tools/${params.id}`,
+        `/api/v1/tools/${params.id}`,
       )
       return { tool: data.tool }
     } catch (error) {
@@ -35,7 +35,7 @@ function ToolDetailPage() {
   const handleSave = async (updatedTool: Tool) => {
     if (!tool.id) return
 
-    await apiFetch(`/api/tools/${tool.id}`, {
+    await apiFetch(`/api/v1/tools/${tool.id}`, {
       method: 'PUT',
       body: JSON.stringify(updatedTool),
     })
@@ -50,7 +50,7 @@ function ToolDetailPage() {
   const handleDelete = async () => {
     if (!tool.id) return
 
-    await apiFetch(`/api/tools/${tool.id}`, {
+    await apiFetch(`/api/v1/tools/${tool.id}`, {
       method: 'DELETE',
     })
 

@@ -79,7 +79,7 @@ export function RequirementLinkingPanel({
     try {
       const response = await apiFetch<{
         data: { requirements: Array<SatisfiedRequirement> }
-      }>(`/api/items/${itemId}/satisfied-requirements`)
+      }>(`/api/v1/items/${itemId}/satisfied-requirements`)
       setRequirements(response.data.requirements)
     } catch {
       // Failed to load requirements
@@ -114,7 +114,7 @@ export function RequirementLinkingPanel({
 
         const response = await apiFetch<{
           data: { items: Array<RequirementSearchResult> }
-        }>(`/api/items/search?${params}`)
+        }>(`/api/v1/items/search?${params}`)
 
         // Filter out already linked requirements
         const linkedIds = new Set(requirements.map((r) => r.id))
@@ -140,7 +140,7 @@ export function RequirementLinkingPanel({
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/requirements/${requirementId}/satisfy`, {
+          await apiFetch(`/api/v1/requirements/${requirementId}/satisfy`, {
             method: 'DELETE',
             body: JSON.stringify({ itemId }),
           })
@@ -174,7 +174,7 @@ export function RequirementLinkingPanel({
     try {
       // Link each selected requirement
       for (const requirementId of selectedIds) {
-        await apiFetch(`/api/requirements/${requirementId}/satisfy`, {
+        await apiFetch(`/api/v1/requirements/${requirementId}/satisfy`, {
           method: 'POST',
           body: JSON.stringify({ itemIds: [itemId] }),
         })

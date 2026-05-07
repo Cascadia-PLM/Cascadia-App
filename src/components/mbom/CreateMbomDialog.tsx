@@ -97,7 +97,7 @@ export function CreateMbomDialog({
 
   const loadTags = async () => {
     try {
-      const response = await apiFetch(`/api/designs/${sourceDesignId}/tags`)
+      const response = await apiFetch(`/api/v1/designs/${sourceDesignId}/tags`)
       const { data } = response as { data: { tags: Array<Tag> } }
       setTags(data.tags)
       setStatus('idle')
@@ -114,7 +114,7 @@ export function CreateMbomDialog({
     setError(null)
 
     try {
-      const response = await apiFetch('/api/mbom', {
+      const response = await apiFetch('/api/v1/mbom', {
         method: 'POST',
         body: JSON.stringify({
           sourceDesignId,

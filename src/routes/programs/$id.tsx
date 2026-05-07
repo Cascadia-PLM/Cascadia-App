@@ -41,9 +41,9 @@ export const Route = createFileRoute('/programs/$id')({
   component: ProgramDetailPage,
   loader: async ({ params }) => {
     const [programResult, designsResult] = await Promise.all([
-      apiFetch<{ data: { program: Program } }>(`/api/programs/${params.id}`),
+      apiFetch<{ data: { program: Program } }>(`/api/v1/programs/${params.id}`),
       apiFetch<{ data: { designs: Array<Design> } }>(
-        `/api/designs?programId=${params.id}`,
+        `/api/v1/designs?programId=${params.id}`,
       ).catch(() => ({ data: { designs: [] as Array<Design> } })),
     ])
     return {
@@ -126,7 +126,7 @@ function ProgramDetailPage() {
         targetEndDate: editProgram.targetEndDate || '',
         attributes,
       }
-      await apiFetch(`/api/programs/${program.id}`, {
+      await apiFetch(`/api/v1/programs/${program.id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       })
@@ -153,7 +153,7 @@ function ProgramDetailPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/programs/${program.id}`, {
+          await apiFetch(`/api/v1/programs/${program.id}`, {
             method: 'DELETE',
           })
 

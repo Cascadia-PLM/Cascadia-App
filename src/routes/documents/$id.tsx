@@ -21,7 +21,7 @@ export const Route = createFileRoute('/documents/$id')({
   loader: async ({ params }) => {
     try {
       const result = await apiFetch<{ data: { document: Document } }>(
-        `/api/documents/${params.id}`,
+        `/api/v1/documents/${params.id}`,
       )
       return { document: result.data.document }
     } catch (error) {
@@ -41,7 +41,7 @@ function DocumentDetailPage() {
   const handleSave = async (updatedDocument: Document) => {
     if (!document.id) return
 
-    await apiFetch(`/api/documents/${document.id}`, {
+    await apiFetch(`/api/v1/documents/${document.id}`, {
       method: 'PUT',
       body: JSON.stringify(updatedDocument),
     })
@@ -56,7 +56,7 @@ function DocumentDetailPage() {
   const handleDelete = async () => {
     if (!document.id) return
 
-    await apiFetch(`/api/documents/${document.id}`, {
+    await apiFetch(`/api/v1/documents/${document.id}`, {
       method: 'DELETE',
     })
 

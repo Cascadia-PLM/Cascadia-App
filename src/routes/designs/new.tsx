@@ -24,7 +24,7 @@ const newDesignSearchSchema = z.object({
 
 async function fetchPrograms(): Promise<Array<Program>> {
   try {
-    const response = await fetch('/api/programs', {
+    const response = await fetch('/api/v1/programs', {
       headers: { 'Content-Type': 'application/json' },
     })
     if (!response.ok) return []
@@ -55,7 +55,7 @@ function NewDesignPage() {
     setIsSubmitting(true)
     try {
       const result = await apiFetch<{ data: { design: Design } }>(
-        '/api/designs',
+        '/api/v1/designs',
         {
           method: 'POST',
           body: JSON.stringify(data),

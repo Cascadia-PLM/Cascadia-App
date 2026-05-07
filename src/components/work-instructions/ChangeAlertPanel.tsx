@@ -33,8 +33,8 @@ export function ChangeAlertPanel({
   const loadAlerts = useCallback(async () => {
     try {
       const url = filter
-        ? `/api/work-instructions/${workInstructionId}/alerts?status=${filter}`
-        : `/api/work-instructions/${workInstructionId}/alerts`
+        ? `/api/v1/work-instructions/${workInstructionId}/alerts?status=${filter}`
+        : `/api/v1/work-instructions/${workInstructionId}/alerts`
       const response = await fetch(url)
       if (!response.ok) throw new Error('Failed to load alerts')
       const data = await response.json()
@@ -60,7 +60,7 @@ export function ChangeAlertPanel({
   ) => {
     try {
       const response = await fetch(
-        `/api/work-instructions/${workInstructionId}/alerts`,
+        `/api/v1/work-instructions/${workInstructionId}/alerts`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -99,7 +99,7 @@ export function ChangeAlertPanel({
   const handleBulkAcknowledge = async () => {
     try {
       const response = await fetch(
-        `/api/work-instructions/${workInstructionId}/alerts`,
+        `/api/v1/work-instructions/${workInstructionId}/alerts`,
         { method: 'POST' },
       )
       if (!response.ok) throw new Error('Failed to acknowledge alerts')

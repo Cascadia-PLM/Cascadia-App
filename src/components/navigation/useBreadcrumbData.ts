@@ -90,14 +90,14 @@ export function useBreadcrumbData(
         // Fetch programs
         const programsRes = await apiFetch<{
           data: { programs: Array<Program> }
-        }>('/api/programs')
+        }>('/api/v1/programs')
         setPrograms(programsRes.data.programs)
 
         // Fetch designs (for pages that need design dropdown)
         if (needsDesignDropdown) {
           const designsRes = await apiFetch<{
             data: { designs: Array<Design> }
-          }>('/api/designs')
+          }>('/api/v1/designs')
           setDesigns(designsRes.data.designs)
         }
       } catch {
@@ -123,7 +123,7 @@ export function useBreadcrumbData(
         if (isItemDetailPage && itemIdFromPath) {
           try {
             const itemRes = await apiFetch<ItemResponse>(
-              `/api/items/${itemIdFromPath}`,
+              `/api/v1/items/${itemIdFromPath}`,
             )
             data.item = {
               id: itemRes.data.item.id,
@@ -134,13 +134,13 @@ export function useBreadcrumbData(
 
             if (itemRes.data.item.designId) {
               const designRes = await apiFetch<DesignResponse>(
-                `/api/designs/${itemRes.data.item.designId}`,
+                `/api/v1/designs/${itemRes.data.item.designId}`,
               )
               data.design = designRes.data.design
 
               if (designRes.data.design.programId) {
                 const programRes = await apiFetch<ProgramResponse>(
-                  `/api/programs/${designRes.data.design.programId}`,
+                  `/api/v1/programs/${designRes.data.design.programId}`,
                 )
                 data.program = programRes.data.program
               }
@@ -154,7 +154,7 @@ export function useBreadcrumbData(
         if (isChangeOrderDetailPage && changeOrderIdFromPath) {
           try {
             const itemRes = await apiFetch<ItemResponse>(
-              `/api/items/${changeOrderIdFromPath}`,
+              `/api/v1/items/${changeOrderIdFromPath}`,
             )
             data.item = {
               id: itemRes.data.item.id,
@@ -165,13 +165,13 @@ export function useBreadcrumbData(
 
             if (itemRes.data.item.designId) {
               const designRes = await apiFetch<DesignResponse>(
-                `/api/designs/${itemRes.data.item.designId}`,
+                `/api/v1/designs/${itemRes.data.item.designId}`,
               )
               data.design = designRes.data.design
 
               if (designRes.data.design.programId) {
                 const programRes = await apiFetch<ProgramResponse>(
-                  `/api/programs/${designRes.data.design.programId}`,
+                  `/api/v1/programs/${designRes.data.design.programId}`,
                 )
                 data.program = programRes.data.program
               }
@@ -185,13 +185,13 @@ export function useBreadcrumbData(
         if (isDesignDetailPage && designIdFromPath) {
           try {
             const designRes = await apiFetch<DesignResponse>(
-              `/api/designs/${designIdFromPath}`,
+              `/api/v1/designs/${designIdFromPath}`,
             )
             data.design = designRes.data.design
 
             if (designRes.data.design.programId) {
               const programRes = await apiFetch<ProgramResponse>(
-                `/api/programs/${designRes.data.design.programId}`,
+                `/api/v1/programs/${designRes.data.design.programId}`,
               )
               data.program = programRes.data.program
             }
@@ -204,7 +204,7 @@ export function useBreadcrumbData(
         if (isProgramDetailPage && programIdFromPath) {
           try {
             const programRes = await apiFetch<ProgramResponse>(
-              `/api/programs/${programIdFromPath}`,
+              `/api/v1/programs/${programIdFromPath}`,
             )
             data.program = programRes.data.program
           } catch {

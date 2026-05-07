@@ -13,7 +13,7 @@ export const Route = createFileRoute('/reports/$id/edit')({
   loader: async ({ params }) => {
     try {
       const result = await apiFetch<{ data: { report: Report } }>(
-        `/api/reports/${params.id}`,
+        `/api/v1/reports/${params.id}`,
       )
       return { report: result.data.report }
     } catch (error) {
@@ -32,7 +32,7 @@ function EditReportPage() {
   const handleSubmit = async (data: ReportCreateInput) => {
     setIsSubmitting(true)
     try {
-      const response = await fetch(`/api/reports/${report.id}`, {
+      const response = await fetch(`/api/v1/reports/${report.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

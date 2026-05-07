@@ -54,7 +54,7 @@ export function PartValidationPanel({
       try {
         const response = await apiFetch<{
           data: { tests: Array<ValidatingTest> }
-        }>(`/api/parts/${partId}/validating-tests`)
+        }>(`/api/v1/parts/${partId}/validating-tests`)
         setValidatingTests(response.data.tests)
       } catch (error) {
         console.error('Failed to fetch validating tests:', error)
@@ -82,7 +82,7 @@ export function PartValidationPanel({
           designId,
         })
         const response = await apiFetch<{ data: { items: Array<TestCase> } }>(
-          `/api/items?${params}`,
+          `/api/v1/items?${params}`,
         )
         // Filter out already linked tests
         const linkedIds = new Set(validatingTests.map((t) => t.id))
@@ -103,14 +103,14 @@ export function PartValidationPanel({
   const handleLinkTest = async (testCaseId: string) => {
     setLinking(testCaseId)
     try {
-      await apiFetch(`/api/parts/${partId}/validate`, {
+      await apiFetch(`/api/v1/parts/${partId}/validate`, {
         method: 'POST',
         body: JSON.stringify({ testCaseIds: [testCaseId] }),
       })
       // Refresh the list
       const response = await apiFetch<{
         data: { tests: Array<ValidatingTest> }
-      }>(`/api/parts/${partId}/validating-tests`)
+      }>(`/api/v1/parts/${partId}/validating-tests`)
       setValidatingTests(response.data.tests)
       setSearchQuery('')
       setSearchResults([])
@@ -124,7 +124,7 @@ export function PartValidationPanel({
   const handleUnlinkTest = async (testCaseId: string) => {
     setUnlinking(testCaseId)
     try {
-      await apiFetch(`/api/parts/${partId}/validate?testCaseId=${testCaseId}`, {
+      await apiFetch(`/api/v1/parts/${partId}/validate?testCaseId=${testCaseId}`, {
         method: 'DELETE',
       })
       setValidatingTests((prev) => prev.filter((t) => t.id !== testCaseId))

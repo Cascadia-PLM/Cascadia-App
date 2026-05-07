@@ -68,7 +68,7 @@ export function MergeToEcoDialog({
         // Fetch ECOs that can still accept items (scope not locked)
         const response = await apiFetch<{
           data: { changeOrders: Array<ECO> }
-        }>(`/api/change-orders/editable?designId=${designId}`)
+        }>(`/api/v1/change-orders/editable?designId=${designId}`)
         setEcos(response.data.changeOrders)
       } catch {
         setEcos([])
@@ -97,7 +97,7 @@ export function MergeToEcoDialog({
           itemsSkipped: number
           workspaceDeleted: boolean
         }
-      }>(`/api/workspaces/${workspaceId}/merge-to-eco`, {
+      }>(`/api/v1/workspaces/${workspaceId}/merge-to-eco`, {
         method: 'POST',
         body: JSON.stringify({
           ecoId: selectedEcoId,

@@ -48,7 +48,7 @@ function EditLifecyclePage() {
       try {
         const result = await apiFetch<{
           data: { workflow: WorkflowDefinition }
-        }>(`/api/workflows/${id}`)
+        }>(`/api/v1/workflows/${id}`)
         setDefinition(result.data.workflow)
 
         // Determine lifecycle type
@@ -131,7 +131,7 @@ function EditLifecyclePage() {
       const definitionType =
         lifecycleType === 'Driving' ? 'workflow' : 'lifecycle'
 
-      await apiFetch(`/api/workflows/${definition.id}`, {
+      await apiFetch(`/api/v1/workflows/${definition.id}`, {
         method: 'PUT',
         body: JSON.stringify({
           ...definition,

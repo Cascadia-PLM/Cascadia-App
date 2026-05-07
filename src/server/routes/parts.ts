@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
+import { z } from 'zod'
 import { eq } from 'drizzle-orm'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { Part } from '@/lib/items/types/part'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { BranchService } from '@/lib/services/BranchService'
@@ -10,6 +11,7 @@ import { ParametricResolutionService } from '@/lib/services/ParametricResolution
 import { assessPartForCadGeneration } from '@/lib/cad-generation/assessment'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { apiHandler, created } from '@/lib/api/handler'
+import { partUpdateSchema } from '@/lib/api/schemas'
 import { db } from '@/lib/db'
 import {
   items,
@@ -19,17 +21,40 @@ import {
 // Register item types (server-side version)
 import '@/lib/items/registerItemTypes.server'
 
+const adapt = tagged('Parts')
+
 const app = new Hono()
+
+const partIdParamSchema = z.object({ id: z.string().uuid() })
+const partResponseSchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string().nullable(),
+    partType: z.string().nullable(),
+  })
+  .passthrough()
 
 // GET /api/parts/:id
 app.get(
   '/:id',
   adapt(
-    apiHandler({ permission: ['parts', 'read'] }, async ({ params }) => {
-      const part = await ItemService.findById(params.id)
-      if (!part) throw new NotFoundError('Part', params.id)
-      return { part }
-    }),
+    apiHandler(
+      {
+        permission: ['parts', 'read'],
+        openapi: {
+          summary: 'Get a part by ID',
+          request: { params: partIdParamSchema },
+          responses: {
+            200: { schema: z.object({ part: partResponseSchema }) },
+          },
+        },
+      },
+      async ({ params }) => {
+        const part = await ItemService.findById(params.id)
+        if (!part) throw new NotFoundError('Part', params.id)
+        return { part }
+      },
+    ),
   ),
 )
 
@@ -38,7 +63,19 @@ app.put(
   '/:id',
   adapt(
     apiHandler(
-      { permission: ['parts', 'update'] },
+      {
+        permission: ['parts', 'update'],
+        openapi: {
+          summary: 'Update a part',
+          request: {
+            params: partIdParamSchema,
+            body: { schema: partUpdateSchema },
+          },
+          responses: {
+            200: { schema: z.object({ part: partResponseSchema }) },
+          },
+        },
+      },
       async ({ params, request, user }) => {
         const data = await request.json()
         const part = await ItemService.update<Part>(params.id, data, user.id)
@@ -52,10 +89,22 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({ permission: ['parts', 'delete'] }, async ({ params }) => {
-      await ItemService.delete(params.id)
-      return { success: true }
-    }),
+    apiHandler(
+      {
+        permission: ['parts', 'delete'],
+        openapi: {
+          summary: 'Delete a part',
+          request: { params: partIdParamSchema },
+          responses: {
+            200: { schema: z.object({ success: z.boolean() }) },
+          },
+        },
+      },
+      async ({ params }) => {
+        await ItemService.delete(params.id)
+        return { success: true }
+      },
+    ),
   ),
 )
 

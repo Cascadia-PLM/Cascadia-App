@@ -64,7 +64,7 @@ export function ECOsTab({
 
         const response = await apiFetch<{
           data: { ecos: Array<ECOSummary>; total: number }
-        }>(`/api/designs/${designId}/ecos?${params.toString()}`)
+        }>(`/api/v1/designs/${designId}/ecos?${params.toString()}`)
 
         setEcos(response.data.ecos)
       } catch {

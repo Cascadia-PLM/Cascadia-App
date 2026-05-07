@@ -28,6 +28,26 @@ jobs:
       - name: Run lint
         run: npm run lint
 
+  openapi:
+    name: OpenAPI Snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Regenerates the OpenAPI spec from route metadata and diffs it against
+      # the committed snapshot. Fails the build if a route signature changed
+      # without `npm run openapi:snapshot` being committed alongside.
+      - name: Verify OpenAPI snapshot is up to date
+        run: npm run openapi:check
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest

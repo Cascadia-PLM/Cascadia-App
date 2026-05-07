@@ -140,7 +140,7 @@ function ItemTypeConfigEditPage() {
 
   const fetchLifecycles = async () => {
     try {
-      const response = await fetch('/api/workflows')
+      const response = await fetch('/api/v1/workflows')
       if (!response.ok) return
 
       const data = await response.json()
@@ -163,7 +163,7 @@ function ItemTypeConfigEditPage() {
   const fetchConfig = async () => {
     try {
       setError(null)
-      const response = await fetch(`/api/admin/item-type-configs/${itemType}`)
+      const response = await fetch(`/api/v1/admin/item-type-configs/${itemType}`)
       if (!response.ok) {
         const data = await response.json()
         throw new Error(data.error?.message || 'Failed to fetch configuration')
@@ -227,7 +227,7 @@ function ItemTypeConfigEditPage() {
         config.workflowsByChangeType = workflowsByChangeType
       }
 
-      const response = await fetch('/api/admin/item-type-configs', {
+      const response = await fetch('/api/v1/admin/item-type-configs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemType, config }),
@@ -264,7 +264,7 @@ function ItemTypeConfigEditPage() {
     setSuccessMessage(null)
 
     try {
-      const response = await fetch(`/api/admin/item-type-configs/${itemType}`, {
+      const response = await fetch(`/api/v1/admin/item-type-configs/${itemType}`, {
         method: 'DELETE',
       })
 

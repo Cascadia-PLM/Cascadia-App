@@ -52,7 +52,7 @@ function AdminPage() {
   const loadVaultConfig = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/vault-config')
+      const response = await fetch('/api/v1/admin/vault-config')
 
       if (response.ok) {
         const data = await response.json()
@@ -80,7 +80,7 @@ function AdminPage() {
       setSaveStatus('idle')
       setErrorMessage('')
 
-      const response = await fetch('/api/admin/settings', {
+      const response = await fetch('/api/v1/admin/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

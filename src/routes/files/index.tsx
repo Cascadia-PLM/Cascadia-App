@@ -34,7 +34,7 @@ export const Route = createFileRoute('/files/')({
     try {
       const result = await apiFetch<{
         data: { files: Array<FileRecordWithItem>; count: number }
-      }>('/api/files?limit=200')
+      }>('/api/v1/files?limit=200')
       return {
         files: result.data.files,
       }
@@ -81,7 +81,7 @@ function FilesListPage() {
 
   const handleDownload = async (file: FileRecordWithItem) => {
     try {
-      const response = await fetch(`/api/files/${file.id}/download`)
+      const response = await fetch(`/api/v1/files/${file.id}/download`)
 
       if (!response.ok) {
         throw new Error('Download failed')
@@ -120,7 +120,7 @@ function FilesListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/files/${file.id}`, {
+          await apiFetch(`/api/v1/files/${file.id}`, {
             method: 'DELETE',
           })
 

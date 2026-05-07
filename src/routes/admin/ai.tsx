@@ -118,7 +118,7 @@ function AISettingsPage() {
   const loadSettings = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/ai-settings')
+      const response = await fetch('/api/v1/admin/ai-settings')
 
       if (response.ok) {
         const data = await response.json()
@@ -168,7 +168,7 @@ function AISettingsPage() {
       setSaveStatus('idle')
       setErrorMessage('')
 
-      const response = await fetch('/api/admin/ai-settings', {
+      const response = await fetch('/api/v1/admin/ai-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -210,7 +210,7 @@ function AISettingsPage() {
       setTestStatus('testing')
       setTestMessage('')
 
-      const response = await fetch('/api/admin/ai-settings/test', {
+      const response = await fetch('/api/v1/admin/ai-settings/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

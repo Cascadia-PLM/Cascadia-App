@@ -369,9 +369,9 @@ All endpoints require authentication. Permission requirements are noted per endp
 
 | Method | Path                         | Permission                 | Description                |
 | ------ | ---------------------------- | -------------------------- | -------------------------- |
-| GET    | `/api/work-instructions/:id` | `work_instructions:read`   | Get WI with steps          |
-| PUT    | `/api/work-instructions/:id` | `work_instructions:update` | Update WI metadata         |
-| DELETE | `/api/work-instructions/:id` | `work_instructions:delete` | Delete WI and all children |
+| GET    | `/api/v1/work-instructions/:id` | `work_instructions:read`   | Get WI with steps          |
+| PUT    | `/api/v1/work-instructions/:id` | `work_instructions:update` | Update WI metadata         |
+| DELETE | `/api/v1/work-instructions/:id` | `work_instructions:delete` | Delete WI and all children |
 
 Work instructions are created through the standard `ItemService.create()` flow, like any other item type.
 
@@ -379,22 +379,22 @@ Work instructions are created through the standard `ItemService.create()` flow, 
 
 | Method | Path                                                 | Permission                 | Description                             |
 | ------ | ---------------------------------------------------- | -------------------------- | --------------------------------------- |
-| GET    | `/api/work-instructions/:id/operations`              | `work_instructions:read`   | List operations ordered by index        |
-| POST   | `/api/work-instructions/:id/operations`              | `work_instructions:update` | Create operation (appended to end)      |
-| PUT    | `/api/work-instructions/:id/operations`              | `work_instructions:update` | Bulk reorder operations                 |
-| PUT    | `/api/work-instructions/:id/operations/:operationId` | `work_instructions:update` | Update operation title/description/time |
-| DELETE | `/api/work-instructions/:id/operations/:operationId` | `work_instructions:update` | Delete operation (reindexes remaining)  |
+| GET    | `/api/v1/work-instructions/:id/operations`              | `work_instructions:read`   | List operations ordered by index        |
+| POST   | `/api/v1/work-instructions/:id/operations`              | `work_instructions:update` | Create operation (appended to end)      |
+| PUT    | `/api/v1/work-instructions/:id/operations`              | `work_instructions:update` | Bulk reorder operations                 |
+| PUT    | `/api/v1/work-instructions/:id/operations/:operationId` | `work_instructions:update` | Update operation title/description/time |
+| DELETE | `/api/v1/work-instructions/:id/operations/:operationId` | `work_instructions:update` | Delete operation (reindexes remaining)  |
 
 ### Steps
 
 | Method | Path                                       | Permission                 | Description                                 |
 | ------ | ------------------------------------------ | -------------------------- | ------------------------------------------- |
-| GET    | `/api/work-instructions/:id/steps`         | `work_instructions:read`   | List steps ordered by index                 |
-| POST   | `/api/work-instructions/:id/steps`         | `work_instructions:update` | Create step (with optional position insert) |
-| PUT    | `/api/work-instructions/:id/steps`         | `work_instructions:update` | Bulk reorder steps                          |
-| GET    | `/api/work-instructions/:id/steps/:stepId` | `work_instructions:read`   | Get single step                             |
-| PUT    | `/api/work-instructions/:id/steps/:stepId` | `work_instructions:update` | Update step content/title/order/operation   |
-| DELETE | `/api/work-instructions/:id/steps/:stepId` | `work_instructions:update` | Delete step (reindexes remaining)           |
+| GET    | `/api/v1/work-instructions/:id/steps`         | `work_instructions:read`   | List steps ordered by index                 |
+| POST   | `/api/v1/work-instructions/:id/steps`         | `work_instructions:update` | Create step (with optional position insert) |
+| PUT    | `/api/v1/work-instructions/:id/steps`         | `work_instructions:update` | Bulk reorder steps                          |
+| GET    | `/api/v1/work-instructions/:id/steps/:stepId` | `work_instructions:read`   | Get single step                             |
+| PUT    | `/api/v1/work-instructions/:id/steps/:stepId` | `work_instructions:update` | Update step content/title/order/operation   |
+| DELETE | `/api/v1/work-instructions/:id/steps/:stepId` | `work_instructions:update` | Delete step (reindexes remaining)           |
 
 When creating a step with a specific `orderIndex`, existing steps at or after that position are shifted up automatically.
 
@@ -402,17 +402,17 @@ When creating a step with a specific `orderIndex`, existing steps at or after th
 
 | Method | Path                               | Permission                 | Description                                        |
 | ------ | ---------------------------------- | -------------------------- | -------------------------------------------------- |
-| GET    | `/api/work-instructions/:id/parts` | `work_instructions:read`   | List attached parts with details                   |
-| POST   | `/api/work-instructions/:id/parts` | `work_instructions:update` | Attach a part (body: `{ partId, inheritToMBOM? }`) |
-| PATCH  | `/api/work-instructions/:id/parts` | `work_instructions:update` | Update attachment flags (e.g., `inheritToMBOM`)    |
-| DELETE | `/api/work-instructions/:id/parts` | `work_instructions:update` | Detach a part (query or body: `partId`)            |
-| GET    | `/api/parts/:id/work-instructions` | `parts:read`               | List WIs attached to a specific part               |
+| GET    | `/api/v1/work-instructions/:id/parts` | `work_instructions:read`   | List attached parts with details                   |
+| POST   | `/api/v1/work-instructions/:id/parts` | `work_instructions:update` | Attach a part (body: `{ partId, inheritToMBOM? }`) |
+| PATCH  | `/api/v1/work-instructions/:id/parts` | `work_instructions:update` | Update attachment flags (e.g., `inheritToMBOM`)    |
+| DELETE | `/api/v1/work-instructions/:id/parts` | `work_instructions:update` | Detach a part (query or body: `partId`)            |
+| GET    | `/api/v1/parts/:id/work-instructions` | `parts:read`               | List WIs attached to a specific part               |
 
 ### Parametric Resolution
 
 | Method | Path                                            | Permission               | Description                                |
 | ------ | ----------------------------------------------- | ------------------------ | ------------------------------------------ |
-| GET    | `/api/work-instructions/:id/resolve-parametric` | `work_instructions:read` | Resolve all parametric blocks in all steps |
+| GET    | `/api/v1/work-instructions/:id/resolve-parametric` | `work_instructions:read` | Resolve all parametric blocks in all steps |
 
 Returns a map keyed by `{partId}.{attributePath}` with `{ value, available }` for each parametric reference.
 
@@ -420,19 +420,19 @@ Returns a map keyed by `{partId}.{attributePath}` with `{ value, available }` fo
 
 | Method | Path                                | Permission                 | Description                                                                 |
 | ------ | ----------------------------------- | -------------------------- | --------------------------------------------------------------------------- |
-| GET    | `/api/work-instructions/:id/alerts` | `work_instructions:read`   | List alerts with counts (filterable by `?status=pending`)                   |
-| PUT    | `/api/work-instructions/:id/alerts` | `work_instructions:update` | Acknowledge or dismiss a single alert (body: `{ alertId, action, notes? }`) |
-| POST   | `/api/work-instructions/:id/alerts` | `work_instructions:update` | Bulk acknowledge all pending alerts                                         |
+| GET    | `/api/v1/work-instructions/:id/alerts` | `work_instructions:read`   | List alerts with counts (filterable by `?status=pending`)                   |
+| PUT    | `/api/v1/work-instructions/:id/alerts` | `work_instructions:update` | Acknowledge or dismiss a single alert (body: `{ alertId, action, notes? }`) |
+| POST   | `/api/v1/work-instructions/:id/alerts` | `work_instructions:update` | Bulk acknowledge all pending alerts                                         |
 
 ### Executions
 
 | Method | Path                                                          | Permission               | Description                                          |
 | ------ | ------------------------------------------------------------- | ------------------------ | ---------------------------------------------------- |
-| GET    | `/api/work-instructions/:id/executions`                       | `work_instructions:read` | List executions (paginated: `?limit=&offset=`)       |
-| POST   | `/api/work-instructions/:id/executions`                       | `work_instructions:read` | Start or resume execution (body: `{ workOrderId? }`) |
-| GET    | `/api/work-instructions/:id/executions/:executionId`          | `work_instructions:read` | Get execution details                                |
-| PUT    | `/api/work-instructions/:id/executions/:executionId`          | `work_instructions:read` | Update step data or progress                         |
-| POST   | `/api/work-instructions/:id/executions/:executionId/complete` | `work_instructions:read` | Mark execution complete                              |
+| GET    | `/api/v1/work-instructions/:id/executions`                       | `work_instructions:read` | List executions (paginated: `?limit=&offset=`)       |
+| POST   | `/api/v1/work-instructions/:id/executions`                       | `work_instructions:read` | Start or resume execution (body: `{ workOrderId? }`) |
+| GET    | `/api/v1/work-instructions/:id/executions/:executionId`          | `work_instructions:read` | Get execution details                                |
+| PUT    | `/api/v1/work-instructions/:id/executions/:executionId`          | `work_instructions:read` | Update step data or progress                         |
+| POST   | `/api/v1/work-instructions/:id/executions/:executionId/complete` | `work_instructions:read` | Mark execution complete                              |
 
 Note: Starting and updating executions require only `read` permission, since manufacturing technicians on read-only seats need to execute and record data.
 
@@ -440,8 +440,8 @@ Note: Starting and updating executions require only `read` permission, since man
 
 | Method | Path                                                          | Permission           | Description                                                 |
 | ------ | ------------------------------------------------------------- | -------------------- | ----------------------------------------------------------- |
-| GET    | `/api/work-instructions/:id/executions/:executionId/sign-off` | `work_orders:read`   | Get sign-off records                                        |
-| POST   | `/api/work-instructions/:id/executions/:executionId/sign-off` | `work_orders:update` | Submit approval/rejection (body: `{ decision, comments? }`) |
+| GET    | `/api/v1/work-instructions/:id/executions/:executionId/sign-off` | `work_orders:read`   | Get sign-off records                                        |
+| POST   | `/api/v1/work-instructions/:id/executions/:executionId/sign-off` | `work_orders:update` | Submit approval/rejection (body: `{ decision, comments? }`) |
 
 Sign-off endpoints use `work_orders` permissions since they are a supervisory function tied to work order management.
 

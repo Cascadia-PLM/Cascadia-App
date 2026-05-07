@@ -21,10 +21,10 @@ export const Route = createFileRoute('/work-instructions/$id/execute')({
   loader: async ({ params }) => {
     const [wiResult, opsResult] = await Promise.all([
       apiFetch<{ data: { workInstruction: WorkInstructionWithSteps } }>(
-        `/api/work-instructions/${params.id}`,
+        `/api/v1/work-instructions/${params.id}`,
       ),
       apiFetch<{ data: { operations: Array<WorkInstructionOperation> } }>(
-        `/api/work-instructions/${params.id}/operations`,
+        `/api/v1/work-instructions/${params.id}/operations`,
       ),
     ])
     return {
@@ -207,7 +207,7 @@ function ExecutionStepBlockRenderer({
         {block.fileId ? (
           <>
             <img
-              src={`/api/files/${block.fileId}`}
+              src={`/api/v1/files/${block.fileId}`}
               alt={block.alt || 'Step image'}
               className="max-w-full max-h-[50vh] rounded-lg shadow-lg"
             />
@@ -326,7 +326,7 @@ function ExecutionModePage() {
 
   // Start or resume execution on mount
   useEffect(() => {
-    fetch(`/api/work-instructions/${workInstruction.id}/executions`, {
+    fetch(`/api/v1/work-instructions/${workInstruction.id}/executions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ workOrderId }),
@@ -359,7 +359,7 @@ function ExecutionModePage() {
     )
     if (!hasParametric) return
 
-    fetch(`/api/work-instructions/${workInstruction.id}/resolve-parametric`)
+    fetch(`/api/v1/work-instructions/${workInstruction.id}/resolve-parametric`)
       .then((r) => r.json())
       .then((data) => {
         if (data.data?.resolved) {
@@ -376,7 +376,7 @@ function ExecutionModePage() {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
       saveTimeoutRef.current = setTimeout(() => {
         fetch(
-          `/api/work-instructions/${workInstruction.id}/executions/${executionId}`,
+          `/api/v1/work-instructions/${workInstruction.id}/executions/${executionId}`,
           {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -399,7 +399,7 @@ function ExecutionModePage() {
   useEffect(() => {
     if (!executionId) return
     fetch(
-      `/api/work-instructions/${workInstruction.id}/executions/${executionId}`,
+      `/api/v1/work-instructions/${workInstruction.id}/executions/${executionId}`,
       {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -425,7 +425,7 @@ function ExecutionModePage() {
     setCompleting(true)
     try {
       await fetch(
-        `/api/work-instructions/${workInstruction.id}/executions/${executionId}/complete`,
+        `/api/v1/work-instructions/${workInstruction.id}/executions/${executionId}/complete`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -448,7 +448,7 @@ function ExecutionModePage() {
   const confirmExit = async () => {
     if (executionId) {
       await fetch(
-        `/api/work-instructions/${workInstruction.id}/executions/${executionId}`,
+        `/api/v1/work-instructions/${workInstruction.id}/executions/${executionId}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -459,7 +459,7 @@ function ExecutionModePage() {
       // Mark as incomplete
       try {
         const response = await fetch(
-          `/api/work-instructions/${workInstruction.id}/executions/${executionId}/complete`,
+          `/api/v1/work-instructions/${workInstruction.id}/executions/${executionId}/complete`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

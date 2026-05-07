@@ -272,7 +272,7 @@ export function PartDetail({
         return
       }
       try {
-        const response = await fetch(`/api/designs/${part.designId}`)
+        const response = await fetch(`/api/v1/designs/${part.designId}`)
         if (response.ok) {
           const design = await response.json()
           setMainBranchId(design.defaultBranchId)
@@ -298,7 +298,7 @@ export function PartDetail({
       setLoadingStatus(true)
       try {
         const result = await apiFetch<{ data: DesignStatus }>(
-          `/api/designs/${part.designId}/status`,
+          `/api/v1/designs/${part.designId}/status`,
         )
         setDesignStatus(result.data)
         // Clear branch selection when design changes
@@ -349,7 +349,7 @@ export function PartDetail({
             existsAtContext: boolean
             resolvedItemId?: string
           }
-        }>(`/api/items/${part.id}/at-context?${queryString}`)
+        }>(`/api/v1/items/${part.id}/at-context?${queryString}`)
 
         // For branch/main contexts: if the resolved item has a different ID,
         // navigate to it so the route loader fetches the correct version.
@@ -401,7 +401,7 @@ export function PartDetail({
       try {
         const response = await apiFetch<{
           data: { branch: { branchType: string } }
-        }>(`/api/branches/${context.branchId}`)
+        }>(`/api/v1/branches/${context.branchId}`)
         setIsWorkspaceContext(response.data.branch.branchType === 'workspace')
       } catch (error) {
         console.error('Failed to check branch type:', error)
@@ -425,7 +425,7 @@ export function PartDetail({
     if (!displayedPart.id) return
     try {
       const url = new URL(
-        `/api/items/${displayedPart.id}/cad-files`,
+        `/api/v1/items/${displayedPart.id}/cad-files`,
         window.location.origin,
       )
       const effectBranchId =
@@ -580,7 +580,7 @@ export function PartDetail({
 
   const handleDownloadCAD = () => {
     if (selectedCADFile) {
-      window.open(`/api/files/${selectedCADFile.id}/download`, '_blank')
+      window.open(`/api/v1/files/${selectedCADFile.id}/download`, '_blank')
     }
   }
 
@@ -1167,7 +1167,7 @@ export function PartDetail({
                       />
                       <CADViewer
                         ref={cadViewerRef}
-                        fileUrl={`/api/files/${selectedCADFile.id}/download`}
+                        fileUrl={`/api/v1/files/${selectedCADFile.id}/download`}
                         fileType={selectedCADFile.fileType}
                         fileName={selectedCADFile.fileName}
                         wireframe={cadWireframe}

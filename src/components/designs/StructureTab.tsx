@@ -213,7 +213,7 @@ export function StructureTab({
 
       const response = await apiFetch<{
         data: { roots: Array<BOMTreeNode>; orphans: Array<OrphanItem> }
-      }>(`/api/designs/${designId}/structure?${params.toString()}`)
+      }>(`/api/v1/designs/${designId}/structure?${params.toString()}`)
 
       setRoots(response.data.roots)
       setOrphans(response.data.orphans)
@@ -252,7 +252,7 @@ export function StructureTab({
         setRemovingItemId(itemId)
         try {
           // Set inDesignStructure=false, keeping the designId association
-          await apiFetch(`/api/designs/${designId}/items?itemId=${itemId}`, {
+          await apiFetch(`/api/v1/designs/${designId}/items?itemId=${itemId}`, {
             method: 'DELETE',
           })
           fetchStructure()
@@ -276,7 +276,7 @@ export function StructureTab({
         setRemovingItemId(itemId) // Reuse loading state
         try {
           // Set inDesignStructure=true
-          await apiFetch(`/api/designs/${designId}/items`, {
+          await apiFetch(`/api/v1/designs/${designId}/items`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ itemId }),
@@ -501,7 +501,7 @@ export function StructureTab({
     if (!pullInChainInfo) return
     setPullInLoading(true)
     try {
-      await apiFetch(`/api/designs/${designId}/cross-references`, {
+      await apiFetch(`/api/v1/designs/${designId}/cross-references`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -662,7 +662,7 @@ export function StructureTab({
       }
 
       try {
-        await apiFetch(`/api/designs/${designId}/cross-references`, {
+        await apiFetch(`/api/v1/designs/${designId}/cross-references`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -687,7 +687,7 @@ export function StructureTab({
     // Process standalone chains individually (no refId, use parentBomRelationshipId)
     for (const chain of standaloneChains) {
       try {
-        await apiFetch(`/api/designs/${designId}/cross-references`, {
+        await apiFetch(`/api/v1/designs/${designId}/cross-references`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

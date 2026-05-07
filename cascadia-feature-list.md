@@ -371,11 +371,11 @@ Standards-based interoperability layer.
 
 | Feature                                          | Status | Notes                          |
 | ------------------------------------------------ | ------ | ------------------------------ |
-| `/api/sysml/projects`                            | ✅     | List designs as SysML projects |
-| `/api/sysml/projects/:id`                        | ✅     | Get single project             |
-| `/api/sysml/projects/:id/commits`                | ✅     | Commit history                 |
-| `/api/sysml/projects/:id/branches/:bid/elements` | ✅     | Elements on branch             |
-| `/api/sysml/projects/:id/commits/:cid/elements`  | ✅     | Elements at commit             |
+| `/api/v1/sysml/projects`                            | ✅     | List designs as SysML projects |
+| `/api/v1/sysml/projects/:id`                        | ✅     | Get single project             |
+| `/api/v1/sysml/projects/:id/commits`                | ✅     | Commit history                 |
+| `/api/v1/sysml/projects/:id/branches/:bid/elements` | ✅     | Elements on branch             |
+| `/api/v1/sysml/projects/:id/commits/:cid/elements`  | ✅     | Elements at commit             |
 | SysML element serialization                      | ✅     | Convert items to SysML format  |
 | SysML relationship mapping                       | ✅     | BOM, Satisfy, Verify, etc.     |
 
@@ -514,7 +514,7 @@ Production-ready infrastructure.
 | ----------------------- | ------ | ------------------------ |
 | Environment variables   | ✅     | All config via env       |
 | .env file support       | ✅     | Local development        |
-| Health check endpoint   | ✅     | `/api/health`            |
+| Health check endpoint   | ✅     | `/api/v1/health`            |
 | Secrets management docs | ✅     | Kubernetes secrets, etc. |
 
 ---

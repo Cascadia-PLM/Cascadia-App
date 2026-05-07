@@ -24,7 +24,7 @@ import {
 export const Route = createFileRoute('/work-orders/$id')({
   component: WorkOrderDetailPage,
   loader: async ({ params }) => {
-    const response = await fetch(`/api/work-orders/${params.id}`)
+    const response = await fetch(`/api/v1/work-orders/${params.id}`)
     if (!response.ok) throw new Error('Work Order not found')
     const data = await response.json()
     return { workOrder: data.data.workOrder as WorkOrder }
@@ -189,7 +189,7 @@ function WOExecutionsTab({ workOrderId }: { workOrderId: string }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`/api/work-orders/${workOrderId}/executions`)
+    fetch(`/api/v1/work-orders/${workOrderId}/executions`)
       .then((r) => r.json())
       .then((data) => {
         setExecutions(data.data?.executions || [])

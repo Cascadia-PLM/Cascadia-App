@@ -51,7 +51,7 @@ export const Route = createFileRoute('/programs/')({
           total: number
           counts?: { active: number; onHold: number; completed: number }
         }
-      }>('/api/programs?includeCounts=true')
+      }>('/api/v1/programs?includeCounts=true')
       return {
         programs: result.data.programs,
         total: result.data.total,
@@ -100,7 +100,7 @@ function ProgramsListPage() {
       }
       const result = await apiFetch<{
         data: { programs: Array<Program>; total: number }
-      }>(`/api/programs?${qs}`)
+      }>(`/api/v1/programs?${qs}`)
       return {
         items: result.data.programs,
         total: result.data.total,
@@ -129,7 +129,7 @@ function ProgramsListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/programs/${program.id}`, {
+          await apiFetch(`/api/v1/programs/${program.id}`, {
             method: 'DELETE',
           })
 

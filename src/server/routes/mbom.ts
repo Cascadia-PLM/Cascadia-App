@@ -1,10 +1,12 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { MbomService } from '@/lib/services/MbomService'
 import { DesignService } from '@/lib/services/DesignService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { requireDesignAccess } from '@/lib/auth/access'
 import { apiHandler, created } from '@/lib/api/handler'
+
+const adapt = tagged('MBOM')
 
 const app = new Hono()
 

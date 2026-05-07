@@ -109,7 +109,7 @@ function EcoHistoryGraphViewInner({ changeOrderId }: EcoHistoryGraphViewProps) {
         params.set('limit', '50')
 
         const response = await apiFetch<{ data: EcoGraphData }>(
-          `/api/change-orders/${changeOrderId}/branch-history/graph?${params.toString()}`,
+          `/api/v1/change-orders/${changeOrderId}/branch-history/graph?${params.toString()}`,
         )
 
         setGraphData(response.data)

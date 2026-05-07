@@ -33,16 +33,16 @@ export const Route = createFileRoute('/work-instructions/')({
       const [result, draftCount, inReviewCount, releasedCount] =
         await Promise.all([
           apiFetch<{ data: { items: Array<WorkInstruction>; total: number } }>(
-            '/api/items?itemType=WorkInstruction&limit=50',
+            '/api/v1/items?itemType=WorkInstruction&limit=50',
           ),
           apiFetch<{ data: { total: number } }>(
-            `/api/items?${countParams}&state=Draft`,
+            `/api/v1/items?${countParams}&state=Draft`,
           ).catch(() => ({ data: { total: 0 } })),
           apiFetch<{ data: { total: number } }>(
-            `/api/items?${countParams}&state=InReview`,
+            `/api/v1/items?${countParams}&state=InReview`,
           ).catch(() => ({ data: { total: 0 } })),
           apiFetch<{ data: { total: number } }>(
-            `/api/items?${countParams}&state=Released`,
+            `/api/v1/items?${countParams}&state=Released`,
           ).catch(() => ({ data: { total: 0 } })),
         ])
 
@@ -114,7 +114,7 @@ function WorkInstructionsListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/work-instructions/${workInstruction.id}`, {
+          await apiFetch(`/api/v1/work-instructions/${workInstruction.id}`, {
             method: 'DELETE',
           })
 

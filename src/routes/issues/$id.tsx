@@ -16,8 +16,8 @@ export const Route = createFileRoute('/issues/$id')({
   loader: async ({ params }) => {
     try {
       const [issueResult, designsResult] = await Promise.all([
-        apiFetch<{ data: { issue: Issue } }>(`/api/issues/${params.id}`),
-        apiFetch<{ data: { designs: Array<Design> } }>('/api/designs'),
+        apiFetch<{ data: { issue: Issue } }>(`/api/v1/issues/${params.id}`),
+        apiFetch<{ data: { designs: Array<Design> } }>('/api/v1/designs'),
       ])
       return {
         issue: issueResult.data.issue,
@@ -40,7 +40,7 @@ function IssueDetailPage() {
   const handleSave = async (updatedIssue: Issue) => {
     if (!issue.id) return
 
-    await apiFetch(`/api/issues/${issue.id}`, {
+    await apiFetch(`/api/v1/issues/${issue.id}`, {
       method: 'PUT',
       body: JSON.stringify(updatedIssue),
     })
@@ -55,7 +55,7 @@ function IssueDetailPage() {
   const handleDelete = async () => {
     if (!issue.id) return
 
-    await apiFetch(`/api/issues/${issue.id}`, {
+    await apiFetch(`/api/v1/issues/${issue.id}`, {
       method: 'DELETE',
     })
 

@@ -92,7 +92,7 @@ function NewLifecyclePage() {
         lifecycleType === 'Driving' ? 'workflow' : 'lifecycle'
 
       const result = await apiFetch<{ data: { workflow: WorkflowDefinition } }>(
-        '/api/workflows',
+        '/api/v1/workflows',
         {
           method: 'POST',
           body: JSON.stringify({

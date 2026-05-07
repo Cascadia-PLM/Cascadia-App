@@ -15,7 +15,7 @@ export const Route = createFileRoute('/tasks/$id')({
   loader: async ({ params }) => {
     try {
       const result = await apiFetch<{ data: { task: Task } }>(
-        `/api/tasks/${params.id}`,
+        `/api/v1/tasks/${params.id}`,
       )
       return { task: result.data.task }
     } catch (error) {
@@ -35,7 +35,7 @@ function TaskDetailPage() {
   const handleSave = async (updatedTask: Task) => {
     if (!task.id) return
 
-    await apiFetch(`/api/tasks/${task.id}`, {
+    await apiFetch(`/api/v1/tasks/${task.id}`, {
       method: 'PUT',
       body: JSON.stringify(updatedTask),
     })
@@ -50,7 +50,7 @@ function TaskDetailPage() {
   const handleDelete = async () => {
     if (!task.id) return
 
-    await apiFetch(`/api/tasks/${task.id}`, {
+    await apiFetch(`/api/v1/tasks/${task.id}`, {
       method: 'DELETE',
     })
 

@@ -464,7 +464,7 @@ export function ImpactAssessmentPanel({
     try {
       const response = await apiFetch<{
         data: { impactReport: { reportData: ImpactData } }
-      }>(`/api/change-orders/${changeOrderId}/impact-assessment`)
+      }>(`/api/v1/change-orders/${changeOrderId}/impact-assessment`)
       setInternalImpactData(response.data.impactReport.reportData)
     } catch {
       // No existing report — that's fine, user can run one
@@ -480,7 +480,7 @@ export function ImpactAssessmentPanel({
     try {
       const response = await apiFetch<{
         data: { impactAnalysis: ImpactData }
-      }>(`/api/change-orders/${changeOrderId}/impact-assessment`, {
+      }>(`/api/v1/change-orders/${changeOrderId}/impact-assessment`, {
         method: 'POST',
       })
       setInternalImpactData(response.data.impactAnalysis)
@@ -511,7 +511,7 @@ export function ImpactAssessmentPanel({
     async (node: WhereUsedNode) => {
       const nodeKey = node.masterId ?? node.itemId
       try {
-        await apiFetch(`/api/change-orders/${changeOrderId}/affected-items`, {
+        await apiFetch(`/api/v1/change-orders/${changeOrderId}/affected-items`, {
           method: 'POST',
           body: JSON.stringify({
             affectedItemId: node.itemId,

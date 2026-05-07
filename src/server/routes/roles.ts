@@ -1,8 +1,10 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { db } from '@/lib/db'
 import { roles } from '@/lib/db/schema/users'
 import { apiHandler } from '@/lib/api/handler'
+
+const adapt = tagged('Roles')
 
 const app = new Hono()
 

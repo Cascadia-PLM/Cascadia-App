@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { chat, toServerSentEventsResponse } from '@tanstack/ai'
 import { eq, isNull } from 'drizzle-orm'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { AIProviderConfig } from '@/lib/db/schema/ai'
 import { apiHandler, created } from '@/lib/api/handler'
 import { getAdapter, getAvailableProviders, isAIEnabled, loadProviderConfig  } from '@/lib/ai/adapters'
@@ -19,6 +19,8 @@ import { userRoles } from '@/lib/db/schema/users'
 import { db } from '@/lib/db'
 // Register item types for KnowledgeService
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('AI')
 
 // TanStack AI request body format (from @tanstack/ai-client)
 interface ChatRequestBody {

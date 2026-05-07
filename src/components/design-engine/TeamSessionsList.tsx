@@ -56,7 +56,7 @@ export function TeamSessionsList({
     setLoading(true)
     try {
       const response = await fetch(
-        `/api/design-engine/sessions?programId=${programId}`,
+        `/api/v1/design-engine/sessions?programId=${programId}`,
       )
       if (response.ok) {
         const data = await response.json()

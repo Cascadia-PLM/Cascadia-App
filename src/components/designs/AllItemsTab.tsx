@@ -67,7 +67,7 @@ export function AllItemsTab({
 
         const response = await apiFetch<{
           data: { items: Array<Item>; total: number }
-        }>(`/api/designs/${designId}/items?${params.toString()}`)
+        }>(`/api/v1/designs/${designId}/items?${params.toString()}`)
 
         setItems(response.data.items)
       } catch {

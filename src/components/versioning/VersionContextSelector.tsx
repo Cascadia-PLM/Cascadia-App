@@ -89,7 +89,7 @@ export function VersionContextSelector({
               branches: Array<Branch>
               tags: Array<Tag>
             }
-          }>(`/api/items/${itemId}/available-contexts`)
+          }>(`/api/v1/items/${itemId}/available-contexts`)
           // Only include contexts where item exists
           fetchedBranches = res.data.branches.filter((b) => b.exists !== false)
           fetchedTags = res.data.tags.filter((t) => t.exists !== false)
@@ -97,10 +97,10 @@ export function VersionContextSelector({
           // Fetch all branches and tags (original behavior)
           const [branchesRes, tagsRes] = await Promise.all([
             apiFetch<{ data: { branches: Array<Branch> } }>(
-              `/api/designs/${designId}/branches`,
+              `/api/v1/designs/${designId}/branches`,
             ),
             apiFetch<{ data: { tags: Array<Tag> } }>(
-              `/api/designs/${designId}/tags`,
+              `/api/v1/designs/${designId}/tags`,
             ).catch(() => ({ data: { tags: [] } })),
           ])
           fetchedBranches = branchesRes.data.branches

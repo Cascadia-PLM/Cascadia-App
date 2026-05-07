@@ -1,8 +1,10 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { ConflictDetectionService } from '@/lib/services/ConflictDetectionService'
 import { apiHandler } from '@/lib/api/handler'
+
+const adapt = tagged('Branch Items')
 
 const pullFromMainSchema = z.object({
   mainItemId: z.string().uuid(),

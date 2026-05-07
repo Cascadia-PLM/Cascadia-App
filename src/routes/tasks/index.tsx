@@ -28,7 +28,7 @@ export const Route = createFileRoute('/tasks/')({
     try {
       const result = await apiFetch<{
         data: { items: Array<Task>; total: number }
-      }>('/api/items?itemType=Task&limit=1000')
+      }>('/api/v1/items?itemType=Task&limit=1000')
       return { tasks: result.data.items }
     } catch (error) {
       console.error('Error loading tasks:', error)
@@ -65,7 +65,7 @@ function TasksListPage() {
 
     try {
       const result = await apiFetch<{ data: { task: Task } }>(
-        `/api/tasks/${updatedTask.id}`,
+        `/api/v1/tasks/${updatedTask.id}`,
         {
           method: 'PUT',
           body: JSON.stringify(updatedTask),
@@ -94,7 +94,7 @@ function TasksListPage() {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/tasks/${task.id}`, {
+          await apiFetch(`/api/v1/tasks/${task.id}`, {
             method: 'DELETE',
           })
 

@@ -22,7 +22,7 @@ export const Route = createFileRoute('/parts/$id')({
   loader: async ({ params }) => {
     try {
       const result = await apiFetch<{ data: { part: Part } }>(
-        `/api/parts/${params.id}`,
+        `/api/v1/parts/${params.id}`,
       )
       return { part: result.data.part }
     } catch (error) {
@@ -42,7 +42,7 @@ function PartDetailPage() {
   const handleSave = async (updatedPart: Part) => {
     if (!part.id) return
 
-    await apiFetch(`/api/parts/${part.id}`, {
+    await apiFetch(`/api/v1/parts/${part.id}`, {
       method: 'PUT',
       body: JSON.stringify(updatedPart),
     })
@@ -57,7 +57,7 @@ function PartDetailPage() {
   const handleDelete = async () => {
     if (!part.id) return
 
-    await apiFetch(`/api/parts/${part.id}`, {
+    await apiFetch(`/api/v1/parts/${part.id}`, {
       method: 'DELETE',
     })
 

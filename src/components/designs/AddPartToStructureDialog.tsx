@@ -77,7 +77,7 @@ export function AddPartToStructureDialog({
         contextDesignId: currentDesignId,
       })
 
-      const response = await fetch(`/api/items/search?${params}`)
+      const response = await fetch(`/api/v1/items/search?${params}`)
       if (response.ok) {
         const data = await response.json()
         // Filter out the parent item itself
@@ -123,7 +123,7 @@ export function AddPartToStructureDialog({
 
     setLoading(true)
     try {
-      await apiFetch(`/api/items/${parentItemId}/relationships`, {
+      await apiFetch(`/api/v1/items/${parentItemId}/relationships`, {
         method: 'POST',
         body: JSON.stringify({
           targetId: selectedItem.id,

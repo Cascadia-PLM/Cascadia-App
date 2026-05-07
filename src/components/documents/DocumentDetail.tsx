@@ -165,7 +165,7 @@ export function DocumentDetail({
         return
       }
       try {
-        const response = await fetch(`/api/designs/${document.designId}`)
+        const response = await fetch(`/api/v1/designs/${document.designId}`)
         if (response.ok) {
           const design = await response.json()
           setMainBranchId(design.defaultBranchId)
@@ -205,7 +205,7 @@ export function DocumentDetail({
 
         const response = await apiFetch<{
           data: { item: Document | null; existsAtContext: boolean }
-        }>(`/api/items/${document.id}/at-context?${queryString}`)
+        }>(`/api/v1/items/${document.id}/at-context?${queryString}`)
 
         if (response.data.item) {
           setDisplayedDocument(response.data.item)
@@ -233,7 +233,7 @@ export function DocumentDetail({
       try {
         const response = await apiFetch<{
           data: { branch: { branchType: string } }
-        }>(`/api/branches/${context.branchId}`)
+        }>(`/api/v1/branches/${context.branchId}`)
         setIsWorkspaceContext(response.data.branch.branchType === 'workspace')
       } catch (error) {
         console.error('Failed to check branch type:', error)

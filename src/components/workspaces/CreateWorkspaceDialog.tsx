@@ -45,7 +45,7 @@ export function CreateWorkspaceDialog({
     try {
       const response = await apiFetch<{
         data: { workspaceId: string; branchName: string }
-      }>('/api/workspaces', {
+      }>('/api/v1/workspaces', {
         method: 'POST',
         body: JSON.stringify({
           designId,

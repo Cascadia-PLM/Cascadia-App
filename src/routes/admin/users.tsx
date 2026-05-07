@@ -58,7 +58,7 @@ function UsersPage() {
       const params = new URLSearchParams()
       if (searchQuery) params.set('search', searchQuery)
 
-      const response = await fetch(`/api/users?${params}`)
+      const response = await fetch(`/api/v1/users?${params}`)
       if (!response.ok) {
         const data = await response.json()
         throw new Error(data.error?.message || 'Failed to fetch users')
@@ -113,7 +113,7 @@ function UsersPage() {
 
     try {
       const response = await fetch(
-        `/api/users/${resetUser.id}/reset-password`,
+        `/api/v1/users/${resetUser.id}/reset-password`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

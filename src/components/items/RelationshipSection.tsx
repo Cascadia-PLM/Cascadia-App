@@ -47,7 +47,7 @@ export function RelationshipSection({ itemId }: RelationshipSectionProps) {
   // Load relationships
   const loadRelationships = async () => {
     try {
-      const response = await fetch(`/api/items/${itemId}/relationships`)
+      const response = await fetch(`/api/v1/items/${itemId}/relationships`)
       if (response.ok) {
         const json = await response.json()
         const fetchedRelationships = json.data?.relationships ?? []
@@ -110,7 +110,7 @@ export function RelationshipSection({ itemId }: RelationshipSectionProps) {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/relationships/${relationshipId}`, {
+          const response = await fetch(`/api/v1/relationships/${relationshipId}`, {
             method: 'DELETE',
           })
 

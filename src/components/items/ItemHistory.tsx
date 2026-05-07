@@ -54,7 +54,7 @@ export function ItemHistory({
         const params = new URLSearchParams({ masterId })
         if (designId) params.append('designId', designId)
 
-        const response = await fetch(`/api/items/history?${params}`)
+        const response = await fetch(`/api/v1/items/history?${params}`)
         if (!response.ok) {
           throw new Error('Failed to load history')
         }

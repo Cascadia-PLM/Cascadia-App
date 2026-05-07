@@ -1,11 +1,13 @@
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { CommitService } from '@/lib/services/CommitService'
 import { VersionResolver } from '@/lib/services/VersionResolver'
 import { NotFoundError } from '@/lib/errors'
 import { requireDesignAccess } from '@/lib/auth/access'
 import { apiHandler, parseQuery } from '@/lib/api/handler'
 import { itemListSchema } from '@/lib/api/schemas'
+
+const adapt = tagged('Commits')
 
 const app = new Hono()
 

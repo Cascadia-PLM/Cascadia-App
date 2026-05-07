@@ -82,7 +82,7 @@ function StepBlockEditor({
       formData.append('file_0', file)
 
       const response = await fetch(
-        `/api/items/${workInstructionId}/files/upload`,
+        `/api/v1/items/${workInstructionId}/files/upload`,
         {
           method: 'POST',
           body: formData,
@@ -199,7 +199,7 @@ function StepBlockEditor({
           ) : block.fileId ? (
             <div className="text-center w-full">
               <img
-                src={`/api/files/${block.fileId}`}
+                src={`/api/v1/files/${block.fileId}`}
                 alt={block.alt || 'Step image'}
                 className="max-w-full max-h-64 rounded mx-auto"
               />

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { and, eq, inArray } from 'drizzle-orm'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { db } from '@/lib/db'
 import { itemRelationships, items } from '@/lib/db/schema'
 import { ValidationError } from '@/lib/errors'
@@ -9,6 +9,8 @@ import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipSe
 import { apiHandler, jsonResponse } from '@/lib/api/handler'
 // Register item types (server-side version)
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Relationships')
 
 interface RelationshipData {
   sourceId: string

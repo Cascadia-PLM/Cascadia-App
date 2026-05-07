@@ -26,7 +26,7 @@ function RolesPage() {
 
   const fetchRoles = async () => {
     try {
-      const response = await fetch('/api/roles')
+      const response = await fetch('/api/v1/roles')
 
       if (!response.ok) {
         const data = await response.json()

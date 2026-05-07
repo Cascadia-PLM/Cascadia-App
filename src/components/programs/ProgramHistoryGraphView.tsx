@@ -215,7 +215,7 @@ function ProgramHistoryGraphViewInner({
         params.set('limit', '50')
 
         const response = await apiFetch<ProgramGraphResponse>(
-          `/api/programs/${programId}/history/graph?${params.toString()}`,
+          `/api/v1/programs/${programId}/history/graph?${params.toString()}`,
         )
 
         setGraphData(response.data)

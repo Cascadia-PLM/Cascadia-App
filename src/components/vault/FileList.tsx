@@ -74,7 +74,7 @@ export function FileList({
       setLoading(true)
 
       // Build URL with version context query params
-      const url = new URL(`/api/items/${itemId}/files`, window.location.origin)
+      const url = new URL(`/api/v1/items/${itemId}/files`, window.location.origin)
       if (branchId) {
         url.searchParams.set('branchId', branchId)
       }
@@ -100,7 +100,7 @@ export function FileList({
 
   const handleDownload = async (file: FileRecord) => {
     try {
-      const response = await fetch(`/api/files/${file.id}/download`)
+      const response = await fetch(`/api/v1/files/${file.id}/download`)
 
       if (!response.ok) {
         throw new Error('Download failed')
@@ -136,7 +136,7 @@ export function FileList({
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/files/${fileId}`, {
+          const response = await fetch(`/api/v1/files/${fileId}`, {
             method: 'DELETE',
           })
 
@@ -161,7 +161,7 @@ export function FileList({
 
   const handleCheckOut = async (fileId: string) => {
     try {
-      const response = await fetch(`/api/files/${fileId}/checkout`, {
+      const response = await fetch(`/api/v1/files/${fileId}/checkout`, {
         method: 'POST',
       })
 
@@ -184,7 +184,7 @@ export function FileList({
 
   const handleCheckIn = async (fileId: string) => {
     try {
-      const response = await fetch(`/api/files/${fileId}/checkin`, {
+      const response = await fetch(`/api/v1/files/${fileId}/checkin`, {
         method: 'POST',
       })
 
@@ -214,7 +214,7 @@ export function FileList({
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/files/${fileId}/force-unlock`, {
+          const response = await fetch(`/api/v1/files/${fileId}/force-unlock`, {
             method: 'POST',
           })
 

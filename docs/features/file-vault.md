@@ -614,33 +614,33 @@ The factory caches the storage instance and reuses it across requests. Call `Sto
 
 | Method | Endpoint                                          | Permission         | Description                                      |
 | ------ | ------------------------------------------------- | ------------------ | ------------------------------------------------ |
-| POST   | `/api/items/{itemId}/files/upload`                | Authenticated      | Upload files to an item                          |
-| GET    | `/api/items/{itemId}/files`                       | Authenticated      | List files for an item (branch-aware)            |
-| GET    | `/api/items/{itemId}/files/primary`               | `documents:read`   | Get primary CAD model                            |
-| PUT    | `/api/items/{itemId}/files/primary`               | Authenticated      | Set primary CAD model                            |
-| GET    | `/api/items/{itemId}/cad-files`                   | Authenticated      | List viewable CAD files (including related docs) |
-| GET    | `/api/files/{fileId}/download`                    | `documents:read`   | Download a file                                  |
-| GET    | `/api/files/{fileId}/metadata`                    | `documents:read`   | Get file metadata                                |
-| GET    | `/api/files/{fileId}/versions`                    | `documents:read`   | List all versions                                |
-| GET    | `/api/files/{fileId}/versions/{version}/download` | `documents:read`   | Download specific version                        |
-| GET    | `/api/files/{fileId}/thumbnail`                   | `documents:read`   | Get file thumbnail                               |
-| DELETE | `/api/files/{fileId}`                             | `documents:delete` | Soft-delete a file                               |
+| POST   | `/api/v1/items/{itemId}/files/upload`                | Authenticated      | Upload files to an item                          |
+| GET    | `/api/v1/items/{itemId}/files`                       | Authenticated      | List files for an item (branch-aware)            |
+| GET    | `/api/v1/items/{itemId}/files/primary`               | `documents:read`   | Get primary CAD model                            |
+| PUT    | `/api/v1/items/{itemId}/files/primary`               | Authenticated      | Set primary CAD model                            |
+| GET    | `/api/v1/items/{itemId}/cad-files`                   | Authenticated      | List viewable CAD files (including related docs) |
+| GET    | `/api/v1/files/{fileId}/download`                    | `documents:read`   | Download a file                                  |
+| GET    | `/api/v1/files/{fileId}/metadata`                    | `documents:read`   | Get file metadata                                |
+| GET    | `/api/v1/files/{fileId}/versions`                    | `documents:read`   | List all versions                                |
+| GET    | `/api/v1/files/{fileId}/versions/{version}/download` | `documents:read`   | Download specific version                        |
+| GET    | `/api/v1/files/{fileId}/thumbnail`                   | `documents:read`   | Get file thumbnail                               |
+| DELETE | `/api/v1/files/{fileId}`                             | `documents:delete` | Soft-delete a file                               |
 
 ### Lock Operations
 
 | Method | Endpoint                          | Permission         | Description                                      |
 | ------ | --------------------------------- | ------------------ | ------------------------------------------------ |
-| POST   | `/api/files/{fileId}/checkout`    | `documents:update` | Check out (lock) a file                          |
-| POST   | `/api/files/{fileId}/checkin`     | `documents:update` | Check in (unlock, optionally upload new version) |
-| GET    | `/api/files/{fileId}/lock-status` | `documents:read`   | Get lock status                                  |
-| POST   | `/api/files/batch-checkout`       | `documents:update` | Batch check out (max 100)                        |
-| POST   | `/api/files/batch-checkin`        | `documents:update` | Batch check in (max 100)                         |
+| POST   | `/api/v1/files/{fileId}/checkout`    | `documents:update` | Check out (lock) a file                          |
+| POST   | `/api/v1/files/{fileId}/checkin`     | `documents:update` | Check in (unlock, optionally upload new version) |
+| GET    | `/api/v1/files/{fileId}/lock-status` | `documents:read`   | Get lock status                                  |
+| POST   | `/api/v1/files/batch-checkout`       | `documents:update` | Batch check out (max 100)                        |
+| POST   | `/api/v1/files/batch-checkin`        | `documents:update` | Batch check in (max 100)                         |
 
 ### CAD Operations
 
 | Method | Endpoint                      | Permission       | Description                                    |
 | ------ | ----------------------------- | ---------------- | ---------------------------------------------- |
-| POST   | `/api/files/{fileId}/convert` | `documents:read` | Submit a CAD conversion job (STEP/IGES to STL) |
+| POST   | `/api/v1/files/{fileId}/convert` | `documents:read` | Submit a CAD conversion job (STEP/IGES to STL) |
 
 ---
 

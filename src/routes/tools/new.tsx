@@ -18,7 +18,7 @@ function NewToolPage() {
     setIsSubmitting(true)
     try {
       const payload = { ...tool, itemType: 'Tool' }
-      const result = await apiFetch<{ data: { item: Tool } }>('/api/items', {
+      const result = await apiFetch<{ data: { item: Tool } }>('/api/v1/items', {
         method: 'POST',
         body: JSON.stringify(payload),
       })

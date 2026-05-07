@@ -60,7 +60,7 @@ export function AddMemberDialog({
       setSearching(true)
       try {
         const params = programId ? `?programId=${programId}` : ''
-        const response = await fetch(`/api/designs${params}`)
+        const response = await fetch(`/api/v1/designs${params}`)
         if (response.ok) {
           const { data } = await response.json()
           // Filter to designs that can be added:
@@ -108,7 +108,7 @@ export function AddMemberDialog({
 
     setLoading(true)
     try {
-      await apiFetch(`/api/designs/${familyDesignId}/members`, {
+      await apiFetch(`/api/v1/designs/${familyDesignId}/members`, {
         method: 'POST',
         body: JSON.stringify({ designId: selectedDesignId }),
       })

@@ -106,7 +106,7 @@ export const DesignDetailsSection = forwardRef<
         const params = editValues.programId
           ? `?programId=${editValues.programId}`
           : ''
-        const response = await fetch(`/api/designs/families${params}`)
+        const response = await fetch(`/api/v1/designs/families${params}`)
         if (response.ok) {
           const { data } = await response.json()
           const filteredFamilies = (data?.families || []).filter(
@@ -130,7 +130,7 @@ export const DesignDetailsSection = forwardRef<
     () => ({
       async save() {
         try {
-          await apiFetch(`/api/designs/${design.id}`, {
+          await apiFetch(`/api/v1/designs/${design.id}`, {
             method: 'PUT',
             body: JSON.stringify({
               description: editValues.description || null,

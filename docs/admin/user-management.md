@@ -286,10 +286,10 @@ Event types recorded:
 
 | Method | Endpoint                  | Permission     | Description                 |
 | ------ | ------------------------- | -------------- | --------------------------- |
-| GET    | `/api/users/:id`          | `users:read`   | Get user with roles         |
-| PUT    | `/api/users/:id`          | `users:update` | Update user fields          |
-| DELETE | `/api/users/:id`          | `users:delete` | Hard delete user            |
-| GET    | `/api/users/:id/roles`    | `users:read`   | Get user's roles            |
-| PUT    | `/api/users/:id/roles`    | `users:manage` | Replace user's role set     |
-| PUT    | `/api/users/:id/password` | `users:manage` | Change user password        |
-| POST   | `/api/users/:id/activate` | `users:manage` | Activate or deactivate user |
+| GET    | `/api/v1/users/:id`          | `users:read`   | Get user with roles         |
+| PUT    | `/api/v1/users/:id`          | `users:update` | Update user fields          |
+| DELETE | `/api/v1/users/:id`          | `users:delete` | Hard delete user            |
+| GET    | `/api/v1/users/:id/roles`    | `users:read`   | Get user's roles            |
+| PUT    | `/api/v1/users/:id/roles`    | `users:manage` | Replace user's role set     |
+| PUT    | `/api/v1/users/:id/password` | `users:manage` | Change user password        |
+| POST   | `/api/v1/users/:id/activate` | `users:manage` | Activate or deactivate user |

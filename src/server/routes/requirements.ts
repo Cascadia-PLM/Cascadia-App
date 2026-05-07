@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { Requirement } from '@/lib/items/types/requirement'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { RequirementService } from '@/lib/services/RequirementService'
@@ -8,6 +8,8 @@ import { NotFoundError, ValidationError } from '@/lib/errors'
 import { apiHandler, created } from '@/lib/api/handler'
 // Register item types (server-side version)
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Requirements')
 
 const deriveRequirementSchema = z.object({
   name: z.string().min(1),

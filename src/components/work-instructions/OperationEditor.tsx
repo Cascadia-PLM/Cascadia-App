@@ -72,7 +72,7 @@ export function OperationEditor({
     try {
       const result = await apiFetch<{
         data: { operation: WorkInstructionOperation }
-      }>(`/api/work-instructions/${workInstructionId}/operations`, {
+      }>(`/api/v1/work-instructions/${workInstructionId}/operations`, {
         method: 'POST',
         body: JSON.stringify({ title: 'New Operation' }),
       })
@@ -91,7 +91,7 @@ export function OperationEditor({
     try {
       const result = await apiFetch<{
         data: { operation: WorkInstructionOperation }
-      }>(`/api/work-instructions/${workInstructionId}/operations/${opId}`, {
+      }>(`/api/v1/work-instructions/${workInstructionId}/operations/${opId}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       })
@@ -106,7 +106,7 @@ export function OperationEditor({
   const handleDeleteOperation = async (opId: string) => {
     try {
       await apiFetch(
-        `/api/work-instructions/${workInstructionId}/operations/${opId}`,
+        `/api/v1/work-instructions/${workInstructionId}/operations/${opId}`,
         { method: 'DELETE' },
       )
       onOperationsChange(operations.filter((o) => o.id !== opId))
@@ -141,7 +141,7 @@ export function OperationEditor({
     try {
       const result = await apiFetch<{
         data: { operations: Array<WorkInstructionOperation> }
-      }>(`/api/work-instructions/${workInstructionId}/operations`, {
+      }>(`/api/v1/work-instructions/${workInstructionId}/operations`, {
         method: 'PUT',
         body: JSON.stringify({ operations: reordered }),
       })

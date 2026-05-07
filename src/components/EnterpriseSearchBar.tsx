@@ -125,7 +125,7 @@ export function EnterpriseSearchBar() {
     const timer = setTimeout(async () => {
       try {
         const response = await fetch(
-          `/api/enterprise-search?q=${encodeURIComponent(query)}&limit=20`,
+          `/api/v1/enterprise-search?q=${encodeURIComponent(query)}&limit=20`,
         )
         const data = await response.json()
         setResults(data.data)

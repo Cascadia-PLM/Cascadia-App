@@ -277,7 +277,7 @@ export function EcoDesignStructureTree({
     setError(null)
     try {
       const response = await apiFetch<StructureResponse>(
-        `/api/change-orders/${changeOrderId}/designs/${designId}/structure`,
+        `/api/v1/change-orders/${changeOrderId}/designs/${designId}/structure`,
       )
       setRoots(response.data.roots)
       setOrphans(response.data.orphans)

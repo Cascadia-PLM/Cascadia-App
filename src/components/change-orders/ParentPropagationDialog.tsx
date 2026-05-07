@@ -71,7 +71,7 @@ export function ParentPropagationDialog({
           draftCount: number
         }
       }>(
-        `/api/change-orders/${changeOrderId}/items/${targetItem.itemId}/ancestors?designId=${designId}`,
+        `/api/v1/change-orders/${changeOrderId}/items/${targetItem.itemId}/ancestors?designId=${designId}`,
       )
 
       const fetchedAncestors = response.data.ancestors
@@ -160,7 +160,7 @@ export function ParentPropagationDialog({
       }
 
       // Batch add
-      await apiFetch(`/api/change-orders/${changeOrderId}/affected-items`, {
+      await apiFetch(`/api/v1/change-orders/${changeOrderId}/affected-items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: itemsToAdd }),

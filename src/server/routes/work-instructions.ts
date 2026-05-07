@@ -9,7 +9,7 @@
 import { randomUUID } from 'node:crypto'
 import { Hono } from 'hono'
 import { and, asc, eq, gt, sql } from 'drizzle-orm'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import type { WorkInstruction } from '@/lib/items/types/work-instruction'
 import type { StepContent } from '@/lib/db/schema/items'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -28,6 +28,8 @@ import {
 } from '@/lib/db/schema'
 // Register item types (server-side version)
 import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Work Instructions')
 
 const app = new Hono()
 

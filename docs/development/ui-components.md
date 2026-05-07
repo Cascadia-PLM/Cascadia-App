@@ -448,7 +448,7 @@ API responses are wrapped in `{ data: { ... } }`. When consuming from the client
 
 ```typescript
 // CORRECT
-const response = await fetch('/api/parts')
+const response = await fetch('/api/v1/parts')
 const json = await response.json()
 const parts = json.data?.items ?? []
 

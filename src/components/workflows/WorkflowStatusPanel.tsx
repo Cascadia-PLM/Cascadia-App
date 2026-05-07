@@ -75,7 +75,7 @@ export function WorkflowStatusPanel({
     setLoading(true)
     try {
       // Get workflow instance and definition
-      const response = await fetch(`/api/change-orders/${itemId}/workflow`)
+      const response = await fetch(`/api/v1/change-orders/${itemId}/workflow`)
       if (response.ok) {
         const data = await response.json()
         setInstance(data.instance)
@@ -84,7 +84,7 @@ export function WorkflowStatusPanel({
         if (data.instance) {
           // Get history
           const historyRes = await fetch(
-            `/api/change-orders/${itemId}/workflow/history`,
+            `/api/v1/change-orders/${itemId}/workflow/history`,
           )
           if (historyRes.ok) {
             const historyData = await historyRes.json()
@@ -93,7 +93,7 @@ export function WorkflowStatusPanel({
 
           // Get available transitions (V1 response format - wrapped in data.transitions)
           const transitionsRes = await fetch(
-            `/api/change-orders/${itemId}/workflow/transition`,
+            `/api/v1/change-orders/${itemId}/workflow/transition`,
           )
           if (transitionsRes.ok) {
             const transitionsData = await transitionsRes.json()
@@ -117,7 +117,7 @@ export function WorkflowStatusPanel({
     setTransitioning(true)
     try {
       const response = await fetch(
-        `/api/change-orders/${itemId}/workflow/transition`,
+        `/api/v1/change-orders/${itemId}/workflow/transition`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

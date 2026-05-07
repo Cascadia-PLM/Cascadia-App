@@ -609,10 +609,10 @@ Connecting lines between stages are cyan (completed) or gray (pending).
 
 | Method  | Endpoint                          | Description                             |
 | ------- | --------------------------------- | --------------------------------------- |
-| `GET`   | `/api/design-engine/sessions`     | List current user's sessions            |
-| `POST`  | `/api/design-engine/sessions`     | Create a new session                    |
-| `GET`   | `/api/design-engine/sessions/:id` | Get session by ID                       |
-| `PATCH` | `/api/design-engine/sessions/:id` | Update description, artifacts, or stage |
+| `GET`   | `/api/v1/design-engine/sessions`     | List current user's sessions            |
+| `POST`  | `/api/v1/design-engine/sessions`     | Create a new session                    |
+| `GET`   | `/api/v1/design-engine/sessions/:id` | Get session by ID                       |
+| `PATCH` | `/api/v1/design-engine/sessions/:id` | Update description, artifacts, or stage |
 
 **POST body** for creating a session:
 
@@ -629,14 +629,14 @@ Connecting lines between stages are cyan (completed) or gray (pending).
 
 | Method | Endpoint                                 | Description                        |
 | ------ | ---------------------------------------- | ---------------------------------- |
-| `POST` | `/api/design-engine/sessions/:id/stream` | Send action and receive SSE stream |
+| `POST` | `/api/v1/design-engine/sessions/:id/stream` | Send action and receive SSE stream |
 
 ### Materialization
 
 | Method | Endpoint                                      | Description             |
 | ------ | --------------------------------------------- | ----------------------- |
-| `GET`  | `/api/design-engine/sessions/:id/materialize` | Generate preview        |
-| `POST` | `/api/design-engine/sessions/:id/materialize` | Execute materialization |
+| `GET`  | `/api/v1/design-engine/sessions/:id/materialize` | Generate preview        |
+| `POST` | `/api/v1/design-engine/sessions/:id/materialize` | Execute materialization |
 
 All endpoints require authentication. Session access is restricted to the owning user.
 

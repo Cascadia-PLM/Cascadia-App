@@ -86,18 +86,24 @@ describe('CatalogSeedService', () => {
       expect(secondCount).toBe(firstCount)
     })
 
-    it('reports counts that match what landed in the database', async () => {
-      const result = await CatalogSeedService.run()
-
-      const [categoryRow] = await testDb.db
-        .select({ c: count() })
-        .from(componentCatalogCategories)
-      const [entryRow] = await testDb.db
+    it('reports counts consistent with the rows it inserted', async () => {
+      // Baseline counts may be non-zero if another committed run is
+      // already in the database (e.g. someone ran db:seed:catalog), so
+      // we compare the delta around our run instead of absolute totals.
+      const [entryBefore] = await testDb.db
         .select({ c: sql<number>`count(*)::int` })
         .from(componentCatalogEntries)
+      const beforeCount = Number(entryBefore?.c ?? 0)
 
-      expect(Number(categoryRow?.c ?? 0)).toBe(result.categoriesReady)
-      expect(Number(entryRow?.c ?? 0)).toBe(result.inserted)
+      const result = await CatalogSeedService.run()
+
+      const [entryAfter] = await testDb.db
+        .select({ c: sql<number>`count(*)::int` })
+        .from(componentCatalogEntries)
+      const afterCount = Number(entryAfter?.c ?? 0)
+
+      expect(afterCount - beforeCount).toBe(result.inserted)
+      expect(result.categoriesReady).toBeGreaterThan(0)
     })
   })
 })

@@ -10,6 +10,7 @@ import { Check, FileText, Pencil, Wrench } from 'lucide-react'
 import { RequirementsPanel } from './RequirementsPanel'
 import { BomDraftPanel } from './BomDraftPanel'
 import type {
+  BomNodeDraft,
   DesignArtifacts,
   DesignSessionStage,
   RequirementDraft,
@@ -33,6 +34,9 @@ interface ArtifactPanelProps {
   onAddRequirement?: (data: Partial<RequirementDraft>) => void
   onConfirmRequirements?: () => void
   onConfirmBom?: () => void
+  onUpdateBomNode?: (tempId: string, patch: Partial<BomNodeDraft>) => void
+  onRemoveBomNode?: (tempId: string) => void
+  onAddBomChild?: (parentTempId: string, data: Partial<BomNodeDraft>) => void
   className?: string
 }
 
@@ -45,6 +49,9 @@ export function ArtifactPanel({
   onAddRequirement,
   onConfirmRequirements,
   onConfirmBom,
+  onUpdateBomNode,
+  onRemoveBomNode,
+  onAddBomChild,
   className,
 }: ArtifactPanelProps) {
   const [editingDescription, setEditingDescription] = useState(false)
@@ -169,6 +176,9 @@ export function ArtifactPanel({
           totalRequirements={artifacts.requirements.length}
           requirements={artifacts.requirements}
           onConfirm={onConfirmBom}
+          onUpdateNode={onUpdateBomNode}
+          onRemoveNode={onRemoveBomNode}
+          onAddChild={onAddBomChild}
         />
       </section>
     </div>

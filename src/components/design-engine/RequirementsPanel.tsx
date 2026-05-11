@@ -11,7 +11,29 @@ import type {
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/Select'
 import { cn } from '@/lib/utils'
+
+const PRIORITY_OPTIONS: ReadonlyArray<RequirementDraft['priority']> = [
+  'low',
+  'medium',
+  'high',
+  'critical',
+]
+
+const TYPE_OPTIONS: ReadonlyArray<RequirementDraft['requirementType']> = [
+  'Functional',
+  'Performance',
+  'Interface',
+  'Constraint',
+  'Other',
+]
 
 const PRIORITY_COLORS: Record<string, string> = {
   critical: 'destructive',
@@ -48,9 +70,17 @@ export function RequirementsPanel({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editDescription, setEditDescription] = useState('')
+  const [editPriority, setEditPriority] =
+    useState<RequirementDraft['priority']>('medium')
+  const [editType, setEditType] =
+    useState<RequirementDraft['requirementType']>('Functional')
   const [addingNew, setAddingNew] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDescription, setNewDescription] = useState('')
+  const [newPriority, setNewPriority] =
+    useState<RequirementDraft['priority']>('medium')
+  const [newType, setNewType] =
+    useState<RequirementDraft['requirementType']>('Functional')
 
   const canEdit =
     currentStage === 'requirements_review' ||
@@ -62,10 +92,17 @@ export function RequirementsPanel({
     setEditingId(req.tempId)
     setEditName(req.name)
     setEditDescription(req.description)
+    setEditPriority(req.priority)
+    setEditType(req.requirementType)
   }
 
   const saveEdit = (tempId: string) => {
-    onUpdate?.(tempId, { name: editName, description: editDescription })
+    onUpdate?.(tempId, {
+      name: editName,
+      description: editDescription,
+      priority: editPriority,
+      requirementType: editType,
+    })
     setEditingId(null)
   }
 
@@ -74,13 +111,15 @@ export function RequirementsPanel({
       onAdd?.({
         name: newName.trim(),
         description: newDescription.trim(),
-        requirementType: 'Functional',
-        priority: 'medium',
+        requirementType: newType,
+        priority: newPriority,
         verificationMethod: 'Analysis',
         source: 'user',
       })
       setNewName('')
       setNewDescription('')
+      setNewPriority('medium')
+      setNewType('Functional')
       setAddingNew(false)
     }
   }
@@ -131,6 +170,42 @@ export function RequirementsPanel({
                   className="text-sm h-8"
                   placeholder="Description"
                 />
+                <div className="grid grid-cols-2 gap-2">
+                  <Select
+                    value={editPriority}
+                    onValueChange={(v) =>
+                      setEditPriority(v as RequirementDraft['priority'])
+                    }
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRIORITY_OPTIONS.map((p) => (
+                        <SelectItem key={p} value={p} className="text-xs">
+                          {p}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={editType}
+                    onValueChange={(v) =>
+                      setEditType(v as RequirementDraft['requirementType'])
+                    }
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TYPE_OPTIONS.map((t) => (
+                        <SelectItem key={t} value={t} className="text-xs">
+                          {t}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex gap-1">
                   <Button
                     variant="ghost"
@@ -240,6 +315,42 @@ export function RequirementsPanel({
               className="text-sm h-8"
               placeholder="Description (optional)"
             />
+            <div className="grid grid-cols-2 gap-2">
+              <Select
+                value={newPriority}
+                onValueChange={(v) =>
+                  setNewPriority(v as RequirementDraft['priority'])
+                }
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITY_OPTIONS.map((p) => (
+                    <SelectItem key={p} value={p} className="text-xs">
+                      {p}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={newType}
+                onValueChange={(v) =>
+                  setNewType(v as RequirementDraft['requirementType'])
+                }
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TYPE_OPTIONS.map((t) => (
+                    <SelectItem key={t} value={t} className="text-xs">
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex gap-1">
               <Button
                 variant="default"
@@ -257,6 +368,8 @@ export function RequirementsPanel({
                   setAddingNew(false)
                   setNewName('')
                   setNewDescription('')
+                  setNewPriority('medium')
+                  setNewType('Functional')
                 }}
                 className="h-7 text-xs"
               >

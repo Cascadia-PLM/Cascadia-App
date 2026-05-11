@@ -19,10 +19,10 @@ import type {
   DesignArtifacts,
   DesignSessionStage,
   MaterializationPreview as PreviewType,
-  RequirementDraft,
   MaterializationResult as ResultType,
 } from '@/lib/design-engine/types'
 import { useDesignEngineStream } from '@/hooks/useDesignEngineStream'
+import { useArtifactMutations } from '@/hooks/useArtifactMutations'
 import { Button } from '@/components/ui/Button'
 
 interface CollaborativeWorkspaceProps {
@@ -41,6 +41,10 @@ export function CollaborativeWorkspace({
 }: CollaborativeWorkspaceProps) {
   const navigate = useNavigate()
   const stream = useDesignEngineStream({ sessionId })
+  const mutations = useArtifactMutations({
+    sessionId,
+    artifacts: stream.artifacts,
+  })
 
   const [materializationPreview, setMaterializationPreview] =
     useState<PreviewType | null>(null)
@@ -120,66 +124,12 @@ export function CollaborativeWorkspace({
     [sessionId],
   )
 
-  const handleUpdateRequirement = useCallback(
-    async (tempId: string, data: Partial<RequirementDraft>) => {
-      // Update locally in artifacts then persist
-      const updated = { ...stream.artifacts }
-      const idx = updated.requirements.findIndex((r) => r.tempId === tempId)
-      if (idx >= 0) {
-        updated.requirements = [...updated.requirements]
-        updated.requirements[idx] = { ...updated.requirements[idx], ...data }
-        await fetch(`/api/v1/design-engine/sessions/${sessionId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ artifacts: updated }),
-        })
-      }
-    },
-    [sessionId, stream.artifacts],
-  )
-
-  const handleRemoveRequirement = useCallback(
-    async (tempId: string) => {
-      const updated = {
-        ...stream.artifacts,
-        requirements: stream.artifacts.requirements.filter(
-          (r) => r.tempId !== tempId,
-        ),
-      }
-      await fetch(`/api/v1/design-engine/sessions/${sessionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ artifacts: updated }),
-      })
-    },
-    [sessionId, stream.artifacts],
-  )
-
-  const handleAddRequirement = useCallback(
-    async (data: Partial<RequirementDraft>) => {
-      const newReq: RequirementDraft = {
-        tempId: crypto.randomUUID(),
-        name: data.name ?? '',
-        description: data.description ?? '',
-        requirementType: data.requirementType ?? 'Functional',
-        priority: data.priority ?? 'medium',
-        verificationMethod: data.verificationMethod ?? 'Analysis',
-        rationale: data.rationale ?? '',
-        confidence: data.confidence ?? 1,
-        source: 'user',
-      }
-      const updated = {
-        ...stream.artifacts,
-        requirements: [...stream.artifacts.requirements, newReq],
-      }
-      await fetch(`/api/v1/design-engine/sessions/${sessionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ artifacts: updated }),
-      })
-    },
-    [sessionId, stream.artifacts],
-  )
+  const handleUpdateRequirement = mutations.updateRequirement
+  const handleRemoveRequirement = mutations.removeRequirement
+  const handleAddRequirement = mutations.addRequirement
+  const handleUpdateBomNode = mutations.updateNode
+  const handleRemoveBomNode = mutations.removeNode
+  const handleAddBomChild = mutations.addChild
 
   const handleAnswer = useCallback(
     (questionId: string, answer: string) => {
@@ -382,6 +332,9 @@ export function CollaborativeWorkspace({
               onAddRequirement={handleAddRequirement}
               onConfirmRequirements={handleConfirmRequirements}
               onConfirmBom={handleConfirmBom}
+              onUpdateBomNode={handleUpdateBomNode}
+              onRemoveBomNode={handleRemoveBomNode}
+              onAddBomChild={handleAddBomChild}
               className="flex-1"
             />
           )}

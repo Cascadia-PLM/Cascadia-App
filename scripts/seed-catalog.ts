@@ -20,6 +20,9 @@ async function main() {
   console.log(
     `  ${result.inserted} entries inserted, ${result.skipped} skipped`,
   )
+  if (result.prunedCategories > 0) {
+    console.log(`  ${result.prunedCategories} empty categories pruned`)
+  }
   console.log('\nDone!')
   process.exit(0)
 }

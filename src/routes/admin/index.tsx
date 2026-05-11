@@ -9,6 +9,7 @@ import {
   Loader2,
   Lock,
   Package,
+  PlayCircle,
   Save,
   Settings,
   Users,
@@ -479,6 +480,34 @@ function AdminPage() {
               <Button>
                 <Package className="w-4 h-4 mr-2" />
                 Manage Catalog
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* First-time setup wizard */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <PlayCircle className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            <CardTitle>First-time setup wizard</CardTitle>
+          </div>
+          <CardDescription>
+            Re-run the guided setup flow to bootstrap users, AI keys, and
+            programs/designs/parts
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              The wizard auto-launches the first time a Global Admin signs in
+              after a fresh database. You can re-enter it anytime from here.
+            </p>
+            <Link to="/setup">
+              <Button>
+                <PlayCircle className="w-4 h-4 mr-2" />
+                Run setup wizard
               </Button>
             </Link>
           </div>

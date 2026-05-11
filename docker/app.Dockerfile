@@ -60,6 +60,9 @@ COPY --from=builder /app/drizzle.config.ts ./
 COPY --from=builder /app/tsconfig.json ./
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/scripts ./scripts
+# Catalog seed JSON — imported by scripts/seed/catalog-data/entries.ts.
+# The bundled server inlines these, but tsx-run admin scripts need them on disk.
+COPY --from=builder /app/test-data ./test-data
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \

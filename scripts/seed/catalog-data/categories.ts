@@ -3,6 +3,11 @@
  *
  * Hierarchical category tree for organizing catalog entries.
  * Slugs are used as stable identifiers for bulk import.
+ *
+ * Only categories that the bundled test-data seed actually populates are
+ * declared here. CatalogSeedService prunes any empty leaves after import,
+ * so adding aspirational subcategories here without entries will just
+ * silently drop them on seed.
  */
 
 export interface CategoryDef {
@@ -15,21 +20,13 @@ export const CATEGORIES: Array<CategoryDef> = [
   {
     name: 'Fasteners',
     slug: 'fasteners',
-    children: [
-      { name: 'Bolts', slug: 'bolts' },
-      { name: 'Nuts', slug: 'nuts' },
-      { name: 'Washers', slug: 'washers' },
-      { name: 'Screws', slug: 'screws' },
-      { name: 'Standoffs & Spacers', slug: 'standoffs-spacers' },
-      { name: 'Threaded Inserts', slug: 'threaded-inserts' },
-    ],
+    children: [{ name: 'Nuts', slug: 'nuts' }],
   },
   {
     name: 'Bearings',
     slug: 'bearings',
     children: [
       { name: 'Ball Bearings', slug: 'ball-bearings' },
-      { name: 'Bushings', slug: 'bushings' },
       { name: 'Thrust Bearings', slug: 'thrust-bearings' },
     ],
   },
@@ -43,125 +40,35 @@ export const CATEGORIES: Array<CategoryDef> = [
       { name: 'Linear Bearings', slug: 'linear-bearings' },
     ],
   },
-  {
-    name: 'Motors',
-    slug: 'motors',
-    children: [
-      { name: 'Stepper Motors', slug: 'stepper-motors' },
-      { name: 'DC Motors', slug: 'dc-motors' },
-      { name: 'Servo Motors', slug: 'servo-motors' },
-      { name: 'Linear Actuators', slug: 'linear-actuators' },
-    ],
-  },
-  {
-    name: 'Motor Drivers',
-    slug: 'motor-drivers',
-  },
-  {
-    name: 'Microcontrollers',
-    slug: 'microcontrollers',
-  },
-  {
-    name: 'Sensors',
-    slug: 'sensors',
-    children: [
-      { name: 'Limit Switches', slug: 'limit-switches' },
-      { name: 'Encoders', slug: 'encoders' },
-      { name: 'Temperature Sensors', slug: 'temperature-sensors' },
-      { name: 'Distance Sensors', slug: 'distance-sensors' },
-    ],
-  },
-  {
-    name: 'Power',
-    slug: 'power',
-    children: [
-      { name: 'Voltage Regulators', slug: 'voltage-regulators' },
-      { name: 'Battery Holders', slug: 'battery-holders' },
-      { name: 'Power Modules', slug: 'power-modules' },
-    ],
-  },
-  {
-    name: 'Connectors',
-    slug: 'connectors',
-    children: [
-      { name: 'JST Connectors', slug: 'jst-connectors' },
-      { name: 'Screw Terminals', slug: 'screw-terminals' },
-      { name: 'Barrel Jacks', slug: 'barrel-jacks' },
-      { name: 'USB Connectors', slug: 'usb-connectors' },
-    ],
-  },
-  {
-    name: 'Wire & Cable',
-    slug: 'wire-cable',
-  },
-  {
-    name: 'Displays',
-    slug: 'displays',
-  },
-  {
-    name: 'Relays & Switching',
-    slug: 'relays-switching',
-  },
+  { name: 'Motors', slug: 'motors' },
+  { name: 'Motor Drivers', slug: 'motor-drivers' },
+  { name: 'Microcontrollers', slug: 'microcontrollers' },
+  { name: 'Sensors', slug: 'sensors' },
+  { name: 'Power', slug: 'power' },
+  { name: 'Connectors', slug: 'connectors' },
+  { name: 'Wire & Cable', slug: 'wire-cable' },
+  { name: 'Displays', slug: 'displays' },
+  { name: 'Relays & Switching', slug: 'relays-switching' },
+  { name: 'Passive Components', slug: 'passive-components' },
+  { name: 'Discrete Semiconductors', slug: 'discrete-semiconductors' },
+  { name: 'LEDs', slug: 'leds' },
+  { name: 'Protection Components', slug: 'protection-components' },
+  { name: 'DIN Rail', slug: 'din-rail' },
   {
     name: 'Gears & Transmission',
     slug: 'gears-transmission',
-    children: [
-      { name: 'GT2 Pulleys & Belts', slug: 'gt2-pulleys-belts' },
-      { name: 'Spur Gears', slug: 'spur-gears' },
-      { name: 'Shaft Couplings', slug: 'shaft-couplings' },
-    ],
+    children: [{ name: 'Shaft Couplings', slug: 'shaft-couplings' }],
   },
-  {
-    name: 'T-Slot Extrusion',
-    slug: 't-slot-extrusion',
-  },
-  {
-    name: 'T-Slot Hardware',
-    slug: 't-slot-hardware',
-  },
-  {
-    name: 'Aluminum Profiles',
-    slug: 'aluminum-profiles',
-  },
-  {
-    name: 'Steel Profiles',
-    slug: 'steel-profiles',
-  },
-  {
-    name: 'Sheet Stock',
-    slug: 'sheet-stock',
-  },
-  {
-    name: 'Plastic Sheet',
-    slug: 'plastic-sheet',
-  },
-  {
-    name: 'Round Bar & Rod',
-    slug: 'round-bar-rod',
-  },
-  {
-    name: 'Threaded Rod',
-    slug: 'threaded-rod',
-  },
-  {
-    name: 'Tubing',
-    slug: 'tubing',
-  },
-  {
-    name: 'Adhesives & Sealants',
-    slug: 'adhesives-sealants',
-  },
-  {
-    name: 'Enclosures',
-    slug: 'enclosures',
-  },
-  {
-    name: 'Misc Hardware',
-    slug: 'misc-hardware',
-    children: [
-      { name: 'Springs', slug: 'springs' },
-      { name: 'Magnets', slug: 'magnets' },
-      { name: 'Rubber Feet & Bumpers', slug: 'rubber-feet-bumpers' },
-    ],
-  },
+  { name: 'T-Slot Extrusion', slug: 't-slot-extrusion' },
+  { name: 'T-Slot Hardware', slug: 't-slot-hardware' },
+  { name: 'Aluminum Profiles', slug: 'aluminum-profiles' },
+  { name: 'Steel Profiles', slug: 'steel-profiles' },
+  { name: 'Sheet Stock', slug: 'sheet-stock' },
+  { name: 'Plastic Sheet', slug: 'plastic-sheet' },
+  { name: 'Threaded Rod', slug: 'threaded-rod' },
+  { name: 'Tubing', slug: 'tubing' },
+  { name: 'Adhesives & Sealants', slug: 'adhesives' },
+  { name: 'Plywood & MDF', slug: 'plywood-mdf' },
+  { name: 'Enclosures', slug: 'enclosures' },
+  { name: 'Misc Hardware', slug: 'misc-hardware' },
 ]

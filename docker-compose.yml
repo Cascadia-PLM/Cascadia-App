@@ -40,6 +40,10 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-cascadia}
+      # The bundled postgres image does not advertise TLS and is only reachable
+      # on the private cascadia-network. Override to "require" if you put a
+      # TLS-terminating proxy in front or swap in a managed Postgres.
+      DATABASE_SSL: ${DATABASE_SSL:-disable}
       SESSION_SECRET: ${SESSION_SECRET:-change-this-to-a-random-32-char-string}
       BASE_URL: ${BASE_URL:-http://localhost:3000}
       FILE_STORAGE_PATH: ${FILE_STORAGE_PATH:-/app/storage/files}

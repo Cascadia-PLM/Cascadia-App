@@ -17,7 +17,7 @@
     "url": "https://github.com/Cascadia-PLM/Cascadia-App/issues"
   },
   "scripts": {
-    "dev": "concurrently -n client,api -c blue,green \"npm run dev:client\" \"npm run dev:api\"",
+    "dev": "node scripts/dev.mjs",
     "dev:client": "vite --port 3000",
     "dev:api": "tsx src/server/dev.ts",
     "build": "vite build && npm run build:server && npm run build:jobs-worker",

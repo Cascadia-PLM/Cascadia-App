@@ -22,11 +22,43 @@ const connectionString =
   process.env.DATABASE_URL ||
   'postgresql://postgres:postgres@localhost:5432/cascadia'
 
-// Parse connection string for Cloud SQL Unix socket support
-// postgres.js doesn't parse ?host= from URL, so we extract it manually
-function parseConnectionOptions(connStr: string) {
+export type SslMode = 'disable' | 'require' | 'verify-ca' | 'verify-full'
+
+const VALID_SSL_MODES: ReadonlyArray<SslMode> = [
+  'disable',
+  'require',
+  'verify-ca',
+  'verify-full',
+]
+
+function isSslMode(value: string): value is SslMode {
+  return (VALID_SSL_MODES as ReadonlyArray<string>).includes(value)
+}
+
+// Parse connection string for Cloud SQL Unix socket support and libpq-style
+// sslmode query parameter. postgres.js doesn't honor ?host= or ?sslmode= from
+// the URL, so we extract them manually and strip them before handing the URL
+// to the driver.
+export function parseConnectionOptions(connStr: string): {
+  connectionString: string
+  options: { host?: string }
+  sslMode?: SslMode
+} {
   const url = new URL(connStr)
   const socketPath = url.searchParams.get('host')
+  const rawSslMode = url.searchParams.get('sslmode')
+
+  let sslMode: SslMode | undefined
+  if (rawSslMode !== null) {
+    if (!isSslMode(rawSslMode)) {
+      throw new Error(
+        `Invalid sslmode "${rawSslMode}" in DATABASE_URL. ` +
+          `Supported values: ${VALID_SSL_MODES.join(', ')}.`,
+      )
+    }
+    sslMode = rawSslMode
+    url.searchParams.delete('sslmode')
+  }
 
   if (socketPath && socketPath.startsWith('/cloudsql/')) {
     // Cloud SQL Unix socket connection
@@ -35,33 +67,87 @@ function parseConnectionOptions(connStr: string) {
     return {
       connectionString: url.toString(),
       options: { host: socketPath },
+      sslMode,
     }
   }
 
-  return { connectionString: connStr, options: {} }
-}
-
-const { connectionString: cleanConnString, options } =
-  parseConnectionOptions(connectionString)
-
-// SSL configuration. By default, production NODE_ENV requires SSL. Self-hosted
-// deployments (including the bundled docker-compose.demo.yml) where the app
-// connects to a Postgres on a private network can opt out via DATABASE_SSL=disable.
-const isProduction = process.env.NODE_ENV === 'production'
-const sslMode = process.env.DATABASE_SSL // 'disable' | 'require' | undefined
-const sslOptions: Record<string, unknown> = {}
-
-const sslDisabled =
-  sslMode === 'disable' || options.host?.startsWith('/cloudsql/')
-
-if (!sslDisabled && (sslMode === 'require' || isProduction)) {
-  const caCertPath = process.env.DATABASE_CA_CERT_PATH
-  if (caCertPath) {
-    sslOptions.ssl = { ca: fs.readFileSync(caCertPath) }
-  } else {
-    sslOptions.ssl = 'require'
+  return {
+    connectionString: url.toString(),
+    options: {},
+    sslMode,
   }
 }
+
+const {
+  connectionString: cleanConnString,
+  options,
+  sslMode: urlSslMode,
+} = parseConnectionOptions(connectionString)
+
+// SSL configuration. Precedence (highest first):
+//   1. Cloud SQL Unix socket — SSL is meaningless, always off
+//   2. DATABASE_SSL env var ("disable" | "require") — explicit operator override
+//   3. ?sslmode= in DATABASE_URL — libpq-style URL parameter
+//   4. NODE_ENV=production fallback — require SSL by default in production
+//
+// The DATABASE_CA_CERT_PATH env var supplies a CA bundle when verification is
+// requested. verify-ca / verify-full require it; without it we throw rather
+// than silently downgrade.
+export function resolveSslOption(args: {
+  databaseSslEnv: string | undefined
+  urlSslMode: SslMode | undefined
+  isProduction: boolean
+  isCloudSqlSocket: boolean
+  caCertPath: string | undefined
+  readCaFile: (p: string) => Buffer
+}): { ssl?: 'require' | { ca: Buffer } } {
+  const {
+    databaseSslEnv,
+    urlSslMode: urlMode,
+    isProduction,
+    isCloudSqlSocket,
+    caCertPath,
+    readCaFile,
+  } = args
+
+  if (isCloudSqlSocket) return {}
+
+  // Effective mode after applying precedence. `undefined` means "fall back to
+  // NODE_ENV-based default" (off in dev, require in prod).
+  let effective: SslMode | undefined
+  if (databaseSslEnv === 'disable' || databaseSslEnv === 'require') {
+    effective = databaseSslEnv
+  } else if (urlMode) {
+    effective = urlMode
+  } else if (isProduction) {
+    effective = 'require'
+  }
+
+  if (!effective || effective === 'disable') return {}
+
+  if (effective === 'verify-ca' || effective === 'verify-full') {
+    if (!caCertPath) {
+      throw new Error(
+        `sslmode=${effective} requires DATABASE_CA_CERT_PATH to be set ` +
+          `so the server certificate can be verified.`,
+      )
+    }
+    return { ssl: { ca: readCaFile(caCertPath) } }
+  }
+
+  // require
+  if (caCertPath) return { ssl: { ca: readCaFile(caCertPath) } }
+  return { ssl: 'require' }
+}
+
+const sslOptions = resolveSslOption({
+  databaseSslEnv: process.env.DATABASE_SSL,
+  urlSslMode,
+  isProduction: process.env.NODE_ENV === 'production',
+  isCloudSqlSocket: options.host?.startsWith('/cloudsql/') ?? false,
+  caCertPath: process.env.DATABASE_CA_CERT_PATH,
+  readCaFile: (p) => fs.readFileSync(p),
+})
 
 // For query purposes
 const queryClient = postgres(cleanConnString, { ...options, ...sslOptions })

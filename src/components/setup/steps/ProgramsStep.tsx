@@ -83,6 +83,7 @@ export function ProgramsStep({ onCompleted }: ProgramsStepProps) {
   const [catalogResult, setCatalogResult] = useState<{
     inserted: number
     skipped: number
+    prunedCategories: number
   } | null>(null)
   const [catalogError, setCatalogError] = useState('')
 
@@ -227,9 +228,14 @@ export function ProgramsStep({ onCompleted }: ProgramsStepProps) {
       }
       const json = await response.json()
       setCatalogResult(
-        (json.data ?? { inserted: 0, skipped: 0 }) as {
+        (json.data ?? {
+          inserted: 0,
+          skipped: 0,
+          prunedCategories: 0,
+        }) as {
           inserted: number
           skipped: number
+          prunedCategories: number
         },
       )
     } catch (err) {

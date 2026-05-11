@@ -329,36 +329,30 @@ export interface WorkflowTransitionResult {
 }
 
 // Component Catalog
+//
+// The seed input is intentionally permissive — JSON files in `test-data/`
+// carry mixed-type spec values (numbers, booleans, nested objects) and
+// `null`-valued electrical fields. The DB columns are jsonb, so anything
+// JSON-serializable round-trips; the runtime API uses the same loose shape
+// (z.record(z.string(), z.unknown()) for specs).
 export interface CatalogEntryDef {
   name: string
   description: string
   categorySlug: string
   entryType: 'component' | 'raw_stock'
-  dimensions?: {
-    width?: number
-    height?: number
-    depth?: number
-    diameter?: number
-    weight?: number
-  }
+  dimensions?: Record<string, number | string | null> | null
   mountingFeatures?: Array<{
     type: string
-    specs: Record<string, number>
-  }>
-  electrical?: {
-    voltage?: string
-    current?: string
-    power?: string
-    interface?: string
-    pinout?: string
-  }
-  specs?: Record<string, string>
+    specs: Record<string, unknown>
+  }> | null
+  electrical?: Record<string, string | null> | null
+  specs?: Record<string, unknown>
   stockSizes?: Array<{
     label: string
     dimensions: Record<string, number>
     supplierPartNumber?: string
     approximatePrice?: number
-  }>
+  }> | null
   suppliers?: Array<{
     name: string
     partNumber?: string
@@ -366,7 +360,7 @@ export interface CatalogEntryDef {
     url?: string
     lastVerified?: string
   }>
-  designNotes?: string
+  designNotes?: string | null
   tags?: Array<string>
 }
 

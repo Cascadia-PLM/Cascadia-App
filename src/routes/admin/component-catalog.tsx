@@ -149,7 +149,7 @@ function ComponentCatalogPage() {
             className={`w-full text-left px-2 py-1.5 rounded text-sm ${
               !selectedCategoryId
                 ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
             onClick={() => {
               setSelectedCategoryId(null)
@@ -196,7 +196,7 @@ function ComponentCatalogPage() {
                 setEntryTypeFilter(e.target.value)
                 setPage(0)
               }}
-              className="h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm"
+              className="h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 text-sm"
             >
               <option value="all">All Types</option>
               <option value="component">Components</option>
@@ -226,7 +226,7 @@ function ComponentCatalogPage() {
                 <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
               </div>
             ) : entries.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                 No entries found.{' '}
                 {searchQuery && 'Try a different search query.'}
               </div>
@@ -265,9 +265,11 @@ function ComponentCatalogPage() {
                       }}
                     >
                       <td className="py-2 px-3">
-                        <div className="font-medium">{entry.name}</div>
+                        <div className="font-medium text-slate-900 dark:text-slate-100">
+                          {entry.name}
+                        </div>
                         {entry.description && (
-                          <div className="text-xs text-slate-500 truncate max-w-md">
+                          <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-md">
                             {entry.description}
                           </div>
                         )}
@@ -297,7 +299,7 @@ function ComponentCatalogPage() {
                               ` +${entry.suppliers.length - 1}`}
                           </span>
                         ) : (
-                          <span className="text-slate-400">-</span>
+                          <span className="text-slate-400 dark:text-slate-500">-</span>
                         )}
                       </td>
                       <td className="py-2 px-3">
@@ -329,7 +331,7 @@ function ComponentCatalogPage() {
           {/* Pagination */}
           {totalEntries > pageSize && (
             <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-slate-500 dark:text-slate-400">
                 Showing {page * pageSize + 1}-
                 {Math.min((page + 1) * pageSize, totalEntries)} of{' '}
                 {totalEntries}
@@ -427,7 +429,7 @@ function CategoryTreeItem({
         className={`w-full text-left px-2 py-1.5 rounded text-sm flex items-center gap-1 ${
           selectedId === category.id
             ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-            : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
         }`}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
         onClick={() => onSelect(category.id)}
@@ -559,7 +561,7 @@ function EntryDialog({
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 bg-black/50">
       <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {isEditing ? 'Edit Entry' : 'New Catalog Entry'}
           </h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -588,7 +590,7 @@ function EntryDialog({
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm"
+                className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 text-sm"
               >
                 <option value="">Select category...</option>
                 {categories.map((c) => (
@@ -618,7 +620,7 @@ function EntryDialog({
                 onChange={(e) =>
                   setEntryType(e.target.value as 'component' | 'raw_stock')
                 }
-                className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm"
+                className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 text-sm"
               >
                 <option value="component">Component</option>
                 <option value="raw_stock">Raw Stock</option>
@@ -632,7 +634,9 @@ function EntryDialog({
                   onChange={(e) => setVerified(e.target.checked)}
                   className="rounded border-slate-300"
                 />
-                <span className="text-sm">Verified</span>
+                <span className="text-sm text-slate-700 dark:text-slate-300">
+                  Verified
+                </span>
               </label>
             </div>
           </div>
@@ -890,7 +894,9 @@ function ImportDialog({
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 bg-black/50">
       <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Bulk Import</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            Bulk Import
+          </h2>
           <Button variant="ghost" size="sm" onClick={handleClose}>
             <X className="w-4 h-4" />
           </Button>
@@ -937,7 +943,7 @@ function ImportDialog({
                 className="border rounded p-2 bg-slate-50 dark:bg-slate-800 text-sm"
               >
                 <div className="flex items-center gap-2">
-                  <FileJson className="w-4 h-4 text-slate-500 shrink-0" />
+                  <FileJson className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
                   <span className="font-mono text-xs truncate flex-1">
                     {row.file.name}
                   </span>
@@ -962,7 +968,7 @@ function ImportDialog({
                         </div>
                       ))}
                       {row.status.errors.length > 5 && (
-                        <div className="text-slate-500">
+                        <div className="text-slate-500 dark:text-slate-400">
                           …and {row.status.errors.length - 5} more
                         </div>
                       )}
@@ -1013,7 +1019,7 @@ function StatusBadge({ status }: { status: FileRowStatus }) {
   switch (status.state) {
     case 'pending':
       return (
-        <span className="text-xs text-slate-500 px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700">
+        <span className="text-xs text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700">
           Pending
         </span>
       )
@@ -1099,7 +1105,9 @@ function CategoryDialog({
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/50">
       <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">New Category</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            New Category
+          </h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-4 h-4" />
           </Button>
@@ -1143,7 +1151,7 @@ function CategoryDialog({
             <select
               value={parentId}
               onChange={(e) => setParentId(e.target.value)}
-              className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm"
+              className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 text-sm"
             >
               <option value="">None (top-level)</option>
               {categories.map((c) => (

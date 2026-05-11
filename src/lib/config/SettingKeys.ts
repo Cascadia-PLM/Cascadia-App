@@ -8,6 +8,9 @@ export const SettingKeys = {
   VAULT_TYPE: 'vault_type',
   VAULT_CONFIG: 'vault_config',
   MAX_FILE_SIZE: 'max_file_size',
+  SETUP_COMPLETED: 'system.setup_completed',
+  SETUP_PROGRESS: 'system.setup_progress',
+  ORG_INFO: 'org.info',
 } as const
 
 export type SettingKey = (typeof SettingKeys)[keyof typeof SettingKeys]

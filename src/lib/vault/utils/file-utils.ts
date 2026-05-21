@@ -131,8 +131,26 @@ const ALLOWED_EXTENSIONS = new Set([
   '.dxf',
   '.ipt',
   '.iam',
+  '.idw',
   '.3dm',
   '.ply',
+  // Solid Edge
+  '.par',
+  '.psm',
+  '.dft',
+  '.pwd',
+  // SolidWorks drawing
+  '.slddrw',
+  // Creo / Pro-E (.prt and .asm shared above)
+  '.drw',
+  '.frm',
+  '.lay',
+  '.sec',
+  // CATIA drawing
+  '.catdrawing',
+  // Fusion 360
+  '.f3d',
+  '.f3z',
   // Documents
   '.pdf',
   '.doc',
@@ -180,6 +198,14 @@ export function isFileTypeAllowed(
 }
 
 /**
+ * Get the full list of allowed file extensions.
+ * Use this when reporting errors so the message stays in sync with the allowlist.
+ */
+export function getAllowedExtensions(): Array<string> {
+  return Array.from(ALLOWED_EXTENSIONS)
+}
+
+/**
  * Check if a file is a CAD model based on extension
  */
 export function isCADFile(filename: string): boolean {
@@ -193,13 +219,19 @@ export function isCADFile(filename: string): boolean {
     '.igs', // IGES (alternate extension)
     '.sldprt', // SolidWorks Part
     '.sldasm', // SolidWorks Assembly
-    '.prt', // Various CAD formats
+    '.prt', // Various CAD formats (Creo/NX part)
+    '.asm', // Assembly (Solid Edge / Creo / NX)
+    '.par', // Solid Edge Part
+    '.psm', // Solid Edge Sheet Metal
+    '.pwd', // Solid Edge Weldment
     '.dwg', // AutoCAD Drawing
     '.dxf', // AutoCAD DXF
     '.ipt', // Autodesk Inventor Part
     '.iam', // Autodesk Inventor Assembly
     '.catpart', // CATIA Part
     '.catproduct', // CATIA Product
+    '.f3d', // Fusion 360
+    '.f3z', // Fusion 360 archive
     '.3dm', // Rhino 3D
     '.ply', // Polygon File Format
     '.glb', // glTF Binary
@@ -226,8 +258,13 @@ export function detectFileCategory(filename: string, mimeType: string): string {
     '.igs',
     '.sldprt',
     '.prt',
+    '.par',
+    '.psm',
+    '.pwd',
     '.ipt',
     '.catpart',
+    '.f3d',
+    '.f3z',
     '.3dm',
     '.ply',
     '.glb',
@@ -238,7 +275,16 @@ export function detectFileCategory(filename: string, mimeType: string): string {
   }
 
   // Drawing files
-  const drawingExtensions = ['.dwg', '.dxf', '.pdf']
+  const drawingExtensions = [
+    '.dwg',
+    '.dxf',
+    '.pdf',
+    '.dft', // Solid Edge Draft
+    '.slddrw', // SolidWorks Drawing
+    '.idw', // Inventor Drawing
+    '.drw', // Creo Drawing
+    '.catdrawing', // CATIA Drawing
+  ]
   if (
     drawingExtensions.includes(ext) ||
     lowerFilename.includes('drawing') ||
@@ -272,7 +318,7 @@ export function detectFileCategory(filename: string, mimeType: string): string {
   }
 
   // Assembly files
-  const assemblyExtensions = ['.sldasm', '.iam', '.catproduct']
+  const assemblyExtensions = ['.sldasm', '.iam', '.catproduct', '.asm']
   if (assemblyExtensions.includes(ext)) {
     return 'cad_model'
   }
@@ -295,12 +341,27 @@ export function getCADFormat(filename: string): string | null {
     '.igs': 'IGES',
     '.sldprt': 'SolidWorks',
     '.sldasm': 'SolidWorks',
+    '.slddrw': 'SolidWorks',
     '.dwg': 'AutoCAD',
     '.dxf': 'AutoCAD DXF',
     '.ipt': 'Inventor',
     '.iam': 'Inventor',
+    '.idw': 'Inventor',
+    '.par': 'Solid Edge',
+    '.psm': 'Solid Edge',
+    '.asm': 'Solid Edge',
+    '.dft': 'Solid Edge',
+    '.pwd': 'Solid Edge',
+    '.prt': 'Creo/NX',
+    '.drw': 'Creo',
+    '.frm': 'Creo',
+    '.lay': 'Creo',
+    '.sec': 'Creo',
     '.catpart': 'CATIA',
     '.catproduct': 'CATIA',
+    '.catdrawing': 'CATIA',
+    '.f3d': 'Fusion 360',
+    '.f3z': 'Fusion 360',
     '.3dm': 'Rhino',
     '.ply': 'PLY',
     '.glb': 'glTF',

@@ -186,10 +186,10 @@ export class AuthService {
         .where(eq(users.id, user.id))
     }
 
-    // Session rotation: invalidate all existing sessions before creating new one
-    await SessionManager.deleteUserSessions(user.id)
-
-    // Create session
+    // Allow concurrent sessions per user (e.g. browser + Solid Edge plugin signed in at the
+    // same time). We intentionally do NOT invalidate existing sessions on login; this matches
+    // the OAuth login path, which has never rotated sessions. Sessions still expire normally
+    // and can be revoked individually (logout) or in bulk if needed.
     const { sessionToken } = await SessionManager.createSession(
       user.id,
       ipAddress,

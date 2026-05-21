@@ -89,7 +89,7 @@ export function FileList({
       }
 
       const data = await response.json()
-      setFiles(data.files || [])
+      setFiles(data.data?.files ?? [])
       setError(null)
     } catch (err) {
       setError((err as Error).message)

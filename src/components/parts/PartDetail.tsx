@@ -274,8 +274,8 @@ export function PartDetail({
       try {
         const response = await fetch(`/api/v1/designs/${part.designId}`)
         if (response.ok) {
-          const design = await response.json()
-          setMainBranchId(design.defaultBranchId)
+          const body = await response.json()
+          setMainBranchId(body.data?.design?.defaultBranchId)
         }
       } catch (err) {
         console.error('Error fetching design:', err)

@@ -10,6 +10,7 @@ import {
   extractFileMetadata,
   generateFileHash,
   generateStoragePath,
+  getAllowedExtensions,
   getFileExtension,
   isFileTypeAllowed,
   sanitizeFilename,
@@ -134,23 +135,10 @@ export class FileService {
     // Validate file type
     if (!isFileTypeAllowed(metadata.originalFileName, metadata.mimeType)) {
       const ext = getFileExtension(metadata.originalFileName)
-      throw new FileTypeNotAllowedError(ext || metadata.mimeType, [
-        '.step',
-        '.stp',
-        '.iges',
-        '.stl',
-        '.obj',
-        '.pdf',
-        '.doc',
-        '.docx',
-        '.xls',
-        '.xlsx',
-        '.csv',
-        '.png',
-        '.jpg',
-        '.jpeg',
-        '.zip',
-      ])
+      throw new FileTypeNotAllowedError(
+        ext || metadata.mimeType,
+        getAllowedExtensions(),
+      )
     }
 
     // Get item to validate it exists and get masterId

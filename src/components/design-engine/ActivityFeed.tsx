@@ -197,6 +197,7 @@ export function ActivityFeed({
                 questionId={event.questionId}
                 question={event.question}
                 options={event.options}
+                multiSelect={event.multiSelect}
                 onAnswer={onAnswer}
               />
             )

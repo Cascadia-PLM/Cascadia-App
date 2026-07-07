@@ -211,11 +211,14 @@ app.post(
 
       // Track assistant response for persistence
       let fullResponse = ''
-      const collectedToolCalls: Array<{
-        id: string
-        name: string
-        arguments: Record<string, unknown>
-      }> = []
+      // Tool-call arguments stream in incrementally as JSON fragments keyed by
+      // `chunk.index`; accumulate them and finalize once the stream completes.
+      const toolCallAccum = new Map<
+        number,
+        { id: string; name: string; args: string }
+      >()
+      // tool_result chunks carry no tool name — resolve it from the tool_call.
+      const toolCallIdToName = new Map<string, string>()
       const collectedToolResults: Array<{
         toolCallId: string
         toolName: string
@@ -231,33 +234,53 @@ app.post(
               fullResponse = chunk.content // Replace, not append - content is cumulative
             }
 
-            // Track tool calls made by assistant
-            if (chunk.type === 'tool-call') {
-              collectedToolCalls.push({
-                id: chunk.id,
-                name: chunk.name,
-                arguments:
-                  typeof chunk.arguments === 'string'
-                    ? JSON.parse(chunk.arguments)
-                    : chunk.arguments,
-              })
+            // Accumulate streamed tool-call fragments (id/name arrive on the
+            // first fragment; arguments concatenate across fragments per index).
+            if (chunk.type === 'tool_call') {
+              const entry = toolCallAccum.get(chunk.index) ?? {
+                id: '',
+                name: '',
+                args: '',
+              }
+              if (chunk.toolCall.id) entry.id = chunk.toolCall.id
+              if (chunk.toolCall.function.name) {
+                entry.name = chunk.toolCall.function.name
+              }
+              entry.args += chunk.toolCall.function.arguments
+              toolCallAccum.set(chunk.index, entry)
+              if (entry.id && entry.name) {
+                toolCallIdToName.set(entry.id, entry.name)
+              }
             }
 
-            // Track tool results
-            if (chunk.type === 'tool-result') {
+            // Track tool results (name looked up via the toolCallId map).
+            if (chunk.type === 'tool_result') {
               collectedToolResults.push({
                 toolCallId: chunk.toolCallId,
-                toolName: chunk.toolName || '',
-                content:
-                  typeof chunk.content === 'string'
-                    ? chunk.content
-                    : JSON.stringify(chunk.content),
+                toolName: toolCallIdToName.get(chunk.toolCallId) ?? '',
+                content: chunk.content,
               })
             }
 
             yield chunk
           }
         } finally {
+          // Finalize accumulated tool calls (parse the completed argument JSON).
+          const collectedToolCalls = Array.from(toolCallAccum.values())
+            .filter((e) => e.id && e.name)
+            .map((e) => {
+              let args: Record<string, unknown> = {}
+              try {
+                const parsed: unknown = JSON.parse(e.args || '{}')
+                if (typeof parsed === 'object' && parsed !== null) {
+                  args = parsed as Record<string, unknown>
+                }
+              } catch {
+                args = {}
+              }
+              return { id: e.id, name: e.name, arguments: args }
+            })
+
           // Save assistant message with tool calls after stream completes
           if (fullResponse || collectedToolCalls.length > 0) {
             await sessionService.addMessage(session.id, {

@@ -33,12 +33,14 @@ const createSessionSchema = z.object({
 
 const streamActionSchema = z.object({
   action: z.enum([
+    'start_toolset',
     'start_requirements',
     'start_bom',
     'start_cad_generation',
     'start_assembly_composition',
     'regenerate_part',
     'resume',
+    'confirm_toolset',
     'confirm_requirements',
     'confirm_bom',
     'confirm_cad',
@@ -67,16 +69,13 @@ function determineStageForResume(stage: string): 'requirements' | 'bom' | null {
   return null
 }
 
-/**
- * Try to find the question text for a pending clarification from events stored in the session.
- * Falls back to the questionId itself if not found.
- */
 function findPendingQuestion(
-  _artifacts: DesignArtifacts,
+  artifacts: DesignArtifacts,
   questionId: string,
 ): string {
-  // The question text isn't stored in artifacts — it was streamed as a StageEvent.
-  // We use the questionId as a fallback. The prompt builder uses the answer anyway.
+  if (artifacts.pendingClarification?.id === questionId) {
+    return artifacts.pendingClarification.question
+  }
   return questionId
 }
 
@@ -380,6 +379,12 @@ app.post(
       })
 
       // Handle stage confirmations (non-streaming)
+      if (action === 'confirm_toolset') {
+        await designEngine.confirmStage(params.id, 'toolset')
+        const updated = await DesignSessionService.getById(params.id)
+        return { session: updated, confirmed: 'toolset' }
+      }
+
       if (action === 'confirm_requirements') {
         await designEngine.confirmStage(params.id, 'requirements')
         const updated = await DesignSessionService.getById(params.id)
@@ -415,6 +420,10 @@ app.post(
 
         const current = await DesignSessionService.getById(params.id)
         if (current?.artifacts) {
+          const pending =
+            current.artifacts.pendingClarification?.id === questionId
+              ? current.artifacts.pendingClarification
+              : undefined
           const artifacts: DesignArtifacts = {
             ...current.artifacts,
             clarifications: [
@@ -422,17 +431,18 @@ app.post(
               {
                 questionId,
                 question:
-                  current.artifacts.pendingClarificationId === questionId
-                    ? findPendingQuestion(current.artifacts, questionId)
-                    : questionId,
+                  pending?.question ??
+                  findPendingQuestion(current.artifacts, questionId),
+                options: pending?.options,
+                multiSelect: pending?.multiSelect,
                 answer,
                 answeredAt: new Date().toISOString(),
                 stage: current.stage as DesignSessionStage,
-                options: undefined,
               },
             ],
             userMessages: current.artifacts.userMessages,
             pendingClarificationId: undefined,
+            pendingClarification: undefined,
           }
           await DesignSessionService.updateArtifacts(params.id, artifacts)
         }
@@ -531,7 +541,12 @@ app.post(
       // Handle streaming stages
       let eventSource: AsyncIterable<StageEvent>
 
-      if (action === 'start_requirements') {
+      if (action === 'start_toolset') {
+        eventSource = designEngine.runToolsetEstablishmentStage(
+          params.id,
+          abortController.signal,
+        )
+      } else if (action === 'start_requirements') {
         eventSource = designEngine.runRequirementsStage(
           params.id,
           abortController.signal,

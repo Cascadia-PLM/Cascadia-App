@@ -41,6 +41,7 @@ export interface ClarificationEntry {
   questionId: string
   question: string
   options?: Array<string>
+  multiSelect?: boolean
   answer: string
   answeredAt: string // ISO timestamp
   stage: DesignSessionStage
@@ -151,6 +152,7 @@ export type StageEvent =
       questionId: string
       question: string
       options?: Array<string>
+      multiSelect?: boolean
     }
   | { type: 'stage_complete'; stage: DesignSessionStage; summary: string }
   | { type: 'error'; message: string }
@@ -386,6 +388,7 @@ export interface DesignArtifacts {
     id: string
     question: string
     options?: Array<string>
+    multiSelect?: boolean
   }
   materializationResult?: MaterializationResult
   cadGenerationState?: CadGenerationState
@@ -499,6 +502,7 @@ const clarificationEntrySchema = z.object({
   questionId: z.string(),
   question: z.string(),
   options: z.array(z.string()).optional(),
+  multiSelect: z.boolean().optional(),
   answer: z.string(),
   answeredAt: z.string(),
   stage: z.string(),
@@ -608,6 +612,7 @@ export const designArtifactsPatchSchema = z
         id: z.string(),
         question: z.string(),
         options: z.array(z.string()).optional(),
+        multiSelect: z.boolean().optional(),
       })
       .optional(),
     materializationResult: z

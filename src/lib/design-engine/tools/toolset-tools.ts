@@ -9,6 +9,7 @@
 import { toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
 import { and, eq, ilike, or } from 'drizzle-orm'
+import { toolErrorMessage } from './tool-utils'
 import type {
   DesignSessionToolset,
   ManufacturingScope,
@@ -31,6 +32,7 @@ export function createToolsetTools(
     questionId: string,
     question: string,
     options?: Array<string>,
+    multiSelect?: boolean,
   ) => void,
 ) {
   const state: ToolsetBuildState = {
@@ -67,61 +69,66 @@ export function createToolsetTools(
     outputSchema: z.object({
       tools: z.array(z.record(z.string(), z.unknown())),
       total: z.number(),
+      error: z.string().optional(),
     }),
   }).server(async (input) => {
-    const conditions = [
-      eq(items.itemType, 'Tool'),
-      eq(items.isCurrent, true),
-      eq(items.isDeleted, false),
-    ]
+    try {
+      const conditions = [
+        eq(items.itemType, 'Tool'),
+        eq(items.isCurrent, true),
+        eq(items.isDeleted, false),
+      ]
 
-    // Search across name, manufacturer, model
-    if (input.query) {
-      const pattern = `%${input.query}%`
-      conditions.push(
-        or(
-          ilike(items.name, pattern),
-          ilike(tools.manufacturer, pattern),
-          ilike(tools.model, pattern),
-        )!,
+      // Search across name, manufacturer, model
+      if (input.query) {
+        const pattern = `%${input.query}%`
+        conditions.push(
+          or(
+            ilike(items.name, pattern),
+            ilike(tools.manufacturer, pattern),
+            ilike(tools.model, pattern),
+          )!,
+        )
+      }
+
+      if (input.toolType) {
+        conditions.push(eq(tools.toolType, input.toolType))
+      }
+      if (input.toolSubtype) {
+        conditions.push(eq(tools.toolSubtype, input.toolSubtype))
+      }
+
+      const results = await db
+        .select({
+          id: items.id,
+          itemNumber: items.itemNumber,
+          name: items.name,
+          state: items.state,
+          toolType: tools.toolType,
+          toolSubtype: tools.toolSubtype,
+          manufacturer: tools.manufacturer,
+          model: tools.model,
+          capabilities: tools.capabilities,
+          toolStatus: tools.toolStatus,
+          location: tools.location,
+          notes: tools.notes,
+        })
+        .from(items)
+        .innerJoin(tools, eq(items.id, tools.itemId))
+        .where(and(...conditions))
+        .limit(20)
+
+      // Only return active tools (toolStatus = available or in_use)
+      const activeTools = results.filter(
+        (t) => t.toolStatus === 'available' || t.toolStatus === 'in_use',
       )
-    }
 
-    if (input.toolType) {
-      conditions.push(eq(tools.toolType, input.toolType))
-    }
-    if (input.toolSubtype) {
-      conditions.push(eq(tools.toolSubtype, input.toolSubtype))
-    }
-
-    const results = await db
-      .select({
-        id: items.id,
-        itemNumber: items.itemNumber,
-        name: items.name,
-        state: items.state,
-        toolType: tools.toolType,
-        toolSubtype: tools.toolSubtype,
-        manufacturer: tools.manufacturer,
-        model: tools.model,
-        capabilities: tools.capabilities,
-        toolStatus: tools.toolStatus,
-        location: tools.location,
-        notes: tools.notes,
-      })
-      .from(items)
-      .innerJoin(tools, eq(items.id, tools.itemId))
-      .where(and(...conditions))
-      .limit(20)
-
-    // Only return active tools (toolStatus = available or in_use)
-    const activeTools = results.filter(
-      (t) => t.toolStatus === 'available' || t.toolStatus === 'in_use',
-    )
-
-    return {
-      tools: activeTools as Array<Record<string, unknown>>,
-      total: activeTools.length,
+      return {
+        tools: activeTools as Array<Record<string, unknown>>,
+        total: activeTools.length,
+      }
+    } catch (err) {
+      return { tools: [], total: 0, error: toolErrorMessage(err) }
     }
   })
 
@@ -269,24 +276,32 @@ export function createToolsetTools(
   const askToolsetClarification = toolDefinition({
     name: 'ask_toolset_clarification',
     description:
-      "Ask the user a question about their manufacturing capabilities, equipment, or preferences. Use this when the product description mentions manufacturing methods but you're unsure about specifics.",
+      "Ask the user a question about their manufacturing capabilities, equipment, or preferences. Use this when the product description mentions manufacturing methods but you're unsure about specifics. ALWAYS provide `options` when the answer is a known choice from a finite set (yes/no, list of tools, list of processes). Set `multiSelect: true` when more than one option can apply (e.g., \"which of these tools do you have?\"). Set `multiSelect: false` (or omit) when exactly one option should be picked.",
     inputSchema: z.object({
       question: z
         .string()
         .describe(
-          'The question to ask the user about their manufacturing setup',
+          'The question to ask the user about their manufacturing setup. Keep it concise — the UI will render the options separately, so do not embed an inline list of choices in the question text.',
         ),
       options: z
         .array(z.string())
         .optional()
-        .describe('Optional list of suggested answers'),
+        .describe(
+          'Suggested answers, presented as buttons or checkboxes. Provide these whenever the answer is a known choice from a finite set.',
+        ),
+      multiSelect: z
+        .boolean()
+        .optional()
+        .describe(
+          'True when the user can pick more than one option ("select all that apply"). Defaults to false (single choice).',
+        ),
     }),
     outputSchema: z.object({
       acknowledged: z.boolean(),
     }),
   }).server((input) => {
     const questionId = crypto.randomUUID()
-    onClarification(questionId, input.question, input.options)
+    onClarification(questionId, input.question, input.options, input.multiSelect)
     return { acknowledged: true }
   })
 

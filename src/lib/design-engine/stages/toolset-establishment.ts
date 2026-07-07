@@ -10,10 +10,12 @@
  * When the user answers, the stage is re-invoked with enriched context.
  */
 
-import { chat } from '@tanstack/ai'
+import { chat, maxIterations } from '@tanstack/ai'
 import { buildToolsetPrompt } from '../prompts/toolset-prompt'
+import { summarizeToolCalls } from '../prompts/tool-call-summary'
 import { createToolsetTools } from '../tools/toolset-tools'
 import { DesignSessionService } from '../session-service'
+import { createToolEventTracker } from './tool-event-tracker'
 import type { DesignSession } from '../session-service'
 import type {
   DesignArtifacts,
@@ -21,6 +23,9 @@ import type {
   StageEvent,
 } from '../types'
 import { getAdapter, loadProviderConfig } from '@/lib/ai/adapters'
+
+/** Cap the tool-calling loop so a search-then-add sequence isn't cut short. */
+const TOOLSET_MAX_ITERATIONS = 15
 
 export async function* runToolsetEstablishmentStage(
   session: DesignSession,
@@ -55,6 +60,7 @@ export async function* runToolsetEstablishmentStage(
       questionId: string
       question: string
       options?: Array<string>
+      multiSelect?: boolean
     } | null
   } = { requested: false, data: null }
 
@@ -64,9 +70,11 @@ export async function* runToolsetEstablishmentStage(
     (toolset) => {
       currentToolset = toolset
     },
-    (questionId, question, options) => {
+    (questionId, question, options, multiSelect) => {
+      // First clarification in a round wins — don't let a later one overwrite it.
+      if (clarificationRef.requested) return
       clarificationRef.requested = true
-      clarificationRef.data = { questionId, question, options }
+      clarificationRef.data = { questionId, question, options, multiSelect }
     },
   )
 
@@ -76,6 +84,9 @@ export async function* runToolsetEstablishmentStage(
     const adapter = getAdapter(providerConfig)
 
     // Build system prompt
+    const priorToolCalls = isResuming
+      ? summarizeToolCalls(session.llmHistory)
+      : ''
     const systemPrompt = buildToolsetPrompt(
       description,
       artifacts.clarifications.length > 0
@@ -85,6 +96,7 @@ export async function* runToolsetEstablishmentStage(
       isResuming && artifacts.toolset?.tools.length
         ? artifacts.toolset
         : undefined,
+      priorToolCalls || undefined,
     )
 
     // Build messages
@@ -110,11 +122,13 @@ export async function* runToolsetEstablishmentStage(
       messages,
       tools,
       maxTokens: 8192,
+      agentLoopStrategy: maxIterations(TOOLSET_MAX_ITERATIONS),
       abortController,
     })
 
     let lastToolCount = artifacts.toolset?.tools.length ?? 0
     let accumulatedText = ''
+    const tracker = createToolEventTracker()
 
     for await (const chunk of stream) {
       if (clarificationRef.requested || signal?.aborted) break
@@ -128,17 +142,12 @@ export async function* runToolsetEstablishmentStage(
         }
       }
 
+      // Translate SDK tool chunks into tool_call/tool_result events so they're
+      // captured into llmHistory (and shown in the activity feed).
+      for (const ev of tracker.handle(chunk)) yield ev
+
       // Check for toolset changes and yield artifact updates
       if (currentToolset.tools.length !== lastToolCount) {
-        const newTools = currentToolset.tools.slice(lastToolCount)
-        for (const tool of newTools) {
-          yield {
-            type: 'tool_result',
-            toolName: 'add_session_tool',
-            result: { sessionToolId: tool.id, name: tool.name },
-          }
-        }
-
         artifacts.toolset = { ...currentToolset }
         yield {
           type: 'artifact_update',
@@ -157,6 +166,7 @@ export async function* runToolsetEstablishmentStage(
         id: clarificationRef.data.questionId,
         question: clarificationRef.data.question,
         options: clarificationRef.data.options,
+        multiSelect: clarificationRef.data.multiSelect,
       }
       await DesignSessionService.updateArtifacts(session.id, artifacts)
 
@@ -165,6 +175,7 @@ export async function* runToolsetEstablishmentStage(
         questionId: clarificationRef.data.questionId,
         question: clarificationRef.data.question,
         options: clarificationRef.data.options,
+        multiSelect: clarificationRef.data.multiSelect,
       }
 
       yield { type: 'paused', reason: 'Waiting for your answer...' }

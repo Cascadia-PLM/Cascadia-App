@@ -10,13 +10,18 @@
  * When the user answers, the stage is re-invoked with enriched context.
  */
 
-import { chat } from '@tanstack/ai'
+import { chat, maxIterations } from '@tanstack/ai'
 import { buildRequirementsPrompt } from '../prompts/requirements-prompt'
+import { summarizeToolCalls } from '../prompts/tool-call-summary'
 import { createRequirementsTools } from '../tools/requirements-tools'
 import { DesignSessionService } from '../session-service'
+import { createToolEventTracker } from './tool-event-tracker'
 import type { DesignSession } from '../session-service'
 import type { DesignArtifacts, RequirementDraft, StageEvent } from '../types'
 import { getAdapter, loadProviderConfig } from '@/lib/ai/adapters'
+
+/** Cap the tool-calling loop so a search-then-propose sequence isn't cut short. */
+const REQUIREMENTS_MAX_ITERATIONS = 20
 
 export async function* runRequirementsStage(
   session: DesignSession,
@@ -60,17 +65,28 @@ export async function* runRequirementsStage(
       questionId: string
       question: string
       options?: Array<string>
+      multiSelect?: boolean
     } | null
   } = { requested: false, data: null }
 
   const tools = createRequirementsTools(
     toolContext,
     (requirement) => {
+      // Structural dedup: same normalized name → return the existing tempId
+      // instead of adding a duplicate (guards re-proposes on resume).
+      const normalized = requirement.name.trim().toLowerCase()
+      const existing = proposedRequirements.find(
+        (r) => r.name.trim().toLowerCase() === normalized,
+      )
+      if (existing) return { tempId: existing.tempId, added: false }
       proposedRequirements.push(requirement)
+      return { tempId: requirement.tempId, added: true }
     },
-    (questionId, question, options) => {
+    (questionId, question, options, multiSelect) => {
+      // First clarification in a round wins — don't let a later one overwrite it.
+      if (clarificationRef.requested) return
       clarificationRef.requested = true
-      clarificationRef.data = { questionId, question, options }
+      clarificationRef.data = { questionId, question, options, multiSelect }
     },
   )
 
@@ -80,6 +96,9 @@ export async function* runRequirementsStage(
     const adapter = getAdapter(providerConfig)
 
     // Build system prompt with clarification/user message context
+    const priorToolCalls = isResuming
+      ? summarizeToolCalls(session.llmHistory)
+      : ''
     const systemPrompt = buildRequirementsPrompt(
       description,
       artifacts.clarifications.length > 0
@@ -89,6 +108,8 @@ export async function* runRequirementsStage(
       isResuming && artifacts.requirements.length > 0
         ? artifacts.requirements
         : undefined,
+      undefined,
+      priorToolCalls || undefined,
     )
 
     // Build messages - cast to satisfy TanStack AI's constrained message types
@@ -114,11 +135,13 @@ export async function* runRequirementsStage(
       messages,
       tools,
       maxTokens: 16384,
+      agentLoopStrategy: maxIterations(REQUIREMENTS_MAX_ITERATIONS),
       abortController,
     })
 
     let lastRequirementsCount = artifacts.requirements.length
     let accumulatedText = ''
+    const tracker = createToolEventTracker()
 
     for await (const chunk of stream) {
       // Check if clarification was requested or abort signalled — break out of loop
@@ -133,17 +156,12 @@ export async function* runRequirementsStage(
         }
       }
 
+      // Translate SDK tool chunks into tool_call/tool_result events so they're
+      // captured into llmHistory (and shown in the activity feed).
+      for (const ev of tracker.handle(chunk)) yield ev
+
       // Check for new requirements and yield artifact updates
       if (proposedRequirements.length > lastRequirementsCount) {
-        const newReqs = proposedRequirements.slice(lastRequirementsCount)
-        for (const req of newReqs) {
-          yield {
-            type: 'tool_result',
-            toolName: 'propose_requirement',
-            result: { tempId: req.tempId, name: req.name },
-          }
-        }
-
         artifacts.requirements = [...proposedRequirements]
         yield {
           type: 'artifact_update',
@@ -163,6 +181,7 @@ export async function* runRequirementsStage(
         id: clarificationRef.data.questionId,
         question: clarificationRef.data.question,
         options: clarificationRef.data.options,
+        multiSelect: clarificationRef.data.multiSelect,
       }
       await DesignSessionService.updateArtifacts(session.id, artifacts)
 
@@ -171,6 +190,7 @@ export async function* runRequirementsStage(
         questionId: clarificationRef.data.questionId,
         question: clarificationRef.data.question,
         options: clarificationRef.data.options,
+        multiSelect: clarificationRef.data.multiSelect,
       }
 
       yield { type: 'paused', reason: 'Waiting for your answer...' }

@@ -14,6 +14,7 @@ export function buildRequirementsPrompt(
   userMessages?: Array<UserMessage>,
   existingRequirements?: Array<RequirementDraft>,
   schemaContext?: string,
+  priorToolCalls?: string,
 ): string {
   let prompt = `You are a systems engineering assistant helping design a product. Your task is to analyze a product description and generate complete and fully detailed structured requirements.
 
@@ -75,6 +76,10 @@ ${description}
 
   if (schemaContext) {
     prompt += `\n## PLM Schema Context\n${schemaContext}\n`
+  }
+
+  if (priorToolCalls) {
+    prompt += `\n${priorToolCalls}\n`
   }
 
   prompt += `\nBegin by searching for similar designs, then propose requirements one at a time.`

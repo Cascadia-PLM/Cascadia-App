@@ -11,6 +11,7 @@ import {
   getMechanismRoles,
   validateMechanismParameters,
 } from '../validation/mechanism-schemas'
+import { toolErrorMessage } from './tool-utils'
 import type { ToolContext } from '@/lib/ai/tools/permission-wrapper'
 import type {
   BomDraft,
@@ -43,6 +44,7 @@ export function createBomTools(
     questionId: string,
     question: string,
     options?: Array<string>,
+    multiSelect?: boolean,
   ) => void,
 ) {
   const searchParts = toolDefinition({
@@ -60,16 +62,21 @@ export function createBomTools(
     outputSchema: z.object({
       items: z.array(z.record(z.string(), z.unknown())),
       total: z.number(),
+      error: z.string().optional(),
     }),
   }).server(async (input) => {
-    return (await searchItemsHandler(
-      {
-        query: input.query,
-        itemType: input.itemType,
-        limit: input.limit ?? 10,
-      },
-      context,
-    )) as { items: Array<Record<string, unknown>>; total: number }
+    try {
+      return (await searchItemsHandler(
+        {
+          query: input.query,
+          itemType: input.itemType,
+          limit: input.limit ?? 10,
+        },
+        context,
+      )) as { items: Array<Record<string, unknown>>; total: number }
+    } catch (err) {
+      return { items: [], total: 0, error: toolErrorMessage(err) }
+    }
   })
 
   const lookupComponentCatalog = toolDefinition({
@@ -99,27 +106,32 @@ export function createBomTools(
       results: z.array(z.record(z.string(), z.unknown())),
       total: z.number(),
       message: z.string().optional(),
+      error: z.string().optional(),
     }),
   }).server(async (input) => {
-    const { results, total } = await CatalogService.search(input.query, {
-      categorySlug: input.category,
-      entryType: input.entryType,
-      limit: input.limit ?? 5,
-    })
+    try {
+      const { results, total } = await CatalogService.search(input.query, {
+        categorySlug: input.category,
+        entryType: input.entryType,
+        limit: input.limit ?? 5,
+      })
 
-    if (results.length === 0) {
-      return {
-        results: [],
-        total: 0,
-        message:
-          'No catalog matches found. Propose the part with your best knowledge of specs ' +
-          'and set requiresManualSourcing = true so engineers can source it manually.',
+      if (results.length === 0) {
+        return {
+          results: [],
+          total: 0,
+          message:
+            'No catalog matches found. Propose the part with your best knowledge of specs ' +
+            'and set requiresManualSourcing = true so engineers can source it manually.',
+        }
       }
-    }
 
-    return {
-      results: results as unknown as Array<Record<string, unknown>>,
-      total,
+      return {
+        results: results as unknown as Array<Record<string, unknown>>,
+        total,
+      }
+    } catch (err) {
+      return { results: [], total: 0, error: toolErrorMessage(err) }
     }
   })
 
@@ -132,10 +144,14 @@ export function createBomTools(
     }),
     outputSchema: z.record(z.string(), z.unknown()),
   }).server(async (input) => {
-    return (await getBomHandler(
-      { itemId: input.itemId, depth: input.depth },
-      context,
-    )) as Record<string, unknown>
+    try {
+      return (await getBomHandler(
+        { itemId: input.itemId, depth: input.depth },
+        context,
+      )) as Record<string, unknown>
+    } catch (err) {
+      return { error: toolErrorMessage(err) }
+    }
   })
 
   const getItemDetails = toolDefinition({
@@ -146,10 +162,14 @@ export function createBomTools(
     }),
     outputSchema: z.record(z.string(), z.unknown()),
   }).server(async (input) => {
-    return (await getItemDetailsHandler({ id: input.id }, context)) as Record<
-      string,
-      unknown
-    >
+    try {
+      return (await getItemDetailsHandler({ id: input.id }, context)) as Record<
+        string,
+        unknown
+      >
+    } catch (err) {
+      return { error: toolErrorMessage(err) }
+    }
   })
 
   const proposeNewPart = toolDefinition({
@@ -298,6 +318,14 @@ export function createBomTools(
       tempId: z.string(),
     }),
   }).server((input) => {
+    // Structural dedup: same name under the same parent → return the existing
+    // node instead of adding a duplicate (guards re-proposes on resume).
+    const normalizedName = input.name.trim().toLowerCase()
+    const duplicate = siblingsFor(input.parentTempId).find(
+      (n) => n.name.trim().toLowerCase() === normalizedName,
+    )
+    if (duplicate) return { tempId: duplicate.tempId }
+
     const tempId = crypto.randomUUID()
 
     const proposedPart: ProposedPart = {
@@ -383,6 +411,13 @@ export function createBomTools(
       tempId: z.string(),
     }),
   }).server((input) => {
+    // Structural dedup: same existing item under the same parent → return the
+    // existing node instead of adding a duplicate (guards re-adds on resume).
+    const duplicate = siblingsFor(input.parentTempId).find(
+      (n) => n.existingItemId === input.existingItemId,
+    )
+    if (duplicate) return { tempId: duplicate.tempId }
+
     const tempId = crypto.randomUUID()
     const bomNode: BomNodeDraft = {
       tempId,
@@ -468,17 +503,33 @@ export function createBomTools(
 
   const askBomClarification = toolDefinition({
     name: 'ask_bom_clarification',
-    description: 'Ask the user for clarification about the BOM structure.',
+    description:
+      'Ask the user for clarification about the BOM structure. ALWAYS provide `options` when the answer is a known choice from a finite set. Set `multiSelect: true` when more than one option can apply ("select all that apply").',
     inputSchema: z.object({
-      question: z.string(),
-      options: z.array(z.string()).optional(),
+      question: z
+        .string()
+        .describe(
+          'The question to ask the user. Keep it concise — options are rendered separately, so do not embed an inline list of choices in the question text.',
+        ),
+      options: z
+        .array(z.string())
+        .optional()
+        .describe(
+          'Suggested answers, presented as buttons or checkboxes. Provide these whenever the answer is a known choice from a finite set.',
+        ),
+      multiSelect: z
+        .boolean()
+        .optional()
+        .describe(
+          'True when the user can pick more than one option ("select all that apply"). Defaults to false (single choice).',
+        ),
     }),
     outputSchema: z.object({
       acknowledged: z.boolean(),
     }),
   }).server((input) => {
     const questionId = crypto.randomUUID()
-    onClarification(questionId, input.question, input.options)
+    onClarification(questionId, input.question, input.options, input.multiSelect)
     return { acknowledged: true }
   })
 
@@ -820,6 +871,22 @@ export function createBomTools(
     state.changeVersion++
     const bom = buildBomDraft(state)
     onUpdate(bom)
+  }
+
+  /**
+   * The sibling nodes a new node would join under `parentTempId` (or the root
+   * level when no parent is given). Used for structural dedup so a re-run after
+   * a resume doesn't append duplicate nodes under the same parent.
+   */
+  function siblingsFor(parentTempId?: string): Array<BomNodeDraft> {
+    if (parentTempId) {
+      const parent = state.nodes.get(parentTempId)
+      return parent ? parent.children : []
+    }
+    const root = state.rootTempId
+      ? state.nodes.get(state.rootTempId)
+      : undefined
+    return root ? [root] : []
   }
 
   return [

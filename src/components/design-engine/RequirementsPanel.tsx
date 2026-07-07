@@ -53,6 +53,7 @@ const TYPE_LABELS: Record<string, string> = {
 interface RequirementsPanelProps {
   requirements: Array<RequirementDraft>
   currentStage: DesignSessionStage
+  isStreaming?: boolean
   onUpdate?: (tempId: string, data: Partial<RequirementDraft>) => void
   onRemove?: (tempId: string) => void
   onAdd?: (data: Partial<RequirementDraft>) => void
@@ -62,6 +63,7 @@ interface RequirementsPanelProps {
 export function RequirementsPanel({
   requirements,
   currentStage,
+  isStreaming,
   onUpdate,
   onRemove,
   onAdd,
@@ -82,9 +84,10 @@ export function RequirementsPanel({
   const [newType, setNewType] =
     useState<RequirementDraft['requirementType']>('Functional')
 
-  const canEdit =
+  const inEditableStage =
     currentStage === 'requirements_review' ||
     currentStage === 'requirements_drafting'
+  const canEdit = inEditableStage && !isStreaming
   const canConfirm =
     currentStage === 'requirements_review' && requirements.length > 0
 
@@ -132,7 +135,7 @@ export function RequirementsPanel({
         </h3>
         {canEdit && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => setAddingNew(true)}
             className="h-7 text-xs gap-1"
@@ -142,6 +145,14 @@ export function RequirementsPanel({
           </Button>
         )}
       </div>
+
+      {inEditableStage && requirements.length > 0 && (
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          {canEdit
+            ? 'Use Edit to refine a requirement, or Reject to remove one.'
+            : 'Pause the AI to edit or reject requirements.'}
+        </p>
+      )}
 
       {requirements.length === 0 && !addingNew && (
         <p className="text-xs text-slate-400 dark:text-slate-500 py-2">
@@ -246,23 +257,35 @@ export function RequirementsPanel({
                       </p>
                     )}
                   </div>
-                  {canEdit && (
-                    <div className="flex gap-1 flex-shrink-0">
+                  {inEditableStage && (
+                    <div className="flex gap-1.5 flex-shrink-0">
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => startEdit(req)}
-                        className="h-6 w-6 p-0"
+                        disabled={!canEdit}
+                        className="h-7 px-2 text-xs gap-1"
+                        title={
+                          canEdit ? 'Edit requirement' : 'Pause the AI to edit'
+                        }
                       >
                         <Pencil className="h-3 w-3" />
+                        Edit
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => onRemove?.(req.tempId)}
-                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                        disabled={!canEdit}
+                        className="h-7 px-2 text-xs gap-1 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:border-red-900 dark:hover:bg-red-950"
+                        title={
+                          canEdit
+                            ? 'Reject this requirement'
+                            : 'Pause the AI to reject'
+                        }
                       >
                         <Trash2 className="h-3 w-3" />
+                        Reject
                       </Button>
                     </div>
                   )}

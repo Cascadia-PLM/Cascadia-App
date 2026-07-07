@@ -59,7 +59,11 @@ src/
 │   ├── ai/           # AI chatbot tools, adapters, session service
 │   ├── design-engine/# Collaborative design engine (stages, tools, prompts, materialization)
 │   └── cad-generation/ # CAD generation pipeline (Zoo API, KCL, assembly)
-├── routes/           # TanStack Router routes & API endpoints
+├── routes/           # TanStack Router file-based routes (frontend SPA pages)
+├── server/           # Hono API server
+│   ├── index.ts      # Entry: mounts every route module under /api/v1/*
+│   ├── adapter.ts    # tagged() factory for consistent OpenAPI tags
+│   └── routes/       # API route modules — one file per resource (parts, items, …)
 └── __tests__/        # Test utilities and fixtures
 workers/
 ├── node/             # Node.js job worker Dockerfile
@@ -89,10 +93,13 @@ npm run db:push       # Push schema directly to database (dev only)
 npm run db:studio     # Open Drizzle Studio GUI
 npm run db:seed       # Minimal seed (admin, roles, program, standard library)
 npm run db:seed:catalog  # Generic component catalog (fasteners, raw stock)
+npm run db:seed:demo  # Full TDJ-25 demo robot-arm dataset (~88 parts, BOM, CAD)
 
 # Database Reset (truncates all tables, then optionally reseeds)
-npm run db:reset              # Truncate all tables only
+npm run db:reset              # Truncate all tables only (data gone, schema kept)
 npm run db:reset:seed         # Truncate + minimal seed
+npm run db:drop               # Drop all tables (schema gone, not just data)
+npm run db:drop:seed          # Drop + re-push schema + minimal seed
 
 # Testing
 npm run test          # Run Vitest tests
@@ -110,9 +117,11 @@ npx vitest run src/lib/services/BranchService.test.ts
 npx vitest run -t "should create branch"
 
 # Code Quality
-npm run lint          # ESLint
+npm run lint          # ESLint (--max-warnings 0)
 npm run format        # Prettier
 npm run check         # Format + lint fix
+npm run openapi:snapshot  # Regenerate docs/api/openapi.v1.json after route changes
+npm run openapi:check     # Verify the committed OpenAPI snapshot matches (CI gate)
 
 # Background Workers
 npm run workers:dev   # Start RabbitMQ + all workers (Node.js + Python)
@@ -123,17 +132,19 @@ npm run workers:logs  # Tail Python worker logs
 npm run jobs:worker:dev    # Node.js worker only (requires RabbitMQ)
 npm run cad:worker:dev     # CAD converter only (Docker)
 npm run cadgen:worker:dev  # CAD generator only (Docker)
+
+# Demo Stack (full pre-seeded environment via docker-compose.demo.yml)
+npm run demo:up       # Start the demo stack (Postgres, RabbitMQ, app, workers)
+npm run demo:down     # Stop the demo stack
+npm run demo:reset    # Recreate the demo stack from scratch (wipes demo volumes)
+npm run demo:logs     # Tail demo app logs
 ```
 
 ## Lint Warnings Baseline
 
-`npm run lint` runs `eslint --max-warnings N`, where `N` is the current warning count. This is a **ratchet**: the current baseline is the ceiling — any new warning fails lint. Most of these are `@typescript-eslint/no-unnecessary-condition` (over-defensive null/undefined guards that the type system already rules out).
+`npm run lint` runs `eslint --max-warnings 0` — the warning ratchet has reached its floor. **Zero warnings are tolerated**: any new warning fails lint (and CI). Historically the bulk were `@typescript-eslint/no-unnecessary-condition` (over-defensive null/undefined guards the type system already rules out).
 
-**Target: 20 warnings.** Legitimately-defensive code at system boundaries may still trip the rule; 20 is the rough floor we expect once over-guarding is cleaned up.
-
-**When you specifically address lint warnings** (as opposed to incidentally touching a file and fixing a few), and the total drops below the previous threshold, **update `--max-warnings` in `package.json` to the new count** in the same commit. The ratchet should only ever move down, never up. If a refactor legitimately adds a warning, fix one elsewhere to keep the ceiling flat.
-
-Do not raise the threshold to accommodate new warnings. If a warning cannot be fixed, disable it per-line with `// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- <reason>` so the suppression is visible and reviewable.
+Keep it at zero. **Do not raise `--max-warnings` in `package.json` to accommodate a new warning** — fix the warning instead. If a warning is genuinely unavoidable (legitimately-defensive code at a system boundary), disable it per-line with `// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- <reason>` so the suppression is visible and reviewable. The threshold may only ever move down, never up.
 
 ## Documentation Reference
 
@@ -492,17 +503,20 @@ SESSION_SECRET=your-secret-key    # Session encryption
 
 The design engine is a multi-stage AI workflow at `src/lib/design-engine/`:
 
-**Stages** (sequential): Requirements Drafting → Requirements Review → BOM Drafting → BOM Review → Materialization → CAD Generation → CAD Review → Assembly Composition → Assembly Review
+**Stages** (sequential): Toolset Establishment → Toolset Review → Requirements Drafting → Requirements Review → BOM Drafting → BOM Review → Materialization → CAD Generation → CAD Review → Assembly Composition → Assembly Review
+
+The canonical stage enum is `DesignSessionStage` in `src/lib/design-engine/types.ts`.
 
 **Key concepts:**
 
 - Sessions are persisted in `design_sessions` table with JSONB artifacts
-- Each stage has a file in `stages/` implementing the engine logic
+- Each drafting/review stage pairs into one file in `stages/` (`toolset-establishment.ts`, `requirements.ts`, `bom.ts`, `cad-generation.ts`, `assembly-composition.ts`); materialization lives in `materialize.ts`, not `stages/`
+- Toolset Establishment captures the available manufacturing processes/tools and a scope (`in_house_only` | `in_house_preferred` | `unconstrained`); selections become per-BOM-node `ManufacturingConstraints` (FDM, laser-cut, CNC, …) that constrain downstream BOM and CAD generation
 - BOM drafting uses LLM tool-calling with tools defined in `tools/bom-tools.ts`
 - Materialization creates actual PLM items (parts, requirements, relationships, ECO) from the draft
 - CAD generation submits prompts to Zoo's Text-to-CAD API, uploads STEP files to vault
 - Assembly composition uses KCL (KittyCAD Language) code generation
-- SSE streaming for real-time updates via `/api/design-engine/sessions/$id/stream`
+- SSE streaming for real-time updates via `POST /api/v1/design-engine/sessions/:id/stream`
 - UI workspace at `/designs/collaborative/$sessionId`
 
 **CAD converter** (`workers/cad-converter/`): Python worker using pythonocc-core. Processes STEP/IGES files into STL + GLB (with per-face color preservation). Connects to RabbitMQ for job processing.

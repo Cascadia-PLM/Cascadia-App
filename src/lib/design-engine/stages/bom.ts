@@ -16,9 +16,11 @@ import {
   buildBomContinuationPrompt,
   buildBomPrompt,
 } from '../prompts/bom-prompt'
+import { summarizeToolCalls } from '../prompts/tool-call-summary'
 import { createBomTools } from '../tools/bom-tools'
 import { validateBomDraft } from '../validation/bom-validator'
 import { DesignSessionService } from '../session-service'
+import { createToolEventTracker } from './tool-event-tracker'
 import type { DesignSession } from '../session-service'
 import type {
   BomDraft,
@@ -157,6 +159,7 @@ export async function* runBomStage(
       questionId: string
       question: string
       options?: Array<string>
+      multiSelect?: boolean
     } | null
   } = { requested: false, data: null }
 
@@ -166,9 +169,11 @@ export async function* runBomStage(
     (bom) => {
       bomRef.current = bom
     },
-    (questionId, question, options) => {
+    (questionId, question, options, multiSelect) => {
+      // First clarification in a round wins — don't let a later one overwrite it.
+      if (clarificationRef.requested) return
       clarificationRef.requested = true
-      clarificationRef.data = { questionId, question, options }
+      clarificationRef.data = { questionId, question, options, multiSelect }
     },
   )
 
@@ -178,6 +183,9 @@ export async function* runBomStage(
     const adapter = getAdapter(providerConfig)
 
     // Build system prompt with clarification/user message context
+    const priorToolCalls = isResuming
+      ? summarizeToolCalls(session.llmHistory)
+      : ''
     const systemPrompt = buildBomPrompt(
       description,
       artifacts.requirements,
@@ -188,6 +196,7 @@ export async function* runBomStage(
       isResuming && artifacts.bom ? artifacts.bom : undefined,
       undefined, // schemaContext
       artifacts.toolset ?? undefined,
+      priorToolCalls || undefined,
     )
 
     // Build messages - cast to satisfy TanStack AI's constrained message types
@@ -209,6 +218,8 @@ export async function* runBomStage(
     ): AsyncGenerator<StageEvent, boolean> {
       let lastBomVersion = bomState.changeVersion
       let accumulatedText = ''
+      // Fresh tracker per stream — pending args are keyed by a per-call index.
+      const tracker = createToolEventTracker()
 
       for await (const chunk of streamIter) {
         if (clarificationRef.requested || signal?.aborted) break
@@ -220,6 +231,10 @@ export async function* runBomStage(
             yield { type: 'llm_text', text: delta }
           }
         }
+
+        // Translate SDK tool chunks into tool_call/tool_result events so they're
+        // captured into llmHistory (and shown in the activity feed).
+        for (const ev of tracker.handle(chunk)) yield ev
 
         if (bomRef.current && bomState.changeVersion > lastBomVersion) {
           artifacts.bom = bomRef.current
@@ -268,6 +283,7 @@ export async function* runBomStage(
         id: clarificationRef.data.questionId,
         question: clarificationRef.data.question,
         options: clarificationRef.data.options,
+        multiSelect: clarificationRef.data.multiSelect,
       }
       await DesignSessionService.updateArtifacts(session.id, artifacts)
 
@@ -276,6 +292,7 @@ export async function* runBomStage(
         questionId: clarificationRef.data.questionId,
         question: clarificationRef.data.question,
         options: clarificationRef.data.options,
+        multiSelect: clarificationRef.data.multiSelect,
       }
 
       yield { type: 'paused', reason: 'Waiting for your answer...' }
@@ -306,6 +323,7 @@ export async function* runBomStage(
         bomRef.current,
         undefined, // schemaContext
         artifacts.toolset ?? undefined,
+        priorToolCalls || undefined,
       )
 
       const contUserMessage = buildBomContinuationPrompt(gaps)
@@ -348,6 +366,7 @@ export async function* runBomStage(
           questionId: string
           question: string
           options?: Array<string>
+          multiSelect?: boolean
         }
         if (bomRef.current) {
           artifacts.bom = bomRef.current
@@ -357,6 +376,7 @@ export async function* runBomStage(
           id: clarData.questionId,
           question: clarData.question,
           options: clarData.options,
+          multiSelect: clarData.multiSelect,
         }
         await DesignSessionService.updateArtifacts(session.id, artifacts)
 
@@ -365,6 +385,7 @@ export async function* runBomStage(
           questionId: clarData.questionId,
           question: clarData.question,
           options: clarData.options,
+          multiSelect: clarData.multiSelect,
         }
 
         yield { type: 'paused', reason: 'Waiting for your answer...' }

@@ -17,6 +17,7 @@ export function buildToolsetPrompt(
   clarifications?: Array<ClarificationEntry>,
   userMessages?: Array<UserMessage>,
   existingToolset?: DesignSessionToolset | null,
+  priorToolCalls?: string,
 ): string {
   let prompt = `You are a manufacturing engineer analyzing what tools and equipment are available for a product design session. Your task is to establish the manufacturing toolset that will be used during this design.
 
@@ -96,6 +97,10 @@ After searching and gathering information, present a summary:
     prompt += `\n## Current Toolset (Resume)\nThe following tools have already been added to the session:\n`
     prompt += formatToolsetSummary(existingToolset)
     prompt += `\nReview this existing toolset, incorporate any new clarification answers or user guidance, and continue the establishment process. Do not re-add tools that are already in the session.\n`
+  }
+
+  if (priorToolCalls) {
+    prompt += `\n${priorToolCalls}\n`
   }
 
   return prompt

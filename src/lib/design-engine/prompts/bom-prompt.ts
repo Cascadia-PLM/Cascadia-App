@@ -42,6 +42,7 @@ export function buildBomPrompt(
   existingBom?: BomDraft | null,
   schemaContext?: string,
   toolset?: DesignSessionToolset,
+  priorToolCalls?: string,
 ): string {
   const requirementsList = requirements
     .map(
@@ -249,6 +250,10 @@ apply_mechanism_template({
 
   if (schemaContext) {
     prompt += `\n## PLM Schema Context\n${schemaContext}\n`
+  }
+
+  if (priorToolCalls) {
+    prompt += `\n${priorToolCalls}\n`
   }
 
   const phaseCount =

@@ -326,6 +326,7 @@ export function CollaborativeWorkspace({
             <ArtifactPanel
               artifacts={stream.artifacts}
               currentStage={stream.currentStage}
+              isStreaming={stream.isStreaming}
               onUpdateDescription={handleUpdateDescription}
               onUpdateRequirement={handleUpdateRequirement}
               onRemoveRequirement={handleRemoveRequirement}
@@ -348,7 +349,7 @@ export function CollaborativeWorkspace({
             showStartBom ||
             showGenerateCad ||
             showStartAssembly) && (
-            <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 space-y-2">
               <Button
                 variant="default"
                 onClick={
@@ -381,6 +382,15 @@ export function CollaborativeWorkspace({
                         ? 'Generate CAD Files'
                         : 'Start Assembly Composition'}
               </Button>
+              {showStartToolset && (
+                <Button
+                  variant="ghost"
+                  onClick={handleStartRequirements}
+                  className="w-full text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                >
+                  Skip toolset — go straight to Requirements
+                </Button>
+              )}
             </div>
           )}
 

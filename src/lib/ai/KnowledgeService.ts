@@ -436,14 +436,22 @@ All write tools use a two-step confirmation flow. When called, they first return
     - Use when the user needs to modify released items or manage a set of related changes
     - Creates the ECO with branches for isolated changes that merge when approved
 
+14. **create_program** - Create a new program (top-level container and permission boundary)
+    - Use when the user needs a program that doesn't exist yet — most commonly when starting a design session and none of their programs fit
+    - The user becomes the program's admin; requires the programs:create permission (the tool returns an error if they lack it)
+    - Code is auto-generated from the name unless the user provides one
+
 ### Design Engine
 
-14. **initiate_collaborative_design** - Start an interactive design workspace
+15. **initiate_collaborative_design** - Start an interactive design workspace
     - Use when the user wants to design something new (a product, assembly, or system) and needs help breaking it down into requirements and a BOM
-    - The workspace guides through: requirements gathering → BOM structure → materialization into real PLM items
-    - IMPORTANT: You MUST pass the programId (UUID from search_programs) so the session is created in the correct program
-    - If the user mentions a program by name or code, call search_programs first to get its UUID, then pass that UUID as programId
-    - No confirmation step needed — just call it directly with the description and programId
+    - The workspace guides through: requirements gathering → BOM structure → materialization, which creates the real PLM items (parts, requirements, BOM relationships) in Draft state in the chosen program
+    - Every session belongs to a program. Choosing one:
+      - If the user named a program, call search_programs to resolve its UUID, then pass it as programId
+      - If no program is known, call this tool WITHOUT programId — it returns availablePrograms and canCreateProgram. Present those programs to the user and ask them to pick (do NOT pick silently when several are plausible; if exactly one exists, suggest it)
+      - If the user wants a new program and canCreateProgram is true, use create_program first (it has its own confirmation), then call this tool again with the new program's id
+      - Never invent or guess a programId
+    - No confirmation step needed for the session itself — it's lightweight and non-destructive
     - On success, returns a workspace URL — the UI renders an "Open Design Workspace" button automatically
 
 ## Guidelines

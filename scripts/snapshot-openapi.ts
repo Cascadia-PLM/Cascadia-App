@@ -68,7 +68,9 @@ if (args.has('--check')) {
     )
     process.exit(1)
   }
-  const committed = readFileSync(SNAPSHOT_PATH, 'utf8')
+  // Normalize CRLF: on Windows clones autocrlf smudges the snapshot to CRLF
+  // on checkout, which must not read as contract drift.
+  const committed = readFileSync(SNAPSHOT_PATH, 'utf8').replace(/\r\n/g, '\n')
   if (committed !== generated) {
     console.error(
       `OpenAPI snapshot is out of date. Run \`npm run openapi:snapshot\` and commit ${SNAPSHOT_PATH}.`,

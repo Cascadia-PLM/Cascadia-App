@@ -369,15 +369,15 @@ Bulk data import from spreadsheets with intelligent BOM parsing.
 
 Standards-based interoperability layer.
 
-| Feature                                          | Status | Notes                          |
-| ------------------------------------------------ | ------ | ------------------------------ |
+| Feature                                             | Status | Notes                          |
+| --------------------------------------------------- | ------ | ------------------------------ |
 | `/api/v1/sysml/projects`                            | ✅     | List designs as SysML projects |
 | `/api/v1/sysml/projects/:id`                        | ✅     | Get single project             |
 | `/api/v1/sysml/projects/:id/commits`                | ✅     | Commit history                 |
 | `/api/v1/sysml/projects/:id/branches/:bid/elements` | ✅     | Elements on branch             |
 | `/api/v1/sysml/projects/:id/commits/:cid/elements`  | ✅     | Elements at commit             |
-| SysML element serialization                      | ✅     | Convert items to SysML format  |
-| SysML relationship mapping                       | ✅     | BOM, Satisfy, Verify, etc.     |
+| SysML element serialization                         | ✅     | Convert items to SysML format  |
+| SysML relationship mapping                          | ✅     | BOM, Satisfy, Verify, etc.     |
 
 ### SysML Relationship Types ✅
 
@@ -514,7 +514,7 @@ Production-ready infrastructure.
 | ----------------------- | ------ | ------------------------ |
 | Environment variables   | ✅     | All config via env       |
 | .env file support       | ✅     | Local development        |
-| Health check endpoint   | ✅     | `/api/v1/health`            |
+| Health check endpoint   | ✅     | `/api/v1/health`         |
 | Secrets management docs | ✅     | Kubernetes secrets, etc. |
 
 ---
@@ -562,17 +562,17 @@ AI-assisted product design workflow that generates requirements, BOMs, CAD, and 
 
 ### Design Stages ✅
 
-| Stage                 | Status | Notes                                                              |
-| --------------------- | ------ | ------------------------------------------------------------------ |
-| Requirements drafting | ✅     | LLM analyzes description, proposes structured requirements         |
-| Requirements review   | ✅     | User edits/approves proposed requirements                          |
-| BOM drafting          | ✅     | LLM decomposes into hierarchical BOM, searches for reuse           |
-| BOM review            | ✅     | User validates BOM structure and requirement coverage              |
-| Materialization       | ✅     | Creates actual items, relationships, and ECO in PLM                |
-| CAD generation        | 🟡     | Generates STEP files via Zoo Text-to-CAD API for Manufacture parts |
-| CAD review            | 🟡     | 3D viewer for reviewing generated models                           |
-| Assembly composition  | 🟡     | Bottom-up assembly via KCL code generation                         |
-| Assembly review       | 🟡     | Final assembly validation                                          |
+| Stage                 | Status | Notes                                                                                                |
+| --------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| Requirements drafting | ✅     | LLM analyzes description, proposes structured requirements                                           |
+| Requirements review   | ✅     | User edits/approves proposed requirements                                                            |
+| BOM drafting          | ✅     | LLM decomposes into hierarchical BOM, searches for reuse                                             |
+| BOM review            | ✅     | User validates BOM structure and requirement coverage                                                |
+| Materialization       | ✅     | Creates items + BOM relationships in Draft (pre-release designs on main; released designs via an ECO) |
+| CAD generation        | 🟡     | Generates STEP files via Zoo Text-to-CAD API for Manufacture parts                                   |
+| CAD review            | 🟡     | 3D viewer for reviewing generated models                                                             |
+| Assembly composition  | 🟡     | Bottom-up assembly via KCL code generation                                                           |
+| Assembly review       | 🟡     | Final assembly validation                                                                            |
 
 ### BOM Drafting Tools ✅
 

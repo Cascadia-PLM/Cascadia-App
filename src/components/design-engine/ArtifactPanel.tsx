@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils'
 interface ArtifactPanelProps {
   artifacts: DesignArtifacts
   currentStage: DesignSessionStage
+  isStreaming?: boolean
   onUpdateDescription?: (description: string) => void
   onUpdateRequirement?: (
     tempId: string,
@@ -43,6 +44,7 @@ interface ArtifactPanelProps {
 export function ArtifactPanel({
   artifacts,
   currentStage,
+  isStreaming,
   onUpdateDescription,
   onUpdateRequirement,
   onRemoveRequirement,
@@ -161,6 +163,7 @@ export function ArtifactPanel({
         <RequirementsPanel
           requirements={artifacts.requirements}
           currentStage={currentStage}
+          isStreaming={isStreaming}
           onUpdate={onUpdateRequirement}
           onRemove={onRemoveRequirement}
           onAdd={onAddRequirement}

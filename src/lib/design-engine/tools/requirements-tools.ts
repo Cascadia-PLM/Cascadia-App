@@ -7,6 +7,7 @@
 
 import { toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
+import { toolErrorMessage } from './tool-utils'
 import type { ToolContext } from '@/lib/ai/tools/permission-wrapper'
 import type { RequirementDraft } from '../types'
 import {
@@ -17,11 +18,17 @@ import {
 /** Create tool definitions for the requirements stage */
 export function createRequirementsTools(
   context: ToolContext,
-  onPropose: (requirement: RequirementDraft) => void,
+  // Returns the resulting tempId and whether a new requirement was added; the
+  // stage owns dedup (a re-proposed name returns the existing tempId).
+  onPropose: (requirement: RequirementDraft) => {
+    tempId: string
+    added: boolean
+  },
   onClarification: (
     questionId: string,
     question: string,
     options?: Array<string>,
+    multiSelect?: boolean,
   ) => void,
 ) {
   const searchExistingDesigns = toolDefinition({
@@ -35,13 +42,21 @@ export function createRequirementsTools(
     outputSchema: z.object({
       designs: z.array(z.record(z.string(), z.unknown())),
       total: z.number(),
+      error: z.string().optional(),
     }),
   }).server(async (input) => {
-    const result = await searchDesignsHandler(
-      { query: input.query, limit: input.limit ?? 10 },
-      context,
-    )
-    return result as { designs: Array<Record<string, unknown>>; total: number }
+    try {
+      const result = await searchDesignsHandler(
+        { query: input.query, limit: input.limit ?? 10 },
+        context,
+      )
+      return result as {
+        designs: Array<Record<string, unknown>>
+        total: number
+      }
+    } catch (err) {
+      return { designs: [], total: 0, error: toolErrorMessage(err) }
+    }
   })
 
   const searchPartsLibrary = toolDefinition({
@@ -59,17 +74,22 @@ export function createRequirementsTools(
     outputSchema: z.object({
       items: z.array(z.record(z.string(), z.unknown())),
       total: z.number(),
+      error: z.string().optional(),
     }),
   }).server(async (input) => {
-    const result = await searchItemsHandler(
-      {
-        query: input.query,
-        itemType: input.itemType,
-        limit: input.limit ?? 10,
-      },
-      context,
-    )
-    return result as { items: Array<Record<string, unknown>>; total: number }
+    try {
+      const result = await searchItemsHandler(
+        {
+          query: input.query,
+          itemType: input.itemType,
+          limit: input.limit ?? 10,
+        },
+        context,
+      )
+      return result as { items: Array<Record<string, unknown>>; total: number }
+    } catch (err) {
+      return { items: [], total: 0, error: toolErrorMessage(err) }
+    }
   })
 
   const proposeRequirement = toolDefinition({
@@ -102,9 +122,8 @@ export function createRequirementsTools(
       added: z.boolean(),
     }),
   }).server((input) => {
-    const tempId = crypto.randomUUID()
     const requirement: RequirementDraft = {
-      tempId,
+      tempId: crypto.randomUUID(),
       name: input.name,
       description: input.description,
       requirementType: input.requirementType,
@@ -114,27 +133,39 @@ export function createRequirementsTools(
       confidence: input.confidence,
       source: 'ai',
     }
-    onPropose(requirement)
-    return { tempId, added: true }
+    // Stage-owned dedup: a re-proposed name returns the existing tempId.
+    return onPropose(requirement)
   })
 
   const askClarification = toolDefinition({
     name: 'ask_clarification',
     description:
-      'Ask the user a clarification question about the design when more information is needed to generate accurate requirements.',
+      'Ask the user a clarification question about the design when more information is needed to generate accurate requirements. ALWAYS provide `options` when the answer is a known choice from a finite set. Set `multiSelect: true` when more than one option can apply ("select all that apply").',
     inputSchema: z.object({
-      question: z.string().describe('The question to ask the user'),
+      question: z
+        .string()
+        .describe(
+          'The question to ask the user. Keep it concise — options are rendered separately, so do not embed an inline list of choices in the question text.',
+        ),
       options: z
         .array(z.string())
         .optional()
-        .describe('Optional list of suggested answers'),
+        .describe(
+          'Suggested answers, presented as buttons or checkboxes. Provide these whenever the answer is a known choice from a finite set.',
+        ),
+      multiSelect: z
+        .boolean()
+        .optional()
+        .describe(
+          'True when the user can pick more than one option ("select all that apply"). Defaults to false (single choice).',
+        ),
     }),
     outputSchema: z.object({
       acknowledged: z.boolean(),
     }),
   }).server((input) => {
     const questionId = crypto.randomUUID()
-    onClarification(questionId, input.question, input.options)
+    onClarification(questionId, input.question, input.options, input.multiSelect)
     return { acknowledged: true }
   })
 

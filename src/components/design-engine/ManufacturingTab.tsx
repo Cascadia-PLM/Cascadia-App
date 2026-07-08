@@ -133,7 +133,9 @@ export function ManufacturingTab({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Wrench className="h-4 w-4 text-zinc-400" />
-          <h3 className="text-sm font-medium">Manufacturing Toolset</h3>
+          <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            Manufacturing Toolset
+          </h3>
         </div>
         <Badge variant="outline" className={scopeInfo.color}>
           {scopeInfo.label}
@@ -152,11 +154,13 @@ export function ManufacturingTab({
           return (
             <div
               key={tool.id}
-              className="rounded-md border border-zinc-800 bg-zinc-900/50 p-3"
+              className="rounded-md border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900/50"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{tool.name}</span>
+                  <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    {tool.name}
+                  </span>
                   <Badge variant="outline" className="text-[10px]">
                     {subtypeLabel(tool.toolSubtype)}
                   </Badge>
@@ -200,7 +204,9 @@ export function ManufacturingTab({
                   key={i}
                   className="rounded border border-yellow-500/20 bg-yellow-500/5 p-2 text-xs"
                 >
-                  <span className="font-medium">{item.name}</span>
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                    {item.name}
+                  </span>
                   {item.notes && (
                     <p className="mt-0.5 text-zinc-400">{item.notes}</p>
                   )}

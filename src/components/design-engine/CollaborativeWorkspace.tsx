@@ -18,6 +18,7 @@ import { AssemblyReviewPanel } from './AssemblyReviewPanel'
 import type {
   DesignArtifacts,
   DesignSessionStage,
+  LlmHistoryEntry,
   MaterializationPreview as PreviewType,
   MaterializationResult as ResultType,
 } from '@/lib/design-engine/types'
@@ -32,6 +33,7 @@ interface CollaborativeWorkspaceProps {
     stage: string
     status: string
     artifacts: DesignArtifacts | null
+    llmHistory?: Array<LlmHistoryEntry> | null
   }
 }
 
@@ -62,12 +64,17 @@ export function CollaborativeWorkspace({
       stream.initializeArtifacts(
         initialSession.artifacts,
         initialSession.stage as DesignSessionStage,
+        initialSession.llmHistory,
       )
     }
   }, [])
 
   const handleStartToolset = useCallback(() => {
     stream.sendAction('start_toolset')
+  }, [stream])
+
+  const handleResumeToolset = useCallback(() => {
+    stream.sendAction('resume')
   }, [stream])
 
   const handleConfirmToolset = useCallback(() => {
@@ -203,6 +210,13 @@ export function CollaborativeWorkspace({
 
   // Determine if we need the start button
   const showStartToolset = stream.currentStage === 'idle' && !stream.isStreaming
+  // Toolset establishment paused mid-run (e.g. after a clarification): offer a
+  // way to continue. Hidden while a clarification is still pending — the prompt
+  // in the feed drives the resume in that case.
+  const showResumeToolset =
+    stream.currentStage === 'toolset_establishment' &&
+    !stream.isStreaming &&
+    !stream.artifacts.pendingClarification
   const showStartRequirements =
     stream.currentStage === 'requirements_drafting' &&
     !stream.isStreaming &&
@@ -343,6 +357,27 @@ export function CollaborativeWorkspace({
 
         {/* Right panel: Activity Feed */}
         <div className="overflow-hidden flex flex-col">
+          {/* Resume controls when toolset establishment paused mid-run */}
+          {showResumeToolset && (
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 space-y-2">
+              <Button
+                variant="default"
+                onClick={handleResumeToolset}
+                className="w-full gap-2"
+              >
+                <Play className="h-4 w-4" />
+                Continue Toolset Establishment
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleStartRequirements}
+                className="w-full text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              >
+                Skip toolset — go straight to Requirements
+              </Button>
+            </div>
+          )}
+
           {/* Start button for initial stages */}
           {(showStartToolset ||
             showStartRequirements ||

@@ -9,7 +9,14 @@ import { spawn } from 'node:child_process'
 const RESET = '\x1b[0m'
 const procs = [
   { name: 'client', color: '\x1b[34m', cmd: 'vite', args: ['--port', '3000'] },
-  { name: 'api', color: '\x1b[32m', cmd: 'tsx', args: ['src/server/dev.ts'] },
+  // `watch` so edits to server/lib files auto-reload the API (matches Vite HMR
+  // on the client side); without it the API serves stale code until restarted.
+  {
+    name: 'api',
+    color: '\x1b[32m',
+    cmd: 'tsx',
+    args: ['watch', 'src/server/dev.ts'],
+  },
 ]
 
 const labelWidth = Math.max(...procs.map((p) => p.name.length))

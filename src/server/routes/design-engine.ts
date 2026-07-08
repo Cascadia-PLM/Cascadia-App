@@ -59,14 +59,31 @@ function encodeSSE(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
 }
 
-function determineStageForResume(stage: string): 'requirements' | 'bom' | null {
-  if (stage === 'requirements_drafting' || stage === 'idle') {
-    return 'requirements'
+/**
+ * Map a stage that supports a streaming (re)start to the generator that runs it.
+ *
+ * Covers the drafting stages that can pause for a clarification / user guidance
+ * and later resume: toolset establishment, requirements, and BOM. Returns null
+ * for stages with no streaming resume path (reviews, materialization, etc.).
+ *
+ * Each generator re-fetches the session, so any answer/message persisted just
+ * before the call is picked up as context when the stage continues.
+ */
+function draftingStageSource(
+  stage: string,
+  sessionId: string,
+  signal: AbortSignal,
+): AsyncIterable<StageEvent> | null {
+  switch (stage) {
+    case 'toolset_establishment':
+      return designEngine.runToolsetEstablishmentStage(sessionId, signal)
+    case 'requirements_drafting':
+      return designEngine.runRequirementsStage(sessionId, signal)
+    case 'bom_drafting':
+      return designEngine.runBomStage(sessionId, signal)
+    default:
+      return null
   }
-  if (stage === 'bom_drafting') {
-    return 'bom'
-  }
-  return null
 }
 
 function findPendingQuestion(
@@ -447,26 +464,19 @@ app.post(
           await DesignSessionService.updateArtifacts(params.id, artifacts)
         }
 
-        // Determine which stage to restart and fall through to streaming
-        const stageType = determineStageForResume(
-          current?.stage ?? session.stage,
+        // Restart the paused stage as a stream so the LLM continues with the
+        // answer in context. `idle` predates toolset establishment and is kept
+        // mapping to requirements for backwards compatibility.
+        const pausedStage = current?.stage ?? session.stage
+        const resumeStage =
+          pausedStage === 'idle' ? 'requirements_drafting' : pausedStage
+        const eventSource = draftingStageSource(
+          resumeStage,
+          params.id,
+          abortController.signal,
         )
-        if (!stageType) {
+        if (!eventSource) {
           return { acknowledged: true, questionId }
-        }
-
-        // Fall through to streaming — the stage processor will re-fetch the session
-        let eventSource: AsyncIterable<StageEvent>
-        if (stageType === 'requirements') {
-          eventSource = designEngine.runRequirementsStage(
-            params.id,
-            abortController.signal,
-          )
-        } else {
-          eventSource = designEngine.runBomStage(
-            params.id,
-            abortController.signal,
-          )
         }
 
         return streamResponse(eventSource, params.id, request)
@@ -497,24 +507,14 @@ app.post(
           await DesignSessionService.updateArtifacts(params.id, artifacts)
         }
 
-        // If in a drafting stage, restart as streaming
+        // If in a drafting stage, restart as streaming so the guidance is applied
         const currentStage = current?.stage ?? session.stage
-        if (
-          currentStage === 'requirements_drafting' ||
-          currentStage === 'bom_drafting'
-        ) {
-          let eventSource: AsyncIterable<StageEvent>
-          if (currentStage === 'requirements_drafting') {
-            eventSource = designEngine.runRequirementsStage(
-              params.id,
-              abortController.signal,
-            )
-          } else {
-            eventSource = designEngine.runBomStage(
-              params.id,
-              abortController.signal,
-            )
-          }
+        const eventSource = draftingStageSource(
+          currentStage,
+          params.id,
+          abortController.signal,
+        )
+        if (eventSource) {
           return streamResponse(eventSource, params.id, request)
         }
 
@@ -568,20 +568,17 @@ app.post(
         )
       } else {
         // 'resume' — continue whatever stage was in progress
-        const currentStage = session.stage
-        if (currentStage === 'requirements_drafting') {
-          eventSource = designEngine.runRequirementsStage(
-            params.id,
-            abortController.signal,
+        const source = draftingStageSource(
+          session.stage,
+          params.id,
+          abortController.signal,
+        )
+        if (!source) {
+          throw new ValidationError(
+            `Cannot resume from stage: ${session.stage}`,
           )
-        } else if (currentStage === 'bom_drafting') {
-          eventSource = designEngine.runBomStage(
-            params.id,
-            abortController.signal,
-          )
-        } else {
-          throw new ValidationError(`Cannot resume from stage: ${currentStage}`)
         }
+        eventSource = source
       }
 
       return streamResponse(eventSource, params.id, request)

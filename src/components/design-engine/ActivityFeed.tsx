@@ -68,7 +68,8 @@ export function ActivityFeed({
   const showInput =
     onSendMessage &&
     currentStage &&
-    (currentStage === 'requirements_drafting' ||
+    (currentStage === 'toolset_establishment' ||
+      currentStage === 'requirements_drafting' ||
       currentStage === 'requirements_review' ||
       currentStage === 'bom_drafting' ||
       currentStage === 'bom_review') &&

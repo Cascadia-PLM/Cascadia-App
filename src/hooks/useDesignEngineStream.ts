@@ -9,11 +9,55 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   DesignArtifacts,
   DesignSessionStage,
+  LlmHistoryEntry,
   StageEvent,
 } from '@/lib/design-engine/types'
 
 interface UseDesignEngineStreamOptions {
   sessionId: string
+}
+
+/**
+ * Rebuild the activity feed from persisted LLM history so a reloaded session
+ * shows the prior reasoning and tool calls, not just the final artifacts.
+ * Mirrors the capture format in CollaborativeDesignEngine.wrapWithHistoryCapture:
+ * assistant text is stored raw, tool entries as JSON with args (a call) or a
+ * result (a completion).
+ */
+function hydrateEventsFromHistory(
+  history: Array<LlmHistoryEntry>,
+): Array<StageEvent> {
+  const events: Array<StageEvent> = []
+  for (const entry of history) {
+    if (entry.role === 'assistant') {
+      if (entry.content) events.push({ type: 'llm_text', text: entry.content })
+    } else if (entry.role === 'tool') {
+      try {
+        const parsed = JSON.parse(entry.content) as {
+          toolName?: string
+          args?: Record<string, unknown>
+          result?: Record<string, unknown>
+        }
+        if (!parsed.toolName) continue
+        if (parsed.result !== undefined) {
+          events.push({
+            type: 'tool_result',
+            toolName: parsed.toolName,
+            result: parsed.result,
+          })
+        } else {
+          events.push({
+            type: 'tool_call',
+            toolName: parsed.toolName,
+            args: parsed.args ?? {},
+          })
+        }
+      } catch {
+        // Skip unparseable history entries
+      }
+    }
+  }
+  return events
 }
 
 interface StreamState {
@@ -31,6 +75,7 @@ type StreamAction =
   | 'start_cad_generation'
   | 'start_assembly_composition'
   | 'regenerate_part'
+  | 'resume'
   | 'confirm_toolset'
   | 'confirm_requirements'
   | 'confirm_bom'
@@ -328,9 +373,25 @@ export function useDesignEngineStream({
   }, [])
 
   const initializeArtifacts = useCallback(
-    (artifacts: DesignArtifacts, stage: DesignSessionStage) => {
+    (
+      artifacts: DesignArtifacts,
+      stage: DesignSessionStage,
+      llmHistory?: Array<LlmHistoryEntry> | null,
+    ) => {
+      const events = llmHistory ? hydrateEventsFromHistory(llmHistory) : []
+      // Re-surface an unanswered clarification so the prompt reappears on reload.
+      if (artifacts.pendingClarification) {
+        events.push({
+          type: 'clarification_needed',
+          questionId: artifacts.pendingClarification.id,
+          question: artifacts.pendingClarification.question,
+          options: artifacts.pendingClarification.options,
+          multiSelect: artifacts.pendingClarification.multiSelect,
+        })
+      }
       setState((prev) => ({
         ...prev,
+        events,
         artifacts: {
           ...artifacts,
           clarifications: artifacts.clarifications,

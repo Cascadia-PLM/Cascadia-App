@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
+import { stageLabel } from '@/components/design-engine/session-labels'
 
 interface TeamSession {
   id: string
@@ -29,20 +30,6 @@ interface TeamSession {
 interface TeamSessionsListProps {
   programId: string
   currentUserId: string
-}
-
-const STAGE_LABELS: Record<string, string> = {
-  idle: 'Not started',
-  requirements_drafting: 'Drafting requirements',
-  requirements_review: 'Reviewing requirements',
-  bom_drafting: 'Drafting BOM',
-  bom_review: 'Reviewing BOM',
-  materialization: 'Materializing',
-  cad_generation: 'Generating CAD',
-  cad_review: 'Reviewing CAD',
-  assembly_composition: 'Composing assemblies',
-  assembly_review: 'Reviewing assemblies',
-  complete: 'Complete',
 }
 
 export function TeamSessionsList({
@@ -120,7 +107,7 @@ export function TeamSessionsList({
                   )}
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">
-                  {STAGE_LABELS[session.stage] ?? session.stage}
+                  {stageLabel(session.stage)}
                   {' \u00B7 '}
                   {new Date(session.updatedAt).toLocaleDateString()}
                 </div>

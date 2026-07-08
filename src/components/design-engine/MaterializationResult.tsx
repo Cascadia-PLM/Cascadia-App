@@ -25,11 +25,24 @@ export function MaterializationResult({
         <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0" />
         <div>
           <h3 className="text-sm font-semibold text-green-800 dark:text-green-300">
-            Design Materialized Successfully
+            {result.mode === 'eco_required'
+              ? 'Change Order Created'
+              : 'Design Materialized Successfully'}
           </h3>
           <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
-            Created {result.createdItems.length} items and{' '}
-            {result.bomRelationshipsCreated} BOM relationships
+            {result.mode === 'eco_required'
+              ? `Added ${result.createdItems.length} items and ${result.bomRelationshipsCreated} BOM relationships to ${result.ecoNumber ?? 'the ECO'}. They will be released with revision letters once the ECO is reviewed and approved.`
+              : `${
+                  result.mode === 'create_design'
+                    ? `Created design "${result.designName ?? 'Collaborative Design'}" with `
+                    : result.designName
+                      ? `Added to design "${result.designName}": `
+                      : 'Created '
+                }${result.createdItems.length} items and ${result.bomRelationshipsCreated} BOM relationships${
+                  result.initialState
+                    ? `, all in the "${result.initialState}" state`
+                    : ''
+                }`}
           </p>
         </div>
       </div>

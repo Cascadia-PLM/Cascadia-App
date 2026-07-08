@@ -19,6 +19,7 @@
  * - create_relationship: Create BOM or Document relationships
  * - transition_item_state: Transition items through workflow states
  * - create_change_order: Create a new ECO for managing changes
+ * - create_program: Create a new program (top-level container)
  */
 
 import { toolDefinition } from '@tanstack/ai'
@@ -299,6 +300,39 @@ Requires user confirmation before creating.`,
 })
 
 // ============================================================================
+// create_program - Create a new program
+// ============================================================================
+
+export const createProgramDef = toolDefinition({
+  name: 'create_program',
+  description: `Create a new program. Programs are the top-level containers and permission boundaries for designs and items.
+Use this when the user wants to start work that doesn't fit any existing program — for example, kicking off a collaborative design session when none of their programs are a good match.
+The requesting user automatically becomes the program's admin. Requires the 'programs: create' permission — the tool returns a permission error if the user lacks it.
+Requires user confirmation before creating.`,
+  inputSchema: z.object({
+    name: z.string().describe('Program name (e.g., "Drone Platform")'),
+    code: z
+      .string()
+      .optional()
+      .describe(
+        'Program code — uppercase alphanumeric with hyphens (e.g., "DRONE-X"). Auto-generated from the name if omitted.',
+      ),
+    description: z.string().optional().describe('Program description'),
+    customer: z.string().optional().describe('Customer name, if any'),
+    // Confirmation flag
+    confirmed: z
+      .boolean()
+      .optional()
+      .describe('Set to true after user confirms the operation'),
+  }),
+  outputSchema: confirmationResponseSchema.extend({
+    programId: z.string().optional(),
+    programCode: z.string().optional(),
+    programName: z.string().optional(),
+  }),
+})
+
+// ============================================================================
 // Export all write definitions
 // ============================================================================
 
@@ -308,6 +342,7 @@ export const allWriteToolDefinitions = [
   createRelationshipDef,
   transitionItemStateDef,
   createChangeOrderDef,
+  createProgramDef,
 ]
 
 // Export type helpers for handlers
@@ -322,6 +357,7 @@ export type TransitionItemStateInput = z.infer<
 export type CreateChangeOrderInput = z.infer<
   typeof createChangeOrderDef.inputSchema
 >
+export type CreateProgramInput = z.infer<typeof createProgramDef.inputSchema>
 
 // Export confirmation response type
 export type WriteToolResponse = z.infer<typeof confirmationResponseSchema>

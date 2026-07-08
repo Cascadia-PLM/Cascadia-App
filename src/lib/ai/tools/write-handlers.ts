@@ -11,6 +11,7 @@
 
 import { randomUUID } from 'node:crypto'
 
+import { eq } from 'drizzle-orm'
 import { withWritePermissionAndAudit } from './permission-wrapper'
 import type { BaseItem } from '@/lib/items/types/base'
 
@@ -19,7 +20,10 @@ import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { BranchService } from '@/lib/services/BranchService'
 import { DesignService } from '@/lib/services/DesignService'
+import { ProgramService } from '@/lib/services/ProgramService'
 import { aiLogger } from '@/lib/logging/logger'
+import { db } from '@/lib/db'
+import { programs } from '@/lib/db/schema'
 
 // ============================================================================
 // Input Types (manually defined for better type inference)
@@ -87,6 +91,14 @@ interface CreateChangeOrderInput {
   impactDescription?: string
   affectedItemIds?: Array<string>
   designIds?: Array<string>
+  confirmed?: boolean
+}
+
+interface CreateProgramInput {
+  name: string
+  code?: string
+  description?: string
+  customer?: string
   confirmed?: boolean
 }
 
@@ -861,5 +873,124 @@ export const createChangeOrderHandler = (
     'create_change_order',
     { resource: 'change_orders', action: 'create' },
     createChangeOrderHandlerImpl,
+  )(input, context, meta)
+}
+
+// ============================================================================
+// create_program handler
+// ============================================================================
+
+/**
+ * Derive a program code from a name: uppercase alphanumeric with hyphens.
+ * Deterministic so the code shown in the confirmation step matches the one
+ * used when the tool is re-invoked with confirmed: true.
+ */
+function programCodeFromName(name: string): string {
+  const base = name
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 20)
+    .replace(/-+$/g, '')
+  return base || 'PROGRAM'
+}
+
+/** Find a free program code: the name-derived base, or base-2, base-3, ... */
+async function findAvailableProgramCode(name: string): Promise<string> {
+  const base = programCodeFromName(name)
+  for (let i = 0; i < 50; i++) {
+    const candidate = i === 0 ? base : `${base}-${i + 1}`
+    const existing = await db
+      .select({ id: programs.id })
+      .from(programs)
+      .where(eq(programs.code, candidate))
+      .limit(1)
+    if (existing.length === 0) return candidate
+  }
+  return `${base}-${Date.now().toString(36).toUpperCase()}`
+}
+
+async function createProgramHandlerImpl(
+  input: CreateProgramInput,
+  context: ToolContext,
+): Promise<
+  WriteToolResponse & {
+    programId?: string
+    programCode?: string
+    programName?: string
+  }
+> {
+  try {
+    const code = input.code
+      ? input.code.toUpperCase()
+      : await findAvailableProgramCode(input.name)
+
+    if (!input.confirmed) {
+      return confirmationRequired(
+        'Create Program',
+        {
+          action: 'create',
+          itemType: 'Program',
+          itemName: input.name,
+          additionalInfo: [
+            `Code: ${code}`,
+            input.customer ? `Customer: ${input.customer}` : '',
+            'You will be added as the program admin.',
+          ].filter(Boolean),
+        },
+        `Create new program "${input.name}" (${code})?`,
+      )
+    }
+
+    const program = await ProgramService.create(
+      {
+        name: input.name,
+        code,
+        description: input.description,
+        customer: input.customer,
+      },
+      context.userId,
+    )
+    if (!program) {
+      return errorResponse('Failed to create program')
+    }
+
+    return {
+      requiresConfirmation: false,
+      success: true,
+      programId: program.id,
+      programCode: program.code,
+      programName: program.name,
+      confirmationMessage: `Created program ${program.code} "${program.name}" — you are its admin`,
+    }
+  } catch (e) {
+    return errorResponse(
+      e instanceof Error ? e.message : 'Failed to create program',
+    )
+  }
+}
+
+export const createProgramHandler = (
+  input: CreateProgramInput,
+  context: ToolContext,
+) => {
+  const meta: WriteOperationMeta = {
+    actionType: 'create_program',
+    affectedItemIds: [],
+    wasConfirmed: input.confirmed ?? false,
+    transactionId: randomUUID(),
+  }
+
+  return withWritePermissionAndAudit<
+    CreateProgramInput,
+    WriteToolResponse & {
+      programId?: string
+      programCode?: string
+      programName?: string
+    }
+  >(
+    'create_program',
+    { resource: 'programs', action: 'create' },
+    createProgramHandlerImpl,
   )(input, context, meta)
 }

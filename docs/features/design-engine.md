@@ -127,26 +127,37 @@ When satisfied, the user clicks **Confirm BOM** to advance to materialization.
 
 **Stage key**: `materialization`
 
-This stage converts the draft BOM into real PLM data. It has two phases: preview and execution.
+This stage converts the draft BOM into real PLM data. It has three phases: plan, preview, and execution.
 
-**Preview** (automatic on entering the stage): The `MaterializationService.preview()` method walks the BOM tree and counts:
+**Plan**: `MaterializationService.plan()` computes the materialization contract — exactly what executing will do. Both the preview and the execution derive from this shared plan, so the message shown to the user cannot drift from the actual behavior. The plan has one of three modes:
+
+| Mode            | When                                                | What happens                                                                                                                                                        |
+| --------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create_design` | Session has no target design                        | A new design is created in the session's program; all items are created in `Draft` state on its `main` branch                                                       |
+| `add_to_design` | Target design exists and is pre-release             | Items are created in `Draft` state directly on the design's `main` branch                                                                                            |
+| `eco_required`  | Target design has released items (branch-protected) | An ECO is created and the new items are added to its branch (as `added` working copies, registered with the `release` change action); they release when it's merged |
+
+No ECO is created in the `create_design`/`add_to_design` modes: pre-release designs are directly editable, and revision letters are assigned later when the design is first released through an ECO. In `eco_required` mode the ECO is the mechanism for releasing the new items — revision letters are assigned when the ECO is approved and merged to `main`.
+
+**Preview** (automatic on entering the stage): `MaterializationService.preview()` returns the plan plus counts from walking the BOM tree:
 
 - New parts to create
 - Existing parts to reuse
 - New requirements to create
 - BOM relationships to establish
-- Whether an ECO is required (based on branch protection)
 
-The preview is shown in the `MaterializationPreview` component with summary cards and a scrollable item list.
+The `MaterializationPreview` component renders the plan as a "What will happen" summary, with summary cards and a scrollable item list.
 
-**Execution** (on user confirmation): The `MaterializationService.execute()` method:
+**Execution** (on user confirmation): `MaterializationService.execute()` re-derives the plan, then:
 
-1. Creates or resolves the target Design
-2. Checks branch protection and creates an ECO with workflow if needed
-3. Creates Requirement items (mapping priority and type enums to PLM equivalents)
-4. Creates Part items depth-first (leaves before parents) so BOM relationships can be established bottom-up
+1. Creates the target Design if the session has none (mode `create_design`)
+2. In `eco_required` mode, creates the ECO (`ItemService.create('ChangeOrder', …)`), starts its workflow, and creates its branch (`ChangeOrderService.addDesignToEco`); items are then created on that branch instead of `main`
+3. Creates Requirement items in `Draft` state (mapping priority and type enums to PLM equivalents)
+4. Creates Part items in `Draft` state depth-first (leaves before parents) so BOM relationships can be established bottom-up
 5. Creates BOM relationships between parent and child parts
 6. Updates the session with the materialization result
+
+In `eco_required` mode, items are created via `ItemService.createOnBranch()` (as `added` working copies) and each is registered on the ECO with the `release` change action so it appears in the Affected Items tab. Nothing is written to `main` until the ECO is approved and merged.
 
 The materialization result is persisted in `artifacts.materializationResult` and provides the `tempId -> itemId` mapping needed by subsequent CAD generation.
 
@@ -607,8 +618,8 @@ Connecting lines between stages are cyan (completed) or gray (pending).
 
 ### Session Management
 
-| Method  | Endpoint                          | Description                             |
-| ------- | --------------------------------- | --------------------------------------- |
+| Method  | Endpoint                             | Description                             |
+| ------- | ------------------------------------ | --------------------------------------- |
 | `GET`   | `/api/v1/design-engine/sessions`     | List current user's sessions            |
 | `POST`  | `/api/v1/design-engine/sessions`     | Create a new session                    |
 | `GET`   | `/api/v1/design-engine/sessions/:id` | Get session by ID                       |
@@ -627,14 +638,14 @@ Connecting lines between stages are cyan (completed) or gray (pending).
 
 ### Streaming
 
-| Method | Endpoint                                 | Description                        |
-| ------ | ---------------------------------------- | ---------------------------------- |
+| Method | Endpoint                                    | Description                        |
+| ------ | ------------------------------------------- | ---------------------------------- |
 | `POST` | `/api/v1/design-engine/sessions/:id/stream` | Send action and receive SSE stream |
 
 ### Materialization
 
-| Method | Endpoint                                      | Description             |
-| ------ | --------------------------------------------- | ----------------------- |
+| Method | Endpoint                                         | Description             |
+| ------ | ------------------------------------------------ | ----------------------- |
 | `GET`  | `/api/v1/design-engine/sessions/:id/materialize` | Generate preview        |
 | `POST` | `/api/v1/design-engine/sessions/:id/materialize` | Execute materialization |
 

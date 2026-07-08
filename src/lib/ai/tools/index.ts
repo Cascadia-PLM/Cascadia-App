@@ -19,6 +19,7 @@
  * - create_relationship: Create BOM or Document relationships
  * - transition_item_state: Transition items through workflow states
  * - create_change_order: Create a new ECO for managing changes
+ * - create_program: Create a new program (creator becomes admin)
  *
  * Usage:
  * ```typescript
@@ -64,6 +65,7 @@ import {
   allWriteToolDefinitions,
   createChangeOrderDef,
   createItemDef,
+  createProgramDef,
   createRelationshipDef,
   transitionItemStateDef,
   updateItemDef,
@@ -72,6 +74,7 @@ import {
 import {
   createChangeOrderHandler,
   createItemHandler,
+  createProgramHandler,
   createRelationshipHandler,
   transitionItemStateHandler,
   updateItemHandler,
@@ -123,6 +126,7 @@ export {
   createRelationshipDef,
   transitionItemStateDef,
   createChangeOrderDef,
+  createProgramDef,
 }
 
 /**
@@ -187,6 +191,10 @@ export function createServerTools(context: ToolContext) {
     createChangeOrderHandler(input, context),
   )
 
+  const createProgram = createProgramDef.server((input) =>
+    createProgramHandler(input, context),
+  )
+
   // Design engine tools
   const initiateCollaborativeDesign = initiateCollaborativeDesignDef.server(
     (input) => initiateCollaborativeDesignHandler(input, context),
@@ -208,6 +216,7 @@ export function createServerTools(context: ToolContext) {
     createRelationship,
     transitionItemState,
     createChangeOrder,
+    createProgram,
     // Design engine
     initiateCollaborativeDesign,
   ]

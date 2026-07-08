@@ -299,7 +299,13 @@ data: {"finished":true}
 
 ## GET /api/design-engine/sessions/:id/materialize
 
-Preview what items would be created if materialization were executed. Requires a BOM to be present in the session artifacts.
+Preview what materialization would do. Returns the materialization **plan** (the exact contract execution will follow) plus item counts. Requires a BOM to be present in the session artifacts.
+
+The plan's `mode` is one of:
+
+- `create_design` -- a new design will be created in the session's program; all items land on its `main` branch in `Draft` state
+- `add_to_design` -- items are added to the existing pre-release target design's `main` branch in `Draft` state
+- `eco_required` -- the target design has released items; an ECO (named in `ecoName`) is created and the new items are added to its branch, releasing when the ECO is approved and merged
 
 ### Response
 
@@ -307,12 +313,21 @@ Preview what items would be created if materialization were executed. Requires a
 {
   "data": {
     "preview": {
+      "plan": {
+        "mode": "create_design",
+        "supported": true,
+        "programId": "program-uuid",
+        "programName": "Sensor Platform",
+        "targetDesignId": null,
+        "targetDesignName": null,
+        "newDesignName": "Bracket assembly for mounting sensors",
+        "initialState": "Draft",
+        "targetBranch": "main"
+      },
       "newPartsCount": 8,
       "reusedPartsCount": 2,
       "newRequirementsCount": 5,
       "bomRelationshipsCount": 10,
-      "requiresEco": true,
-      "targetDesignId": "design-uuid",
       "items": [
         {
           "tempId": "part-1",
@@ -337,7 +352,9 @@ Preview what items would be created if materialization were executed. Requires a
 
 ## POST /api/design-engine/sessions/:id/materialize
 
-Execute materialization -- creates actual PLM items (parts, requirements, BOM relationships) from the session's draft artifacts. Creates an ECO if the target design is post-release.
+Execute materialization -- creates actual PLM items (parts, requirements, BOM relationships) from the session's draft artifacts, following the plan returned by the GET preview. For the `create_design`/`add_to_design` modes all items are created in `Draft` state on the target design's `main` branch; no ECO is involved.
+
+If the target design has released items (plan mode `eco_required`), an ECO is created and the new items are added to its branch instead of `main`. The response includes `ecoId`/`ecoNumber`; the items are released with revision letters only when that ECO is approved and merged.
 
 Can only be executed once per session. After successful materialization the session status changes to `completed`.
 
@@ -347,9 +364,10 @@ Can only be executed once per session. After successful materialization the sess
 {
   "data": {
     "result": {
+      "mode": "create_design",
       "designId": "design-uuid",
-      "ecoId": "eco-uuid",
-      "ecoNumber": "ECO-0042",
+      "designName": "Bracket assembly for mounting sensors",
+      "initialState": "Draft",
       "createdItems": [
         {
           "tempId": "part-1",
@@ -367,10 +385,10 @@ Can only be executed once per session. After successful materialization the sess
 
 ### Errors
 
-| Status | Condition                                                     |
-| ------ | ------------------------------------------------------------- |
-| 404    | Session not found                                             |
-| 403    | User is not the session owner                                 |
+| Status | Condition                                                                                    |
+| ------ | -------------------------------------------------------------------------------------------- |
+| 404    | Session not found                             |
+| 403    | User is not the session owner                 |
 | 422    | No BOM artifacts to materialize, or session already completed |
 
 ---

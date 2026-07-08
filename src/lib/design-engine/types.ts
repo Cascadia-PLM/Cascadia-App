@@ -398,13 +398,58 @@ export interface DesignArtifacts {
 // Materialization Types
 // ============================================================================
 
+/**
+ * How materialization will write the session's artifacts into the PLM database.
+ *
+ * - 'create_design': the session has no target design — a new design is created
+ *   in the session's program, and all items land on its main branch.
+ * - 'add_to_design': the target design exists and is pre-release (no released
+ *   items) — items are added directly to its main branch.
+ * - 'eco_required': the target design has released items, so changes must go
+ *   through an ECO branch. Materialization creates the ECO, adds the new items
+ *   to its branch, and they are released with revision letters when the ECO is
+ *   approved and merged.
+ */
+export type MaterializationMode =
+  | 'create_design'
+  | 'add_to_design'
+  | 'eco_required'
+
+/**
+ * The materialization contract: exactly what executing materialization will do.
+ * Both the preview shown to the user and the execution derive from this plan,
+ * so the stated behavior cannot drift from the actual behavior.
+ */
+export interface MaterializationPlan {
+  mode: MaterializationMode
+  /** False when execution would be refused (see blockedReason) */
+  supported: boolean
+  programId: string
+  programName: string | null
+  targetDesignId: string | null
+  targetDesignName: string | null
+  /** Name the new design will be given (mode 'create_design' only) */
+  newDesignName?: string
+  /** Name of the ECO that will be created (mode 'eco_required' only) */
+  ecoName?: string
+  /** Lifecycle state every created item starts in */
+  initialState: 'Draft'
+  /**
+   * Branch the items are created on. 'main' for the create/add modes; for
+   * 'eco_required' the items land on a new ECO branch (whose name isn't known
+   * until the ECO is created) but reach 'main' when the ECO merges.
+   */
+  targetBranch: 'main'
+  /** Human-readable reason when supported is false */
+  blockedReason?: string
+}
+
 export interface MaterializationPreview {
+  plan: MaterializationPlan
   newPartsCount: number
   reusedPartsCount: number
   newRequirementsCount: number
   bomRelationshipsCount: number
-  requiresEco: boolean
-  targetDesignId: string | null
   items: Array<{
     tempId: string
     name: string
@@ -415,7 +460,14 @@ export interface MaterializationPreview {
 }
 
 export interface MaterializationResult {
+  // mode/designName/initialState are optional because results persisted by
+  // older sessions predate these fields
+  mode?: MaterializationMode
   designId: string
+  designName?: string | null
+  /** Lifecycle state the created items start in */
+  initialState?: 'Draft'
+  /** The ECO created when materializing into a released design (mode 'eco_required') */
   ecoId?: string
   ecoNumber?: string
   createdItems: Array<{

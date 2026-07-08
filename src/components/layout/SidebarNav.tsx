@@ -20,6 +20,7 @@ import {
   RotateCcw,
   Settings,
   Shield,
+  Sparkles,
   Users,
   Wrench,
 } from 'lucide-react'
@@ -114,6 +115,14 @@ export function SidebarNav({
           icon={GitFork}
           label="My Workspaces"
           onClick={onNavClick}
+        />
+        <NavSubItem
+          to="/designs/collaborative"
+          icon={Sparkles}
+          label="Design Sessions"
+          onClick={onNavClick}
+          activeOptions={{ exact: true }}
+          testId="nav-design-sessions"
         />
       </SidebarSection>
 

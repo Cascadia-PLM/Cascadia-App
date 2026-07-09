@@ -64,7 +64,9 @@ export async function* runToolsetEstablishmentStage(
     } | null
   } = { requested: false, data: null }
 
-  // Create stage tools with callbacks
+  // Create stage tools with callbacks. Seed the builder with the current
+  // toolset so a resumed stage adds to the existing tools instead of wiping
+  // them (each tool mutation emits the full set).
   const { tools } = createToolsetTools(
     session.programId,
     (toolset) => {
@@ -76,6 +78,7 @@ export async function* runToolsetEstablishmentStage(
       clarificationRef.requested = true
       clarificationRef.data = { questionId, question, options, multiSelect }
     },
+    currentToolset,
   )
 
   try {

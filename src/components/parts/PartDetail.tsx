@@ -24,6 +24,7 @@ import type {
   MaterialPreset,
   StandardView,
 } from '@/components/parts/CADViewerTypes'
+import type { UrlEnrichmentResult } from '@/components/items/useUrlDropEnrichment'
 import { PageContainer } from '@/components/layout'
 import { DigitalThreadNavigator } from '@/components/thread'
 import { PartRelationshipsPanel } from '@/components/items/PartRelationshipsPanel'
@@ -43,6 +44,8 @@ import { CADViewer } from '@/components/parts/CADViewer'
 import { CADViewerToolbar } from '@/components/parts/CADViewerToolbar'
 import { useCADViewerKeyboard } from '@/components/parts/useCADViewerKeyboard'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
+import { UrlDropOverlay } from '@/components/items/UrlDropOverlay'
+import { useUrlDropEnrichment } from '@/components/items/useUrlDropEnrichment'
 import { useVersionContext } from '@/lib/hooks/useVersionContext'
 import { WorkspaceContextBanner } from '@/components/workspaces/WorkspaceContextBanner'
 import {
@@ -200,7 +203,7 @@ export function PartDetail({
   const router = useRouter()
   const navigate = useNavigate()
   const { confirm } = useAlertDialog()
-  const { handleError, showSuccess } = useErrorHandler()
+  const { handleError, showSuccess, showInfo } = useErrorHandler()
 
   // Determine if this is create mode
   const isCreateMode = !initialPart?.id
@@ -216,6 +219,63 @@ export function PartDetail({
   const [attributes, setAttributes] = useState<Record<string, string>>(
     initialPart?.attributes ?? {},
   )
+
+  // Drag-and-drop a web link onto the create form to auto-fill it.
+  const applyEnrichment = useCallback(
+    (result: UrlEnrichmentResult) => {
+      // Always keep the source link as provenance (existing keys win).
+      setAttributes((prev) => {
+        const merged: Record<string, string> = { ...result.attributes, ...prev }
+        if (!merged.link || !merged.link.trim()) merged.link = result.link
+        return merged
+      })
+
+      // Fill only empty or still-default fields; never clobber user input.
+      setPart((prev) => {
+        const defaults = createEmptyPart() as unknown as Record<string, unknown>
+        const prevRecord = prev as unknown as Record<string, unknown>
+        const next: Record<string, unknown> = { ...prevRecord }
+        for (const [key, value] of Object.entries(result.fields)) {
+          const current = prevRecord[key]
+          if (
+            current === undefined ||
+            current === null ||
+            current === '' ||
+            current === defaults[key]
+          ) {
+            next[key] = value
+          }
+        }
+        return next as unknown as Part
+      })
+
+      const fieldCount = Object.keys(result.fields).length
+      const attrCount = Object.keys(result.attributes).length
+      if (!result.aiEnabled) {
+        showInfo(
+          'Link saved',
+          'AI isn’t connected — the link was saved as a custom attribute. Connect AI in settings to auto-fill more.',
+        )
+      } else if (fieldCount === 0 && attrCount === 0) {
+        showInfo(
+          'Link saved',
+          'Couldn’t pull details from that page, but the link was saved.',
+        )
+      } else {
+        showSuccess(
+          'Details added',
+          `Filled ${fieldCount} field${fieldCount === 1 ? '' : 's'} and ${attrCount} attribute${attrCount === 1 ? '' : 's'} from the link.`,
+        )
+      }
+    },
+    [showSuccess, showInfo],
+  )
+
+  const { isDragging, isEnriching, dropHandlers } = useUrlDropEnrichment({
+    itemType: 'Part',
+    enabled: isCreateMode,
+    onEnriched: applyEnrichment,
+  })
 
   // Version context state (only for existing parts)
   const [displayedPart, setDisplayedPart] = useState<Part>(part)
@@ -644,824 +704,848 @@ export function PartDetail({
     : ['details', 'relationships', 'work-instructions', 'history']
 
   return (
-    <PageContainer data-testid="part-form">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link to="/parts">
-            <Button variant="outline" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          {!isCreateMode && part.id && (
-            <PartThumbnail itemId={part.id} size="lg" />
-          )}
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-4xl font-bold text-slate-900 dark:text-white">
-                {isCreateMode
-                  ? 'Create New Part'
-                  : currentPart.itemNumber || 'New Part'}
-              </h1>
-              {!isCreateMode && isLoadingVersion && (
-                <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-              )}
-              {!isCreateMode && currentPart.state && (
-                <Badge
-                  className="text-base"
-                  variant={stateVariant(currentPart.state)}
-                >
-                  {currentPart.state}
-                </Badge>
-              )}
-              {!isCreateMode && currentPart.state && (
-                <PhaseBadge itemType="Part" state={currentPart.state} />
-              )}
-              {!isCreateMode &&
-                currentPart.designId &&
-                context.type !== 'main' && (
-                  <Badge variant={getContextBadgeVariant()} className="text-sm">
-                    <GitBranch className="h-3 w-3 mr-1" />
-                    {contextLabel}
+    <div className="relative" {...dropHandlers}>
+      <PageContainer data-testid="part-form">
+        {/* Header */}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link to="/parts">
+              <Button variant="outline" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            {!isCreateMode && part.id && (
+              <PartThumbnail itemId={part.id} size="lg" />
+            )}
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-4xl font-bold text-slate-900 dark:text-white">
+                  {isCreateMode
+                    ? 'Create New Part'
+                    : currentPart.itemNumber || 'New Part'}
+                </h1>
+                {!isCreateMode && isLoadingVersion && (
+                  <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                )}
+                {!isCreateMode && currentPart.state && (
+                  <Badge
+                    className="text-base"
+                    variant={stateVariant(currentPart.state)}
+                  >
+                    {currentPart.state}
                   </Badge>
                 )}
+                {!isCreateMode && currentPart.state && (
+                  <PhaseBadge itemType="Part" state={currentPart.state} />
+                )}
+                {!isCreateMode &&
+                  currentPart.designId &&
+                  context.type !== 'main' && (
+                    <Badge
+                      variant={getContextBadgeVariant()}
+                      className="text-sm"
+                    >
+                      <GitBranch className="h-3 w-3 mr-1" />
+                      {contextLabel}
+                    </Badge>
+                  )}
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mt-1">
+                {isCreateMode
+                  ? 'Enter the details for the new part'
+                  : `Revision ${currentPart.revision} • ${currentPart.name || 'Unnamed'}`}
+              </p>
             </div>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">
-              {isCreateMode
-                ? 'Enter the details for the new part'
-                : `Revision ${currentPart.revision} • ${currentPart.name || 'Unnamed'}`}
-            </p>
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex gap-2">
-            {isEditing ? (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={handleCancelEdit}
-                  disabled={isSubmitting}
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={
-                    isSubmitting ||
-                    (isCreateMode && branchRequired && !selectedBranchId)
-                  }
-                  data-testid="part-submit"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {isSubmitting
-                    ? 'Saving...'
-                    : isCreateMode
-                      ? 'Create Part'
-                      : 'Save Changes'}
-                </Button>
-              </>
-            ) : (
-              <>
-                {!isCreateMode && currentPart.id && (
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex gap-2">
+              {isEditing ? (
+                <>
                   <Button
                     variant="outline"
-                    onClick={() => setIsImpactDialogOpen(true)}
+                    onClick={handleCancelEdit}
+                    disabled={isSubmitting}
                   >
-                    <Search className="h-4 w-4 mr-2" />
-                    Impact Analysis
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
                   </Button>
-                )}
-                {/* Edit button with tooltip when disabled */}
-                {getEditDisabledReason() ? (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span>
-                          <Button
-                            variant="outline"
-                            onClick={handleEdit}
-                            disabled={!isEditable}
-                          >
-                            {needsCheckout ? (
-                              <>
-                                <GitBranch className="h-4 w-4 mr-2" />
-                                Revise
-                              </>
-                            ) : (
-                              <>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </>
-                            )}
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{getEditDisabledReason()}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ) : (
                   <Button
-                    variant="outline"
-                    onClick={handleEdit}
-                    disabled={!isEditable}
+                    onClick={handleSave}
+                    disabled={
+                      isSubmitting ||
+                      (isCreateMode && branchRequired && !selectedBranchId)
+                    }
+                    data-testid="part-submit"
                   >
-                    {needsCheckout ? (
-                      <>
-                        <GitBranch className="h-4 w-4 mr-2" />
-                        Revise
-                      </>
-                    ) : (
-                      <>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </>
-                    )}
+                    <Save className="h-4 w-4 mr-2" />
+                    {isSubmitting
+                      ? 'Saving...'
+                      : isCreateMode
+                        ? 'Create Part'
+                        : 'Save Changes'}
                   </Button>
-                )}
-                {onDelete && (
-                  <Button
-                    variant="destructive"
-                    onClick={handleDelete}
-                    disabled={!isEditable}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </Button>
-                )}
-                {!isCreateMode && currentPart.partType === 'Manufacture' && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => setIsGenerateCadOpen(true)}
-                      >
-                        <Box className="h-4 w-4 mr-2" />
-                        Generate CAD
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Workspace Context Banner */}
-      {!isCreateMode &&
-        isWorkspaceContext &&
-        context.type === 'branch' &&
-        context.branchId && (
-          <WorkspaceContextBanner branchId={context.branchId} />
-        )}
-
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-        <TabsList
-          className={`grid w-full ${isCreateMode ? 'grid-cols-2' : 'grid-cols-4'}`}
-        >
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="relationships">Relationships</TabsTrigger>
-          {!isCreateMode && (
-            <TabsTrigger value="work-instructions">
-              Work Instructions
-            </TabsTrigger>
-          )}
-          {!isCreateMode && <TabsTrigger value="history">History</TabsTrigger>}
-        </TabsList>
-
-        {/* Details Tab */}
-        <TabsContent value="details" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Content - Left 2 columns */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Overview Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Overview</CardTitle>
-                  <CardDescription>
-                    General information about this part
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ViewEditText
-                      label="Item Number"
-                      value={
-                        isEditing ? part.itemNumber : currentPart.itemNumber
-                      }
-                      onChange={(v) => updateField('itemNumber', v)}
-                      isEditing={isEditing && isCreateMode} // Only editable when creating
-                      placeholder="PART-001"
-                      required
-                      data-testid="part-item-number"
-                    />
-                    <ViewEditText
-                      label="Revision"
-                      value={isEditing ? part.revision : currentPart.revision}
-                      onChange={(v) => updateField('revision', v)}
-                      isEditing={false} // Revision is system-managed
-                    />
-                    <ViewEditText
-                      label="Name"
-                      value={isEditing ? part.name : currentPart.name}
-                      onChange={(v) => updateField('name', v)}
-                      isEditing={isEditing}
-                      placeholder="Part name"
-                      required
-                      data-testid="part-name"
-                    />
-                    <ViewEditBadge
-                      label="State"
-                      value={isEditing ? part.state : currentPart.state}
-                      onChange={(v) => updateField('state', v)}
-                      isEditing={isEditing}
-                      options={STATE_OPTIONS}
-                      variant={stateVariant}
-                      readOnly={!isCreateMode} // State is managed by lifecycle
-                    />
-                    <ViewEditTextarea
-                      label="Description"
-                      value={
-                        isEditing ? part.description : currentPart.description
-                      }
-                      onChange={(v) => updateField('description', v)}
-                      isEditing={isEditing}
-                      placeholder="Enter a description..."
-                      className="md:col-span-2"
-                    />
-                    {/* Design selector (only in create mode or if no design assigned) */}
-                    {(isCreateMode || !currentPart.designId) &&
-                      designs.length > 0 && (
-                        <div className="md:col-span-2 space-y-4">
-                          <div className="flex items-center gap-4">
-                            <ViewEditSelect
-                              label="Design"
-                              value={
-                                isEditing ? part.designId : currentPart.designId
-                              }
-                              onChange={(v) => updateField('designId', v)}
-                              isEditing={isEditing && isCreateMode}
-                              options={designs.map((d) => ({
-                                value: d.id,
-                                label: `${d.code} - ${d.name}`,
-                              }))}
-                              placeholder="Select a design..."
-                              required
-                              data-testid="design-selector"
-                            />
-                            {part.designId &&
-                              !loadingStatus &&
-                              designStatus && (
-                                <DesignPhaseIndicator
-                                  designId={part.designId}
-                                  status={designStatus}
-                                />
+                </>
+              ) : (
+                <>
+                  {!isCreateMode && currentPart.id && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsImpactDialogOpen(true)}
+                    >
+                      <Search className="h-4 w-4 mr-2" />
+                      Impact Analysis
+                    </Button>
+                  )}
+                  {/* Edit button with tooltip when disabled */}
+                  {getEditDisabledReason() ? (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="outline"
+                              onClick={handleEdit}
+                              disabled={!isEditable}
+                            >
+                              {needsCheckout ? (
+                                <>
+                                  <GitBranch className="h-4 w-4 mr-2" />
+                                  Revise
+                                </>
+                              ) : (
+                                <>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </>
                               )}
-                          </div>
-
-                          {/* Branch Selection - Available for new items when design is selected */}
-                          {showBranchSelector && (
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                Target Branch{' '}
-                                {branchRequired && (
-                                  <span className="text-red-500">*</span>
-                                )}
-                              </label>
-                              <BranchSelector
-                                designId={part.designId}
-                                value={selectedBranchId}
-                                onChange={setSelectedBranchId}
-                                showMainOption={!branchRequired}
-                                placeholder={
-                                  branchRequired
-                                    ? 'Select branch...'
-                                    : 'Main branch (default)'
-                                }
-                              />
-                              {branchRequired && (
-                                <div className="flex items-start gap-2 mt-2 p-3 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-sm rounded-md">
-                                  <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                                  <span>
-                                    This design is under change control. New
-                                    parts must be created on an ECO or workspace
-                                    branch.
-                                  </span>
-                                </div>
-                              )}
-                              {!branchRequired && !selectedBranchId && (
-                                <div className="flex items-start gap-2 mt-2 p-3 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-sm rounded-md">
-                                  <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                                  <span>
-                                    No branch selected - part will be created on
-                                    the main branch. Select a workspace branch
-                                    for private development work.
-                                  </span>
-                                </div>
-                              )}
-                              {branchRequired && !selectedBranchId && (
-                                <p className="text-sm text-red-500">
-                                  Please select a branch to create this part on
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{getEditDisabledReason()}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={handleEdit}
+                      disabled={!isEditable}
+                    >
+                      {needsCheckout ? (
+                        <>
+                          <GitBranch className="h-4 w-4 mr-2" />
+                          Revise
+                        </>
+                      ) : (
+                        <>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </>
                       )}
-                  </dl>
-                </CardContent>
-              </Card>
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      variant="destructive"
+                      onClick={handleDelete}
+                      disabled={!isEditable}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  )}
+                  {!isCreateMode && currentPart.partType === 'Manufacture' && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => setIsGenerateCadOpen(true)}
+                        >
+                          <Box className="h-4 w-4 mr-2" />
+                          Generate CAD
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
 
-              {/* Manufacturing Details Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Manufacturing Details</CardTitle>
-                  <CardDescription>
-                    Production and sourcing information
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ViewEditBadge
-                      label="Type"
-                      value={isEditing ? part.partType : currentPart.partType}
-                      onChange={(v) => updateField('partType', v)}
-                      isEditing={isEditing}
-                      options={PART_TYPE_OPTIONS}
-                      variant={(v) => {
-                        const m: Record<
-                          string,
-                          'default' | 'secondary' | 'success' | 'outline'
-                        > = {
-                          Manufacture: 'default',
-                          Purchase: 'secondary',
-                          Software: 'success',
-                          Phantom: 'outline',
-                        }
-                        return m[v] || 'default'
-                      }}
-                    />
-                    <ViewEditText
-                      label="Material"
-                      value={isEditing ? part.material : currentPart.material}
-                      onChange={(v) => updateField('material', v)}
-                      isEditing={isEditing}
-                      placeholder="e.g., Aluminum 6061"
-                    />
-                    <ViewEditNumber
-                      label="Weight"
-                      value={isEditing ? part.weight : currentPart.weight}
-                      onChange={(v) => updateField('weight', v)}
-                      isEditing={isEditing}
-                      unitOptions={WEIGHT_UNIT_OPTIONS}
-                      unitValue={
-                        isEditing ? part.weightUnit : currentPart.weightUnit
-                      }
-                      onUnitChange={(v) => updateField('weightUnit', v)}
-                      step="0.001"
-                    />
-                    <ViewEditCurrency
-                      label="Cost"
-                      value={isEditing ? part.cost : currentPart.cost}
-                      onChange={(v) => updateField('cost', v)}
-                      isEditing={isEditing}
-                      currency={
-                        isEditing ? part.costCurrency : currentPart.costCurrency
-                      }
-                      currencyOptions={CURRENCY_OPTIONS}
-                      onCurrencyChange={(v) => updateField('costCurrency', v)}
-                    />
-                    <ViewEditNumber
-                      label="Lead Time"
-                      value={
-                        isEditing ? part.leadTimeDays : currentPart.leadTimeDays
-                      }
-                      onChange={(v) =>
-                        updateField('leadTimeDays', v ? parseInt(v) : undefined)
-                      }
-                      isEditing={isEditing}
-                      unit="days"
-                      min={0}
-                    />
-                  </dl>
-                </CardContent>
-              </Card>
+        {/* Workspace Context Banner */}
+        {!isCreateMode &&
+          isWorkspaceContext &&
+          context.type === 'branch' &&
+          context.branchId && (
+            <WorkspaceContextBanner branchId={context.branchId} />
+          )}
 
-              {/* CAD 3D Viewer (only for existing parts with CAD files) */}
-              {!isCreateMode && selectedCADFile && showCADViewer && (
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+          <TabsList
+            className={`grid w-full ${isCreateMode ? 'grid-cols-2' : 'grid-cols-4'}`}
+          >
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="relationships">Relationships</TabsTrigger>
+            {!isCreateMode && (
+              <TabsTrigger value="work-instructions">
+                Work Instructions
+              </TabsTrigger>
+            )}
+            {!isCreateMode && (
+              <TabsTrigger value="history">History</TabsTrigger>
+            )}
+          </TabsList>
+
+          {/* Details Tab */}
+          <TabsContent value="details" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main Content - Left 2 columns */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Overview Card */}
                 <Card>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle>3D CAD Model</CardTitle>
-                        <CardDescription>
-                          Interactive 3D visualization •{' '}
-                          {selectedCADFile.fileName}
-                          {selectedCADFile.source === 'cad_doc' &&
-                            selectedCADFile.sourceItemNumber &&
-                            ` (from ${selectedCADFile.sourceItemNumber})`}
-                        </CardDescription>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {cadFiles.length > 1 && (
-                          <Select
-                            value={selectedCADFile.id}
-                            onValueChange={(fileId) => {
-                              const file = cadFiles.find((f) => f.id === fileId)
-                              if (file) setSelectedCADFile(file)
-                            }}
-                          >
-                            <SelectTrigger className="w-[220px] h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {cadFiles.some((f) => f.source === 'direct') && (
-                                <SelectGroup>
-                                  <SelectLabel>Direct Files</SelectLabel>
-                                  {cadFiles
-                                    .filter((f) => f.source === 'direct')
-                                    .map((f) => (
-                                      <SelectItem key={f.id} value={f.id}>
-                                        {f.fileName}
-                                      </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                              )}
-                              {(() => {
-                                const docGroups = new Map<
-                                  string,
-                                  Array<CADFileEntry>
-                                >()
-                                for (const f of cadFiles.filter(
-                                  (cf) => cf.source === 'cad_doc',
-                                )) {
-                                  const key =
-                                    f.sourceItemNumber ?? f.sourceItemId
-                                  if (!docGroups.has(key))
-                                    docGroups.set(key, [])
-                                  docGroups.get(key)!.push(f)
+                    <CardTitle>Overview</CardTitle>
+                    <CardDescription>
+                      General information about this part
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <ViewEditText
+                        label="Item Number"
+                        value={
+                          isEditing ? part.itemNumber : currentPart.itemNumber
+                        }
+                        onChange={(v) => updateField('itemNumber', v)}
+                        isEditing={isEditing && isCreateMode} // Only editable when creating
+                        placeholder="PART-001"
+                        required
+                        data-testid="part-item-number"
+                      />
+                      <ViewEditText
+                        label="Revision"
+                        value={isEditing ? part.revision : currentPart.revision}
+                        onChange={(v) => updateField('revision', v)}
+                        isEditing={false} // Revision is system-managed
+                      />
+                      <ViewEditText
+                        label="Name"
+                        value={isEditing ? part.name : currentPart.name}
+                        onChange={(v) => updateField('name', v)}
+                        isEditing={isEditing}
+                        placeholder="Part name"
+                        required
+                        data-testid="part-name"
+                      />
+                      <ViewEditBadge
+                        label="State"
+                        value={isEditing ? part.state : currentPart.state}
+                        onChange={(v) => updateField('state', v)}
+                        isEditing={isEditing}
+                        options={STATE_OPTIONS}
+                        variant={stateVariant}
+                        readOnly={!isCreateMode} // State is managed by lifecycle
+                      />
+                      <ViewEditTextarea
+                        label="Description"
+                        value={
+                          isEditing ? part.description : currentPart.description
+                        }
+                        onChange={(v) => updateField('description', v)}
+                        isEditing={isEditing}
+                        placeholder="Enter a description..."
+                        className="md:col-span-2"
+                      />
+                      {/* Design selector (only in create mode or if no design assigned) */}
+                      {(isCreateMode || !currentPart.designId) &&
+                        designs.length > 0 && (
+                          <div className="md:col-span-2 space-y-4">
+                            <div className="flex items-center gap-4">
+                              <ViewEditSelect
+                                label="Design"
+                                value={
+                                  isEditing
+                                    ? part.designId
+                                    : currentPart.designId
                                 }
-                                return Array.from(docGroups.entries()).map(
-                                  ([label, files]) => (
-                                    <SelectGroup key={label}>
-                                      <SelectLabel>{label}</SelectLabel>
-                                      {files.map((f) => (
+                                onChange={(v) => updateField('designId', v)}
+                                isEditing={isEditing && isCreateMode}
+                                options={designs.map((d) => ({
+                                  value: d.id,
+                                  label: `${d.code} - ${d.name}`,
+                                }))}
+                                placeholder="Select a design..."
+                                required
+                                data-testid="design-selector"
+                              />
+                              {part.designId &&
+                                !loadingStatus &&
+                                designStatus && (
+                                  <DesignPhaseIndicator
+                                    designId={part.designId}
+                                    status={designStatus}
+                                  />
+                                )}
+                            </div>
+
+                            {/* Branch Selection - Available for new items when design is selected */}
+                            {showBranchSelector && (
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                  Target Branch{' '}
+                                  {branchRequired && (
+                                    <span className="text-red-500">*</span>
+                                  )}
+                                </label>
+                                <BranchSelector
+                                  designId={part.designId}
+                                  value={selectedBranchId}
+                                  onChange={setSelectedBranchId}
+                                  showMainOption={!branchRequired}
+                                  placeholder={
+                                    branchRequired
+                                      ? 'Select branch...'
+                                      : 'Main branch (default)'
+                                  }
+                                />
+                                {branchRequired && (
+                                  <div className="flex items-start gap-2 mt-2 p-3 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-sm rounded-md">
+                                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                    <span>
+                                      This design is under change control. New
+                                      parts must be created on an ECO or
+                                      workspace branch.
+                                    </span>
+                                  </div>
+                                )}
+                                {!branchRequired && !selectedBranchId && (
+                                  <div className="flex items-start gap-2 mt-2 p-3 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-sm rounded-md">
+                                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                    <span>
+                                      No branch selected - part will be created
+                                      on the main branch. Select a workspace
+                                      branch for private development work.
+                                    </span>
+                                  </div>
+                                )}
+                                {branchRequired && !selectedBranchId && (
+                                  <p className="text-sm text-red-500">
+                                    Please select a branch to create this part
+                                    on
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                    </dl>
+                  </CardContent>
+                </Card>
+
+                {/* Manufacturing Details Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Manufacturing Details</CardTitle>
+                    <CardDescription>
+                      Production and sourcing information
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <ViewEditBadge
+                        label="Type"
+                        value={isEditing ? part.partType : currentPart.partType}
+                        onChange={(v) => updateField('partType', v)}
+                        isEditing={isEditing}
+                        options={PART_TYPE_OPTIONS}
+                        variant={(v) => {
+                          const m: Record<
+                            string,
+                            'default' | 'secondary' | 'success' | 'outline'
+                          > = {
+                            Manufacture: 'default',
+                            Purchase: 'secondary',
+                            Software: 'success',
+                            Phantom: 'outline',
+                          }
+                          return m[v] || 'default'
+                        }}
+                      />
+                      <ViewEditText
+                        label="Material"
+                        value={isEditing ? part.material : currentPart.material}
+                        onChange={(v) => updateField('material', v)}
+                        isEditing={isEditing}
+                        placeholder="e.g., Aluminum 6061"
+                      />
+                      <ViewEditNumber
+                        label="Weight"
+                        value={isEditing ? part.weight : currentPart.weight}
+                        onChange={(v) => updateField('weight', v)}
+                        isEditing={isEditing}
+                        unitOptions={WEIGHT_UNIT_OPTIONS}
+                        unitValue={
+                          isEditing ? part.weightUnit : currentPart.weightUnit
+                        }
+                        onUnitChange={(v) => updateField('weightUnit', v)}
+                        step="0.001"
+                      />
+                      <ViewEditCurrency
+                        label="Cost"
+                        value={isEditing ? part.cost : currentPart.cost}
+                        onChange={(v) => updateField('cost', v)}
+                        isEditing={isEditing}
+                        currency={
+                          isEditing
+                            ? part.costCurrency
+                            : currentPart.costCurrency
+                        }
+                        currencyOptions={CURRENCY_OPTIONS}
+                        onCurrencyChange={(v) => updateField('costCurrency', v)}
+                      />
+                      <ViewEditNumber
+                        label="Lead Time"
+                        value={
+                          isEditing
+                            ? part.leadTimeDays
+                            : currentPart.leadTimeDays
+                        }
+                        onChange={(v) =>
+                          updateField(
+                            'leadTimeDays',
+                            v ? parseInt(v) : undefined,
+                          )
+                        }
+                        isEditing={isEditing}
+                        unit="days"
+                        min={0}
+                      />
+                    </dl>
+                  </CardContent>
+                </Card>
+
+                {/* CAD 3D Viewer (only for existing parts with CAD files) */}
+                {!isCreateMode && selectedCADFile && showCADViewer && (
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle>3D CAD Model</CardTitle>
+                          <CardDescription>
+                            Interactive 3D visualization •{' '}
+                            {selectedCADFile.fileName}
+                            {selectedCADFile.source === 'cad_doc' &&
+                              selectedCADFile.sourceItemNumber &&
+                              ` (from ${selectedCADFile.sourceItemNumber})`}
+                          </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {cadFiles.length > 1 && (
+                            <Select
+                              value={selectedCADFile.id}
+                              onValueChange={(fileId) => {
+                                const file = cadFiles.find(
+                                  (f) => f.id === fileId,
+                                )
+                                if (file) setSelectedCADFile(file)
+                              }}
+                            >
+                              <SelectTrigger className="w-[220px] h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {cadFiles.some(
+                                  (f) => f.source === 'direct',
+                                ) && (
+                                  <SelectGroup>
+                                    <SelectLabel>Direct Files</SelectLabel>
+                                    {cadFiles
+                                      .filter((f) => f.source === 'direct')
+                                      .map((f) => (
                                         <SelectItem key={f.id} value={f.id}>
                                           {f.fileName}
                                         </SelectItem>
                                       ))}
-                                    </SelectGroup>
-                                  ),
-                                )
-                              })()}
-                            </SelectContent>
-                          </Select>
-                        )}
+                                  </SelectGroup>
+                                )}
+                                {(() => {
+                                  const docGroups = new Map<
+                                    string,
+                                    Array<CADFileEntry>
+                                  >()
+                                  for (const f of cadFiles.filter(
+                                    (cf) => cf.source === 'cad_doc',
+                                  )) {
+                                    const key =
+                                      f.sourceItemNumber ?? f.sourceItemId
+                                    if (!docGroups.has(key))
+                                      docGroups.set(key, [])
+                                    docGroups.get(key)!.push(f)
+                                  }
+                                  return Array.from(docGroups.entries()).map(
+                                    ([label, files]) => (
+                                      <SelectGroup key={label}>
+                                        <SelectLabel>{label}</SelectLabel>
+                                        {files.map((f) => (
+                                          <SelectItem key={f.id} value={f.id}>
+                                            {f.fileName}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    ),
+                                  )
+                                })()}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowCADViewer(false)}
+                            title="Hide 3D viewer"
+                          >
+                            <EyeOff className="h-4 w-4 mr-2" />
+                            Hide Viewer
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div
+                        ref={viewerContainerRef}
+                        className={`relative ${cadFullscreen ? 'h-screen' : 'h-[500px]'}`}
+                        tabIndex={0}
+                      >
+                        <CADViewerToolbar
+                          wireframe={cadWireframe}
+                          showGrid={cadShowGrid}
+                          isFullscreen={cadFullscreen}
+                          backgroundPreset={cadBackground}
+                          materialPreset={cadMaterial}
+                          polygonCount={cadModelStats.polygonCount}
+                          hasEmbeddedColors={
+                            selectedCADFile.hasColors &&
+                            selectedCADFile.fileType === 'glb'
+                          }
+                          onResetView={() => cadViewerRef.current?.resetView()}
+                          onToggleWireframe={() =>
+                            setCADWireframe((prev) => !prev)
+                          }
+                          onToggleGrid={() => setCADShowGrid((prev) => !prev)}
+                          onToggleFullscreen={toggleFullscreen}
+                          onBackgroundChange={setCADBackground}
+                          onMaterialChange={setCADMaterial}
+                          onDownload={handleDownloadCAD}
+                        />
+                        <CADViewer
+                          ref={cadViewerRef}
+                          fileUrl={`/api/v1/files/${selectedCADFile.id}/download`}
+                          fileType={selectedCADFile.fileType}
+                          fileName={selectedCADFile.fileName}
+                          wireframe={cadWireframe}
+                          showGrid={cadShowGrid}
+                          backgroundPreset={cadBackground}
+                          materialPreset={cadMaterial}
+                          hasEmbeddedColors={
+                            selectedCADFile.hasColors &&
+                            selectedCADFile.fileType === 'glb'
+                          }
+                          onLoad={handleCADModelLoad}
+                          onError={(error) =>
+                            handleError(error, {
+                              title: 'Failed to load CAD model',
+                            })
+                          }
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Show Viewer Button (when hidden) */}
+                {!isCreateMode && cadFiles.length > 0 && !showCADViewer && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-slate-900 dark:text-white">
+                            3D CAD Model Available
+                          </p>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">
+                            {cadFiles.length} viewable CAD{' '}
+                            {cadFiles.length === 1 ? 'file' : 'files'}
+                            {cadFiles.some((f) => f.source === 'cad_doc')
+                              ? ' (includes related documents)'
+                              : ' attached'}
+                          </p>
+                        </div>
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowCADViewer(false)}
-                          title="Hide 3D viewer"
+                          variant="default"
+                          onClick={() => setShowCADViewer(true)}
+                          title="Show 3D viewer"
                         >
-                          <EyeOff className="h-4 w-4 mr-2" />
-                          Hide Viewer
+                          <Eye className="h-4 w-4 mr-2" />
+                          Show 3D Viewer
                         </Button>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div
-                      ref={viewerContainerRef}
-                      className={`relative ${cadFullscreen ? 'h-screen' : 'h-[500px]'}`}
-                      tabIndex={0}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
+              {/* Sidebar - Right column */}
+              <div className="space-y-6">
+                {/* Custom Attributes */}
+                {isEditing ? (
+                  <Card>
+                    <AttributesEditor
+                      value={attributes}
+                      onChange={setAttributes}
+                      disabled={isSubmitting}
+                      className="border-0 rounded-none"
+                    />
+                  </Card>
+                ) : (
+                  <Card>
+                    <Collapsible
+                      defaultOpen={
+                        Object.keys(currentPart.attributes ?? {}).length > 0
+                      }
                     >
-                      <CADViewerToolbar
-                        wireframe={cadWireframe}
-                        showGrid={cadShowGrid}
-                        isFullscreen={cadFullscreen}
-                        backgroundPreset={cadBackground}
-                        materialPreset={cadMaterial}
-                        polygonCount={cadModelStats.polygonCount}
-                        hasEmbeddedColors={
-                          selectedCADFile.hasColors &&
-                          selectedCADFile.fileType === 'glb'
-                        }
-                        onResetView={() => cadViewerRef.current?.resetView()}
-                        onToggleWireframe={() =>
-                          setCADWireframe((prev) => !prev)
-                        }
-                        onToggleGrid={() => setCADShowGrid((prev) => !prev)}
-                        onToggleFullscreen={toggleFullscreen}
-                        onBackgroundChange={setCADBackground}
-                        onMaterialChange={setCADMaterial}
-                        onDownload={handleDownloadCAD}
-                      />
-                      <CADViewer
-                        ref={cadViewerRef}
-                        fileUrl={`/api/v1/files/${selectedCADFile.id}/download`}
-                        fileType={selectedCADFile.fileType}
-                        fileName={selectedCADFile.fileName}
-                        wireframe={cadWireframe}
-                        showGrid={cadShowGrid}
-                        backgroundPreset={cadBackground}
-                        materialPreset={cadMaterial}
-                        hasEmbeddedColors={
-                          selectedCADFile.hasColors &&
-                          selectedCADFile.fileType === 'glb'
-                        }
-                        onLoad={handleCADModelLoad}
-                        onError={(error) =>
-                          handleError(error, {
-                            title: 'Failed to load CAD model',
-                          })
-                        }
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                      <CardHeader className="pb-3">
+                        <CollapsibleTrigger className="hover:opacity-70">
+                          <CardTitle>Custom Attributes</CardTitle>
+                        </CollapsibleTrigger>
+                      </CardHeader>
+                      <CollapsibleContent>
+                        <CardContent className="pt-0">
+                          {Object.keys(currentPart.attributes ?? {}).length >
+                          0 ? (
+                            <dl className="space-y-3">
+                              {Object.entries(currentPart.attributes ?? {}).map(
+                                ([key, value]) => (
+                                  <div key={key} className="space-y-1">
+                                    <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                                      {key}
+                                    </dt>
+                                    <dd className="text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-md">
+                                      {value || '-'}
+                                    </dd>
+                                  </div>
+                                ),
+                              )}
+                            </dl>
+                          ) : (
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                              No custom attributes defined.
+                            </p>
+                          )}
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </Card>
+                )}
 
-              {/* Show Viewer Button (when hidden) */}
-              {!isCreateMode && cadFiles.length > 0 && !showCADViewer && (
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-white">
-                          3D CAD Model Available
-                        </p>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          {cadFiles.length} viewable CAD{' '}
-                          {cadFiles.length === 1 ? 'file' : 'files'}
-                          {cadFiles.some((f) => f.source === 'cad_doc')
-                            ? ' (includes related documents)'
-                            : ' attached'}
-                        </p>
-                      </div>
-                      <Button
-                        variant="default"
-                        onClick={() => setShowCADViewer(true)}
-                        title="Show 3D viewer"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Show 3D Viewer
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                {/* Files (only for existing parts) */}
+                {!isCreateMode && currentPart.id && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Files</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FileUploadZone
+                        itemId={currentPart.id}
+                        branchId={
+                          context.type === 'branch'
+                            ? context.branchId
+                            : mainBranchId
+                        }
+                        onUploadComplete={() => {
+                          showSuccess(
+                            'File uploaded',
+                            'File has been uploaded successfully',
+                          )
+                          loadCADFiles()
+                          router.invalidate()
+                        }}
+                        onUploadError={(error) =>
+                          handleError(error, { title: 'Upload failed' })
+                        }
+                      />
+                      <FileList
+                        itemId={currentPart.id}
+                        branchId={
+                          context.type === 'branch'
+                            ? context.branchId
+                            : undefined
+                        }
+                        mainBranchId={mainBranchId}
+                        onViewCAD={handleViewCAD}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* Sidebar - Right column */}
-            <div className="space-y-6">
-              {/* Custom Attributes */}
-              {isEditing ? (
-                <Card>
-                  <AttributesEditor
-                    value={attributes}
-                    onChange={setAttributes}
-                    disabled={isSubmitting}
-                    className="border-0 rounded-none"
-                  />
-                </Card>
-              ) : (
-                <Card>
-                  <Collapsible
-                    defaultOpen={
-                      Object.keys(currentPart.attributes ?? {}).length > 0
-                    }
-                  >
-                    <CardHeader className="pb-3">
+                {/* Metadata */}
+                <Collapsible defaultOpen={false}>
+                  <Card>
+                    <CardHeader>
                       <CollapsibleTrigger className="hover:opacity-70">
-                        <CardTitle>Custom Attributes</CardTitle>
+                        <CardTitle>Metadata</CardTitle>
                       </CollapsibleTrigger>
                     </CardHeader>
                     <CollapsibleContent>
-                      <CardContent className="pt-0">
-                        {Object.keys(currentPart.attributes ?? {}).length >
-                        0 ? (
-                          <dl className="space-y-3">
-                            {Object.entries(
-                              currentPart.attributes ?? {},
-                            ).map(([key, value]) => (
-                              <div key={key} className="space-y-1">
-                                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                                  {key}
-                                </dt>
-                                <dd className="text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-md">
-                                  {value || '-'}
-                                </dd>
-                              </div>
-                            ))}
-                          </dl>
-                        ) : (
-                          <p className="text-sm text-slate-500 dark:text-slate-400">
-                            No custom attributes defined.
-                          </p>
+                      <CardContent className="space-y-3">
+                        <ViewEditStatic
+                          label="Created"
+                          value={
+                            currentPart.createdAt
+                              ? new Date(
+                                  currentPart.createdAt,
+                                ).toLocaleDateString()
+                              : '-'
+                          }
+                        />
+                        <ViewEditStatic
+                          label="Last Modified"
+                          value={
+                            currentPart.modifiedAt
+                              ? new Date(
+                                  currentPart.modifiedAt,
+                                ).toLocaleDateString()
+                              : '-'
+                          }
+                        />
+                        {!isCreateMode && (
+                          <>
+                            <ViewEditStatic
+                              label="Master ID"
+                              value={currentPart.masterId}
+                              mono
+                            />
+                            <ViewEditStatic
+                              label="Part ID"
+                              value={currentPart.id}
+                              mono
+                            />
+                          </>
                         )}
                       </CardContent>
                     </CollapsibleContent>
-                  </Collapsible>
-                </Card>
-              )}
-
-              {/* Files (only for existing parts) */}
-              {!isCreateMode && currentPart.id && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Files</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FileUploadZone
-                      itemId={currentPart.id}
-                      branchId={
-                        context.type === 'branch'
-                          ? context.branchId
-                          : mainBranchId
-                      }
-                      onUploadComplete={() => {
-                        showSuccess(
-                          'File uploaded',
-                          'File has been uploaded successfully',
-                        )
-                        loadCADFiles()
-                        router.invalidate()
-                      }}
-                      onUploadError={(error) =>
-                        handleError(error, { title: 'Upload failed' })
-                      }
-                    />
-                    <FileList
-                      itemId={currentPart.id}
-                      branchId={
-                        context.type === 'branch' ? context.branchId : undefined
-                      }
-                      mainBranchId={mainBranchId}
-                      onViewCAD={handleViewCAD}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Metadata */}
-              <Collapsible defaultOpen={false}>
-                <Card>
-                  <CardHeader>
-                    <CollapsibleTrigger className="hover:opacity-70">
-                      <CardTitle>Metadata</CardTitle>
-                    </CollapsibleTrigger>
-                  </CardHeader>
-                  <CollapsibleContent>
-                    <CardContent className="space-y-3">
-                      <ViewEditStatic
-                        label="Created"
-                        value={
-                          currentPart.createdAt
-                            ? new Date(
-                                currentPart.createdAt,
-                              ).toLocaleDateString()
-                            : '-'
-                        }
-                      />
-                      <ViewEditStatic
-                        label="Last Modified"
-                        value={
-                          currentPart.modifiedAt
-                            ? new Date(
-                                currentPart.modifiedAt,
-                              ).toLocaleDateString()
-                            : '-'
-                        }
-                      />
-                      {!isCreateMode && (
-                        <>
-                          <ViewEditStatic
-                            label="Master ID"
-                            value={currentPart.masterId}
-                            mono
-                          />
-                          <ViewEditStatic
-                            label="Part ID"
-                            value={currentPart.id}
-                            mono
-                          />
-                        </>
-                      )}
-                    </CardContent>
-                  </CollapsibleContent>
-                </Card>
-              </Collapsible>
+                  </Card>
+                </Collapsible>
+              </div>
             </div>
-          </div>
-        </TabsContent>
+          </TabsContent>
 
-        {/* Relationships Tab */}
-        <TabsContent value="relationships" className="mt-6 space-y-6">
-          {currentPart.id ? (
-            <>
-              <DigitalThreadNavigator
-                itemId={currentPart.id}
-                itemNumber={currentPart.itemNumber}
-                itemName={currentPart.name}
-                designId={currentPart.designId}
-              />
-              <PartRelationshipsPanel
-                itemId={currentPart.id}
-                itemType="Part"
-                branchId={
-                  context.type === 'branch' ? context.branchId : undefined
+          {/* Relationships Tab */}
+          <TabsContent value="relationships" className="mt-6 space-y-6">
+            {currentPart.id ? (
+              <>
+                <DigitalThreadNavigator
+                  itemId={currentPart.id}
+                  itemNumber={currentPart.itemNumber}
+                  itemName={currentPart.name}
+                  designId={currentPart.designId}
+                />
+                <PartRelationshipsPanel
+                  itemId={currentPart.id}
+                  itemType="Part"
+                  branchId={
+                    context.type === 'branch' ? context.branchId : undefined
+                  }
+                />
+                <RequirementLinkingPanel
+                  itemId={currentPart.id}
+                  designId={currentPart.designId}
+                  readOnly={!isEditable}
+                />
+                <PartValidationPanel
+                  partId={currentPart.id}
+                  designId={currentPart.designId}
+                  isEditable={isEditable}
+                />
+              </>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-slate-500 dark:text-slate-400">
+                    Save the part first to manage relationships
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Work Instructions Tab (only for existing parts) */}
+          {!isCreateMode && currentPart.id && (
+            <TabsContent value="work-instructions" className="mt-6">
+              <WorkInstructionsForPartPanel
+                partId={currentPart.id}
+                onError={(error) =>
+                  handleError(error, {
+                    title: 'Failed to load work instructions',
+                  })
                 }
               />
-              <RequirementLinkingPanel
-                itemId={currentPart.id}
-                designId={currentPart.designId}
-                readOnly={!isEditable}
-              />
-              <PartValidationPanel
-                partId={currentPart.id}
-                designId={currentPart.designId}
-                isEditable={isEditable}
-              />
-            </>
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <p className="text-slate-500 dark:text-slate-400">
-                  Save the part first to manage relationships
-                </p>
-              </CardContent>
-            </Card>
+            </TabsContent>
           )}
-        </TabsContent>
 
-        {/* Work Instructions Tab (only for existing parts) */}
+          {/* History Tab (only for existing parts) */}
+          {!isCreateMode && (
+            <TabsContent value="history" className="mt-6">
+              <ItemHistoryTab
+                itemId={currentPart.id!}
+                designId={currentPart.designId}
+                versionContext={context}
+                onViewHistoricalState={setContext}
+                itemType="Part"
+              />
+            </TabsContent>
+          )}
+        </Tabs>
+
+        {/* Checkout Dialog for released items */}
+        {!isCreateMode && currentPart.id && currentPart.designId && (
+          <CheckoutDialog
+            open={isCheckoutDialogOpen}
+            onOpenChange={setIsCheckoutDialogOpen}
+            itemId={currentPart.id}
+            itemNumber={currentPart.itemNumber ?? ''}
+            designId={currentPart.designId}
+            onCheckoutComplete={handleCheckoutComplete}
+          />
+        )}
+
+        {/* Impact Analysis Dialog */}
         {!isCreateMode && currentPart.id && (
-          <TabsContent value="work-instructions" className="mt-6">
-            <WorkInstructionsForPartPanel
-              partId={currentPart.id}
-              onError={(error) =>
-                handleError(error, {
-                  title: 'Failed to load work instructions',
-                })
-              }
-            />
-          </TabsContent>
+          <ImpactAnalysisDialog
+            open={isImpactDialogOpen}
+            onOpenChange={setIsImpactDialogOpen}
+            itemId={currentPart.id}
+            itemNumber={currentPart.itemNumber ?? ''}
+            itemName={currentPart.name}
+          />
         )}
 
-        {/* History Tab (only for existing parts) */}
-        {!isCreateMode && (
-          <TabsContent value="history" className="mt-6">
-            <ItemHistoryTab
-              itemId={currentPart.id!}
-              designId={currentPart.designId}
-              versionContext={context}
-              onViewHistoricalState={setContext}
-              itemType="Part"
-            />
-          </TabsContent>
+        {/* Generate CAD Dialog */}
+        {!isCreateMode && currentPart.partType === 'Manufacture' && (
+          <GenerateCadDialog
+            open={isGenerateCadOpen}
+            onOpenChange={setIsGenerateCadOpen}
+            part={currentPart}
+          />
         )}
-      </Tabs>
-
-      {/* Checkout Dialog for released items */}
-      {!isCreateMode && currentPart.id && currentPart.designId && (
-        <CheckoutDialog
-          open={isCheckoutDialogOpen}
-          onOpenChange={setIsCheckoutDialogOpen}
-          itemId={currentPart.id}
-          itemNumber={currentPart.itemNumber ?? ''}
-          designId={currentPart.designId}
-          onCheckoutComplete={handleCheckoutComplete}
-        />
-      )}
-
-      {/* Impact Analysis Dialog */}
-      {!isCreateMode && currentPart.id && (
-        <ImpactAnalysisDialog
-          open={isImpactDialogOpen}
-          onOpenChange={setIsImpactDialogOpen}
-          itemId={currentPart.id}
-          itemNumber={currentPart.itemNumber ?? ''}
-          itemName={currentPart.name}
-        />
-      )}
-
-      {/* Generate CAD Dialog */}
-      {!isCreateMode && currentPart.partType === 'Manufacture' && (
-        <GenerateCadDialog
-          open={isGenerateCadOpen}
-          onOpenChange={setIsGenerateCadOpen}
-          part={currentPart}
-        />
-      )}
-    </PageContainer>
+      </PageContainer>
+      <UrlDropOverlay isDragging={isDragging} isEnriching={isEnriching} />
+    </div>
   )
 }

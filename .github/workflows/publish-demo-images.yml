@@ -2,7 +2,9 @@
 #   ghcr.io/cascadia-plm/cascadia-app
 #   ghcr.io/cascadia-plm/cascadia-cad-converter
 #   ghcr.io/cascadia-plm/cascadia-jobs-worker
-#   ghcr.io/cascadia-plm/cascadia-demo-data
+#
+# The fourth image, ghcr.io/cascadia-plm/cascadia-demo-data, is built and
+# published by Cascadia-PLM/Demo-Data, which owns the dataset.
 #
 # Images are built SELECTIVELY: the `plan` job diffs the push/PR against its base
 # and emits a matrix containing only the images whose inputs actually changed. A
@@ -100,10 +102,6 @@ jobs:
             cad_converter:
               - *pipeline
               - 'workers/cad-converter/**'
-            demo_data:
-              - *pipeline
-              - 'demo-data/**'
-              - 'docker/demo-data.Dockerfile'
 
       - name: Select images to build
         id: select
@@ -115,13 +113,12 @@ jobs:
           set -euo pipefail
 
           # Canonical catalog. `filter` maps each image to its paths-filter key and is
-          # stripped before the matrix is emitted. Retiring an image (cascadia-demo-data
-          # is moving to its own repo) means deleting one row here and its filter block.
+          # stripped before the matrix is emitted. Adding or retiring an image means
+          # one row here plus its filter block.
           catalog='[
             {"name":"cascadia-app","context":".","dockerfile":"docker/app.Dockerfile","target":"production","filter":"app"},
             {"name":"cascadia-jobs-worker","context":".","dockerfile":"workers/node/Dockerfile","target":"production","filter":"jobs_worker"},
-            {"name":"cascadia-cad-converter","context":"workers/cad-converter","dockerfile":"workers/cad-converter/Dockerfile","target":"","filter":"cad_converter"},
-            {"name":"cascadia-demo-data","context":"demo-data","dockerfile":"docker/demo-data.Dockerfile","target":"","filter":"demo_data"}
+            {"name":"cascadia-cad-converter","context":"workers/cad-converter","dockerfile":"workers/cad-converter/Dockerfile","target":"","filter":"cad_converter"}
           ]'
 
           if [ -z "${CHANGES}" ]; then

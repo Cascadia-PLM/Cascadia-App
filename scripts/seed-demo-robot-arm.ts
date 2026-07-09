@@ -5,10 +5,14 @@
  * a TDJ-25 design, ~88 parts, ~101 BOM relationships, and ~79 GLB + thumbnail
  * vault file pairs. Optionally releases an ECO-001 baseline.
  *
+ * The dataset is not in this repo — it lives in Cascadia-PLM/Demo-Data. Fetch it
+ * with `npm run demo:fetch` on a host, or mount it at DEMO_DATA_DIR in a
+ * container (docker-compose.demo.yml does this from the published image).
+ *
  * Idempotent: skips entirely if a program with code 'ROBOT-ARM' already exists.
  *
  * Run with:
- *   tsx scripts/seed-demo-robot-arm.ts
+ *   npm run demo:fetch && tsx scripts/seed-demo-robot-arm.ts
  *
  * Env:
  *   DEMO_DATA_DIR    root of demo data (default: ./demo-data inside container, ./demo-data on host)
@@ -17,7 +21,7 @@
  *   DEMO_SKIP_FILES  set to 'true' to skip vault file ingestion (DB rows + parts only)
  */
 
-import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHash, randomUUID } from 'node:crypto'
@@ -154,13 +158,38 @@ if (existingProgram.length > 0) {
 
 if (!existsSync(MANIFEST_PATH)) {
   console.error(`Manifest not found at ${MANIFEST_PATH}.`)
-  console.error('Run scripts/build-demo-manifest.ts first to generate it.')
+  console.error('The demo dataset lives in Cascadia-PLM/Demo-Data, not this repo.')
+  console.error('Fetch it with:  npm run demo:fetch')
   process.exit(1)
 }
 
 const manifest: Manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf-8'))
 
 console.log(`   parts: ${manifest.parts.length}, relationships: ${manifest.relationships.length}`)
+
+// A half-fetched dataset used to seed "successfully" with zero vault files: every
+// part fell through the !haveGlb branch below and the demo came up with no 3D
+// models. Fail here instead, while the cause is still obvious.
+if (!SKIP_FILES) {
+  const expectedGlb = manifest.parts.filter((p) => p.cadFileBase).length
+  const actualGlb = existsSync(GLB_DIR)
+    ? readdirSync(GLB_DIR).filter((f) => f.toLowerCase().endsWith('.glb')).length
+    : -1
+
+  if (actualGlb === -1) {
+    console.error(`Manifest is present but ${GLB_DIR} is missing.`)
+    console.error('The dataset is incomplete. Re-fetch it with:  npm run demo:fetch')
+    process.exit(1)
+  }
+  if (actualGlb < expectedGlb) {
+    console.error(
+      `Dataset is incomplete: manifest expects ${expectedGlb} GLB files, found ${actualGlb} in ${GLB_DIR}.`,
+    )
+    console.error('Re-fetch it with:  npm run demo:fetch')
+    console.error('To seed database rows without any CAD files, set DEMO_SKIP_FILES=true.')
+    process.exit(1)
+  }
+}
 
 // ---- 4. Create Program -----------------------------------------------------
 

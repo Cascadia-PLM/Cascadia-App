@@ -52,7 +52,7 @@
     "demo:down": "docker compose -f docker-compose.demo.yml down",
     "demo:reset": "docker compose -f docker-compose.demo.yml down -v && docker compose -f docker-compose.demo.yml up -d",
     "demo:logs": "docker compose -f docker-compose.demo.yml logs -f app",
-    "demo:build-data": "tsx scripts/build-demo-manifest.ts && tsx scripts/prepare-demo-cad.ts",
+    "demo:fetch": "tsx scripts/fetch-demo-data.ts",
     "deploy:install": "tsx scripts/deploy/install.ts",
     "jobs:worker": "node .output/server/jobs-worker.mjs",
     "jobs:worker:dev": "tsx src/jobs-worker.ts",

@@ -1,8 +1,0 @@
-# Build context filter for docker/demo-data.Dockerfile (context: demo-data).
-#
-# STEP files are build-time inputs to scripts/prepare-demo-cad.ts, not runtime
-# data — scripts/seed-demo-robot-arm.ts treats them as optional and seeds from
-# glb/ + thumbnails/ + manifest.json alone. They are gitignored, so a CI build
-# never sees them; excluding them here keeps a local build byte-comparable
-# instead of silently producing a ~590 MB image.
-robot-arm/step

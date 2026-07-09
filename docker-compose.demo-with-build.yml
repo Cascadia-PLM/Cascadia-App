@@ -7,7 +7,13 @@
 # seed before pushing — every `up` rebuilds the app, cad-converter, and
 # jobs-worker images from your working tree.
 #
+# PREREQUISITE: the app service bind-mounts ./demo-data, which is no longer in
+# this repo. Fetch it first, or the demo seed will exit 1:
+#
+#   npm run demo:fetch
+#
 # Usage:
+#   npm run demo:fetch
 #   docker compose -f docker-compose.demo-with-build.yml up -d
 #
 # Then open http://localhost:3000 and log in with:
@@ -99,6 +105,8 @@ services:
     volumes:
       - cascadia_demo_app_storage:/app/storage
       - cascadia_demo_app_vault:/app/vault
+      # Populated by `npm run demo:fetch` (clones Cascadia-PLM/Demo-Data at a
+      # pinned tag). Absent by default — this directory is gitignored.
       - ./demo-data:/app/demo-data:ro
     networks: [cascadia-demo]
     # First boot: push schema → minimal seed → demo seed → serve.

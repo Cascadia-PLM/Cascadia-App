@@ -33,6 +33,7 @@ function CollaborativeWorkspacePage() {
         stage: session.stage,
         status: session.status,
         artifacts: session.artifacts,
+        llmHistory: session.llmHistory,
       }}
     />
   )

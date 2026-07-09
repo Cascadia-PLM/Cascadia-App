@@ -34,10 +34,14 @@ export function createToolsetTools(
     options?: Array<string>,
     multiSelect?: boolean,
   ) => void,
+  initialToolset?: DesignSessionToolset,
 ) {
+  // Seed from any existing toolset so a resumed stage accumulates onto prior
+  // tools/scope instead of replacing them. Every mutation emits the full set,
+  // so an empty seed on resume would wipe tools added before the pause.
   const state: ToolsetBuildState = {
-    scope: 'unconstrained',
-    tools: [],
+    scope: initialToolset?.scope ?? 'unconstrained',
+    tools: initialToolset ? [...initialToolset.tools] : [],
     changeVersion: 0,
   }
 

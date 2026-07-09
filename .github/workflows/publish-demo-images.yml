@@ -51,8 +51,10 @@ jobs:
             context: .
             dockerfile: workers/node/Dockerfile
             target: production
+          # Context is demo-data/, not the repo root: the root .dockerignore
+          # excludes demo-data so the other builds don't transfer it.
           - name: cascadia-demo-data
-            context: .
+            context: demo-data
             dockerfile: docker/demo-data.Dockerfile
             target: ''
 

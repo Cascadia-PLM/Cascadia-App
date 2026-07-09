@@ -1,18 +1,27 @@
-# Build and publish the four images that back the zero-friction demo:
+# Build and publish the images that back the zero-friction demo:
 #   ghcr.io/cascadia-plm/cascadia-app
 #   ghcr.io/cascadia-plm/cascadia-cad-converter
 #   ghcr.io/cascadia-plm/cascadia-jobs-worker
 #   ghcr.io/cascadia-plm/cascadia-demo-data
 #
+# Images are built SELECTIVELY: the `plan` job diffs the push/PR against its base
+# and emits a matrix containing only the images whose inputs actually changed. A
+# docs-only or test-only commit builds nothing. Tag pushes and manual dispatches
+# always build the full set so a release is coherent.
+#
 # Triggers:
-#   - push to main           -> multi-arch build, push :latest, :main, :sha-<short>
-#   - workflow_dispatch      -> same as above (manual rebuild)
-#   - pull_request to main   -> amd64-only build, no push (verify Dockerfiles still build)
-#   - tag push v*            -> additionally publish :semver (workflow already wired
-#                               via metadata-action; activates when first git tag exists)
+#   - push to main           -> multi-arch build of changed images, push :latest, :main, :sha-<short>
+#   - workflow_dispatch      -> full multi-arch rebuild of every image
+#   - pull_request to main   -> amd64-only build of changed images, no push (Dockerfile smoke test)
+#   - tag push v*            -> full rebuild, additionally publish :semver
+#
+# NOTE on :sha-<short> tags. Because images build selectively, a given commit SHA
+# only tags the images that changed in it. `docker-compose.demo.yml` pins :latest,
+# which always resolves (unchanged images keep pointing at their previous digest),
+# so this affects only users hand-pinning :sha-<short> across all services.
 #
 # ONE-TIME SETUP after the first successful run:
-#   For each of the four packages, flip visibility to public:
+#   For each package, flip visibility to public:
 #     GitHub -> org Cascadia-PLM -> Packages -> <package> -> Settings ->
 #     "Change visibility" -> Public.
 #   Without this the curl quickstart fails with `unauthorized` for unauthenticated
@@ -33,30 +42,121 @@ permissions:
   packages: write
 
 jobs:
-  publish:
+  # ---------------------------------------------------------------------------
+  # Decide which images need building. Emits a JSON matrix consumed by `publish`.
+  # ---------------------------------------------------------------------------
+  plan:
     runs-on: ubuntu-latest
+    outputs:
+      images: ${{ steps.select.outputs.images }}
+      any: ${{ steps.select.outputs.any }}
+    steps:
+      # Default shallow checkout. paths-filter deepens on demand via its
+      # initial-fetch-depth (default 100); `fetch-depth: 0` would drag in every
+      # historical demo-data blob for no benefit.
+      - uses: actions/checkout@v4
+
+      # Skipped entirely on tag pushes, workflow_dispatch, and the all-zeros
+      # `before` SHA (branch creation / history-rewriting force-push). In those
+      # cases `changes` is unset and the next step force-builds everything.
+      - name: Detect changed image sources
+        id: filter
+        if: >-
+          github.event_name == 'pull_request' ||
+          (github.event_name == 'push'
+           && !startsWith(github.ref, 'refs/tags/')
+           && github.event.before != '0000000000000000000000000000000000000000')
+        uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+        with:
+          filters: |
+            # Anchor for the sources shared by cascadia-app and cascadia-jobs-worker.
+            # Both Dockerfiles `COPY . .` and run the identical `npm run build`, so a
+            # change to any of these genuinely invalidates both images. It surfaces as
+            # its own filter key, which the catalog below has no entry for and drops.
+            _app_sources: &app_sources
+              - 'src/**'
+              - 'scripts/**'
+              - 'public/**'
+              - 'test-data/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'index.html'
+              - 'vite.config.ts'
+              - 'tsconfig.json'
+              - 'drizzle.config.ts'
+              - '.dockerignore'
+            # Editing the pipeline itself rebuilds everything, so a change to how
+            # images are built is always exercised by the commit that makes it.
+            _pipeline: &pipeline
+              - '.github/workflows/publish-demo-images.yml'
+            app:
+              - *app_sources
+              - *pipeline
+              - 'docker/app.Dockerfile'
+            jobs_worker:
+              - *app_sources
+              - *pipeline
+              - 'workers/node/Dockerfile'
+            cad_converter:
+              - *pipeline
+              - 'workers/cad-converter/**'
+            demo_data:
+              - *pipeline
+              - 'demo-data/**'
+              - 'docker/demo-data.Dockerfile'
+
+      - name: Select images to build
+        id: select
+        env:
+          # JSON array of matched filter names, e.g. ["_app_sources","app","jobs_worker"].
+          # Empty string when the filter step above was skipped.
+          CHANGES: ${{ steps.filter.outputs.changes }}
+        run: |
+          set -euo pipefail
+
+          # Canonical catalog. `filter` maps each image to its paths-filter key and is
+          # stripped before the matrix is emitted. Retiring an image (cascadia-demo-data
+          # is moving to its own repo) means deleting one row here and its filter block.
+          catalog='[
+            {"name":"cascadia-app","context":".","dockerfile":"docker/app.Dockerfile","target":"production","filter":"app"},
+            {"name":"cascadia-jobs-worker","context":".","dockerfile":"workers/node/Dockerfile","target":"production","filter":"jobs_worker"},
+            {"name":"cascadia-cad-converter","context":"workers/cad-converter","dockerfile":"workers/cad-converter/Dockerfile","target":"","filter":"cad_converter"},
+            {"name":"cascadia-demo-data","context":"demo-data","dockerfile":"docker/demo-data.Dockerfile","target":"","filter":"demo_data"}
+          ]'
+
+          if [ -z "${CHANGES}" ]; then
+            echo "No change detection ran (tag push, manual dispatch, or no diff base) - building every image."
+            images=$(jq -c '[.[] | del(.filter)]' <<<"$catalog")
+          else
+            # --argjson parses CHANGES as JSON rather than interpolating it into the
+            # program, so an unexpected filter name cannot alter the jq expression.
+            images=$(jq -c --argjson ch "$CHANGES" \
+              '[.[] | select(.filter as $f | $ch | index($f)) | del(.filter)]' \
+              <<<"$catalog")
+          fi
+
+          count=$(jq 'length' <<<"$images")
+          {
+            echo "images=$images"
+            echo "any=$([ "$count" -gt 0 ] && echo true || echo false)"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Building $count image(s):"
+          jq -r '.[].name | "  - " + .' <<<"$images"
+
+  # ---------------------------------------------------------------------------
+  # Build (and, off PRs, push) each selected image.
+  # ---------------------------------------------------------------------------
+  publish:
+    needs: plan
+    # Short-circuits before matrix expansion; an empty matrix would otherwise error.
+    if: needs.plan.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    name: publish ${{ matrix.image.name }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: cascadia-app
-            context: .
-            dockerfile: docker/app.Dockerfile
-            target: production
-          - name: cascadia-cad-converter
-            context: workers/cad-converter
-            dockerfile: workers/cad-converter/Dockerfile
-            target: ''
-          - name: cascadia-jobs-worker
-            context: .
-            dockerfile: workers/node/Dockerfile
-            target: production
-          # Context is demo-data/, not the repo root: the root .dockerignore
-          # excludes demo-data so the other builds don't transfer it.
-          - name: cascadia-demo-data
-            context: demo-data
-            dockerfile: docker/demo-data.Dockerfile
-            target: ''
+        image: ${{ fromJSON(needs.plan.outputs.images) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -79,7 +179,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/cascadia-plm/${{ matrix.name }}
+          images: ghcr.io/cascadia-plm/${{ matrix.image.name }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=main,enable={{is_default_branch}}
@@ -90,14 +190,14 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          target: ${{ matrix.target }}
+          context: ${{ matrix.image.context }}
+          file: ${{ matrix.image.dockerfile }}
+          target: ${{ matrix.image.target }}
           # PRs build amd64 only and don't push - faster feedback, no GHCR pollution.
           # Main branch and tags build multi-arch and push.
           platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          cache-from: type=gha,scope=${{ matrix.image.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}

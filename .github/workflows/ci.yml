@@ -183,3 +183,58 @@ jobs:
 
       - name: Validate contributor compose
         run: docker compose -f docker-compose.demo-with-build.yml config --quiet
+
+  large-files:
+    name: Large File Guard
+    runs-on: ubuntu-latest
+    # PR-only: it needs a base to diff against. Every change reaches main via a
+    # PR, so this is sufficient.
+    if: github.event_name == 'pull_request'
+    steps:
+      # Needs real history to enumerate the objects this PR introduces.
+      # Cheap now: the packed repo is ~3 MB.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # demo-data/robot-arm/glb was once 95% of this repo's history — 79 GLB
+      # files, one of them 62 MB — before it moved to Cascadia-PLM/Demo-Data and
+      # the history was rewritten to reclaim it. Nothing structural stops that
+      # from happening again, so this does.
+      #
+      # rev-list --not base enumerates objects the PR *introduces*, which catches
+      # a blob that was committed and then deleted again: it no longer appears in
+      # any tree, but it is permanently in history all the same.
+      - name: Reject new blobs over 5 MB
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          LIMIT=$((5 * 1024 * 1024))
+
+          offenders=$(
+            git rev-list --objects "$HEAD" --not "$BASE" \
+              | git cat-file --batch-check='%(objecttype) %(objectsize) %(rest)' \
+              | awk -v lim="$LIMIT" '
+                  $1 == "blob" && $2 > lim {
+                    size = $2; $1 = ""; $2 = ""; sub(/^ +/, "")
+                    printf "  %.1f MB  %s\n", size / 1048576, $0
+                  }'
+          )
+
+          if [ -n "$offenders" ]; then
+            echo "::error::This PR introduces blobs larger than 5 MB. Git history is forever."
+            echo ""
+            echo "$offenders"
+            echo ""
+            echo "Large binaries do not belong in this repo. Options:"
+            echo "  - CAD/demo assets  -> Cascadia-PLM/Demo-Data, fetched via 'npm run demo:fetch'"
+            echo "  - build outputs    -> generate them, and add the path to .gitignore"
+            echo "  - genuinely needed -> publish as a release asset and download at build time"
+            echo ""
+            echo "Deleting the file in a later commit does NOT help; the blob stays in history."
+            exit 1
+          fi
+
+          echo "No blobs over 5 MB introduced."

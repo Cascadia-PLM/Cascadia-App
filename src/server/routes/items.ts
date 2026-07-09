@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { and, asc, eq, inArray, isNull, like, or, sql } from 'drizzle-orm'
-import { ZodError } from 'zod'
+import { ZodError, z } from 'zod'
 import { tagged } from '../adapter'
 import type { ResourceType } from '@/lib/auth/permissions'
 import type { BaseItem } from '@/lib/items/types/base'
@@ -11,6 +11,7 @@ import {
   ValidationError,
 } from '@/lib/errors'
 import { ItemService } from '@/lib/items/services/ItemService'
+import { enrichItemFromUrl } from '@/lib/items/enrichment/enrich-from-url'
 import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
 import { ImpactAssessmentService } from '@/lib/items/services/ImpactAssessmentService'
 import { BranchService } from '@/lib/services/BranchService'
@@ -29,7 +30,8 @@ import { requireBranchAccess, requireDesignAccess } from '@/lib/auth/access'
 import {
   batchCreateRequestSchema,
   calculateLockDuration,
-  createLockedStatus, createUnlockedStatus 
+  createLockedStatus,
+  createUnlockedStatus,
 } from '@/lib/api'
 import {
   batchCheckinRequestSchema,
@@ -47,7 +49,8 @@ import {
   parts,
   requirements,
   tasks,
-  users, vaultFiles 
+  users,
+  vaultFiles,
 } from '@/lib/db/schema'
 import { designs } from '@/lib/db/schema/designs'
 // Register item types (server-side version)
@@ -63,6 +66,7 @@ function getResourceType(itemType: string): ResourceType {
     ChangeOrder: 'change_orders',
     Requirement: 'requirements',
     Task: 'tasks',
+    Tool: 'tools',
     TestPlan: 'test_plans',
     TestCase: 'test_cases',
   }
@@ -896,7 +900,10 @@ app.get(
       const countStates = url.searchParams.get('countStates')
 
       let columnFilters:
-        | Record<string, string | Array<string> | { min?: number; max?: number }>
+        | Record<
+            string,
+            string | Array<string> | { min?: number; max?: number }
+          >
         | undefined
       const columnFiltersRaw = url.searchParams.get('columnFilters')
       if (columnFiltersRaw) {
@@ -1122,6 +1129,49 @@ app.post(
 
       return created({ item })
     }),
+  ),
+)
+
+// POST /api/items/enrich-from-url
+// Parse a dropped web link into suggested field values + custom attributes.
+// Returns { aiEnabled: false, link } when no AI provider is connected.
+app.post(
+  '/enrich-from-url',
+  adapt(
+    apiHandler(
+      {
+        openapi: {
+          summary: 'Suggest item fields from a web link',
+          request: {
+            body: {
+              schema: z.object({
+                url: z.string().url(),
+                itemType: z.enum(['Part', 'Tool']),
+              }),
+            },
+          },
+        },
+      },
+      async ({ request }) => {
+        const body = await request.json()
+        const { url, itemType } = body as {
+          url?: unknown
+          itemType?: unknown
+        }
+
+        if (typeof url !== 'string' || !url.trim()) {
+          throw new ValidationError('url is required')
+        }
+        if (itemType !== 'Part' && itemType !== 'Tool') {
+          throw new ValidationError('itemType must be "Part" or "Tool"')
+        }
+
+        // Gate on the same create permission used when creating the item.
+        await requirePermission(request, getResourceType(itemType), 'create')
+
+        return await enrichItemFromUrl({ url, itemType })
+      },
+    ),
   ),
 )
 
@@ -1994,7 +2044,7 @@ app.get(
 
       // Return graphData directly as Response to preserve existing shape
       // (existing clients expect { nodes, edges } at the top level, not { data: { nodes, edges } })
-       
+
       return new Response(JSON.stringify(graphData), {
         headers: { 'Content-Type': 'application/json' },
       })

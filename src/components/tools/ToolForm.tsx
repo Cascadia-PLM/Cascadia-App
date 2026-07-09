@@ -7,6 +7,7 @@ import {
   getSubtypeGroup,
   toolSchema,
 } from '@/lib/items/types/tool'
+import { AttributesEditor } from '@/components/items/AttributesEditor'
 import { zodValidator } from '@/lib/form-validation'
 import {
   Button,
@@ -50,6 +51,9 @@ export function ToolForm({
   const [capabilities, setCapabilities] = useState<Record<string, unknown>>(
     tool?.capabilities ?? {},
   )
+  const [attributes, setAttributes] = useState<Record<string, string>>(
+    tool?.attributes ?? {},
+  )
 
   const form = useForm({
     defaultValues: {
@@ -78,6 +82,7 @@ export function ToolForm({
       const submissionData = {
         ...value,
         revision: value.revision.trim() || 'A',
+        attributes,
         capabilities:
           Object.keys(capabilities).length > 0 ? capabilities : undefined,
       } as Tool
@@ -278,6 +283,9 @@ export function ToolForm({
           </FormField>
         )}
       </form.Field>
+
+      {/* Custom Attributes */}
+      <AttributesEditor value={attributes} onChange={setAttributes} />
 
       {/* Actions */}
       <div className="flex justify-end gap-2 pt-4">

@@ -96,6 +96,10 @@ export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
         actions: ['create', 'read', 'update', 'delete', 'manage'],
       },
       {
+        resource: 'tools',
+        actions: ['create', 'read', 'update', 'delete', 'manage'],
+      },
+      {
         resource: 'work_instructions',
         actions: ['create', 'read', 'update', 'delete', 'manage'],
       },
@@ -152,6 +156,7 @@ export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
         actions: ['create', 'read', 'update', 'delete', 'approve'],
       },
       { resource: 'tasks', actions: ['create', 'read', 'update', 'delete'] },
+      { resource: 'tools', actions: ['create', 'read', 'update', 'delete'] },
       {
         resource: 'work_instructions',
         actions: ['create', 'read', 'update', 'delete'],

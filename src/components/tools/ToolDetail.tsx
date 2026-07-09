@@ -1,11 +1,16 @@
 import { Link } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ArrowLeft, Edit, Save, Trash2, X } from 'lucide-react'
 import { CapabilitiesEditor } from './CapabilitiesEditor'
 import type { KnownToolSubtype, Tool } from '@/lib/items/types/tool'
 import type { SearchableSelectOption } from '@/components/ui/SearchableSelect'
+import type { UrlEnrichmentResult } from '@/components/items/useUrlDropEnrichment'
 import { TOOL_SUBTYPES, getSubtypeGroup } from '@/lib/items/types/tool'
 import { PageContainer } from '@/components/layout'
+import { AttributesEditor } from '@/components/items/AttributesEditor'
+import { UrlDropOverlay } from '@/components/items/UrlDropOverlay'
+import { useUrlDropEnrichment } from '@/components/items/useUrlDropEnrichment'
+import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import {
   Badge,
@@ -131,11 +136,17 @@ export function ToolDetail({
   const [capabilities, setCapabilities] = useState<Record<string, unknown>>(
     initialTool?.capabilities ?? {},
   )
+  const [attributes, setAttributes] = useState<Record<string, string>>(
+    initialTool?.attributes ?? {},
+  )
+
+  const { showSuccess, showInfo } = useErrorHandler()
 
   useEffect(() => {
     if (initialTool) {
       setTool(initialTool)
       setCapabilities(initialTool.capabilities ?? {})
+      setAttributes(initialTool.attributes ?? {})
     }
   }, [initialTool])
 
@@ -145,6 +156,63 @@ export function ToolDetail({
     setTool((prev) => ({ ...prev, [field]: value }))
   }
 
+  // Drag-and-drop a web link onto the create form to auto-fill it.
+  const applyEnrichment = useCallback(
+    (result: UrlEnrichmentResult) => {
+      // Always keep the source link as provenance (existing keys win).
+      setAttributes((prev) => {
+        const merged: Record<string, string> = { ...result.attributes, ...prev }
+        if (!merged.link || !merged.link.trim()) merged.link = result.link
+        return merged
+      })
+
+      // Fill only empty or still-default fields; never clobber user input.
+      setTool((prev) => {
+        const defaults = createEmptyTool() as unknown as Record<string, unknown>
+        const prevRecord = prev as unknown as Record<string, unknown>
+        const next: Record<string, unknown> = { ...prevRecord }
+        for (const [key, value] of Object.entries(result.fields)) {
+          const current = prevRecord[key]
+          if (
+            current === undefined ||
+            current === null ||
+            current === '' ||
+            current === defaults[key]
+          ) {
+            next[key] = value
+          }
+        }
+        return next as unknown as Tool
+      })
+
+      const fieldCount = Object.keys(result.fields).length
+      const attrCount = Object.keys(result.attributes).length
+      if (!result.aiEnabled) {
+        showInfo(
+          'Link saved',
+          'AI isn’t connected — the link was saved as a custom attribute. Connect AI in settings to auto-fill more.',
+        )
+      } else if (fieldCount === 0 && attrCount === 0) {
+        showInfo(
+          'Link saved',
+          'Couldn’t pull details from that page, but the link was saved.',
+        )
+      } else {
+        showSuccess(
+          'Details added',
+          `Filled ${fieldCount} field${fieldCount === 1 ? '' : 's'} and ${attrCount} attribute${attrCount === 1 ? '' : 's'} from the link.`,
+        )
+      }
+    },
+    [showSuccess, showInfo],
+  )
+
+  const { isDragging, isEnriching, dropHandlers } = useUrlDropEnrichment({
+    itemType: 'Tool',
+    enabled: isCreateMode,
+    onEnriched: applyEnrichment,
+  })
+
   const handleEdit = () => {
     setIsEditing(true)
   }
@@ -152,6 +220,7 @@ export function ToolDetail({
   const handleSave = async () => {
     const toolToSave = {
       ...tool,
+      attributes,
       capabilities:
         Object.keys(capabilities).length > 0 ? capabilities : undefined,
     }
@@ -165,6 +234,7 @@ export function ToolDetail({
     } else {
       setTool(initialTool)
       setCapabilities(initialTool.capabilities ?? {})
+      setAttributes(initialTool.attributes ?? {})
       setIsEditing(false)
     }
   }
@@ -205,304 +275,364 @@ export function ToolDetail({
     }))
 
   return (
-    <PageContainer>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link to="/tools">
-            <Button variant="outline" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white">
-              {isCreateMode ? 'Create New Tool' : currentTool.itemNumber}
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">
-              {isCreateMode
-                ? 'Enter the details for the new tool'
-                : currentTool.name || 'Unnamed'}
-            </p>
+    <div className="relative" {...dropHandlers}>
+      <PageContainer>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link to="/tools">
+              <Button variant="outline" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-4xl font-bold text-slate-900 dark:text-white">
+                {isCreateMode ? 'Create New Tool' : currentTool.itemNumber}
+              </h1>
+              <p className="text-slate-600 dark:text-slate-400 mt-1">
+                {isCreateMode
+                  ? 'Enter the details for the new tool'
+                  : currentTool.name || 'Unnamed'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            {isEditing ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                  disabled={isSubmitting}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={isSubmitting}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSubmitting
+                    ? 'Saving...'
+                    : isCreateMode
+                      ? 'Create Tool'
+                      : 'Save Changes'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={handleEdit}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                {onDelete && (
+                  <Button variant="destructive" onClick={handleDelete}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
+              </>
+            )}
           </div>
         </div>
 
-        <div className="flex gap-2">
-          {isEditing ? (
-            <>
-              <Button
-                variant="outline"
-                onClick={handleCancelEdit}
-                disabled={isSubmitting}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={isSubmitting}>
-                <Save className="h-4 w-4 mr-2" />
-                {isSubmitting
-                  ? 'Saving...'
-                  : isCreateMode
-                    ? 'Create Tool'
-                    : 'Save Changes'}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="outline" onClick={handleEdit}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-              {onDelete && (
-                <Button variant="destructive" onClick={handleDelete}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {!isCreateMode && (
-        <div className="flex gap-2">
-          <Badge
-            variant={stateVariant(currentTool.state ?? 'Draft')}
-            className="text-sm"
-          >
-            {currentTool.state ?? 'Draft'}
-          </Badge>
-          {currentTool.toolStatus && (
+        {!isCreateMode && (
+          <div className="flex gap-2">
             <Badge
-              variant={statusVariant(currentTool.toolStatus)}
+              variant={stateVariant(currentTool.state ?? 'Draft')}
               className="text-sm"
             >
-              {currentTool.toolStatus}
+              {currentTool.state ?? 'Draft'}
             </Badge>
-          )}
-        </div>
-      )}
+            {currentTool.toolStatus && (
+              <Badge
+                variant={statusVariant(currentTool.toolStatus)}
+                className="text-sm"
+              >
+                {currentTool.toolStatus}
+              </Badge>
+            )}
+          </div>
+        )}
 
-      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-        </TabsList>
+        <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="details" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              {/* Overview Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Overview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ViewEditText
-                      label="Item Number"
-                      value={
-                        isEditing ? tool.itemNumber : currentTool.itemNumber
-                      }
-                      onChange={(v) => updateField('itemNumber', v)}
-                      isEditing={isEditing && isCreateMode}
-                      placeholder="Auto-assigned"
-                    />
-                    <ViewEditText
-                      label="Name"
-                      value={isEditing ? tool.name : currentTool.name}
-                      onChange={(v) => updateField('name', v)}
-                      isEditing={isEditing}
-                      placeholder="e.g., Prusa MK4S"
-                      required
-                    />
-                  </dl>
-                </CardContent>
-              </Card>
-
-              {/* Tool Information Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tool Information</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ViewEditSelect
-                      label="Tool Type"
-                      value={isEditing ? tool.toolType : currentTool.toolType}
-                      onChange={(v) => updateField('toolType', v)}
-                      isEditing={isEditing}
-                      options={TOOL_TYPE_OPTIONS}
-                    />
-                    {isEditing ? (
-                      <div>
-                        <dt className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          Subtype
-                        </dt>
-                        <dd>
-                          <SearchableSelect
-                            value={tool.toolSubtype || ''}
-                            onValueChange={(v) => updateField('toolSubtype', v)}
-                            options={[
-                              ...subtypeOptions,
-                              { value: 'other', label: 'Other' },
-                            ]}
-                            placeholder="Search subtypes..."
-                            searchPlaceholder="Type to filter..."
-                          />
-                        </dd>
-                      </div>
-                    ) : (
-                      <ViewEditStatic
-                        label="Subtype"
-                        value={subtypeLabel(currentTool.toolSubtype)}
-                      />
-                    )}
-                    <ViewEditText
-                      label="Manufacturer"
-                      value={
-                        isEditing ? tool.manufacturer : currentTool.manufacturer
-                      }
-                      onChange={(v) => updateField('manufacturer', v)}
-                      isEditing={isEditing}
-                      placeholder="e.g., Prusa Research"
-                    />
-                    <ViewEditText
-                      label="Model"
-                      value={isEditing ? tool.model : currentTool.model}
-                      onChange={(v) => updateField('model', v)}
-                      isEditing={isEditing}
-                      placeholder="e.g., MK4S"
-                    />
-                  </dl>
-                </CardContent>
-              </Card>
-
-              {/* Capabilities Card */}
-              {(isEditing ||
-                (currentTool.capabilities &&
-                  Object.keys(currentTool.capabilities).length > 0)) && (
+          <TabsContent value="details" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                {/* Overview Card */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Capabilities</CardTitle>
+                    <CardTitle>Overview</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {isEditing ? (
-                      <CapabilitiesEditor
-                        subtype={tool.toolSubtype || ''}
-                        capabilities={capabilities}
-                        onChange={setCapabilities}
+                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <ViewEditText
+                        label="Item Number"
+                        value={
+                          isEditing ? tool.itemNumber : currentTool.itemNumber
+                        }
+                        onChange={(v) => updateField('itemNumber', v)}
+                        isEditing={isEditing && isCreateMode}
+                        placeholder="Auto-assigned"
                       />
-                    ) : (
-                      <pre className="text-sm font-mono bg-slate-100 dark:bg-slate-800 p-4 rounded-md overflow-x-auto">
-                        {JSON.stringify(currentTool.capabilities, null, 2)}
-                      </pre>
-                    )}
+                      <ViewEditText
+                        label="Name"
+                        value={isEditing ? tool.name : currentTool.name}
+                        onChange={(v) => updateField('name', v)}
+                        isEditing={isEditing}
+                        placeholder="e.g., Prusa MK4S"
+                        required
+                      />
+                    </dl>
                   </CardContent>
                 </Card>
-              )}
-            </div>
 
-            {/* Right sidebar */}
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Status & Location</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ViewEditSelect
-                    label="State"
-                    value={isEditing ? tool.state : currentTool.state}
-                    onChange={(v) => updateField('state', v)}
-                    isEditing={isEditing}
-                    options={STATE_OPTIONS}
-                  />
-                  <ViewEditSelect
-                    label="Tool Status"
-                    value={isEditing ? tool.toolStatus : currentTool.toolStatus}
-                    onChange={(v) => updateField('toolStatus', v)}
-                    isEditing={isEditing}
-                    options={TOOL_STATUS_OPTIONS}
-                  />
-                  <ViewEditText
-                    label="Location"
-                    value={isEditing ? tool.location : currentTool.location}
-                    onChange={(v) => updateField('location', v)}
-                    isEditing={isEditing}
-                    placeholder="e.g., Workshop bench 3"
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Notes */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ViewEditTextarea
-                    label=""
-                    value={isEditing ? tool.notes : currentTool.notes}
-                    onChange={(v) => updateField('notes', v)}
-                    isEditing={isEditing}
-                    placeholder="Free-form notes about this tool..."
-                  />
-                </CardContent>
-              </Card>
-
-              <Collapsible defaultOpen={false}>
+                {/* Tool Information Card */}
                 <Card>
                   <CardHeader>
-                    <CollapsibleTrigger className="hover:opacity-70">
-                      <CardTitle>Metadata</CardTitle>
-                    </CollapsibleTrigger>
+                    <CardTitle>Tool Information</CardTitle>
                   </CardHeader>
-                  <CollapsibleContent>
-                    <CardContent className="space-y-3">
-                      <ViewEditStatic
-                        label="Revision"
-                        value={currentTool.revision}
+                  <CardContent>
+                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <ViewEditSelect
+                        label="Tool Type"
+                        value={isEditing ? tool.toolType : currentTool.toolType}
+                        onChange={(v) => updateField('toolType', v)}
+                        isEditing={isEditing}
+                        options={TOOL_TYPE_OPTIONS}
                       />
-                      <ViewEditStatic
-                        label="Created"
-                        value={formatDate(currentTool.createdAt)}
-                      />
-                      <ViewEditStatic
-                        label="Last Modified"
-                        value={formatDate(currentTool.modifiedAt)}
-                      />
-                      {!isCreateMode && (
+                      {isEditing ? (
+                        <div>
+                          <dt className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            Subtype
+                          </dt>
+                          <dd>
+                            <SearchableSelect
+                              value={tool.toolSubtype || ''}
+                              onValueChange={(v) =>
+                                updateField('toolSubtype', v)
+                              }
+                              options={[
+                                ...subtypeOptions,
+                                { value: 'other', label: 'Other' },
+                              ]}
+                              placeholder="Search subtypes..."
+                              searchPlaceholder="Type to filter..."
+                            />
+                          </dd>
+                        </div>
+                      ) : (
                         <ViewEditStatic
-                          label="Tool ID"
-                          value={currentTool.id}
-                          mono
+                          label="Subtype"
+                          value={subtypeLabel(currentTool.toolSubtype)}
                         />
                       )}
-                    </CardContent>
-                  </CollapsibleContent>
+                      <ViewEditText
+                        label="Manufacturer"
+                        value={
+                          isEditing
+                            ? tool.manufacturer
+                            : currentTool.manufacturer
+                        }
+                        onChange={(v) => updateField('manufacturer', v)}
+                        isEditing={isEditing}
+                        placeholder="e.g., Prusa Research"
+                      />
+                      <ViewEditText
+                        label="Model"
+                        value={isEditing ? tool.model : currentTool.model}
+                        onChange={(v) => updateField('model', v)}
+                        isEditing={isEditing}
+                        placeholder="e.g., MK4S"
+                      />
+                    </dl>
+                  </CardContent>
                 </Card>
-              </Collapsible>
-            </div>
-          </div>
-        </TabsContent>
 
-        <TabsContent value="history" className="mt-6">
-          {currentTool.id ? (
-            <ItemHistoryTab
-              itemId={currentTool.id}
-              designId={currentTool.designId ?? null}
-              versionContext={{ type: 'main' }}
-              onViewHistoricalState={() => {}}
-            />
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <p className="text-slate-500">
-                  Save the tool first to view history
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
-    </PageContainer>
+                {/* Capabilities Card */}
+                {(isEditing ||
+                  (currentTool.capabilities &&
+                    Object.keys(currentTool.capabilities).length > 0)) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Capabilities</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {isEditing ? (
+                        <CapabilitiesEditor
+                          subtype={tool.toolSubtype || ''}
+                          capabilities={capabilities}
+                          onChange={setCapabilities}
+                        />
+                      ) : (
+                        <pre className="text-sm font-mono bg-slate-100 dark:bg-slate-800 p-4 rounded-md overflow-x-auto">
+                          {JSON.stringify(currentTool.capabilities, null, 2)}
+                        </pre>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
+              {/* Right sidebar */}
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Status & Location</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <ViewEditSelect
+                      label="State"
+                      value={isEditing ? tool.state : currentTool.state}
+                      onChange={(v) => updateField('state', v)}
+                      isEditing={isEditing}
+                      options={STATE_OPTIONS}
+                    />
+                    <ViewEditSelect
+                      label="Tool Status"
+                      value={
+                        isEditing ? tool.toolStatus : currentTool.toolStatus
+                      }
+                      onChange={(v) => updateField('toolStatus', v)}
+                      isEditing={isEditing}
+                      options={TOOL_STATUS_OPTIONS}
+                    />
+                    <ViewEditText
+                      label="Location"
+                      value={isEditing ? tool.location : currentTool.location}
+                      onChange={(v) => updateField('location', v)}
+                      isEditing={isEditing}
+                      placeholder="e.g., Workshop bench 3"
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Notes */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Notes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ViewEditTextarea
+                      label=""
+                      value={isEditing ? tool.notes : currentTool.notes}
+                      onChange={(v) => updateField('notes', v)}
+                      isEditing={isEditing}
+                      placeholder="Free-form notes about this tool..."
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Custom Attributes */}
+                {isEditing ? (
+                  <Card>
+                    <AttributesEditor
+                      value={attributes}
+                      onChange={setAttributes}
+                      disabled={isSubmitting}
+                      className="border-0 rounded-none"
+                    />
+                  </Card>
+                ) : (
+                  <Card>
+                    <Collapsible
+                      defaultOpen={
+                        Object.keys(currentTool.attributes ?? {}).length > 0
+                      }
+                    >
+                      <CardHeader className="pb-3">
+                        <CollapsibleTrigger className="hover:opacity-70">
+                          <CardTitle>Custom Attributes</CardTitle>
+                        </CollapsibleTrigger>
+                      </CardHeader>
+                      <CollapsibleContent>
+                        <CardContent className="pt-0">
+                          {Object.keys(currentTool.attributes ?? {}).length >
+                          0 ? (
+                            <dl className="space-y-3">
+                              {Object.entries(currentTool.attributes ?? {}).map(
+                                ([key, value]) => (
+                                  <div key={key} className="space-y-1">
+                                    <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                                      {key}
+                                    </dt>
+                                    <dd className="text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-md">
+                                      {value || '-'}
+                                    </dd>
+                                  </div>
+                                ),
+                              )}
+                            </dl>
+                          ) : (
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                              No custom attributes defined.
+                            </p>
+                          )}
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </Card>
+                )}
+
+                <Collapsible defaultOpen={false}>
+                  <Card>
+                    <CardHeader>
+                      <CollapsibleTrigger className="hover:opacity-70">
+                        <CardTitle>Metadata</CardTitle>
+                      </CollapsibleTrigger>
+                    </CardHeader>
+                    <CollapsibleContent>
+                      <CardContent className="space-y-3">
+                        <ViewEditStatic
+                          label="Revision"
+                          value={currentTool.revision}
+                        />
+                        <ViewEditStatic
+                          label="Created"
+                          value={formatDate(currentTool.createdAt)}
+                        />
+                        <ViewEditStatic
+                          label="Last Modified"
+                          value={formatDate(currentTool.modifiedAt)}
+                        />
+                        {!isCreateMode && (
+                          <ViewEditStatic
+                            label="Tool ID"
+                            value={currentTool.id}
+                            mono
+                          />
+                        )}
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="history" className="mt-6">
+            {currentTool.id ? (
+              <ItemHistoryTab
+                itemId={currentTool.id}
+                designId={currentTool.designId ?? null}
+                versionContext={{ type: 'main' }}
+                onViewHistoricalState={() => {}}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-slate-500">
+                    Save the tool first to view history
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+      </PageContainer>
+      <UrlDropOverlay isDragging={isDragging} isEnriching={isEnriching} />
+    </div>
   )
 }

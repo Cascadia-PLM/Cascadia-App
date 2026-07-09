@@ -16,6 +16,8 @@ export interface Tool extends BaseItem {
   toolStatus?: 'available' | 'in_use' | 'maintenance' | 'retired'
   location?: string
   notes?: string
+  // Free-form key/value metadata (inherited from BaseItem; declared for clarity)
+  attributes?: Record<string, string>
 }
 
 // ============================================================================

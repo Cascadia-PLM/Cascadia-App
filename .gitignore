@@ -16,9 +16,10 @@ todos.json
 /storage/
 .env.docker
 
-# Demo data: STEPs are build-time only (input to scripts/prepare-demo-cad.ts).
-# We ship GLB + thumbnails; STEPs are regenerated from the archive when refreshing.
-demo-data/robot-arm/step/
+# Demo dataset. Lives in Cascadia-PLM/Demo-Data and is fetched on demand by
+# `npm run demo:fetch` (scripts/fetch-demo-data.ts), which clones it here at a
+# pinned tag. Never commit it back into this repo.
+demo-data/
 html/
 .gcloudignore
 

@@ -16,10 +16,12 @@ The signature feature is "ECO-as-Branch" - each Engineering Change Order gets it
 
 This is the main Cascadia PLM application. Related repositories:
 
-| Repository          | Purpose            |
-| ------------------- | ------------------ |
-| `../DocsSite/`      | Documentation site |
-| `../MarketingSite/` | Marketing website  |
+| Repository                     | Purpose                                                                       |
+| ------------------------------ | ----------------------------------------------------------------------------- |
+| `../DocsSite/`                 | Documentation site                                                            |
+| `../MarketingSite/`            | Marketing website                                                             |
+| `Cascadia-PLM/Demo-Data`       | TDJ-25 robot-arm demo dataset; publishes `cascadia-demo-data`. Fetched by `npm run demo:fetch`. |
+| `Cascadia-PLM/Cascadia-App-archive` | Private. SolidWorks source + STEPs behind the demo dataset.              |
 
 ## Technology Stack
 
@@ -93,6 +95,7 @@ npm run db:push       # Push schema directly to database (dev only)
 npm run db:studio     # Open Drizzle Studio GUI
 npm run db:seed       # Minimal seed (admin, roles, program, standard library)
 npm run db:seed:catalog  # Generic component catalog (fasteners, raw stock)
+npm run demo:fetch    # Fetch the demo dataset (required before db:seed:demo)
 npm run db:seed:demo  # Full TDJ-25 demo robot-arm dataset (~88 parts, BOM, CAD)
 
 # Database Reset (truncates all tables, then optionally reseeds)

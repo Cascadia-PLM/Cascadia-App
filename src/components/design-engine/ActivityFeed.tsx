@@ -75,49 +75,86 @@ export function ActivityFeed({
       currentStage === 'bom_review') &&
     !isStreaming
 
-  // Group consecutive llm_text events for rendering.
-  // Non-rendering events like artifact_update shouldn't break text groups.
-  const renderedEvents: Array<{
-    key: string
-    event: StageEvent | { type: 'llm_text_group'; text: string }
-  }> = []
+  // Build the render list from the raw event stream.
+  //
+  // - Consecutive llm_text events are merged into one markdown block
+  //   (artifact_update events don't render and don't break a text group).
+  // - A tool_call and its matching tool_result are collapsed into a single
+  //   `tool_activity` card that flips from pending → completed, rather than
+  //   rendering two near-identical cards (which reads as the tool being
+  //   reported twice).
+  type RenderedEvent =
+    | StageEvent
+    | { type: 'llm_text_group'; text: string }
+    | { type: 'tool_activity'; toolName: string; completed: boolean }
+
+  const renderedEvents: Array<{ key: string; event: RenderedEvent }> = []
 
   let textBuffer = ''
   let textGroupStart = -1
 
-  // Event types that render visibly and should break text groups
-  const breaksTextGroup = (type: string) =>
-    type !== 'llm_text' && type !== 'artifact_update'
+  const flushText = () => {
+    if (textBuffer) {
+      renderedEvents.push({
+        key: `text-${textGroupStart}`,
+        event: { type: 'llm_text_group', text: textBuffer },
+      })
+      textBuffer = ''
+      textGroupStart = -1
+    }
+  }
 
   for (let i = 0; i < events.length; i++) {
     const event = events[i]
+    if (!event) continue
 
     if (event.type === 'llm_text') {
       if (textGroupStart === -1) textGroupStart = i
       textBuffer += event.text
-    } else if (breaksTextGroup(event.type)) {
-      // Flush text buffer before visible events
-      if (textBuffer) {
-        renderedEvents.push({
-          key: `text-${textGroupStart}`,
-          event: { type: 'llm_text_group', text: textBuffer },
-        })
-        textBuffer = ''
-        textGroupStart = -1
+      continue
+    }
+
+    // artifact_update events don't render and shouldn't split text groups.
+    if (event.type === 'artifact_update') continue
+
+    // Any other event is visible — flush any pending text first.
+    flushText()
+
+    if (event.type === 'tool_call') {
+      renderedEvents.push({
+        key: `event-${i}`,
+        event: { type: 'tool_activity', toolName: event.toolName, completed: false },
+      })
+    } else if (event.type === 'tool_result') {
+      // Mark the most recent unfinished call of the same tool as completed.
+      let paired = false
+      for (let j = renderedEvents.length - 1; j >= 0; j--) {
+        const candidate = renderedEvents[j]?.event
+        if (
+          candidate &&
+          candidate.type === 'tool_activity' &&
+          candidate.toolName === event.toolName &&
+          !candidate.completed
+        ) {
+          candidate.completed = true
+          paired = true
+          break
+        }
       }
+      if (!paired) {
+        // Result without a preceding call (e.g. hydrated history) — show it
+        // as an already-completed activity on its own.
+        renderedEvents.push({
+          key: `event-${i}`,
+          event: { type: 'tool_activity', toolName: event.toolName, completed: true },
+        })
+      }
+    } else {
       renderedEvents.push({ key: `event-${i}`, event })
     }
-    // artifact_update events are skipped — they don't render
-    // and shouldn't split text groups
   }
 
-  // Flush remaining text
-  if (textBuffer) {
-    renderedEvents.push({
-      key: `text-${textGroupStart}`,
-      event: { type: 'llm_text_group', text: textBuffer },
-    })
-  }
+  flushText()
 
   return (
     <div className={cn('flex flex-col overflow-hidden', className)}>
@@ -166,27 +203,21 @@ export function ActivityFeed({
             )
           }
 
-          if (event.type === 'tool_call') {
+          if (event.type === 'tool_activity') {
             return (
               <div
                 key={key}
                 className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded px-2 py-1"
               >
-                <Wrench className="h-3 w-3" />
+                {event.completed ? (
+                  <CheckCircle className="h-3 w-3 text-green-500" />
+                ) : (
+                  <Wrench className="h-3 w-3 animate-pulse" />
+                )}
                 <span className="font-mono">{event.toolName}</span>
-              </div>
-            )
-          }
-
-          if (event.type === 'tool_result') {
-            return (
-              <div
-                key={key}
-                className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded px-2 py-1"
-              >
-                <CheckCircle className="h-3 w-3 text-green-500" />
-                <span className="font-mono">{event.toolName}</span>
-                <span className="text-slate-400">completed</span>
+                {event.completed && (
+                  <span className="text-slate-400">completed</span>
+                )}
               </div>
             )
           }

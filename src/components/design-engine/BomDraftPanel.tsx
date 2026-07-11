@@ -21,7 +21,13 @@ import {
 } from 'lucide-react'
 import { InterfaceIndicator } from './InterfaceIndicator'
 import { RequirementsCoverage } from './RequirementsCoverage'
-import { ReviewStatusChip } from './RequirementsPanel'
+import {
+  DiffBadge,
+  FieldChangeList,
+  ReviewStatusChip,
+} from './RequirementsPanel'
+import { ArtifactDiffLegend } from './ArtifactDiffLegend'
+import { DIFF_STATUS_STYLES } from './diff-styles'
 import type {
   BomDraft,
   BomNodeDraft,
@@ -30,6 +36,7 @@ import type {
   RequirementDraft,
   ReviewStatus,
 } from '@/lib/design-engine/types'
+import type { BomDiff } from '@/lib/design-engine/artifact-diff'
 import { effectiveReviewStatus } from '@/lib/design-engine/types'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -62,6 +69,8 @@ interface BomDraftPanelProps {
   onSetNodeReviewStatus?: (tempId: string, status: ReviewStatus) => void
   onAcceptAllNodes?: () => void
   onAddChild?: (parentTempId: string, data: Partial<BomNodeDraft>) => void
+  /** Changes since the last confirmed BOM snapshot (reopen/re-run only) */
+  diff?: BomDiff | null
 }
 
 function countUnresolvedNodes(bom: BomDraft): number {
@@ -86,6 +95,7 @@ export function BomDraftPanel({
   onSetNodeReviewStatus,
   onAcceptAllNodes,
   onAddChild,
+  diff,
 }: BomDraftPanelProps) {
   const [showRejected, setShowRejected] = useState(false)
   const canConfirm = currentStage === 'bom_review' && bom !== null
@@ -129,6 +139,8 @@ export function BomDraftPanel({
         )}
       </div>
 
+      {diff?.hasChanges && <ArtifactDiffLegend />}
+
       {/* BOM Tree */}
       <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
         <div className="bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 flex">
@@ -146,8 +158,34 @@ export function BomDraftPanel({
           onRejectNode={onRejectNode}
           onSetNodeReviewStatus={onSetNodeReviewStatus}
           onAddChild={onAddChild}
+          diff={diff}
         />
       </div>
+
+      {/* Nodes removed since the last confirmed snapshot */}
+      {diff && diff.removed.length > 0 && (
+        <div className="space-y-1">
+          {diff.removed.map((node) => (
+            <div
+              key={node.tempId}
+              className={cn(
+                'border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 flex items-center gap-2',
+                DIFF_STATUS_STYLES.removed.row,
+              )}
+            >
+              <span className="text-xs text-slate-500 dark:text-slate-400 line-through truncate">
+                {node.name}
+              </span>
+              {node.parentName && (
+                <span className="text-[10px] text-slate-400">
+                  was under {node.parentName}
+                </span>
+              )}
+              <DiffBadge status="removed" />
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Rejected parts (tombstones fed back to the AI) */}
       {bomRejections && bomRejections.length > 0 && (
@@ -260,6 +298,7 @@ interface BomNodeRowProps {
   onRejectNode?: (tempId: string, reason?: string) => void
   onSetNodeReviewStatus?: (tempId: string, status: ReviewStatus) => void
   onAddChild?: (parentTempId: string, data: Partial<BomNodeDraft>) => void
+  diff?: BomDiff | null
 }
 
 function BomNodeRow({
@@ -271,6 +310,7 @@ function BomNodeRow({
   onRejectNode,
   onSetNodeReviewStatus,
   onAddChild,
+  diff,
 }: BomNodeRowProps) {
   const [expanded, setExpanded] = useState(depth < 2)
   const [editing, setEditing] = useState(false)
@@ -280,6 +320,7 @@ function BomNodeRow({
   const hasChildren = node.children.length > 0
   const isRoot = node.tempId === rootTempId
   const reviewStatus = effectiveReviewStatus(node)
+  const nodeDiff = diff?.byTempId.get(node.tempId)
 
   const submitReject = () => {
     onRejectNode?.(node.tempId, rejectReason.trim() || undefined)
@@ -307,6 +348,7 @@ function BomNodeRow({
         className={cn(
           'group flex items-center px-3 py-1.5 text-sm border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50',
           depth === 0 && 'font-medium',
+          nodeDiff && DIFF_STATUS_STYLES[nodeDiff.status].row,
         )}
       >
         <div className="flex-1 flex items-center min-w-0">
@@ -356,6 +398,14 @@ function BomNodeRow({
           {!isRoot && (
             <span className="ml-1.5">
               <ReviewStatusChip status={reviewStatus} />
+            </span>
+          )}
+          {nodeDiff && nodeDiff.status !== 'unchanged' && (
+            <span className="ml-1.5">
+              <DiffBadge
+                status={nodeDiff.status}
+                reparented={nodeDiff.reparented}
+              />
             </span>
           )}
         </div>
@@ -431,6 +481,14 @@ function BomNodeRow({
           </span>
         )}
       </div>
+      {nodeDiff && nodeDiff.fieldChanges.length > 0 && (
+        <div
+          className="px-3 py-1 border-t border-slate-100 dark:border-slate-800"
+          style={{ paddingLeft: 12 + depth * 20 + 20 }}
+        >
+          <FieldChangeList changes={nodeDiff.fieldChanges} />
+        </div>
+      )}
       {rejecting && (
         <div
           className="flex items-center gap-1.5 px-3 py-1.5 border-t border-dashed border-red-200 dark:border-red-900 bg-red-50/40 dark:bg-red-900/10"
@@ -478,6 +536,7 @@ function BomNodeRow({
             onRejectNode={onRejectNode}
             onSetNodeReviewStatus={onSetNodeReviewStatus}
             onAddChild={onAddChild}
+            diff={diff}
           />
         ))}
       {addingChild && onAddChild && (

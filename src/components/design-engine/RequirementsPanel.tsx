@@ -18,11 +18,17 @@ import {
   X,
   XCircle,
 } from 'lucide-react'
+import { ArtifactDiffLegend } from './ArtifactDiffLegend'
+import { DIFF_STATUS_STYLES } from './diff-styles'
 import type {
   DesignSessionStage,
   RequirementDraft,
   ReviewStatus,
 } from '@/lib/design-engine/types'
+import type {
+  FieldChange,
+  RequirementsDiff,
+} from '@/lib/design-engine/artifact-diff'
 import { effectiveReviewStatus } from '@/lib/design-engine/types'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -35,6 +41,61 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { cn } from '@/lib/utils'
+
+function formatDiffValue(value: unknown): string {
+  if (value === undefined || value === null || value === '') return '(empty)'
+  if (typeof value === 'string') {
+    return value.length > 60 ? `${value.slice(0, 57)}...` : value
+  }
+  return JSON.stringify(value)
+}
+
+export function FieldChangeList({
+  changes,
+}: {
+  changes: Array<FieldChange>
+}) {
+  return (
+    <div className="space-y-0.5">
+      {changes.map((change) => (
+        <div
+          key={change.fieldName}
+          className="text-[10px] text-slate-500 dark:text-slate-400"
+        >
+          <span className="font-medium">{change.fieldName}:</span>{' '}
+          <span className="text-red-500 dark:text-red-400 line-through">
+            {formatDiffValue(change.oldValue)}
+          </span>{' '}
+          → <span className="text-green-600 dark:text-green-400">
+            {formatDiffValue(change.newValue)}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function DiffBadge({
+  status,
+  reparented,
+}: {
+  status: 'added' | 'modified' | 'removed'
+  reparented?: boolean
+}) {
+  const style = DIFF_STATUS_STYLES[status]
+  const Icon = style.Icon
+  return (
+    <span
+      className={cn(
+        'flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-medium flex-shrink-0',
+        style.badge,
+      )}
+    >
+      {Icon && <Icon className="h-2 w-2" />}
+      {reparented ? 'MOVED' : style.label}
+    </span>
+  )
+}
 
 export const REVIEW_STATUS_STYLES: Record<ReviewStatus, string> = {
   proposed:
@@ -101,6 +162,8 @@ interface RequirementsPanelProps {
   ) => void
   onAcceptAll?: () => void
   onConfirm?: (options?: { force?: boolean }) => void
+  /** Changes since the last confirmed requirements snapshot (reopen/re-run only) */
+  diff?: RequirementsDiff | null
 }
 
 export function RequirementsPanel({
@@ -112,6 +175,7 @@ export function RequirementsPanel({
   onSetReviewStatus,
   onAcceptAll,
   onConfirm,
+  diff,
 }: RequirementsPanelProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
@@ -230,6 +294,8 @@ export function RequirementsPanel({
         </p>
       )}
 
+      {diff?.hasChanges && <ArtifactDiffLegend />}
+
       <div className="space-y-2">
         {requirements.map((req) => (
           <div
@@ -237,6 +303,10 @@ export function RequirementsPanel({
             className={cn(
               'border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2',
               effectiveReviewStatus(req) === 'rejected' && 'opacity-60',
+              diff &&
+                DIFF_STATUS_STYLES[
+                  diff.byTempId.get(req.tempId)?.status ?? 'unchanged'
+                ].row,
             )}
           >
             {editingId === req.tempId ? (
@@ -330,6 +400,12 @@ export function RequirementsPanel({
                         <User className="h-3 w-3 text-cyan-500 flex-shrink-0" />
                       )}
                       <ReviewStatusChip status={effectiveReviewStatus(req)} />
+                      {(() => {
+                        const itemDiff = diff?.byTempId.get(req.tempId)
+                        return itemDiff && itemDiff.status !== 'unchanged' ? (
+                          <DiffBadge status={itemDiff.status} />
+                        ) : null
+                      })()}
                     </div>
                     {req.description && (
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
@@ -342,6 +418,14 @@ export function RequirementsPanel({
                           Reason: {req.reviewNote}
                         </p>
                       )}
+                    {(() => {
+                      const itemDiff = diff?.byTempId.get(req.tempId)
+                      return itemDiff && itemDiff.fieldChanges.length > 0 ? (
+                        <div className="mt-1">
+                          <FieldChangeList changes={itemDiff.fieldChanges} />
+                        </div>
+                      ) : null
+                    })()}
                   </div>
                   {inEditableStage && (
                     <div className="flex gap-1.5 flex-shrink-0">
@@ -480,6 +564,28 @@ export function RequirementsPanel({
             )}
           </div>
         ))}
+
+        {/* Requirements deleted since the last confirmed snapshot */}
+        {diff && diff.removed.length > 0 && (
+          <div className="space-y-1">
+            {diff.removed.map((req) => (
+              <div
+                key={req.tempId}
+                className={cn(
+                  'border border-slate-200 dark:border-slate-700 rounded-lg p-2',
+                  DIFF_STATUS_STYLES.removed.row,
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 line-through truncate">
+                    {req.name}
+                  </span>
+                  <DiffBadge status="removed" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Add new requirement form */}
         {addingNew && (

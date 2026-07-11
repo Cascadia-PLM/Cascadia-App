@@ -16,6 +16,10 @@ import type {
   RequirementDraft,
   ReviewStatus,
 } from '@/lib/design-engine/types'
+import type {
+  BomDiff,
+  RequirementsDiff,
+} from '@/lib/design-engine/artifact-diff'
 import type { KnownToolSubtype } from '@/lib/items/types/tool'
 import { TOOL_SUBTYPES } from '@/lib/items/types/tool'
 import { Button } from '@/components/ui/Button'
@@ -46,6 +50,8 @@ interface ArtifactPanelProps {
   onSetBomNodeReviewStatus?: (tempId: string, status: ReviewStatus) => void
   onAcceptAllBomNodes?: () => void
   onAddBomChild?: (parentTempId: string, data: Partial<BomNodeDraft>) => void
+  requirementsDiff?: RequirementsDiff | null
+  bomDiff?: BomDiff | null
   className?: string
 }
 
@@ -65,6 +71,8 @@ export function ArtifactPanel({
   onSetBomNodeReviewStatus,
   onAcceptAllBomNodes,
   onAddBomChild,
+  requirementsDiff,
+  bomDiff,
   className,
 }: ArtifactPanelProps) {
   const [editingDescription, setEditingDescription] = useState(false)
@@ -180,6 +188,7 @@ export function ArtifactPanel({
           onSetReviewStatus={onSetRequirementReviewStatus}
           onAcceptAll={onAcceptAllRequirements}
           onConfirm={onConfirmRequirements}
+          diff={requirementsDiff}
         />
       </section>
 
@@ -197,6 +206,7 @@ export function ArtifactPanel({
           onSetNodeReviewStatus={onSetBomNodeReviewStatus}
           onAcceptAllNodes={onAcceptAllBomNodes}
           onAddChild={onAddBomChild}
+          diff={bomDiff}
         />
       </section>
     </div>

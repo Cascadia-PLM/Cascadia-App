@@ -8,6 +8,7 @@ import type {
 } from '@/lib/design-engine/types'
 import { apiHandler, created } from '@/lib/api/handler'
 import { DesignSessionService } from '@/lib/design-engine/session-service'
+import { DesignSnapshotService } from '@/lib/design-engine/snapshot-service'
 import { MaterializationService } from '@/lib/design-engine/materialize'
 import { designEngine } from '@/lib/design-engine/engine'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
@@ -326,6 +327,48 @@ app.patch(
 
       const updated = await DesignSessionService.getById(params.id)
       return { session: updated }
+    }),
+  ),
+)
+
+// GET /api/design-engine/sessions/:id/snapshots — metadata only, newest first
+app.get(
+  '/sessions/:id/snapshots',
+  adapt(
+    apiHandler({}, async ({ params, user }) => {
+      const session = await DesignSessionService.getById(params.id)
+
+      if (!session) {
+        throw new NotFoundError('DesignSession', params.id)
+      }
+
+      await requireSessionAccess(user.id, session, 'read')
+
+      const snapshots = await DesignSnapshotService.listBySession(params.id)
+      return { snapshots }
+    }),
+  ),
+)
+
+// GET /api/design-engine/sessions/:id/snapshots/:snapshotId — full artifacts payload
+app.get(
+  '/sessions/:id/snapshots/:snapshotId',
+  adapt(
+    apiHandler({}, async ({ params, user }) => {
+      const session = await DesignSessionService.getById(params.id)
+
+      if (!session) {
+        throw new NotFoundError('DesignSession', params.id)
+      }
+
+      await requireSessionAccess(user.id, session, 'read')
+
+      const snapshot = await DesignSnapshotService.getById(params.snapshotId)
+      if (!snapshot || snapshot.sessionId !== params.id) {
+        throw new NotFoundError('DesignSessionSnapshot', params.snapshotId)
+      }
+
+      return { snapshot }
     }),
   ),
 )

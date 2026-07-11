@@ -2,7 +2,7 @@
  * CollaborativeWorkspace - Main two-panel layout for the design engine
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Cpu, Layers, Lightbulb, Pause, Play, X } from 'lucide-react'
 import { StageIndicator } from './StageIndicator'
@@ -27,6 +27,7 @@ import { useDesignEngineStream } from '@/hooks/useDesignEngineStream'
 import { useArtifactMutations } from '@/hooks/useArtifactMutations'
 import { Button } from '@/components/ui/Button'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
+import { diffBom, diffRequirements } from '@/lib/design-engine/artifact-diff'
 
 interface CollaborativeWorkspaceProps {
   sessionId: string
@@ -61,6 +62,66 @@ export function CollaborativeWorkspace({
   const [materializationError, setMaterializationError] = useState<
     string | null
   >(null)
+
+  // Diff base for review stages: the latest confirmed snapshot of the SAME
+  // gate. Exists only after a reopen/re-run — first-pass reviews show no diff.
+  const [diffBase, setDiffBase] = useState<DesignArtifacts | null>(null)
+
+  useEffect(() => {
+    const stage = stream.currentStage
+    if (stage !== 'requirements_review' && stage !== 'bom_review') {
+      setDiffBase(null)
+      return
+    }
+    let cancelled = false
+    const loadBase = async () => {
+      try {
+        const listRes = await fetch(
+          `/api/v1/design-engine/sessions/${sessionId}/snapshots`,
+        )
+        if (!listRes.ok) return
+        const listData = await listRes.json()
+        const snapshots: Array<{ id: string; stage: string }> =
+          listData.data?.snapshots ?? []
+        // Newest first — the latest snapshot of this same review gate
+        const match = snapshots.find((s) => s.stage === stage)
+        if (!match) {
+          if (!cancelled) setDiffBase(null)
+          return
+        }
+        const snapRes = await fetch(
+          `/api/v1/design-engine/sessions/${sessionId}/snapshots/${match.id}`,
+        )
+        if (!snapRes.ok) return
+        const snapData = await snapRes.json()
+        if (!cancelled) {
+          setDiffBase(snapData.data?.snapshot?.artifacts ?? null)
+        }
+      } catch {
+        // Diff view is best-effort — review works without it
+      }
+    }
+    loadBase()
+    return () => {
+      cancelled = true
+    }
+  }, [stream.currentStage, sessionId])
+
+  const requirementsDiff = useMemo(
+    () =>
+      diffBase && stream.currentStage === 'requirements_review'
+        ? diffRequirements(diffBase.requirements, stream.artifacts.requirements)
+        : null,
+    [diffBase, stream.currentStage, stream.artifacts.requirements],
+  )
+
+  const bomDiff = useMemo(
+    () =>
+      diffBase && stream.currentStage === 'bom_review'
+        ? diffBom(diffBase.bom, stream.artifacts.bom)
+        : null,
+    [diffBase, stream.currentStage, stream.artifacts.bom],
+  )
 
   // Initialize from session data
   useEffect(() => {
@@ -397,6 +458,8 @@ export function CollaborativeWorkspace({
               onSetBomNodeReviewStatus={mutations.setNodeReviewStatus}
               onAcceptAllBomNodes={mutations.acceptAllNodes}
               onAddBomChild={handleAddBomChild}
+              requirementsDiff={requirementsDiff}
+              bomDiff={bomDiff}
               className="flex-1"
             />
           )}

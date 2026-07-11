@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createBomTools } from './bom-tools'
+import { createBomTools, createConsolidationTools } from './bom-tools'
 import { createRequirementsTools } from './requirements-tools'
 import { createToolsetTools } from './toolset-tools'
 import type { ToolContext } from '@/lib/ai/tools/permission-wrapper'
@@ -39,6 +39,19 @@ const toolGroups: Array<[string, Array<any>]> = [
     'bom',
     createBomTools(
       context,
+      {
+        nodes: new Map(),
+        proposedParts: [],
+        rootTempId: null,
+        changeVersion: 0,
+      },
+      noop,
+      noop,
+    ),
+  ],
+  [
+    'consolidation',
+    createConsolidationTools(
       {
         nodes: new Map(),
         proposedParts: [],

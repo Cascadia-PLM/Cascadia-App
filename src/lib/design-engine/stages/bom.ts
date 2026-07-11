@@ -13,12 +13,14 @@
 
 import { chat, maxIterations } from '@tanstack/ai'
 import {
+  buildBomConsolidationPrompt,
   buildBomContinuationPrompt,
   buildBomPrompt,
 } from '../prompts/bom-prompt'
 import { summarizeToolCalls } from '../prompts/tool-call-summary'
-import { createBomTools } from '../tools/bom-tools'
+import { createBomTools, createConsolidationTools } from '../tools/bom-tools'
 import { validateBomDraft } from '../validation/bom-validator'
+import { detectMirrorCandidates } from '../validation/mirror-detection'
 import { DesignSessionService } from '../session-service'
 import { createToolEventTracker } from './tool-event-tracker'
 import { isResumingStage } from './resume'
@@ -30,6 +32,7 @@ import type {
   DesignArtifacts,
   ProposedPart,
   StageEvent,
+  ValidationIssue,
 } from '../types'
 import { getAdapter, loadProviderConfig } from '@/lib/ai/adapters'
 
@@ -223,7 +226,6 @@ export async function* runBomStage(
       streamIter: any,
     ): AsyncGenerator<StageEvent, boolean> {
       let lastBomVersion = bomState.changeVersion
-      let accumulatedText = ''
       // Fresh tracker per stream — pending args are keyed by a per-call index.
       const tracker = createToolEventTracker()
 
@@ -237,12 +239,13 @@ export async function* runBomStage(
           continue
         }
 
-        if (chunk.type === 'content' && chunk.content) {
-          const delta = (chunk.content as string).slice(accumulatedText.length)
-          accumulatedText = chunk.content as string
-          if (delta) {
-            yield { type: 'llm_text', text: delta }
-          }
+        // Yield only the incremental text. The SDK resets its accumulated
+        // `content` at the start of each agent-loop iteration (i.e. after every
+        // tool call), so slicing against a persistent offset would drop the
+        // leading characters of each post-tool-call message. `chunk.delta` is
+        // the true per-chunk increment and is iteration-safe.
+        if (chunk.type === 'content' && chunk.delta) {
+          yield { type: 'llm_text', text: chunk.delta as string }
         }
 
         // Translate SDK tool chunks into tool_call/tool_result events so they're
@@ -406,28 +409,95 @@ export async function* runBomStage(
       }
     }
 
+    // --- Logistical consolidation pass: merge mirrored/duplicate parts ---
+    // The tree may be technically complete yet list mirror-image or repeated
+    // parts as separate lines (e.g. "Frame Member, Left" + "Frame Member,
+    // Right" instead of "Frame Member" x2). Detect candidate groups cheaply and
+    // only spend an LLM call — which judges which groups are truly the same
+    // manufactured item — when there is something to review.
+    const consolidationNotes: Array<string> = []
+    if (bomRef.current && !signal?.aborted) {
+      const candidates = detectMirrorCandidates(bomRef.current.rootAssembly)
+      if (candidates.length > 0) {
+        yield {
+          type: 'llm_text',
+          text: `\n\nReviewing BOM for mirrored/duplicate parts (${candidates.length} candidate group(s))...\n`,
+        }
+
+        const consolidationTools = createConsolidationTools(
+          bomState,
+          (bom) => {
+            bomRef.current = bom
+          },
+          (info) => {
+            consolidationNotes.push(
+              `Consolidated ${info.mergedCount + 1} mirrored parts into "${info.name}" (qty ${info.quantity}).`,
+            )
+          },
+        )
+
+        const consMessages: any = [
+          {
+            role: 'system',
+            content: buildBomConsolidationPrompt(bomRef.current, candidates),
+          },
+          {
+            role: 'user',
+            content:
+              'Review the candidate groups and consolidate every group whose members are the same manufactured item.',
+          },
+        ]
+
+        const consAbortController = new AbortController()
+        if (signal) {
+          signal.addEventListener('abort', () => consAbortController.abort())
+        }
+
+        const consStream = chat({
+          adapter,
+          messages: consMessages,
+          tools: consolidationTools,
+          maxTokens: 8192,
+          agentLoopStrategy: maxIterations(20),
+          abortController: consAbortController,
+        })
+
+        const consStreamGen = processStream(consStream)
+        for (;;) {
+          const result = await consStreamGen.next()
+          if (result.done) break
+          yield result.value
+        }
+      }
+    }
+
+    // Run validation
+    if (bomRef.current) {
+      artifacts.bom = bomRef.current
+      const issues = validateBomDraft(artifacts)
+      const consolidationIssues: Array<ValidationIssue> =
+        consolidationNotes.map((message) => ({ severity: 'info', message }))
+      bomRef.current.validationIssues = [...consolidationIssues, ...issues]
+
+      await DesignSessionService.updateArtifacts(session.id, artifacts)
+
+      yield {
+        type: 'artifact_update',
+        artifacts: { bom: bomRef.current },
+      }
+    }
+
     // A run that proposed nothing has no BOM to review. Advancing to
     // `bom_review` anyway strands the session: the review panel has no tree to
     // confirm and no stage offers a restart. Stay at `bom_drafting` so the user
     // can retry or steer the model with a message.
-    const bom = bomRef.current
-    if (!bom) {
+    if (!bomRef.current) {
       yield {
         type: 'error',
         message:
           'BOM generation finished without proposing any parts. Start BOM generation again, or send a message describing where it should begin.',
       }
       return
-    }
-
-    // Run validation
-    artifacts.bom = bom
-    bom.validationIssues = validateBomDraft(artifacts)
-    await DesignSessionService.updateArtifacts(session.id, artifacts)
-
-    yield {
-      type: 'artifact_update',
-      artifacts: { bom },
     }
 
     // Transition to review

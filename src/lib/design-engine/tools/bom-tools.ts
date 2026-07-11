@@ -872,6 +872,175 @@ export function createBomTools(
   ]
 }
 
+/**
+ * Find the node whose `children` array contains `tempId`, or null for the root.
+ */
+function findParent(
+  state: BomBuildState,
+  tempId: string,
+): BomNodeDraft | null {
+  for (const node of state.nodes.values()) {
+    if (node.children.some((c) => c.tempId === tempId)) return node
+  }
+  return null
+}
+
+/**
+ * Merge a group of mirrored/duplicate sibling leaf parts into one line item.
+ *
+ * The kept node absorbs the summed quantity and the union of requirement links;
+ * the merged nodes are removed from the tree, the node map, and the proposed
+ * parts list. Refuses anything that isn't safe to combine — non-siblings,
+ * assemblies with children, or parts of a different type — so a bad tool call
+ * surfaces as an error the LLM can correct rather than corrupting the tree.
+ */
+export function consolidateBomNodes(
+  state: BomBuildState,
+  keepTempId: string,
+  mergeTempIds: Array<string>,
+  consolidatedName: string,
+):
+  | { ok: true; quantity: number; name: string }
+  | { ok: false; error: string } {
+  const keep = state.nodes.get(keepTempId)
+  if (!keep) return { ok: false, error: `Keep node ${keepTempId} not found` }
+
+  const mergeIds = [...new Set(mergeTempIds)].filter((id) => id !== keepTempId)
+  if (mergeIds.length === 0) {
+    return {
+      ok: false,
+      error:
+        'mergeTempIds must reference at least one sibling other than keepTempId',
+    }
+  }
+
+  const parent = findParent(state, keepTempId)
+  if (!parent) {
+    return { ok: false, error: 'Cannot consolidate the root assembly' }
+  }
+  if (keep.children.length > 0) {
+    return {
+      ok: false,
+      error: `"${keep.name}" has children; only leaf parts can be consolidated`,
+    }
+  }
+
+  const merges: Array<BomNodeDraft> = []
+  for (const id of mergeIds) {
+    const node = state.nodes.get(id)
+    if (!node) return { ok: false, error: `Merge node ${id} not found` }
+    if (findParent(state, id) !== parent) {
+      return {
+        ok: false,
+        error: `Part ${id} is not a sibling of ${keepTempId}; only parts under the same assembly can be consolidated`,
+      }
+    }
+    if (node.children.length > 0) {
+      return {
+        ok: false,
+        error: `"${node.name}" has children; only leaf parts can be consolidated`,
+      }
+    }
+    if (node.partType !== keep.partType) {
+      return {
+        ok: false,
+        error: `"${node.name}" (${node.partType ?? 'unknown'}) has a different part type than "${keep.name}" (${keep.partType ?? 'unknown'}) and cannot be merged`,
+      }
+    }
+    merges.push(node)
+  }
+
+  // Sum quantities and union requirement links onto the kept node.
+  keep.quantity =
+    keep.quantity + merges.reduce((sum, n) => sum + n.quantity, 0)
+  const reqs = new Set(keep.requirementTempIds)
+  for (const n of merges) {
+    for (const r of n.requirementTempIds) reqs.add(r)
+  }
+  keep.requirementTempIds = [...reqs]
+  keep.name = consolidatedName
+
+  // Drop the merged nodes from the tree, the map, and the proposed parts list.
+  const mergeSet = new Set(mergeIds)
+  parent.children = parent.children.filter((c) => !mergeSet.has(c.tempId))
+  for (const id of mergeIds) state.nodes.delete(id)
+  state.proposedParts = state.proposedParts.filter(
+    (p) => !mergeSet.has(p.tempId),
+  )
+
+  return { ok: true, quantity: keep.quantity, name: keep.name }
+}
+
+/**
+ * Tools for the logistical-consolidation pass. Kept separate from the main BOM
+ * toolset so that pass is focused: the LLM's only lever is merging the
+ * candidate mirror/duplicate groups it is shown.
+ */
+export function createConsolidationTools(
+  state: BomBuildState,
+  onUpdate: (bom: BomDraft) => void,
+  onConsolidation?: (info: {
+    name: string
+    mergedCount: number
+    quantity: number
+  }) => void,
+) {
+  const consolidateParts = toolDefinition({
+    name: 'consolidate_parts',
+    description:
+      'Merge mirrored or duplicate sibling parts that represent the SAME manufactured item into a single BOM line with a summed quantity. ' +
+      'Use for parts that are geometrically identical or mirror images — e.g. "Longitudinal Frame Member, Left" and "Longitudinal Frame Member, Right" become "Longitudinal Frame Member" (qty 2). ' +
+      'Do NOT merge parts that differ functionally (different hole patterns, handedness that cannot be flipped, different lengths or materials). When unsure, leave them separate.',
+    inputSchema: z.object({
+      keepTempId: z
+        .string()
+        .describe('tempId of the sibling node to keep as the consolidated line'),
+      mergeTempIds: z
+        .array(z.string())
+        .min(1)
+        .describe(
+          'tempIds of the sibling nodes to fold into the kept node and remove',
+        ),
+      consolidatedName: z
+        .string()
+        .describe(
+          'Generalized part name with mirror qualifiers removed (e.g. "Longitudinal Frame Member", not "Longitudinal Frame Member, Left")',
+        ),
+      reason: z
+        .string()
+        .describe('Why these parts are the same manufactured item'),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      quantity: z.number().optional(),
+      message: z.string().optional(),
+    }),
+  }).server((input) => {
+    const result = consolidateBomNodes(
+      state,
+      input.keepTempId,
+      input.mergeTempIds,
+      input.consolidatedName,
+    )
+    if (!result.ok) {
+      return { success: false, message: result.error }
+    }
+
+    onConsolidation?.({
+      name: result.name,
+      mergedCount: input.mergeTempIds.filter((id) => id !== input.keepTempId)
+        .length,
+      quantity: result.quantity,
+    })
+
+    state.changeVersion++
+    onUpdate(buildBomDraft(state))
+    return { success: true, quantity: result.quantity }
+  })
+
+  return [consolidateParts]
+}
+
 function buildBomDraft(state: BomBuildState): BomDraft {
   const rootNode = state.rootTempId
     ? state.nodes.get(state.rootTempId)

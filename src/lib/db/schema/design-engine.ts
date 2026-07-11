@@ -23,6 +23,7 @@ import { aiChatSessions } from './ai'
 import type {
   DesignArtifacts,
   LlmHistoryEntry,
+  UserMessage,
 } from '@/lib/design-engine/types'
 
 // ============================================================================
@@ -64,6 +65,15 @@ export const designSessions = pgTable(
 
     // Full LLM conversation history for context continuity
     llmHistory: jsonb('llm_history').$type<Array<LlmHistoryEntry>>(),
+
+    // Mid-stream steering mailbox: guidance sent while a drafting stream is
+    // in flight. The running stage loop drains it at tool-call boundaries.
+    // Lives outside `artifacts` because that blob has two independent
+    // full-object writers (stage loop + client PATCH) that would clobber it.
+    pendingGuidance: jsonb('pending_guidance')
+      .$type<Array<UserMessage>>()
+      .default([])
+      .notNull(),
 
     // Timestamps
     createdAt: timestamp('created_at', { withTimezone: true })

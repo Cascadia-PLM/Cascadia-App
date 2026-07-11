@@ -22,6 +22,7 @@ import { validateBomDraft } from '../validation/bom-validator'
 import { DesignSessionService } from '../session-service'
 import { activeRequirements, unresolvedComments } from '../types'
 import { createToolEventTracker } from './tool-event-tracker'
+import { buildSteeringUserMessage, createGuidanceChecker } from './guidance'
 import type { DesignSession } from '../session-service'
 import type {
   BomDraft,
@@ -29,8 +30,12 @@ import type {
   DesignArtifacts,
   ProposedPart,
   StageEvent,
+  UserMessage,
 } from '../types'
 import { getAdapter, loadProviderConfig } from '@/lib/ai/adapters'
+
+/** Bound the number of mid-stream steering restarts per request. */
+const MAX_STEERING_CONTINUATIONS = 5
 
 /**
  * Recursively collect all nodes from a BOM tree into a Map keyed by tempId.
@@ -184,6 +189,18 @@ export async function* runBomStage(
     const providerConfig = await loadProviderConfig(session.programId)
     const adapter = getAdapter(providerConfig)
 
+    const guidance = createGuidanceChecker(session.id)
+
+    // Guidance sent while no stream was running: fold it in before prompting.
+    const startGuidance = await guidance.drain()
+    if (startGuidance.length > 0) {
+      artifacts.userMessages = [...artifacts.userMessages, ...startGuidance]
+      await DesignSessionService.updateArtifacts(session.id, artifacts)
+      for (const m of startGuidance) {
+        yield { type: 'user_message', id: m.id, text: m.text }
+      }
+    }
+
     // Build system prompt with clarification/user message context
     const priorToolCalls = isResuming
       ? summarizeToolCalls(session.llmHistory)
@@ -204,38 +221,15 @@ export async function* runBomStage(
       targetName: nodeNames.get(c.targetTempId) ?? c.targetTempId,
       text: c.text,
     }))
-    const systemPrompt = buildBomPrompt(
-      description,
-      activeRequirements(artifacts.requirements),
-      artifacts.clarifications.length > 0
-        ? artifacts.clarifications
-        : undefined,
-      artifacts.userMessages.length > 0 ? artifacts.userMessages : undefined,
-      isResuming && artifacts.bom ? artifacts.bom : undefined,
-      undefined, // schemaContext
-      artifacts.toolset ?? undefined,
-      priorToolCalls || undefined,
-      artifacts.bomRejections,
-      bomItemFeedback.length > 0 ? bomItemFeedback : undefined,
-    )
-
-    // Build messages - cast to satisfy TanStack AI's constrained message types
-    const messages: any = [
-      { role: 'system', content: systemPrompt },
-      {
-        role: 'user',
-        content: isResuming
-          ? `Continue building the Bill of Materials. Take into account all clarification answers and user guidance provided above. Do not re-propose parts already in the tree.`
-          : `Build a Bill of Materials for this design based on the confirmed requirements. Search for existing parts first, then propose new parts as needed.`,
-      },
-    ]
-
     // --- Stream-processing helper ---
-    // Yields StageEvent items, returns whether a clarification was requested.
+    // Yields StageEvent items; returns any steering guidance drained
+    // mid-stream (after aborting the passed chat controller). Clarifications
+    // are surfaced via clarificationRef, checked by the caller.
     // Uses `any` for streamIter to match chat()'s opaque return type.
     const processStream = async function* (
       streamIter: any,
-    ): AsyncGenerator<StageEvent, boolean> {
+      chatAbort: AbortController,
+    ): AsyncGenerator<StageEvent, { steering: Array<UserMessage> | null }> {
       let lastBomVersion = bomState.changeVersion
       // Fresh tracker per stream — pending args are keyed by a per-call index.
       const tracker = createToolEventTracker()
@@ -265,32 +259,108 @@ export async function* runBomStage(
           await DesignSessionService.updateArtifacts(session.id, artifacts)
           lastBomVersion = bomState.changeVersion
         }
+
+        // Mid-stream steering: internally throttled, so this is cheap to call
+        // per chunk. On a hit, cut this chat short and restart with the
+        // guidance injected as the next user turn.
+        const drained = await guidance.maybeDrain()
+        if (drained.length > 0) {
+          chatAbort.abort()
+          return { steering: drained }
+        }
       }
 
-      return clarificationRef.requested
+      return { steering: null }
     }
 
-    // Create an abort controller that combines the external signal with internal needs
-    const abortController = new AbortController()
-    if (signal) {
-      signal.addEventListener('abort', () => abortController.abort())
+    // Fold drained steering into the artifacts and feed, then continue.
+    let steeringCount = 0
+    const applySteering = async (drained: Array<UserMessage>) => {
+      steeringCount++
+      artifacts.userMessages = [...artifacts.userMessages, ...drained]
+      if (bomRef.current) artifacts.bom = bomRef.current
+      await DesignSessionService.updateArtifacts(session.id, artifacts)
     }
 
-    // --- Initial chat call ---
-    const stream = chat({
-      adapter,
-      messages,
-      tools,
-      maxTokens: 16384,
-      agentLoopStrategy: maxIterations(30),
-      abortController,
-    })
-
-    const initialStreamGen = processStream(stream)
+    // --- Initial pass, restarted on mid-stream steering ---
+    let steeringMessages: Array<UserMessage> | null = null
     for (;;) {
-      const result = await initialStreamGen.next()
-      if (result.done) break
-      yield result.value
+      const systemPrompt = buildBomPrompt(
+        description,
+        activeRequirements(artifacts.requirements),
+        artifacts.clarifications.length > 0
+          ? artifacts.clarifications
+          : undefined,
+        artifacts.userMessages.length > 0 ? artifacts.userMessages : undefined,
+        (isResuming || steeringMessages) && (bomRef.current ?? artifacts.bom)
+          ? (bomRef.current ?? artifacts.bom)
+          : undefined,
+        undefined, // schemaContext
+        artifacts.toolset ?? undefined,
+        priorToolCalls || undefined,
+        artifacts.bomRejections,
+        bomItemFeedback.length > 0 ? bomItemFeedback : undefined,
+      )
+
+      const userContent = steeringMessages
+        ? buildSteeringUserMessage(steeringMessages)
+        : isResuming
+          ? `Continue building the Bill of Materials. Take into account all clarification answers and user guidance provided above. Do not re-propose parts already in the tree.`
+          : `Build a Bill of Materials for this design based on the confirmed requirements. Search for existing parts first, then propose new parts as needed.`
+
+      // Build messages - cast to satisfy TanStack AI's constrained message types
+      const messages: any = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent },
+      ]
+
+      // Internal controller: aborted by the external signal AND by steering
+      const abortController = new AbortController()
+      if (signal) {
+        signal.addEventListener('abort', () => abortController.abort())
+      }
+
+      const stream = chat({
+        adapter,
+        messages,
+        tools,
+        maxTokens: 16384,
+        agentLoopStrategy: maxIterations(30),
+        abortController,
+      })
+
+      const initialStreamGen = processStream(stream, abortController)
+      let streamOutcome: { steering: Array<UserMessage> | null } = {
+        steering: null,
+      }
+      for (;;) {
+        const result = await initialStreamGen.next()
+        if (result.done) {
+          streamOutcome = result.value
+          break
+        }
+        yield result.value
+      }
+
+      if (
+        streamOutcome.steering &&
+        !clarificationRef.requested &&
+        !signal?.aborted &&
+        steeringCount < MAX_STEERING_CONTINUATIONS
+      ) {
+        await applySteering(streamOutcome.steering)
+        for (const m of streamOutcome.steering) {
+          yield { type: 'user_message', id: m.id, text: m.text }
+        }
+        yield {
+          type: 'llm_text',
+          text: '\n\n_Incorporating your guidance..._\n\n',
+        }
+        steeringMessages = streamOutcome.steering
+        continue
+      }
+
+      break
     }
 
     // If clarification was requested, save progress and pause
@@ -374,11 +444,39 @@ export async function* runBomStage(
         abortController: contAbortController,
       })
 
-      const contStreamGen = processStream(contStream)
+      const contStreamGen = processStream(contStream, contAbortController)
+      let contOutcome: { steering: Array<UserMessage> | null } = {
+        steering: null,
+      }
       for (;;) {
         const result = await contStreamGen.next()
-        if (result.done) break
+        if (result.done) {
+          contOutcome = result.value
+          break
+        }
         yield result.value
+      }
+
+      // Steering during a gap-filling pass: fold the guidance in and repeat
+      // this pass (bounded by the shared steering budget).
+      if (
+        contOutcome.steering &&
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated via closure callback
+        !clarificationRef.requested &&
+        !signal?.aborted
+      ) {
+        await applySteering(contOutcome.steering)
+        for (const m of contOutcome.steering) {
+          yield { type: 'user_message', id: m.id, text: m.text }
+        }
+        if (steeringCount < MAX_STEERING_CONTINUATIONS) {
+          yield {
+            type: 'llm_text',
+            text: '\n\n_Incorporating your guidance..._\n\n',
+          }
+          cont--
+          continue
+        }
       }
 
       // If clarification was requested during continuation, pause.

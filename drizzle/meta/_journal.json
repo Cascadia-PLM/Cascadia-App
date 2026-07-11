@@ -15,6 +15,13 @@
       "when": 1783786832814,
       "tag": "0001_early_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783789570211,
+      "tag": "0002_natural_james_howlett",
+      "breakpoints": true
     }
   ]
 }

@@ -61,6 +61,10 @@ const streamActionSchema = z.object({
     .optional(),
   // Skip the per-item review gate on confirm_* ("Confirm anyway")
   force: z.boolean().optional(),
+  // send_message only: enqueue into the mid-stream steering mailbox instead
+  // of restarting the drafting stream (client sets this while it holds an
+  // open stream; the running stage loop drains the mailbox mid-generation)
+  queue: z.boolean().optional(),
 })
 
 function encodeSSE(event: string, data: unknown): string {
@@ -559,9 +563,23 @@ app.post(
 
       // Handle send_message — store and optionally restart stage
       if (action === 'send_message') {
-        const { message } = parsed.data
+        const { message, queue } = parsed.data
         if (!message) {
           throw new ValidationError('message is required for send_message')
+        }
+
+        // Mid-stream steering: the client holds an open drafting stream, so
+        // don't restart it — enqueue into the mailbox the running stage loop
+        // drains at its next check. If the stream died without draining, the
+        // message is still picked up by drain-on-start of the next run.
+        if (queue) {
+          await DesignSessionService.enqueueGuidance(params.id, {
+            id: crypto.randomUUID(),
+            text: message,
+            createdAt: new Date().toISOString(),
+            stage: session.stage as DesignSessionStage,
+          })
+          return { queued: true }
         }
 
         const current = await DesignSessionService.getById(params.id)

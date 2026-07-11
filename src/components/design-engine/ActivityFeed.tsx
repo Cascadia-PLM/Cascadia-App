@@ -64,7 +64,13 @@ export function ActivityFeed({
     }
   }
 
-  // Show input when in a drafting or review stage and not streaming
+  // Requirements/BOM drafting support mid-stream steering: guidance sent
+  // while streaming is queued and picked up by the running generation.
+  const supportsSteering =
+    currentStage === 'requirements_drafting' || currentStage === 'bom_drafting'
+
+  // Show input when in a drafting or review stage; while streaming, only for
+  // stages that can be steered mid-generation.
   const showInput =
     onSendMessage &&
     currentStage &&
@@ -73,7 +79,7 @@ export function ActivityFeed({
       currentStage === 'requirements_review' ||
       currentStage === 'bom_drafting' ||
       currentStage === 'bom_review') &&
-    !isStreaming
+    (!isStreaming || supportsSteering)
 
   // Build the render list from the raw event stream.
   //
@@ -292,7 +298,11 @@ export function ActivityFeed({
             value={messageInput}
             onChange={(e) => setMessageInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Send guidance to the AI..."
+            placeholder={
+              isStreaming
+                ? 'Steer the AI mid-generation...'
+                : 'Send guidance to the AI...'
+            }
             className="flex-1 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
           />
           <button

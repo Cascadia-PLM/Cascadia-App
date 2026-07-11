@@ -8,12 +8,13 @@
  * Pattern follows SessionService from src/lib/ai/SessionService.ts.
  */
 
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import type {
   DesignArtifacts,
   DesignSessionStage,
   DesignSessionStatus,
   LlmHistoryEntry,
+  UserMessage,
 } from './types'
 import { db } from '@/lib/db'
 import { designSessions } from '@/lib/db/schema/design-engine'
@@ -30,6 +31,7 @@ export interface DesignSession {
   description: string | null
   artifacts: DesignArtifacts | null
   llmHistory: Array<LlmHistoryEntry> | null
+  pendingGuidance: Array<UserMessage>
   createdAt: Date
   updatedAt: Date
   completedAt: Date | null
@@ -188,6 +190,45 @@ export class DesignSessionService {
       .orderBy(desc(designSessions.updatedAt))
 
     return results as Array<DesignSession>
+  }
+
+  /**
+   * Append a steering message to the session's mailbox. Atomic JSONB
+   * concatenation — concurrent enqueues never lose messages.
+   */
+  static async enqueueGuidance(id: string, message: UserMessage): Promise<void> {
+    await db
+      .update(designSessions)
+      .set({
+        pendingGuidance: sql`coalesce(${designSessions.pendingGuidance}, '[]'::jsonb) || ${JSON.stringify([message])}::jsonb`,
+        updatedAt: new Date(),
+      })
+      .where(eq(designSessions.id, id))
+  }
+
+  /**
+   * Atomically take and clear the pending guidance. SELECT ... FOR UPDATE
+   * inside a transaction guarantees each message is delivered exactly once
+   * even when drains race (e.g. a stage loop and a stage start).
+   */
+  static async drainGuidance(id: string): Promise<Array<UserMessage>> {
+    return db.transaction(async (tx) => {
+      const [row] = await tx
+        .select({ pendingGuidance: designSessions.pendingGuidance })
+        .from(designSessions)
+        .where(eq(designSessions.id, id))
+        .for('update')
+
+      const pending = row?.pendingGuidance ?? []
+      if (pending.length === 0) return []
+
+      await tx
+        .update(designSessions)
+        .set({ pendingGuidance: [], updatedAt: new Date() })
+        .where(eq(designSessions.id, id))
+
+      return pending
+    })
   }
 
   static async setMaterializedDesign(

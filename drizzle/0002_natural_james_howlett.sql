@@ -1,0 +1,1 @@
+ALTER TABLE "design_sessions" ADD COLUMN "pending_guidance" jsonb DEFAULT '[]'::jsonb NOT NULL;

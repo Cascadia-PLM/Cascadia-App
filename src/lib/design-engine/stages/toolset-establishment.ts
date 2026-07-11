@@ -130,19 +130,18 @@ export async function* runToolsetEstablishmentStage(
     })
 
     let lastToolCount = artifacts.toolset?.tools.length ?? 0
-    let accumulatedText = ''
     const tracker = createToolEventTracker()
 
     for await (const chunk of stream) {
       if (clarificationRef.requested || signal?.aborted) break
 
-      // Yield text content
-      if (chunk.type === 'content' && chunk.content) {
-        const delta = chunk.content.slice(accumulatedText.length)
-        accumulatedText = chunk.content
-        if (delta) {
-          yield { type: 'llm_text', text: delta }
-        }
+      // Yield only the incremental text. The SDK resets its accumulated
+      // `content` at the start of each agent-loop iteration (i.e. after every
+      // tool call), so slicing against a persistent offset would drop the
+      // leading characters of each post-tool-call message. `chunk.delta` is the
+      // true per-chunk increment and is iteration-safe.
+      if (chunk.type === 'content' && chunk.delta) {
+        yield { type: 'llm_text', text: chunk.delta }
       }
 
       // Translate SDK tool chunks into tool_call/tool_result events so they're

@@ -547,6 +547,17 @@ export function CollaborativeWorkspace({
             onAnswer={handleAnswer}
             onSendMessage={handleSendMessage}
             currentStage={stream.currentStage}
+            clarificationContext={(() => {
+              const pending = stream.artifacts.pendingClarification
+              if (!pending?.context) return undefined
+              const stageLabel = pending.context.stage.replace(/_/g, ' ')
+              return {
+                questionId: pending.id,
+                label: pending.context.nodeName
+                  ? `${stageLabel} — about "${pending.context.nodeName}"`
+                  : stageLabel,
+              }
+            })()}
             className="flex-1"
           />
 

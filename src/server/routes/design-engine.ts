@@ -93,6 +93,12 @@ function draftingStageSource(
       return designEngine.runRequirementsStage(sessionId, signal)
     case 'bom_drafting':
       return designEngine.runBomStage(sessionId, signal)
+    // Generation stages are resume-idempotent (completed parts/assemblies
+    // are skipped), so clarification answers and resume re-enter them safely.
+    case 'cad_generation':
+      return designEngine.runCadGenerationStage(sessionId, signal)
+    case 'assembly_composition':
+      return designEngine.runAssemblyCompositionStage(sessionId, signal)
     default:
       return null
   }

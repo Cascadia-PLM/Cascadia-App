@@ -31,6 +31,8 @@ interface ActivityFeedProps {
   onAnswer?: (questionId: string, answer: string) => void
   onSendMessage?: (message: string) => void
   currentStage?: DesignSessionStage
+  /** Caption for the pending clarification (matched by questionId) */
+  clarificationContext?: { questionId: string; label: string }
   className?: string
 }
 
@@ -40,6 +42,7 @@ export function ActivityFeed({
   onAnswer,
   onSendMessage,
   currentStage,
+  clarificationContext,
   className,
 }: ActivityFeedProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -236,6 +239,11 @@ export function ActivityFeed({
                 question={event.question}
                 options={event.options}
                 multiSelect={event.multiSelect}
+                contextLabel={
+                  clarificationContext?.questionId === event.questionId
+                    ? clarificationContext.label
+                    : undefined
+                }
                 onAnswer={onAnswer}
               />
             )

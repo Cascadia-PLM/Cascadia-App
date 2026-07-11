@@ -509,6 +509,12 @@ export interface DesignArtifacts {
     question: string
     options?: Array<string>
     multiSelect?: boolean
+    /** Where the question came from (stage + optionally the BOM node it's about) */
+    context?: {
+      stage: DesignSessionStage
+      nodeTempId?: string
+      nodeName?: string
+    }
   }
   materializationResult?: MaterializationResult
   cadGenerationState?: CadGenerationState
@@ -814,6 +820,13 @@ export const designArtifactsPatchSchema = z
         question: z.string(),
         options: z.array(z.string()).optional(),
         multiSelect: z.boolean().optional(),
+        context: z
+          .object({
+            stage: z.string(),
+            nodeTempId: z.string().optional(),
+            nodeName: z.string().optional(),
+          })
+          .optional(),
       })
       .optional(),
     materializationResult: z

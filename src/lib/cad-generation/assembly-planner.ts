@@ -9,10 +9,30 @@
  * child bounding boxes, interface descriptions, and interface mappings.
  */
 
-import { chat } from '@tanstack/ai'
+import { chat, toolDefinition } from '@tanstack/ai'
+import { z } from 'zod'
 import type { BomNodeDraft } from '@/lib/design-engine/types'
 import type { AssemblyPlan, BoundingBox3D, Transform3D } from './types'
 import { getAdapter, loadProviderConfig } from '@/lib/ai/adapters'
+
+export interface AssemblyClarificationRequest {
+  questionId: string
+  question: string
+  options?: Array<string>
+  multiSelect?: boolean
+}
+
+export interface PlanAssemblyOptions {
+  /** Per-assembly user feedback to address in the plan */
+  userNotes?: Array<string>
+  /** Previously answered clarifications (fed back into the prompt on resume) */
+  priorClarifications?: Array<{ question: string; answer: string }>
+  /**
+   * When provided, the planner may ask the user a clarification instead of
+   * planning; planAssembly then returns null and the caller pauses the stage.
+   */
+  onClarification?: (request: AssemblyClarificationRequest) => void
+}
 
 interface AssemblyChildData {
   tempId: string
@@ -35,14 +55,17 @@ interface AssemblyChildData {
 export class AssemblyPlanner {
   /**
    * Plan assembly composition using LLM analysis.
+   *
+   * Returns null when the planner asked the user a clarification instead of
+   * producing a plan (only possible when options.onClarification is given).
    */
   static async planAssembly(
     assemblyNode: BomNodeDraft,
     childData: Array<AssemblyChildData>,
     designContext?: string,
     programId?: string,
-    userNotes?: Array<string>,
-  ): Promise<AssemblyPlan> {
+    options?: PlanAssemblyOptions,
+  ): Promise<AssemblyPlan | null> {
     const providerConfig = await loadProviderConfig(programId)
     const adapter = getAdapter(providerConfig)
 
@@ -50,7 +73,8 @@ export class AssemblyPlanner {
       assemblyNode,
       childData,
       designContext,
-      userNotes,
+      options?.userNotes,
+      options?.priorClarifications,
     )
 
     const messages: any = [
@@ -58,17 +82,65 @@ export class AssemblyPlanner {
       { role: 'user', content: prompt },
     ]
 
+    // Clarification escape hatch: the planner may ask the user one question
+    // instead of guessing (e.g. ambiguous orientation with no mappings).
+    const clarificationRef: { request: AssemblyClarificationRequest | null } = {
+      request: null,
+    }
+    const tools = options?.onClarification
+      ? [
+          toolDefinition({
+            name: 'ask_assembly_clarification',
+            description:
+              'Ask the user a clarification question about how this assembly should be composed, when the interfaces/mappings are too ambiguous to plan confidently. Use sparingly — only when a wrong guess would produce an unusable assembly. ALWAYS provide `options` when the answer is a known choice from a finite set.',
+            inputSchema: z.object({
+              question: z
+                .string()
+                .describe(
+                  'The question to ask the user. Keep it concise — options are rendered separately.',
+                ),
+              options: z
+                .array(z.string())
+                .optional()
+                .describe('Suggested answers, presented as buttons.'),
+              multiSelect: z
+                .boolean()
+                .optional()
+                .describe('True when more than one option can apply.'),
+            }),
+            outputSchema: z.object({ acknowledged: z.boolean() }),
+          }).server((input) => {
+            if (!clarificationRef.request) {
+              clarificationRef.request = {
+                questionId: crypto.randomUUID(),
+                question: input.question,
+                options: input.options,
+                multiSelect: input.multiSelect,
+              }
+            }
+            return { acknowledged: true }
+          }),
+        ]
+      : undefined
+
     const stream = chat({
       adapter,
       messages,
+      ...(tools ? { tools } : {}),
       maxTokens: 8192,
     })
 
     let fullResponse = ''
     for await (const chunk of stream) {
+      if (clarificationRef.request) break
       if (chunk.type === 'content' && chunk.content) {
         fullResponse = chunk.content
       }
+    }
+
+    if (clarificationRef.request) {
+      options?.onClarification?.(clarificationRef.request)
+      return null
     }
 
     return parseAssemblyPlan(assemblyNode.tempId, fullResponse)
@@ -87,6 +159,7 @@ Rules:
 - Ensure mating interfaces are aligned (e.g., coaxial holes share the same axis)
 - No parts should overlap (respect bounding boxes)
 - Use millimeters for all dimensions
+- If the composition is too ambiguous to plan confidently (e.g. no interface mappings and no obvious arrangement) and the ask_assembly_clarification tool is available, call it ONCE instead of responding with JSON
 
 Respond with ONLY a JSON object in this exact format:
 {
@@ -111,6 +184,7 @@ function buildAssemblyPlanPrompt(
   childData: Array<AssemblyChildData>,
   designContext?: string,
   userNotes?: Array<string>,
+  priorClarifications?: Array<{ question: string; answer: string }>,
 ): string {
   let prompt = `## Assembly: ${assemblyNode.name}\n`
   if (assemblyNode.rationale) {
@@ -123,6 +197,12 @@ function buildAssemblyPlanPrompt(
     prompt += `\n## User Feedback on This Assembly\nAddress each of these notes in your assembly plan:\n`
     for (const note of userNotes) {
       prompt += `- ${note}\n`
+    }
+  }
+  if (priorClarifications && priorClarifications.length > 0) {
+    prompt += `\n## Prior Clarifications\nYou already asked and the user answered — do NOT re-ask these:\n`
+    for (const c of priorClarifications) {
+      prompt += `- Q: ${c.question}\n  A: ${c.answer}\n`
     }
   }
 

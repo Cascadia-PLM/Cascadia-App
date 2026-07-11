@@ -33,6 +33,11 @@ const createSessionSchema = z.object({
   aiChatSessionId: z.string().uuid('Invalid chat session ID').optional(),
 })
 
+const forkSessionSchema = z.object({
+  title: z.string().min(1).max(255).optional(),
+  includeLlmHistory: z.boolean().optional(),
+})
+
 const streamActionSchema = z.object({
   action: z.enum([
     'start_toolset',
@@ -337,6 +342,50 @@ app.patch(
 
       const updated = await DesignSessionService.getById(params.id)
       return { session: updated }
+    }),
+  ),
+)
+
+// POST /api/design-engine/sessions/:id/fork — copy the session to explore a variant
+app.post(
+  '/sessions/:id/fork',
+  adapt(
+    apiHandler({}, async ({ params, request, user }) => {
+      const session = await DesignSessionService.getById(params.id)
+
+      if (!session) {
+        throw new NotFoundError('DesignSession', params.id)
+      }
+
+      // Forking is non-destructive to the source, so read access suffices;
+      // the fork itself is owned (and writable) by the forking user.
+      await requireSessionAccess(user.id, session, 'read')
+
+      const body = await request.json().catch(() => ({}))
+      const parsed = forkSessionSchema.safeParse(body)
+      if (!parsed.success) {
+        throw new ValidationError(
+          parsed.error.issues
+            .map((e: { message: string }) => e.message)
+            .join(', '),
+        )
+      }
+
+      const forked = await DesignSessionService.fork(params.id, user.id, {
+        title: parsed.data.title,
+        includeLlmHistory: parsed.data.includeLlmHistory,
+      })
+
+      return created({
+        session: {
+          id: forked.id,
+          title: forked.title,
+          stage: forked.stage,
+          status: forked.status,
+          forkedFromSessionId: forked.forkedFromSessionId,
+          workspaceUrl: `/designs/collaborative/${forked.id}`,
+        },
+      })
     }),
   ),
 )

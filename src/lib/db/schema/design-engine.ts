@@ -20,6 +20,7 @@ import { users } from './users'
 import { programs } from './programs'
 import { designs } from './designs'
 import { aiChatSessions } from './ai'
+import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import type {
   DesignArtifacts,
   LlmHistoryEntry,
@@ -92,6 +93,12 @@ export const designSessions = pgTable(
 
     // Error tracking
     errorMessage: text('error_message'),
+
+    // Fork lineage: the session this one was forked from (variant exploration)
+    forkedFromSessionId: uuid('forked_from_session_id').references(
+      (): AnyPgColumn => designSessions.id,
+      { onDelete: 'set null' },
+    ),
   },
   (table) => [
     index('design_sessions_user_id_idx').on(table.userId),

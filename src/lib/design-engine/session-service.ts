@@ -10,6 +10,7 @@
 
 import { and, desc, eq, sql } from 'drizzle-orm'
 import type {
+  BomNodeDraft,
   DesignArtifacts,
   DesignSessionStage,
   DesignSessionStatus,
@@ -18,6 +19,7 @@ import type {
 } from './types'
 import { db } from '@/lib/db'
 import { designSessions } from '@/lib/db/schema/design-engine'
+import { NotFoundError } from '@/lib/errors'
 
 export interface DesignSession {
   id: string
@@ -37,6 +39,7 @@ export interface DesignSession {
   completedAt: Date | null
   materializedDesignId: string | null
   errorMessage: string | null
+  forkedFromSessionId: string | null
 }
 
 interface CreateSessionInput {
@@ -229,6 +232,97 @@ export class DesignSessionService {
 
       return pending
     })
+  }
+
+  /**
+   * Fork a session so an alternative can be explored without destroying the
+   * original's single mutable artifacts document.
+   *
+   * Integrity resets on the copy:
+   * - pendingClarification is always cleared (it belongs to the source's
+   *   stream; the fork's owner can resume and the AI re-asks if needed).
+   * - If the source materialized (or reached that stage), the fork strips
+   *   materializationResult, cadGenerationState, and all per-node
+   *   generation status, and caps the stage at bom_review —
+   *   materializationResult maps tempIds to REAL PLM itemIds, and a fork
+   *   keeping it would upload regenerated CAD onto the original's parts.
+   */
+  static async fork(
+    sessionId: string,
+    userId: string,
+    options?: { title?: string; includeLlmHistory?: boolean },
+  ): Promise<DesignSession> {
+    const source = await this.getById(sessionId)
+    if (!source) {
+      throw new NotFoundError('DesignSession', sessionId)
+    }
+
+    const artifacts: DesignArtifacts = source.artifacts
+      ? (JSON.parse(JSON.stringify(source.artifacts)) as DesignArtifacts)
+      : {
+          description: source.description ?? '',
+          requirements: [],
+          bom: null,
+          clarifications: [],
+          userMessages: [],
+        }
+
+    artifacts.pendingClarificationId = undefined
+    artifacts.pendingClarification = undefined
+
+    let stage = source.stage as DesignSessionStage
+    const generationStages: Array<DesignSessionStage> = [
+      'materialization',
+      'cad_generation',
+      'cad_review',
+      'assembly_composition',
+      'assembly_review',
+      'complete',
+    ]
+    const materialized =
+      artifacts.materializationResult !== undefined ||
+      generationStages.includes(stage)
+    if (materialized) {
+      artifacts.materializationResult = undefined
+      artifacts.cadGenerationState = undefined
+      if (artifacts.bom) {
+        const strip = (node: BomNodeDraft) => {
+          node.cadGeneration = undefined
+          node.assemblyComposition = undefined
+          node.children.forEach(strip)
+        }
+        strip(artifacts.bom.rootAssembly)
+      }
+      stage = 'bom_review'
+    }
+
+    const forked = await db.transaction(async (tx) => {
+      const [session] = await tx
+        .insert(designSessions)
+        .values({
+          userId,
+          programId: source.programId,
+          designId: source.designId,
+          aiChatSessionId: null,
+          title: options?.title ?? `${source.title ?? 'Design Session'} (variant)`,
+          description: source.description,
+          stage,
+          status: 'active',
+          artifacts,
+          llmHistory:
+            (options?.includeLlmHistory ?? true) ? (source.llmHistory ?? []) : [],
+          pendingGuidance: [],
+          forkedFromSessionId: source.id,
+        })
+        .returning()
+      return session as DesignSession
+    })
+
+    // Preserve diff bases and rollback targets in the fork
+    const { DesignSnapshotService } = await import('./snapshot-service')
+    await DesignSnapshotService.copyToSession(source.id, forked.id)
+
+    return forked
   }
 
   static async setMaterializedDesign(

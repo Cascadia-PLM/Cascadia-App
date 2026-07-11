@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Cpu, Layers, Lightbulb, Pause, Play, X } from 'lucide-react'
+import { Cpu, GitFork, Layers, Lightbulb, Pause, Play, X } from 'lucide-react'
 import { StageIndicator } from './StageIndicator'
 import { ArtifactPanel } from './ArtifactPanel'
 import { ActivityFeed } from './ActivityFeed'
@@ -249,6 +249,28 @@ export function CollaborativeWorkspace({
     [stream],
   )
 
+  const [isForking, setIsForking] = useState(false)
+  const handleFork = useCallback(async () => {
+    if (isForking) return
+    setIsForking(true)
+    try {
+      const response = await fetch(
+        `/api/v1/design-engine/sessions/${sessionId}/fork`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        },
+      )
+      if (!response.ok) return
+      const data = await response.json()
+      const url = data.data?.session?.workspaceUrl
+      if (url) navigate({ to: url })
+    } finally {
+      setIsForking(false)
+    }
+  }, [sessionId, navigate, isForking])
+
   // Load materialization preview when entering that stage
   useEffect(() => {
     if (stream.currentStage === 'materialization' && !materializationPreview) {
@@ -362,6 +384,17 @@ export function CollaborativeWorkspace({
               Pause
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleFork}
+            disabled={stream.isStreaming || isForking}
+            className="h-7 text-xs gap-1"
+            title="Copy this session to explore an alternative without changing this one"
+          >
+            <GitFork className="h-3 w-3" />
+            {isForking ? 'Forking…' : 'Fork'}
+          </Button>
           <Button
             variant="ghost"
             size="sm"

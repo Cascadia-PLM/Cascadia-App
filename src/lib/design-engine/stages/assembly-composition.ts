@@ -9,9 +9,11 @@
  */
 
 import { DesignSessionService } from '../session-service'
+import { unresolvedComments } from '../types'
 import type { DesignSession } from '../session-service'
 import type { DesignArtifacts, StageEvent } from '../types'
 import type { BoundingBox3D } from '@/lib/cad-generation/types'
+import type { AssemblyClarificationRequest } from '@/lib/cad-generation/assembly-planner'
 import { AssemblyPlanner } from '@/lib/cad-generation/assembly-planner'
 import {
   computeAssemblyOrder,
@@ -30,8 +32,11 @@ export async function* runAssemblyCompositionStage(
   session: DesignSession,
   signal?: AbortSignal,
 ): AsyncGenerator<StageEvent> {
-  yield { type: 'stage_change', stage: 'assembly_composition' }
-  await DesignSessionService.updateStage(session.id, 'assembly_composition')
+  const isResuming = session.stage === 'assembly_composition'
+  if (!isResuming) {
+    yield { type: 'stage_change', stage: 'assembly_composition' }
+    await DesignSessionService.updateStage(session.id, 'assembly_composition')
+  }
 
   const artifacts: DesignArtifacts = session.artifacts ?? {
     description: '',
@@ -88,6 +93,14 @@ export async function* runAssemblyCompositionStage(
 
     for (const assemblyNode of assemblyOrder) {
       if (signal?.aborted) break
+
+      // Resume-idempotent: skip assemblies that already composed (a
+      // clarification pause must not redo finished work).
+      const priorStatus = assemblyNode.assemblyComposition?.status
+      if (priorStatus === 'complete' || priorStatus === 'code_only') {
+        completed++
+        continue
+      }
 
       // Check if any children have geometry to compose
       if (!hasComposableGeometry(assemblyNode)) {
@@ -173,13 +186,66 @@ export async function* runAssemblyCompositionStage(
             })),
           }))
 
-        // Plan assembly via LLM
+        // Plan assembly via LLM, folding in unresolved comments on this node
+        // and any clarifications already answered for this stage.
+        const assemblyNotes = unresolvedComments(
+          artifacts.itemComments,
+          'bom_node',
+          assemblyNode.tempId,
+        ).map((c) => c.text)
+        const priorClarifications = artifacts.clarifications
+          .filter((c) => c.stage === 'assembly_composition')
+          .map((c) => ({ question: c.question, answer: c.answer }))
+
+        let clarificationRequest: AssemblyClarificationRequest | null = null
         const plan = await AssemblyPlanner.planAssembly(
           assemblyNode,
           childData,
           artifacts.description,
           session.programId,
+          {
+            userNotes: assemblyNotes.length > 0 ? assemblyNotes : undefined,
+            priorClarifications:
+              priorClarifications.length > 0 ? priorClarifications : undefined,
+            onClarification: (request) => {
+              clarificationRequest = request
+            },
+          },
         )
+
+        // The planner asked the user instead of planning: pause the stage.
+        // On answer_clarification the stage re-runs, skips completed
+        // assemblies, and re-plans this node with the answer in context.
+        if (!plan) {
+          const request = clarificationRequest as AssemblyClarificationRequest | null
+          if (!request) {
+            throw new Error('Assembly planner returned no plan')
+          }
+          assemblyNode.assemblyComposition = { status: 'pending' }
+          artifacts.pendingClarificationId = request.questionId
+          artifacts.pendingClarification = {
+            id: request.questionId,
+            question: request.question,
+            options: request.options,
+            multiSelect: request.multiSelect,
+            context: {
+              stage: 'assembly_composition',
+              nodeTempId: assemblyNode.tempId,
+              nodeName: assemblyNode.name,
+            },
+          }
+          await DesignSessionService.updateArtifacts(session.id, artifacts)
+
+          yield {
+            type: 'clarification_needed',
+            questionId: request.questionId,
+            question: request.question,
+            options: request.options,
+            multiSelect: request.multiSelect,
+          }
+          yield { type: 'paused', reason: 'Waiting for your answer...' }
+          return
+        }
 
         // Validate the plan
         const childBoundingBoxes = new Map<string, BoundingBox3D>()

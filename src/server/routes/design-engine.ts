@@ -8,6 +8,7 @@ import type {
 } from '@/lib/design-engine/types'
 import { apiHandler, created } from '@/lib/api/handler'
 import { DesignSessionService } from '@/lib/design-engine/session-service'
+import { DesignSnapshotService } from '@/lib/design-engine/snapshot-service'
 import { MaterializationService } from '@/lib/design-engine/materialize'
 import { designEngine } from '@/lib/design-engine/engine'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
@@ -20,6 +21,7 @@ import { requireSessionAccess } from '@/lib/auth/session-access'
 import {
   designArtifactsPatchSchema,
   designSessionStageSchema,
+  stageIndex,
 } from '@/lib/design-engine/types'
 
 const adapt = tagged('Design Engine')
@@ -29,6 +31,11 @@ const createSessionSchema = z.object({
   programId: z.string().uuid('Invalid program ID'),
   designId: z.string().uuid('Invalid design ID').optional(),
   aiChatSessionId: z.string().uuid('Invalid chat session ID').optional(),
+})
+
+const forkSessionSchema = z.object({
+  title: z.string().min(1).max(255).optional(),
+  includeLlmHistory: z.boolean().optional(),
 })
 
 const streamActionSchema = z.object({
@@ -47,12 +54,22 @@ const streamActionSchema = z.object({
     'confirm_assembly',
     'answer_clarification',
     'send_message',
+    'reopen_stage',
   ]),
   questionId: z.string().optional(),
   answer: z.string().optional(),
   message: z.string().optional(),
   tempId: z.string().optional(),
   feedback: z.string().optional(),
+  targetStage: z
+    .enum(['toolset_review', 'requirements_review', 'bom_review'])
+    .optional(),
+  // Skip the per-item review gate on confirm_* ("Confirm anyway")
+  force: z.boolean().optional(),
+  // send_message only: enqueue into the mid-stream steering mailbox instead
+  // of restarting the drafting stream (client sets this while it holds an
+  // open stream; the running stage loop drains the mailbox mid-generation)
+  queue: z.boolean().optional(),
 })
 
 function encodeSSE(event: string, data: unknown): string {
@@ -81,6 +98,12 @@ function draftingStageSource(
       return designEngine.runRequirementsStage(sessionId, signal)
     case 'bom_drafting':
       return designEngine.runBomStage(sessionId, signal)
+    // Generation stages are resume-idempotent (completed parts/assemblies
+    // are skipped), so clarification answers and resume re-enter them safely.
+    case 'cad_generation':
+      return designEngine.runCadGenerationStage(sessionId, signal)
+    case 'assembly_composition':
+      return designEngine.runAssemblyCompositionStage(sessionId, signal)
     default:
       return null
   }
@@ -298,17 +321,113 @@ app.patch(
         )
       }
 
-      // Update stage (with validation)
+      // Update stage (with validation). Backward moves must go through the
+      // reopen_stage action, which restores the matching artifacts snapshot —
+      // a raw backward PATCH would leave artifacts from the abandoned pass.
       if (body.stage) {
         const result = designSessionStageSchema.safeParse(body.stage)
         if (!result.success) {
           throw new ValidationError('Invalid stage value')
+        }
+        if (
+          stageIndex(result.data) <
+          stageIndex(session.stage as DesignSessionStage)
+        ) {
+          throw new ValidationError(
+            'Cannot move a session backward via PATCH — use the reopen_stage stream action',
+          )
         }
         await DesignSessionService.updateStage(params.id, result.data)
       }
 
       const updated = await DesignSessionService.getById(params.id)
       return { session: updated }
+    }),
+  ),
+)
+
+// POST /api/design-engine/sessions/:id/fork — copy the session to explore a variant
+app.post(
+  '/sessions/:id/fork',
+  adapt(
+    apiHandler({}, async ({ params, request, user }) => {
+      const session = await DesignSessionService.getById(params.id)
+
+      if (!session) {
+        throw new NotFoundError('DesignSession', params.id)
+      }
+
+      // Forking is non-destructive to the source, so read access suffices;
+      // the fork itself is owned (and writable) by the forking user.
+      await requireSessionAccess(user.id, session, 'read')
+
+      const body = await request.json().catch(() => ({}))
+      const parsed = forkSessionSchema.safeParse(body)
+      if (!parsed.success) {
+        throw new ValidationError(
+          parsed.error.issues
+            .map((e: { message: string }) => e.message)
+            .join(', '),
+        )
+      }
+
+      const forked = await DesignSessionService.fork(params.id, user.id, {
+        title: parsed.data.title,
+        includeLlmHistory: parsed.data.includeLlmHistory,
+      })
+
+      return created({
+        session: {
+          id: forked.id,
+          title: forked.title,
+          stage: forked.stage,
+          status: forked.status,
+          forkedFromSessionId: forked.forkedFromSessionId,
+          workspaceUrl: `/designs/collaborative/${forked.id}`,
+        },
+      })
+    }),
+  ),
+)
+
+// GET /api/design-engine/sessions/:id/snapshots — metadata only, newest first
+app.get(
+  '/sessions/:id/snapshots',
+  adapt(
+    apiHandler({}, async ({ params, user }) => {
+      const session = await DesignSessionService.getById(params.id)
+
+      if (!session) {
+        throw new NotFoundError('DesignSession', params.id)
+      }
+
+      await requireSessionAccess(user.id, session, 'read')
+
+      const snapshots = await DesignSnapshotService.listBySession(params.id)
+      return { snapshots }
+    }),
+  ),
+)
+
+// GET /api/design-engine/sessions/:id/snapshots/:snapshotId — full artifacts payload
+app.get(
+  '/sessions/:id/snapshots/:snapshotId',
+  adapt(
+    apiHandler({}, async ({ params, user }) => {
+      const session = await DesignSessionService.getById(params.id)
+
+      if (!session) {
+        throw new NotFoundError('DesignSession', params.id)
+      }
+
+      await requireSessionAccess(user.id, session, 'read')
+
+      const snapshot = await DesignSnapshotService.getById(params.snapshotId)
+      if (!snapshot || snapshot.sessionId !== params.id) {
+        throw new NotFoundError('DesignSessionSnapshot', params.snapshotId)
+      }
+
+      return { snapshot }
     }),
   ),
 )
@@ -403,13 +522,17 @@ app.post(
       }
 
       if (action === 'confirm_requirements') {
-        await designEngine.confirmStage(params.id, 'requirements')
+        await designEngine.confirmStage(params.id, 'requirements', {
+          force: parsed.data.force,
+        })
         const updated = await DesignSessionService.getById(params.id)
         return { session: updated, confirmed: 'requirements' }
       }
 
       if (action === 'confirm_bom') {
-        await designEngine.confirmStage(params.id, 'bom')
+        await designEngine.confirmStage(params.id, 'bom', {
+          force: parsed.data.force,
+        })
         const updated = await DesignSessionService.getById(params.id)
         return { session: updated, confirmed: 'bom' }
       }
@@ -424,6 +547,17 @@ app.post(
         await designEngine.confirmStage(params.id, 'assembly')
         const updated = await DesignSessionService.getById(params.id)
         return { session: updated, confirmed: 'assembly' }
+      }
+
+      // Reopen a previously confirmed review gate (non-streaming)
+      if (action === 'reopen_stage') {
+        const { targetStage } = parsed.data
+        if (!targetStage) {
+          throw new ValidationError('targetStage is required for reopen_stage')
+        }
+        await designEngine.reopenStage(params.id, targetStage)
+        const updated = await DesignSessionService.getById(params.id)
+        return { session: updated, reopened: targetStage }
       }
 
       // Handle clarification answers — store structured entry and restart stage as streaming
@@ -484,9 +618,23 @@ app.post(
 
       // Handle send_message — store and optionally restart stage
       if (action === 'send_message') {
-        const { message } = parsed.data
+        const { message, queue } = parsed.data
         if (!message) {
           throw new ValidationError('message is required for send_message')
+        }
+
+        // Mid-stream steering: the client holds an open drafting stream, so
+        // don't restart it — enqueue into the mailbox the running stage loop
+        // drains at its next check. If the stream died without draining, the
+        // message is still picked up by drain-on-start of the next run.
+        if (queue) {
+          await DesignSessionService.enqueueGuidance(params.id, {
+            id: crypto.randomUUID(),
+            text: message,
+            createdAt: new Date().toISOString(),
+            stage: session.stage as DesignSessionStage,
+          })
+          return { queued: true }
         }
 
         const current = await DesignSessionService.getById(params.id)

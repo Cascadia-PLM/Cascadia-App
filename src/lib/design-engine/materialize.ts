@@ -22,6 +22,7 @@
  */
 
 import { DesignSessionService } from './session-service'
+import { activeRequirements } from './types'
 import type { BaseItem } from '@/lib/items/types/base'
 import type { DesignSession } from './session-service'
 import type {
@@ -148,11 +149,12 @@ export class MaterializationService {
 
     walkNode(bom.rootAssembly)
 
-    // Count requirements to create
-    const newRequirementsCount = artifacts.requirements.length
+    // Count requirements to create (rejected requirements never materialize)
+    const requirementsToCreate = activeRequirements(artifacts.requirements)
+    const newRequirementsCount = requirementsToCreate.length
 
     // Add requirements to items list
-    for (const req of artifacts.requirements) {
+    for (const req of requirementsToCreate) {
       items.push({
         tempId: req.tempId,
         name: req.name,
@@ -324,7 +326,7 @@ export class MaterializationService {
       Other: 'Business',
     }
 
-    for (const req of artifacts.requirements) {
+    for (const req of activeRequirements(artifacts.requirements)) {
       const item = await createItem('Requirement', {
         name: req.name,
         revision: '-',

@@ -2,9 +2,9 @@
  * CollaborativeWorkspace - Main two-panel layout for the design engine
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Cpu, Layers, Lightbulb, Pause, Play, X } from 'lucide-react'
+import { Cpu, GitFork, Layers, Lightbulb, Pause, Play, X } from 'lucide-react'
 import { StageIndicator } from './StageIndicator'
 import { ArtifactPanel } from './ArtifactPanel'
 import { ActivityFeed } from './ActivityFeed'
@@ -20,11 +20,14 @@ import type {
   DesignSessionStage,
   LlmHistoryEntry,
   MaterializationPreview as PreviewType,
+  ReopenableStage,
   MaterializationResult as ResultType,
 } from '@/lib/design-engine/types'
 import { useDesignEngineStream } from '@/hooks/useDesignEngineStream'
 import { useArtifactMutations } from '@/hooks/useArtifactMutations'
 import { Button } from '@/components/ui/Button'
+import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
+import { diffBom, diffRequirements } from '@/lib/design-engine/artifact-diff'
 
 interface CollaborativeWorkspaceProps {
   sessionId: string
@@ -42,10 +45,12 @@ export function CollaborativeWorkspace({
   initialSession,
 }: CollaborativeWorkspaceProps) {
   const navigate = useNavigate()
+  const { confirm } = useAlertDialog()
   const stream = useDesignEngineStream({ sessionId })
   const mutations = useArtifactMutations({
     sessionId,
     artifacts: stream.artifacts,
+    currentStage: stream.currentStage,
   })
 
   const [materializationPreview, setMaterializationPreview] =
@@ -57,6 +62,66 @@ export function CollaborativeWorkspace({
   const [materializationError, setMaterializationError] = useState<
     string | null
   >(null)
+
+  // Diff base for review stages: the latest confirmed snapshot of the SAME
+  // gate. Exists only after a reopen/re-run — first-pass reviews show no diff.
+  const [diffBase, setDiffBase] = useState<DesignArtifacts | null>(null)
+
+  useEffect(() => {
+    const stage = stream.currentStage
+    if (stage !== 'requirements_review' && stage !== 'bom_review') {
+      setDiffBase(null)
+      return
+    }
+    let cancelled = false
+    const loadBase = async () => {
+      try {
+        const listRes = await fetch(
+          `/api/v1/design-engine/sessions/${sessionId}/snapshots`,
+        )
+        if (!listRes.ok) return
+        const listData = await listRes.json()
+        const snapshots: Array<{ id: string; stage: string }> =
+          listData.data?.snapshots ?? []
+        // Newest first — the latest snapshot of this same review gate
+        const match = snapshots.find((s) => s.stage === stage)
+        if (!match) {
+          if (!cancelled) setDiffBase(null)
+          return
+        }
+        const snapRes = await fetch(
+          `/api/v1/design-engine/sessions/${sessionId}/snapshots/${match.id}`,
+        )
+        if (!snapRes.ok) return
+        const snapData = await snapRes.json()
+        if (!cancelled) {
+          setDiffBase(snapData.data?.snapshot?.artifacts ?? null)
+        }
+      } catch {
+        // Diff view is best-effort — review works without it
+      }
+    }
+    loadBase()
+    return () => {
+      cancelled = true
+    }
+  }, [stream.currentStage, sessionId])
+
+  const requirementsDiff = useMemo(
+    () =>
+      diffBase && stream.currentStage === 'requirements_review'
+        ? diffRequirements(diffBase.requirements, stream.artifacts.requirements)
+        : null,
+    [diffBase, stream.currentStage, stream.artifacts.requirements],
+  )
+
+  const bomDiff = useMemo(
+    () =>
+      diffBase && stream.currentStage === 'bom_review'
+        ? diffBom(diffBase.bom, stream.artifacts.bom)
+        : null,
+    [diffBase, stream.currentStage, stream.artifacts.bom],
+  )
 
   // Initialize from session data
   useEffect(() => {
@@ -89,13 +154,19 @@ export function CollaborativeWorkspace({
     stream.sendAction('start_bom')
   }, [stream])
 
-  const handleConfirmRequirements = useCallback(() => {
-    stream.sendAction('confirm_requirements')
-  }, [stream])
+  const handleConfirmRequirements = useCallback(
+    (options?: { force?: boolean }) => {
+      stream.sendAction('confirm_requirements', { force: options?.force })
+    },
+    [stream],
+  )
 
-  const handleConfirmBom = useCallback(() => {
-    stream.sendAction('confirm_bom')
-  }, [stream])
+  const handleConfirmBom = useCallback(
+    (options?: { force?: boolean }) => {
+      stream.sendAction('confirm_bom', { force: options?.force })
+    },
+    [stream],
+  )
 
   const handleStartCadGeneration = useCallback(() => {
     stream.sendAction('start_cad_generation')
@@ -120,6 +191,34 @@ export function CollaborativeWorkspace({
     [stream],
   )
 
+  const handleReopenStage = useCallback(
+    (targetStage: ReopenableStage) => {
+      const discards: Record<ReopenableStage, string> = {
+        toolset_review:
+          'Later drafts (requirements and BOM) revert to the state approved at this gate.',
+        requirements_review:
+          'The BOM draft reverts to the state approved at this gate.',
+        bom_review: 'The session returns to BOM review.',
+      }
+      const labels: Record<ReopenableStage, string> = {
+        toolset_review: 'Toolset',
+        requirements_review: 'Requirements',
+        bom_review: 'BOM',
+      }
+      confirm({
+        title: `Reopen ${labels[targetStage]} review?`,
+        description: `The session moves back to the ${labels[targetStage]} review gate. ${discards[targetStage]}`,
+        actionLabel: 'Reopen',
+        cancelLabel: 'Cancel',
+        variant: 'destructive',
+        onConfirm: () => {
+          stream.sendAction('reopen_stage', { targetStage })
+        },
+      })
+    },
+    [stream, confirm],
+  )
+
   const handleUpdateDescription = useCallback(
     async (description: string) => {
       await fetch(`/api/v1/design-engine/sessions/${sessionId}`, {
@@ -132,10 +231,8 @@ export function CollaborativeWorkspace({
   )
 
   const handleUpdateRequirement = mutations.updateRequirement
-  const handleRemoveRequirement = mutations.removeRequirement
   const handleAddRequirement = mutations.addRequirement
   const handleUpdateBomNode = mutations.updateNode
-  const handleRemoveBomNode = mutations.removeNode
   const handleAddBomChild = mutations.addChild
 
   const handleAnswer = useCallback(
@@ -151,6 +248,28 @@ export function CollaborativeWorkspace({
     },
     [stream],
   )
+
+  const [isForking, setIsForking] = useState(false)
+  const handleFork = useCallback(async () => {
+    if (isForking) return
+    setIsForking(true)
+    try {
+      const response = await fetch(
+        `/api/v1/design-engine/sessions/${sessionId}/fork`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        },
+      )
+      if (!response.ok) return
+      const data = await response.json()
+      const url = data.data?.session?.workspaceUrl
+      if (url) navigate({ to: url })
+    } finally {
+      setIsForking(false)
+    }
+  }, [sessionId, navigate, isForking])
 
   // Load materialization preview when entering that stage
   useEffect(() => {
@@ -250,7 +369,15 @@ export function CollaborativeWorkspace({
             {initialSession.title ?? 'Design Session'}
           </h1>
         </div>
-        <StageIndicator currentStage={stream.currentStage} />
+        <StageIndicator
+          currentStage={stream.currentStage}
+          onReopen={handleReopenStage}
+          reopenDisabled={
+            stream.isStreaming ||
+            stream.currentStage === 'complete' ||
+            Boolean(stream.artifacts.materializationResult)
+          }
+        />
         <div className="flex items-center gap-2">
           {stream.isStreaming && (
             <Button
@@ -263,6 +390,17 @@ export function CollaborativeWorkspace({
               Pause
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleFork}
+            disabled={stream.isStreaming || isForking}
+            className="h-7 text-xs gap-1"
+            title="Copy this session to explore an alternative without changing this one"
+          >
+            <GitFork className="h-3 w-3" />
+            {isForking ? 'Forking…' : 'Fork'}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -349,13 +487,20 @@ export function CollaborativeWorkspace({
               isStreaming={stream.isStreaming}
               onUpdateDescription={handleUpdateDescription}
               onUpdateRequirement={handleUpdateRequirement}
-              onRemoveRequirement={handleRemoveRequirement}
               onAddRequirement={handleAddRequirement}
+              onSetRequirementReviewStatus={mutations.setRequirementReviewStatus}
+              onAcceptAllRequirements={mutations.acceptAllRequirements}
               onConfirmRequirements={handleConfirmRequirements}
               onConfirmBom={handleConfirmBom}
               onUpdateBomNode={handleUpdateBomNode}
-              onRemoveBomNode={handleRemoveBomNode}
+              onRejectBomNode={mutations.rejectNode}
+              onSetBomNodeReviewStatus={mutations.setNodeReviewStatus}
+              onAcceptAllBomNodes={mutations.acceptAllNodes}
               onAddBomChild={handleAddBomChild}
+              requirementsDiff={requirementsDiff}
+              bomDiff={bomDiff}
+              onAddComment={mutations.addItemComment}
+              onSetCommentResolved={mutations.setItemCommentResolved}
               className="flex-1"
             />
           )}
@@ -441,6 +586,17 @@ export function CollaborativeWorkspace({
             onAnswer={handleAnswer}
             onSendMessage={handleSendMessage}
             currentStage={stream.currentStage}
+            clarificationContext={(() => {
+              const pending = stream.artifacts.pendingClarification
+              if (!pending?.context) return undefined
+              const stageLabel = pending.context.stage.replace(/_/g, ' ')
+              return {
+                questionId: pending.id,
+                label: pending.context.nodeName
+                  ? `${stageLabel} — about "${pending.context.nodeName}"`
+                  : stageLabel,
+              }
+            })()}
             className="flex-1"
           />
 

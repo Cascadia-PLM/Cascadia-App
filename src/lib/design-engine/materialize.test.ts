@@ -292,6 +292,40 @@ describe('MaterializationService', () => {
     expect(fresh?.status).toBe('completed')
   })
 
+  it('never materializes a rejected requirement', async () => {
+    const session = await createSession()
+    const artifacts = session.artifacts!
+    artifacts.requirements.push({
+      tempId: 'req-rejected',
+      name: 'Waterproof to IP68',
+      description: 'Full submersion protection',
+      requirementType: 'Constraint',
+      priority: 'low',
+      verificationMethod: 'Test',
+      rationale: 'Speculative',
+      confidence: 0.4,
+      source: 'ai',
+      reviewStatus: 'rejected',
+      reviewNote: 'Out of scope for v1',
+    })
+    await DesignSessionService.updateArtifacts(session.id, artifacts)
+    const updated = { ...session, artifacts }
+
+    const preview = await MaterializationService.preview(updated)
+    expect(preview.newRequirementsCount).toBe(1)
+    expect(
+      preview.items.find((i) => i.tempId === 'req-rejected'),
+    ).toBeUndefined()
+
+    const result = await MaterializationService.execute(updated, user.id)
+    expect(
+      result.createdItems.find((i) => i.tempId === 'req-rejected'),
+    ).toBeUndefined()
+    expect(
+      result.createdItems.filter((i) => i.itemType === 'Requirement'),
+    ).toHaveLength(1)
+  })
+
   it('adds items to an existing pre-release design instead of creating a new one', async () => {
     const design = await DesignService.create(
       {

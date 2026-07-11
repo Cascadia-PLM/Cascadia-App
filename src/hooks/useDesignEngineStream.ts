@@ -83,6 +83,17 @@ type StreamAction =
   | 'confirm_assembly'
   | 'answer_clarification'
   | 'send_message'
+  | 'reopen_stage'
+
+interface StreamActionExtra {
+  questionId?: string
+  answer?: string
+  message?: string
+  tempId?: string
+  feedback?: string
+  targetStage?: 'toolset_review' | 'requirements_review' | 'bom_review'
+  force?: boolean
+}
 
 export function useDesignEngineStream({
   sessionId,
@@ -102,6 +113,8 @@ export function useDesignEngineStream({
   })
 
   const abortControllerRef = useRef<AbortController | null>(null)
+  // Ref mirror of isStreaming so callbacks don't act on a stale closure
+  const isStreamingRef = useRef(false)
 
   // Cleanup on unmount
   useEffect(() => {
@@ -162,21 +175,13 @@ export function useDesignEngineStream({
    * Start an SSE streaming connection and process events.
    */
   const startStream = useCallback(
-    async (
-      action: StreamAction,
-      extra?: {
-        questionId?: string
-        answer?: string
-        message?: string
-        tempId?: string
-        feedback?: string
-      },
-    ) => {
+    async (action: StreamAction, extra?: StreamActionExtra) => {
       // Abort existing stream
       abortControllerRef.current?.abort()
       const abortController = new AbortController()
       abortControllerRef.current = abortController
 
+      isStreamingRef.current = true
       setState((prev) => ({
         ...prev,
         isStreaming: true,
@@ -249,6 +254,7 @@ export function useDesignEngineStream({
           }))
         }
       } finally {
+        isStreamingRef.current = false
         setState((prev) => ({ ...prev, isStreaming: false }))
       }
     },
@@ -256,23 +262,15 @@ export function useDesignEngineStream({
   )
 
   const sendAction = useCallback(
-    async (
-      action: StreamAction,
-      extra?: {
-        questionId?: string
-        answer?: string
-        message?: string
-        tempId?: string
-        feedback?: string
-      },
-    ) => {
-      // Handle non-streaming confirmations
+    async (action: StreamAction, extra?: StreamActionExtra) => {
+      // Handle non-streaming actions (stage confirmations and reopens)
       if (
         action === 'confirm_toolset' ||
         action === 'confirm_requirements' ||
         action === 'confirm_bom' ||
         action === 'confirm_cad' ||
-        action === 'confirm_assembly'
+        action === 'confirm_assembly' ||
+        action === 'reopen_stage'
       ) {
         // Guard against double-clicks
         if (state.isStreaming) return
@@ -284,13 +282,15 @@ export function useDesignEngineStream({
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action }),
+              body: JSON.stringify({ action, ...extra }),
             },
           )
 
           if (!response.ok) {
             const errBody = await response.text().catch(() => '')
-            throw new Error(`Confirm failed (${response.status}): ${errBody}`)
+            throw new Error(
+              `${action === 'reopen_stage' ? 'Reopen' : 'Confirm'} failed (${response.status}): ${errBody}`,
+            )
           }
 
           const data = await response.json()
@@ -356,6 +356,27 @@ export function useDesignEngineStream({
           ],
         }))
 
+        // A drafting stream is in flight: steer it via the mailbox instead of
+        // aborting and restarting it. The running stage loop drains the
+        // mailbox mid-generation; if the stream dies first, the next stage
+        // start drains it instead — the message is never lost.
+        if (isStreamingRef.current) {
+          try {
+            await fetch(`/api/v1/design-engine/sessions/${sessionId}/stream`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action,
+                message: extra?.message,
+                queue: true,
+              }),
+            })
+          } catch {
+            // Best-effort — drain-on-start covers delivery
+          }
+          return
+        }
+
         // If in a drafting stage, this becomes a streaming action
         await startStream(action, extra)
         return
@@ -369,6 +390,7 @@ export function useDesignEngineStream({
 
   const pause = useCallback(() => {
     abortControllerRef.current?.abort()
+    isStreamingRef.current = false
     setState((prev) => ({ ...prev, isStreaming: false }))
   }, [])
 

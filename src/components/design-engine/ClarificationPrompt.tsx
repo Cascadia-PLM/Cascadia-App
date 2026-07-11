@@ -14,6 +14,8 @@ interface ClarificationPromptProps {
   question: string
   options?: Array<string>
   multiSelect?: boolean
+  /** Short caption for what the question is about (e.g. a part name + stage) */
+  contextLabel?: string
   onAnswer?: (questionId: string, answer: string) => void
 }
 
@@ -22,6 +24,7 @@ export function ClarificationPrompt({
   question,
   options,
   multiSelect,
+  contextLabel,
   onAnswer,
 }: ClarificationPromptProps) {
   const [freeText, setFreeText] = useState('')
@@ -60,6 +63,11 @@ export function ClarificationPrompt({
 
   return (
     <div className="border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 space-y-3">
+      {contextLabel && (
+        <div className="text-[10px] font-medium uppercase tracking-wide text-yellow-700/70 dark:text-yellow-400/70">
+          {contextLabel}
+        </div>
+      )}
       <div className="flex items-start gap-2">
         <HelpCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-1 flex-shrink-0" />
         <div className="text-sm text-slate-700 dark:text-slate-200 prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1">

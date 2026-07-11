@@ -105,11 +105,23 @@ export async function* generateAllParts(
     : undefined
   const concurrency = options.concurrency ?? envConcurrency ?? 3
 
-  // Filter out parts that are covered by mechanism templates
+  const isComplete = (p: BomNodeDraft) => p.cadGeneration?.status === 'complete'
+  const partsByTempId = new Map(parts.map((p) => [p.tempId, p]))
+
+  // Filter out parts that are covered by mechanism templates, and — for
+  // resume-idempotency — parts that already generated successfully (a
+  // clarification pause or dropped connection must not re-generate them).
   const individualParts = parts.filter(
-    (p) => !mechanismCoveredTempIds.has(p.tempId),
+    (p) => !mechanismCoveredTempIds.has(p.tempId) && !isComplete(p),
   )
-  const totalParts = individualParts.length + mechanismCoveredTempIds.size
+  const pendingMechanisms = mechanismAssemblies.filter((assembly) =>
+    assembly.mechanismTemplate?.partMapping.some((m) => {
+      const child = partsByTempId.get(m.tempId)
+      return !child || !isComplete(child)
+    }),
+  )
+  const alreadyComplete = parts.filter(isComplete).length
+  const totalParts = parts.length
 
   if (totalParts === 0) {
     yield {
@@ -119,14 +131,29 @@ export async function* generateAllParts(
     return
   }
 
-  // Phase 1: Process mechanism assemblies (each generates multiple parts)
-  if (mechanismAssemblies.length > 0) {
+  if (individualParts.length === 0 && pendingMechanisms.length === 0) {
     yield {
       type: 'llm_text',
-      text: `Generating ${mechanismAssemblies.length} mechanism(s) (${mechanismCoveredTempIds.size} parts)...`,
+      text: 'All parts already have generated CAD — nothing to do.',
+    }
+    return
+  }
+
+  if (alreadyComplete > 0) {
+    yield {
+      type: 'llm_text',
+      text: `Skipping ${alreadyComplete} part(s) that already generated successfully.`,
+    }
+  }
+
+  // Phase 1: Process mechanism assemblies (each generates multiple parts)
+  if (pendingMechanisms.length > 0) {
+    yield {
+      type: 'llm_text',
+      text: `Generating ${pendingMechanisms.length} mechanism(s)...`,
     }
 
-    for (const assembly of mechanismAssemblies) {
+    for (const assembly of pendingMechanisms) {
       const mechResults = await generateMechanismParts(assembly, options)
       for (const [_role, result] of mechResults) {
         // Find the child node in the full parts list to update its status
@@ -163,8 +190,8 @@ export async function* generateAllParts(
   const pending = new Map<string, Promise<CadGenerationResult>>()
   let partIndex = 0
 
-  // Account for mechanism parts already generated in Phase 1
-  state.partsCompleted = mechanismCoveredTempIds.size
+  // Account for parts finished before this run (resume) and in Phase 1
+  state.partsCompleted = parts.filter(isComplete).length
 
   for (const part of remainingParts) {
     const promise = part.parametricSpec

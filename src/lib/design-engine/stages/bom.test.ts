@@ -30,6 +30,9 @@ vi.mock('../session-service', () => ({
     updateStage: vi.fn(() => Promise.resolve()),
     updateArtifacts: vi.fn(() => Promise.resolve()),
     updateStatus: vi.fn(() => Promise.resolve()),
+    // Steering mailbox: empty unless a test enqueues guidance
+    drainGuidance: vi.fn(() => Promise.resolve([])),
+    enqueueGuidance: vi.fn(() => Promise.resolve()),
   },
 }))
 
@@ -94,6 +97,8 @@ function session(bom: BomDraft | null): DesignSession {
     completedAt: null,
     materializedDesignId: null,
     errorMessage: null,
+    pendingGuidance: [],
+    forkedFromSessionId: null,
   }
 }
 

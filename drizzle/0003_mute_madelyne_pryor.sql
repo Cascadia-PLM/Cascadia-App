@@ -1,0 +1,2 @@
+ALTER TABLE "design_sessions" ADD COLUMN "forked_from_session_id" uuid;--> statement-breakpoint
+ALTER TABLE "design_sessions" ADD CONSTRAINT "design_sessions_forked_from_session_id_design_sessions_id_fk" FOREIGN KEY ("forked_from_session_id") REFERENCES "public"."design_sessions"("id") ON DELETE set null ON UPDATE no action;

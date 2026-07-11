@@ -6,7 +6,45 @@
  * `requirementsCoverage` and `uncoveredRequirements` maps consistent.
  */
 
-import type { BomDraft, BomNodeDraft } from './types'
+import type { BomDraft, BomNodeDraft, ReviewStatus } from './types'
+
+/** Locate a node and its parent in the tree. Returns null when not found. */
+export function findBomNode(
+  bom: BomDraft,
+  tempId: string,
+): { node: BomNodeDraft; parent: BomNodeDraft | null } | null {
+  function visit(
+    node: BomNodeDraft,
+    parent: BomNodeDraft | null,
+  ): { node: BomNodeDraft; parent: BomNodeDraft | null } | null {
+    if (node.tempId === tempId) return { node, parent }
+    for (const child of node.children) {
+      const found = visit(child, node)
+      if (found) return found
+    }
+    return null
+  }
+  return visit(bom.rootAssembly, null)
+}
+
+/**
+ * Set every node still awaiting review to the given status.
+ * The root node is skipped — it has no per-item review state.
+ */
+export function setAllProposedNodesStatus(
+  bom: BomDraft,
+  status: ReviewStatus,
+): BomDraft {
+  function visit(node: BomNodeDraft, isRoot: boolean): BomNodeDraft {
+    const children = node.children.map((c) => visit(c, false))
+    const isProposed =
+      !isRoot && (node.reviewStatus === 'proposed' || node.reviewStatus === undefined)
+    return isProposed
+      ? { ...node, children, reviewStatus: status }
+      : { ...node, children }
+  }
+  return { ...bom, rootAssembly: visit(bom.rootAssembly, true) }
+}
 
 function mapNode(
   node: BomNodeDraft,
@@ -71,6 +109,8 @@ export function addBomNodeChild(
     requirementTempIds: data.requirementTempIds ?? [],
     rationale: data.rationale ?? '',
     confidence: data.confidence ?? 1,
+    // User-authored nodes are implicitly approved by their author
+    reviewStatus: data.reviewStatus ?? 'accepted',
     partType: data.partType ?? 'Manufacture',
     material: data.material,
     existingItemId: data.existingItemId,

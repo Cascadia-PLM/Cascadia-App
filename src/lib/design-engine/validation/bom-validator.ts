@@ -4,6 +4,7 @@
  * Validates the BOM draft structure for correctness before materialization.
  */
 
+import { activeRequirements } from '../types'
 import {
   getMechanismRoles,
   validateMechanismParameters,
@@ -303,9 +304,9 @@ export function validateBomDraft(
 
   checkCircular(bom.rootAssembly, 'rootAssembly', new Set())
 
-  // Check requirements coverage
+  // Check requirements coverage (rejected requirements don't need covering)
   const requirementTempIds = new Set(
-    artifacts.requirements.map((r) => r.tempId),
+    activeRequirements(artifacts.requirements).map((r) => r.tempId),
   )
   const coveredReqIds = new Set(Object.keys(bom.requirementsCoverage))
   const uncoveredIds: Array<string> = []

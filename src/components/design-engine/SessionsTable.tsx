@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
-import { Eye, MoreVertical, Play } from 'lucide-react'
+import { Eye, GitFork, MoreVertical, Play } from 'lucide-react'
 import type { DataGridColumn, Row } from '@/components/ui'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import {
@@ -27,6 +27,7 @@ export interface DesignSessionRow {
   updatedAt: string | Date
   createdAt: string | Date
   completedAt: string | Date | null
+  forkedFromSessionId?: string | null
 }
 
 interface SessionsTableProps {
@@ -47,13 +48,21 @@ const columns: Array<DataGridColumn<DesignSessionRow>> = [
     filterType: 'text',
     filterPlaceholder: 'Filter...',
     cell: ({ row }) => (
-      <Link
-        to="/designs/collaborative/$sessionId"
-        params={{ sessionId: row.original.id }}
-        className="font-medium text-cyan-600 dark:text-cyan-400 hover:underline"
-      >
-        {row.original.title || 'Untitled session'}
-      </Link>
+      <span className="flex items-center gap-1.5">
+        <Link
+          to="/designs/collaborative/$sessionId"
+          params={{ sessionId: row.original.id }}
+          className="font-medium text-cyan-600 dark:text-cyan-400 hover:underline"
+        >
+          {row.original.title || 'Untitled session'}
+        </Link>
+        {row.original.forkedFromSessionId && (
+          <GitFork
+            className="h-3 w-3 text-slate-400 flex-shrink-0"
+            aria-label="Forked from another session"
+          />
+        )}
+      </span>
     ),
   },
   {

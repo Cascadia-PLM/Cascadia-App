@@ -7,6 +7,7 @@
  */
 
 import { DesignSessionService } from '../session-service'
+import { unresolvedComments } from '../types'
 import type { DesignSession } from '../session-service'
 import type { BomNodeDraft, DesignArtifacts, StageEvent } from '../types'
 import type { CadPromptContext } from '@/lib/cad-generation/types'
@@ -20,12 +21,50 @@ import {
   notifyStaleAssemblies,
 } from '@/lib/cad-generation/cascade-recompose'
 
+/**
+ * New Manufacture leaves that carry no geometry signal at all — no
+ * parametric spec, no material, no CAD hint, no mechanism coverage. Zoo
+ * would have to guess their shape from the name alone.
+ */
+function collectAmbiguousParts(root: BomNodeDraft): Array<BomNodeDraft> {
+  const mechanismCovered = new Set<string>()
+  const ambiguous: Array<BomNodeDraft> = []
+  const walk = (node: BomNodeDraft) => {
+    if (node.mechanismTemplate) {
+      for (const m of node.mechanismTemplate.partMapping) {
+        mechanismCovered.add(m.tempId)
+      }
+    }
+    for (const child of node.children) walk(child)
+  }
+  walk(root)
+  const collect = (node: BomNodeDraft) => {
+    if (
+      node.isNew &&
+      node.partType === 'Manufacture' &&
+      node.children.length === 0 &&
+      !node.parametricSpec &&
+      !node.material &&
+      !node.cadGenerationHint &&
+      !mechanismCovered.has(node.tempId)
+    ) {
+      ambiguous.push(node)
+    }
+    for (const child of node.children) collect(child)
+  }
+  collect(root)
+  return ambiguous
+}
+
 export async function* runCadGenerationStage(
   session: DesignSession,
   signal?: AbortSignal,
 ): AsyncGenerator<StageEvent> {
-  yield { type: 'stage_change', stage: 'cad_generation' }
-  await DesignSessionService.updateStage(session.id, 'cad_generation')
+  const isResuming = session.stage === 'cad_generation'
+  if (!isResuming) {
+    yield { type: 'stage_change', stage: 'cad_generation' }
+    await DesignSessionService.updateStage(session.id, 'cad_generation')
+  }
 
   const artifacts: DesignArtifacts = session.artifacts ?? {
     description: '',
@@ -47,6 +86,41 @@ export async function* runCadGenerationStage(
         'Materialization result not found. Run materialization before CAD generation.',
     }
     return
+  }
+
+  // Pre-flight ambiguity check: this stage has no LLM loop that could ask,
+  // so a deterministic check pauses ONCE for under-specified parts before
+  // spending minutes generating guesswork geometry.
+  const stageClarifications = artifacts.clarifications.filter(
+    (c) => c.stage === 'cad_generation',
+  )
+  const ambiguousParts = collectAmbiguousParts(artifacts.bom.rootAssembly)
+  if (ambiguousParts.length > 0 && stageClarifications.length === 0) {
+    const names = ambiguousParts.map((p) => `"${p.name}"`).join(', ')
+    const questionId = crypto.randomUUID()
+    const question = `${ambiguousParts.length} part(s) have no material or geometry hints: ${names}. Describe their shape/material (one line each), or answer "proceed" to generate from the part names alone.`
+    artifacts.pendingClarificationId = questionId
+    artifacts.pendingClarification = {
+      id: questionId,
+      question,
+      context: { stage: 'cad_generation' },
+    }
+    await DesignSessionService.updateArtifacts(session.id, artifacts)
+
+    yield { type: 'clarification_needed', questionId, question }
+    yield { type: 'paused', reason: 'Waiting for your answer...' }
+    // Stage stays at cad_generation; answer_clarification resumes it.
+    return
+  }
+
+  // Fold a prior clarification answer into the ambiguous parts' CAD hints
+  // (an answer of "proceed" means generate as-is).
+  const lastAnswer = stageClarifications[stageClarifications.length - 1]?.answer
+  if (lastAnswer && lastAnswer.trim().toLowerCase() !== 'proceed') {
+    for (const part of ambiguousParts) {
+      part.cadGenerationHint = `User guidance for under-specified parts: ${lastAnswer}`
+    }
+    await DesignSessionService.updateArtifacts(session.id, artifacts)
   }
 
   // Build tempId → itemId mapping from materialization result
@@ -223,6 +297,15 @@ export async function* regeneratePartCad(
 
     const zooClient = new ZooClient(await resolveZooApiKey())
 
+    // Fold unresolved per-part comments into the regeneration feedback
+    const partComments = unresolvedComments(
+      artifacts.itemComments,
+      'bom_node',
+      tempId,
+    ).map((c) => c.text)
+    const combinedFeedback =
+      [feedback, ...partComments].filter(Boolean).join('\n') || undefined
+
     const promptContext: CadPromptContext = {
       partName: partNode.name,
       partDescription: partNode.rationale || partNode.name,
@@ -234,7 +317,7 @@ export async function* regeneratePartCad(
         locationHint: i.locationHint,
       })),
       overallProductDescription: artifacts.description,
-      additionalFeedback: feedback,
+      additionalFeedback: combinedFeedback,
     }
 
     const prompt = buildCadPrompt(promptContext)

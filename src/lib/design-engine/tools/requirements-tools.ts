@@ -19,10 +19,13 @@ import {
 export function createRequirementsTools(
   context: ToolContext,
   // Returns the resulting tempId and whether a new requirement was added; the
-  // stage owns dedup (a re-proposed name returns the existing tempId).
+  // stage owns dedup (a re-proposed name returns the existing tempId, and a
+  // match against a user-rejected requirement is flagged back to the LLM).
   onPropose: (requirement: RequirementDraft) => {
     tempId: string
     added: boolean
+    rejectedByUser?: boolean
+    message?: string
   },
   onClarification: (
     questionId: string,
@@ -120,6 +123,8 @@ export function createRequirementsTools(
     outputSchema: z.object({
       tempId: z.string(),
       added: z.boolean(),
+      rejectedByUser: z.boolean().optional(),
+      message: z.string().optional(),
     }),
   }).server((input) => {
     const requirement: RequirementDraft = {
@@ -132,6 +137,7 @@ export function createRequirementsTools(
       rationale: input.rationale,
       confidence: input.confidence,
       source: 'ai',
+      reviewStatus: 'proposed',
     }
     // Stage-owned dedup: a re-proposed name returns the existing tempId.
     return onPropose(requirement)

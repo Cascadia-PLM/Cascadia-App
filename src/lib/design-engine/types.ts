@@ -33,6 +33,43 @@ export type DesignSessionStage =
   | 'complete'
   | 'error'
 
+/**
+ * Canonical forward order of session stages. 'error' sits at the end so a
+ * failed session can still be reopened to any real stage.
+ */
+export const DESIGN_SESSION_STAGE_ORDER: Array<DesignSessionStage> = [
+  'idle',
+  'toolset_establishment',
+  'toolset_review',
+  'requirements_drafting',
+  'requirements_review',
+  'bom_drafting',
+  'bom_review',
+  'materialization',
+  'cad_generation',
+  'cad_review',
+  'assembly_composition',
+  'assembly_review',
+  'complete',
+  'error',
+]
+
+export function stageIndex(stage: DesignSessionStage): number {
+  return DESIGN_SESSION_STAGE_ORDER.indexOf(stage)
+}
+
+/** Review gates that can be reopened after being confirmed (pre-materialization only). */
+export type ReopenableStage =
+  | 'toolset_review'
+  | 'requirements_review'
+  | 'bom_review'
+
+export const REOPENABLE_STAGES: Array<ReopenableStage> = [
+  'toolset_review',
+  'requirements_review',
+  'bom_review',
+]
+
 // ============================================================================
 // Clarification & User Message Types
 // ============================================================================
@@ -52,6 +89,22 @@ export interface UserMessage {
   text: string
   createdAt: string // ISO timestamp
   stage: DesignSessionStage
+}
+
+/**
+ * A comment attached to a specific artifact item (requirement or BOM node).
+ * Unresolved comments are injected into stage prompts and regeneration
+ * feedback so the AI addresses them on the next run. Stored as a flat list
+ * so comments survive node removal/tombstoning.
+ */
+export interface ItemComment {
+  id: string
+  targetType: 'requirement' | 'bom_node'
+  targetTempId: string
+  text: string
+  createdAt: string // ISO timestamp
+  stage: DesignSessionStage
+  resolved?: boolean
 }
 
 // ============================================================================
@@ -160,6 +213,65 @@ export type StageEvent =
   | { type: 'user_message'; id: string; text: string }
 
 // ============================================================================
+// Per-item Review State
+// ============================================================================
+
+/**
+ * Review state of an AI-proposed artifact item.
+ * - 'proposed': awaiting review (AI output not yet looked at)
+ * - 'accepted': explicitly approved by the user
+ * - 'edited': the user changed it (implicit approval of their own edit)
+ * - 'rejected': explicitly declined; kept (requirements) or tombstoned (BOM)
+ */
+export type ReviewStatus = 'proposed' | 'accepted' | 'rejected' | 'edited'
+
+/**
+ * Effective review status for items that predate review tracking:
+ * user-authored items are implicitly accepted, AI items start proposed.
+ */
+export function effectiveReviewStatus(item: {
+  reviewStatus?: ReviewStatus
+  source?: 'ai' | 'user'
+}): ReviewStatus {
+  if (item.reviewStatus) return item.reviewStatus
+  return item.source === 'user' ? 'accepted' : 'proposed'
+}
+
+/** Requirements that should flow downstream (BOM prompt, coverage, materialization). */
+export function activeRequirements(
+  requirements: Array<RequirementDraft>,
+): Array<RequirementDraft> {
+  return requirements.filter(
+    (r) => effectiveReviewStatus(r) !== 'rejected',
+  )
+}
+
+/** Unresolved comments for a target type (optionally narrowed to one item). */
+export function unresolvedComments(
+  comments: Array<ItemComment> | undefined,
+  targetType: ItemComment['targetType'],
+  targetTempId?: string,
+): Array<ItemComment> {
+  return (comments ?? []).filter(
+    (c) =>
+      c.targetType === targetType &&
+      !c.resolved &&
+      (targetTempId === undefined || c.targetTempId === targetTempId),
+  )
+}
+
+/** Tombstone recording a BOM node the user rejected (the node itself is removed from the tree). */
+export interface BomRejectionEntry {
+  tempId: string
+  name: string
+  partType?: string
+  parentName?: string
+  reason?: string
+  rejectedAt: string // ISO timestamp
+  stage: DesignSessionStage
+}
+
+// ============================================================================
 // Requirement Draft
 // ============================================================================
 
@@ -178,6 +290,8 @@ export interface RequirementDraft {
   rationale: string
   confidence: number // 0-1
   source: 'ai' | 'user'
+  reviewStatus?: ReviewStatus
+  reviewNote?: string
 }
 
 // ============================================================================
@@ -301,6 +415,8 @@ export interface BomNodeDraft {
   material?: string
   rationale: string
   confidence: number // 0-1
+  reviewStatus?: ReviewStatus
+  reviewNote?: string
   // CAD generation metadata
   parametricSpec?: ParametricPartSpec
   interfaces?: Array<InterfaceIntent>
@@ -381,6 +497,10 @@ export interface DesignArtifacts {
   toolset?: DesignSessionToolset
   requirements: Array<RequirementDraft>
   bom: BomDraft | null
+  /** Tombstones of BOM nodes the user rejected — fed back into BOM prompts. */
+  bomRejections?: Array<BomRejectionEntry>
+  /** Per-item feedback threads — unresolved comments feed the next AI run. */
+  itemComments?: Array<ItemComment>
   clarifications: Array<ClarificationEntry>
   userMessages: Array<UserMessage>
   pendingClarificationId?: string
@@ -389,6 +509,12 @@ export interface DesignArtifacts {
     question: string
     options?: Array<string>
     multiSelect?: boolean
+    /** Where the question came from (stage + optionally the BOM node it's about) */
+    context?: {
+      stage: DesignSessionStage
+      nodeTempId?: string
+      nodeName?: string
+    }
   }
   materializationResult?: MaterializationResult
   cadGenerationState?: CadGenerationState
@@ -537,6 +663,11 @@ export interface DesignEngine {
   confirmStage: (
     sessionId: string,
     stage: 'toolset' | 'requirements' | 'bom' | 'cad' | 'assembly',
+    options?: { force?: boolean },
+  ) => Promise<void>
+  reopenStage: (
+    sessionId: string,
+    targetStage: ReopenableStage,
   ) => Promise<void>
   materialize: (sessionId: string) => Promise<MaterializationResult>
 }
@@ -588,6 +719,28 @@ const requirementDraftSchema = z.object({
   rationale: z.string(),
   confidence: z.number().min(0).max(1),
   source: z.enum(['ai', 'user']),
+  reviewStatus: z.enum(['proposed', 'accepted', 'rejected', 'edited']).optional(),
+  reviewNote: z.string().optional(),
+})
+
+const bomRejectionEntrySchema = z.object({
+  tempId: z.string(),
+  name: z.string(),
+  partType: z.string().optional(),
+  parentName: z.string().optional(),
+  reason: z.string().optional(),
+  rejectedAt: z.string(),
+  stage: z.string(),
+})
+
+const itemCommentSchema = z.object({
+  id: z.string(),
+  targetType: z.enum(['requirement', 'bom_node']),
+  targetTempId: z.string(),
+  text: z.string(),
+  createdAt: z.string(),
+  stage: z.string(),
+  resolved: z.boolean().optional(),
 })
 
 // BOM tree is deeply recursive — validate top-level shape, passthrough nested
@@ -656,6 +809,8 @@ export const designArtifactsPatchSchema = z
       .optional(),
     requirements: z.array(requirementDraftSchema),
     bom: bomDraftSchema,
+    bomRejections: z.array(bomRejectionEntrySchema),
+    itemComments: z.array(itemCommentSchema),
     clarifications: z.array(clarificationEntrySchema),
     userMessages: z.array(userMessageSchema),
     pendingClarificationId: z.string().optional(),
@@ -665,6 +820,13 @@ export const designArtifactsPatchSchema = z
         question: z.string(),
         options: z.array(z.string()).optional(),
         multiSelect: z.boolean().optional(),
+        context: z
+          .object({
+            stage: z.string(),
+            nodeTempId: z.string().optional(),
+            nodeName: z.string().optional(),
+          })
+          .optional(),
       })
       .optional(),
     materializationResult: z

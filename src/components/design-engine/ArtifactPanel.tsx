@@ -13,8 +13,14 @@ import type {
   BomNodeDraft,
   DesignArtifacts,
   DesignSessionStage,
+  ItemComment,
   RequirementDraft,
+  ReviewStatus,
 } from '@/lib/design-engine/types'
+import type {
+  BomDiff,
+  RequirementsDiff,
+} from '@/lib/design-engine/artifact-diff'
 import type { KnownToolSubtype } from '@/lib/items/types/tool'
 import { TOOL_SUBTYPES } from '@/lib/items/types/tool'
 import { Button } from '@/components/ui/Button'
@@ -31,13 +37,28 @@ interface ArtifactPanelProps {
     tempId: string,
     data: Partial<RequirementDraft>,
   ) => void
-  onRemoveRequirement?: (tempId: string) => void
   onAddRequirement?: (data: Partial<RequirementDraft>) => void
-  onConfirmRequirements?: () => void
-  onConfirmBom?: () => void
+  onSetRequirementReviewStatus?: (
+    tempId: string,
+    status: ReviewStatus,
+    note?: string,
+  ) => void
+  onAcceptAllRequirements?: () => void
+  onConfirmRequirements?: (options?: { force?: boolean }) => void
+  onConfirmBom?: (options?: { force?: boolean }) => void
   onUpdateBomNode?: (tempId: string, patch: Partial<BomNodeDraft>) => void
-  onRemoveBomNode?: (tempId: string) => void
+  onRejectBomNode?: (tempId: string, reason?: string) => void
+  onSetBomNodeReviewStatus?: (tempId: string, status: ReviewStatus) => void
+  onAcceptAllBomNodes?: () => void
   onAddBomChild?: (parentTempId: string, data: Partial<BomNodeDraft>) => void
+  requirementsDiff?: RequirementsDiff | null
+  bomDiff?: BomDiff | null
+  onAddComment?: (
+    targetType: ItemComment['targetType'],
+    targetTempId: string,
+    text: string,
+  ) => void
+  onSetCommentResolved?: (commentId: string, resolved: boolean) => void
   className?: string
 }
 
@@ -47,13 +68,20 @@ export function ArtifactPanel({
   isStreaming,
   onUpdateDescription,
   onUpdateRequirement,
-  onRemoveRequirement,
   onAddRequirement,
+  onSetRequirementReviewStatus,
+  onAcceptAllRequirements,
   onConfirmRequirements,
   onConfirmBom,
   onUpdateBomNode,
-  onRemoveBomNode,
+  onRejectBomNode,
+  onSetBomNodeReviewStatus,
+  onAcceptAllBomNodes,
   onAddBomChild,
+  requirementsDiff,
+  bomDiff,
+  onAddComment,
+  onSetCommentResolved,
   className,
 }: ArtifactPanelProps) {
   const [editingDescription, setEditingDescription] = useState(false)
@@ -165,9 +193,14 @@ export function ArtifactPanel({
           currentStage={currentStage}
           isStreaming={isStreaming}
           onUpdate={onUpdateRequirement}
-          onRemove={onRemoveRequirement}
           onAdd={onAddRequirement}
+          onSetReviewStatus={onSetRequirementReviewStatus}
+          onAcceptAll={onAcceptAllRequirements}
           onConfirm={onConfirmRequirements}
+          diff={requirementsDiff}
+          comments={artifacts.itemComments}
+          onAddComment={onAddComment}
+          onSetCommentResolved={onSetCommentResolved}
         />
       </section>
 
@@ -178,10 +211,17 @@ export function ArtifactPanel({
           currentStage={currentStage}
           totalRequirements={artifacts.requirements.length}
           requirements={artifacts.requirements}
+          bomRejections={artifacts.bomRejections}
           onConfirm={onConfirmBom}
           onUpdateNode={onUpdateBomNode}
-          onRemoveNode={onRemoveBomNode}
+          onRejectNode={onRejectBomNode}
+          onSetNodeReviewStatus={onSetBomNodeReviewStatus}
+          onAcceptAllNodes={onAcceptAllBomNodes}
           onAddChild={onAddBomChild}
+          diff={bomDiff}
+          comments={artifacts.itemComments}
+          onAddComment={onAddComment}
+          onSetCommentResolved={onSetCommentResolved}
         />
       </section>
     </div>

@@ -197,7 +197,7 @@ The `ZooClient` class (`zoo-client.ts`) handles communication with the Zoo API:
 
 Configuration:
 
-- `ZOO_API_KEY` (required): API key for authentication.
+- `ZOO_API_KEY` (required): API key for authentication. Can be provided via the environment variable **or** configured in the UI by an admin at **Admin → AI Assistant** (`/admin/ai`) in the **CAD Generation** section. A key saved and enabled in the UI is stored in the `settings` table (encrypted at rest when `ENCRYPTION_KEY` is set) and takes precedence over the environment variable; if no UI key is set/enabled, the app falls back to `ZOO_API_KEY`.
 - `ZOO_TEXT_TO_CAD_TIMEOUT_MS` (optional): Maximum wait time, default 600 seconds (10 minutes).
 - `ZOO_TEXT_TO_CAD_CONCURRENCY` (optional): Max parallel Zoo API calls, default 3.
 

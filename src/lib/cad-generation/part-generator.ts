@@ -11,6 +11,7 @@
  */
 
 import { ZooClient } from './zoo-client'
+import { resolveZooApiKey } from './settings'
 import { buildCadPrompt } from './prompt-builder'
 import type {
   BomNodeDraft,
@@ -181,7 +182,7 @@ export async function* generateAllParts(
     artifacts: { cadGenerationState: state },
   }
 
-  const zooClient = new ZooClient()
+  const zooClient = new ZooClient(await resolveZooApiKey())
   const results: Array<CadGenerationResult> = []
 
   // Process parts with concurrency limit using a Map keyed by tempId

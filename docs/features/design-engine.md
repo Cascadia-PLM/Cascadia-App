@@ -190,6 +190,8 @@ Generates individual STEP files for each new Manufacture leaf part. Two generati
 
 **Concurrency**: Parts are generated in parallel with a configurable concurrency limit (default 3, controlled by `ZOO_TEXT_TO_CAD_CONCURRENCY` env var).
 
+**API key**: The Zoo API key resolves from the database first (the **CAD Generation** section of **Admin → AI Assistant**, `/admin/ai`), falling back to the `ZOO_API_KEY` environment variable.
+
 **Flow**:
 
 1. Walk the BOM tree to collect all new Manufacture leaf parts

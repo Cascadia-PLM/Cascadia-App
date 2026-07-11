@@ -37,6 +37,77 @@ interface BomBuildState {
   changeVersion: number
 }
 
+/**
+ * A fixed-length numeric vector.
+ *
+ * `z.tuple()` serializes to draft-07's array-form `items`, but Anthropic
+ * requires tool schemas to be valid JSON Schema draft 2020-12, where `items`
+ * must be a single schema. A tuple therefore makes the whole request 400, and
+ * the adapter reports that as an `error` stream chunk rather than throwing. A
+ * length-constrained array describes the same shape and is valid in both drafts.
+ */
+const numericVector = (length: number, description: string) =>
+  z.array(z.number()).length(length).describe(description)
+
+/**
+ * Manufacturing constraints derived from an assigned tool's capabilities.
+ * Shared by `propose_new_part` and `assign_manufacturing` so the two cannot drift.
+ */
+const manufacturingConstraintsSchema = z.object({
+  process: z.string().describe('Manufacturing process matching tool subtype'),
+  toolReference: z.string().describe('SessionTool.id'),
+  fdm: z
+    .object({
+      buildVolume: numericVector(3, 'Build volume [x, y, z] in mm'),
+      nozzleDiameter: z.number(),
+      layerHeight: z.number(),
+      material: z.string(),
+      needsSupports: z.boolean(),
+      segmentation: z
+        .object({
+          needed: z.boolean(),
+          maxSegmentSize: numericVector(3, 'Max segment size [x, y, z] in mm'),
+          jointType: z.enum([
+            'dovetail',
+            'pin_slot',
+            'bolt_through',
+            'tongue_groove',
+            'glue_face',
+          ]),
+          overlapLength: z.number().optional(),
+          alignmentFeatures: z.boolean().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+  laserCut: z
+    .object({
+      bedSize: numericVector(2, 'Bed size [x, y] in mm'),
+      material: z.string(),
+      thickness: z.number(),
+      requiresNesting: z.boolean(),
+    })
+    .optional(),
+  cnc: z
+    .object({
+      workVolume: numericVector(3, 'Work volume [x, y, z] in mm'),
+      material: z.string(),
+      minToolDiameter: z.number(),
+      axes: z.number(),
+    })
+    .optional(),
+  manualCut: z
+    .object({
+      toolReference: z.string(),
+      maxCutWidth: z.number().optional(),
+      maxCutDepth: z.number().optional(),
+      cutTypes: z.array(z.string()),
+    })
+    .optional(),
+  outsourced: z.boolean().optional(),
+  outsourceNotes: z.string().optional(),
+})
+
 export function createBomTools(
   context: ToolContext,
   state: BomBuildState,
@@ -256,63 +327,7 @@ export function createBomTools(
         .describe(
           'SessionTool.id from the session toolset. Assigns this tool as the manufacturing method.',
         ),
-      manufacturingConstraints: z
-        .object({
-          process: z
-            .string()
-            .describe('Manufacturing process matching tool subtype'),
-          toolReference: z.string().describe('SessionTool.id'),
-          fdm: z
-            .object({
-              buildVolume: z.tuple([z.number(), z.number(), z.number()]),
-              nozzleDiameter: z.number(),
-              layerHeight: z.number(),
-              material: z.string(),
-              needsSupports: z.boolean(),
-              segmentation: z
-                .object({
-                  needed: z.boolean(),
-                  maxSegmentSize: z.tuple([z.number(), z.number(), z.number()]),
-                  jointType: z.enum([
-                    'dovetail',
-                    'pin_slot',
-                    'bolt_through',
-                    'tongue_groove',
-                    'glue_face',
-                  ]),
-                  overlapLength: z.number().optional(),
-                  alignmentFeatures: z.boolean().optional(),
-                })
-                .optional(),
-            })
-            .optional(),
-          laserCut: z
-            .object({
-              bedSize: z.tuple([z.number(), z.number()]),
-              material: z.string(),
-              thickness: z.number(),
-              requiresNesting: z.boolean(),
-            })
-            .optional(),
-          cnc: z
-            .object({
-              workVolume: z.tuple([z.number(), z.number(), z.number()]),
-              material: z.string(),
-              minToolDiameter: z.number(),
-              axes: z.number(),
-            })
-            .optional(),
-          manualCut: z
-            .object({
-              toolReference: z.string(),
-              maxCutWidth: z.number().optional(),
-              maxCutDepth: z.number().optional(),
-              cutTypes: z.array(z.string()),
-            })
-            .optional(),
-          outsourced: z.boolean().optional(),
-          outsourceNotes: z.string().optional(),
-        })
+      manufacturingConstraints: manufacturingConstraintsSchema
         .optional()
         .describe(
           'Manufacturing constraints derived from the assigned tool capabilities. Required for Manufacture parts when a session toolset exists.',
@@ -565,7 +580,12 @@ export function createBomTools(
     }),
   }).server((input) => {
     const questionId = crypto.randomUUID()
-    onClarification(questionId, input.question, input.options, input.multiSelect)
+    onClarification(
+      questionId,
+      input.question,
+      input.options,
+      input.multiSelect,
+    )
     return { acknowledged: true }
   })
 
@@ -702,61 +722,7 @@ export function createBomTools(
       assignedToolId: z
         .string()
         .describe('SessionTool.id from the session toolset'),
-      manufacturingConstraints: z
-        .object({
-          process: z.string(),
-          toolReference: z.string(),
-          fdm: z
-            .object({
-              buildVolume: z.tuple([z.number(), z.number(), z.number()]),
-              nozzleDiameter: z.number(),
-              layerHeight: z.number(),
-              material: z.string(),
-              needsSupports: z.boolean(),
-              segmentation: z
-                .object({
-                  needed: z.boolean(),
-                  maxSegmentSize: z.tuple([z.number(), z.number(), z.number()]),
-                  jointType: z.enum([
-                    'dovetail',
-                    'pin_slot',
-                    'bolt_through',
-                    'tongue_groove',
-                    'glue_face',
-                  ]),
-                  overlapLength: z.number().optional(),
-                  alignmentFeatures: z.boolean().optional(),
-                })
-                .optional(),
-            })
-            .optional(),
-          laserCut: z
-            .object({
-              bedSize: z.tuple([z.number(), z.number()]),
-              material: z.string(),
-              thickness: z.number(),
-              requiresNesting: z.boolean(),
-            })
-            .optional(),
-          cnc: z
-            .object({
-              workVolume: z.tuple([z.number(), z.number(), z.number()]),
-              material: z.string(),
-              minToolDiameter: z.number(),
-              axes: z.number(),
-            })
-            .optional(),
-          manualCut: z
-            .object({
-              toolReference: z.string(),
-              maxCutWidth: z.number().optional(),
-              maxCutDepth: z.number().optional(),
-              cutTypes: z.array(z.string()),
-            })
-            .optional(),
-          outsourced: z.boolean().optional(),
-          outsourceNotes: z.string().optional(),
-        })
+      manufacturingConstraints: manufacturingConstraintsSchema
         .optional()
         .describe('Manufacturing constraints from the assigned tool'),
       cadGenerationHint: z

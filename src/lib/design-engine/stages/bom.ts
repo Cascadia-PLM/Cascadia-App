@@ -25,6 +25,8 @@ import { DesignSessionService } from '../session-service'
 import { activeRequirements, unresolvedComments } from '../types'
 import { createToolEventTracker } from './tool-event-tracker'
 import { buildSteeringUserMessage, createGuidanceChecker } from './guidance'
+import { isResumingStage } from './resume'
+import { streamChunkError, streamChunkErrorToError } from './stream-error'
 import type { DesignSession } from '../session-service'
 import type {
   BomDraft,
@@ -112,14 +114,6 @@ export async function* runBomStage(
   session: DesignSession,
   signal?: AbortSignal,
 ): AsyncGenerator<StageEvent> {
-  const isResuming = session.stage === 'bom_drafting'
-
-  // Only signal stage start if not resuming
-  if (!isResuming) {
-    yield { type: 'stage_change', stage: 'bom_drafting' }
-    await DesignSessionService.updateStage(session.id, 'bom_drafting')
-  }
-
   const artifacts: DesignArtifacts = session.artifacts ?? {
     description: session.description ?? '',
     requirements: [],
@@ -128,6 +122,18 @@ export async function* runBomStage(
     userMessages: [],
   }
   const description = artifacts.description || session.description || ''
+
+  const isResuming = isResumingStage(
+    session.stage,
+    'bom_drafting',
+    artifacts.bom !== null,
+  )
+
+  // Only signal stage start if not resuming
+  if (!isResuming) {
+    yield { type: 'stage_change', stage: 'bom_drafting' }
+    await DesignSessionService.updateStage(session.id, 'bom_drafting')
+  }
 
   // Build tool context — sessionId must be an ai_chat_sessions ID (for ai_usage_logs FK)
   const toolContext = {
@@ -239,6 +245,13 @@ export async function* runBomStage(
 
       for await (const chunk of streamIter) {
         if (clarificationRef.requested || signal?.aborted) break
+
+        const chunkError = streamChunkError(chunk)
+        if (chunkError?.fatal) throw streamChunkErrorToError(chunkError)
+        if (chunkError) {
+          yield { type: 'llm_text', text: `\n\n_${chunkError.message}_\n\n` }
+          continue
+        }
 
         // Yield only the incremental text. The SDK resets its accumulated
         // `content` at the start of each agent-loop iteration (i.e. after every
@@ -608,6 +621,19 @@ export async function* runBomStage(
         type: 'artifact_update',
         artifacts: { bom: bomRef.current },
       }
+    }
+
+    // A run that proposed nothing has no BOM to review. Advancing to
+    // `bom_review` anyway strands the session: the review panel has no tree to
+    // confirm and no stage offers a restart. Stay at `bom_drafting` so the user
+    // can retry or steer the model with a message.
+    if (!bomRef.current) {
+      yield {
+        type: 'error',
+        message:
+          'BOM generation finished without proposing any parts. Start BOM generation again, or send a message describing where it should begin.',
+      }
+      return
     }
 
     // Transition to review

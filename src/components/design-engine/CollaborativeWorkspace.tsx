@@ -336,12 +336,18 @@ export function CollaborativeWorkspace({
     stream.currentStage === 'toolset_establishment' &&
     !stream.isStreaming &&
     !stream.artifacts.pendingClarification
+  // A review stage reached with an empty artifact means the drafting run
+  // produced nothing: the review panel has nothing to confirm, so keep offering
+  // the restart rather than stranding the session there.
   const showStartRequirements =
-    stream.currentStage === 'requirements_drafting' &&
+    (stream.currentStage === 'requirements_drafting' ||
+      stream.currentStage === 'requirements_review') &&
     !stream.isStreaming &&
     stream.artifacts.requirements.length === 0
   const showStartBom =
-    stream.currentStage === 'bom_drafting' && !stream.isStreaming
+    (stream.currentStage === 'bom_drafting' ||
+      (stream.currentStage === 'bom_review' && !stream.artifacts.bom)) &&
+    !stream.isStreaming
   const showGenerateCad =
     materializationResult !== null &&
     stream.currentStage !== 'cad_generation' &&

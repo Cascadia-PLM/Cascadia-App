@@ -16,6 +16,8 @@ import { summarizeToolCalls } from '../prompts/tool-call-summary'
 import { createRequirementsTools } from '../tools/requirements-tools'
 import { DesignSessionService } from '../session-service'
 import { createToolEventTracker } from './tool-event-tracker'
+import { isResumingStage } from './resume'
+import { streamChunkError, streamChunkErrorToError } from './stream-error'
 import type { DesignSession } from '../session-service'
 import type { DesignArtifacts, RequirementDraft, StageEvent } from '../types'
 import { getAdapter, loadProviderConfig } from '@/lib/ai/adapters'
@@ -27,14 +29,6 @@ export async function* runRequirementsStage(
   session: DesignSession,
   signal?: AbortSignal,
 ): AsyncGenerator<StageEvent> {
-  const isResuming = session.stage === 'requirements_drafting'
-
-  // Only signal stage start if not resuming
-  if (!isResuming) {
-    yield { type: 'stage_change', stage: 'requirements_drafting' }
-    await DesignSessionService.updateStage(session.id, 'requirements_drafting')
-  }
-
   const artifacts: DesignArtifacts = session.artifacts ?? {
     description: session.description ?? '',
     requirements: [],
@@ -43,6 +37,18 @@ export async function* runRequirementsStage(
     userMessages: [],
   }
   const description = artifacts.description || session.description || ''
+
+  const isResuming = isResumingStage(
+    session.stage,
+    'requirements_drafting',
+    artifacts.requirements.length > 0,
+  )
+
+  // Only signal stage start if not resuming
+  if (!isResuming) {
+    yield { type: 'stage_change', stage: 'requirements_drafting' }
+    await DesignSessionService.updateStage(session.id, 'requirements_drafting')
+  }
 
   // Collect proposed requirements (start from existing for resume)
   const proposedRequirements: Array<RequirementDraft> = [
@@ -146,6 +152,13 @@ export async function* runRequirementsStage(
       // Check if clarification was requested or abort signalled — break out of loop
       if (clarificationRef.requested || signal?.aborted) break
 
+      const chunkError = streamChunkError(chunk)
+      if (chunkError?.fatal) throw streamChunkErrorToError(chunkError)
+      if (chunkError) {
+        yield { type: 'llm_text', text: `\n\n_${chunkError.message}_\n\n` }
+        continue
+      }
+
       // Yield only the incremental text. The SDK resets its accumulated
       // `content` at the start of each agent-loop iteration (i.e. after every
       // tool call), so slicing against a persistent offset would drop the
@@ -195,6 +208,19 @@ export async function* runRequirementsStage(
       yield { type: 'paused', reason: 'Waiting for your answer...' }
       // Generator ends here — SSE stream closes.
       // Stage stays at requirements_drafting so resume works.
+      return
+    }
+
+    // A run that proposed nothing has no requirements to review. Advancing to
+    // `requirements_review` anyway strands the session: the review panel has
+    // nothing to confirm and no stage offers a restart. Stay at
+    // `requirements_drafting` so the user can retry or steer with a message.
+    if (proposedRequirements.length === 0) {
+      yield {
+        type: 'error',
+        message:
+          'Requirements analysis finished without proposing any requirements. Start requirements analysis again, or send a message describing what to focus on.',
+      }
       return
     }
 

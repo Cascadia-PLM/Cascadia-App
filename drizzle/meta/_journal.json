@@ -8,6 +8,13 @@
       "when": 1775042162572,
       "tag": "0000_huge_sunfire",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783786832814,
+      "tag": "0001_early_nitro",
+      "breakpoints": true
     }
   ]
 }

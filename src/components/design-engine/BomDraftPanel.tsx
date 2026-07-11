@@ -9,23 +9,28 @@
 import { useState } from 'react'
 import {
   Check,
+  CheckCheck,
   ChevronDown,
   ChevronRight,
   Package,
   Pencil,
   Plus,
   Sparkles,
-  Trash2,
   X,
+  XCircle,
 } from 'lucide-react'
 import { InterfaceIndicator } from './InterfaceIndicator'
 import { RequirementsCoverage } from './RequirementsCoverage'
+import { ReviewStatusChip } from './RequirementsPanel'
 import type {
   BomDraft,
   BomNodeDraft,
+  BomRejectionEntry,
   DesignSessionStage,
   RequirementDraft,
+  ReviewStatus,
 } from '@/lib/design-engine/types'
+import { effectiveReviewStatus } from '@/lib/design-engine/types'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
@@ -50,10 +55,23 @@ interface BomDraftPanelProps {
   currentStage: DesignSessionStage
   totalRequirements: number
   requirements: Array<RequirementDraft>
-  onConfirm?: () => void
+  bomRejections?: Array<BomRejectionEntry>
+  onConfirm?: (options?: { force?: boolean }) => void
   onUpdateNode?: (tempId: string, patch: Partial<BomNodeDraft>) => void
-  onRemoveNode?: (tempId: string) => void
+  onRejectNode?: (tempId: string, reason?: string) => void
+  onSetNodeReviewStatus?: (tempId: string, status: ReviewStatus) => void
+  onAcceptAllNodes?: () => void
   onAddChild?: (parentTempId: string, data: Partial<BomNodeDraft>) => void
+}
+
+function countUnresolvedNodes(bom: BomDraft): number {
+  let count = 0
+  const walk = (node: BomNodeDraft, isRoot: boolean) => {
+    if (!isRoot && effectiveReviewStatus(node) === 'proposed') count++
+    for (const child of node.children) walk(child, false)
+  }
+  walk(bom.rootAssembly, true)
+  return count
 }
 
 export function BomDraftPanel({
@@ -61,11 +79,15 @@ export function BomDraftPanel({
   currentStage,
   totalRequirements,
   requirements,
+  bomRejections,
   onConfirm,
   onUpdateNode,
-  onRemoveNode,
+  onRejectNode,
+  onSetNodeReviewStatus,
+  onAcceptAllNodes,
   onAddChild,
 }: BomDraftPanelProps) {
+  const [showRejected, setShowRejected] = useState(false)
   const canConfirm = currentStage === 'bom_review' && bom !== null
   const canEdit =
     currentStage === 'bom_review' || currentStage === 'bom_drafting'
@@ -85,12 +107,27 @@ export function BomDraftPanel({
 
   const hasErrors = bom.validationIssues.some((i) => i.severity === 'error')
   const rootTempId = bom.rootAssembly.tempId
+  const unresolvedCount = countUnresolvedNodes(bom)
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-        Bill of Materials
-      </h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+          Bill of Materials
+        </h3>
+        {canEdit && unresolvedCount > 0 && onAcceptAllNodes && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAcceptAllNodes}
+            className="h-7 text-xs gap-1"
+            title="Accept all unreviewed BOM items"
+          >
+            <CheckCheck className="h-3 w-3" />
+            Accept all
+          </Button>
+        )}
+      </div>
 
       {/* BOM Tree */}
       <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
@@ -98,18 +135,58 @@ export function BomDraftPanel({
           <span className="flex-1">Item</span>
           <span className="w-12 text-center">Qty</span>
           <span className="w-16 text-center">Type</span>
-          {canEdit && <span className="w-20 text-right" />}
+          {canEdit && <span className="w-28 text-right" />}
         </div>
         <BomNodeRow
           node={bom.rootAssembly}
           depth={0}
           rootTempId={rootTempId}
-          canEdit={canEdit && (!!onUpdateNode || !!onRemoveNode || !!onAddChild)}
+          canEdit={canEdit && (!!onUpdateNode || !!onRejectNode || !!onAddChild)}
           onUpdateNode={onUpdateNode}
-          onRemoveNode={onRemoveNode}
+          onRejectNode={onRejectNode}
+          onSetNodeReviewStatus={onSetNodeReviewStatus}
           onAddChild={onAddChild}
         />
       </div>
+
+      {/* Rejected parts (tombstones fed back to the AI) */}
+      {bomRejections && bomRejections.length > 0 && (
+        <div className="border border-slate-200 dark:border-slate-700 rounded-lg">
+          <button
+            onClick={() => setShowRejected(!showRejected)}
+            className="w-full flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+          >
+            {showRejected ? (
+              <ChevronDown className="h-3 w-3" />
+            ) : (
+              <ChevronRight className="h-3 w-3" />
+            )}
+            Rejected parts ({bomRejections.length})
+          </button>
+          {showRejected && (
+            <div className="px-3 pb-2 space-y-1">
+              {bomRejections.map((r) => (
+                <div
+                  key={`${r.tempId}-${r.rejectedAt}`}
+                  className="text-xs text-slate-500 dark:text-slate-400"
+                >
+                  <span className="line-through">{r.name}</span>
+                  {r.partType && (
+                    <span className="ml-1.5 text-slate-400">
+                      [{r.partType}]
+                    </span>
+                  )}
+                  {r.reason && (
+                    <span className="ml-1.5 text-red-500 dark:text-red-400">
+                      — {r.reason}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Validation issues */}
       {bom.validationIssues.length > 0 && (
@@ -142,15 +219,33 @@ export function BomDraftPanel({
 
       {/* Confirm button */}
       {canConfirm && (
-        <Button
-          variant="default"
-          onClick={onConfirm}
-          className="w-full"
-          disabled={hasErrors}
-        >
-          <Check className="h-4 w-4 mr-2" />
-          Confirm BOM
-        </Button>
+        <div className="space-y-1.5">
+          <Button
+            variant="default"
+            onClick={() => onConfirm?.()}
+            className="w-full"
+            disabled={hasErrors || unresolvedCount > 0}
+            title={
+              unresolvedCount > 0
+                ? 'Accept, edit, or reject every proposed item to confirm'
+                : undefined
+            }
+          >
+            <Check className="h-4 w-4 mr-2" />
+            {unresolvedCount > 0
+              ? `Confirm BOM (${unresolvedCount} unreviewed)`
+              : 'Confirm BOM'}
+          </Button>
+          {unresolvedCount > 0 && !hasErrors && (
+            <Button
+              variant="ghost"
+              onClick={() => onConfirm?.({ force: true })}
+              className="w-full text-xs text-slate-500 dark:text-slate-400"
+            >
+              Confirm anyway — skip per-item review
+            </Button>
+          )}
+        </div>
       )}
     </div>
   )
@@ -162,7 +257,8 @@ interface BomNodeRowProps {
   rootTempId: string
   canEdit: boolean
   onUpdateNode?: (tempId: string, patch: Partial<BomNodeDraft>) => void
-  onRemoveNode?: (tempId: string) => void
+  onRejectNode?: (tempId: string, reason?: string) => void
+  onSetNodeReviewStatus?: (tempId: string, status: ReviewStatus) => void
   onAddChild?: (parentTempId: string, data: Partial<BomNodeDraft>) => void
 }
 
@@ -172,14 +268,24 @@ function BomNodeRow({
   rootTempId,
   canEdit,
   onUpdateNode,
-  onRemoveNode,
+  onRejectNode,
+  onSetNodeReviewStatus,
   onAddChild,
 }: BomNodeRowProps) {
   const [expanded, setExpanded] = useState(depth < 2)
   const [editing, setEditing] = useState(false)
   const [addingChild, setAddingChild] = useState(false)
+  const [rejecting, setRejecting] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
   const hasChildren = node.children.length > 0
   const isRoot = node.tempId === rootTempId
+  const reviewStatus = effectiveReviewStatus(node)
+
+  const submitReject = () => {
+    onRejectNode?.(node.tempId, rejectReason.trim() || undefined)
+    setRejecting(false)
+    setRejectReason('')
+  }
 
   if (editing) {
     return (
@@ -247,6 +353,11 @@ function BomNodeRow({
               {node.existingItemNumber}
             </span>
           )}
+          {!isRoot && (
+            <span className="ml-1.5">
+              <ReviewStatusChip status={reviewStatus} />
+            </span>
+          )}
         </div>
         <span className="w-12 text-center text-xs text-slate-600 dark:text-slate-400">
           {node.quantity}
@@ -269,7 +380,18 @@ function BomNodeRow({
           )}
         </span>
         {canEdit && (
-          <span className="w-20 flex justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="w-28 flex justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            {onSetNodeReviewStatus && !isRoot && reviewStatus === 'proposed' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onSetNodeReviewStatus(node.tempId, 'accepted')}
+                className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
+                title="Accept"
+              >
+                <Check className="h-3 w-3" />
+              </Button>
+            )}
             {onAddChild && (
               <Button
                 variant="ghost"
@@ -295,20 +417,54 @@ function BomNodeRow({
                 <Pencil className="h-3 w-3" />
               </Button>
             )}
-            {onRemoveNode && !isRoot && (
+            {onRejectNode && !isRoot && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onRemoveNode(node.tempId)}
+                onClick={() => setRejecting(true)}
                 className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                title="Remove"
+                title="Reject (removes the part; the AI is told not to re-propose it)"
               >
-                <Trash2 className="h-3 w-3" />
+                <XCircle className="h-3 w-3" />
               </Button>
             )}
           </span>
         )}
       </div>
+      {rejecting && (
+        <div
+          className="flex items-center gap-1.5 px-3 py-1.5 border-t border-dashed border-red-200 dark:border-red-900 bg-red-50/40 dark:bg-red-900/10"
+          style={{ paddingLeft: 12 + depth * 20 }}
+        >
+          <Input
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            className="text-xs h-7 flex-1"
+            placeholder={`Why reject "${node.name}"? (optional — the AI learns from it)`}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submitReject()
+              if (e.key === 'Escape') setRejecting(false)
+            }}
+          />
+          <Button
+            variant="default"
+            size="sm"
+            onClick={submitReject}
+            className="h-7 text-xs"
+          >
+            Reject
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setRejecting(false)}
+            className="h-7 w-7 p-0"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
       {expanded &&
         hasChildren &&
         node.children.map((child) => (
@@ -319,7 +475,8 @@ function BomNodeRow({
             rootTempId={rootTempId}
             canEdit={canEdit}
             onUpdateNode={onUpdateNode}
-            onRemoveNode={onRemoveNode}
+            onRejectNode={onRejectNode}
+            onSetNodeReviewStatus={onSetNodeReviewStatus}
             onAddChild={onAddChild}
           />
         ))}

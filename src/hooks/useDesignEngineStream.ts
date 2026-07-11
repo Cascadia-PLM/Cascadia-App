@@ -83,6 +83,17 @@ type StreamAction =
   | 'confirm_assembly'
   | 'answer_clarification'
   | 'send_message'
+  | 'reopen_stage'
+
+interface StreamActionExtra {
+  questionId?: string
+  answer?: string
+  message?: string
+  tempId?: string
+  feedback?: string
+  targetStage?: 'toolset_review' | 'requirements_review' | 'bom_review'
+  force?: boolean
+}
 
 export function useDesignEngineStream({
   sessionId,
@@ -162,16 +173,7 @@ export function useDesignEngineStream({
    * Start an SSE streaming connection and process events.
    */
   const startStream = useCallback(
-    async (
-      action: StreamAction,
-      extra?: {
-        questionId?: string
-        answer?: string
-        message?: string
-        tempId?: string
-        feedback?: string
-      },
-    ) => {
+    async (action: StreamAction, extra?: StreamActionExtra) => {
       // Abort existing stream
       abortControllerRef.current?.abort()
       const abortController = new AbortController()
@@ -256,23 +258,15 @@ export function useDesignEngineStream({
   )
 
   const sendAction = useCallback(
-    async (
-      action: StreamAction,
-      extra?: {
-        questionId?: string
-        answer?: string
-        message?: string
-        tempId?: string
-        feedback?: string
-      },
-    ) => {
-      // Handle non-streaming confirmations
+    async (action: StreamAction, extra?: StreamActionExtra) => {
+      // Handle non-streaming actions (stage confirmations and reopens)
       if (
         action === 'confirm_toolset' ||
         action === 'confirm_requirements' ||
         action === 'confirm_bom' ||
         action === 'confirm_cad' ||
-        action === 'confirm_assembly'
+        action === 'confirm_assembly' ||
+        action === 'reopen_stage'
       ) {
         // Guard against double-clicks
         if (state.isStreaming) return
@@ -284,13 +278,15 @@ export function useDesignEngineStream({
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action }),
+              body: JSON.stringify({ action, ...extra }),
             },
           )
 
           if (!response.ok) {
             const errBody = await response.text().catch(() => '')
-            throw new Error(`Confirm failed (${response.status}): ${errBody}`)
+            throw new Error(
+              `${action === 'reopen_stage' ? 'Reopen' : 'Confirm'} failed (${response.status}): ${errBody}`,
+            )
           }
 
           const data = await response.json()

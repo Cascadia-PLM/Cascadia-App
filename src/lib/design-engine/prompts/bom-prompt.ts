@@ -5,6 +5,7 @@
 import type {
   BomDraft,
   BomNodeDraft,
+  BomRejectionEntry,
   ClarificationEntry,
   DesignSessionToolset,
   RequirementDraft,
@@ -43,6 +44,7 @@ export function buildBomPrompt(
   schemaContext?: string,
   toolset?: DesignSessionToolset,
   priorToolCalls?: string,
+  bomRejections?: Array<BomRejectionEntry>,
 ): string {
   const requirementsList = requirements
     .map(
@@ -240,6 +242,15 @@ apply_mechanism_template({
       prompt += `- (${m.stage.replace(/_/g, ' ')}): ${m.text}\n`
     }
     prompt += `\nIncorporate this guidance into your BOM design.\n`
+  }
+
+  if (bomRejections && bomRejections.length > 0) {
+    prompt += `\n## Rejected Proposals\nThe user reviewed and REJECTED these parts (they have been removed from the tree). Do NOT re-propose them or close variants of them unless the user's latest guidance explicitly asks for them again:\n`
+    for (const r of bomRejections) {
+      const where = r.parentName ? ` (was under "${r.parentName}")` : ''
+      prompt += `- "${r.name}"${r.partType ? ` [${r.partType}]` : ''}${where}${r.reason ? ` — user's reason: ${r.reason}` : ''}\n`
+    }
+    prompt += `\nTreat these rejections as design decisions and let them inform the rest of the BOM.\n`
   }
 
   if (existingBom) {

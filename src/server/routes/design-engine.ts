@@ -20,6 +20,7 @@ import { requireSessionAccess } from '@/lib/auth/session-access'
 import {
   designArtifactsPatchSchema,
   designSessionStageSchema,
+  stageIndex,
 } from '@/lib/design-engine/types'
 
 const adapt = tagged('Design Engine')
@@ -47,12 +48,18 @@ const streamActionSchema = z.object({
     'confirm_assembly',
     'answer_clarification',
     'send_message',
+    'reopen_stage',
   ]),
   questionId: z.string().optional(),
   answer: z.string().optional(),
   message: z.string().optional(),
   tempId: z.string().optional(),
   feedback: z.string().optional(),
+  targetStage: z
+    .enum(['toolset_review', 'requirements_review', 'bom_review'])
+    .optional(),
+  // Skip the per-item review gate on confirm_* ("Confirm anyway")
+  force: z.boolean().optional(),
 })
 
 function encodeSSE(event: string, data: unknown): string {
@@ -298,11 +305,21 @@ app.patch(
         )
       }
 
-      // Update stage (with validation)
+      // Update stage (with validation). Backward moves must go through the
+      // reopen_stage action, which restores the matching artifacts snapshot —
+      // a raw backward PATCH would leave artifacts from the abandoned pass.
       if (body.stage) {
         const result = designSessionStageSchema.safeParse(body.stage)
         if (!result.success) {
           throw new ValidationError('Invalid stage value')
+        }
+        if (
+          stageIndex(result.data) <
+          stageIndex(session.stage as DesignSessionStage)
+        ) {
+          throw new ValidationError(
+            'Cannot move a session backward via PATCH — use the reopen_stage stream action',
+          )
         }
         await DesignSessionService.updateStage(params.id, result.data)
       }
@@ -403,13 +420,17 @@ app.post(
       }
 
       if (action === 'confirm_requirements') {
-        await designEngine.confirmStage(params.id, 'requirements')
+        await designEngine.confirmStage(params.id, 'requirements', {
+          force: parsed.data.force,
+        })
         const updated = await DesignSessionService.getById(params.id)
         return { session: updated, confirmed: 'requirements' }
       }
 
       if (action === 'confirm_bom') {
-        await designEngine.confirmStage(params.id, 'bom')
+        await designEngine.confirmStage(params.id, 'bom', {
+          force: parsed.data.force,
+        })
         const updated = await DesignSessionService.getById(params.id)
         return { session: updated, confirmed: 'bom' }
       }
@@ -424,6 +445,17 @@ app.post(
         await designEngine.confirmStage(params.id, 'assembly')
         const updated = await DesignSessionService.getById(params.id)
         return { session: updated, confirmed: 'assembly' }
+      }
+
+      // Reopen a previously confirmed review gate (non-streaming)
+      if (action === 'reopen_stage') {
+        const { targetStage } = parsed.data
+        if (!targetStage) {
+          throw new ValidationError('targetStage is required for reopen_stage')
+        }
+        await designEngine.reopenStage(params.id, targetStage)
+        const updated = await DesignSessionService.getById(params.id)
+        return { session: updated, reopened: targetStage }
       }
 
       // Handle clarification answers — store structured entry and restart stage as streaming

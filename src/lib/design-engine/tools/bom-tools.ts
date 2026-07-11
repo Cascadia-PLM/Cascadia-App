@@ -16,6 +16,7 @@ import type { ToolContext } from '@/lib/ai/tools/permission-wrapper'
 import type {
   BomDraft,
   BomNodeDraft,
+  BomRejectionEntry,
   InterfaceIntent,
   InterfaceMapping,
   MechanismType,
@@ -46,7 +47,17 @@ export function createBomTools(
     options?: Array<string>,
     multiSelect?: boolean,
   ) => void,
+  rejectedParts?: Array<BomRejectionEntry>,
 ) {
+  /**
+   * The user accepted this node's previous content — any AI mutation makes
+   * that acceptance stale, so the node goes back to needing review.
+   */
+  function markNeedsReview(node: BomNodeDraft): void {
+    if (node.reviewStatus === 'accepted' || node.reviewStatus === 'edited') {
+      node.reviewStatus = 'proposed'
+    }
+  }
   const searchParts = toolDefinition({
     name: 'search_parts',
     description:
@@ -313,9 +324,17 @@ export function createBomTools(
           'Detailed geometry description for CAD generation (3-8 sentences with exact dimensions, features, mating references). ' +
             'Required for every Manufacture part.',
         ),
+      overrideRejection: z
+        .boolean()
+        .optional()
+        .describe(
+          'Set true ONLY when the user has explicitly asked to bring back a part they previously rejected.',
+        ),
     }),
     outputSchema: z.object({
       tempId: z.string(),
+      rejectedByUser: z.boolean().optional(),
+      message: z.string().optional(),
     }),
   }).server((input) => {
     // Structural dedup: same name under the same parent → return the existing
@@ -325,6 +344,19 @@ export function createBomTools(
       (n) => n.name.trim().toLowerCase() === normalizedName,
     )
     if (duplicate) return { tempId: duplicate.tempId }
+
+    // The user rejected a part with this name — refuse the re-propose unless
+    // explicitly overridden on the user's behalf.
+    const tombstone = rejectedParts?.find(
+      (r) => r.name.trim().toLowerCase() === normalizedName,
+    )
+    if (tombstone && !input.overrideRejection) {
+      return {
+        tempId: '',
+        rejectedByUser: true,
+        message: `The user rejected "${tombstone.name}"${tombstone.reason ? ` (reason: ${tombstone.reason})` : ''} — do not re-propose it. If the user's latest guidance explicitly asks for it again, retry with overrideRejection: true.`,
+      }
+    }
 
     const tempId = crypto.randomUUID()
 
@@ -359,6 +391,7 @@ export function createBomTools(
       material: input.material,
       rationale: input.rationale,
       confidence: 0.8,
+      reviewStatus: 'proposed',
       parametricSpec: input.parametricSpec as ParametricPartSpec | undefined,
       catalogComponentId: input.catalogComponentId,
       requiresManualSourcing: input.requiresManualSourcing,
@@ -431,6 +464,7 @@ export function createBomTools(
       requirementTempIds: input.requirementTempIds ?? [],
       rationale: 'Existing part reused from library',
       confidence: 1.0,
+      reviewStatus: 'proposed',
     }
     state.nodes.set(tempId, bomNode)
 
@@ -475,6 +509,7 @@ export function createBomTools(
     }
 
     parent.children.push(child)
+    markNeedsReview(child)
     rebuildAndNotify()
     return { success: true }
   })
@@ -496,6 +531,7 @@ export function createBomTools(
 
     if (!node.requirementTempIds.includes(input.requirementTempId)) {
       node.requirementTempIds.push(input.requirementTempId)
+      markNeedsReview(node)
     }
     rebuildAndNotify()
     return { linked: true }
@@ -589,6 +625,7 @@ export function createBomTools(
     if (!node) return { success: false, interfaceCount: 0 }
 
     node.interfaces = input.interfaces as Array<InterfaceIntent>
+    markNeedsReview(node)
     rebuildAndNotify()
     return { success: true, interfaceCount: input.interfaces.length }
   })
@@ -651,6 +688,7 @@ export function createBomTools(
     }
 
     node.interfaceMappings = input.mappings as Array<InterfaceMapping>
+    markNeedsReview(node)
     rebuildAndNotify()
     return { success: true, mappingCount: input.mappings.length }
   })
@@ -746,6 +784,7 @@ export function createBomTools(
       node.cadGenerationHint = input.cadGenerationHint
     }
 
+    markNeedsReview(node)
     rebuildAndNotify()
     return { success: true }
   })
@@ -852,6 +891,7 @@ export function createBomTools(
         tempId: m.childTempId,
       })),
     }
+    markNeedsReview(node)
 
     // Compute preview metadata for LLM feedback
     const preview = computeMechanismPreview(

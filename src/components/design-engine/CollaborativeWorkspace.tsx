@@ -20,11 +20,13 @@ import type {
   DesignSessionStage,
   LlmHistoryEntry,
   MaterializationPreview as PreviewType,
+  ReopenableStage,
   MaterializationResult as ResultType,
 } from '@/lib/design-engine/types'
 import { useDesignEngineStream } from '@/hooks/useDesignEngineStream'
 import { useArtifactMutations } from '@/hooks/useArtifactMutations'
 import { Button } from '@/components/ui/Button'
+import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 
 interface CollaborativeWorkspaceProps {
   sessionId: string
@@ -42,10 +44,12 @@ export function CollaborativeWorkspace({
   initialSession,
 }: CollaborativeWorkspaceProps) {
   const navigate = useNavigate()
+  const { confirm } = useAlertDialog()
   const stream = useDesignEngineStream({ sessionId })
   const mutations = useArtifactMutations({
     sessionId,
     artifacts: stream.artifacts,
+    currentStage: stream.currentStage,
   })
 
   const [materializationPreview, setMaterializationPreview] =
@@ -89,13 +93,19 @@ export function CollaborativeWorkspace({
     stream.sendAction('start_bom')
   }, [stream])
 
-  const handleConfirmRequirements = useCallback(() => {
-    stream.sendAction('confirm_requirements')
-  }, [stream])
+  const handleConfirmRequirements = useCallback(
+    (options?: { force?: boolean }) => {
+      stream.sendAction('confirm_requirements', { force: options?.force })
+    },
+    [stream],
+  )
 
-  const handleConfirmBom = useCallback(() => {
-    stream.sendAction('confirm_bom')
-  }, [stream])
+  const handleConfirmBom = useCallback(
+    (options?: { force?: boolean }) => {
+      stream.sendAction('confirm_bom', { force: options?.force })
+    },
+    [stream],
+  )
 
   const handleStartCadGeneration = useCallback(() => {
     stream.sendAction('start_cad_generation')
@@ -120,6 +130,34 @@ export function CollaborativeWorkspace({
     [stream],
   )
 
+  const handleReopenStage = useCallback(
+    (targetStage: ReopenableStage) => {
+      const discards: Record<ReopenableStage, string> = {
+        toolset_review:
+          'Later drafts (requirements and BOM) revert to the state approved at this gate.',
+        requirements_review:
+          'The BOM draft reverts to the state approved at this gate.',
+        bom_review: 'The session returns to BOM review.',
+      }
+      const labels: Record<ReopenableStage, string> = {
+        toolset_review: 'Toolset',
+        requirements_review: 'Requirements',
+        bom_review: 'BOM',
+      }
+      confirm({
+        title: `Reopen ${labels[targetStage]} review?`,
+        description: `The session moves back to the ${labels[targetStage]} review gate. ${discards[targetStage]}`,
+        actionLabel: 'Reopen',
+        cancelLabel: 'Cancel',
+        variant: 'destructive',
+        onConfirm: () => {
+          stream.sendAction('reopen_stage', { targetStage })
+        },
+      })
+    },
+    [stream, confirm],
+  )
+
   const handleUpdateDescription = useCallback(
     async (description: string) => {
       await fetch(`/api/v1/design-engine/sessions/${sessionId}`, {
@@ -132,10 +170,8 @@ export function CollaborativeWorkspace({
   )
 
   const handleUpdateRequirement = mutations.updateRequirement
-  const handleRemoveRequirement = mutations.removeRequirement
   const handleAddRequirement = mutations.addRequirement
   const handleUpdateBomNode = mutations.updateNode
-  const handleRemoveBomNode = mutations.removeNode
   const handleAddBomChild = mutations.addChild
 
   const handleAnswer = useCallback(
@@ -244,7 +280,15 @@ export function CollaborativeWorkspace({
             {initialSession.title ?? 'Design Session'}
           </h1>
         </div>
-        <StageIndicator currentStage={stream.currentStage} />
+        <StageIndicator
+          currentStage={stream.currentStage}
+          onReopen={handleReopenStage}
+          reopenDisabled={
+            stream.isStreaming ||
+            stream.currentStage === 'complete' ||
+            Boolean(stream.artifacts.materializationResult)
+          }
+        />
         <div className="flex items-center gap-2">
           {stream.isStreaming && (
             <Button
@@ -343,12 +387,15 @@ export function CollaborativeWorkspace({
               isStreaming={stream.isStreaming}
               onUpdateDescription={handleUpdateDescription}
               onUpdateRequirement={handleUpdateRequirement}
-              onRemoveRequirement={handleRemoveRequirement}
               onAddRequirement={handleAddRequirement}
+              onSetRequirementReviewStatus={mutations.setRequirementReviewStatus}
+              onAcceptAllRequirements={mutations.acceptAllRequirements}
               onConfirmRequirements={handleConfirmRequirements}
               onConfirmBom={handleConfirmBom}
               onUpdateBomNode={handleUpdateBomNode}
-              onRemoveBomNode={handleRemoveBomNode}
+              onRejectBomNode={mutations.rejectNode}
+              onSetBomNodeReviewStatus={mutations.setNodeReviewStatus}
+              onAcceptAllBomNodes={mutations.acceptAllNodes}
               onAddBomChild={handleAddBomChild}
               className="flex-1"
             />

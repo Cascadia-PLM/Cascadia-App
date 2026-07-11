@@ -8,19 +8,26 @@
 import { useCallback } from 'react'
 import type {
   BomNodeDraft,
+  BomRejectionEntry,
   DesignArtifacts,
+  DesignSessionStage,
   RequirementDraft,
+  ReviewStatus,
 } from '@/lib/design-engine/types'
+import { activeRequirements } from '@/lib/design-engine/types'
 import {
   addBomNodeChild,
+  findBomNode,
   recomputeBomDerivedFields,
   removeBomNode,
+  setAllProposedNodesStatus,
   updateBomNode,
 } from '@/lib/design-engine/bom-mutations'
 
 interface UseArtifactMutationsArgs {
   sessionId: string
   artifacts: DesignArtifacts
+  currentStage?: DesignSessionStage
 }
 
 async function patchArtifacts(
@@ -37,13 +44,17 @@ async function patchArtifacts(
 export function useArtifactMutations({
   sessionId,
   artifacts,
+  currentStage,
 }: UseArtifactMutationsArgs) {
   // ---------------- Requirements ----------------
 
   const updateRequirement = useCallback(
     async (tempId: string, data: Partial<RequirementDraft>) => {
       const requirements = artifacts.requirements.map((r) =>
-        r.tempId === tempId ? { ...r, ...data } : r,
+        r.tempId === tempId
+          ? // A user edit implicitly approves the edited content
+            { ...r, reviewStatus: 'edited' as ReviewStatus, ...data }
+          : r,
       )
       await patchArtifacts(sessionId, { ...artifacts, requirements })
     },
@@ -60,7 +71,7 @@ export function useArtifactMutations({
       if (bom) {
         bom = recomputeBomDerivedFields(
           bom,
-          requirements.map((r) => r.tempId),
+          activeRequirements(requirements).map((r) => r.tempId),
         )
       }
       await patchArtifacts(sessionId, { ...artifacts, requirements, bom })
@@ -80,13 +91,14 @@ export function useArtifactMutations({
         rationale: data.rationale ?? '',
         confidence: data.confidence ?? 1,
         source: 'user',
+        reviewStatus: 'accepted',
       }
       const requirements = [...artifacts.requirements, newReq]
       let bom = artifacts.bom
       if (bom) {
         bom = recomputeBomDerivedFields(
           bom,
-          requirements.map((r) => r.tempId),
+          activeRequirements(requirements).map((r) => r.tempId),
         )
       }
       await patchArtifacts(sessionId, { ...artifacts, requirements, bom })
@@ -94,15 +106,50 @@ export function useArtifactMutations({
     [sessionId, artifacts],
   )
 
+  const setRequirementReviewStatus = useCallback(
+    async (tempId: string, status: ReviewStatus, note?: string) => {
+      const requirements = artifacts.requirements.map((r) =>
+        r.tempId === tempId
+          ? { ...r, reviewStatus: status, reviewNote: note ?? r.reviewNote }
+          : r,
+      )
+      // Rejected requirements drop out of coverage — recompute if BOM exists.
+      let bom = artifacts.bom
+      if (bom) {
+        bom = recomputeBomDerivedFields(
+          bom,
+          activeRequirements(requirements).map((r) => r.tempId),
+        )
+      }
+      await patchArtifacts(sessionId, { ...artifacts, requirements, bom })
+    },
+    [sessionId, artifacts],
+  )
+
+  const acceptAllRequirements = useCallback(async () => {
+    const requirements = artifacts.requirements.map((r) =>
+      r.reviewStatus === undefined || r.reviewStatus === 'proposed'
+        ? { ...r, reviewStatus: 'accepted' as ReviewStatus }
+        : r,
+    )
+    await patchArtifacts(sessionId, { ...artifacts, requirements })
+  }, [sessionId, artifacts])
+
   // ---------------- BOM ----------------
 
-  const requirementIds = artifacts.requirements.map((r) => r.tempId)
+  const requirementIds = activeRequirements(artifacts.requirements).map(
+    (r) => r.tempId,
+  )
 
   const updateNode = useCallback(
     async (tempId: string, patch: Partial<BomNodeDraft>) => {
       if (!artifacts.bom) return
       const next = recomputeBomDerivedFields(
-        updateBomNode(artifacts.bom, tempId, patch),
+        // A user edit implicitly approves the edited content
+        updateBomNode(artifacts.bom, tempId, {
+          reviewStatus: 'edited',
+          ...patch,
+        }),
         requirementIds,
       )
       await patchArtifacts(sessionId, { ...artifacts, bom: next })
@@ -122,6 +169,57 @@ export function useArtifactMutations({
     [sessionId, artifacts, requirementIds],
   )
 
+  /**
+   * Reject a node: remove its subtree from the tree and record a tombstone in
+   * `bomRejections` so the AI won't re-propose it on later runs.
+   */
+  const rejectNode = useCallback(
+    async (tempId: string, reason?: string) => {
+      if (!artifacts.bom) return
+      const found = findBomNode(artifacts.bom, tempId)
+      if (!found || !found.parent) return // root cannot be rejected
+
+      const tombstone: BomRejectionEntry = {
+        tempId,
+        name: found.node.name,
+        partType: found.node.partType,
+        parentName: found.parent.name,
+        reason,
+        rejectedAt: new Date().toISOString(),
+        stage: currentStage ?? 'bom_review',
+      }
+
+      const next = recomputeBomDerivedFields(
+        removeBomNode(artifacts.bom, tempId),
+        requirementIds,
+      )
+      await patchArtifacts(sessionId, {
+        ...artifacts,
+        bom: next,
+        bomRejections: [...(artifacts.bomRejections ?? []), tombstone],
+      })
+    },
+    [sessionId, artifacts, requirementIds, currentStage],
+  )
+
+  const setNodeReviewStatus = useCallback(
+    async (tempId: string, status: ReviewStatus, note?: string) => {
+      if (!artifacts.bom) return
+      const next = updateBomNode(artifacts.bom, tempId, {
+        reviewStatus: status,
+        ...(note !== undefined ? { reviewNote: note } : {}),
+      })
+      await patchArtifacts(sessionId, { ...artifacts, bom: next })
+    },
+    [sessionId, artifacts],
+  )
+
+  const acceptAllNodes = useCallback(async () => {
+    if (!artifacts.bom) return
+    const next = setAllProposedNodesStatus(artifacts.bom, 'accepted')
+    await patchArtifacts(sessionId, { ...artifacts, bom: next })
+  }, [sessionId, artifacts])
+
   const addChild = useCallback(
     async (parentTempId: string, data: Partial<BomNodeDraft>) => {
       if (!artifacts.bom) return
@@ -138,8 +236,13 @@ export function useArtifactMutations({
     updateRequirement,
     removeRequirement,
     addRequirement,
+    setRequirementReviewStatus,
+    acceptAllRequirements,
     updateNode,
     removeNode,
+    rejectNode,
+    setNodeReviewStatus,
+    acceptAllNodes,
     addChild,
   }
 }

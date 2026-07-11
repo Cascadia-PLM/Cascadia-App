@@ -15,6 +15,7 @@ import { buildRequirementsPrompt } from '../prompts/requirements-prompt'
 import { summarizeToolCalls } from '../prompts/tool-call-summary'
 import { createRequirementsTools } from '../tools/requirements-tools'
 import { DesignSessionService } from '../session-service'
+import { effectiveReviewStatus } from '../types'
 import { createToolEventTracker } from './tool-event-tracker'
 import type { DesignSession } from '../session-service'
 import type { DesignArtifacts, RequirementDraft, StageEvent } from '../types'
@@ -73,12 +74,24 @@ export async function* runRequirementsStage(
     toolContext,
     (requirement) => {
       // Structural dedup: same normalized name → return the existing tempId
-      // instead of adding a duplicate (guards re-proposes on resume).
+      // instead of adding a duplicate (guards re-proposes on resume). A match
+      // against a user-rejected requirement signals the rejection back to the
+      // LLM instead of silently resurrecting it.
       const normalized = requirement.name.trim().toLowerCase()
       const existing = proposedRequirements.find(
         (r) => r.name.trim().toLowerCase() === normalized,
       )
-      if (existing) return { tempId: existing.tempId, added: false }
+      if (existing) {
+        if (effectiveReviewStatus(existing) === 'rejected') {
+          return {
+            tempId: existing.tempId,
+            added: false,
+            rejectedByUser: true,
+            message: `The user rejected "${existing.name}"${existing.reviewNote ? ` (reason: ${existing.reviewNote})` : ''} — do not re-propose it.`,
+          }
+        }
+        return { tempId: existing.tempId, added: false }
+      }
       proposedRequirements.push(requirement)
       return { tempId: requirement.tempId, added: true }
     },
@@ -99,6 +112,9 @@ export async function* runRequirementsStage(
     const priorToolCalls = isResuming
       ? summarizeToolCalls(session.llmHistory)
       : ''
+    const rejectedRequirements = artifacts.requirements.filter(
+      (r) => effectiveReviewStatus(r) === 'rejected',
+    )
     const systemPrompt = buildRequirementsPrompt(
       description,
       artifacts.clarifications.length > 0
@@ -110,6 +126,7 @@ export async function* runRequirementsStage(
         : undefined,
       undefined,
       priorToolCalls || undefined,
+      rejectedRequirements.length > 0 ? rejectedRequirements : undefined,
     )
 
     // Build messages - cast to satisfy TanStack AI's constrained message types

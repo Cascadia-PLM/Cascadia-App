@@ -2,6 +2,7 @@
  * Requirements Stage System Prompt Builder
  */
 
+import { effectiveReviewStatus } from '../types'
 import type {
   ClarificationEntry,
   RequirementDraft,
@@ -15,6 +16,7 @@ export function buildRequirementsPrompt(
   existingRequirements?: Array<RequirementDraft>,
   schemaContext?: string,
   priorToolCalls?: string,
+  rejectedRequirements?: Array<RequirementDraft>,
 ): string {
   let prompt = `You are a systems engineering assistant helping design a product. Your task is to analyze a product description and generate complete and fully detailed structured requirements.
 
@@ -67,11 +69,24 @@ ${description}
   }
 
   if (existingRequirements && existingRequirements.length > 0) {
-    prompt += `\n## Work Done So Far\nThe following requirements have already been proposed — do NOT re-propose these. You may propose additional requirements that complement them:\n`
-    for (const r of existingRequirements) {
-      prompt += `- [${r.tempId}] ${r.name} (${r.requirementType}, ${r.priority}): ${r.description}\n`
+    const active = existingRequirements.filter(
+      (r) => effectiveReviewStatus(r) !== 'rejected',
+    )
+    if (active.length > 0) {
+      prompt += `\n## Work Done So Far\nThe following requirements have already been proposed — do NOT re-propose these. You may propose additional requirements that complement them:\n`
+      for (const r of active) {
+        prompt += `- [${r.tempId}] ${r.name} (${r.requirementType}, ${r.priority}): ${r.description}\n`
+      }
+      prompt += '\n'
     }
-    prompt += '\n'
+  }
+
+  if (rejectedRequirements && rejectedRequirements.length > 0) {
+    prompt += `\n## Rejected Proposals\nThe user reviewed and REJECTED these requirements. Do NOT re-propose them or close variants of them unless the user's latest guidance explicitly asks for them again:\n`
+    for (const r of rejectedRequirements) {
+      prompt += `- "${r.name}"${r.reviewNote ? ` — user's reason: ${r.reviewNote}` : ''}\n`
+    }
+    prompt += `\nTreat these rejections as design decisions and let them inform the rest of your analysis.\n`
   }
 
   if (schemaContext) {

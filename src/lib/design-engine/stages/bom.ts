@@ -20,6 +20,7 @@ import { summarizeToolCalls } from '../prompts/tool-call-summary'
 import { createBomTools } from '../tools/bom-tools'
 import { validateBomDraft } from '../validation/bom-validator'
 import { DesignSessionService } from '../session-service'
+import { activeRequirements } from '../types'
 import { createToolEventTracker } from './tool-event-tracker'
 import type { DesignSession } from '../session-service'
 import type {
@@ -175,6 +176,7 @@ export async function* runBomStage(
       clarificationRef.requested = true
       clarificationRef.data = { questionId, question, options, multiSelect }
     },
+    artifacts.bomRejections,
   )
 
   try {
@@ -188,7 +190,7 @@ export async function* runBomStage(
       : ''
     const systemPrompt = buildBomPrompt(
       description,
-      artifacts.requirements,
+      activeRequirements(artifacts.requirements),
       artifacts.clarifications.length > 0
         ? artifacts.clarifications
         : undefined,
@@ -197,6 +199,7 @@ export async function* runBomStage(
       undefined, // schemaContext
       artifacts.toolset ?? undefined,
       priorToolCalls || undefined,
+      artifacts.bomRejections,
     )
 
     // Build messages - cast to satisfy TanStack AI's constrained message types
@@ -315,7 +318,7 @@ export async function* runBomStage(
       // Rebuild prompt with current BOM state baked in
       const contSystemPrompt = buildBomPrompt(
         description,
-        artifacts.requirements,
+        activeRequirements(artifacts.requirements),
         artifacts.clarifications.length > 0
           ? artifacts.clarifications
           : undefined,
@@ -324,6 +327,7 @@ export async function* runBomStage(
         undefined, // schemaContext
         artifacts.toolset ?? undefined,
         priorToolCalls || undefined,
+        artifacts.bomRejections,
       )
 
       const contUserMessage = buildBomContinuationPrompt(gaps)

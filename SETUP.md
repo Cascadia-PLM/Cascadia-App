@@ -131,11 +131,17 @@ OPENAI_API_KEY=your-key-here
 
 ### AI CAD Generation
 
-Requires a Zoo API key for text-to-CAD model generation:
+Requires a Zoo API key for text-to-CAD model generation. Set it either via the
+environment:
 
 ```
 ZOO_API_KEY=your-zoo-api-key
 ```
+
+…or in the UI as an admin at **Admin → AI Assistant** (`/admin/ai`), in the
+**CAD Generation** section. A key saved and enabled there is stored in the
+database (encrypted at rest when `ENCRYPTION_KEY` is set) and overrides the
+environment variable.
 
 ### CAD Conversion Workers
 

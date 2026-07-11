@@ -12,6 +12,7 @@ import type { BomNodeDraft, DesignArtifacts, StageEvent } from '../types'
 import type { CadPromptContext } from '@/lib/cad-generation/types'
 import { generateAllParts } from '@/lib/cad-generation/part-generator'
 import { ZooClient } from '@/lib/cad-generation/zoo-client'
+import { resolveZooApiKey } from '@/lib/cad-generation/settings'
 import { buildCadPrompt } from '@/lib/cad-generation/prompt-builder'
 import {
   findAffectedAssemblies,
@@ -220,7 +221,7 @@ export async function* regeneratePartCad(
       return
     }
 
-    const zooClient = new ZooClient()
+    const zooClient = new ZooClient(await resolveZooApiKey())
 
     const promptContext: CadPromptContext = {
       partName: partNode.name,

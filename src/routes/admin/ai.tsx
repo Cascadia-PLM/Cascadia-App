@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { PageContainer } from '@/components/layout'
+import { CadGenerationSettingsCard } from '@/components/admin/CadGenerationSettingsCard'
 import {
   Badge,
   Button,
@@ -55,11 +56,7 @@ const DEFAULT_MODELS: Record<ProviderType, Array<string>> = {
     'o3',
     'o4-mini',
   ],
-  anthropic: [
-    'claude-opus-4-7',
-    'claude-opus-4-6',
-    'claude-sonnet-4-6',
-  ],
+  anthropic: ['claude-opus-4-7', 'claude-opus-4-6', 'claude-sonnet-4-6'],
   gemini: [
     'gemini-2.5-pro',
     'gemini-2.5-flash',
@@ -557,6 +554,22 @@ function AISettingsPage() {
           </div>
         </>
       )}
+
+      {/* CAD Generation section */}
+      <div className="border-t border-slate-200 dark:border-slate-800 pt-8 mt-4">
+        <div className="mb-4">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            CAD Generation
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
+            Configure the Text-to-CAD provider used by the collaborative design
+            engine
+          </p>
+        </div>
+        <div className="space-y-6">
+          <CadGenerationSettingsCard />
+        </div>
+      </div>
     </PageContainer>
   )
 }

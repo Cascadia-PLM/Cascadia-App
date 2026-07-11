@@ -38,7 +38,8 @@ export const zooGenerationHandler: JobHandler<
 
     // Submit to Zoo and wait for completion
     const { ZooClient } = await import('@/lib/cad-generation/zoo-client')
-    const zooClient = new ZooClient()
+    const { resolveZooApiKey } = await import('@/lib/cad-generation/settings')
+    const zooClient = new ZooClient(await resolveZooApiKey())
 
     const { requestId, stepContent } = await zooClient.generateAndWait(
       prompt,

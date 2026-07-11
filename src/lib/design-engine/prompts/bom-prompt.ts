@@ -11,6 +11,7 @@ import type {
   SessionTool,
   UserMessage,
 } from '../types'
+import type { MirrorCandidateGroup } from '../validation/mirror-detection'
 
 /**
  * Render a BOM tree as an indented text representation showing
@@ -138,6 +139,7 @@ ${toolset.tools.map((t) => formatToolForPrompt(t)).join('\n')}
 - Search for existing parts before proposing new ones
 - For Purchase parts: search PLM library first (\`search_parts\`), then component catalog (\`lookup_component_catalog\`), then propose with \`requiresManualSourcing: true\`
 - Set appropriate quantities for each BOM relationship
+- **Consolidate identical and mirror-image parts into a single line with the right quantity.** If a part appears multiple times — including mirror images that are the same manufactured item (e.g. a left and right rail cut from the same stock, or four identical corner brackets) — record ONE part with the summed quantity, not one line per instance. Only split them into separate lines when they are genuinely different parts (different holes, handedness that cannot be flipped, different lengths or materials). Name such parts generically (e.g. "Side Rail" qty 2), not "Left Rail" + "Right Rail".
 - Use Manufacture for custom-fabricated parts, Purchase for COTS/standard components, Software for firmware/code, Phantom for logical groupings
 - Assign find numbers for position identification
 - Link each part to the requirements it satisfies
@@ -309,6 +311,55 @@ export function buildBomContinuationPrompt(gaps: {
   )
 
   return sections.join('\n\n')
+}
+
+/**
+ * Build the system prompt for the logistical-consolidation pass. The pass is
+ * shown the current tree and a shortlist of sibling groups that look like the
+ * same part split into separate lines, and decides which to merge.
+ */
+export function buildBomConsolidationPrompt(
+  bom: BomDraft,
+  candidates: Array<MirrorCandidateGroup>,
+): string {
+  const groupsText = candidates
+    .map((g, i) => {
+      const members = g.members
+        .map((m) => `    - "${m.name}" (${m.tempId}, qty ${m.quantity})`)
+        .join('\n')
+      return `${i + 1}. Under assembly "${g.parentName}":\n${members}`
+    })
+    .join('\n')
+
+  return `You are reviewing a Bill of Materials for **logistical correctness**. The tree is already technically complete; your only job now is to consolidate parts that were mistakenly recorded as separate line items when they are really the same manufactured item.
+
+A BOM is logistically wrong when the same part is listed multiple times instead of once with a quantity. The most common cause is **mirror-image or repeated parts split into separate lines**, e.g.:
+
+- "Longitudinal Frame Member, Left" (x1) + "Longitudinal Frame Member, Right" (x1) → **"Longitudinal Frame Member" (x2)**
+- "Front Frame Member" (x1) + "Rear Frame Member" (x1) → **"End Frame Member" (x2)**
+- "Mid Frame Brace 1" (x1) + "Mid Frame Brace 2" (x1) → **"Mid Frame Brace" (x2)**
+
+## Current BOM tree
+\`\`\`
+${renderBomTree(bom.rootAssembly)}\`\`\`
+
+## Candidate groups to evaluate
+These sibling parts share a base name once directional/index qualifiers are stripped. For EACH group, decide whether the members are truly the same manufactured item:
+
+${groupsText}
+
+## How to decide
+- **Merge** when the parts are geometrically identical or true mirror images that would be fabricated from the same drawing/stock. A left and right member that are mirror images of each other are the SAME part (fabrication mirrors it), so they consolidate.
+- **Do NOT merge** when the parts differ functionally — different hole patterns, features that cannot be produced by mirroring, different lengths, or different materials. When in doubt, leave them separate.
+
+## What to do
+For every group you decide to consolidate, call \`consolidate_parts\` with:
+- \`keepTempId\`: one member to keep as the line item
+- \`mergeTempIds\`: the other members to fold in
+- \`consolidatedName\`: a generic name with the mirror qualifier removed (e.g. "Longitudinal Frame Member", "End Frame Member")
+- \`reason\`: why they are the same part
+
+The quantity is summed automatically. Only call the tool for groups you are consolidating — skip groups whose members are genuinely different parts. When you have processed every candidate group, stop.`
 }
 
 /**

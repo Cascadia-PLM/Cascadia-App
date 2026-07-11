@@ -304,16 +304,37 @@ design_sessions
   description     TEXT
   artifacts       JSONB (DesignArtifacts)
   llm_history     JSONB (Array<LlmHistoryEntry>)
+  pending_guidance  JSONB (Array<UserMessage>, default [])  -- mid-stream steering mailbox
   created_at      TIMESTAMPTZ
   updated_at      TIMESTAMPTZ
   completed_at    TIMESTAMPTZ
   materialized_design_id  UUID (FK -> designs, nullable)
   error_message   TEXT
+  forked_from_session_id  UUID (FK -> design_sessions, nullable)  -- fork lineage
 ```
 
 **Indexes**: `user_id`, `program_id`, `status`.
 
 **Relations**: Links to `users`, `programs`, `designs`, and `ai_chat_sessions`.
+
+Review-gate snapshots live in a separate append-only table (separate because
+the artifacts JSONB has two independent full-blob writers — the stage loop
+and the client PATCH — that would clobber anything embedded in it):
+
+```
+design_session_snapshots
+  id                  UUID (PK)
+  session_id          UUID (FK -> design_sessions, cascade)
+  stage               VARCHAR(50)   -- the review gate that was confirmed
+  seq                 INTEGER       -- monotonic per session
+  artifacts           JSONB         -- full DesignArtifacts at confirm time
+  llm_history_length  INTEGER       -- for llmHistory truncation on reopen
+  created_at          TIMESTAMPTZ
+```
+
+A snapshot is written by every `confirm_*` action. The latest snapshot for a
+stage is the **diff base** for that review gate and the **restore target**
+for `reopen_stage`.
 
 ### Artifacts JSONB Structure
 
@@ -322,15 +343,34 @@ The `artifacts` column stores all working data for the session as a single JSONB
 ```typescript
 interface DesignArtifacts {
   description: string
-  requirements: Array<RequirementDraft>
-  bom: BomDraft | null
+  toolset?: DesignSessionToolset
+  requirements: Array<RequirementDraft> // each carries reviewStatus/reviewNote
+  bom: BomDraft | null // each node carries reviewStatus/reviewNote
+  bomRejections?: Array<BomRejectionEntry> // tombstones of rejected parts
+  itemComments?: Array<ItemComment> // per-item feedback threads
   clarifications: Array<ClarificationEntry>
   userMessages: Array<UserMessage>
   pendingClarificationId?: string
+  pendingClarification?: { id; question; options?; multiSelect?; context? }
   materializationResult?: MaterializationResult
   cadGenerationState?: CadGenerationState
 }
 ```
+
+**Per-item review state**: AI proposals carry
+`reviewStatus: 'proposed' | 'accepted' | 'rejected' | 'edited'`. The
+`confirm_requirements` / `confirm_bom` gates refuse while any item is still
+`proposed` (pass `force: true` to override). Rejected requirements stay in
+the list (struck through, excluded from BOM prompts, coverage, and
+materialization); rejected BOM nodes are removed and tombstoned into
+`bomRejections`. Rejections — with the user's reasons — are injected into
+the stage prompts so re-runs don't re-propose them, and AI mutations of an
+accepted node reset it to `proposed` (the acceptance covered the old
+content).
+
+**Item comments**: unresolved `itemComments` render as "Item-Specific
+Feedback" in the requirements/BOM prompts, fold into `regenerate_part`
+feedback, and pass to the assembly planner as user notes.
 
 This design keeps all stage data in one place, avoids extra tables/joins, and allows the engine to resume from any point by reloading the session.
 
@@ -404,20 +444,29 @@ Client
 
 ### Stream Actions
 
-| Action                       | Type          | Description                                      |
-| ---------------------------- | ------------- | ------------------------------------------------ |
-| `start_requirements`         | Streaming     | Start requirements drafting                      |
-| `start_bom`                  | Streaming     | Start BOM drafting                               |
-| `start_cad_generation`       | Streaming     | Start CAD file generation                        |
-| `start_assembly_composition` | Streaming     | Start assembly composition                       |
-| `regenerate_part`            | Streaming     | Regenerate a single part's CAD                   |
-| `resume`                     | Streaming     | Resume whatever stage was in progress            |
-| `answer_clarification`       | Streaming     | Answer a clarification question and resume       |
-| `send_message`               | Streaming     | Send user guidance and resume drafting           |
-| `confirm_requirements`       | Non-streaming | Advance from requirements_review to bom_drafting |
-| `confirm_bom`                | Non-streaming | Advance from bom_review to materialization       |
-| `confirm_cad`                | Non-streaming | Advance from cad_review to assembly_composition  |
-| `confirm_assembly`           | Non-streaming | Advance from assembly_review to complete         |
+| Action                       | Type          | Description                                                                                                                              |
+| ---------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `start_toolset`              | Streaming     | Start toolset establishment                                                                                                              |
+| `start_requirements`         | Streaming     | Start requirements drafting                                                                                                              |
+| `start_bom`                  | Streaming     | Start BOM drafting                                                                                                                       |
+| `start_cad_generation`       | Streaming     | Start CAD file generation                                                                                                                |
+| `start_assembly_composition` | Streaming     | Start assembly composition                                                                                                               |
+| `regenerate_part`            | Streaming     | Regenerate a single part's CAD                                                                                                           |
+| `resume`                     | Streaming     | Resume whatever stage was in progress (drafting + generation stages; the generation stages skip already-completed parts/assemblies)      |
+| `answer_clarification`       | Streaming     | Answer a clarification question and resume                                                                                              |
+| `send_message`               | Streaming\*   | Send user guidance. With `queue: true` (sent while the client holds an open drafting stream) it enqueues into the steering mailbox instead — the running generation picks it up mid-stream without restarting |
+| `confirm_toolset`            | Non-streaming | Advance from toolset_review to requirements_drafting (snapshots artifacts)                                                               |
+| `confirm_requirements`       | Non-streaming | Advance from requirements_review to bom_drafting (snapshots; gated on per-item review, `force` to override)                              |
+| `confirm_bom`                | Non-streaming | Advance from bom_review to materialization (snapshots; gated on per-item review, `force` to override)                                    |
+| `confirm_cad`                | Non-streaming | Advance from cad_review to assembly_composition (snapshots artifacts)                                                                    |
+| `confirm_assembly`           | Non-streaming | Advance from assembly_review to complete (snapshots artifacts)                                                                           |
+| `reopen_stage`               | Non-streaming | Move back to a previously confirmed review gate (`targetStage`), restoring that gate's snapshot and truncating llmHistory to match. Refused after materialization — fork instead |
+
+**Other session endpoints**:
+
+- `GET /sessions/:id/snapshots` — snapshot metadata (id, stage, seq, createdAt), newest first
+- `GET /sessions/:id/snapshots/:snapshotId` — full snapshot payload (the diff base for review panels)
+- `POST /sessions/:id/fork` — copy the session (`{ title?, includeLlmHistory? }`) to explore a variant. Pending clarifications are cleared; a materialized source is stripped of materialization/CAD state and re-enters at `bom_review` so the fork never touches the original's PLM items. Snapshots copy over.
 
 ### Stage Events
 

@@ -16,6 +16,8 @@ import { summarizeToolCalls } from '../prompts/tool-call-summary'
 import { createToolsetTools } from '../tools/toolset-tools'
 import { DesignSessionService } from '../session-service'
 import { createToolEventTracker } from './tool-event-tracker'
+import { isResumingStage } from './resume'
+import { streamChunkError, streamChunkErrorToError } from './stream-error'
 import type { DesignSession } from '../session-service'
 import type {
   DesignArtifacts,
@@ -31,14 +33,6 @@ export async function* runToolsetEstablishmentStage(
   session: DesignSession,
   signal?: AbortSignal,
 ): AsyncGenerator<StageEvent> {
-  const isResuming = session.stage === 'toolset_establishment'
-
-  // Only signal stage start if not resuming
-  if (!isResuming) {
-    yield { type: 'stage_change', stage: 'toolset_establishment' }
-    await DesignSessionService.updateStage(session.id, 'toolset_establishment')
-  }
-
   const artifacts: DesignArtifacts = session.artifacts ?? {
     description: session.description ?? '',
     requirements: [],
@@ -47,6 +41,18 @@ export async function* runToolsetEstablishmentStage(
     userMessages: [],
   }
   const description = artifacts.description || session.description || ''
+
+  const isResuming = isResumingStage(
+    session.stage,
+    'toolset_establishment',
+    (artifacts.toolset?.tools.length ?? 0) > 0,
+  )
+
+  // Only signal stage start if not resuming
+  if (!isResuming) {
+    yield { type: 'stage_change', stage: 'toolset_establishment' }
+    await DesignSessionService.updateStage(session.id, 'toolset_establishment')
+  }
 
   let currentToolset: DesignSessionToolset = artifacts.toolset ?? {
     scope: 'unconstrained',
@@ -135,6 +141,13 @@ export async function* runToolsetEstablishmentStage(
 
     for await (const chunk of stream) {
       if (clarificationRef.requested || signal?.aborted) break
+
+      const chunkError = streamChunkError(chunk)
+      if (chunkError?.fatal) throw streamChunkErrorToError(chunkError)
+      if (chunkError) {
+        yield { type: 'llm_text', text: `\n\n_${chunkError.message}_\n\n` }
+        continue
+      }
 
       // Yield text content
       if (chunk.type === 'content' && chunk.content) {

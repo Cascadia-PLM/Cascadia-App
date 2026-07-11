@@ -45,6 +45,7 @@ export function buildBomPrompt(
   toolset?: DesignSessionToolset,
   priorToolCalls?: string,
   bomRejections?: Array<BomRejectionEntry>,
+  itemFeedback?: Array<{ targetName: string; text: string }>,
 ): string {
   const requirementsList = requirements
     .map(
@@ -251,6 +252,14 @@ apply_mechanism_template({
       prompt += `- "${r.name}"${r.partType ? ` [${r.partType}]` : ''}${where}${r.reason ? ` — user's reason: ${r.reason}` : ''}\n`
     }
     prompt += `\nTreat these rejections as design decisions and let them inform the rest of the BOM.\n`
+  }
+
+  if (itemFeedback && itemFeedback.length > 0) {
+    prompt += `\n## Item-Specific Feedback\nThe user left comments on specific BOM items. Address each one directly (update the item, or explain why not):\n`
+    for (const f of itemFeedback) {
+      prompt += `- On "${f.targetName}": ${f.text}\n`
+    }
+    prompt += '\n'
   }
 
   if (existingBom) {

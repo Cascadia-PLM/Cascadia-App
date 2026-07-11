@@ -41,6 +41,7 @@ export class AssemblyPlanner {
     childData: Array<AssemblyChildData>,
     designContext?: string,
     programId?: string,
+    userNotes?: Array<string>,
   ): Promise<AssemblyPlan> {
     const providerConfig = await loadProviderConfig(programId)
     const adapter = getAdapter(providerConfig)
@@ -49,6 +50,7 @@ export class AssemblyPlanner {
       assemblyNode,
       childData,
       designContext,
+      userNotes,
     )
 
     const messages: any = [
@@ -108,6 +110,7 @@ function buildAssemblyPlanPrompt(
   assemblyNode: BomNodeDraft,
   childData: Array<AssemblyChildData>,
   designContext?: string,
+  userNotes?: Array<string>,
 ): string {
   let prompt = `## Assembly: ${assemblyNode.name}\n`
   if (assemblyNode.rationale) {
@@ -115,6 +118,12 @@ function buildAssemblyPlanPrompt(
   }
   if (designContext) {
     prompt += `Product context: ${designContext}\n`
+  }
+  if (userNotes && userNotes.length > 0) {
+    prompt += `\n## User Feedback on This Assembly\nAddress each of these notes in your assembly plan:\n`
+    for (const note of userNotes) {
+      prompt += `- ${note}\n`
+    }
   }
 
   prompt += `\n## Child Parts\n`

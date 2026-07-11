@@ -13,6 +13,7 @@ import type {
   BomNodeDraft,
   DesignArtifacts,
   DesignSessionStage,
+  ItemComment,
   RequirementDraft,
   ReviewStatus,
 } from '@/lib/design-engine/types'
@@ -52,6 +53,12 @@ interface ArtifactPanelProps {
   onAddBomChild?: (parentTempId: string, data: Partial<BomNodeDraft>) => void
   requirementsDiff?: RequirementsDiff | null
   bomDiff?: BomDiff | null
+  onAddComment?: (
+    targetType: ItemComment['targetType'],
+    targetTempId: string,
+    text: string,
+  ) => void
+  onSetCommentResolved?: (commentId: string, resolved: boolean) => void
   className?: string
 }
 
@@ -73,6 +80,8 @@ export function ArtifactPanel({
   onAddBomChild,
   requirementsDiff,
   bomDiff,
+  onAddComment,
+  onSetCommentResolved,
   className,
 }: ArtifactPanelProps) {
   const [editingDescription, setEditingDescription] = useState(false)
@@ -189,6 +198,9 @@ export function ArtifactPanel({
           onAcceptAll={onAcceptAllRequirements}
           onConfirm={onConfirmRequirements}
           diff={requirementsDiff}
+          comments={artifacts.itemComments}
+          onAddComment={onAddComment}
+          onSetCommentResolved={onSetCommentResolved}
         />
       </section>
 
@@ -207,6 +219,9 @@ export function ArtifactPanel({
           onAcceptAllNodes={onAcceptAllBomNodes}
           onAddChild={onAddBomChild}
           diff={bomDiff}
+          comments={artifacts.itemComments}
+          onAddComment={onAddComment}
+          onSetCommentResolved={onSetCommentResolved}
         />
       </section>
     </div>

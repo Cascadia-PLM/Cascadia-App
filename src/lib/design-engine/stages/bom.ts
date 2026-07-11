@@ -20,7 +20,7 @@ import { summarizeToolCalls } from '../prompts/tool-call-summary'
 import { createBomTools } from '../tools/bom-tools'
 import { validateBomDraft } from '../validation/bom-validator'
 import { DesignSessionService } from '../session-service'
-import { activeRequirements } from '../types'
+import { activeRequirements, unresolvedComments } from '../types'
 import { createToolEventTracker } from './tool-event-tracker'
 import type { DesignSession } from '../session-service'
 import type {
@@ -188,6 +188,22 @@ export async function* runBomStage(
     const priorToolCalls = isResuming
       ? summarizeToolCalls(session.llmHistory)
       : ''
+    // Per-node comments, resolved against current tree names
+    const nodeNames = new Map<string, string>()
+    if (artifacts.bom) {
+      const collectNames = (n: BomNodeDraft) => {
+        nodeNames.set(n.tempId, n.name)
+        n.children.forEach(collectNames)
+      }
+      collectNames(artifacts.bom.rootAssembly)
+    }
+    const bomItemFeedback = unresolvedComments(
+      artifacts.itemComments,
+      'bom_node',
+    ).map((c) => ({
+      targetName: nodeNames.get(c.targetTempId) ?? c.targetTempId,
+      text: c.text,
+    }))
     const systemPrompt = buildBomPrompt(
       description,
       activeRequirements(artifacts.requirements),
@@ -200,6 +216,7 @@ export async function* runBomStage(
       artifacts.toolset ?? undefined,
       priorToolCalls || undefined,
       artifacts.bomRejections,
+      bomItemFeedback.length > 0 ? bomItemFeedback : undefined,
     )
 
     // Build messages - cast to satisfy TanStack AI's constrained message types
@@ -328,6 +345,7 @@ export async function* runBomStage(
         artifacts.toolset ?? undefined,
         priorToolCalls || undefined,
         artifacts.bomRejections,
+        bomItemFeedback.length > 0 ? bomItemFeedback : undefined,
       )
 
       const contUserMessage = buildBomContinuationPrompt(gaps)

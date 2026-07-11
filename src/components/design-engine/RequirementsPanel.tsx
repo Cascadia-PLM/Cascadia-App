@@ -20,8 +20,10 @@ import {
 } from 'lucide-react'
 import { ArtifactDiffLegend } from './ArtifactDiffLegend'
 import { DIFF_STATUS_STYLES } from './diff-styles'
+import { ItemCommentThread } from './ItemCommentThread'
 import type {
   DesignSessionStage,
+  ItemComment,
   RequirementDraft,
   ReviewStatus,
 } from '@/lib/design-engine/types'
@@ -164,6 +166,13 @@ interface RequirementsPanelProps {
   onConfirm?: (options?: { force?: boolean }) => void
   /** Changes since the last confirmed requirements snapshot (reopen/re-run only) */
   diff?: RequirementsDiff | null
+  comments?: Array<ItemComment>
+  onAddComment?: (
+    targetType: ItemComment['targetType'],
+    targetTempId: string,
+    text: string,
+  ) => void
+  onSetCommentResolved?: (commentId: string, resolved: boolean) => void
 }
 
 export function RequirementsPanel({
@@ -176,6 +185,9 @@ export function RequirementsPanel({
   onAcceptAll,
   onConfirm,
   diff,
+  comments,
+  onAddComment,
+  onSetCommentResolved,
 }: RequirementsPanelProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
@@ -426,6 +438,15 @@ export function RequirementsPanel({
                         </div>
                       ) : null
                     })()}
+                    <ItemCommentThread
+                      targetType="requirement"
+                      targetTempId={req.tempId}
+                      comments={comments ?? []}
+                      canComment={!!canEdit}
+                      onAddComment={inEditableStage ? onAddComment : undefined}
+                      onSetResolved={onSetCommentResolved}
+                      className="mt-1"
+                    />
                   </div>
                   {inEditableStage && (
                     <div className="flex gap-1.5 flex-shrink-0">

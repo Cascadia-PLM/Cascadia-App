@@ -7,6 +7,7 @@
  */
 
 import { DesignSessionService } from '../session-service'
+import { unresolvedComments } from '../types'
 import type { DesignSession } from '../session-service'
 import type { BomNodeDraft, DesignArtifacts, StageEvent } from '../types'
 import type { CadPromptContext } from '@/lib/cad-generation/types'
@@ -222,6 +223,15 @@ export async function* regeneratePartCad(
 
     const zooClient = new ZooClient()
 
+    // Fold unresolved per-part comments into the regeneration feedback
+    const partComments = unresolvedComments(
+      artifacts.itemComments,
+      'bom_node',
+      tempId,
+    ).map((c) => c.text)
+    const combinedFeedback =
+      [feedback, ...partComments].filter(Boolean).join('\n') || undefined
+
     const promptContext: CadPromptContext = {
       partName: partNode.name,
       partDescription: partNode.rationale || partNode.name,
@@ -233,7 +243,7 @@ export async function* regeneratePartCad(
         locationHint: i.locationHint,
       })),
       overallProductDescription: artifacts.description,
-      additionalFeedback: feedback,
+      additionalFeedback: combinedFeedback,
     }
 
     const prompt = buildCadPrompt(promptContext)

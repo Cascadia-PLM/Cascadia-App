@@ -460,6 +460,8 @@ export function CollaborativeWorkspace({
               onAddBomChild={handleAddBomChild}
               requirementsDiff={requirementsDiff}
               bomDiff={bomDiff}
+              onAddComment={mutations.addItemComment}
+              onSetCommentResolved={mutations.setItemCommentResolved}
               className="flex-1"
             />
           )}

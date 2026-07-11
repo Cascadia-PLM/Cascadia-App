@@ -9,6 +9,7 @@
  */
 
 import { DesignSessionService } from '../session-service'
+import { unresolvedComments } from '../types'
 import type { DesignSession } from '../session-service'
 import type { DesignArtifacts, StageEvent } from '../types'
 import type { BoundingBox3D } from '@/lib/cad-generation/types'
@@ -173,12 +174,18 @@ export async function* runAssemblyCompositionStage(
             })),
           }))
 
-        // Plan assembly via LLM
+        // Plan assembly via LLM, folding in unresolved comments on this node
+        const assemblyNotes = unresolvedComments(
+          artifacts.itemComments,
+          'bom_node',
+          assemblyNode.tempId,
+        ).map((c) => c.text)
         const plan = await AssemblyPlanner.planAssembly(
           assemblyNode,
           childData,
           artifacts.description,
           session.programId,
+          assemblyNotes.length > 0 ? assemblyNotes : undefined,
         )
 
         // Validate the plan

@@ -91,6 +91,22 @@ export interface UserMessage {
   stage: DesignSessionStage
 }
 
+/**
+ * A comment attached to a specific artifact item (requirement or BOM node).
+ * Unresolved comments are injected into stage prompts and regeneration
+ * feedback so the AI addresses them on the next run. Stored as a flat list
+ * so comments survive node removal/tombstoning.
+ */
+export interface ItemComment {
+  id: string
+  targetType: 'requirement' | 'bom_node'
+  targetTempId: string
+  text: string
+  createdAt: string // ISO timestamp
+  stage: DesignSessionStage
+  resolved?: boolean
+}
+
 // ============================================================================
 // Manufacturing Toolset Types
 // ============================================================================
@@ -227,6 +243,20 @@ export function activeRequirements(
 ): Array<RequirementDraft> {
   return requirements.filter(
     (r) => effectiveReviewStatus(r) !== 'rejected',
+  )
+}
+
+/** Unresolved comments for a target type (optionally narrowed to one item). */
+export function unresolvedComments(
+  comments: Array<ItemComment> | undefined,
+  targetType: ItemComment['targetType'],
+  targetTempId?: string,
+): Array<ItemComment> {
+  return (comments ?? []).filter(
+    (c) =>
+      c.targetType === targetType &&
+      !c.resolved &&
+      (targetTempId === undefined || c.targetTempId === targetTempId),
   )
 }
 
@@ -469,6 +499,8 @@ export interface DesignArtifacts {
   bom: BomDraft | null
   /** Tombstones of BOM nodes the user rejected — fed back into BOM prompts. */
   bomRejections?: Array<BomRejectionEntry>
+  /** Per-item feedback threads — unresolved comments feed the next AI run. */
+  itemComments?: Array<ItemComment>
   clarifications: Array<ClarificationEntry>
   userMessages: Array<UserMessage>
   pendingClarificationId?: string
@@ -695,6 +727,16 @@ const bomRejectionEntrySchema = z.object({
   stage: z.string(),
 })
 
+const itemCommentSchema = z.object({
+  id: z.string(),
+  targetType: z.enum(['requirement', 'bom_node']),
+  targetTempId: z.string(),
+  text: z.string(),
+  createdAt: z.string(),
+  stage: z.string(),
+  resolved: z.boolean().optional(),
+})
+
 // BOM tree is deeply recursive — validate top-level shape, passthrough nested
 const bomNodeDraftSchema: z.ZodType<unknown> = z
   .object({
@@ -762,6 +804,7 @@ export const designArtifactsPatchSchema = z
     requirements: z.array(requirementDraftSchema),
     bom: bomDraftSchema,
     bomRejections: z.array(bomRejectionEntrySchema),
+    itemComments: z.array(itemCommentSchema),
     clarifications: z.array(clarificationEntrySchema),
     userMessages: z.array(userMessageSchema),
     pendingClarificationId: z.string().optional(),

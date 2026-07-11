@@ -28,11 +28,13 @@ import {
 } from './RequirementsPanel'
 import { ArtifactDiffLegend } from './ArtifactDiffLegend'
 import { DIFF_STATUS_STYLES } from './diff-styles'
+import { ItemCommentThread } from './ItemCommentThread'
 import type {
   BomDraft,
   BomNodeDraft,
   BomRejectionEntry,
   DesignSessionStage,
+  ItemComment,
   RequirementDraft,
   ReviewStatus,
 } from '@/lib/design-engine/types'
@@ -71,6 +73,13 @@ interface BomDraftPanelProps {
   onAddChild?: (parentTempId: string, data: Partial<BomNodeDraft>) => void
   /** Changes since the last confirmed BOM snapshot (reopen/re-run only) */
   diff?: BomDiff | null
+  comments?: Array<ItemComment>
+  onAddComment?: (
+    targetType: ItemComment['targetType'],
+    targetTempId: string,
+    text: string,
+  ) => void
+  onSetCommentResolved?: (commentId: string, resolved: boolean) => void
 }
 
 function countUnresolvedNodes(bom: BomDraft): number {
@@ -96,6 +105,9 @@ export function BomDraftPanel({
   onAcceptAllNodes,
   onAddChild,
   diff,
+  comments,
+  onAddComment,
+  onSetCommentResolved,
 }: BomDraftPanelProps) {
   const [showRejected, setShowRejected] = useState(false)
   const canConfirm = currentStage === 'bom_review' && bom !== null
@@ -159,6 +171,9 @@ export function BomDraftPanel({
           onSetNodeReviewStatus={onSetNodeReviewStatus}
           onAddChild={onAddChild}
           diff={diff}
+          comments={comments}
+          onAddComment={onAddComment}
+          onSetCommentResolved={onSetCommentResolved}
         />
       </div>
 
@@ -299,6 +314,13 @@ interface BomNodeRowProps {
   onSetNodeReviewStatus?: (tempId: string, status: ReviewStatus) => void
   onAddChild?: (parentTempId: string, data: Partial<BomNodeDraft>) => void
   diff?: BomDiff | null
+  comments?: Array<ItemComment>
+  onAddComment?: (
+    targetType: ItemComment['targetType'],
+    targetTempId: string,
+    text: string,
+  ) => void
+  onSetCommentResolved?: (commentId: string, resolved: boolean) => void
 }
 
 function BomNodeRow({
@@ -311,6 +333,9 @@ function BomNodeRow({
   onSetNodeReviewStatus,
   onAddChild,
   diff,
+  comments,
+  onAddComment,
+  onSetCommentResolved,
 }: BomNodeRowProps) {
   const [expanded, setExpanded] = useState(depth < 2)
   const [editing, setEditing] = useState(false)
@@ -405,6 +430,18 @@ function BomNodeRow({
               <DiffBadge
                 status={nodeDiff.status}
                 reparented={nodeDiff.reparented}
+              />
+            </span>
+          )}
+          {(onAddComment || onSetCommentResolved) && (
+            <span className="ml-1.5">
+              <ItemCommentThread
+                targetType="bom_node"
+                targetTempId={node.tempId}
+                comments={comments ?? []}
+                canComment={canEdit}
+                onAddComment={onAddComment}
+                onSetResolved={onSetCommentResolved}
               />
             </span>
           )}
@@ -537,6 +574,9 @@ function BomNodeRow({
             onSetNodeReviewStatus={onSetNodeReviewStatus}
             onAddChild={onAddChild}
             diff={diff}
+            comments={comments}
+            onAddComment={onAddComment}
+            onSetCommentResolved={onSetCommentResolved}
           />
         ))}
       {addingChild && onAddChild && (

@@ -17,6 +17,7 @@ export function buildRequirementsPrompt(
   schemaContext?: string,
   priorToolCalls?: string,
   rejectedRequirements?: Array<RequirementDraft>,
+  itemFeedback?: Array<{ targetName: string; text: string }>,
 ): string {
   let prompt = `You are a systems engineering assistant helping design a product. Your task is to analyze a product description and generate complete and fully detailed structured requirements.
 
@@ -87,6 +88,14 @@ ${description}
       prompt += `- "${r.name}"${r.reviewNote ? ` — user's reason: ${r.reviewNote}` : ''}\n`
     }
     prompt += `\nTreat these rejections as design decisions and let them inform the rest of your analysis.\n`
+  }
+
+  if (itemFeedback && itemFeedback.length > 0) {
+    prompt += `\n## Item-Specific Feedback\nThe user left comments on specific requirements. Address each one directly (update the item, or explain why not):\n`
+    for (const f of itemFeedback) {
+      prompt += `- On "${f.targetName}": ${f.text}\n`
+    }
+    prompt += '\n'
   }
 
   if (schemaContext) {

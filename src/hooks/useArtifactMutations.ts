@@ -11,6 +11,7 @@ import type {
   BomRejectionEntry,
   DesignArtifacts,
   DesignSessionStage,
+  ItemComment,
   RequirementDraft,
   ReviewStatus,
 } from '@/lib/design-engine/types'
@@ -232,10 +233,46 @@ export function useArtifactMutations({
     [sessionId, artifacts, requirementIds],
   )
 
+  // ---------------- Item comments ----------------
+
+  const addItemComment = useCallback(
+    async (
+      targetType: ItemComment['targetType'],
+      targetTempId: string,
+      text: string,
+    ) => {
+      const comment: ItemComment = {
+        id: crypto.randomUUID(),
+        targetType,
+        targetTempId,
+        text,
+        createdAt: new Date().toISOString(),
+        stage: currentStage ?? 'idle',
+      }
+      await patchArtifacts(sessionId, {
+        ...artifacts,
+        itemComments: [...(artifacts.itemComments ?? []), comment],
+      })
+    },
+    [sessionId, artifacts, currentStage],
+  )
+
+  const setItemCommentResolved = useCallback(
+    async (commentId: string, resolved: boolean) => {
+      const itemComments = (artifacts.itemComments ?? []).map((c) =>
+        c.id === commentId ? { ...c, resolved } : c,
+      )
+      await patchArtifacts(sessionId, { ...artifacts, itemComments })
+    },
+    [sessionId, artifacts],
+  )
+
   return {
     updateRequirement,
     removeRequirement,
     addRequirement,
+    addItemComment,
+    setItemCommentResolved,
     setRequirementReviewStatus,
     acceptAllRequirements,
     updateNode,

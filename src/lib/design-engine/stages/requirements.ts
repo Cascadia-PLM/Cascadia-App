@@ -15,7 +15,7 @@ import { buildRequirementsPrompt } from '../prompts/requirements-prompt'
 import { summarizeToolCalls } from '../prompts/tool-call-summary'
 import { createRequirementsTools } from '../tools/requirements-tools'
 import { DesignSessionService } from '../session-service'
-import { effectiveReviewStatus } from '../types'
+import { effectiveReviewStatus, unresolvedComments } from '../types'
 import { createToolEventTracker } from './tool-event-tracker'
 import type { DesignSession } from '../session-service'
 import type { DesignArtifacts, RequirementDraft, StageEvent } from '../types'
@@ -115,6 +115,16 @@ export async function* runRequirementsStage(
     const rejectedRequirements = artifacts.requirements.filter(
       (r) => effectiveReviewStatus(r) === 'rejected',
     )
+    const requirementNames = new Map(
+      artifacts.requirements.map((r) => [r.tempId, r.name]),
+    )
+    const itemFeedback = unresolvedComments(
+      artifacts.itemComments,
+      'requirement',
+    ).map((c) => ({
+      targetName: requirementNames.get(c.targetTempId) ?? c.targetTempId,
+      text: c.text,
+    }))
     const systemPrompt = buildRequirementsPrompt(
       description,
       artifacts.clarifications.length > 0
@@ -127,6 +137,7 @@ export async function* runRequirementsStage(
       undefined,
       priorToolCalls || undefined,
       rejectedRequirements.length > 0 ? rejectedRequirements : undefined,
+      itemFeedback.length > 0 ? itemFeedback : undefined,
     )
 
     // Build messages - cast to satisfy TanStack AI's constrained message types

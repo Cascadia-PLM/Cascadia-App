@@ -11,7 +11,11 @@ import {
   getMechanismRoles,
   validateMechanismParameters,
 } from '../validation/mechanism-schemas'
-import { toolErrorMessage } from './tool-utils'
+import {
+  decodeEntities,
+  decodeEntitiesMaybe,
+  toolErrorMessage,
+} from './tool-utils'
 import type { ToolContext } from '@/lib/ai/tools/permission-wrapper'
 import type {
   BomDraft,
@@ -119,6 +123,9 @@ export function createBomTools(
     multiSelect?: boolean,
   ) => void,
   rejectedParts?: Array<BomRejectionEntry>,
+  // Once the stage has spent its clarification budget it withholds this tool so
+  // the model can no longer stall by asking more questions — it must propose.
+  options?: { allowClarification?: boolean },
 ) {
   /**
    * The user accepted this node's previous content — any AI mutation makes
@@ -352,9 +359,17 @@ export function createBomTools(
       message: z.string().optional(),
     }),
   }).server((input) => {
+    // Models sometimes HTML-escape plain text ("Frame &amp; Chassis Assembly");
+    // decode before storing so the name/text is clean in the BOM table and on
+    // the materialized PLM item.
+    const name = decodeEntities(input.name)
+    const description = decodeEntities(input.description)
+    const rationale = decodeEntities(input.rationale)
+    const cadGenerationHint = decodeEntitiesMaybe(input.cadGenerationHint)
+
     // Structural dedup: same name under the same parent → return the existing
     // node instead of adding a duplicate (guards re-proposes on resume).
-    const normalizedName = input.name.trim().toLowerCase()
+    const normalizedName = name.trim().toLowerCase()
     const duplicate = siblingsFor(input.parentTempId).find(
       (n) => n.name.trim().toLowerCase() === normalizedName,
     )
@@ -377,12 +392,12 @@ export function createBomTools(
 
     const proposedPart: ProposedPart = {
       tempId,
-      name: input.name,
-      description: input.description,
+      name,
+      description,
       partType: input.partType,
       material: input.material,
       estimatedCost: input.estimatedCost,
-      rationale: input.rationale,
+      rationale,
       satisfiesRequirements: input.satisfiesRequirements,
       parametricSpec: input.parametricSpec as ParametricPartSpec | undefined,
       catalogComponentId: input.catalogComponentId,
@@ -390,13 +405,13 @@ export function createBomTools(
       selectedStockSize: input.selectedStockSize,
       assignedToolId: input.assignedToolId,
       manufacturingConstraints: input.manufacturingConstraints as any,
-      cadGenerationHint: input.cadGenerationHint,
+      cadGenerationHint,
     }
     state.proposedParts.push(proposedPart)
 
     const bomNode: BomNodeDraft = {
       tempId,
-      name: input.name,
+      name,
       isNew: true,
       quantity: input.quantity ?? 1,
       findNumber: input.findNumber,
@@ -404,7 +419,7 @@ export function createBomTools(
       requirementTempIds: input.satisfiesRequirements,
       partType: input.partType,
       material: input.material,
-      rationale: input.rationale,
+      rationale,
       confidence: 0.8,
       reviewStatus: 'proposed',
       parametricSpec: input.parametricSpec as ParametricPartSpec | undefined,
@@ -413,7 +428,7 @@ export function createBomTools(
       selectedStockSize: input.selectedStockSize,
       assignedToolId: input.assignedToolId,
       manufacturingConstraints: input.manufacturingConstraints as any,
-      cadGenerationHint: input.cadGenerationHint,
+      cadGenerationHint,
     }
     state.nodes.set(tempId, bomNode)
 
@@ -469,7 +484,7 @@ export function createBomTools(
     const tempId = crypto.randomUUID()
     const bomNode: BomNodeDraft = {
       tempId,
-      name: input.name,
+      name: decodeEntities(input.name),
       existingItemId: input.existingItemId,
       existingItemNumber: input.existingItemNumber,
       isNew: false,
@@ -895,6 +910,8 @@ export function createBomTools(
     return root ? [root] : []
   }
 
+  const allowClarification = options?.allowClarification ?? true
+
   return [
     searchParts,
     lookupComponentCatalog,
@@ -908,7 +925,7 @@ export function createBomTools(
     setAssemblyInterfaceMappings,
     assignManufacturing,
     applyMechanismTemplate,
-    askBomClarification,
+    ...(allowClarification ? [askBomClarification] : []),
   ]
 }
 
@@ -1060,7 +1077,7 @@ export function createConsolidationTools(
       state,
       input.keepTempId,
       input.mergeTempIds,
-      input.consolidatedName,
+      decodeEntities(input.consolidatedName),
     )
     if (!result.ok) {
       return { success: false, message: result.error }

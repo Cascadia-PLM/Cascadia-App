@@ -45,3 +45,28 @@ export function streamChunkErrorToError(error: StreamChunkError): Error {
       : `AI provider error: ${error.message}`,
   )
 }
+
+/**
+ * Transient failures — a dropped socket, a timeout, provider overload — are
+ * worth retrying: the request itself was valid and a fresh attempt usually
+ * succeeds. `terminated` is undici's error when the streaming connection is cut
+ * mid-response (e.g. a headers/body timeout on a slow or oversized request).
+ * These differ from 4xx rejections (bad model, malformed request), which fail
+ * identically on retry and must surface immediately instead of looping.
+ */
+const TRANSIENT_MESSAGE_PATTERN =
+  /\bterminated\b|socket|econnreset|econnrefused|etimedout|timeout|network|fetch failed|overloaded|rate.?limit|\b(?:429|500|502|503|504|529)\b/i
+
+const TRANSIENT_CODES = new Set([
+  'overloaded_error',
+  'rate_limit_error',
+  'api_error',
+  'timeout',
+  'econnreset',
+  'etimedout',
+])
+
+export function isTransientStreamError(error: StreamChunkError): boolean {
+  if (error.code && TRANSIENT_CODES.has(error.code.toLowerCase())) return true
+  return TRANSIENT_MESSAGE_PATTERN.test(error.message)
+}

@@ -19,7 +19,11 @@ import { effectiveReviewStatus, unresolvedComments } from '../types'
 import { createToolEventTracker } from './tool-event-tracker'
 import { buildSteeringUserMessage, createGuidanceChecker } from './guidance'
 import { isResumingStage } from './resume'
-import { streamChunkError, streamChunkErrorToError } from './stream-error'
+import {
+  isTransientStreamError,
+  streamChunkError,
+  streamChunkErrorToError,
+} from './stream-error'
 import type { DesignSession } from '../session-service'
 import type {
   DesignArtifacts,
@@ -35,6 +39,18 @@ const REQUIREMENTS_MAX_ITERATIONS = 20
 /** Bound the number of mid-stream steering restarts per request. */
 const MAX_STEERING_CONTINUATIONS = 5
 
+/**
+ * How many clarification rounds the stage will run before it forces the model
+ * to propose. Each `ask_clarification` pauses the stream, so a model that keeps
+ * asking never reaches the proposing phase. Past this budget the clarification
+ * tool is withdrawn and the prompt requires concrete proposals — without it a
+ * session can loop indefinitely gathering context and produce nothing.
+ */
+const MAX_CLARIFICATION_ROUNDS = 6
+
+/** Retries for transient stream failures (dropped socket, timeout, overload). */
+const MAX_TRANSIENT_RETRIES = 2
+
 export async function* runRequirementsStage(
   session: DesignSession,
   signal?: AbortSignal,
@@ -48,10 +64,28 @@ export async function* runRequirementsStage(
   }
   const description = artifacts.description || session.description || ''
 
+  // Clarifications already asked and answered *for this stage*. Answers from
+  // an earlier stage (e.g. toolset) don't count — they don't prove requirements
+  // drafting has run.
+  const clarificationRoundsUsed = artifacts.clarifications.filter(
+    (c) => c.stage === 'requirements_drafting',
+  ).length
+
+  // A run is a continuation — not a fresh start — once the stage has produced
+  // any requirements OR already gathered clarifications. Keying resume solely
+  // on proposed requirements meant a session that only ever asked questions
+  // (never proposed) restarted from scratch every round: re-running "search
+  // first, ask liberally" and never advancing toward proposals.
+  const hasPriorWork =
+    artifacts.requirements.length > 0 || clarificationRoundsUsed > 0
+
+  // Budget spent → stop asking and require proposals this run.
+  const mustPropose = clarificationRoundsUsed >= MAX_CLARIFICATION_ROUNDS
+
   const isResuming = isResumingStage(
     session.stage,
     'requirements_drafting',
-    artifacts.requirements.length > 0,
+    hasPriorWork,
   )
 
   // Only signal stage start if not resuming
@@ -116,6 +150,7 @@ export async function* runRequirementsStage(
       clarificationRef.requested = true
       clarificationRef.data = { questionId, question, options, multiSelect }
     },
+    { allowClarification: !mustPropose },
   )
 
   try {
@@ -174,6 +209,7 @@ export async function* runRequirementsStage(
         priorToolCalls || undefined,
         rejectedRequirements.length > 0 ? rejectedRequirements : undefined,
         itemFeedback.length > 0 ? itemFeedback : undefined,
+        mustPropose,
       )
 
       const userContent = steeringMessages
@@ -188,72 +224,100 @@ export async function* runRequirementsStage(
         { role: 'user', content: userContent },
       ]
 
-      // Internal controller: aborted by the external signal AND by steering
-      // (to cut the current chat short and restart with guidance injected).
-      const abortController = new AbortController()
-      if (signal) {
-        signal.addEventListener('abort', () => abortController.abort())
-      }
-
-      // Stream the LLM response (16k tokens to accommodate multiple tool calls)
-      const stream = chat({
-        adapter,
-        messages,
-        tools,
-        maxTokens: 16384,
-        agentLoopStrategy: maxIterations(REQUIREMENTS_MAX_ITERATIONS),
-        abortController,
-      })
-
-      const tracker = createToolEventTracker()
+      // Guidance drained mid-stream; injected as the next round's user turn.
       let drainedSteering: Array<UserMessage> | null = null
 
-      for await (const chunk of stream) {
-        // Check if clarification was requested or abort signalled — break out of loop
-        if (clarificationRef.requested || signal?.aborted) break
-
-        // Adapter errors arrive as terminal error chunks, not throws — a loop
-        // that ignores them mistakes a rejected request for an empty answer.
-        const chunkError = streamChunkError(chunk)
-        if (chunkError?.fatal) throw streamChunkErrorToError(chunkError)
-        if (chunkError) {
-          yield { type: 'llm_text', text: `\n\n_${chunkError.message}_\n\n` }
-          continue
+      // Transient provider failures (dropped socket, timeout, overload) arrive
+      // as terminal error chunks, not throws. Retry the same request a few times
+      // before giving up so one flaky connection doesn't destroy the whole run.
+      for (let attempt = 0; ; attempt++) {
+        // Internal controller: aborted by the external signal AND by steering
+        // (to cut the current chat short and restart with guidance injected).
+        const abortController = new AbortController()
+        if (signal) {
+          signal.addEventListener('abort', () => abortController.abort())
         }
 
-        // Yield only the incremental text. The SDK resets its accumulated
-        // `content` at the start of each agent-loop iteration (i.e. after every
-        // tool call), so slicing against a persistent offset would drop the
-        // leading characters of each post-tool-call message. `chunk.delta` is the
-        // true per-chunk increment and is iteration-safe.
-        if (chunk.type === 'content' && chunk.delta) {
-          yield { type: 'llm_text', text: chunk.delta }
-        }
+        // Stream the LLM response (16k tokens to accommodate multiple tool calls)
+        const stream = chat({
+          adapter,
+          messages,
+          tools,
+          maxTokens: 16384,
+          agentLoopStrategy: maxIterations(REQUIREMENTS_MAX_ITERATIONS),
+          abortController,
+        })
 
-        // Translate SDK tool chunks into tool_call/tool_result events so they're
-        // captured into llmHistory (and shown in the activity feed).
-        for (const ev of tracker.handle(chunk)) yield ev
+        const tracker = createToolEventTracker()
+        let retryTransient = false
 
-        // Check for new requirements and yield artifact updates
-        if (proposedRequirements.length > lastRequirementsCount) {
-          artifacts.requirements = [...proposedRequirements]
-          yield {
-            type: 'artifact_update',
-            artifacts: { requirements: artifacts.requirements },
+        for await (const chunk of stream) {
+          // Check if clarification was requested or abort signalled — break out of loop
+          if (clarificationRef.requested || signal?.aborted) break
+
+          // Adapter errors arrive as terminal error chunks, not throws — a loop
+          // that ignores them mistakes a rejected request for an empty answer.
+          const chunkError = streamChunkError(chunk)
+          if (chunkError?.fatal) {
+            // Retry transient failures; surface genuine rejections immediately.
+            if (
+              isTransientStreamError(chunkError) &&
+              attempt < MAX_TRANSIENT_RETRIES
+            ) {
+              retryTransient = true
+              abortController.abort()
+              yield {
+                type: 'llm_text',
+                text: `\n\n_The AI provider connection dropped (${chunkError.message}) — retrying (attempt ${attempt + 2}/${MAX_TRANSIENT_RETRIES + 1})..._\n\n`,
+              }
+              break
+            }
+            throw streamChunkErrorToError(chunkError)
           }
-          await DesignSessionService.updateArtifacts(session.id, artifacts)
-          lastRequirementsCount = proposedRequirements.length
+          if (chunkError) {
+            yield { type: 'llm_text', text: `\n\n_${chunkError.message}_\n\n` }
+            continue
+          }
+
+          // Yield only the incremental text. The SDK resets its accumulated
+          // `content` at the start of each agent-loop iteration (i.e. after every
+          // tool call), so slicing against a persistent offset would drop the
+          // leading characters of each post-tool-call message. `chunk.delta` is the
+          // true per-chunk increment and is iteration-safe.
+          if (chunk.type === 'content' && chunk.delta) {
+            yield { type: 'llm_text', text: chunk.delta }
+          }
+
+          // Translate SDK tool chunks into tool_call/tool_result events so they're
+          // captured into llmHistory (and shown in the activity feed).
+          for (const ev of tracker.handle(chunk)) yield ev
+
+          // Check for new requirements and yield artifact updates
+          if (proposedRequirements.length > lastRequirementsCount) {
+            artifacts.requirements = [...proposedRequirements]
+            yield {
+              type: 'artifact_update',
+              artifacts: { requirements: artifacts.requirements },
+            }
+            await DesignSessionService.updateArtifacts(session.id, artifacts)
+            lastRequirementsCount = proposedRequirements.length
+          }
+
+          // Mid-stream steering: internally throttled, so this is cheap to call
+          // per chunk. On a hit, cut this chat short and restart with the
+          // guidance injected as the next user turn.
+          const drained = await guidance.maybeDrain()
+          if (drained.length > 0) {
+            drainedSteering = drained
+            abortController.abort()
+            break
+          }
         }
 
-        // Mid-stream steering: internally throttled, so this is cheap to call
-        // per chunk. On a hit, cut this chat short and restart with the
-        // guidance injected as the next user turn.
-        const drained = await guidance.maybeDrain()
-        if (drained.length > 0) {
-          drainedSteering = drained
-          abortController.abort()
-          break
-        }
+        // Re-run the same request on a transient failure; otherwise the stream
+        // is finished (clarification, steering, or normal completion).
+        if (retryTransient) continue
+        break
       }
 
       // If clarification was requested, save progress and pause

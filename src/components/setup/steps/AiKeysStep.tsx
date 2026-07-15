@@ -28,10 +28,10 @@ import {
 } from '@/components/ui'
 
 const DEFAULT_MODELS: Record<AiProviderType, Array<string>> = {
-  openai: ['gpt-5', 'gpt-5-mini', 'gpt-4.1', 'o3', 'o4-mini'],
-  anthropic: ['claude-opus-4-7', 'claude-sonnet-4-6'],
-  gemini: ['gemini-2.5-pro', 'gemini-2.5-flash'],
-  ollama: ['llama3.3', 'qwen2.5'],
+  openai: ['gpt-5.6-sol', 'gpt-5.6-luna', 'gpt-4.1', 'o4-mini', 'o3'],
+  anthropic: ['claude-opus-4-8', 'claude-sonnet-5'],
+  gemini: ['gemini-3.1-pro-preview', 'gemini-3.5-flash'],
+  ollama: ['llama4:scout', 'qwen3'],
 }
 
 const PROVIDER_LABELS: Record<AiProviderType, string> = {

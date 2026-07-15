@@ -301,12 +301,12 @@ The AI assistant supports multiple LLM providers through TanStack AI adapters.
 
 ### Supported Providers
 
-| Provider               | Status    | Default Model       | Adapter                  |
-| ---------------------- | --------- | ------------------- | ------------------------ |
-| **Anthropic** (Claude) | Supported | `claude-sonnet-4-6` | `@tanstack/ai-anthropic` |
-| **OpenAI** (GPT)       | Supported | `gpt-4.1`           | `@tanstack/ai-openai`    |
-| **Google** (Gemini)    | Planned   | `gemini-2.0-flash`  | Not yet implemented      |
-| **Ollama** (local)     | Planned   | `llama3.2`          | Not yet implemented      |
+| Provider               | Status    | Default Model      | Adapter                                                     |
+| ---------------------- | --------- | ------------------ | ----------------------------------------------------------- |
+| **Anthropic** (Claude) | Supported | `claude-sonnet-5`  | `@tanstack/ai-anthropic`                                    |
+| **OpenAI** (GPT)       | Supported | `gpt-5.6-terra`    | `@tanstack/ai-openai`                                       |
+| **Google** (Gemini)    | Supported | `gemini-3.5-flash` | `@tanstack/ai-openai` (Gemini's OpenAI-compatible endpoint) |
+| **Ollama** (local)     | Supported | `llama4:scout`     | `@tanstack/ai-openai` (Ollama's OpenAI-compatible endpoint) |
 
 ### Provider Selection
 
@@ -326,26 +326,30 @@ When the chat endpoint processes a request, it resolves the provider configurati
 
 1. **Program-specific settings** -- If the session has a `programId` and that program has AI settings in `ai_settings`, use them
 2. **Global settings** -- If no program-specific settings exist, use the global row (where `programId` is NULL)
-3. **Environment variables** -- Fall back to `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
+3. **Environment variables** -- Fall back to `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`/`GOOGLE_API_KEY`, or `OLLAMA_BASE_URL`, checked in that order
 
 This allows different programs to use different providers or models.
 
 ### Environment Variables
 
-| Variable            | Description                                    |
-| ------------------- | ---------------------------------------------- |
-| `OPENAI_API_KEY`    | OpenAI API key (fallback if no DB settings)    |
-| `OPENAI_MODEL`      | Override default OpenAI model                  |
-| `OPENAI_BASE_URL`   | Custom OpenAI-compatible endpoint              |
-| `ANTHROPIC_API_KEY` | Anthropic API key (fallback if no DB settings) |
-| `ANTHROPIC_MODEL`   | Override default Anthropic model               |
+| Variable            | Description                                     |
+| ------------------- | ----------------------------------------------- |
+| `OPENAI_API_KEY`    | OpenAI API key (fallback if no DB settings)     |
+| `OPENAI_MODEL`      | Override default OpenAI model                   |
+| `OPENAI_BASE_URL`   | Custom OpenAI-compatible endpoint               |
+| `ANTHROPIC_API_KEY` | Anthropic API key (fallback if no DB settings)  |
+| `ANTHROPIC_MODEL`   | Override default Anthropic model                |
+| `GEMINI_API_KEY`    | Gemini API key (or `GOOGLE_API_KEY`)            |
+| `GEMINI_MODEL`      | Override default Gemini model                   |
+| `OLLAMA_BASE_URL`   | Ollama server URL (enables the Ollama provider) |
+| `OLLAMA_MODEL`      | Override default Ollama model                   |
 
 ### Settings API
 
 The settings API (`/api/v1/ai/settings`) manages provider configuration stored in the `ai_settings` table.
 
-| Endpoint                         | Method | Permission           | Description              |
-| -------------------------------- | ------ | -------------------- | ------------------------ |
+| Endpoint                            | Method | Permission           | Description              |
+| ----------------------------------- | ------ | -------------------- | ------------------------ |
 | `/api/v1/ai/settings?programId=...` | GET    | Authenticated        | Get settings for a scope |
 | `/api/v1/ai/settings`               | POST   | `ai_settings:create` | Create settings          |
 | `/api/v1/ai/settings`               | PUT    | `ai_settings:update` | Update settings          |
@@ -509,8 +513,8 @@ The API sets `X-Session-Id` and `X-Request-Id` headers on the SSE response for t
 
 ## API Reference
 
-| Endpoint                        | Method | Auth                  | Description                             |
-| ------------------------------- | ------ | --------------------- | --------------------------------------- |
+| Endpoint                           | Method | Auth                  | Description                             |
+| ---------------------------------- | ------ | --------------------- | --------------------------------------- |
 | `/api/v1/ai/chat`                  | POST   | Authenticated         | Send a chat message, receive SSE stream |
 | `/api/v1/ai/sessions`              | GET    | Authenticated         | List user's sessions                    |
 | `/api/v1/ai/sessions`              | POST   | Authenticated         | Create a new session                    |

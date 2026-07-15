@@ -35,10 +35,10 @@ const DEFAULT_OLLAMA_BASE_URL = 'http://localhost:11434/v1'
  * Default models for each provider
  */
 export const DEFAULT_MODELS: Record<ProviderType, string> = {
-  openai: 'gpt-4.1',
-  anthropic: 'claude-sonnet-4-6',
-  gemini: 'gemini-2.5-flash',
-  ollama: 'llama3.3',
+  openai: 'gpt-5.6-terra',
+  anthropic: 'claude-sonnet-5',
+  gemini: 'gemini-3.5-flash',
+  ollama: 'llama4:scout',
 }
 
 /**

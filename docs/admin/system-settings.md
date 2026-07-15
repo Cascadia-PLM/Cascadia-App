@@ -241,7 +241,7 @@ Returns the current global AI configuration and indicates which environment vari
       "config": {
         "provider": "anthropic",
         "apiKey": "sk-ant-a...1234",
-        "model": "claude-sonnet-4-20250514"
+        "model": "claude-sonnet-5"
       }
     },
     "envVars": {
@@ -263,7 +263,7 @@ API keys are masked in responses (first 8 and last 4 characters shown).
   "config": {
     "provider": "anthropic",
     "apiKey": "sk-ant-api-key-here",
-    "model": "claude-sonnet-4-20250514",
+    "model": "claude-sonnet-5",
     "baseURL": "https://api.anthropic.com"
   }
 }
@@ -277,7 +277,7 @@ When `ENCRYPTION_KEY` is set in the environment, API keys are encrypted before s
 
 AI settings can come from two sources:
 
-1. **Environment variables**: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`
+1. **Environment variables**: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`/`GOOGLE_API_KEY`, `OLLAMA_BASE_URL`
 2. **Database settings**: Stored in the `ai_settings` table via the admin API
 
 The `ai_settings` table stores global settings (where `program_id` is null) as well as optional per-program overrides.
@@ -411,8 +411,8 @@ DELETE /api/admin/settings?key=vault_root
 
 The thread cache stores precomputed data for performance. Admin endpoints are available for monitoring and maintenance:
 
-| Endpoint                          | Method | Description              |
-| --------------------------------- | ------ | ------------------------ |
+| Endpoint                             | Method | Description              |
+| ------------------------------------ | ------ | ------------------------ |
 | `/api/v1/admin/thread-cache/stats`   | GET    | View cache statistics    |
 | `/api/v1/admin/thread-cache/warm`    | POST   | Warm the cache           |
 | `/api/v1/admin/thread-cache/clear`   | POST   | Clear all cached entries |

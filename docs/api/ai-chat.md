@@ -311,7 +311,7 @@ Get the current AI provider configuration. API keys are masked in the response.
       "provider": "anthropic",
       "config": {
         "apiKey": "***",
-        "model": "claude-sonnet-4-20250514"
+        "model": "claude-sonnet-5"
       },
       "enabled": true,
       "createdAt": "2025-01-01T00:00:00.000Z",
@@ -337,7 +337,7 @@ Create AI settings. Requires `ai_settings:create` permission.
   "provider": "anthropic",
   "config": {
     "apiKey": "sk-ant-...",
-    "model": "claude-sonnet-4-20250514"
+    "model": "claude-sonnet-5"
   },
   "enabled": true
 }

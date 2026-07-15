@@ -29,7 +29,7 @@ import {
 
 const DEFAULT_MODELS: Record<AiProviderType, Array<string>> = {
   openai: ['gpt-5', 'gpt-5-mini', 'gpt-4.1', 'o3', 'o4-mini'],
-  anthropic: ['claude-opus-4-7', 'claude-sonnet-4-6'],
+  anthropic: ['claude-opus-4-8', 'claude-sonnet-5', 'claude-haiku-4-5'],
   gemini: ['gemini-2.5-pro', 'gemini-2.5-flash'],
   ollama: ['llama3.3', 'qwen2.5'],
 }

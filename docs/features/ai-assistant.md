@@ -303,10 +303,10 @@ The AI assistant supports multiple LLM providers through TanStack AI adapters.
 
 | Provider               | Status    | Default Model       | Adapter                  |
 | ---------------------- | --------- | ------------------- | ------------------------ |
-| **Anthropic** (Claude) | Supported | `claude-sonnet-4-6` | `@tanstack/ai-anthropic` |
+| **Anthropic** (Claude) | Supported | `claude-sonnet-5`   | `@tanstack/ai-anthropic` |
 | **OpenAI** (GPT)       | Supported | `gpt-4.1`           | `@tanstack/ai-openai`    |
-| **Google** (Gemini)    | Planned   | `gemini-2.0-flash`  | Not yet implemented      |
-| **Ollama** (local)     | Planned   | `llama3.2`          | Not yet implemented      |
+| **Google** (Gemini)    | Supported | `gemini-2.5-flash`  | `@tanstack/ai-openai` (OpenAI-compatible endpoint) |
+| **Ollama** (local)     | Supported | `llama3.3`          | `@tanstack/ai-openai` (OpenAI-compatible endpoint) |
 
 ### Provider Selection
 

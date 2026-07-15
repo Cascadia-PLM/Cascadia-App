@@ -56,7 +56,13 @@ const DEFAULT_MODELS: Record<ProviderType, Array<string>> = {
     'o3',
     'o4-mini',
   ],
-  anthropic: ['claude-opus-4-7', 'claude-opus-4-6', 'claude-sonnet-4-6'],
+  anthropic: [
+    'claude-opus-4-8',
+    'claude-opus-4-7',
+    'claude-sonnet-5',
+    'claude-sonnet-4-6',
+    'claude-haiku-4-5',
+  ],
   gemini: [
     'gemini-2.5-pro',
     'gemini-2.5-flash',
@@ -85,7 +91,7 @@ function AISettingsPage() {
     enabled: false,
     provider: 'openai',
     apiKey: '',
-    model: 'gpt-4o',
+    model: DEFAULT_MODELS.openai[0],
     baseURL: '',
   })
   const [originalSettings, setOriginalSettings] = useState<AISettings | null>(

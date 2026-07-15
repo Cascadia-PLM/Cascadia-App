@@ -220,7 +220,7 @@ STEP and IGES files are not rendered directly. They are converted server-side by
 
 ### Viewer Features
 
-- **Orbit controls:** Rotate, pan, and zoom with mouse. Damping is enabled for smooth motion.
+- **Trackball controls:** Rotate, pan, and zoom with mouse. Rotation is fully unconstrained (no polar-angle limit), so models can be tumbled freely in any direction for interrogation. Damping is enabled for smooth motion.
 - **Auto-fit camera:** On model load, the camera automatically positions itself to frame the entire model with comfortable padding.
 - **Dynamic zoom limits:** Min and max zoom distances are calculated from the model's bounding box, preventing both clipping into the model and zooming too far away.
 - **Wireframe mode:** Toggle wireframe rendering. In wireframe mode, the model renders as blue lines.
@@ -294,7 +294,7 @@ The `CADViewerToolbar` floats in the top-left corner of the viewer and provides:
 The viewer is built on:
 
 - **React Three Fiber** (`@react-three/fiber` v9) -- React renderer for Three.js
-- **React Three Drei** (`@react-three/drei` v10) -- Helper components (OrbitControls, Environment, GizmoHelper, Grid, etc.)
+- **React Three Drei** (`@react-three/drei` v10) -- Helper components (TrackballControls, Environment, GizmoHelper, Grid, etc.)
 - **Three.js** (v0.182) -- Core 3D rendering library
 
 The `CADViewer` component uses `forwardRef` to expose a `CADViewerHandle` with `resetView()` and `setView()` methods. The internal `Model` component handles loading via Three.js loaders, computing normals and bounding boxes, and applying material presets.

@@ -29,24 +29,52 @@ interface UseArtifactMutationsArgs {
   sessionId: string
   artifacts: DesignArtifacts
   currentStage?: DesignSessionStage
+  /**
+   * Apply the change to local state so the UI reflects it immediately. Without
+   * it a mutation only PATCHes the server and the review panel stays stale until
+   * a reload (no SSE stream runs during review to push the update back).
+   */
+  applyArtifacts?: (artifacts: DesignArtifacts) => void
 }
 
 async function patchArtifacts(
   sessionId: string,
   artifacts: DesignArtifacts,
 ): Promise<void> {
-  await fetch(`/api/v1/design-engine/sessions/${sessionId}`, {
+  const res = await fetch(`/api/v1/design-engine/sessions/${sessionId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ artifacts }),
   })
+  if (!res.ok) {
+    throw new Error(`Failed to save changes (${res.status})`)
+  }
 }
 
 export function useArtifactMutations({
   sessionId,
   artifacts,
   currentStage,
+  applyArtifacts,
 }: UseArtifactMutationsArgs) {
+  // Update local state immediately, then persist. Rolling back on failure keeps
+  // the optimistic UI from drifting away from server truth. Every mutation goes
+  // through here so a click is reflected at once and sequential edits build on
+  // each other instead of each PATCHing from the same stale base.
+  const commit = useCallback(
+    async (next: DesignArtifacts) => {
+      const previous = artifacts
+      applyArtifacts?.(next)
+      try {
+        await patchArtifacts(sessionId, next)
+      } catch (err) {
+        applyArtifacts?.(previous)
+        throw err
+      }
+    },
+    [sessionId, artifacts, applyArtifacts],
+  )
+
   // ---------------- Requirements ----------------
 
   const updateRequirement = useCallback(
@@ -57,9 +85,9 @@ export function useArtifactMutations({
             { ...r, reviewStatus: 'edited' as ReviewStatus, ...data }
           : r,
       )
-      await patchArtifacts(sessionId, { ...artifacts, requirements })
+      await commit({ ...artifacts, requirements })
     },
-    [sessionId, artifacts],
+    [artifacts, commit],
   )
 
   const removeRequirement = useCallback(
@@ -75,9 +103,9 @@ export function useArtifactMutations({
           activeRequirements(requirements).map((r) => r.tempId),
         )
       }
-      await patchArtifacts(sessionId, { ...artifacts, requirements, bom })
+      await commit({ ...artifacts, requirements, bom })
     },
-    [sessionId, artifacts],
+    [artifacts, commit],
   )
 
   const addRequirement = useCallback(
@@ -102,9 +130,9 @@ export function useArtifactMutations({
           activeRequirements(requirements).map((r) => r.tempId),
         )
       }
-      await patchArtifacts(sessionId, { ...artifacts, requirements, bom })
+      await commit({ ...artifacts, requirements, bom })
     },
-    [sessionId, artifacts],
+    [artifacts, commit],
   )
 
   const setRequirementReviewStatus = useCallback(
@@ -122,9 +150,9 @@ export function useArtifactMutations({
           activeRequirements(requirements).map((r) => r.tempId),
         )
       }
-      await patchArtifacts(sessionId, { ...artifacts, requirements, bom })
+      await commit({ ...artifacts, requirements, bom })
     },
-    [sessionId, artifacts],
+    [artifacts, commit],
   )
 
   const acceptAllRequirements = useCallback(async () => {
@@ -133,8 +161,8 @@ export function useArtifactMutations({
         ? { ...r, reviewStatus: 'accepted' as ReviewStatus }
         : r,
     )
-    await patchArtifacts(sessionId, { ...artifacts, requirements })
-  }, [sessionId, artifacts])
+    await commit({ ...artifacts, requirements })
+  }, [artifacts, commit])
 
   // ---------------- BOM ----------------
 
@@ -153,9 +181,9 @@ export function useArtifactMutations({
         }),
         requirementIds,
       )
-      await patchArtifacts(sessionId, { ...artifacts, bom: next })
+      await commit({ ...artifacts, bom: next })
     },
-    [sessionId, artifacts, requirementIds],
+    [artifacts, requirementIds, commit],
   )
 
   const removeNode = useCallback(
@@ -165,9 +193,9 @@ export function useArtifactMutations({
         removeBomNode(artifacts.bom, tempId),
         requirementIds,
       )
-      await patchArtifacts(sessionId, { ...artifacts, bom: next })
+      await commit({ ...artifacts, bom: next })
     },
-    [sessionId, artifacts, requirementIds],
+    [artifacts, requirementIds, commit],
   )
 
   /**
@@ -194,13 +222,13 @@ export function useArtifactMutations({
         removeBomNode(artifacts.bom, tempId),
         requirementIds,
       )
-      await patchArtifacts(sessionId, {
+      await commit({
         ...artifacts,
         bom: next,
         bomRejections: [...(artifacts.bomRejections ?? []), tombstone],
       })
     },
-    [sessionId, artifacts, requirementIds, currentStage],
+    [artifacts, requirementIds, currentStage, commit],
   )
 
   const setNodeReviewStatus = useCallback(
@@ -210,16 +238,16 @@ export function useArtifactMutations({
         reviewStatus: status,
         ...(note !== undefined ? { reviewNote: note } : {}),
       })
-      await patchArtifacts(sessionId, { ...artifacts, bom: next })
+      await commit({ ...artifacts, bom: next })
     },
-    [sessionId, artifacts],
+    [artifacts, commit],
   )
 
   const acceptAllNodes = useCallback(async () => {
     if (!artifacts.bom) return
     const next = setAllProposedNodesStatus(artifacts.bom, 'accepted')
-    await patchArtifacts(sessionId, { ...artifacts, bom: next })
-  }, [sessionId, artifacts])
+    await commit({ ...artifacts, bom: next })
+  }, [artifacts, commit])
 
   const addChild = useCallback(
     async (parentTempId: string, data: Partial<BomNodeDraft>) => {
@@ -228,9 +256,9 @@ export function useArtifactMutations({
         addBomNodeChild(artifacts.bom, parentTempId, data),
         requirementIds,
       )
-      await patchArtifacts(sessionId, { ...artifacts, bom: next })
+      await commit({ ...artifacts, bom: next })
     },
-    [sessionId, artifacts, requirementIds],
+    [artifacts, requirementIds, commit],
   )
 
   // ---------------- Item comments ----------------
@@ -249,12 +277,12 @@ export function useArtifactMutations({
         createdAt: new Date().toISOString(),
         stage: currentStage ?? 'idle',
       }
-      await patchArtifacts(sessionId, {
+      await commit({
         ...artifacts,
         itemComments: [...(artifacts.itemComments ?? []), comment],
       })
     },
-    [sessionId, artifacts, currentStage],
+    [artifacts, currentStage, commit],
   )
 
   const setItemCommentResolved = useCallback(
@@ -262,9 +290,9 @@ export function useArtifactMutations({
       const itemComments = (artifacts.itemComments ?? []).map((c) =>
         c.id === commentId ? { ...c, resolved } : c,
       )
-      await patchArtifacts(sessionId, { ...artifacts, itemComments })
+      await commit({ ...artifacts, itemComments })
     },
-    [sessionId, artifacts],
+    [artifacts, commit],
   )
 
   return {

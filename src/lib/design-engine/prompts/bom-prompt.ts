@@ -47,6 +47,7 @@ export function buildBomPrompt(
   priorToolCalls?: string,
   bomRejections?: Array<BomRejectionEntry>,
   itemFeedback?: Array<{ targetName: string; text: string }>,
+  forceProposeNow?: boolean,
 ): string {
   const requirementsList = requirements
     .map(
@@ -281,6 +282,13 @@ apply_mechanism_template({
   const phaseCount =
     toolset && toolset.tools.length > 0 ? 'all four phases' : 'all three phases'
   prompt += `\nBegin by proposing the top-level assembly, then decompose into sub-assemblies and components. Complete ${phaseCount} before stopping.`
+
+  if (forceProposeNow) {
+    // The stage has spent its clarification budget and withdrawn the
+    // clarification tool. Require concrete parts this turn so the session
+    // cannot loop forever gathering context without ever building a BOM.
+    prompt += `\n\n## Time to Build\nYou have already gathered enough clarification for this design, and the \`ask_bom_clarification\` tool is now disabled — you cannot ask further questions. Do NOT wait for more information. Start building the BOM NOW: propose the top-level assembly with \`propose_new_part\`, then decompose it. Where a detail is still uncertain, make a reasonable engineering assumption and note it in the part's rationale. Do not end your turn without proposing parts.`
+  }
 
   return prompt
 }

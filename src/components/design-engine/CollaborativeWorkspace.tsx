@@ -18,6 +18,7 @@ import { AssemblyReviewPanel } from './AssemblyReviewPanel'
 import type {
   DesignArtifacts,
   DesignSessionStage,
+  ItemComment,
   LlmHistoryEntry,
   MaterializationPreview as PreviewType,
   ReopenableStage,
@@ -51,6 +52,7 @@ export function CollaborativeWorkspace({
     sessionId,
     artifacts: stream.artifacts,
     currentStage: stream.currentStage,
+    applyArtifacts: stream.applyArtifacts,
   })
 
   const [materializationPreview, setMaterializationPreview] =
@@ -247,6 +249,20 @@ export function CollaborativeWorkspace({
       stream.sendMessage(message)
     },
     [stream],
+  )
+
+  // Adding a review comment auto-runs a revision that folds it in. Persist the
+  // comment first (so the re-run re-fetches it), then trigger the revise.
+  const handleAddComment = useCallback(
+    async (
+      targetType: ItemComment['targetType'],
+      targetTempId: string,
+      text: string,
+    ) => {
+      await mutations.addItemComment(targetType, targetTempId, text)
+      stream.requestRevise()
+    },
+    [mutations, stream],
   )
 
   const [isForking, setIsForking] = useState(false)
@@ -499,7 +515,7 @@ export function CollaborativeWorkspace({
               onAddBomChild={handleAddBomChild}
               requirementsDiff={requirementsDiff}
               bomDiff={bomDiff}
-              onAddComment={mutations.addItemComment}
+              onAddComment={handleAddComment}
               onSetCommentResolved={mutations.setItemCommentResolved}
               className="flex-1"
             />

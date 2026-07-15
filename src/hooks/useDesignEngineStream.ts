@@ -83,6 +83,7 @@ type StreamAction =
   | 'confirm_assembly'
   | 'answer_clarification'
   | 'send_message'
+  | 'revise'
   | 'reopen_stage'
 
 interface StreamActionExtra {
@@ -115,6 +116,14 @@ export function useDesignEngineStream({
   const abortControllerRef = useRef<AbortController | null>(null)
   // Ref mirror of isStreaming so callbacks don't act on a stale closure
   const isStreamingRef = useRef(false)
+  // Feedback (a comment) arrived while a run was live: revise once it finishes,
+  // so rapid feedback coalesces into a single follow-up instead of being lost.
+  const pendingReviseRef = useRef(false)
+  // Latest `startStream`, so its own `finally` can launch the follow-up run
+  // without a useCallback self-dependency. Kept current by an effect below.
+  const startStreamRef = useRef<
+    ((action: StreamAction, extra?: StreamActionExtra) => Promise<void>) | null
+  >(null)
 
   // Cleanup on unmount
   useEffect(() => {
@@ -256,10 +265,20 @@ export function useDesignEngineStream({
       } finally {
         isStreamingRef.current = false
         setState((prev) => ({ ...prev, isStreaming: false }))
+        // Feedback that arrived mid-run coalesces into one follow-up revision.
+        if (pendingReviseRef.current && !abortController.signal.aborted) {
+          pendingReviseRef.current = false
+          void startStreamRef.current?.('revise')
+        }
       }
     },
     [sessionId, handleStageEvent],
   )
+
+  // Keep the ref pointing at the latest startStream for the follow-up above.
+  useEffect(() => {
+    startStreamRef.current = startStream
+  }, [startStream])
 
   const sendAction = useCallback(
     async (action: StreamAction, extra?: StreamActionExtra) => {
@@ -432,11 +451,35 @@ export function useDesignEngineStream({
     [sendAction],
   )
 
+  /**
+   * Re-run the current review gate's drafting stage to fold in review feedback
+   * (per-item comments) with no message of its own. If a run is already live,
+   * the follow-up fires when it finishes so nothing is dropped.
+   */
+  const requestRevise = useCallback(() => {
+    if (isStreamingRef.current) {
+      pendingReviseRef.current = true
+      return
+    }
+    void startStream('revise')
+  }, [startStream])
+
+  /**
+   * Replace the local artifacts. Used by the review-stage mutations (accept,
+   * edit, reject, …) to reflect a change immediately — no SSE stream runs during
+   * review, so without this the UI would stay stale until a reload.
+   */
+  const applyArtifacts = useCallback((artifacts: DesignArtifacts) => {
+    setState((prev) => ({ ...prev, artifacts }))
+  }, [])
+
   return {
     ...state,
     sendAction,
     sendMessage,
+    requestRevise,
     pause,
     initializeArtifacts,
+    applyArtifacts,
   }
 }

@@ -26,7 +26,12 @@ import { activeRequirements, unresolvedComments } from '../types'
 import { createToolEventTracker } from './tool-event-tracker'
 import { buildSteeringUserMessage, createGuidanceChecker } from './guidance'
 import { isResumingStage } from './resume'
-import { streamChunkError, streamChunkErrorToError } from './stream-error'
+import {
+  isTransientStreamError,
+  streamChunkError,
+  streamChunkErrorToError,
+} from './stream-error'
+import type { StreamChunkError } from './stream-error'
 import type { DesignSession } from '../session-service'
 import type {
   BomDraft,
@@ -41,6 +46,19 @@ import { getAdapter, loadProviderConfig } from '@/lib/ai/adapters'
 
 /** Bound the number of mid-stream steering restarts per request. */
 const MAX_STEERING_CONTINUATIONS = 5
+
+/**
+ * How many clarification rounds the stage will run before it forces the model
+ * to build. Each `ask_bom_clarification` pauses the stream, so a model that
+ * keeps asking never reaches the proposing phase. Past this budget the
+ * clarification tool is withdrawn and the prompt requires concrete parts —
+ * without it a session can loop indefinitely gathering context and build
+ * nothing.
+ */
+const MAX_CLARIFICATION_ROUNDS = 6
+
+/** Retries for transient stream failures (dropped socket, timeout, overload). */
+const MAX_TRANSIENT_RETRIES = 2
 
 /**
  * Recursively collect all nodes from a BOM tree into a Map keyed by tempId.
@@ -123,10 +141,26 @@ export async function* runBomStage(
   }
   const description = artifacts.description || session.description || ''
 
+  // Clarifications already asked and answered *for this stage*. Answers from an
+  // earlier stage (requirements, toolset) don't count — they don't prove BOM
+  // drafting has run.
+  const clarificationRoundsUsed = artifacts.clarifications.filter(
+    (c) => c.stage === 'bom_drafting',
+  ).length
+
+  // A run is a continuation — not a fresh start — once the stage has produced
+  // any BOM OR already gathered clarifications. Keying resume solely on the BOM
+  // meant a session that only ever asked questions (never proposed a part)
+  // restarted from scratch every round instead of advancing toward a tree.
+  const hasPriorWork = artifacts.bom !== null || clarificationRoundsUsed > 0
+
+  // Budget spent → stop asking and require parts this run.
+  const mustPropose = clarificationRoundsUsed >= MAX_CLARIFICATION_ROUNDS
+
   const isResuming = isResumingStage(
     session.stage,
     'bom_drafting',
-    artifacts.bom !== null,
+    hasPriorWork,
   )
 
   // Only signal stage start if not resuming
@@ -191,6 +225,7 @@ export async function* runBomStage(
       clarificationRef.data = { questionId, question, options, multiSelect }
     },
     artifacts.bomRejections,
+    { allowClarification: !mustPropose },
   )
 
   try {
@@ -238,7 +273,10 @@ export async function* runBomStage(
     const processStream = async function* (
       streamIter: any,
       chatAbort: AbortController,
-    ): AsyncGenerator<StageEvent, { steering: Array<UserMessage> | null }> {
+    ): AsyncGenerator<
+      StageEvent,
+      { steering: Array<UserMessage> | null; transient?: StreamChunkError }
+    > {
       let lastBomVersion = bomState.changeVersion
       // Fresh tracker per stream — pending args are keyed by a per-call index.
       const tracker = createToolEventTracker()
@@ -247,7 +285,16 @@ export async function* runBomStage(
         if (clarificationRef.requested || signal?.aborted) break
 
         const chunkError = streamChunkError(chunk)
-        if (chunkError?.fatal) throw streamChunkErrorToError(chunkError)
+        if (chunkError?.fatal) {
+          // Transient failures (dropped socket, timeout, overload) signal the
+          // caller to retry; genuine rejections (bad schema, 400) throw so they
+          // surface immediately rather than looping.
+          if (isTransientStreamError(chunkError)) {
+            chatAbort.abort()
+            return { steering: null, transient: chunkError }
+          }
+          throw streamChunkErrorToError(chunkError)
+        }
         if (chunkError) {
           yield { type: 'llm_text', text: `\n\n_${chunkError.message}_\n\n` }
           continue
@@ -298,6 +345,40 @@ export async function* runBomStage(
       await DesignSessionService.updateArtifacts(session.id, artifacts)
     }
 
+    // Drive a chat stream to completion, retrying transient provider failures
+    // (dropped socket, timeout, overload) so one flaky connection doesn't
+    // destroy the whole run. `makeStream` builds a fresh stream + controller per
+    // attempt. Yields StageEvents; returns the steering outcome.
+    const driveStream = async function* (
+      makeStream: () => { stream: unknown; abort: AbortController },
+    ): AsyncGenerator<StageEvent, { steering: Array<UserMessage> | null }> {
+      for (let attempt = 0; ; attempt++) {
+        const { stream, abort } = makeStream()
+        const gen = processStream(stream, abort)
+        let outcome: {
+          steering: Array<UserMessage> | null
+          transient?: StreamChunkError
+        } = { steering: null }
+        for (;;) {
+          const result = await gen.next()
+          if (result.done) {
+            outcome = result.value
+            break
+          }
+          yield result.value
+        }
+        if (outcome.transient && attempt < MAX_TRANSIENT_RETRIES) {
+          yield {
+            type: 'llm_text',
+            text: `\n\n_The AI provider connection dropped (${outcome.transient.message}) — retrying (attempt ${attempt + 2}/${MAX_TRANSIENT_RETRIES + 1})..._\n\n`,
+          }
+          continue
+        }
+        if (outcome.transient) throw streamChunkErrorToError(outcome.transient)
+        return { steering: outcome.steering }
+      }
+    }
+
     // --- Initial pass, restarted on mid-stream steering ---
     let steeringMessages: Array<UserMessage> | null = null
     for (;;) {
@@ -316,6 +397,7 @@ export async function* runBomStage(
         priorToolCalls || undefined,
         artifacts.bomRejections,
         bomItemFeedback.length > 0 ? bomItemFeedback : undefined,
+        mustPropose,
       )
 
       const userContent = steeringMessages
@@ -330,22 +412,24 @@ export async function* runBomStage(
         { role: 'user', content: userContent },
       ]
 
-      // Internal controller: aborted by the external signal AND by steering
-      const abortController = new AbortController()
-      if (signal) {
-        signal.addEventListener('abort', () => abortController.abort())
-      }
-
-      const stream = chat({
-        adapter,
-        messages,
-        tools,
-        maxTokens: 16384,
-        agentLoopStrategy: maxIterations(30),
-        abortController,
+      const initialStreamGen = driveStream(() => {
+        // Internal controller: aborted by the external signal AND by steering
+        const abortController = new AbortController()
+        if (signal) {
+          signal.addEventListener('abort', () => abortController.abort())
+        }
+        return {
+          stream: chat({
+            adapter,
+            messages,
+            tools,
+            maxTokens: 16384,
+            agentLoopStrategy: maxIterations(30),
+            abortController,
+          }),
+          abort: abortController,
+        }
       })
-
-      const initialStreamGen = processStream(stream, abortController)
       let streamOutcome: { steering: Array<UserMessage> | null } = {
         steering: null,
       }
@@ -445,22 +529,24 @@ export async function* runBomStage(
       clarificationRef.requested = false
       clarificationRef.data = null
 
-      // Create a fresh abort controller for continuation (prior one may be exhausted)
-      const contAbortController = new AbortController()
-      if (signal) {
-        signal.addEventListener('abort', () => contAbortController.abort())
-      }
-
-      const contStream = chat({
-        adapter,
-        messages: contMessages,
-        tools,
-        maxTokens: 16384,
-        agentLoopStrategy: maxIterations(30),
-        abortController: contAbortController,
+      const contStreamGen = driveStream(() => {
+        // Fresh abort controller per continuation (prior one may be exhausted)
+        const contAbortController = new AbortController()
+        if (signal) {
+          signal.addEventListener('abort', () => contAbortController.abort())
+        }
+        return {
+          stream: chat({
+            adapter,
+            messages: contMessages,
+            tools,
+            maxTokens: 16384,
+            agentLoopStrategy: maxIterations(30),
+            abortController: contAbortController,
+          }),
+          abort: contAbortController,
+        }
       })
-
-      const contStreamGen = processStream(contStream, contAbortController)
       let contOutcome: { steering: Array<UserMessage> | null } = {
         steering: null,
       }
@@ -568,21 +654,23 @@ export async function* runBomStage(
           },
         ]
 
-        const consAbortController = new AbortController()
-        if (signal) {
-          signal.addEventListener('abort', () => consAbortController.abort())
-        }
-
-        const consStream = chat({
-          adapter,
-          messages: consMessages,
-          tools: consolidationTools,
-          maxTokens: 8192,
-          agentLoopStrategy: maxIterations(20),
-          abortController: consAbortController,
+        const consStreamGen = driveStream(() => {
+          const consAbortController = new AbortController()
+          if (signal) {
+            signal.addEventListener('abort', () => consAbortController.abort())
+          }
+          return {
+            stream: chat({
+              adapter,
+              messages: consMessages,
+              tools: consolidationTools,
+              maxTokens: 8192,
+              agentLoopStrategy: maxIterations(20),
+              abortController: consAbortController,
+            }),
+            abort: consAbortController,
+          }
         })
-
-        const consStreamGen = processStream(consStream, consAbortController)
         let consOutcome: { steering: Array<UserMessage> | null } = {
           steering: null,
         }

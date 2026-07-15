@@ -7,7 +7,7 @@
 
 import { toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
-import { toolErrorMessage } from './tool-utils'
+import { decodeEntities, toolErrorMessage } from './tool-utils'
 import type { ToolContext } from '@/lib/ai/tools/permission-wrapper'
 import type { RequirementDraft } from '../types'
 import {
@@ -33,6 +33,9 @@ export function createRequirementsTools(
     options?: Array<string>,
     multiSelect?: boolean,
   ) => void,
+  // Once the stage has spent its clarification budget it withholds this tool so
+  // the model can no longer stall by asking more questions — it must propose.
+  options?: { allowClarification?: boolean },
 ) {
   const searchExistingDesigns = toolDefinition({
     name: 'search_existing_designs',
@@ -127,14 +130,16 @@ export function createRequirementsTools(
       message: z.string().optional(),
     }),
   }).server((input) => {
+    // Models sometimes HTML-escape plain text ("Payload &amp; Cargo"); decode
+    // before storing so the text is clean wherever it is shown or materialized.
     const requirement: RequirementDraft = {
       tempId: crypto.randomUUID(),
-      name: input.name,
-      description: input.description,
+      name: decodeEntities(input.name),
+      description: decodeEntities(input.description),
       requirementType: input.requirementType,
       priority: input.priority,
       verificationMethod: input.verificationMethod,
-      rationale: input.rationale,
+      rationale: decodeEntities(input.rationale),
       confidence: input.confidence,
       source: 'ai',
       reviewStatus: 'proposed',
@@ -175,10 +180,12 @@ export function createRequirementsTools(
     return { acknowledged: true }
   })
 
+  const allowClarification = options?.allowClarification ?? true
+
   return [
     searchExistingDesigns,
     searchPartsLibrary,
     proposeRequirement,
-    askClarification,
+    ...(allowClarification ? [askClarification] : []),
   ]
 }

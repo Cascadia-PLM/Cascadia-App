@@ -18,6 +18,7 @@ export function buildRequirementsPrompt(
   priorToolCalls?: string,
   rejectedRequirements?: Array<RequirementDraft>,
   itemFeedback?: Array<{ targetName: string; text: string }>,
+  forceProposeNow?: boolean,
 ): string {
   let prompt = `You are a systems engineering assistant helping design a product. Your task is to analyze a product description and generate complete and fully detailed structured requirements.
 
@@ -41,7 +42,7 @@ ${description}
    - Verification method (Test, Analysis, Inspection, or Demonstration)
    - Rationale explaining why this requirement matters
    - Confidence (0-1) - how confident you are this is needed
-5. Use the \`ask_clarification\` tool liberally to refine details, such as ranges for performance requirements, to resolve ambiguities in the description, or anything else that would help you generate better requirements. Remember, it's better to ask clarifying questions than to make assumptions.
+5. Use the \`ask_clarification\` tool when a specific answer would materially change the requirements — an unknown performance target, a genuine ambiguity in scope. Each question pauses generation and waits on the user, so ask early for the few things that truly matter, then propose. For minor details, propose a requirement with a stated assumption (in its rationale) and a lower confidence score rather than asking.
 6. Search for existing parts and designs that might inform requirements
 
 ## Guidelines
@@ -51,6 +52,7 @@ ${description}
 - Consider manufacturability, testability, and cost constraints (remember to ask for clarification if these aren't clear)
 - Reference industry standards where applicable
 - Mark uncertain requirements with lower confidence scores
+- Propose each requirement as soon as you have enough for it — do NOT withhold all proposals while waiting to resolve every open question. Asking a clarification pauses generation, so ask only when an answer would truly change the requirements; otherwise propose with a reasonable assumption (noted in the rationale) and a lower confidence score.
 `
 
   if (clarifications && clarifications.length > 0) {
@@ -106,7 +108,15 @@ ${description}
     prompt += `\n${priorToolCalls}\n`
   }
 
-  prompt += `\nBegin by searching for similar designs, then propose requirements one at a time.`
+  if (forceProposeNow) {
+    // The stage has spent its clarification budget and withdrawn the
+    // clarification tool. Override the "ask liberally" guidance above and
+    // require concrete proposals this turn, so the session cannot loop
+    // forever gathering context without ever producing requirements.
+    prompt += `\n## Time to Propose\nYou have already gathered enough clarification for this design, and the \`ask_clarification\` tool is now disabled — you cannot ask further questions. Do NOT wait for more information. Propose the complete set of requirements NOW using the \`propose_requirement\` tool, covering the functional, performance, interface, and constraint aspects. Where a detail is still uncertain, make a reasonable engineering assumption, state it in the requirement's rationale, and assign a lower confidence score. Do not end your turn without proposing requirements.`
+  } else {
+    prompt += `\nBegin by searching for similar designs, then propose requirements one at a time.`
+  }
 
   return prompt
 }

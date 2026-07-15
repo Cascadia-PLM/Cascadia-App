@@ -54,6 +54,7 @@ const streamActionSchema = z.object({
     'confirm_assembly',
     'answer_clarification',
     'send_message',
+    'revise',
     'reopen_stage',
   ]),
   questionId: z.string().optional(),
@@ -107,6 +108,41 @@ function draftingStageSource(
     default:
       return null
   }
+}
+
+/**
+ * Which drafting stage a review gate re-enters when the user leaves feedback.
+ * Only the LLM-driven gates map — CAD/assembly review regenerate via Zoo/KCL,
+ * which don't consume comments/guidance and are expensive to re-run blindly.
+ */
+const REVIEW_TO_DRAFTING: Record<string, string> = {
+  toolset_review: 'toolset_establishment',
+  requirements_review: 'requirements_drafting',
+  bom_review: 'bom_drafting',
+}
+
+/**
+ * Start (or re-enter) the drafting stage for a given session stage so a run
+ * consumes freshly-persisted review feedback. From a review gate this first
+ * drops the session back to the matching drafting stage, which makes the stage
+ * resume in place (revise the existing artifact) rather than start fresh. From
+ * a drafting stage it just returns that stage's generator. Returns null when the
+ * stage has no drafting re-run (e.g. cad/assembly review, materialization).
+ */
+async function reRunFromReview(
+  stage: string,
+  sessionId: string,
+  signal: AbortSignal,
+): Promise<AsyncIterable<StageEvent> | null> {
+  const draftingStage = REVIEW_TO_DRAFTING[stage]
+  if (draftingStage) {
+    await DesignSessionService.updateStage(
+      sessionId,
+      draftingStage as DesignSessionStage,
+    )
+    return draftingStageSource(draftingStage, sessionId, signal)
+  }
+  return draftingStageSource(stage, sessionId, signal)
 }
 
 function findPendingQuestion(
@@ -271,6 +307,7 @@ app.get(
   '/sessions/:id',
   adapt(
     apiHandler({}, async ({ params, user }) => {
+      if (!params.id) throw new ValidationError('Session id is required')
       const session = await DesignSessionService.getById(params.id)
 
       if (!session) {
@@ -289,6 +326,7 @@ app.patch(
   '/sessions/:id',
   adapt(
     apiHandler({}, async ({ params, request, user }) => {
+      if (!params.id) throw new ValidationError('Session id is required')
       const session = await DesignSessionService.getById(params.id)
 
       if (!session) {
@@ -351,6 +389,7 @@ app.post(
   '/sessions/:id/fork',
   adapt(
     apiHandler({}, async ({ params, request, user }) => {
+      if (!params.id) throw new ValidationError('Session id is required')
       const session = await DesignSessionService.getById(params.id)
 
       if (!session) {
@@ -395,6 +434,7 @@ app.get(
   '/sessions/:id/snapshots',
   adapt(
     apiHandler({}, async ({ params, user }) => {
+      if (!params.id) throw new ValidationError('Session id is required')
       const session = await DesignSessionService.getById(params.id)
 
       if (!session) {
@@ -414,6 +454,7 @@ app.get(
   '/sessions/:id/snapshots/:snapshotId',
   adapt(
     apiHandler({}, async ({ params, user }) => {
+      if (!params.id) throw new ValidationError('Session id is required')
       const session = await DesignSessionService.getById(params.id)
 
       if (!session) {
@@ -422,6 +463,8 @@ app.get(
 
       await requireSessionAccess(user.id, session, 'read')
 
+      if (!params.snapshotId)
+        throw new ValidationError('Snapshot id is required')
       const snapshot = await DesignSnapshotService.getById(params.snapshotId)
       if (!snapshot || snapshot.sessionId !== params.id) {
         throw new NotFoundError('DesignSessionSnapshot', params.snapshotId)
@@ -437,6 +480,7 @@ app.get(
   '/sessions/:id/materialize',
   adapt(
     apiHandler({}, async ({ params, user }) => {
+      if (!params.id) throw new ValidationError('Session id is required')
       const session = await DesignSessionService.getById(params.id)
 
       if (!session) {
@@ -460,6 +504,7 @@ app.post(
   '/sessions/:id/materialize',
   adapt(
     apiHandler({}, async ({ params, user }) => {
+      if (!params.id) throw new ValidationError('Session id is required')
       const session = await DesignSessionService.getById(params.id)
 
       if (!session) {
@@ -487,6 +532,7 @@ app.post(
   '/sessions/:id/stream',
   adapt(
     apiHandler({}, async ({ params, request, user }) => {
+      if (!params.id) throw new ValidationError('Session id is required')
       const session = await DesignSessionService.getById(params.id)
 
       if (!session) {
@@ -655,9 +701,11 @@ app.post(
           await DesignSessionService.updateArtifacts(params.id, artifacts)
         }
 
-        // If in a drafting stage, restart as streaming so the guidance is applied
+        // A review gate re-enters its drafting stage so the guidance (and any
+        // open per-item comments) are folded into an in-place revision run; a
+        // drafting stage just restarts. Non-re-runnable stages fall through.
         const currentStage = current?.stage ?? session.stage
-        const eventSource = draftingStageSource(
+        const eventSource = await reRunFromReview(
           currentStage,
           params.id,
           abortController.signal,
@@ -666,7 +714,23 @@ app.post(
           return streamResponse(eventSource, params.id, request)
         }
 
-        // For review/other stages, just acknowledge
+        // No drafting re-run for this stage — just acknowledge
+        return { acknowledged: true }
+      }
+
+      // Handle revise — re-run the current gate's drafting stage to fold in
+      // per-item comments (and any guidance) with no new message of its own.
+      // A comment PATCH doesn't change the stage, so the session fetched at the
+      // top of the handler still reflects the current gate.
+      if (action === 'revise') {
+        const eventSource = await reRunFromReview(
+          session.stage,
+          session.id,
+          abortController.signal,
+        )
+        if (eventSource) {
+          return streamResponse(eventSource, session.id, request)
+        }
         return { acknowledged: true }
       }
 

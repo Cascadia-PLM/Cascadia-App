@@ -1,17 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as TanStackAi from '@tanstack/ai'
 import type { DesignSession } from '../session-service'
-import type { BomDraft, BomNodeDraft, StageEvent } from '../types'
+import type {
+  BomDraft,
+  BomNodeDraft,
+  ClarificationEntry,
+  StageEvent,
+} from '../types'
 
-const chatCalls: Array<{ messages: Array<{ role: string; content: string }> }> =
-  []
+const chatCalls: Array<{
+  messages: Array<{ role: string; content: string }>
+  tools: Array<unknown>
+}> = []
 /** Chunks the fake model emits. Empty means it proposed nothing. */
 let chunks: Array<unknown> = []
 
 vi.mock('@tanstack/ai', async (importOriginal) => ({
   ...(await importOriginal<typeof TanStackAi>()),
-  chat: (opts: { messages: Array<{ role: string; content: string }> }) => {
-    chatCalls.push({ messages: opts.messages })
+  chat: (opts: {
+    messages: Array<{ role: string; content: string }>
+    tools: Array<unknown>
+  }) => {
+    chatCalls.push({ messages: opts.messages, tools: opts.tools })
     return (async function* () {
       // Chunks arrive off the microtask queue, as they would from a real stream.
       await Promise.resolve()
@@ -63,7 +73,20 @@ function bomDraft(): BomDraft {
   }
 }
 
-function session(bom: BomDraft | null): DesignSession {
+function clarification(i: number): ClarificationEntry {
+  return {
+    questionId: `q-${i}`,
+    question: `Clarification ${i}?`,
+    answer: `Answer ${i}`,
+    answeredAt: new Date(0).toISOString(),
+    stage: 'bom_drafting',
+  }
+}
+
+function session(
+  bom: BomDraft | null,
+  clarifications: Array<ClarificationEntry> = [],
+): DesignSession {
   return {
     id: 'session-1',
     userId: 'user-1',
@@ -80,7 +103,7 @@ function session(bom: BomDraft | null): DesignSession {
       description: 'A hand cart',
       requirements: [],
       bom,
-      clarifications: [],
+      clarifications,
       userMessages: [],
     },
     llmHistory: [
@@ -102,9 +125,13 @@ function session(bom: BomDraft | null): DesignSession {
   }
 }
 
-async function collect(bom: BomDraft | null): Promise<Array<StageEvent>> {
+async function collect(
+  bom: BomDraft | null,
+  clarifications: Array<ClarificationEntry> = [],
+): Promise<Array<StageEvent>> {
   const events: Array<StageEvent> = []
-  for await (const event of runBomStage(session(bom))) events.push(event)
+  for await (const event of runBomStage(session(bom, clarifications)))
+    events.push(event)
   return events
 }
 
@@ -116,6 +143,10 @@ function userMessage(): string {
 function systemMessage(): string {
   const call = chatCalls[chatCalls.length - 1]
   return call?.messages.find((m) => m.role === 'system')?.content ?? ''
+}
+
+function lastToolCount(): number {
+  return chatCalls[chatCalls.length - 1]?.tools.length ?? 0
 }
 
 describe('runBomStage', () => {
@@ -138,6 +169,43 @@ describe('runBomStage', () => {
 
     expect(userMessage()).toContain('Continue building')
     expect(systemMessage()).toContain('Work Done So Far')
+  })
+
+  // The never-propose loop: a session that only ever asked clarifications (and
+  // built no tree) must resume, not restart from scratch every round.
+  it('treats a run with prior clarifications but no BOM as a resume', async () => {
+    await collect(null, [clarification(0)])
+
+    expect(userMessage()).toContain('Continue building')
+    expect(userMessage()).not.toContain('Build a Bill of Materials for this')
+  })
+
+  it('withholds clarification and forces a build once the budget is spent', async () => {
+    await collect(null, [])
+    const fullToolCount = lastToolCount()
+
+    chatCalls.length = 0
+    const spentBudget = Array.from({ length: 6 }, (_, i) => clarification(i))
+    await collect(null, spentBudget)
+
+    expect(lastToolCount()).toBe(fullToolCount - 1)
+    expect(systemMessage()).toContain('Time to Build')
+  })
+
+  // A dropped socket ("terminated") is transient: retry rather than destroying
+  // the run. A non-transient rejection (see the 400 test) must NOT retry.
+  it('retries a transient provider error before giving up', async () => {
+    chunks = [{ type: 'error', error: { message: 'terminated' } }]
+
+    const events = await collect(null)
+
+    // Initial attempt + MAX_TRANSIENT_RETRIES (2) = 3 chat calls.
+    expect(chatCalls).toHaveLength(3)
+    expect(
+      events.some((e) => e.type === 'llm_text' && e.text.includes('retrying')),
+    ).toBe(true)
+    const errors = events.flatMap((e) => (e.type === 'error' ? [e.message] : []))
+    expect(errors.some((m) => m.includes('terminated'))).toBe(true)
   })
 
   it('does not advance to bom_review when no parts were proposed', async () => {

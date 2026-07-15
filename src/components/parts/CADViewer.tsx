@@ -15,8 +15,8 @@ import {
   GizmoHelper,
   GizmoViewcube,
   Grid,
-  OrbitControls,
   PerspectiveCamera,
+  TrackballControls,
 } from '@react-three/drei'
 import * as THREE from 'three'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
@@ -62,7 +62,8 @@ interface CADViewerProps {
 
 /**
  * 3D CAD Model Viewer Component
- * Supports STL and OBJ file formats with orbit controls
+ * Supports STL and OBJ file formats with trackball controls
+ * (full, unconstrained rotation for model interrogation)
  */
 export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
   function CADViewer(
@@ -316,14 +317,17 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
             />
           </GizmoHelper>
 
-          {/* Controls with dynamic zoom limits */}
-          <OrbitControls
+          {/* Trackball controls: unlimited tumbling (no polar-angle clamp
+              like OrbitControls), so models can be rotated freely for
+              inspection from any direction. Dynamic zoom limits. */}
+          <TrackballControls
             ref={controlsRef}
-            enableDamping
-            dampingFactor={0.05}
-            rotateSpeed={0.5}
+            makeDefault
+            rotateSpeed={2.5}
             zoomSpeed={1.0}
             panSpeed={0.5}
+            staticMoving={false}
+            dynamicDampingFactor={0.15}
             minDistance={minZoomDistance}
             maxDistance={maxZoomDistance}
           />

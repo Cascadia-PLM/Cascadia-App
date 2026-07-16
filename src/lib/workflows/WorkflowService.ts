@@ -916,7 +916,7 @@ export class WorkflowService {
       if (effectiveStructure.isInstanceLevel) {
         // Instance-level: no guards, just check approvals if required
         const guardResults: Array<GuardResult> = []
-        const instanceTransition = transition as InstanceWorkflowTransition
+        const instanceTransition = transition
 
         // Check approvals for the current state (fromStateId)
         const approvalResult = await this.checkApprovalRequirement(
@@ -934,7 +934,7 @@ export class WorkflowService {
         }
 
         available.push({
-          transition: transition as WorkflowTransition,
+          transition: transition,
           canTransition: guardResults.every((r) => r.passed),
           guardResults,
         })
@@ -1387,7 +1387,7 @@ export class WorkflowService {
       // Build the chain of effects for this item
       const chain = this.buildEffectChain(
         effectsWithGuards,
-        affected.changeAction as ChangeAction,
+        affected.changeAction,
         item.state || '',
         lifecycleDefinitionId,
       )
@@ -1408,7 +1408,7 @@ export class WorkflowService {
         // Evaluate guards
         const actorRoles = await permissionService.getUserRoles(actorId)
         const context: GuardContext = {
-          item: item as Record<string, unknown>,
+          item: item,
           user: { id: actorId, roles: actorRoles },
         }
 
@@ -1463,7 +1463,7 @@ export class WorkflowService {
       if (!item) {
         results.push({
           itemId: affected.affectedItemId,
-          changeAction: affected.changeAction as ChangeAction,
+          changeAction: affected.changeAction,
           executedTransitions: [],
           success: false,
           error: 'Item data not found',
@@ -1479,7 +1479,7 @@ export class WorkflowService {
       // Build the chain of effects for this item
       const chain = this.buildEffectChain(
         effects,
-        affected.changeAction as ChangeAction,
+        affected.changeAction,
         item.state || '',
         lifecycleDefinitionId,
       )
@@ -1492,7 +1492,7 @@ export class WorkflowService {
       const result: LifecycleEffectResult = {
         itemId: affected.affectedItemId,
         itemNumber: item.itemNumber,
-        changeAction: affected.changeAction as ChangeAction,
+        changeAction: affected.changeAction,
         executedTransitions: [],
         success: true,
       }
@@ -1709,7 +1709,7 @@ export class WorkflowService {
 
           if (lifecycleTransition?.guards?.length) {
             const guardContext: GuardContext = {
-              item: item as Record<string, unknown>,
+              item: item,
               user: { id: actorId, roles: actorRoles },
             }
 

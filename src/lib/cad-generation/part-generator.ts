@@ -295,9 +295,7 @@ async function generateSinglePart(
         .map((c) => ({
           name: c.name,
           description: c.rationale || c.name,
-          boundingBox: c.cadGeneration?.boundingBox as
-            | BoundingBox3D
-            | undefined,
+          boundingBox: c.cadGeneration?.boundingBox,
         }))
     }
 

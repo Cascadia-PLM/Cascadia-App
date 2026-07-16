@@ -110,7 +110,7 @@ export function ProgramForm({
             <FormField
               label="Program Name"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Input
@@ -131,7 +131,7 @@ export function ProgramForm({
             <FormField
               label="Program Code"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Unique identifier (uppercase, hyphens allowed)"
             >
               <Input
@@ -153,7 +153,7 @@ export function ProgramForm({
           {(field) => (
             <FormField
               label="Status"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value}
@@ -182,7 +182,7 @@ export function ProgramForm({
           {(field) => (
             <FormField
               label="Description"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Textarea
@@ -203,7 +203,7 @@ export function ProgramForm({
           {(field) => (
             <FormField
               label="Customer"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}
@@ -222,7 +222,7 @@ export function ProgramForm({
           {(field) => (
             <FormField
               label="Contract Number"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}
@@ -241,7 +241,7 @@ export function ProgramForm({
           {(field) => (
             <FormField
               label="Start Date"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}
@@ -260,7 +260,7 @@ export function ProgramForm({
           {(field) => (
             <FormField
               label="Target End Date"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}

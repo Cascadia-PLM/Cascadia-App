@@ -202,7 +202,7 @@ export function FileTable({
         return (
           <div className="space-y-0.5">
             <Link
-              to={`${route}/${file.item.id}` as any}
+              to={`${route}/${file.item.id}`}
               className="text-cyan-600 dark:text-cyan-400 hover:underline font-medium"
             >
               {file.item.itemNumber}
@@ -381,7 +381,7 @@ export function FileTable({
           <DropdownMenuItem asChild>
             <Link
               to={
-                `${getItemTypeRoute(file.item.itemType)}/${file.item.id}` as any
+                `${getItemTypeRoute(file.item.itemType)}/${file.item.id}`
               }
             >
               <FileIcon className="mr-2 h-4 w-4" />
@@ -425,7 +425,7 @@ export function FileTable({
         <ContextMenuItem asChild>
           <Link
             to={
-              `${getItemTypeRoute(file.item.itemType)}/${file.item.id}` as any
+              `${getItemTypeRoute(file.item.itemType)}/${file.item.id}`
             }
           >
             <FileIcon className="mr-2 h-4 w-4" />

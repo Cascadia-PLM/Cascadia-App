@@ -41,7 +41,7 @@ export const Route = createFileRoute('/tools/')({
           active: 0,
           maintenance: 0,
           retired: 0,
-        } as ToolStateCounts,
+        },
       }
     } catch (error) {
       console.error('Error loading tools:', error)
@@ -53,7 +53,7 @@ export const Route = createFileRoute('/tools/')({
           active: 0,
           maintenance: 0,
           retired: 0,
-        } as ToolStateCounts,
+        },
       }
     }
   },

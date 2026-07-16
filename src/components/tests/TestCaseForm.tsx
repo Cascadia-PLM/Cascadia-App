@@ -191,7 +191,7 @@ export function TestCaseForm({
             <FormField
               label="Design"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="The design this test case belongs to"
               className="md:col-span-2"
             >
@@ -249,7 +249,7 @@ export function TestCaseForm({
           {(field) => (
             <FormField
               label="Test Plan"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Optional parent test plan"
               className="md:col-span-2"
             >
@@ -284,7 +284,7 @@ export function TestCaseForm({
           {(field) => (
             <FormField
               label="Item Number"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Leave blank to auto-generate (e.g., TC-000001)"
             >
               <Input
@@ -306,7 +306,7 @@ export function TestCaseForm({
             <FormField
               label="Revision"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Version identifier (A, B, C, etc.)"
             >
               <Input
@@ -326,7 +326,7 @@ export function TestCaseForm({
           {(field) => (
             <FormField
               label="Name"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Input
@@ -347,7 +347,7 @@ export function TestCaseForm({
           {(field) => (
             <FormField
               label="Description"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Textarea
@@ -368,7 +368,7 @@ export function TestCaseForm({
           {(field) => (
             <FormField
               label="Test Type"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value}
@@ -395,7 +395,7 @@ export function TestCaseForm({
           {(field) => (
             <FormField
               label="Environment"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Test environment"
             >
               <Input
@@ -415,7 +415,7 @@ export function TestCaseForm({
           {(field) => (
             <FormField
               label="Preconditions"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Conditions that must be met before running the test"
               className="md:col-span-2"
             >

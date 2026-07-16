@@ -77,7 +77,7 @@ export function TaskForm({
           {(field) => (
             <FormField
               label="Task Number"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Leave blank to auto-generate (e.g., TSK-000001)"
             >
               <Input
@@ -98,7 +98,7 @@ export function TaskForm({
             <FormField
               label="Revision"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Version identifier (A, B, C, etc.)"
             >
               <Input
@@ -118,7 +118,7 @@ export function TaskForm({
           {(field) => (
             <FormField
               label="Task Name"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Input
@@ -138,7 +138,7 @@ export function TaskForm({
           {(field) => (
             <FormField
               label="Description"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Textarea
@@ -159,7 +159,7 @@ export function TaskForm({
           {(field) => (
             <FormField
               label="State"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value}
@@ -186,7 +186,7 @@ export function TaskForm({
           {(field) => (
             <FormField
               label="Priority"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value}
@@ -215,7 +215,7 @@ export function TaskForm({
           {(field) => (
             <FormField
               label="Project ID"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="UUID of the project this task belongs to"
             >
               <Input
@@ -235,7 +235,7 @@ export function TaskForm({
           {(field) => (
             <FormField
               label="Assignee"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="UUID of the assigned user"
             >
               <Input
@@ -255,7 +255,7 @@ export function TaskForm({
           {(field) => (
             <FormField
               label="Due Date"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}
@@ -278,7 +278,7 @@ export function TaskForm({
           {(field) => (
             <FormField
               label="Estimated Hours"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}
@@ -299,7 +299,7 @@ export function TaskForm({
           {(field) => (
             <FormField
               label="Actual Hours"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}

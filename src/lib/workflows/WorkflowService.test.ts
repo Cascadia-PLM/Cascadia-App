@@ -3035,7 +3035,7 @@ describe('WorkflowService Lifecycle Effects', () => {
     }
 
     const result = await WorkflowService.executeLifecycleEffects(
-      transition as any,
+      transition,
       'change-order-id',
       'actor-id',
     )
@@ -3082,7 +3082,7 @@ describe('WorkflowService Lifecycle Effects', () => {
     }
 
     const result = await WorkflowService.validateLifecycleEffectsGuards(
-      transition as any,
+      transition,
       'change-order-id',
       'actor-id',
     )

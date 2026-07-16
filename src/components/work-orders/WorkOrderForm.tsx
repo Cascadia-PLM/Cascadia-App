@@ -99,8 +99,8 @@ export function WorkOrderForm({
       quantity: defaultValues?.quantity ?? 1,
       priority:
         defaultValues?.priority ??
-        ('Normal' as 'Low' | 'Normal' | 'High' | 'Urgent'),
-      dueDate: defaultValues?.dueDate ?? ('' as string),
+        ('Normal'),
+      dueDate: defaultValues?.dueDate ?? (''),
       customerOrder: defaultValues?.customerOrder ?? '',
       notes: defaultValues?.notes ?? '',
       assignedTo: defaultValues?.assignedTo ?? ([] as Array<string>),
@@ -201,7 +201,7 @@ export function WorkOrderForm({
           {(field) => (
             <FormField
               label="Quantity"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 type="number"
@@ -222,7 +222,7 @@ export function WorkOrderForm({
           {(field) => (
             <FormField
               label="Priority"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value}
@@ -249,7 +249,7 @@ export function WorkOrderForm({
           {(field) => (
             <FormField
               label="Due Date"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 type="date"
@@ -267,7 +267,7 @@ export function WorkOrderForm({
           {(field) => (
             <FormField
               label="Customer Order"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}
@@ -313,7 +313,7 @@ export function WorkOrderForm({
         {(field) => (
           <FormField
             label="Notes"
-            error={field.state.meta.errors[0] as string | undefined}
+            error={field.state.meta.errors[0]}
           >
             <Textarea
               name={field.name}

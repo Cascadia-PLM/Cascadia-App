@@ -266,22 +266,27 @@ export function ReportBuilder({
     initialData?.itemType || 'Part',
   )
 
+  // Typed locals pin the form's field generics to the report artifact shapes.
+  const defaultColumns: Array<ReportColumn> = initialData?.columns ?? [
+    {
+      fieldPath: 'itemNumber',
+      label: 'Item Number',
+      displayOrder: 0,
+      isVisible: true,
+    },
+  ]
+  const defaultFilters: Array<ReportFilter> = initialData?.filters ?? []
+  const defaultSorts: Array<ReportSort> = initialData?.sorts ?? []
+
   const form = useForm({
     defaultValues: {
       name: initialData?.name ?? '',
       description: initialData?.description ?? '',
       itemType: initialData?.itemType ?? 'Part',
       isPublic: initialData?.isPublic ?? false,
-      columns: (initialData?.columns ?? [
-        {
-          fieldPath: 'itemNumber',
-          label: 'Item Number',
-          displayOrder: 0,
-          isVisible: true,
-        },
-      ]) as Array<ReportColumn>,
-      filters: (initialData?.filters ?? []) as Array<ReportFilter>,
-      sorts: (initialData?.sorts ?? []) as Array<ReportSort>,
+      columns: defaultColumns,
+      filters: defaultFilters,
+      sorts: defaultSorts,
     },
     onSubmit: async ({ value }) => {
       // Validate with Zod and then submit
@@ -314,7 +319,7 @@ export function ReportBuilder({
     const updated = columns
       .filter((_, i) => i !== index)
       .map((col, i) => ({ ...col, displayOrder: i }))
-    form.setFieldValue('columns', updated as ReportCreateInput['columns'])
+    form.setFieldValue('columns', updated)
   }
 
   const moveColumn = (index: number, direction: 'up' | 'down') => {
@@ -332,7 +337,7 @@ export function ReportBuilder({
       newColumns.map((col, i) => ({
         ...col,
         displayOrder: i,
-      })) as ReportCreateInput['columns'],
+      })),
     )
   }
 
@@ -349,7 +354,7 @@ export function ReportBuilder({
     } else {
       updated[index] = { ...updated[index], [field]: value }
     }
-    form.setFieldValue('columns', updated as ReportCreateInput['columns'])
+    form.setFieldValue('columns', updated)
   }
 
   // Filter management
@@ -372,14 +377,14 @@ export function ReportBuilder({
     const updated = filters
       .filter((_, i) => i !== index)
       .map((f, i) => ({ ...f, displayOrder: i }))
-    form.setFieldValue('filters', updated as ReportCreateInput['filters'])
+    form.setFieldValue('filters', updated)
   }
 
   const updateFilter = (index: number, field: string, value: string) => {
     const filters = form.getFieldValue('filters')
     const updated = [...filters]
     updated[index] = { ...updated[index], [field]: value }
-    form.setFieldValue('filters', updated as ReportCreateInput['filters'])
+    form.setFieldValue('filters', updated)
   }
 
   // Sort management
@@ -401,14 +406,14 @@ export function ReportBuilder({
     const updated = sorts
       .filter((_, i) => i !== index)
       .map((s, i) => ({ ...s, priority: i }))
-    form.setFieldValue('sorts', updated as ReportCreateInput['sorts'])
+    form.setFieldValue('sorts', updated)
   }
 
   const updateSort = (index: number, field: string, value: string) => {
     const sorts = form.getFieldValue('sorts')
     const updated = [...sorts]
     updated[index] = { ...updated[index], [field]: value }
-    form.setFieldValue('sorts', updated as ReportCreateInput['sorts'])
+    form.setFieldValue('sorts', updated)
   }
 
   const handleItemTypeChange = (value: string) => {
@@ -444,7 +449,7 @@ export function ReportBuilder({
               <FormField
                 label="Report Name"
                 required
-                error={field.state.meta.errors[0] as string | undefined}
+                error={field.state.meta.errors[0]}
               >
                 <Input
                   name={field.name}
@@ -463,7 +468,7 @@ export function ReportBuilder({
               <FormField
                 label="Item Type"
                 required
-                error={field.state.meta.errors[0] as string | undefined}
+                error={field.state.meta.errors[0]}
               >
                 <Select
                   value={selectedItemType}
@@ -488,7 +493,7 @@ export function ReportBuilder({
             {(field) => (
               <FormField
                 label="Description"
-                error={field.state.meta.errors[0] as string | undefined}
+                error={field.state.meta.errors[0]}
                 className="md:col-span-2"
               >
                 <Textarea

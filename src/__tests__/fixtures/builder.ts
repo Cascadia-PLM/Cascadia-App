@@ -188,9 +188,7 @@ export class TestDataBuilder {
    */
   withSession(userKey: string, sessionKey?: string): this {
     this.pendingActions.push(async () => {
-      const user = this.data.users[userKey] as
-        | (typeof this.data.users)[string]
-        | undefined
+      const user = this.data.users[userKey]
       if (!user) {
         throw new Error(`User "${userKey}" not found. Create user first.`)
       }
@@ -296,9 +294,7 @@ export class TestDataBuilder {
 
       const designId = designKey
         ? ((
-            this.data.designs[designKey] as
-              | (typeof this.data.designs)[string]
-              | undefined
+            this.data.designs[designKey]
           )?.id ?? null)
         : this.defaultDesignId
 
@@ -332,9 +328,7 @@ export class TestDataBuilder {
 
       const designId = designKey
         ? ((
-            this.data.designs[designKey] as
-              | (typeof this.data.designs)[string]
-              | undefined
+            this.data.designs[designKey]
           )?.id ?? null)
         : this.defaultDesignId
 
@@ -368,9 +362,7 @@ export class TestDataBuilder {
 
       const designId = designKey
         ? ((
-            this.data.designs[designKey] as
-              | (typeof this.data.designs)[string]
-              | undefined
+            this.data.designs[designKey]
           )?.id ?? null)
         : this.defaultDesignId
 
@@ -404,9 +396,7 @@ export class TestDataBuilder {
 
       const designId = designKey
         ? ((
-            this.data.designs[designKey] as
-              | (typeof this.data.designs)[string]
-              | undefined
+            this.data.designs[designKey]
           )?.id ?? null)
         : this.defaultDesignId
 
@@ -454,12 +444,8 @@ export class TestDataBuilder {
     options: { quantity?: number; findNumber?: number } = {},
   ): this {
     this.pendingActions.push(async () => {
-      const parent = this.data.parts[parentKey] as
-        | (typeof this.data.parts)[string]
-        | undefined
-      const child = this.data.parts[childKey] as
-        | (typeof this.data.parts)[string]
-        | undefined
+      const parent = this.data.parts[parentKey]
+      const child = this.data.parts[childKey]
 
       if (!parent) {
         throw new Error(`Parent part "${parentKey}" not found.`)
@@ -498,21 +484,13 @@ export class TestDataBuilder {
     this.pendingActions.push(async () => {
       const source =
         sourceType === 'part'
-          ? (this.data.parts[sourceKey] as
-              | (typeof this.data.parts)[string]
-              | undefined)
-          : (this.data.documents[sourceKey] as
-              | (typeof this.data.documents)[string]
-              | undefined)
+          ? (this.data.parts[sourceKey])
+          : (this.data.documents[sourceKey])
 
       const target =
         targetType === 'part'
-          ? (this.data.parts[targetKey] as
-              | (typeof this.data.parts)[string]
-              | undefined)
-          : (this.data.documents[targetKey] as
-              | (typeof this.data.documents)[string]
-              | undefined)
+          ? (this.data.parts[targetKey])
+          : (this.data.documents[targetKey])
 
       if (!source) {
         throw new Error(`Source ${sourceType} "${sourceKey}" not found.`)

@@ -109,7 +109,7 @@ export const EcoGraphItemNode = memo(({ data }: EcoGraphItemNodeProps) => {
         <div className="flex items-center justify-between gap-2 mb-2">
           <Link
             to={getItemRoute()}
-            search={routeSearch as any}
+            search={routeSearch}
             className="font-semibold text-sm text-slate-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
           >
             {itemNumber}
@@ -167,7 +167,7 @@ export const EcoGraphItemNode = memo(({ data }: EcoGraphItemNodeProps) => {
       <div className="flex items-center justify-between gap-2 mb-1">
         <Link
           to={getItemRoute()}
-          search={routeSearch as any}
+          search={routeSearch}
           className={cn(
             'font-semibold text-xs transition-colors',
             isGreyedOut

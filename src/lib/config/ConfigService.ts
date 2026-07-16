@@ -87,7 +87,7 @@ export class ConfigService {
       .from(itemTypeConfigs)
       .where(eq(itemTypeConfigs.isActive, true))
 
-    return configs as Array<ItemTypeConfigRecord>
+    return configs
   }
 
   /**
@@ -102,7 +102,7 @@ export class ConfigService {
       .where(eq(itemTypeConfigs.itemType, itemType))
       .limit(1)
 
-    return result[0] ? (result[0] as ItemTypeConfigRecord) : null
+    return result[0] ? (result[0]) : null
   }
 
   /**

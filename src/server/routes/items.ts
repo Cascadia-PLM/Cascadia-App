@@ -761,7 +761,7 @@ app.post(
           // Update the item using ItemService
           const updatedItem = await ItemService.update(
             id,
-            updateData as Partial<BaseItem>,
+            updateData,
             userId,
           )
           updated.push(updatedItem)

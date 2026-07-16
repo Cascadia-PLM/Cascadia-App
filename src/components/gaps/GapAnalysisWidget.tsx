@@ -265,7 +265,7 @@ function GapListItem({ gap }: { gap: Gap }) {
 
   return (
     <Link
-      to={itemUrl as any}
+      to={itemUrl}
       className="block p-2 rounded hover:bg-slate-50 dark:hover:bg-slate-900 text-sm"
     >
       <div className="flex items-center justify-between">

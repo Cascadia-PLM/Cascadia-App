@@ -397,12 +397,12 @@ describe('ItemService', () => {
         user.id,
       )
 
-      const updated = await ItemService.update(
+      const updated = await ItemService.update<Part>(
         created.id,
         {
           name: 'Updated Name',
           description: 'Updated description',
-        } as Partial<Part>,
+        },
         user.id,
       )
 
@@ -423,12 +423,12 @@ describe('ItemService', () => {
         user.id,
       )
 
-      const updated = await ItemService.update(
+      const updated = await ItemService.update<Part>(
         created.id,
         {
           partType: 'Purchase',
           material: 'Steel',
-        } as Partial<Part>,
+        },
         user.id,
       )
 

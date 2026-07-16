@@ -162,7 +162,7 @@ export function RequirementForm({
             <FormField
               label="Design"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="The design this requirement belongs to"
               className="md:col-span-2"
             >
@@ -220,7 +220,7 @@ export function RequirementForm({
           {(field) => (
             <FormField
               label="Item Number"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Leave blank to auto-generate (e.g., REQ-000001)"
             >
               <Input
@@ -242,7 +242,7 @@ export function RequirementForm({
             <FormField
               label="Revision"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Version identifier (A, B, C, etc.)"
             >
               <Input
@@ -262,7 +262,7 @@ export function RequirementForm({
           {(field) => (
             <FormField
               label="Name"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Input
@@ -283,7 +283,7 @@ export function RequirementForm({
           {(field) => (
             <FormField
               label="Description"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Textarea
@@ -304,7 +304,7 @@ export function RequirementForm({
           {(field) => (
             <FormField
               label="Type"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value}
@@ -333,7 +333,7 @@ export function RequirementForm({
           {(field) => (
             <FormField
               label="Priority"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value}
@@ -360,7 +360,7 @@ export function RequirementForm({
           {(field) => (
             <FormField
               label="Status"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value}
@@ -388,7 +388,7 @@ export function RequirementForm({
           {(field) => (
             <FormField
               label="Source"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Who requested this requirement"
             >
               <Input
@@ -408,7 +408,7 @@ export function RequirementForm({
           {(field) => (
             <FormField
               label="Category"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Input
@@ -428,7 +428,7 @@ export function RequirementForm({
           {(field) => (
             <FormField
               label="Acceptance Criteria"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Textarea
@@ -449,7 +449,7 @@ export function RequirementForm({
           {(field) => (
             <FormField
               label="Verification Method"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="How this requirement will be verified"
             >
               <Select
@@ -477,7 +477,7 @@ export function RequirementForm({
           {(field) => (
             <FormField
               label="Verification Status"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Current verification status"
             >
               <Select

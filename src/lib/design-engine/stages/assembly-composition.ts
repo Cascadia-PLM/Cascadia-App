@@ -174,9 +174,7 @@ export async function* runAssemblyCompositionStage(
               child.cadGeneration?.stepFileKey ??
               child.assemblyComposition?.assemblyStepFileKey ??
               '',
-            boundingBox: child.cadGeneration?.boundingBox as
-              | BoundingBox3D
-              | undefined,
+            boundingBox: child.cadGeneration?.boundingBox,
             interfaces: (child.interfaces ?? []).map((i) => ({
               id: i.id,
               description: i.description,

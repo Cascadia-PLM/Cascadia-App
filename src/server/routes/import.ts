@@ -106,7 +106,7 @@ app.post(
             // Create on branch (post-release)
             const branchResult = await ItemService.createOnBranch(
               'Document',
-              documentData as unknown as BaseItem,
+              documentData,
               branchId,
               `Imported document: ${row.name}`,
               userId,
@@ -116,7 +116,7 @@ app.post(
             // Create directly (pre-release or bypass)
             createdItem = await ItemService.create(
               'Document',
-              documentData as unknown as BaseItem,
+              documentData,
               userId,
               { bypassBranchProtection: bypassBranchProtection || false },
             )
@@ -235,9 +235,9 @@ app.post(
           }
 
           // Issues don't have branch protection - create directly
-          const createdItem = await ItemService.create(
+          const createdItem: BaseItem = await ItemService.create(
             'Issue',
-            issueData as unknown as BaseItem,
+            issueData,
             userId,
             { bypassBranchProtection: true },
           )
@@ -368,7 +368,7 @@ app.post(
             // Create on branch (post-release)
             const branchResult = await ItemService.createOnBranch(
               'Part',
-              partData as unknown as BaseItem,
+              partData,
               branchId,
               `Imported part: ${row.name}`,
               userId,
@@ -378,7 +378,7 @@ app.post(
             // Create directly (pre-release or bypass)
             createdItem = await ItemService.create(
               'Part',
-              partData as unknown as BaseItem,
+              partData,
               userId,
               { bypassBranchProtection: bypassBranchProtection || false },
             )

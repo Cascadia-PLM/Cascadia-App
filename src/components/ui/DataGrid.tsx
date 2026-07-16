@@ -60,10 +60,20 @@ import type {
   FilterFn,
   PaginationState,
   Row,
+  RowData,
   SortingState,
 } from '@tanstack/react-table'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+
+// Per-column presentation hints read by DataGrid when rendering headers/cells.
+// TanStack ships ColumnMeta as an empty interface for consumers to augment.
+declare module '@tanstack/react-table' {
+  interface ColumnMeta<TData extends RowData, TValue> {
+    align?: string
+    width?: string
+  }
+}
 
 // Re-export filter types for backward compatibility
 export type { FilterType, RangeFilterValue, MultiSelectFilterValue }
@@ -853,9 +863,7 @@ export function DataGrid<T>({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const meta = header.column.columnDef.meta as
-                    | { align?: string; width?: string }
-                    | undefined
+                  const meta = header.column.columnDef.meta
                   return (
                     <TableHead
                       key={header.id}
@@ -903,9 +911,7 @@ export function DataGrid<T>({
                     data-state={row.getIsSelected() ? 'selected' : undefined}
                   >
                     {row.getVisibleCells().map((cell, index) => {
-                      const meta = cell.column.columnDef.meta as
-                        | { align?: string }
-                        | undefined
+                      const meta = cell.column.columnDef.meta
                       const column = columns.find(
                         (c) => c.id === cell.column.id,
                       )

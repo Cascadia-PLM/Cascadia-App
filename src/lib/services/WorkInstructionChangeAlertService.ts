@@ -155,7 +155,7 @@ export class WorkInstructionChangeAlertService {
       )
       .orderBy(desc(workInstructionChangeAlerts.createdAt))
 
-    return (await query) as Array<AlertWithDetails>
+    return await query
   }
 
   /**

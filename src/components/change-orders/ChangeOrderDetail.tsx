@@ -635,7 +635,7 @@ export function ChangeOrderDetail({
                           : (currentChangeOrder as any).description
                       }
                       onChange={(v) =>
-                        updateField('description' as keyof ChangeOrder, v)
+                        updateField('description', v)
                       }
                       isEditing={isEditing}
                       placeholder="Describe the change..."

@@ -187,7 +187,7 @@ function ThreadNodeDiffComponent({ data }: ThreadNodeDiffProps) {
           <div className="flex items-center justify-between">
             {route ? (
               <Link
-                to={route as '/parts/$id'}
+                to={route}
                 params={{ id: data.node.id }}
                 className={cn(
                   'text-sm font-semibold text-cyan-600 dark:text-cyan-400 hover:underline',

@@ -136,7 +136,7 @@ export function TestPlanForm({
             <FormField
               label="Design"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="The design this test plan belongs to"
               className="md:col-span-2"
             >
@@ -194,7 +194,7 @@ export function TestPlanForm({
           {(field) => (
             <FormField
               label="Item Number"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Leave blank to auto-generate (e.g., TP-000001)"
             >
               <Input
@@ -216,7 +216,7 @@ export function TestPlanForm({
             <FormField
               label="Revision"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Version identifier (A, B, C, etc.)"
             >
               <Input
@@ -236,7 +236,7 @@ export function TestPlanForm({
           {(field) => (
             <FormField
               label="Name"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Input
@@ -257,7 +257,7 @@ export function TestPlanForm({
           {(field) => (
             <FormField
               label="Description"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Textarea
@@ -278,7 +278,7 @@ export function TestPlanForm({
           {(field) => (
             <FormField
               label="Scope"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="What is included and excluded from testing"
               className="md:col-span-2"
             >
@@ -300,7 +300,7 @@ export function TestPlanForm({
           {(field) => (
             <FormField
               label="Environment"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Test environment requirements"
             >
               <Input
@@ -320,7 +320,7 @@ export function TestPlanForm({
           {(field) => (
             <FormField
               label="Status"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value}
@@ -347,7 +347,7 @@ export function TestPlanForm({
           {(field) => (
             <FormField
               label="Entry Criteria"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Conditions that must be met before testing begins"
               className="md:col-span-2"
             >
@@ -369,7 +369,7 @@ export function TestPlanForm({
           {(field) => (
             <FormField
               label="Exit Criteria"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Conditions that must be met for testing to be complete"
               className="md:col-span-2"
             >

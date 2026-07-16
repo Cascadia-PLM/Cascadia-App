@@ -723,7 +723,7 @@ export class UsageService {
           dueDate: (data.dueDate as Date | undefined) ?? null,
           estimatedHours: (data.estimatedHours as string | undefined) ?? null,
           actualHours: (data.actualHours as string | undefined) ?? null,
-          tags: (data.tags as Record<string, unknown> | undefined) ?? null,
+          tags: (data.tags) ?? null,
         })
         break
       case 'TestPlan':

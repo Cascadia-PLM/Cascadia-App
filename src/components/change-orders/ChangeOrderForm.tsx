@@ -98,7 +98,7 @@ export function ChangeOrderForm({
             <FormField
               label="Revision"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Version identifier (A, B, C, etc.)"
             >
               <Input
@@ -118,7 +118,7 @@ export function ChangeOrderForm({
           {(field) => (
             <FormField
               label="Name"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
               helpText="Brief description of the change"
             >
@@ -141,7 +141,7 @@ export function ChangeOrderForm({
             <FormField
               label="Change Type"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="ECO: Engineering Change Order, ECN: Engineering Change Notice, MCO: Manufacturing Change Order"
             >
               <Select
@@ -180,7 +180,7 @@ export function ChangeOrderForm({
           {(field) => (
             <FormField
               label="Priority"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Impact urgency level"
             >
               <Select
@@ -210,7 +210,7 @@ export function ChangeOrderForm({
           {(field) => (
             <FormField
               label="Reason for Change"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
               helpText="Explain why this change is necessary"
             >
@@ -232,7 +232,7 @@ export function ChangeOrderForm({
           {(field) => (
             <FormField
               label="Impact Description"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
               helpText="Describe expected impacts (will be refined by impact assessment)"
             >
@@ -254,7 +254,7 @@ export function ChangeOrderForm({
           {(field) => (
             <FormField
               label="Target Implementation Date"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="When this change should be implemented"
             >
               <Input
@@ -305,7 +305,7 @@ export function ChangeOrderForm({
                     <FormField
                       label="Baseline Name"
                       required
-                      error={field.state.meta.errors[0] as string | undefined}
+                      error={field.state.meta.errors[0]}
                       helpText="Name for the baseline/tag (e.g., PDR, CDR, Rev A Release)"
                     >
                       <Input

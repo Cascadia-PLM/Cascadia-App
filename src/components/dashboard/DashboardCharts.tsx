@@ -197,7 +197,7 @@ export function PartTypeChart({ data }: { data: Array<CategoryDataPoint> }) {
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie
-                data={data as unknown as Array<{ name: string; value: number }>}
+                data={data}
                 cx="50%"
                 cy="50%"
                 innerRadius={40}

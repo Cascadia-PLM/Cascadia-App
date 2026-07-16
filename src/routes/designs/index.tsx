@@ -83,7 +83,7 @@ export const Route = createFileRoute('/designs/')({
         designs: enrichedDesigns,
         programs: programsResult.data.programs,
         total: enrichedDesigns.length,
-        counts: { design: 0, family: 0, library: 0 } as TypeCounts,
+        counts: { design: 0, family: 0, library: 0 },
       }
     } catch (error) {
       console.error('Error loading designs:', error)
@@ -91,7 +91,7 @@ export const Route = createFileRoute('/designs/')({
         designs: [] as Array<DesignWithProgram>,
         programs: [] as Array<ProgramInfo>,
         total: 0,
-        counts: { design: 0, family: 0, library: 0 } as TypeCounts,
+        counts: { design: 0, family: 0, library: 0 },
       }
     }
   },

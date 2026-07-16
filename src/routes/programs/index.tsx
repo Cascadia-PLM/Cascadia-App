@@ -56,15 +56,15 @@ export const Route = createFileRoute('/programs/')({
         programs: result.data.programs,
         total: result.data.total,
         counts:
-          (result.data.counts as StateCounts | undefined) ??
-          ({ active: 0, onHold: 0, completed: 0 } as StateCounts),
+          (result.data.counts) ??
+          ({ active: 0, onHold: 0, completed: 0 }),
       }
     } catch (error) {
       console.error('Error loading programs:', error)
       return {
         programs: [] as Array<Program>,
         total: 0,
-        counts: { active: 0, onHold: 0, completed: 0 } as StateCounts,
+        counts: { active: 0, onHold: 0, completed: 0 },
       }
     }
   },

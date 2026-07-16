@@ -291,7 +291,7 @@ export class ItemSearchService {
     // Filter by item types if specified
     if (options?.itemTypes && options.itemTypes.length > 0) {
       conditions.push(
-        or(...options.itemTypes.map((type) => eq(items.itemType, type))) as any,
+        or(...options.itemTypes.map((type) => eq(items.itemType, type))),
       )
     }
 

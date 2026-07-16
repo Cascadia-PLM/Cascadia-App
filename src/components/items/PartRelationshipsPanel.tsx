@@ -198,13 +198,13 @@ function computeVisibleGraph(
   const nodes: Array<Node> = []
   for (const id of visibleIds) {
     const cached = nodeCache.get(id)
-    if (cached) nodes.push({ ...cached } as Node)
+    if (cached) nodes.push({ ...cached })
   }
 
   const edges: Array<Edge> = []
   for (const [, edge] of edgeCache) {
     if (visibleIds.has(edge.source) && visibleIds.has(edge.target)) {
-      edges.push({ ...edge } as Edge)
+      edges.push({ ...edge })
     }
   }
 
@@ -788,10 +788,10 @@ export function PartRelationshipsPanel({
 
       // Inject expand data and apply layout (visible = everything on initial load)
       const withExpandData = injectExpandDataRef.current(
-        flowNodes as Array<Node>,
+        flowNodes,
       )
       const { nodes: layoutedNodes, edges: layoutedEdges } =
-        getLayoutedElements(withExpandData, flowEdges as Array<Edge>)
+        getLayoutedElements(withExpandData, flowEdges)
 
       setGraphNodes(layoutedNodes)
       setGraphEdges(layoutedEdges)
@@ -1110,7 +1110,7 @@ export function PartRelationshipsPanel({
           const itemTypePlural = rel.targetItem.itemType.toLowerCase() + 's'
           return (
             <Link
-              to={`/${itemTypePlural}/${rel.targetItem.id}` as any}
+              to={`/${itemTypePlural}/${rel.targetItem.id}`}
               className="font-medium text-cyan-600 hover:text-cyan-700 hover:underline flex items-center gap-1"
             >
               {rel.targetItem.itemNumber}

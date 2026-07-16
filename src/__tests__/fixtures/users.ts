@@ -223,7 +223,7 @@ export async function insertTestUserWithRole(
     .limit(1)
 
   let role: TestRole
-  const roleRow = existingRole as typeof existingRole | undefined
+  const roleRow = existingRole
   if (roleRow) {
     role = {
       id: roleRow.id,

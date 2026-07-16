@@ -118,7 +118,7 @@ export const Route = createFileRoute('/documents/')({
           draft: draftCount.data.total,
           inReview: inReviewCount.data.total,
           released: releasedCount.data.total,
-        } as StateCounts,
+        },
         designs: designsResult.data.designs,
       }
     } catch (error) {
@@ -126,7 +126,7 @@ export const Route = createFileRoute('/documents/')({
       return {
         documents: [] as Array<Document>,
         total: 0,
-        counts: { draft: 0, inReview: 0, released: 0 } as StateCounts,
+        counts: { draft: 0, inReview: 0, released: 0 },
         designs: [] as Array<Design>,
       }
     }

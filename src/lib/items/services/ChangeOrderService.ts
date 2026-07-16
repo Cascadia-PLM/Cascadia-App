@@ -1205,7 +1205,7 @@ export class ChangeOrderService {
       query = query.innerJoin(
         changeOrderDesigns,
         eq(items.id, changeOrderDesigns.changeOrderId),
-      ) as typeof query
+      )
       conditions.push(eq(changeOrderDesigns.designId, options.designId))
     }
 

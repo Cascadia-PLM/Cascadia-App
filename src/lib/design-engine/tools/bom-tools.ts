@@ -21,10 +21,7 @@ import type {
   BomDraft,
   BomNodeDraft,
   BomRejectionEntry,
-  InterfaceIntent,
-  InterfaceMapping,
   MechanismType,
-  ParametricPartSpec,
   ProposedPart,
 } from '../types'
 import {
@@ -155,14 +152,14 @@ export function createBomTools(
     }),
   }).server(async (input) => {
     try {
-      return (await searchItemsHandler(
+      return await searchItemsHandler(
         {
           query: input.query,
           itemType: input.itemType,
           limit: input.limit ?? 10,
         },
         context,
-      )) as { items: Array<Record<string, unknown>>; total: number }
+      )
     } catch (err) {
       return { items: [], total: 0, error: toolErrorMessage(err) }
     }
@@ -234,10 +231,10 @@ export function createBomTools(
     outputSchema: z.record(z.string(), z.unknown()),
   }).server(async (input) => {
     try {
-      return (await getBomHandler(
+      return await getBomHandler(
         { itemId: input.itemId, depth: input.depth },
         context,
-      )) as Record<string, unknown>
+      )
     } catch (err) {
       return { error: toolErrorMessage(err) }
     }
@@ -252,10 +249,7 @@ export function createBomTools(
     outputSchema: z.record(z.string(), z.unknown()),
   }).server(async (input) => {
     try {
-      return (await getItemDetailsHandler({ id: input.id }, context)) as Record<
-        string,
-        unknown
-      >
+      return await getItemDetailsHandler({ id: input.id }, context)
     } catch (err) {
       return { error: toolErrorMessage(err) }
     }
@@ -399,7 +393,7 @@ export function createBomTools(
       estimatedCost: input.estimatedCost,
       rationale,
       satisfiesRequirements: input.satisfiesRequirements,
-      parametricSpec: input.parametricSpec as ParametricPartSpec | undefined,
+      parametricSpec: input.parametricSpec,
       catalogComponentId: input.catalogComponentId,
       requiresManualSourcing: input.requiresManualSourcing,
       selectedStockSize: input.selectedStockSize,
@@ -422,7 +416,7 @@ export function createBomTools(
       rationale,
       confidence: 0.8,
       reviewStatus: 'proposed',
-      parametricSpec: input.parametricSpec as ParametricPartSpec | undefined,
+      parametricSpec: input.parametricSpec,
       catalogComponentId: input.catalogComponentId,
       requiresManualSourcing: input.requiresManualSourcing,
       selectedStockSize: input.selectedStockSize,
@@ -659,7 +653,7 @@ export function createBomTools(
     const node = state.nodes.get(input.tempId)
     if (!node) return { success: false, interfaceCount: 0 }
 
-    node.interfaces = input.interfaces as Array<InterfaceIntent>
+    node.interfaces = input.interfaces
     markNeedsReview(node)
     rebuildAndNotify()
     return { success: true, interfaceCount: input.interfaces.length }
@@ -722,7 +716,7 @@ export function createBomTools(
       } as any
     }
 
-    node.interfaceMappings = input.mappings as Array<InterfaceMapping>
+    node.interfaceMappings = input.mappings
     markNeedsReview(node)
     rebuildAndNotify()
     return { success: true, mappingCount: input.mappings.length }

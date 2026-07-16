@@ -83,14 +83,14 @@ export const Route = createFileRoute('/change-orders/')({
           draft: draftCount.data.total,
           inReview: inReviewCount.data.total,
           released: releasedCount.data.total,
-        } as StateCounts,
+        },
       }
     } catch (error) {
       console.error('Error loading change orders:', error)
       return {
         changeOrders: [] as Array<ChangeOrder>,
         total: 0,
-        counts: { draft: 0, inReview: 0, released: 0 } as StateCounts,
+        counts: { draft: 0, inReview: 0, released: 0 },
       }
     }
   },

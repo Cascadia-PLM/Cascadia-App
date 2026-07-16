@@ -380,14 +380,14 @@ describe('MaterializationService', () => {
     const designId = design.id!
 
     // Release an item to put the design in post-release (protected) phase
-    const releasedPart = await ItemService.create(
+    const releasedPart = await ItemService.create<BaseItem>(
       'Part',
       {
         name: 'Released Part',
         revision: 'A',
         itemType: 'Part',
         designId,
-      } as BaseItem,
+      },
       user.id,
     )
     await testDb.db

@@ -83,7 +83,7 @@ export class TestDatabase {
    * @throws Error if setup() hasn't been called
    */
   get db(): TestDbInstance {
-    if (this._tx) return this._tx as unknown as TestDbInstance
+    if (this._tx) return this._tx
     if (!this._db) {
       throw new Error('TestDatabase not initialized. Call setup() first.')
     }
@@ -151,7 +151,7 @@ export class TestDatabase {
 
     await new Promise<void>((resolveReady) => {
       this.txDone = this._db!.transaction(async (tx) => {
-        this._tx = tx as unknown as TransactionClient
+        this._tx = tx
         setTestDb(this._tx)
         resolveReady()
 

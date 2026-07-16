@@ -56,10 +56,7 @@ export function createRequirementsTools(
         { query: input.query, limit: input.limit ?? 10 },
         context,
       )
-      return result as {
-        designs: Array<Record<string, unknown>>
-        total: number
-      }
+      return result
     } catch (err) {
       return { designs: [], total: 0, error: toolErrorMessage(err) }
     }
@@ -92,7 +89,7 @@ export function createRequirementsTools(
         },
         context,
       )
-      return result as { items: Array<Record<string, unknown>>; total: number }
+      return result
     } catch (err) {
       return { items: [], total: 0, error: toolErrorMessage(err) }
     }

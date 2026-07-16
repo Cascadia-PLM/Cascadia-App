@@ -504,7 +504,7 @@ export class LifecycleService {
     // Determine lifecycle type
     let lifecycleType: LifecycleType = 'Free'
     if (row.lifecycleType) {
-      lifecycleType = row.lifecycleType as LifecycleType
+      lifecycleType = row.lifecycleType
     } else if (def.lifecycleType) {
       lifecycleType = def.lifecycleType
     } else if (def.definitionType === 'lifecycle') {

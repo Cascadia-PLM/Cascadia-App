@@ -83,7 +83,7 @@ export class DesignSnapshotService {
       .where(eq(designSessionSnapshots.id, id))
       .limit(1)
 
-    return (row as DesignSessionSnapshot | undefined) ?? null
+    return (row) ?? null
   }
 
   static async getLatestForStage(
@@ -102,7 +102,7 @@ export class DesignSnapshotService {
       .orderBy(desc(designSessionSnapshots.seq))
       .limit(1)
 
-    return (row as DesignSessionSnapshot | undefined) ?? null
+    return (row) ?? null
   }
 
   /** Copy every snapshot of one session to another (used by session forking). */

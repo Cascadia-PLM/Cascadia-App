@@ -41,7 +41,7 @@ function parseToolEntry(content: string): ParsedToolEntry | null {
       typeof parsed === 'object' &&
       parsed !== null &&
       'toolName' in parsed &&
-      typeof (parsed as { toolName: unknown }).toolName === 'string'
+      typeof (parsed).toolName === 'string'
     ) {
       return parsed as ParsedToolEntry
     }

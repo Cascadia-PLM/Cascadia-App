@@ -128,7 +128,7 @@ export function createToolsetTools(
       )
 
       return {
-        tools: activeTools as Array<Record<string, unknown>>,
+        tools: activeTools,
         total: activeTools.length,
       }
     } catch (err) {

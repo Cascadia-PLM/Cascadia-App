@@ -121,7 +121,7 @@ export function DocumentForm({
             <FormField
               label="Design"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="The design this document belongs to"
               className="md:col-span-2"
             >
@@ -197,7 +197,7 @@ export function DocumentForm({
           {(field) => (
             <FormField
               label="Item Number"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Leave blank to auto-generate (e.g., DOC-000001)"
             >
               <Input
@@ -219,7 +219,7 @@ export function DocumentForm({
             <FormField
               label="Revision"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Version identifier (A, B, C, etc.)"
             >
               <Input
@@ -239,7 +239,7 @@ export function DocumentForm({
           {(field) => (
             <FormField
               label="Name"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Input
@@ -260,7 +260,7 @@ export function DocumentForm({
           {(field) => (
             <FormField
               label="Description"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Textarea
@@ -281,7 +281,7 @@ export function DocumentForm({
           {(field) => (
             <FormField
               label="File Name"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}
@@ -300,7 +300,7 @@ export function DocumentForm({
           {(field) => (
             <FormField
               label="MIME Type"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}
@@ -319,7 +319,7 @@ export function DocumentForm({
           {(field) => (
             <FormField
               label="File Size (bytes)"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}
@@ -342,7 +342,7 @@ export function DocumentForm({
           {(field) => (
             <FormField
               label="Storage Path"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}

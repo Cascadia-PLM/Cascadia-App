@@ -103,7 +103,7 @@ function WorkflowInstanceEditorInner({
   const { screenToFlowPosition } = useReactFlow()
 
   // Convert states/transitions to React Flow nodes/edges
-  const initialNodes = useMemo(() => {
+  const initialNodes = useMemo((): Array<StateNodeType> => {
     return states.map((state) => ({
       id: state.id,
       type: 'stateNode',
@@ -112,10 +112,10 @@ function WorkflowInstanceEditorInner({
         state,
         isCurrent: state.id === currentState,
       },
-    })) as Array<StateNodeType>
+    }))
   }, [])
 
-  const initialEdges = useMemo(() => {
+  const initialEdges = useMemo((): Array<TransitionEdgeType> => {
     return transitions.map((transition) => ({
       id: transition.id,
       source: transition.fromStateId,
@@ -127,7 +127,7 @@ function WorkflowInstanceEditorInner({
         definitionType: 'workflow' as const,
         readOnly: !canEdit,
       },
-    })) as Array<TransitionEdgeType>
+    }))
   }, [])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
@@ -244,7 +244,7 @@ function WorkflowInstanceEditorInner({
         type: 'stateNode',
         position: newState.position!,
         data: { state: newState, isCurrent: false },
-      } as StateNodeType,
+      },
     ])
   }, [canEdit, setNodes])
 
@@ -382,7 +382,7 @@ function WorkflowInstanceEditorInner({
         ...node.data,
         onEdit: canEdit
           ? (state: WorkflowState) =>
-              setSelectedState(state as InstanceWorkflowState)
+              setSelectedState(state)
           : undefined,
         onDelete:
           canEdit && node.id !== currentState

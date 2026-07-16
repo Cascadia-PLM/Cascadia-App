@@ -144,7 +144,7 @@ export class PermissionService {
       result[resource] = Array.from(actionsSet)
     }
 
-    return result as Record<ResourceType, Array<PermissionAction>>
+    return result
   }
 
   /**

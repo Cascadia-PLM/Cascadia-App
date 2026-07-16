@@ -79,11 +79,12 @@ export function useArtifactMutations({
 
   const updateRequirement = useCallback(
     async (tempId: string, data: Partial<RequirementDraft>) => {
-      const requirements = artifacts.requirements.map((r) =>
-        r.tempId === tempId
-          ? // A user edit implicitly approves the edited content
-            { ...r, reviewStatus: 'edited' as ReviewStatus, ...data }
-          : r,
+      const requirements = artifacts.requirements.map(
+        (r): RequirementDraft =>
+          r.tempId === tempId
+            ? // A user edit implicitly approves the edited content
+              { ...r, reviewStatus: 'edited', ...data }
+            : r,
       )
       await commit({ ...artifacts, requirements })
     },
@@ -156,10 +157,11 @@ export function useArtifactMutations({
   )
 
   const acceptAllRequirements = useCallback(async () => {
-    const requirements = artifacts.requirements.map((r) =>
-      r.reviewStatus === undefined || r.reviewStatus === 'proposed'
-        ? { ...r, reviewStatus: 'accepted' as ReviewStatus }
-        : r,
+    const requirements = artifacts.requirements.map(
+      (r): RequirementDraft =>
+        r.reviewStatus === undefined || r.reviewStatus === 'proposed'
+          ? { ...r, reviewStatus: 'accepted' }
+          : r,
     )
     await commit({ ...artifacts, requirements })
   }, [artifacts, commit])

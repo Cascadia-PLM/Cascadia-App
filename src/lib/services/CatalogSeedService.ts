@@ -24,7 +24,6 @@ import type {
   CatalogDimensions,
   CatalogElectrical,
   CatalogMountingFeature,
-  CatalogStockSize,
 } from '../db/schema/componentCatalog'
 import type { CategoryDef } from '../../../scripts/seed/catalog-data/categories'
 import type { CatalogEntryDef } from '../../../scripts/seed/types'
@@ -158,7 +157,7 @@ export class CatalogSeedService {
             []) as Array<CatalogMountingFeature>,
           electrical: (entry.electrical ?? null) as CatalogElectrical | null,
           specs: (entry.specs ?? {}) as Record<string, string>,
-          stockSizes: (entry.stockSizes ?? null) as Array<CatalogStockSize> | null,
+          stockSizes: entry.stockSizes ?? null,
           suppliers: entry.suppliers ?? [],
           designNotes: entry.designNotes ?? null,
           tags: entry.tags ?? [],

@@ -21,11 +21,7 @@ import { DesignService } from './DesignService'
 import { LifecycleService } from './LifecycleService'
 import { RevisionService } from './RevisionService'
 import type { commits } from '../db/schema'
-import type {
-  ChangeAction,
-  PromoteActionMapping,
-  RevisionScheme,
-} from '../types/lifecycle'
+import type { PromoteActionMapping, RevisionScheme } from '../types/lifecycle'
 import type { ChangeOrder } from '../items/types/change-order'
 import { serviceLogger } from '@/lib/logging/logger'
 
@@ -260,7 +256,7 @@ export class ChangeOrderMergeService {
           const item = await ItemService.findById(affected.affectedItemId)
           if (!item) continue
 
-          const action = affected.changeAction as ChangeAction
+          const action = affected.changeAction
 
           // For release/revise/obsolete actions, check if item is already in target state
           // This makes the release operation idempotent (safe to call multiple times)

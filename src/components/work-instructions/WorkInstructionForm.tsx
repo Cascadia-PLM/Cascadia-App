@@ -72,7 +72,7 @@ export function WorkInstructionForm({
           {(field) => (
             <FormField
               label="Work Instruction Number"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Leave blank to auto-generate (e.g., WI-000001)"
             >
               <Input
@@ -93,7 +93,7 @@ export function WorkInstructionForm({
             <FormField
               label="Revision"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Version identifier (A, B, C, etc.)"
             >
               <Input
@@ -113,7 +113,7 @@ export function WorkInstructionForm({
           {(field) => (
             <FormField
               label="Work Instruction Name"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Input
@@ -133,7 +133,7 @@ export function WorkInstructionForm({
           {(field) => (
             <FormField
               label="Description"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Textarea
@@ -154,7 +154,7 @@ export function WorkInstructionForm({
           {(field) => (
             <FormField
               label="State"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value}
@@ -180,7 +180,7 @@ export function WorkInstructionForm({
           {(field) => (
             <FormField
               label="Difficulty"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value || ''}
@@ -206,7 +206,7 @@ export function WorkInstructionForm({
           {(field) => (
             <FormField
               label="Estimated Time (minutes)"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}
@@ -230,7 +230,7 @@ export function WorkInstructionForm({
           {(field) => (
             <FormField
               label="Required Tools"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Input
                 name={field.name}
@@ -249,7 +249,7 @@ export function WorkInstructionForm({
           {(field) => (
             <FormField
               label="Safety Notes"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Textarea

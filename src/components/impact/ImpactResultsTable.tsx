@@ -118,13 +118,13 @@ export function ImpactResultsTable({
           return (
             <div className="flex items-center gap-2">
               <Link
-                to={itemUrl as any}
+                to={itemUrl}
                 className="text-cyan-600 hover:underline font-medium"
               >
                 {item.itemNumber}
               </Link>
               <Link
-                to={itemUrl as any}
+                to={itemUrl}
                 target="_blank"
                 className="text-slate-400 hover:text-slate-600"
               >

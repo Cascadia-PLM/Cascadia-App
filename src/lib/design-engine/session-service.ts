@@ -156,7 +156,7 @@ export class DesignSessionService {
       .where(eq(designSessions.userId, userId))
       .orderBy(desc(designSessions.updatedAt))
 
-    return results as Array<DesignSession>
+    return results
   }
 
   static async getUserActiveSessionsForProgram(
@@ -175,7 +175,7 @@ export class DesignSessionService {
       )
       .orderBy(desc(designSessions.updatedAt))
 
-    return results as Array<DesignSession>
+    return results
   }
 
   static async getProgramSessions(
@@ -192,7 +192,7 @@ export class DesignSessionService {
       )
       .orderBy(desc(designSessions.updatedAt))
 
-    return results as Array<DesignSession>
+    return results
   }
 
   /**

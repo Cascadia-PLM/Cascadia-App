@@ -295,7 +295,7 @@ export class VaultTestHelper {
         type: this.config.type ?? 'local',
         rootPath: this.config.rootPath,
         ...this.config,
-      } as StorageConfig)
+      })
     } else {
       this.storage = StorageFactory.createFromEnv()
     }

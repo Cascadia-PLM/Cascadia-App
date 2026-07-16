@@ -68,7 +68,7 @@ export function UserForm({
             <FormField
               label="Email"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="User's email address (used for login)"
             >
               <Input
@@ -90,7 +90,7 @@ export function UserForm({
             <FormField
               label="Name"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="User's full name"
             >
               <Input
@@ -112,7 +112,7 @@ export function UserForm({
               <FormField
                 label="Password"
                 required
-                error={field.state.meta.errors[0] as string | undefined}
+                error={field.state.meta.errors[0]}
                 helpText="Minimum 8 characters"
               >
                 <Input
@@ -134,7 +134,7 @@ export function UserForm({
           {(field) => (
             <FormField
               label="Provider"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Authentication provider"
             >
               <Select
@@ -164,7 +164,7 @@ export function UserForm({
                   {(field) => (
                     <FormField
                       label="Provider ID"
-                      error={field.state.meta.errors[0] as string | undefined}
+                      error={field.state.meta.errors[0]}
                       helpText="External provider user ID"
                     >
                       <Input
@@ -188,7 +188,7 @@ export function UserForm({
           {(field) => (
             <FormField
               label="Active Status"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Active users can log in"
             >
               <Select

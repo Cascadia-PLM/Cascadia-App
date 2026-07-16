@@ -229,7 +229,7 @@ export class ItemService {
         createdBy: item.createdBy,
         modifiedAt: item.modifiedAt,
         modifiedBy: item.modifiedBy,
-      } as T
+      }
     })
   }
 

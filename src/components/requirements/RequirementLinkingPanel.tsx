@@ -231,7 +231,7 @@ export function RequirementLinkingPanel({
         enableSorting: true,
         cell: ({ row }) => (
           <Link
-            to={`/requirements/${row.original.id}` as any}
+            to={`/requirements/${row.original.id}`}
             className="font-medium text-cyan-600 hover:text-cyan-700 hover:underline flex items-center gap-1"
           >
             {row.original.itemNumber}

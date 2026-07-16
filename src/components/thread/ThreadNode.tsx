@@ -134,7 +134,7 @@ function ThreadNodeComponent({
           <div className="flex items-center justify-between">
             {route ? (
               <Link
-                to={route as '/parts/$id'}
+                to={route}
                 params={{ id: data.id }}
                 className="text-sm font-semibold text-cyan-600 dark:text-cyan-400 hover:underline"
               >

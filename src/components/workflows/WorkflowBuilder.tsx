@@ -150,7 +150,7 @@ function getLayoutedElements(
         data: { phase },
         style: { width: 240, height: 160 },
         connectable: false,
-      } as PhaseGroupNodeType)
+      })
       continue
     }
 
@@ -179,7 +179,7 @@ function getLayoutedElements(
       data: { phase },
       style: { width: groupW, height: groupH },
       connectable: false,
-    } as PhaseGroupNodeType)
+    })
 
     // Adjust member positions to be relative to group
     for (const m of members) {
@@ -215,16 +215,16 @@ function WorkflowBuilderInner({
   type BuilderNode = StateNodeType | PhaseGroupNodeType
 
   // Convert workflow states/transitions to React Flow nodes/edges
-  const initialNodes = useMemo(() => {
+  const initialNodes = useMemo((): Array<BuilderNode> => {
     return (definition?.states || []).map((state) => ({
       id: state.id,
       type: 'stateNode' as const,
       position: state.position || { x: 0, y: 0 },
       data: { state },
-    })) as Array<BuilderNode>
+    }))
   }, [])
 
-  const initialEdges = useMemo(() => {
+  const initialEdges = useMemo((): Array<TransitionEdgeType> => {
     return (definition?.transitions || []).map((transition) => ({
       id: transition.id,
       source: transition.fromStateId,
@@ -232,7 +232,7 @@ function WorkflowBuilderInner({
       type: 'transitionEdge',
       markerEnd: { type: MarkerType.ArrowClosed },
       data: { transition, definitionType },
-    })) as Array<TransitionEdgeType>
+    }))
   }, [])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
@@ -552,7 +552,7 @@ function WorkflowBuilderInner({
           return {
             ...edge,
             data: { ...edge.data, transition: updatedTransition },
-          } as TransitionEdgeType
+          }
         }),
       )
     },
@@ -664,7 +664,7 @@ function WorkflowBuilderInner({
               : (phase: LifecyclePhaseConfig) => setSelectedPhase(phase),
             onDelete: readOnly ? undefined : deletePhase,
           },
-        } as PhaseGroupNodeType
+        }
       }
       return {
         ...node,
@@ -677,7 +677,7 @@ function WorkflowBuilderInner({
           onDelete: readOnly ? undefined : deleteState,
           hideHandles: disableTransitions,
         },
-      } as StateNodeType
+      }
     })
   }, [nodes, readOnly, deleteState, deletePhase, disableTransitions])
 
@@ -736,8 +736,8 @@ function WorkflowBuilderInner({
       <ReactFlow
         nodes={nodesWithHandlers}
         edges={edgesWithHandlers}
-        onNodesChange={readOnly ? undefined : (onNodesChange as any)}
-        onEdgesChange={readOnly ? undefined : (onEdgesChange as any)}
+        onNodesChange={readOnly ? undefined : (onNodesChange)}
+        onEdgesChange={readOnly ? undefined : (onEdgesChange)}
         onConnect={disableTransitions ? undefined : onConnect}
         onConnectStart={
           readOnly || disableTransitions ? undefined : onConnectStart

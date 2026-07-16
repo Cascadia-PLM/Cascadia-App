@@ -77,7 +77,7 @@ export function IssueForm({
           {(field) => (
             <FormField
               label="Issue Number"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Leave blank to auto-generate (e.g., ISS-000001)"
             >
               <Input
@@ -98,7 +98,7 @@ export function IssueForm({
             <FormField
               label="Revision"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Version identifier (A, B, C, etc.)"
             >
               <Input
@@ -118,7 +118,7 @@ export function IssueForm({
           {(field) => (
             <FormField
               label="Issue Title"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Input
@@ -138,7 +138,7 @@ export function IssueForm({
           {(field) => (
             <FormField
               label="Description"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Textarea
@@ -159,7 +159,7 @@ export function IssueForm({
           {(field) => (
             <FormField
               label="Severity"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value}
@@ -188,7 +188,7 @@ export function IssueForm({
           {(field) => (
             <FormField
               label="Priority"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value}
@@ -217,7 +217,7 @@ export function IssueForm({
           {(field) => (
             <FormField
               label="Category"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value || ''}
@@ -246,7 +246,7 @@ export function IssueForm({
           {(field) => (
             <FormField
               label="State"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
             >
               <Select
                 value={field.state.value}
@@ -274,7 +274,7 @@ export function IssueForm({
           {(field) => (
             <FormField
               label="Assigned To"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="UUID of the assigned user"
             >
               <Input
@@ -294,7 +294,7 @@ export function IssueForm({
           {(field) => (
             <FormField
               label="Root Cause"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Textarea
@@ -315,7 +315,7 @@ export function IssueForm({
           {(field) => (
             <FormField
               label="Resolution"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Textarea

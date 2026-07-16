@@ -163,7 +163,7 @@ export function DesignForm({
             <FormField
               label="Design Name"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Input
@@ -184,7 +184,7 @@ export function DesignForm({
             <FormField
               label="Design Code"
               required
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Unique identifier (uppercase, hyphens allowed)"
             >
               <Input
@@ -206,7 +206,7 @@ export function DesignForm({
           {(field) => (
             <FormField
               label="Type"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText={
                 field.state.value === 'Family'
                   ? 'A family groups related variant designs'
@@ -240,7 +240,7 @@ export function DesignForm({
           {(field) => (
             <FormField
               label="Program"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Optional program association"
             >
               <Select
@@ -271,7 +271,7 @@ export function DesignForm({
             {(field) => (
               <FormField
                 label="Parent Family"
-                error={field.state.meta.errors[0] as string | undefined}
+                error={field.state.meta.errors[0]}
                 helpText="Optional: group this design under a family"
               >
                 <Select
@@ -309,7 +309,7 @@ export function DesignForm({
           {(field) => (
             <FormField
               label="Planned Quantity"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               helpText="Number of units planned"
             >
               <Input
@@ -330,7 +330,7 @@ export function DesignForm({
           {(field) => (
             <FormField
               label="Description"
-              error={field.state.meta.errors[0] as string | undefined}
+              error={field.state.meta.errors[0]}
               className="md:col-span-2"
             >
               <Textarea

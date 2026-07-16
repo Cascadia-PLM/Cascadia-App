@@ -37,7 +37,7 @@ class JobTypeRegistry {
     } else {
       jobLogger.debug({ type: config.type }, 'Registered job type')
     }
-    this.codeDefinitions.set(config.type, config as JobTypeConfig)
+    this.codeDefinitions.set(config.type, config)
     this.mergedCache.delete(config.type)
   }
 

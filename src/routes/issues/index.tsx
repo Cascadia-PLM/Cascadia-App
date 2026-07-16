@@ -122,7 +122,7 @@ export const Route = createFileRoute('/issues/')({
           inProgress: inProgressCount.data.total,
           resolved: resolvedCount.data.total,
           closed: closedCount.data.total,
-        } as StateCounts,
+        },
         designs: designsResult.data.designs,
       }
     } catch (error) {
@@ -135,7 +135,7 @@ export const Route = createFileRoute('/issues/')({
           inProgress: 0,
           resolved: 0,
           closed: 0,
-        } as StateCounts,
+        },
         designs: [] as Array<Design>,
       }
     }

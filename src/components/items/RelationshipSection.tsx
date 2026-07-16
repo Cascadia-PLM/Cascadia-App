@@ -200,7 +200,7 @@ export function RelationshipSection({ itemId }: RelationshipSectionProps) {
           const itemType = rel.targetItem.itemType.toLowerCase() + 's'
           return (
             <Link
-              to={`/${itemType}/${rel.targetItem.id}` as any}
+              to={`/${itemType}/${rel.targetItem.id}`}
               className="font-medium text-cyan-600 hover:text-cyan-700 hover:underline flex items-center gap-1"
             >
               {rel.targetItem.itemNumber}

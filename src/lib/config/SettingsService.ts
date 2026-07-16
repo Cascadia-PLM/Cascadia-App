@@ -30,7 +30,7 @@ export class SettingsService {
       .where(eq(settings.key, key))
       .limit(1)
 
-    return (results[0] as SettingRecord | undefined) ?? null
+    return (results[0]) ?? null
   }
 
   /**
@@ -60,7 +60,7 @@ export class SettingsService {
     const map = new Map<string, SettingRecord>()
     for (const result of results) {
       if (keys.includes(result.key)) {
-        map.set(result.key, result as SettingRecord)
+        map.set(result.key, result)
       }
     }
 
@@ -72,7 +72,7 @@ export class SettingsService {
    */
   static async getAll(): Promise<Array<SettingRecord>> {
     const results = await db.select().from(settings)
-    return results as Array<SettingRecord>
+    return results
   }
 
   /**

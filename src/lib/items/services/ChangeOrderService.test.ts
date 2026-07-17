@@ -28,6 +28,7 @@ import {
   changeOrders,
   commits,
   designs,
+  items as itemsTable,
 } from '@/lib/db/schema'
 import {
   workflowDefinitions,
@@ -377,6 +378,48 @@ describe('ChangeOrderService', () => {
     )
   }
 
+  // Helper: create a second design with a main branch (mirrors beforeEach).
+  async function createDesign(codeSuffix: string): Promise<string> {
+    const [d] = await testDb.db
+      .insert(designs)
+      .values({
+        name: `Test Design ${codeSuffix}`,
+        code: `PROD-${uniquePrefix}-${codeSuffix}`,
+        designType: 'Engineering',
+        createdBy: user.id,
+      })
+      .returning()
+    const [c] = await testDb.db
+      .insert(commits)
+      .values({
+        designId: d.id,
+        branchId: d.id,
+        message: 'Initial commit',
+        createdBy: user.id,
+      })
+      .returning()
+    const [b] = await testDb.db
+      .insert(branches)
+      .values({
+        designId: d.id,
+        name: 'main',
+        branchType: 'main',
+        headCommitId: c.id,
+        baseCommitId: c.id,
+        createdBy: user.id,
+      })
+      .returning()
+    await testDb.db
+      .update(commits)
+      .set({ branchId: b.id })
+      .where(eq(commits.id, c.id))
+    await testDb.db
+      .update(designs)
+      .set({ defaultBranchId: b.id })
+      .where(eq(designs.id, d.id))
+    return d.id
+  }
+
   describe('addAffectedItem', () => {
     it('adds an affected item with release action', async () => {
       const changeOrder = await createChangeOrder()
@@ -510,6 +553,34 @@ describe('ChangeOrderService', () => {
       expect(creationCommit!.message).toBe(
         `ChangeOrder ${changeOrder.itemNumber} created`,
       )
+    })
+
+    it('release does NOT associate other designs that merely hold usage copies', async () => {
+      const changeOrder = await createChangeOrder()
+      const definition = await createPart()
+
+      // A second design holds a usage copy of the definition.
+      const otherDesignId = await createDesign('B')
+      const usage = await createPart({
+        designId: otherDesignId,
+        name: 'Usage copy',
+      })
+      await testDb.db
+        .update(itemsTable)
+        .set({ usageOf: definition.id })
+        .where(eq(itemsTable.id, usage.id))
+
+      await ChangeOrderService.addAffectedItem(
+        changeOrder.id,
+        { affectedItemId: definition.id, changeAction: 'release' },
+        user.id,
+      )
+
+      // Only the definition's OWN design is associated with the release ECO —
+      // the usage-copy design must NOT be pulled in (it has no affected items,
+      // and associating it would leak the ECO's baseline onto it).
+      const ecoDesigns = await ChangeOrderService.getEcoDesigns(changeOrder.id)
+      expect(ecoDesigns.map((d) => d.designId)).toEqual([designId])
     })
   })
 

@@ -312,7 +312,7 @@ function ExecutionModePage() {
       }
     }
     const unassigned = sortedSteps.filter(
-      (s) => !s.operationId || !operations.some((o) => o.id === s.operationId),
+      (s) => !s.operationId || !operations.some((o: WorkInstructionOperation) => o.id === s.operationId),
     )
     for (const step of unassigned) {
       stepItems.push({ type: 'step', step, operationTitle: undefined })
@@ -355,7 +355,7 @@ function ExecutionModePage() {
   // Resolve parametric values
   useEffect(() => {
     const hasParametric = sortedSteps.some((step) =>
-      step.content?.blocks?.some((b) => b.type === 'parametric'),
+      step.content?.blocks?.some((b: StepContentBlock) => b.type === 'parametric'),
     )
     if (!hasParametric) return
 

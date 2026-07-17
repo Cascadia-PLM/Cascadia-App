@@ -67,7 +67,9 @@ export function Breadcrumbs() {
     const basePath = pathname.split('/')[1]
     navigate({
       to: `/${basePath}`,
-      search: (prev) => ({
+      // `to` is built from pathname at runtime, so the target route - and with
+      // it the search schema - is not statically known here.
+      search: (prev: Record<string, unknown>) => ({
         ...prev,
         designId: designId || undefined,
         branch: undefined,

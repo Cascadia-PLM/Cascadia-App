@@ -22,6 +22,20 @@ export interface BaseItem {
   usageOf?: string // If set, this is a usage referencing a definition (SysML v2 pattern)
 }
 
+/**
+ * An item as returned by a read path.
+ *
+ * BaseItem marks id/itemNumber/state optional because it doubles as the shape
+ * you pass to create(), where they are not known yet. A row that came back from
+ * the database always has them - all three are NOT NULL columns - so read paths
+ * return this instead and callers stop guarding against states that cannot occur.
+ */
+export type PersistedItem = BaseItem & {
+  id: string
+  itemNumber: string
+  state: string
+}
+
 // Base Zod schema for validation
 export const baseItemSchema = z.object({
   id: z.string().uuid().optional(),

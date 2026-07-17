@@ -896,7 +896,7 @@ app.get(
         }
 
         const result: EcoBranchHistory = {
-          ecoNumber: eco.itemNumber ?? '',
+          ecoNumber: eco.itemNumber,
           ecoName: eco.name || '',
           mainBranch: { commits: [] },
           ecoBranches: [],
@@ -1566,7 +1566,7 @@ app.get(
 
         if (affectedDesigns.length === 0) {
           return {
-            ecoNumber: eco.itemNumber ?? '',
+            ecoNumber: eco.itemNumber,
             ecoName: eco.name || '',
             nodes: [],
             edges: [],
@@ -1583,7 +1583,7 @@ app.get(
 
         if (!targetDesign.branchId) {
           return {
-            ecoNumber: eco.itemNumber ?? '',
+            ecoNumber: eco.itemNumber,
             ecoName: eco.name || '',
             nodes: [],
             edges: [],
@@ -1623,7 +1623,7 @@ app.get(
 
         return {
           ...graphData,
-          ecoNumber: eco.itemNumber ?? '',
+          ecoNumber: eco.itemNumber,
           ecoName: eco.name || '',
           affectedDesigns: affectedDesignsWithBranches,
         }

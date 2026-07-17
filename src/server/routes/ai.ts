@@ -460,7 +460,11 @@ app.post(
   '/settings',
   adapt(
     apiHandler(
-      { permission: ['ai_settings', 'create'] },
+      // 'ai_settings' was never a ResourceType, and hasPermission() denies any
+      // resource no role declares - so this endpoint 403'd for everyone,
+      // Global Admin included. Admin config is 'system' everywhere else,
+      // including admin.ts's own AI provider routes.
+      { permission: ['system', 'manage'] },
       async ({ request }) => {
         const body: SettingsRequest = await request.json()
         const { programId, provider, config, enabled = true } = body
@@ -521,7 +525,9 @@ app.put(
   '/settings',
   adapt(
     apiHandler(
-      { permission: ['ai_settings', 'update'] },
+      // See POST /settings above: 'ai_settings' is not a ResourceType, so this
+      // denied everyone. Admin config is 'system' everywhere else.
+      { permission: ['system', 'manage'] },
       async ({ request }) => {
         const body: SettingsRequest = await request.json()
         const { programId, provider, config, enabled } = body

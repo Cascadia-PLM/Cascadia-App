@@ -63,7 +63,7 @@ import type {
   RowData,
   SortingState,
 } from '@tanstack/react-table'
-import type { ReactNode } from 'react'
+import type { ReactNode, SetStateAction } from 'react'
 import { cn } from '@/lib/utils'
 
 // Per-column presentation hints read by DataGrid when rendering headers/cells.
@@ -393,7 +393,23 @@ export function DataGrid<T>({
   const globalFilter = controlledGlobalFilter ?? internalGlobalFilter
   const setGlobalFilter = onGlobalFilterChangeProp ?? setInternalGlobalFilter
   const pagination = controlledPagination ?? internalPagination
-  const setPagination = onPaginationChangeProp ?? setInternalPagination
+  // Normalized to useState's updater-accepting shape. `onPaginationChange` takes
+  // a plain PaginationState, but callers below pass `(prev) => next`; a bare
+  // `??` of the two leaves a union no updater can be called on, which silently
+  // degraded `prev` to `any` and would have handed the callback a function
+  // instead of a state object.
+  const setPagination = useCallback(
+    (updater: SetStateAction<PaginationState>) => {
+      if (onPaginationChangeProp) {
+        onPaginationChangeProp(
+          typeof updater === 'function' ? updater(pagination) : updater,
+        )
+      } else {
+        setInternalPagination(updater)
+      }
+    },
+    [onPaginationChangeProp, pagination],
+  )
 
   // Sync local search value from parent (for external changes like URL navigation or clear button elsewhere)
   useEffect(() => {

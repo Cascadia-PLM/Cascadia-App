@@ -163,7 +163,7 @@ function PresentationModePage() {
 
     // Unassigned steps
     const unassigned = sortedSteps.filter(
-      (s) => !s.operationId || !operations.some((o) => o.id === s.operationId),
+      (s) => !s.operationId || !operations.some((o: WorkInstructionOperation) => o.id === s.operationId),
     )
     for (const step of unassigned) {
       items.push({ type: 'step', step, operationTitle: undefined })
@@ -200,7 +200,7 @@ function PresentationModePage() {
   // Resolve parametric values on load
   useEffect(() => {
     const hasParametric = sortedSteps.some((step) =>
-      step.content?.blocks?.some((b) => b.type === 'parametric'),
+      step.content?.blocks?.some((b: StepContentBlock) => b.type === 'parametric'),
     )
     if (!hasParametric) return
 

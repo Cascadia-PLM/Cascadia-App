@@ -141,7 +141,7 @@ function DesignDetailPage() {
     navigate({
       to: '/designs/$id',
       params: { id: design.id },
-      search: (prev) => ({
+      search: (prev: z.infer<typeof designSearchSchema>) => ({
         ...prev,
         tab: tab as
           | 'structure'

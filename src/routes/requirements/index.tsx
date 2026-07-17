@@ -155,7 +155,7 @@ function RequirementsListPage() {
 
   // Get selected design from URL
   const selectedDesignId = searchParams.designId
-  const selectedDesign = designs.find((d) => d.id === selectedDesignId)
+  const selectedDesign = designs.find((d: Design) => d.id === selectedDesignId)
 
   // Version context management
   const { context, contextLabel, isEditable } =

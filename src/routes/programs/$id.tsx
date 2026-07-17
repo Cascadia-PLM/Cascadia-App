@@ -357,7 +357,7 @@ function ProgramDetailPage() {
             <CardContent>
               {designs.length > 0 ? (
                 <div className="space-y-3">
-                  {designs.map((design) => (
+                  {designs.map((design: Design) => (
                     <Link
                       key={design.id}
                       to="/designs/$id"

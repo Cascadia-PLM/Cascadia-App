@@ -285,7 +285,7 @@ function UserDetailPage() {
         <CardContent>
           {user.roles.length > 0 ? (
             <div className="space-y-6">
-              {user.roles.map((role) => (
+              {user.roles.map((role: Role) => (
                 <div key={role.id} className="border-b pb-6 last:border-b-0">
                   <div className="flex items-start justify-between mb-3">
                     <div>

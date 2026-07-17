@@ -69,7 +69,7 @@ function NewIssuePage() {
 
   // Parse comma-separated designIds from URL and combine with backward compat designId
   const parsedDesignIds = searchParams.designIds
-    ? searchParams.designIds.split(',').filter((id) => id.length > 0)
+    ? searchParams.designIds.split(',').filter((id: string) => id.length > 0)
     : []
   const defaultDesignIds = [
     ...parsedDesignIds,

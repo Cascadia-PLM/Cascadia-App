@@ -122,7 +122,7 @@ function DesignsListPage() {
   } = useServerDataGrid<DesignWithProgram>({
     queryKey: ['designs'],
     dependencies: { programId: searchParams.programId },
-    fetchFn: async (params) => {
+    fetchFn: async () => {
       const qp = new URLSearchParams()
       if (searchParams.programId) qp.set('programId', searchParams.programId)
 

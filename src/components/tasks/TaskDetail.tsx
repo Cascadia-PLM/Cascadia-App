@@ -1,16 +1,6 @@
-import { Link, useRouter } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  Edit,
-  Save,
-  Tag,
-  Trash2,
-  User,
-  X,
-} from 'lucide-react'
+import { ArrowLeft, Edit, Save, Tag, Trash2, X } from 'lucide-react'
 import type { Task } from '@/lib/items/types/task'
 import { PageContainer } from '@/components/layout'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
@@ -20,7 +10,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
   Collapsible,
@@ -32,13 +21,11 @@ import {
   TabsTrigger,
   ViewEditBadge,
   ViewEditNumber,
-  ViewEditSelect,
   ViewEditStatic,
   ViewEditText,
   ViewEditTextarea,
 } from '@/components/ui'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'
 
 const STATE_OPTIONS = [
@@ -125,9 +112,7 @@ export function TaskDetail({
   activeTab = 'details',
   onTabChange,
 }: TaskDetailProps) {
-  const router = useRouter()
   const { confirm } = useAlertDialog()
-  const { handleError, showSuccess } = useErrorHandler()
 
   const isCreateMode = !initialTask?.id
 

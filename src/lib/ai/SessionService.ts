@@ -13,8 +13,6 @@ import { and, desc, eq } from 'drizzle-orm'
 import type { ToolCall } from '@/lib/db/schema/ai'
 import { aiChatMessages, aiChatSessions } from '@/lib/db/schema/ai'
 import { db } from '@/lib/db'
-import { programs } from '@/lib/db/schema/programs'
-import { designs } from '@/lib/db/schema/designs'
 
 // Message role types
 export type MessageRole = 'system' | 'user' | 'assistant' | 'tool'

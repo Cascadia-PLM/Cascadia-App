@@ -8,7 +8,7 @@ import {
   workOrderUpdateSchema,
 } from '@/lib/items/types/work-order'
 import { NotFoundError, ValidationError } from '@/lib/errors'
-import { apiHandler, created } from '@/lib/api/handler'
+import { apiHandler } from '@/lib/api/handler'
 
 const adapt = tagged('Work Orders')
 

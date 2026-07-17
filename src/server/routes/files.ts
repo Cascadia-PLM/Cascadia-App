@@ -61,7 +61,7 @@ app.post(
   adapt(
     apiHandler(
       { permission: ['documents', 'update'] },
-      async ({ request, user, requestId }) => {
+      async ({ request, user }) => {
         // Parse and validate request body
         const body = await request.json()
         const parseResult = batchFileCheckinRequestSchema.safeParse(body)
@@ -142,7 +142,7 @@ app.post(
   adapt(
     apiHandler(
       { permission: ['documents', 'update'] },
-      async ({ request, user, requestId }) => {
+      async ({ request, user }) => {
         // Parse and validate request body
         const body = await request.json()
         const parseResult = batchFileCheckoutRequestSchema.safeParse(body)

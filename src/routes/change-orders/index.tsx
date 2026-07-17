@@ -53,6 +53,7 @@ export const Route = createFileRoute('/change-orders/')({
         offset: '0',
       })
       if (designId) params.set('designId', designId)
+      if (programId) params.set('programId', programId)
 
       // Build count params (mirror filters but not pagination)
       const countParams = new URLSearchParams({
@@ -60,6 +61,7 @@ export const Route = createFileRoute('/change-orders/')({
         limit: '1',
       })
       if (designId) countParams.set('designId', designId)
+      if (programId) countParams.set('programId', programId)
 
       const [result, draftCount, inReviewCount, releasedCount] =
         await Promise.all([

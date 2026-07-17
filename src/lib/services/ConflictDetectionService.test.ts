@@ -28,7 +28,6 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
   branchItems,
-  branches,
   changeOrderAffectedItems,
   items,
   programs,
@@ -1160,10 +1159,6 @@ describe('ConflictDetectionService', () => {
         ecoBranch.id,
       )
 
-      // Should detect concurrent modification (different fields changed)
-      const concurrentMods = result.conflicts.filter(
-        (c) => c.conflictType === 'concurrent_modification',
-      )
       // May or may not have concurrent modification depending on exact setup
       expect(result.checkedAt).toBeInstanceOf(Date)
     })
@@ -1786,7 +1781,6 @@ describe('ConflictDetectionService', () => {
         .where(eq(branchItems.branchId, branch.id))
 
       const originalCurrentId = branchItemBefore?.currentItemId
-      const originalBaseId = branchItemBefore?.baseItemId
 
       // Create new base version
       const newBase = await ItemService.create(

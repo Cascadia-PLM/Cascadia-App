@@ -15,7 +15,6 @@ import {
   itemRelationships,
   items,
   requirements,
-  testCases,
 } from '../db/schema'
 import { NotFoundError } from '../errors'
 import { EBOM_SOURCE_RELATIONSHIP } from './MbomService'
@@ -541,11 +540,9 @@ export class ThreadService {
         resolvedFocalItem.id,
         validated.validationDepth,
         validationNodes,
-        requirementsNodes,
         allRelationships,
         visitedIds,
         context,
-        designId,
       )
     }
 
@@ -1146,11 +1143,9 @@ export class ThreadService {
     itemId: string,
     depth: number,
     validationNodes: Array<ThreadNode>,
-    requirementsNodes: Array<ThreadNode>,
     relationships: Array<ThreadEdge>,
     visitedIds: Set<string>,
     context: VersionContext,
-    designId: string,
   ): Promise<void> {
     if (depth <= 0) return
 

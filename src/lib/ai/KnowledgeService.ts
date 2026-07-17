@@ -11,11 +11,7 @@
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import type { z } from 'zod'
 
-import type {
-  ItemTypeConfig,
-  RelationshipConfig,
-  StateConfig,
-} from '@/lib/items/types/base'
+import type { RelationshipConfig, StateConfig } from '@/lib/items/types/base'
 import { ItemTypeRegistry } from '@/lib/items/registry'
 import { aiLogger } from '@/lib/logging/logger'
 

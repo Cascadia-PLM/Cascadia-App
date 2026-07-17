@@ -36,7 +36,6 @@ import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { PhaseBadge } from '@/components/items/PhaseBadge'
 import { FileList, FileUploadZone } from '@/components/vault'
 import { WorkInstructionsForPartPanel } from '@/components/work-instructions'
-import { VersionContextSelector } from '@/components/versioning/VersionContextSelector'
 import { DesignPhaseIndicator } from '@/components/versioning/DesignPhaseIndicator'
 import { BranchSelector } from '@/components/versioning/BranchSelector'
 import { CheckoutDialog } from '@/components/items/CheckoutDialog'
@@ -697,11 +696,6 @@ export function PartDetail({
         return 'default'
     }
   }
-
-  // Available tabs (History and Work Instructions not available in create mode)
-  const availableTabs = isCreateMode
-    ? ['details', 'relationships']
-    : ['details', 'relationships', 'work-instructions', 'history']
 
   return (
     <div className="relative" {...dropHandlers}>

@@ -1252,7 +1252,7 @@ app.get(
 
       // Get item at specific context
       const item = await ItemService.getAtContext(
-        baseItem.masterId!,
+        baseItem.masterId,
         baseItem.designId,
         context,
       )
@@ -1384,7 +1384,7 @@ app.delete(
 
       // Soft delete on branch
       const commit = await ItemService.deleteOnBranch(
-        item.masterId!,
+        item.masterId,
         branchId,
         commitMessage || `Deleted ${item.itemNumber}`,
         user.id,
@@ -1466,7 +1466,7 @@ app.get(
 
       // Get the item at the specified version context
       const itemAtContext = await VersionResolver.getItemAtContext(
-        baseItem.masterId!,
+        baseItem.masterId,
         baseItem.designId,
         context,
       )
@@ -1566,7 +1566,7 @@ app.get(
 
       // Get available contexts for the item
       const contexts = await VersionResolver.getAvailableContextsForItem(
-        item.masterId!,
+        item.masterId,
         item.designId,
       )
 
@@ -1596,7 +1596,7 @@ app.post(
       // Check access to branch/design
       await requireBranchAccess(user.id, branchId)
 
-      await CheckoutService.cancelCheckout(item.masterId!, branchId, user.id)
+      await CheckoutService.cancelCheckout(item.masterId, branchId, user.id)
 
       return { success: true }
     }),
@@ -1624,7 +1624,7 @@ app.post(
       // Check access to branch/design
       await requireBranchAccess(user.id, branchId)
 
-      await CheckoutService.checkin(item.masterId!, branchId, user.id)
+      await CheckoutService.checkin(item.masterId, branchId, user.id)
 
       return { success: true }
     }),
@@ -1653,7 +1653,7 @@ app.get(
       await requireBranchAccess(user.id, branchId)
 
       const status = await CheckoutService.getCheckoutStatus(
-        item.masterId!,
+        item.masterId,
         branchId,
       )
 
@@ -1684,7 +1684,7 @@ app.post(
       await requireBranchAccess(user.id, branchId)
 
       const branchItem = await CheckoutService.checkout(
-        { itemMasterId: item.masterId!, branchId },
+        { itemMasterId: item.masterId, branchId },
         user.id,
       )
 
@@ -1711,7 +1711,7 @@ app.delete(
         throw new NotFoundError('Item', params.id)
       }
 
-      await CheckoutService.cancelCheckout(item.masterId!, branchId, user.id)
+      await CheckoutService.cancelCheckout(item.masterId, branchId, user.id)
 
       return { success: true }
     }),
@@ -2101,7 +2101,7 @@ app.get(
 
       // designId and masterId are guaranteed to be non-null at this point (checked above)
       const history = await ItemService.getHistory(
-        item.masterId!,
+        item.masterId,
         item.designId,
         {
           untilCommitId,

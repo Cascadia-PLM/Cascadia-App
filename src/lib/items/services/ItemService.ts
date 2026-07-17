@@ -519,7 +519,7 @@ export class ItemService {
   static async findByNumber(
     itemNumber: string,
     revision?: string,
-  ): Promise<BaseItem | null> {
+  ): Promise<PersistedItem | null> {
     const query = revision
       ? and(
           eq(items.itemNumber, itemNumber),
@@ -593,7 +593,7 @@ export class ItemService {
   static async getRelated(
     id: string,
     relationshipType?: string,
-  ): Promise<Array<BaseItem>> {
+  ): Promise<Array<PersistedItem>> {
     return ItemRelationshipService.getRelated(id, relationshipType)
   }
 

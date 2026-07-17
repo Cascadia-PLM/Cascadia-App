@@ -25,15 +25,22 @@ export interface BaseItem {
 /**
  * An item as returned by a read path.
  *
- * BaseItem marks id/itemNumber/state optional because it doubles as the shape
- * you pass to create(), where they are not known yet. A row that came back from
- * the database always has them - all three are NOT NULL columns - so read paths
- * return this instead and callers stop guarding against states that cannot occur.
+ * BaseItem marks these fields optional because it doubles as the shape you pass
+ * to create(), where they are not known yet. Every field overridden here is a
+ * NOT NULL column on the `items` table, so a row that came back from the
+ * database always has it - read paths return this instead and callers stop
+ * guarding against states that cannot occur. (revision and itemType are already
+ * required on BaseItem, so they don't need repeating.)
  */
 export type PersistedItem = BaseItem & {
   id: string
+  masterId: string
   itemNumber: string
   state: string
+  createdAt: Date
+  createdBy: string
+  modifiedAt: Date
+  modifiedBy: string
 }
 
 // Base Zod schema for validation

@@ -438,7 +438,7 @@ export class ChangeOrderMergeService {
                       isCurrent: false,
                       state: oldVersionState || 'Superseded',
                     })
-                    .where(eq(items.masterId, item.masterId!))
+                    .where(eq(items.masterId, item.masterId))
 
                   // Calculate final revision - if placeholder (starts with "-"), use next revision from source item
                   const reviseScheme = await LifecycleService.getRevisionScheme(

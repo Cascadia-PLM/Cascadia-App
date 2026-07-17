@@ -689,6 +689,6 @@ function hydrateEntry(row: {
     suppliers: row.entry.suppliers,
     designNotes: row.entry.designNotes,
     tags: row.entry.tags,
-    verified: row.entry.verified,
+    verified: row.entry.verified ?? false,
   }
 }

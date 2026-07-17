@@ -408,10 +408,13 @@ describe('ConflictDetectionService', () => {
         .where(eq(branchItems.branchId, mainBranchId))
 
       if (mainBranchItem?.currentItemId) {
-        // Create a new version on main by updating the item
+        // Create a new version on main by updating the item. Mirrors the
+        // branch-side update above: `name` is a base-item column, whereas
+        // `description` is type-specific (parts/documents/...), so setting it
+        // here never touched the row.
         await testDb.db
           .update(items)
-          .set({ description: 'Main branch updated description' })
+          .set({ name: 'Main Branch Modified Name' })
           .where(eq(items.id, mainBranchItem.currentItemId))
       }
 

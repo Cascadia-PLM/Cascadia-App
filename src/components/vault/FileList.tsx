@@ -210,7 +210,7 @@ export function FileList({
       title: 'Force Unlock File',
       description:
         'This will release the checkout lock held by another user. Any unsaved changes by that user will be lost.',
-      confirmText: 'Force Unlock',
+      actionLabel: 'Force Unlock',
       variant: 'destructive',
       onConfirm: async () => {
         try {

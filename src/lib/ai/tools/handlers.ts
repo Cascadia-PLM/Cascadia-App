@@ -276,9 +276,9 @@ export const getItemDetailsHandler = withPermissionAndAudit(
       state,
       itemType,
       designId: designId ?? null,
-      createdAt: createdAt?.toISOString() ?? new Date().toISOString(),
+      createdAt: createdAt.toISOString(),
       createdBy,
-      modifiedAt: modifiedAt?.toISOString() ?? new Date().toISOString(),
+      modifiedAt: modifiedAt.toISOString(),
       modifiedBy,
       typeSpecificData:
         Object.keys(typeSpecificData).length > 0 ? typeSpecificData : undefined,

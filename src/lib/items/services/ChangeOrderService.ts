@@ -210,7 +210,7 @@ export class ChangeOrderService {
 
       // Check if working copy already exists on this branch (idempotency)
       const existingWorkingCopy = await this.findExistingWorkingCopy(
-        affectedItem.masterId!,
+        affectedItem.masterId,
         ecoDesign.branchId,
       )
 
@@ -758,9 +758,7 @@ export class ChangeOrderService {
           valid: false,
           severity: 'warning',
           message: `${unreleased.length} BOM components are not released`,
-          affectedItems: unreleased
-            .map((u) => u.itemNumber)
-            .filter((n): n is string => n !== undefined),
+          affectedItems: unreleased.map((u) => u.itemNumber),
           suggestion: 'Add these items to change order with "release" action',
         }
       }
@@ -1328,7 +1326,7 @@ export class ChangeOrderService {
     if (item.state === 'Released') {
       // Check if working copy already exists
       const existingWorkingCopy = await this.findExistingWorkingCopy(
-        item.masterId!,
+        item.masterId,
         branch.id,
       )
 
@@ -1342,7 +1340,7 @@ export class ChangeOrderService {
           .where(
             and(
               eq(branchItems.branchId, branch.id),
-              eq(branchItems.itemMasterId, item.masterId!),
+              eq(branchItems.itemMasterId, item.masterId),
             ),
           )
           .limit(1)
@@ -1363,7 +1361,7 @@ export class ChangeOrderService {
       // For non-released items, use standard checkout
       branchItem = await CheckoutService.checkout(
         {
-          itemMasterId: item.masterId!,
+          itemMasterId: item.masterId,
           branchId: branch.id,
         },
         userId,
@@ -1377,7 +1375,7 @@ export class ChangeOrderService {
       .where(
         and(
           eq(changeOrderAffectedItems.changeOrderId, changeOrderId),
-          eq(changeOrderAffectedItems.affectedItemMasterId, item.masterId!),
+          eq(changeOrderAffectedItems.affectedItemMasterId, item.masterId),
         ),
       )
       .limit(1)
@@ -1386,7 +1384,7 @@ export class ChangeOrderService {
       await db.insert(changeOrderAffectedItems).values({
         changeOrderId,
         affectedItemId: itemId,
-        affectedItemMasterId: item.masterId!,
+        affectedItemMasterId: item.masterId,
         changeAction: item.state === 'Released' ? 'revise' : 'release',
         currentState: item.state,
         currentRevision: item.revision,

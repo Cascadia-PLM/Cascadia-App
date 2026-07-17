@@ -8,7 +8,7 @@ import { NotFoundError } from '../../errors'
 import { BranchService } from '../../services/BranchService'
 import { CommitService } from '../../services/CommitService'
 import { ThreadCacheService } from '../../services/ThreadCacheService'
-import type { BaseItem } from '../types/base'
+import type { PersistedItem } from '../types/base'
 import { itemLogger } from '@/lib/logging/logger'
 
 /**
@@ -22,7 +22,7 @@ export class ItemRelationshipService {
   static async getRelated(
     id: string,
     relationshipType?: string,
-  ): Promise<Array<BaseItem>> {
+  ): Promise<Array<PersistedItem>> {
     // Lazy import to avoid circular dependency
     const { ItemService } = await import('./ItemService')
 
@@ -39,7 +39,7 @@ export class ItemRelationshipService {
       relationships.map((rel) => ItemService.findById(rel.targetId)),
     )
 
-    return relatedItems.filter((item): item is BaseItem => item !== null)
+    return relatedItems.filter((item): item is PersistedItem => item !== null)
   }
 
   /**
@@ -105,7 +105,7 @@ export class ItemRelationshipService {
       .where(
         and(
           eq(branchItems.branchId, mainBranch.id),
-          eq(branchItems.itemMasterId, item.masterId!),
+          eq(branchItems.itemMasterId, item.masterId),
         ),
       )
       .limit(1)

@@ -75,6 +75,7 @@ const priorityVariant = (priority: string) => {
 const createEmptyTask = (): Task => ({
   id: undefined,
   masterId: undefined,
+  itemType: 'Task',
   itemNumber: '',
   revision: 'A',
   name: '',
@@ -361,7 +362,7 @@ export function TaskDetail({
                     {isEditing ? (
                       <ViewEditText
                         label="Tags (comma-separated)"
-                        value={task.tags.join(', ')}
+                        value={task.tags?.join(', ') ?? ''}
                         onChange={(v) =>
                           updateField(
                             'tags',

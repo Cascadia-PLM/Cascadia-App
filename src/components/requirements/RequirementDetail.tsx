@@ -143,6 +143,7 @@ const verificationStatusVariant = (status: string) => {
 const createEmptyRequirement = (): Requirement => ({
   id: undefined,
   masterId: undefined,
+  itemType: 'Requirement',
   itemNumber: '',
   revision: 'A',
   name: '',
@@ -155,7 +156,7 @@ const createEmptyRequirement = (): Requirement => ({
   source: undefined,
   category: undefined,
   acceptanceCriteria: undefined,
-  designId: undefined,
+  designId: '',
   createdAt: undefined,
   modifiedAt: undefined,
   verificationMethod: undefined,
@@ -195,7 +196,7 @@ export function RequirementDetail({
     () =>
       initialRequirement || {
         ...createEmptyRequirement(),
-        designId: defaultDesignId,
+        designId: defaultDesignId ?? '',
       },
   )
   const [isEditing, setIsEditing] = useState(isCreateMode)

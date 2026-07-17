@@ -75,6 +75,7 @@ const stateVariant = (state: string) => {
 const createEmptyDocument = (): Document => ({
   id: undefined,
   masterId: undefined,
+  itemType: 'Document',
   itemNumber: '',
   revision: 'A',
   name: '',
@@ -86,7 +87,7 @@ const createEmptyDocument = (): Document => ({
   mimeType: undefined,
   fileId: undefined,
   storagePath: undefined,
-  designId: undefined,
+  designId: '',
   createdAt: undefined,
   modifiedAt: undefined,
 })
@@ -133,7 +134,7 @@ export function DocumentDetail({
     () =>
       initialDocument || {
         ...createEmptyDocument(),
-        designId: defaultDesignId,
+        designId: defaultDesignId ?? '',
       },
   )
   const [isEditing, setIsEditing] = useState(isCreateMode)

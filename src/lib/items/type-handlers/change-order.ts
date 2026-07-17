@@ -20,6 +20,8 @@ registerTypeHandler('ChangeOrder', {
       closedAt: data.closedAt || null,
       impactAssessmentStatus: data.impactAssessmentStatus || 'pending',
       riskLevel: data.riskLevel || null,
+      isBaseline: data.isBaseline ?? false,
+      baselineName: data.baselineName || null,
     })
   },
 
@@ -60,6 +62,9 @@ registerTypeHandler('ChangeOrder', {
         data.impactAssessmentStatus || 'pending'
     if (data.riskLevel !== undefined)
       updateData.riskLevel = data.riskLevel || null
+    if (data.isBaseline !== undefined) updateData.isBaseline = data.isBaseline
+    if (data.baselineName !== undefined)
+      updateData.baselineName = data.baselineName || null
 
     if (Object.keys(updateData).length > 0) {
       await run

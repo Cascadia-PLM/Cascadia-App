@@ -35,7 +35,7 @@ export const Route = createFileRoute('/parts/$id')({
 function PartDetailPage() {
   const router = useRouter()
   const navigate = useNavigate()
-  const { handleError, showSuccess } = useErrorHandler()
+  const { showSuccess } = useErrorHandler()
   const { part } = Route.useLoaderData()
   const search = Route.useSearch()
 

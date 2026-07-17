@@ -7,7 +7,6 @@ import {
   Database,
   FileJson,
   Loader2,
-  Package,
   Plus,
   Search,
   Trash2,
@@ -17,19 +16,7 @@ import {
 import type { ChangeEvent, DragEvent } from 'react'
 import type { CatalogEntryWithCategory } from '@/lib/services/CatalogService'
 import { PageContainer } from '@/components/layout'
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Dialog,
-  Input,
-  Label,
-  Select,
-  Textarea,
-} from '@/components/ui'
+import { Badge, Button, Input, Label, Textarea } from '@/components/ui'
 
 export const Route = createFileRoute('/admin/component-catalog')({
   component: ComponentCatalogPage,

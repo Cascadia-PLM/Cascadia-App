@@ -3006,7 +3006,6 @@ describe('WorkflowService send_notification Action', () => {
 // Lifecycle Effects Tests
 describe('WorkflowService Lifecycle Effects', () => {
   const testDb = new TestDatabase()
-  let testPrefix: string
 
   beforeAll(async () => {
     await testDb.setup()
@@ -3018,7 +3017,6 @@ describe('WorkflowService Lifecycle Effects', () => {
 
   beforeEach(async () => {
     await testDb.beginTransaction()
-    testPrefix = `LE-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
   })
 
   afterEach(async () => {

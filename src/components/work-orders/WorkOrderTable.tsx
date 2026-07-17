@@ -1,11 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
 import { WorkOrderStatusBadge } from './WorkOrderStatusBadge'
-import type {
-  WorkOrder,
-  WorkOrderPriority,
-  WorkOrderStatus,
-} from '@/lib/items/types/work-order'
+import type { WorkOrder } from '@/lib/items/types/work-order'
 import type { DataGridColumn } from '@/components/ui'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import {

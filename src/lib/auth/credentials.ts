@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { db } from '../db'
 import { apiKeys } from '../db/schema/api-keys'
 import { users } from '../db/schema/users'

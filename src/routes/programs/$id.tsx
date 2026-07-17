@@ -28,7 +28,6 @@ import {
 } from '@/components/ui'
 import {
   ViewEditBadge,
-  ViewEditStatic,
   ViewEditText,
   ViewEditTextarea,
 } from '@/components/ui/view-edit-field'

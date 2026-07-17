@@ -56,18 +56,6 @@ interface Design {
 }
 
 // Constants
-const STATE_OPTIONS = [
-  { value: 'Draft', label: 'Draft' },
-  { value: 'Submitted', label: 'Submitted' },
-  { value: 'ImpactAssessment', label: 'Impact Assessment' },
-  { value: 'Review', label: 'Review' },
-  { value: 'Approved', label: 'Approved' },
-  { value: 'Rejected', label: 'Rejected' },
-  { value: 'Implementation', label: 'Implementation' },
-  { value: 'Implemented', label: 'Implemented' },
-  { value: 'Closed', label: 'Closed' },
-]
-
 // Derive change type options from the schema
 const CHANGE_TYPE_OPTIONS = changeOrderTypeSchema.options.map((value) => ({
   value,

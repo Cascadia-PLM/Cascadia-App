@@ -166,8 +166,7 @@ function IssuesListPage() {
   const selectedDesign = designs.find((d) => d.id === selectedDesignId)
 
   // Version context management
-  const { context, contextLabel, isEditable } =
-    useVersionContext(selectedDesignId)
+  const { context, contextLabel } = useVersionContext(selectedDesignId)
 
   // Sync local state with loader data when it changes
   useEffect(() => {

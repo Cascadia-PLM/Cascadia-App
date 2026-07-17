@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { and, asc, eq, inArray, isNull, like, or, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, like, or, sql } from 'drizzle-orm'
 import { ZodError, z } from 'zod'
 import { tagged } from '../adapter'
 import type { ResourceType } from '@/lib/auth/permissions'

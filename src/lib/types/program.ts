@@ -1,6 +1,11 @@
 import type { programs } from '@/lib/db/schema/programs'
+import type { Serialized } from './serialized'
 
-export type Program = typeof programs.$inferSelect & {
+/**
+ * A program as the client receives it: the DB row serialized over HTTP, so
+ * timestamp columns arrive as ISO strings, not Date objects.
+ */
+export type Program = Serialized<typeof programs.$inferSelect> & {
   userRole?: string
 }
 

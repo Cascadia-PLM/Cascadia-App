@@ -126,8 +126,8 @@ jobs:
           # stripped before the matrix is emitted. Adding or retiring an image means
           # one row here plus its filter block.
           # `freeDisk` opts an image into reclaiming the runner's preinstalled
-          # toolchains first - set it for images whose build needs more than the
-          # ~14GB a stock runner leaves free.
+          # toolchains first - set it for images whose cold build would otherwise
+          # run the runner out of disk.
           catalog='[
             {"name":"cascadia-app","context":".","dockerfile":"docker/app.Dockerfile","target":"production","filter":"app"},
             {"name":"cascadia-jobs-worker","context":".","dockerfile":"workers/node/Dockerfile","target":"production","filter":"jobs_worker"},
@@ -192,11 +192,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # cascadia-cad-converter builds a full conda env (pythonocc-core), packs it
-      # with conda-pack, then unpacks the tarball again - several GB of
-      # intermediates that overflow a stock runner's ~14GB free space whenever the
-      # layer cache is cold. None of the toolchains dropped here are used to build
-      # container images. Cheap insurance, so it runs before the cache is consulted.
+      # A cold build of cascadia-cad-converter exhausted the runner's disk
+      # outright (ENOSPC - hard enough that the runner could not write its own
+      # logs, so the exact peak was never captured). It creates a full conda env
+      # (pythonocc-core), packs it with conda-pack, unpacks the tarball again,
+      # and mode=max caching then exports every intermediate layer.
+      # This reclaims ~23GB of preinstalled toolchains, none of which are used to
+      # build container images; a fully cold build fits comfortably afterwards.
+      # It runs before Buildx so the headroom exists for the whole build.
       - name: Free disk space
         if: matrix.image.freeDisk
         run: |

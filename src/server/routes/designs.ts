@@ -1367,7 +1367,7 @@ app.post(
         chainItemIds.map(async (id: string) => {
           const item = await ItemService.findById(id)
           if (!item || !item.id) throw new NotFoundError('Item', id)
-          return item as typeof item & { id: string; itemNumber: string }
+          return item
         }),
       )
 

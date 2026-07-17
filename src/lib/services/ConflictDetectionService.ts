@@ -360,7 +360,7 @@ export class ConflictDetectionService {
 
         const conflict: ItemConflict = {
           itemMasterId: branchItem.itemMasterId,
-          itemNumber: ourFullItem.itemNumber ?? '',
+          itemNumber: ourFullItem.itemNumber,
           itemName: ourFullItem.name ?? null,
           conflictType: hasFieldConflicts
             ? 'field_conflict'
@@ -368,12 +368,12 @@ export class ConflictDetectionService {
           severity: hasFieldConflicts ? 'error' : 'warning',
 
           ourBranchItemId: branchItem.id,
-          ourItemId: ourFullItem.id ?? '',
+          ourItemId: ourFullItem.id,
           ourRevision: ourFullItem.revision,
           ourBranchId: branch.id,
           ourBranchName: branch.name,
 
-          theirItemId: latestMainItem.id ?? '',
+          theirItemId: latestMainItem.id,
           theirRevision: latestMainItem.revision,
           theirBranchId: mainBranch.id,
           theirBranchName: 'main',
@@ -700,13 +700,13 @@ export class ConflictDetectionService {
           // Other ECO doesn't have a working copy yet, just show as co-modification warning
           conflicts.push({
             itemMasterId: masterId,
-            itemNumber: ourFullItem.itemNumber ?? '',
+            itemNumber: ourFullItem.itemNumber,
             itemName: ourFullItem.name ?? null,
             conflictType: 'cross_eco',
             severity: 'warning',
 
             ourBranchItemId: ourModified.branchItem.id,
-            ourItemId: ourFullItem.id ?? '',
+            ourItemId: ourFullItem.id,
             ourRevision: ourFullItem.revision,
             ourBranchId: ourModified.branchItem.branchId,
             ourBranchName: 'This ECO',
@@ -752,13 +752,13 @@ export class ConflictDetectionService {
 
         conflicts.push({
           itemMasterId: masterId,
-          itemNumber: ourFullItem.itemNumber ?? '',
+          itemNumber: ourFullItem.itemNumber,
           itemName: ourFullItem.name ?? null,
           conflictType: hasFieldConflicts ? 'field_conflict' : 'cross_eco',
           severity: hasFieldConflicts ? 'error' : 'warning',
 
           ourBranchItemId: ourModified.branchItem.id,
-          ourItemId: ourFullItem.id ?? '',
+          ourItemId: ourFullItem.id,
           ourRevision: ourFullItem.revision,
           ourBranchId: ourModified.branchItem.branchId,
           ourBranchName: 'This ECO',

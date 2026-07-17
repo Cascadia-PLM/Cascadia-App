@@ -304,7 +304,11 @@ app.post(
         const testMessage = { role: 'user' as const, content: 'Hi' }
         const stream = adapter.chatStream({
           messages: [testMessage],
-          modelOptions: { maxOutputTokens: 5 },
+          // `maxTokens` is TanStack AI's portable option; it maps to each
+          // provider's native field. `maxOutputTokens` is Gemini's native name
+          // and, passed via modelOptions, every other adapter ignored it - so
+          // this probe was requesting a full-length response.
+          maxTokens: 5,
         })
         const response = await streamToText(stream)
 

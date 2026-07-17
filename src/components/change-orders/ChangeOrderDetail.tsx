@@ -116,6 +116,7 @@ const riskVariant = (risk: string) => {
 const createEmptyChangeOrder = (): ChangeOrder => ({
   id: undefined,
   masterId: undefined,
+  itemType: 'ChangeOrder',
   itemNumber: '',
   revision: 'A',
   name: '',

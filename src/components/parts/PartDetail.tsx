@@ -138,6 +138,7 @@ const stateVariant = (state: string) => {
 const createEmptyPart = (): Part => ({
   id: undefined,
   masterId: undefined,
+  itemType: 'Part',
   itemNumber: '',
   revision: 'A',
   name: '',
@@ -151,7 +152,7 @@ const createEmptyPart = (): Part => ({
   cost: undefined,
   costCurrency: 'USD',
   leadTimeDays: undefined,
-  designId: undefined,
+  designId: '',
   createdAt: undefined,
   modifiedAt: undefined,
 })
@@ -209,7 +210,8 @@ export function PartDetail({
 
   // Part state
   const [part, setPart] = useState<Part>(
-    () => initialPart || { ...createEmptyPart(), designId: defaultDesignId },
+    () =>
+      initialPart || { ...createEmptyPart(), designId: defaultDesignId ?? '' },
   )
   const [isEditing, setIsEditing] = useState(isCreateMode)
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false)

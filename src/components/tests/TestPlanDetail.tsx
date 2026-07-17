@@ -98,7 +98,7 @@ const createEmptyTestPlan = (): TestPlan => ({
   description: '',
   state: 'Draft',
   isCurrent: true,
-  designId: undefined,
+  designId: '',
   scope: undefined,
   environment: undefined,
   entryCriteria: undefined,
@@ -139,7 +139,7 @@ export function TestPlanDetail({
     () =>
       initialTestPlan || {
         ...createEmptyTestPlan(),
-        designId: defaultDesignId,
+        designId: defaultDesignId ?? '',
       },
   )
   const [isEditing, setIsEditing] = useState(isCreateMode)

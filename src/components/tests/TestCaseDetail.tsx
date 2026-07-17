@@ -124,7 +124,7 @@ const createEmptyTestCase = (): TestCase => ({
   description: '',
   state: 'Draft',
   isCurrent: true,
-  designId: undefined,
+  designId: '',
   testPlanId: undefined,
   testType: undefined,
   preconditions: undefined,
@@ -169,7 +169,7 @@ export function TestCaseDetail({
     () =>
       initialTestCase || {
         ...createEmptyTestCase(),
-        designId: defaultDesignId,
+        designId: defaultDesignId ?? '',
         testPlanId: defaultTestPlanId,
       },
   )

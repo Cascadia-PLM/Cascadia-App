@@ -1826,7 +1826,7 @@ app.get(
           if (isUsage && item.usageOf) {
             const definition = await ItemService.findById(item.usageOf)
             if (definition) {
-              definitionItemNumber = definition.itemNumber ?? undefined
+              definitionItemNumber = definition.itemNumber
             }
           }
 
@@ -2648,7 +2648,7 @@ app.get(
             hasColors: (f as any).cadMetadata?.hasColors ?? false,
             source: 'cad_doc' as const,
             sourceItemId: rel.targetId,
-            sourceItemNumber: rel.targetItem!.itemNumber ?? null,
+            sourceItemNumber: rel.targetItem!.itemNumber,
           }))
 
         relatedCADFiles.push(...viewable)

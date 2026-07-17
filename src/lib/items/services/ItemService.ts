@@ -34,7 +34,7 @@ import type {
   VersionContext,
 } from '../../services/VersionResolver'
 import type { ItemHistoryEntry } from '../../services/CommitService'
-import type { BaseItem } from '../types/base'
+import type { BaseItem, PersistedItem } from '../types/base'
 import type { SearchCriteria, SearchResult } from './ItemSearchService'
 import { itemLogger } from '@/lib/logging/logger'
 
@@ -488,7 +488,7 @@ export class ItemService {
   static async findById(
     id: string,
     tx?: TransactionClient,
-  ): Promise<BaseItem | null> {
+  ): Promise<PersistedItem | null> {
     const run = tx ?? db
     const result = await run
       .select()

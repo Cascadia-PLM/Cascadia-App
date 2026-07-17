@@ -125,10 +125,13 @@ jobs:
           # Canonical catalog. `filter` maps each image to its paths-filter key and is
           # stripped before the matrix is emitted. Adding or retiring an image means
           # one row here plus its filter block.
+          # `freeDisk` opts an image into reclaiming the runner's preinstalled
+          # toolchains first - set it for images whose build needs more than the
+          # ~14GB a stock runner leaves free.
           catalog='[
             {"name":"cascadia-app","context":".","dockerfile":"docker/app.Dockerfile","target":"production","filter":"app"},
             {"name":"cascadia-jobs-worker","context":".","dockerfile":"workers/node/Dockerfile","target":"production","filter":"jobs_worker"},
-            {"name":"cascadia-cad-converter","context":"workers/cad-converter","dockerfile":"workers/cad-converter/Dockerfile","target":"","filter":"cad_converter"}
+            {"name":"cascadia-cad-converter","context":"workers/cad-converter","dockerfile":"workers/cad-converter/Dockerfile","target":"","filter":"cad_converter","freeDisk":true}
           ]'
 
           if [ -z "${CHANGES}" ]; then
@@ -188,6 +191,26 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # cascadia-cad-converter builds a full conda env (pythonocc-core), packs it
+      # with conda-pack, then unpacks the tarball again - several GB of
+      # intermediates that overflow a stock runner's ~14GB free space whenever the
+      # layer cache is cold. None of the toolchains dropped here are used to build
+      # container images. Cheap insurance, so it runs before the cache is consulted.
+      - name: Free disk space
+        if: matrix.image.freeDisk
+        run: |
+          set -euo pipefail
+          echo "Before:"; df -h / | tail -1
+          # Absent paths are fine; -f keeps rm quiet about them.
+          sudo rm -rf \
+            /usr/local/lib/android \
+            /usr/share/dotnet \
+            /opt/ghc \
+            /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force || true
+          echo "After:"; df -h / | tail -1
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3

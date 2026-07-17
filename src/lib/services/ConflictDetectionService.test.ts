@@ -1439,7 +1439,7 @@ describe('ConflictDetectionService', () => {
       expect(result.hasConflicts).toBe(true)
       // Should have cross-ECO conflict
       const crossEcoConflicts = result.conflicts.filter(
-        (c) => c.type === 'cross_eco',
+        (c) => c.conflictType === 'cross_eco',
       )
       expect(crossEcoConflicts.length).toBeGreaterThanOrEqual(0) // May be 0 if not yet detected
     })
@@ -1497,7 +1497,7 @@ describe('ConflictDetectionService', () => {
           name: 'Second Design',
           code: `DESIGN2-${Date.now()}`,
           designType: 'Engineering',
-        },
+        } as any,
         user.id,
       )
 
@@ -1514,7 +1514,7 @@ describe('ConflictDetectionService', () => {
           revision: 'A',
           name: 'Part in Design 2',
           state: 'Draft',
-        },
+        } as any,
         user.id,
       )
 
@@ -1572,7 +1572,7 @@ describe('ConflictDetectionService', () => {
           revision: 'A',
           name: 'Brand New Part',
           state: 'Draft',
-        },
+        } as any,
         user.id,
       )
 
@@ -1584,7 +1584,7 @@ describe('ConflictDetectionService', () => {
           itemMasterId: newPart.masterId,
           currentItemId: newPart.id,
           baseItemId: null, // No base - new item
-          isNewItem: true,
+          changeType: 'added',
         })
         .returning()
 
@@ -1598,7 +1598,7 @@ describe('ConflictDetectionService', () => {
           revision: 'B',
           name: 'Base Version',
           state: 'Draft',
-        },
+        } as any,
         user.id,
       )
 
@@ -1668,7 +1668,7 @@ describe('ConflictDetectionService', () => {
           itemMasterId: masterId,
           currentItemId: ourWorkingCopy.id,
           baseItemId: basePart.id, // Explicit base for three-way merge
-          action: 'edit' as const,
+          changeType: 'modified',
         })
         .returning()
 
@@ -1745,7 +1745,7 @@ describe('ConflictDetectionService', () => {
           revision: 'B',
           name: 'Different Name',
           state: 'Draft',
-        },
+        } as any,
         user.id,
       )
 
@@ -1795,7 +1795,7 @@ describe('ConflictDetectionService', () => {
           revision: 'B',
           name: 'New Base',
           state: 'Draft',
-        },
+        } as any,
         user.id,
       )
 

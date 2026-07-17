@@ -1,0 +1,26 @@
+// The config the CI typecheck gate enforces.
+//
+// Identical to tsconfig.json except `noUncheckedIndexedAccess` is off, which
+// isolates the ~170 substantive type errors from the ~1862 indexed-access
+// artifacts (`arr[0]`, `map.get()`, loop indices). Both are gated - see
+// scripts/typecheck.mjs - but they ratchet on separate ceilings so the
+// substantive ones can be driven to zero first.
+//
+// This MUST stay a separate file rather than flipping the flag in
+// tsconfig.json: @tanstack/eslint-config sets `project: true`, which resolves
+// to the nearest file *named* tsconfig.json. With the flag off there, `arr[0]`
+// narrows to `T` and every existing `if (arr[0])` guard becomes a
+// no-unnecessary-condition warning. Measured: turning it off in tsconfig.json
+// takes `npm run lint` from clean to 266 problems (35 errors, 231 warnings),
+// which `--max-warnings 0` rejects outright.
+// `project: true` never looks at this file, so it is invisible to ESLint.
+//
+// `include` is inherited from the base config and resolves relative to the
+// base config's directory. Both files sit at the repo root, so the file set is
+// identical - verify with `npx tsc -p tsconfig.ci.json --showConfig`.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noUncheckedIndexedAccess": false
+  }
+}

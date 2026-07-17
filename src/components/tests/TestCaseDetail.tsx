@@ -118,10 +118,10 @@ const executionStatusVariant = (status: string) => {
 const createEmptyTestCase = (): TestCase => ({
   id: undefined,
   masterId: undefined,
+  itemType: 'TestCase',
   itemNumber: '',
   revision: 'A',
   name: '',
-  description: '',
   state: 'Draft',
   isCurrent: true,
   designId: '',
@@ -747,17 +747,6 @@ export function TestCaseDetail({
                   options={STATE_OPTIONS}
                   variant={stateVariant}
                   readOnly={!isCreateMode}
-                />
-                <ViewEditTextarea
-                  label="Description"
-                  value={
-                    isEditing
-                      ? testCase.description
-                      : currentTestCase.description
-                  }
-                  onChange={(v) => updateField('description', v)}
-                  isEditing={isEditing}
-                  className="md:col-span-2"
                 />
                 {testPlan && (
                   <ViewEditStatic

@@ -92,10 +92,10 @@ const statusVariant = (status: string) => {
 const createEmptyTestPlan = (): TestPlan => ({
   id: undefined,
   masterId: undefined,
+  itemType: 'TestPlan',
   itemNumber: '',
   revision: 'A',
   name: '',
-  description: '',
   state: 'Draft',
   isCurrent: true,
   designId: '',
@@ -529,17 +529,6 @@ export function TestPlanDetail({
                   options={STATE_OPTIONS}
                   variant={stateVariant}
                   readOnly={!isCreateMode}
-                />
-                <ViewEditTextarea
-                  label="Description"
-                  value={
-                    isEditing
-                      ? testPlan.description
-                      : currentTestPlan.description
-                  }
-                  onChange={(v) => updateField('description', v)}
-                  isEditing={isEditing}
-                  className="md:col-span-2"
                 />
                 {(isCreateMode || !currentTestPlan.designId) &&
                   designs.length > 0 && (

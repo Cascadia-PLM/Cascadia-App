@@ -26,8 +26,8 @@
 
 import { spawnSync } from 'node:child_process'
 
-const CORE_MAX = 77
-const STRICT_MAX = 1939
+const CORE_MAX = 69
+const STRICT_MAX = 1931
 
 /** Runs tsc against one config and returns its error count plus raw output. */
 function typecheck(project) {

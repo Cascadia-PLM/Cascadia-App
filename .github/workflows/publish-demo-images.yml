@@ -11,6 +11,14 @@
 # docs-only or test-only commit builds nothing. Tag pushes and manual dispatches
 # always build the full set so a release is coherent.
 #
+# Each architecture builds on a runner of its OWN arch - nothing is emulated.
+# `build` fans out over image x platform and pushes untagged, digest-addressed
+# images; `merge` then unites each image's per-arch digests into one multi-arch
+# manifest and applies the tags. Previously a single amd64 runner cross-built
+# arm64 under QEMU, which made `npm ci` die intermittently with exit 132
+# (SIGILL) - a non-deterministic emulation crash. Because PRs are amd64-only,
+# that failure could only ever surface post-merge, on main.
+#
 # Triggers:
 #   - push to main           -> multi-arch build of changed images, push :latest, :main, :sha-<short>
 #   - workflow_dispatch      -> full multi-arch rebuild of every image
@@ -52,6 +60,7 @@ jobs:
     outputs:
       images: ${{ steps.select.outputs.images }}
       any: ${{ steps.select.outputs.any }}
+      platforms: ${{ steps.select.outputs.platforms }}
     steps:
       # Default shallow checkout. paths-filter deepens on demand via its
       # initial-fetch-depth (default 100); `fetch-depth: 0` would drag in every
@@ -109,16 +118,20 @@ jobs:
           # JSON array of matched filter names, e.g. ["_app_sources","app","jobs_worker"].
           # Empty string when the filter step above was skipped.
           CHANGES: ${{ steps.filter.outputs.changes }}
+          EVENT: ${{ github.event_name }}
         run: |
           set -euo pipefail
 
           # Canonical catalog. `filter` maps each image to its paths-filter key and is
           # stripped before the matrix is emitted. Adding or retiring an image means
           # one row here plus its filter block.
+          # `freeDisk` opts an image into reclaiming the runner's preinstalled
+          # toolchains first - set it for images whose cold build would otherwise
+          # run the runner out of disk.
           catalog='[
             {"name":"cascadia-app","context":".","dockerfile":"docker/app.Dockerfile","target":"production","filter":"app"},
             {"name":"cascadia-jobs-worker","context":".","dockerfile":"workers/node/Dockerfile","target":"production","filter":"jobs_worker"},
-            {"name":"cascadia-cad-converter","context":"workers/cad-converter","dockerfile":"workers/cad-converter/Dockerfile","target":"","filter":"cad_converter"}
+            {"name":"cascadia-cad-converter","context":"workers/cad-converter","dockerfile":"workers/cad-converter/Dockerfile","target":"","filter":"cad_converter","freeDisk":true}
           ]'
 
           if [ -z "${CHANGES}" ]; then
@@ -132,40 +145,163 @@ jobs:
               <<<"$catalog")
           fi
 
+          # Each platform carries the runner whose ARCHITECTURE MATCHES it. Adding
+          # an arch means one row here; never point a row at a foreign-arch runner,
+          # which would silently reintroduce QEMU emulation and its SIGILL flake.
+          # arm64 hosted runners are free for public repos.
+          if [ "$EVENT" = "pull_request" ]; then
+            # Fast feedback: one arch is enough to smoke-test the Dockerfile.
+            platforms='[{"name":"linux/amd64","runner":"ubuntu-latest","suffix":"amd64"}]'
+          else
+            platforms='[
+              {"name":"linux/amd64","runner":"ubuntu-latest","suffix":"amd64"},
+              {"name":"linux/arm64","runner":"ubuntu-24.04-arm","suffix":"arm64"}
+            ]'
+          fi
+          platforms=$(jq -c . <<<"$platforms")
+
           count=$(jq 'length' <<<"$images")
           {
             echo "images=$images"
+            echo "platforms=$platforms"
             echo "any=$([ "$count" -gt 0 ] && echo true || echo false)"
           } >> "$GITHUB_OUTPUT"
 
           echo "Building $count image(s):"
           jq -r '.[].name | "  - " + .' <<<"$images"
+          echo "On platform(s):"
+          jq -r '.[] | "  - " + .name + " (" + .runner + ")"' <<<"$platforms"
 
   # ---------------------------------------------------------------------------
-  # Build (and, off PRs, push) each selected image.
+  # Build each selected image, once per platform, on that platform's native
+  # runner. Off PRs the result is pushed untagged and addressed only by digest;
+  # `merge` below turns each image's digests into a tagged multi-arch manifest.
   # ---------------------------------------------------------------------------
-  publish:
+  build:
     needs: plan
     # Short-circuits before matrix expansion; an empty matrix would otherwise error.
     if: needs.plan.outputs.any == 'true'
-    runs-on: ubuntu-latest
-    name: publish ${{ matrix.image.name }}
+    runs-on: ${{ matrix.platform.runner }}
+    name: build ${{ matrix.image.name }} (${{ matrix.platform.suffix }})
     strategy:
       fail-fast: false
       matrix:
         image: ${{ fromJSON(needs.plan.outputs.images) }}
+        platform: ${{ fromJSON(needs.plan.outputs.platforms) }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up QEMU (for arm64 emulation)
-        uses: docker/setup-qemu-action@v3
+      # A cold build of cascadia-cad-converter exhausted the runner's disk
+      # outright (ENOSPC - hard enough that the runner could not write its own
+      # logs, so the exact peak was never captured). It creates a full conda env
+      # (pythonocc-core), packs it with conda-pack, unpacks the tarball again,
+      # and mode=max caching then exports every intermediate layer.
+      # This reclaims ~23GB of preinstalled toolchains, none of which are used to
+      # build container images; a fully cold build fits comfortably afterwards.
+      # It runs before Buildx so the headroom exists for the whole build.
+      - name: Free disk space
+        if: matrix.image.freeDisk
+        run: |
+          set -euo pipefail
+          echo "Before:"; df -h / | tail -1
+          # Absent paths are fine; -f keeps rm quiet about them.
+          sudo rm -rf \
+            /usr/local/lib/android \
+            /usr/share/dotnet \
+            /opt/ghc \
+            /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force || true
+          echo "After:"; df -h / | tail -1
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Tags are applied by `merge`, not here - a per-arch build must not claim
+      # a shared tag like :latest, or the two arches would race to own it.
+      - name: Compute labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/cascadia-plm/${{ matrix.image.name }}
+
+      - name: Build
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.image.context }}
+          file: ${{ matrix.image.dockerfile }}
+          target: ${{ matrix.image.target }}
+          platforms: ${{ matrix.platform.name }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # PRs smoke-test the Dockerfile without publishing anything.
+          outputs: >-
+            ${{ github.event_name == 'pull_request'
+            && 'type=cacheonly'
+            || format('type=image,name=ghcr.io/cascadia-plm/{0},push-by-digest=true,name-canonical=true,push=true',
+            matrix.image.name) }}
+          # Scope is per-arch: one cache per image would have the two arches
+          # clobbering each other's layers.
+          cache-from: type=gha,scope=${{ matrix.image.name }}-${{ matrix.platform.suffix }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}-${{ matrix.platform.suffix }}
+
+      # The digest is the only handle on an untagged image. Hand it to `merge`
+      # as an empty file named for the digest - the name is the whole payload.
+      - name: Export digest
+        if: github.event_name != 'pull_request'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/digests
+          touch "/tmp/digests/${DIGEST#sha256:}"
+
+      - name: Upload digest
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.image.name }}-${{ matrix.platform.suffix }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------
+  # Fan-in: one manifest list per image, tying together the per-arch digests.
+  # This is what actually publishes the tags users pull.
+  # ---------------------------------------------------------------------------
+  merge:
+    needs: [plan, build]
+    if: github.event_name != 'pull_request' && needs.plan.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    name: merge ${{ matrix.image.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJSON(needs.plan.outputs.images) }}
+
+    steps:
+      # merge-multiple collapses this image's per-arch artifacts into one dir;
+      # the pattern keeps sibling images' digests out of it.
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-${{ matrix.image.name }}-*
+          merge-multiple: true
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -184,17 +320,21 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ matrix.image.context }}
-          file: ${{ matrix.image.dockerfile }}
-          target: ${{ matrix.image.target }}
-          # PRs build amd64 only and don't push - faster feedback, no GHCR pollution.
-          # Main branch and tags build multi-arch and push.
-          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.image.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        env:
+          IMAGE: ghcr.io/cascadia-plm/${{ matrix.image.name }}
+        run: |
+          set -euo pipefail
+          # Word splitting is load-bearing on both substitutions: each expands to
+          # a list of args (-t per tag, one ref per digest file in cwd).
+          # shellcheck disable=SC2046 # intentional: see above
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<<"$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf "${IMAGE}@sha256:%s " *)
+
+      - name: Inspect image
+        env:
+          IMAGE: ghcr.io/cascadia-plm/${{ matrix.image.name }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: docker buildx imagetools inspect "${IMAGE}:${VERSION}"

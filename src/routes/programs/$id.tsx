@@ -118,7 +118,9 @@ function ProgramDetailPage() {
         code: editProgram.code,
         name: editProgram.name,
         description: editProgram.description || '',
-        status: editProgram.status,
+        // The DB column is a plain varchar (typed `string`), but the Status
+        // control only ever sets one of the four enum values.
+        status: editProgram.status as CreateProgramInput['status'],
         customer: editProgram.customer || '',
         contractNumber: editProgram.contractNumber || '',
         startDate: editProgram.startDate || '',

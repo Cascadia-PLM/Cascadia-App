@@ -23,6 +23,12 @@ export type ResourceType =
   | 'requirements'
   | 'tasks'
   | 'tools'
+  // Mapped to from itemType in server/routes/items.ts. No role grants these
+  // yet, and hasPermission() denies any resource a role does not declare, so
+  // TestPlan/TestCase items stay inaccessible until those features land and
+  // ROLE_DEFINITIONS below is extended.
+  | 'test_plans'
+  | 'test_cases'
   | 'work_instructions'
   | 'work_orders'
   | 'issues'

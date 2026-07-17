@@ -45,7 +45,6 @@ import {
   ViewEditTextarea,
 } from '@/components/ui'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'
 
 const STATE_OPTIONS = [
@@ -133,7 +132,6 @@ export function TestPlanDetail({
   onTabChange,
 }: TestPlanDetailProps) {
   const { confirm } = useAlertDialog()
-  const { handleError, showSuccess } = useErrorHandler()
 
   const isCreateMode = !initialTestPlan?.id
 

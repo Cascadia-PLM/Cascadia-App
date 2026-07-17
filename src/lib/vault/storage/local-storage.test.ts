@@ -9,7 +9,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { LocalFileStorage } from './local-storage'
 
 describe('LocalFileStorage', () => {

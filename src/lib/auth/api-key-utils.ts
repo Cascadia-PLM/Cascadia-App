@@ -2,7 +2,6 @@ import { SHA256 } from '@oslojs/crypto/sha2'
 import { encodeHexLowerCase } from '@oslojs/encoding'
 
 const API_KEY_PREFIX = 'csc_'
-const API_KEY_RANDOM_LENGTH = 40
 
 /**
  * Generate a new API key.

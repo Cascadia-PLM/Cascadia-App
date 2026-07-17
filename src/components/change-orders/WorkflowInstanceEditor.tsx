@@ -10,7 +10,6 @@ import {
   addEdge,
   useEdgesState,
   useNodesState,
-  useReactFlow,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import dagre from 'dagre'
@@ -91,7 +90,6 @@ function getLayoutedElements(
   return { nodes: layoutedNodes, edges }
 }
 
-// Inner component that uses useReactFlow
 function WorkflowInstanceEditorInner({
   changeOrderId,
   states,
@@ -100,8 +98,6 @@ function WorkflowInstanceEditorInner({
   canEdit,
   onStructureChange,
 }: WorkflowInstanceEditorProps) {
-  const { screenToFlowPosition } = useReactFlow()
-
   // Convert states/transitions to React Flow nodes/edges
   const initialNodes = useMemo((): Array<StateNodeType> => {
     return states.map((state) => ({

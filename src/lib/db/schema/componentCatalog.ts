@@ -18,7 +18,6 @@ import {
   text,
   timestamp,
   uuid,
-  varchar,
 } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
 

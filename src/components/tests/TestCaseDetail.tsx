@@ -51,7 +51,6 @@ import {
   ViewEditTextarea,
 } from '@/components/ui'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'
 
 interface TestExecution {
@@ -153,7 +152,6 @@ interface TestCaseDetailProps {
 
 export function TestCaseDetail({
   testCase: initialTestCase,
-  designs = [],
   defaultDesignId,
   defaultTestPlanId,
   onSave,
@@ -164,7 +162,6 @@ export function TestCaseDetail({
   onTabChange,
 }: TestCaseDetailProps) {
   const { confirm } = useAlertDialog()
-  const { handleError, showSuccess } = useErrorHandler()
 
   const isCreateMode = !initialTestCase?.id
 

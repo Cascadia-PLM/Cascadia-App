@@ -17,7 +17,7 @@ import { WorkInstructionExecutionService } from '@/lib/services/WorkInstructionE
 import { WorkInstructionChangeAlertService } from '@/lib/services/WorkInstructionChangeAlertService'
 import { ParametricResolutionService } from '@/lib/services/ParametricResolutionService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
-import { apiHandler, created } from '@/lib/api/handler'
+import { apiHandler } from '@/lib/api/handler'
 import { db } from '@/lib/db'
 import {
   items,

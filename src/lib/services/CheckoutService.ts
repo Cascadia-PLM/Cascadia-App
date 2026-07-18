@@ -595,11 +595,7 @@ export class CheckoutService {
         // 3. Compute field-level changes (only for modified items)
         const fieldChanges =
           changeType === 'modified'
-            ? computeFieldChanges(
-                item as Record<string, unknown>,
-                newItem as Record<string, unknown>,
-                item.itemType,
-              )
+            ? computeFieldChanges(item, newItem, item.itemType)
             : []
 
         // 4. Update branchItem

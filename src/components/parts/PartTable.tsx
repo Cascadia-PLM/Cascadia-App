@@ -201,7 +201,7 @@ export function PartTable({
       cell: ({ row }) => (
         <PhaseBadge
           itemType="Part"
-          state={row.original.state}
+          state={row.original.state ?? ''}
           className="text-xs"
         />
       ),

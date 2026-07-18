@@ -336,13 +336,17 @@ function WorkflowInstanceEditorInner({
       }))
 
       // Extract transitions from edges
-      const updatedTransitions: Array<InstanceWorkflowTransition> = edges.map(
-        (edge) => ({
-          ...edge.data?.transition,
-          fromStateId: edge.source,
-          toStateId: edge.target,
-        }),
-      )
+      // React Flow types an edge's `data` as optional; every edge here is
+      // created with it set, so skip any that somehow lack a transition rather
+      // than emit a partial one.
+      const updatedTransitions: Array<InstanceWorkflowTransition> =
+        edges.flatMap((edge) => {
+          const transition = edge.data?.transition
+          if (!transition) return []
+          return [
+            { ...transition, fromStateId: edge.source, toStateId: edge.target },
+          ]
+        })
 
       const response = await fetch(
         `/api/v1/change-orders/${changeOrderId}/workflow/structure`,

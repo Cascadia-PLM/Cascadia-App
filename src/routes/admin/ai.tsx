@@ -46,7 +46,9 @@ interface AISettings {
   baseURL?: string
 }
 
-const DEFAULT_MODELS: Record<ProviderType, Array<string>> = {
+// Non-empty tuple type: every provider is guaranteed at least one model, so
+// DEFAULT_MODELS[provider][0] is always defined.
+const DEFAULT_MODELS: Record<ProviderType, [string, ...Array<string>]> = {
   openai: [
     'gpt-5',
     'gpt-5-mini',
@@ -132,7 +134,9 @@ function AISettingsPage() {
             enabled: s.enabled ?? false,
             provider: s.provider ?? 'openai',
             apiKey: s.config?.apiKey ?? '',
-            model: s.config?.model ?? DEFAULT_MODELS[(s.provider ?? 'openai') as ProviderType][0],
+            model:
+              s.config?.model ??
+              DEFAULT_MODELS[(s.provider ?? 'openai') as ProviderType][0],
             baseURL: s.config?.baseURL ?? '',
           })
           setOriginalSettings({
@@ -140,7 +144,9 @@ function AISettingsPage() {
             enabled: s.enabled ?? false,
             provider: s.provider ?? 'openai',
             apiKey: s.config?.apiKey ?? '',
-            model: s.config?.model ?? DEFAULT_MODELS[(s.provider ?? 'openai') as ProviderType][0],
+            model:
+              s.config?.model ??
+              DEFAULT_MODELS[(s.provider ?? 'openai') as ProviderType][0],
             baseURL: s.config?.baseURL ?? '',
           })
         }

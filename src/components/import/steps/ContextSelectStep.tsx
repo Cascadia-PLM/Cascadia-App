@@ -117,8 +117,12 @@ export function ContextSelectStep({
         setDesigns(response.data.designs)
 
         // Auto-select if only one design
-        if (response.data.designs.length === 1) {
-          setSelectedDesignId(response.data.designs[0].id)
+        const onlyDesign =
+          response.data.designs.length === 1
+            ? response.data.designs[0]
+            : undefined
+        if (onlyDesign) {
+          setSelectedDesignId(onlyDesign.id)
         }
       } catch (error) {
         console.error('Failed to load designs:', error)
@@ -158,8 +162,10 @@ export function ContextSelectStep({
           const unlockedBranches = branchesRes.data.branches.filter(
             (b) => !b.isLocked && b.branchType !== 'main',
           )
-          if (unlockedBranches.length === 1) {
-            setSelectedBranchId(unlockedBranches[0].id)
+          const onlyUnlocked =
+            unlockedBranches.length === 1 ? unlockedBranches[0] : undefined
+          if (onlyUnlocked) {
+            setSelectedBranchId(onlyUnlocked.id)
           }
         } else {
           // Pre-release: auto-select main branch

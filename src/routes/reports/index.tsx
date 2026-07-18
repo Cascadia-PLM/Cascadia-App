@@ -77,10 +77,8 @@ function ReportsListPage() {
   const reportsByType = reports.reduce<Record<string, Array<Report>>>(
     (acc, report) => {
       const type = report.itemType
-      if (!(type in acc)) {
-        acc[type] = []
-      }
-      acc[type].push(report)
+      const bucket = (acc[type] ??= [])
+      bucket.push(report)
       return acc
     },
     {},

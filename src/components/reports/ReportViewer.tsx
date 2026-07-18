@@ -87,7 +87,7 @@ export function ReportViewer({ report }: ReportViewerProps) {
       let filename = `report-${report.id}.csv`
       if (contentDisposition) {
         const match = contentDisposition.match(/filename="(.+)"/)
-        if (match) {
+        if (match?.[1]) {
           filename = match[1]
         }
       }

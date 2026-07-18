@@ -147,7 +147,8 @@ export function VersionContextSelector({
       const firstBranch =
         ecoBranch || workspaceBranch || mainBranch || branches[0]
 
-      // firstBranch is guaranteed to exist since branches.length > 0
+      if (!firstBranch) return
+
       if (firstBranch.branchType === 'main') {
         onChange({ type: 'main' })
       } else {

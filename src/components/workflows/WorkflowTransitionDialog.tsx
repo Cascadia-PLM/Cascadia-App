@@ -57,7 +57,7 @@ export function WorkflowTransitionDialog({
     string | null
   >(
     availableTransitions.length === 1
-      ? availableTransitions[0].transition.id
+      ? (availableTransitions[0]?.transition.id ?? null)
       : null,
   )
   const [comments, setComments] = useState('')
@@ -123,7 +123,7 @@ export function WorkflowTransitionDialog({
   const handleClose = () => {
     setSelectedTransitionId(
       availableTransitions.length === 1
-        ? availableTransitions[0].transition.id
+        ? (availableTransitions[0]?.transition.id ?? null)
         : null,
     )
     setComments('')

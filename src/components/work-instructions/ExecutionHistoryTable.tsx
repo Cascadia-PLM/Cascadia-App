@@ -9,12 +9,14 @@ interface ExecutionHistoryTableProps {
   showWorkInstruction?: boolean
 }
 
+const inProgressStatus = {
+  className:
+    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  label: 'In Progress',
+}
+
 const statusConfig: Record<string, { className: string; label: string }> = {
-  'In Progress': {
-    className:
-      'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-    label: 'In Progress',
-  },
+  'In Progress': inProgressStatus,
   Complete: {
     className:
       'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
@@ -120,8 +122,7 @@ export function ExecutionHistoryTable({
       accessorKey: 'status',
       enableFiltering: true,
       cell: ({ row }) => {
-        const config =
-          statusConfig[row.original.status] || statusConfig['In Progress']
+        const config = statusConfig[row.original.status] ?? inProgressStatus
         return (
           <Badge
             variant="secondary"

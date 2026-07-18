@@ -195,8 +195,7 @@ function FieldChangesList({ changes }: { changes: Array<FieldChange> }) {
   const grouped = changes.reduce(
     (acc, change) => {
       const category: string = change.fieldCategory
-      if (!(category in acc)) acc[category] = []
-      acc[category].push(change)
+      ;(acc[category] ??= []).push(change)
       return acc
     },
     {} as Record<string, Array<FieldChange>>,

@@ -74,7 +74,10 @@ export function FileList({
       setLoading(true)
 
       // Build URL with version context query params
-      const url = new URL(`/api/v1/items/${itemId}/files`, window.location.origin)
+      const url = new URL(
+        `/api/v1/items/${itemId}/files`,
+        window.location.origin,
+      )
       if (branchId) {
         url.searchParams.set('branchId', branchId)
       }
@@ -281,8 +284,8 @@ export function FileList({
       analysis: { label: 'Analysis', variant: 'warning' },
     }
 
-    if (!(category in categoryLabels)) return null
     const config = categoryLabels[category]
+    if (!config) return null
 
     return (
       <div className="flex items-center gap-1">

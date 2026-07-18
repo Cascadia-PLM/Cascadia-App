@@ -115,8 +115,9 @@ function EcoHistoryGraphViewInner({ changeOrderId }: EcoHistoryGraphViewProps) {
         setGraphData(response.data)
 
         // Auto-select first design if not selected
-        if (!selectedDesignId && response.data.affectedDesigns.length > 0) {
-          setSelectedDesignId(response.data.affectedDesigns[0].designId)
+        const firstDesign = response.data.affectedDesigns[0]
+        if (!selectedDesignId && firstDesign) {
+          setSelectedDesignId(firstDesign.designId)
         }
       } catch {
         setError('Failed to load ECO history graph. Please try again.')

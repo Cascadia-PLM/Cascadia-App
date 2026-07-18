@@ -23,7 +23,17 @@ interface ManufacturingTabProps {
   onConfirmToolset?: () => void
 }
 
-const SCOPE_LABELS: Record<string, { label: string; color: string }> = {
+interface ScopeLabel {
+  label: string
+  color: string
+}
+
+const UNCONSTRAINED_SCOPE_LABEL: ScopeLabel = {
+  label: 'Unconstrained',
+  color: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+}
+
+const SCOPE_LABELS: Record<string, ScopeLabel> = {
   in_house_only: {
     label: 'In-house only',
     color: 'bg-green-500/10 text-green-400 border-green-500/20',
@@ -32,10 +42,7 @@ const SCOPE_LABELS: Record<string, { label: string; color: string }> = {
     label: 'In-house preferred',
     color: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   },
-  unconstrained: {
-    label: 'Unconstrained',
-    color: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
-  },
+  unconstrained: UNCONSTRAINED_SCOPE_LABEL,
 }
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -121,7 +128,7 @@ export function ManufacturingTab({
     )
   }
 
-  const scopeInfo = SCOPE_LABELS[toolset.scope] ?? SCOPE_LABELS.unconstrained
+  const scopeInfo = SCOPE_LABELS[toolset.scope] ?? UNCONSTRAINED_SCOPE_LABEL
   const showConfirm = currentStage === 'toolset_review' && onConfirmToolset
   const showUtilization = bom != null
 

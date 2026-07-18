@@ -20,7 +20,7 @@ export function incrementRevision(rev: string): string {
     return String.fromCharCode(rev.charCodeAt(0) + 1)
   }
   const match = rev.match(/^(.*)\.(\d+)$/)
-  if (match) {
+  if (match?.[2]) {
     return `${match[1]}.${parseInt(match[2]) + 1}`
   }
   return `${rev}.1`

@@ -32,8 +32,11 @@ interface WorkflowStatusPanelProps {
   onStateChange?: () => void
 }
 
+const draftStateColor =
+  'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+
 const stateColors: Record<string, string> = {
-  draft: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  draft: draftStateColor,
   submitted: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
   approved:
     'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
@@ -48,7 +51,7 @@ const stateColors: Record<string, string> = {
 
 function getStateColor(state: string): string {
   const key = state.toLowerCase().replace(/\s+/g, '')
-  return stateColors[key] || stateColors.draft
+  return stateColors[key] ?? draftStateColor
 }
 
 export function WorkflowStatusPanel({

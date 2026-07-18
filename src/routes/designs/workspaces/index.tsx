@@ -94,13 +94,11 @@ function WorkspacesPage() {
   const workspacesByDesign = workspaces.reduce<
     Record<string, { designName: string; workspaces: Array<Workspace> }>
   >((acc, ws) => {
-    if (!(ws.designId in acc)) {
-      acc[ws.designId] = {
-        designName: ws.designName,
-        workspaces: [],
-      }
-    }
-    acc[ws.designId].workspaces.push(ws)
+    const group = (acc[ws.designId] ??= {
+      designName: ws.designName,
+      workspaces: [],
+    })
+    group.workspaces.push(ws)
     return acc
   }, {})
 

@@ -76,7 +76,7 @@ function statusVariant(
 
 function toDateInputValue(value: string | null | undefined): string {
   if (!value) return ''
-  return new Date(value).toISOString().split('T')[0]
+  return new Date(value).toISOString().slice(0, 10)
 }
 
 function ProgramDetailPage() {

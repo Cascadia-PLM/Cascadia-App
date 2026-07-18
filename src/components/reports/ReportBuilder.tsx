@@ -328,9 +328,12 @@ export function ReportBuilder({
     const newIndex = direction === 'up' ? index - 1 : index + 1
     if (newIndex < 0 || newIndex >= columns.length) return
 
-    const temp = newColumns[index]
-    newColumns[index] = newColumns[newIndex]
-    newColumns[newIndex] = temp
+    const current = newColumns[index]
+    const target = newColumns[newIndex]
+    if (!current || !target) return
+
+    newColumns[index] = target
+    newColumns[newIndex] = current
 
     form.setFieldValue(
       'columns',
@@ -344,15 +347,17 @@ export function ReportBuilder({
   const updateColumn = (index: number, field: string, value: string) => {
     const columns = form.getFieldValue('columns')
     const updated = [...columns]
+    const existing = updated[index]
+    if (!existing) return
     if (field === 'fieldPath') {
       const fieldDef = availableFields.find((f) => f.path === value)
       updated[index] = {
-        ...updated[index],
+        ...existing,
         fieldPath: value,
         label: fieldDef?.label || value,
       }
     } else {
-      updated[index] = { ...updated[index], [field]: value }
+      updated[index] = { ...existing, [field]: value }
     }
     form.setFieldValue('columns', updated)
   }
@@ -383,7 +388,9 @@ export function ReportBuilder({
   const updateFilter = (index: number, field: string, value: string) => {
     const filters = form.getFieldValue('filters')
     const updated = [...filters]
-    updated[index] = { ...updated[index], [field]: value }
+    const existing = updated[index]
+    if (!existing) return
+    updated[index] = { ...existing, [field]: value }
     form.setFieldValue('filters', updated)
   }
 
@@ -412,7 +419,9 @@ export function ReportBuilder({
   const updateSort = (index: number, field: string, value: string) => {
     const sorts = form.getFieldValue('sorts')
     const updated = [...sorts]
-    updated[index] = { ...updated[index], [field]: value }
+    const existing = updated[index]
+    if (!existing) return
+    updated[index] = { ...existing, [field]: value }
     form.setFieldValue('sorts', updated)
   }
 

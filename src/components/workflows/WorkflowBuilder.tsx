@@ -736,8 +736,8 @@ function WorkflowBuilderInner({
       <ReactFlow
         nodes={nodesWithHandlers}
         edges={edgesWithHandlers}
-        onNodesChange={readOnly ? undefined : (onNodesChange)}
-        onEdgesChange={readOnly ? undefined : (onEdgesChange)}
+        onNodesChange={readOnly ? undefined : onNodesChange}
+        onEdgesChange={readOnly ? undefined : onEdgesChange}
         onConnect={disableTransitions ? undefined : onConnect}
         onConnectStart={
           readOnly || disableTransitions ? undefined : onConnectStart
@@ -773,7 +773,7 @@ function WorkflowBuilderInner({
               purple: '#a855f7',
               cyan: '#06b6d4',
             }
-            return colorMap[color] || colorMap.gray
+            return colorMap[color] ?? '#94a3b8'
           }}
           className="!bg-white dark:!bg-slate-900"
         />

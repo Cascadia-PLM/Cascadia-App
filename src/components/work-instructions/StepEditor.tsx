@@ -596,6 +596,7 @@ export function StepEditor({
 
     const newSteps = [...steps]
     const [movedStep] = newSteps.splice(currentIndex, 1)
+    if (!movedStep) return
     newSteps.splice(targetIndex, 0, movedStep)
 
     const reorderedSteps = newSteps.map((step, idx) => ({

@@ -30,6 +30,7 @@ import {
   changeOrderAffectedItems,
   changeOrderDesigns,
   changeOrders,
+  itemRelationships,
   items,
   programs,
   tags,
@@ -601,6 +602,82 @@ describe('ChangeOrderMergeService', () => {
         .from(tags)
         .where(eq(tags.designId, designId))
       expect(designTags.some((t) => t.name === baselineName)).toBe(true)
+    })
+
+    it('carries BOM onto the working copy and honours branch edits (add + delete) on release', async () => {
+      // Released assembly with two children. Create them all before anything is
+      // Released — branch protection blocks creating on main once the design
+      // holds released items — then flip them to Released.
+      const assembly = await createPart('bom-assy')
+      const keepChild = await createPart('bom-keep')
+      const dropChild = await createPart('bom-drop')
+      const addChild = await createPart('bom-add')
+      for (const p of [assembly, keepChild, dropChild, addChild]) {
+        await testDb.db
+          .update(items)
+          .set({ state: 'Released' })
+          .where(eq(items.id, p.id))
+      }
+      await testDb.db.insert(itemRelationships).values([
+        { sourceId: assembly.id, targetId: keepChild.id, relationshipType: 'BOM', quantity: '1', findNumber: 10, createdBy: user.id },
+        { sourceId: assembly.id, targetId: dropChild.id, relationshipType: 'BOM', quantity: '2', findNumber: 20, createdBy: user.id },
+      ])
+
+      const eco = await createChangeOrder()
+      const { workingCopyId } = await ChangeOrderService.addAffectedItem(
+        eco.id,
+        { affectedItemId: assembly.id, changeAction: 'revise' },
+        user.id,
+      )
+      expect(workingCopyId).toBeTruthy()
+
+      // The branch copy must arrive carrying the real structure, otherwise
+      // there is nothing to edit on the ECO branch.
+      const onBranch = await testDb.db
+        .select()
+        .from(itemRelationships)
+        .where(eq(itemRelationships.sourceId, workingCopyId!))
+      expect(onBranch.map((r) => r.targetId).sort()).toEqual(
+        [keepChild.id, dropChild.id].sort(),
+      )
+
+      // Edit the BOM on the branch: drop one line, add another.
+      await testDb.db
+        .delete(itemRelationships)
+        .where(
+          and(
+            eq(itemRelationships.sourceId, workingCopyId!),
+            eq(itemRelationships.targetId, dropChild.id),
+          ),
+        )
+      await testDb.db.insert(itemRelationships).values({
+        sourceId: workingCopyId!,
+        targetId: addChild.id,
+        relationshipType: 'BOM',
+        quantity: '3',
+        findNumber: 30,
+        createdBy: user.id,
+      })
+
+      await approveEco(eco.id)
+      await ChangeOrderMergeService.merge(eco.id, user.id)
+
+      // The released revision reflects the branch edits: deleted line gone,
+      // added line present, untouched line kept.
+      const released = await testDb.db
+        .select()
+        .from(items)
+        .where(and(eq(items.masterId, assembly.masterId), eq(items.isCurrent, true)))
+        .then((r) => r.at(0))
+      expect(released).toBeDefined()
+      const finalBom = await testDb.db
+        .select()
+        .from(itemRelationships)
+        .where(eq(itemRelationships.sourceId, released!.id))
+      const targets = finalBom.map((r) => r.targetId)
+      expect(targets).toContain(keepChild.id)
+      expect(targets).toContain(addChild.id)
+      expect(targets).not.toContain(dropChild.id)
     })
   })
 

@@ -431,7 +431,7 @@ if (SKIP_FILES) {
     }
     if (thumbFileId) {
       await ingest(thumbFileId, thumbSrc, `${part.cadFileBase}.png`, 'thumbnail', false)
-      const linkIds = [glbFileId, stepFileId].filter((x): x is string => x !== null)
+      const linkIds = [glbFileId, stepFileId].filter((x): x is NonNullable<typeof x> => x !== null)
       for (const id of linkIds) {
         await db
           .update(vaultFiles)

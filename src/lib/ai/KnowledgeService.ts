@@ -143,10 +143,15 @@ export class KnowledgeService {
    */
   private extractFields(schema: z.ZodSchema): Array<FieldDefinition> {
     try {
-      const jsonSchema = zodToJsonSchema(schema, {
-        $refStrategy: 'none',
-        target: 'openApi3',
-      }) as {
+      // zod-to-json-schema's parameter type is built against a different Zod
+      // version's internals than the one installed; the runtime call is fine.
+      const jsonSchema = zodToJsonSchema(
+        schema as unknown as Parameters<typeof zodToJsonSchema>[0],
+        {
+          $refStrategy: 'none',
+          target: 'openApi3',
+        },
+      ) as {
         properties?: Record<string, any>
         required?: Array<string>
       }

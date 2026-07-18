@@ -18,7 +18,7 @@ import {
 } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { WorkflowService } from './WorkflowService'
-import type { CreateWorkflowInput } from './types'
+import type { CreateWorkflowInput, TransitionAction } from './types'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { insertTestPart } from '@/__tests__/fixtures/items'
@@ -2595,7 +2595,8 @@ describe('WorkflowService Transition Actions', () => {
                 name: 'Unknown Action',
                 type: 'unknown_type_xyz' as 'update_field',
                 executeOn: 'after',
-                config: {},
+                // Deliberately malformed action for the unknown-type path.
+                config: {} as TransitionAction['config'],
               },
             ],
           },
@@ -4041,7 +4042,7 @@ describe('WorkflowService send_notification Design Access', () => {
 
         const transitions = await WorkflowService.getAvailableTransitions(
           instance.id,
-          actorUser.id,
+          { item: { id: item.id }, user: { id: actorUser.id, roles: [] } },
         )
 
         expect(transitions).toHaveLength(1)

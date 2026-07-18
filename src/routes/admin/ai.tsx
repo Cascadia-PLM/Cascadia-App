@@ -132,7 +132,7 @@ function AISettingsPage() {
             enabled: s.enabled ?? false,
             provider: s.provider ?? 'openai',
             apiKey: s.config?.apiKey ?? '',
-            model: s.config?.model ?? DEFAULT_MODELS[s.provider ?? 'openai'][0],
+            model: s.config?.model ?? DEFAULT_MODELS[(s.provider ?? 'openai') as ProviderType][0],
             baseURL: s.config?.baseURL ?? '',
           })
           setOriginalSettings({
@@ -140,7 +140,7 @@ function AISettingsPage() {
             enabled: s.enabled ?? false,
             provider: s.provider ?? 'openai',
             apiKey: s.config?.apiKey ?? '',
-            model: s.config?.model ?? DEFAULT_MODELS[s.provider ?? 'openai'][0],
+            model: s.config?.model ?? DEFAULT_MODELS[(s.provider ?? 'openai') as ProviderType][0],
             baseURL: s.config?.baseURL ?? '',
           })
         }

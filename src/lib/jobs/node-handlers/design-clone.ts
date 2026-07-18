@@ -5,6 +5,7 @@ import type {
   CloneDesignResult,
 } from '../definitions/design/types'
 import { db } from '@/lib/db'
+import { takeFirst } from '@/lib/db/take-first'
 import {
   documents,
   itemRelationships,
@@ -102,9 +103,10 @@ export const cloneDesignHandler: JobHandler<
       }
       return false
     })
-    if (tooLong.length > 0) {
+    const firstTooLong = tooLong[0]
+    if (firstTooLong) {
       throw new Error(
-        `${tooLong.length} item number(s) would exceed 100 characters after suffix substitution (e.g., "${tooLong[0].itemNumber}")`,
+        `${tooLong.length} item number(s) would exceed 100 characters after suffix substitution (e.g., "${firstTooLong.itemNumber}")`,
       )
     }
 
@@ -163,38 +165,41 @@ export const cloneDesignHandler: JobHandler<
 
           // Create new usage item
           const newMasterId = crypto.randomUUID()
-          const [newUsage] = await tx
-            .insert(items)
-            .values({
-              // New identity
-              masterId: newMasterId,
-              designId: targetDesign.id,
+          const newUsage = takeFirst(
+            await tx
+              .insert(items)
+              .values({
+                // New identity
+                masterId: newMasterId,
+                designId: targetDesign.id,
 
-              // Usage reference - this is the key for traceability!
-              usageOf: definitionId,
+                // Usage reference - this is the key for traceability!
+                usageOf: definitionId,
 
-              // Copy field values from source (including any modifications)
-              itemNumber: applyItemNumberSuffix(
-                sourceItem.itemNumber,
-                sourceDesign.code,
-                targetCode,
-                suffixItemNumbers,
-              ),
-              revision: '-', // Fresh start
-              itemType: sourceItem.itemType,
-              name: sourceItem.name,
-              state: 'Draft', // Fresh start
-              isCurrent: true,
-              attributes: sourceItem.attributes,
-              sysmlType: sysmlType, // Auto-assigned based on item type
-              metamodel: sourceItem.metamodel ?? 'cascadia',
-              inDesignStructure: sourceItem.inDesignStructure,
+                // Copy field values from source (including any modifications)
+                itemNumber: applyItemNumberSuffix(
+                  sourceItem.itemNumber,
+                  sourceDesign.code,
+                  targetCode,
+                  suffixItemNumbers,
+                ),
+                revision: '-', // Fresh start
+                itemType: sourceItem.itemType,
+                name: sourceItem.name,
+                state: 'Draft', // Fresh start
+                isCurrent: true,
+                attributes: sourceItem.attributes,
+                sysmlType: sysmlType, // Auto-assigned based on item type
+                metamodel: sourceItem.metamodel ?? 'cascadia',
+                inDesignStructure: sourceItem.inDesignStructure,
 
-              // Audit
-              createdBy: userId,
-              modifiedBy: userId,
-            })
-            .returning()
+                // Audit
+                createdBy: userId,
+                modifiedBy: userId,
+              })
+              .returning(),
+            'cloned usage item',
+          )
 
           itemIdMap.set(sourceItem.id, newUsage.id)
 

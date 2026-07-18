@@ -317,7 +317,7 @@ export class ProgramService {
 
     return {
       items: results,
-      total: countResult.count,
+      total: countResult!.count,
     }
   }
 

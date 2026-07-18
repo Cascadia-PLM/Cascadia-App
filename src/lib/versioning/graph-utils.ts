@@ -47,8 +47,7 @@ export function extractItemType(message: string): string {
   const match = message.match(
     /^(Part|Document|ChangeOrder|Requirement|Task)\s+/i,
   )
-  if (match) return match[1]
-  return 'Item'
+  return match?.[1] ?? 'Item'
 }
 
 /**
@@ -112,7 +111,8 @@ export function consolidateCommits<
   let i = 0
 
   while (i < sortedNodes.length) {
-    const currentNode = sortedNodes[i]
+    // Safe: the while condition guarantees i is in bounds
+    const currentNode = sortedNodes[i]!
 
     // If this is an important commit, don't consolidate it
     if (isImportantCommit(currentNode.data)) {
@@ -129,7 +129,8 @@ export function consolidateCommits<
 
     let j = i + 1
     while (j < sortedNodes.length) {
-      const nextNode = sortedNodes[j]
+      // Safe: the while condition guarantees j is in bounds
+      const nextNode = sortedNodes[j]!
 
       // Stop if next commit is important
       if (isImportantCommit(nextNode.data)) break
@@ -160,8 +161,9 @@ export function consolidateCommits<
 
     if (group.length >= MIN_COMMITS_TO_CONSOLIDATE) {
       // Create consolidated node
-      const firstCommit = group[0]
-      const lastCommit = group[group.length - 1]
+      // Safe: this branch only runs when group.length >= MIN_COMMITS_TO_CONSOLIDATE
+      const firstCommit = group[0]!
+      const lastCommit = group[group.length - 1]!
 
       // Aggregate stats
       const totalStats = group.reduce(

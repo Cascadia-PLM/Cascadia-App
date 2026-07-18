@@ -85,11 +85,11 @@ export class WorkInstructionExecutionService {
       .from(workInstructionExecutions)
       .where(eq(workInstructionExecutions.id, executionId))
 
-    if (existing.length === 0) {
+    const execution = existing[0]
+    if (!execution) {
       throw new NotFoundError('Execution', executionId)
     }
 
-    const execution = existing[0]
     if (execution.status !== 'In Progress') {
       throw new ValidationError(
         `Cannot complete execution in "${execution.status}" status`,
@@ -135,11 +135,11 @@ export class WorkInstructionExecutionService {
       .from(workInstructionExecutions)
       .where(eq(workInstructionExecutions.id, executionId))
 
-    if (existing.length === 0) {
+    const execution = existing[0]
+    if (!execution) {
       throw new NotFoundError('Execution', executionId)
     }
 
-    const execution = existing[0]
     const completedAt = new Date()
     const duration = Math.round(
       (completedAt.getTime() - new Date(execution.startedAt).getTime()) / 1000,
@@ -174,9 +174,9 @@ export class WorkInstructionExecutionService {
       )
       .where(eq(workInstructionExecutions.id, id))
 
-    if (results.length === 0) return null
-
     const row = results[0]
+    if (!row) return null
+
     return {
       ...row.execution,
       executor: {
@@ -331,11 +331,11 @@ export class WorkInstructionExecutionService {
       .from(workInstructionExecutions)
       .where(eq(workInstructionExecutions.id, executionId))
 
-    if (existing.length === 0) {
+    const execution = existing[0]
+    if (!execution) {
       throw new NotFoundError('Execution', executionId)
     }
 
-    const execution = existing[0]
     if (execution.status !== 'Pending Approval') {
       throw new ValidationError(
         `Cannot sign off on execution in "${execution.status}" status`,
@@ -365,8 +365,8 @@ export class WorkInstructionExecutionService {
         .from(workOrders)
         .where(eq(workOrders.id, execution.workOrderId))
 
-      if (woResult.length > 0) {
-        const wo = woResult[0]
+      const wo = woResult[0]
+      if (wo) {
         await db
           .update(workOrders)
           .set({
@@ -389,11 +389,11 @@ export class WorkInstructionExecutionService {
       .from(workInstructionExecutions)
       .where(eq(workInstructionExecutions.id, executionId))
 
-    if (existing.length === 0) {
+    const execution = existing[0]
+    if (!execution) {
       throw new NotFoundError('Execution', executionId)
     }
 
-    const execution = existing[0]
     if (execution.status !== 'Rejected') {
       throw new ValidationError(
         `Cannot resubmit execution in "${execution.status}" status. Must be "Rejected".`,

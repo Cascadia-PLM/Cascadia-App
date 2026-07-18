@@ -911,7 +911,7 @@ export class FileService {
 
     const filesByType: Record<string, number> = {}
     files.forEach((file) => {
-      const type = file.mimeType.split('/')[0]
+      const type = file.mimeType.split('/')[0]!
       filesByType[type] = (filesByType[type] || 0) + 1
     })
 

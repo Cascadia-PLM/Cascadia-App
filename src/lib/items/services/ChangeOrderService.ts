@@ -327,7 +327,8 @@ export class ChangeOrderService {
       )
       .limit(1)
 
-    if (existing.at(0)) {
+    const existingAssociation = existing[0]
+    if (existingAssociation) {
       // Update itemsAffected count (skip for cross-design associations)
       if (!options?.skipCount) {
         await db
@@ -336,9 +337,9 @@ export class ChangeOrderService {
             itemsAffected: sql`${changeOrderDesigns.itemsAffected} + 1`,
             updatedAt: new Date(),
           })
-          .where(eq(changeOrderDesigns.id, existing[0].id))
+          .where(eq(changeOrderDesigns.id, existingAssociation.id))
       }
-      return existing[0]
+      return existingAssociation
     }
 
     // Get or create ECO branch for this design (idempotent)
@@ -1355,6 +1356,11 @@ export class ChangeOrderService {
             ),
           )
           .limit(1)
+        if (!existingBranchItem) {
+          throw new Error(
+            `Working copy ${existingWorkingCopy.id} exists on branch ${branch.id} but has no branchItem entry for master ${item.masterId}`,
+          )
+        }
         branchItem = existingBranchItem
       } else {
         // Create working copy with proper branchItem
@@ -1592,8 +1598,9 @@ export class ChangeOrderService {
       )
       .limit(1)
 
-    if (existing.at(0)) {
-      return existing[0]
+    const existingAssociation = existing[0]
+    if (existingAssociation) {
+      return existingAssociation
     }
 
     // Create the ECO branch immediately so it shows up in branch selectors

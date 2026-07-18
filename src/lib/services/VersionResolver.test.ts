@@ -144,7 +144,7 @@ describe('VersionResolver', () => {
         },
         user.id,
       )
-      designId = design.id
+      designId = design.id!
       mainBranchId = design.mainBranch!.id
 
       // Create a part item (Rev A)
@@ -539,7 +539,7 @@ describe('VersionResolver', () => {
         },
         user.id,
       )
-      designId = design.id
+      designId = design.id!
     })
 
     it('returns released context for "main" branch name', async () => {
@@ -629,7 +629,7 @@ describe('VersionResolver', () => {
         },
         user.id,
       )
-      designId = design.id
+      designId = design.id!
       initialCommitId = design.initialCommit!.id
 
       // Create a part item
@@ -724,7 +724,7 @@ describe('VersionResolver', () => {
         .limit(1)
 
       await testDb.db.insert(itemVersions).values({
-        itemId: doc[0].id,
+        itemId: doc[0]!.id,
         commitId: initialCommitId,
         changeType: 'added',
       })
@@ -814,7 +814,7 @@ describe('VersionResolver', () => {
       expect(page1.total).toBe(page2.total)
       // Page 2 should have different items than page 1
       if (page1.items.length > 0 && page2.items.length > 0) {
-        expect(page1.items[0].id).not.toBe(page2.items[0].id)
+        expect(page1.items[0]!.id).not.toBe(page2.items[0]!.id)
       }
     })
 
@@ -893,7 +893,10 @@ describe('VersionResolver', () => {
 
       // Query released items - should find via branchItems fallback
       const context: VersionContext = { type: 'released', designId: design.id }
-      const result = await VersionResolver.getItemsAtContext(design.id, context)
+      const result = await VersionResolver.getItemsAtContext(
+        design.id,
+        context,
+      )
 
       expect(result.items.length).toBeGreaterThanOrEqual(1)
       expect(result.items.some((i) => i.id === item.id)).toBe(true)
@@ -933,7 +936,10 @@ describe('VersionResolver', () => {
 
       // No branchItems, no itemVersions - should find via isCurrent fallback
       const context: VersionContext = { type: 'released', designId: design.id }
-      const result = await VersionResolver.getItemsAtContext(design.id, context)
+      const result = await VersionResolver.getItemsAtContext(
+        design.id,
+        context,
+      )
 
       expect(result.items.length).toBeGreaterThanOrEqual(1)
       expect(result.items.some((i) => i.id === item.id)).toBe(true)
@@ -997,7 +1003,10 @@ describe('VersionResolver', () => {
       })
 
       const context: VersionContext = { type: 'released', designId: design.id }
-      const result = await VersionResolver.getItemsAtContext(design.id, context)
+      const result = await VersionResolver.getItemsAtContext(
+        design.id,
+        context,
+      )
 
       // Should find the committed item
       expect(result.items.some((i) => i.id === item.id)).toBe(true)
@@ -1017,7 +1026,10 @@ describe('VersionResolver', () => {
       )
 
       const context: VersionContext = { type: 'released', designId: design.id }
-      const result = await VersionResolver.getItemsAtContext(design.id, context)
+      const result = await VersionResolver.getItemsAtContext(
+        design.id,
+        context,
+      )
 
       expect(result.items).toEqual([])
       expect(result.total).toBe(0)
@@ -1037,7 +1049,7 @@ describe('VersionResolver', () => {
         },
         user.id,
       )
-      designId = design.id
+      designId = design.id!
     })
 
     it('returns "Released (main)" for released context', async () => {
@@ -1168,7 +1180,7 @@ describe('VersionResolver', () => {
         },
         user.id,
       )
-      designId = design.id
+      designId = design.id!
       initialCommitId = design.initialCommit!.id
 
       // Create a part
@@ -1286,7 +1298,7 @@ describe('VersionResolver', () => {
             .from(items)
             .where(eq(items.masterId, itemMasterId))
             .limit(1)
-        )[0].id,
+        )[0]!.id,
         changeType: 'modified',
       })
 
@@ -1328,7 +1340,7 @@ describe('VersionResolver', () => {
         },
         user.id,
       )
-      designId = design.id
+      designId = design.id!
       initialCommitId = design.initialCommit!.id
 
       // Create a part on main

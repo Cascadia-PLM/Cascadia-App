@@ -146,7 +146,7 @@ describe('RequirementService', () => {
 
       const satisfying = await RequirementService.getSatisfyingItems(req.id!)
       expect(satisfying).toHaveLength(1)
-      expect(satisfying[0].id).toBe(part.id)
+      expect(satisfying[0]!.id).toBe(part.id)
     })
 
     it('should link multiple items to a requirement', async () => {
@@ -240,7 +240,7 @@ describe('RequirementService', () => {
         itemType: 'Part',
         name: 'Satisfying Part',
       })
-      expect(result[0].relationshipId).toBeDefined()
+      expect(result[0]!.relationshipId).toBeDefined()
     })
 
     it('should return empty array when no items satisfy', async () => {
@@ -667,7 +667,7 @@ describe('RequirementService', () => {
 
       const tests = await RequirementService.getVerifyingTests(req.id!)
       expect(tests).toHaveLength(1)
-      expect(tests[0].id).toBe(tc.id)
+      expect(tests[0]!.id).toBe(tc.id)
     })
 
     it('should link multiple test cases to a requirement', async () => {
@@ -772,7 +772,7 @@ describe('RequirementService', () => {
         id: tc.id,
         name: 'Verify Performance',
       })
-      expect(result[0].relationshipId).toBeDefined()
+      expect(result[0]!.relationshipId).toBeDefined()
     })
 
     it('should return empty array when no test cases verify the requirement', async () => {

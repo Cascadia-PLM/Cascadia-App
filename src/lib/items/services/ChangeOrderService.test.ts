@@ -330,7 +330,8 @@ describe('ChangeOrderService', () => {
       .where(eq(designs.id, createdDesign.id))
       .returning()
 
-    designId = updated.id
+    expect(updated).toBeDefined()
+    designId = updated!.id
   })
 
   afterEach(async () => {
@@ -506,7 +507,7 @@ describe('ChangeOrderService', () => {
       const branchCommits = await testDb.db
         .select()
         .from(commits)
-        .where(eq(commits.branchId, ecoDesigns[0].branchId!))
+        .where(eq(commits.branchId, ecoDesigns[0]!.branchId!))
 
       // Should have a commit with "ChangeOrder xxx created" message
       const creationCommit = branchCommits.find(
@@ -598,7 +599,7 @@ describe('ChangeOrderService', () => {
       const items = await ChangeOrderService.getAffectedItems(changeOrder.id)
 
       expect(items).toHaveLength(2)
-      expect(items[0].affectedItemDetails).toBeDefined()
+      expect(items[0]?.affectedItemDetails).toBeDefined()
       expect(
         items.some((i) => i.affectedItemDetails?.name === 'Part One'),
       ).toBe(true)
@@ -707,8 +708,10 @@ describe('ChangeOrderService', () => {
       const risks = await ChangeOrderService.getRisks(changeOrder.id)
 
       expect(risks).toHaveLength(1)
-      expect(risks[0].category).toBe('production')
-      expect(risks[0].severity).toBe('high')
+      expect(risks[0]).toMatchObject({
+        category: 'production',
+        severity: 'high',
+      })
     })
 
     it('returns empty array when no risks', async () => {
@@ -741,8 +744,8 @@ describe('ChangeOrderService', () => {
 
       const risks = await ChangeOrderService.getRisks(changeOrder.id)
 
-      expect(risks[0].acknowledgedBy).toBe(user.id)
-      expect(risks[0].acknowledgedAt).toBeDefined()
+      expect(risks[0]).toMatchObject({ acknowledgedBy: user.id })
+      expect(risks[0]?.acknowledgedAt).toBeDefined()
     })
   })
 
@@ -789,7 +792,7 @@ describe('ChangeOrderService', () => {
         .where(eq(changeOrders.itemId, changeOrder.id))
         .limit(1)
 
-      expect(coRecord[0].submittedAt).toBeDefined()
+      expect(coRecord[0]?.submittedAt).toBeDefined()
     })
   })
 
@@ -855,8 +858,8 @@ describe('ChangeOrderService', () => {
         .where(eq(changeOrders.itemId, changeOrder.id))
         .limit(1)
 
-      expect(coRecord[0].approvedAt).toBeDefined()
-      expect(coRecord[0].approvedBy).toBe(user.id)
+      expect(coRecord[0]?.approvedAt).toBeDefined()
+      expect(coRecord[0]).toMatchObject({ approvedBy: user.id })
     })
   })
 
@@ -930,7 +933,7 @@ describe('ChangeOrderService', () => {
         .where(eq(changeOrders.itemId, changeOrder.id))
         .limit(1)
 
-      expect(coRecord[0].closedAt).toBeDefined()
+      expect(coRecord[0]?.closedAt).toBeDefined()
     })
   })
 

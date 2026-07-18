@@ -277,6 +277,10 @@ export class DesignService {
         .where(eq(designs.id, design.id))
         .returning()
 
+      if (!updatedDesign) {
+        throw new NotFoundError('Design', design.id, { operation: 'create' })
+      }
+
       return {
         ...updatedDesign,
         mainBranch,
@@ -570,7 +574,7 @@ export class DesignService {
 
     return {
       items: results,
-      total: countResult.count,
+      total: countResult!.count,
     }
   }
 
@@ -974,8 +978,8 @@ export class DesignService {
 
         return {
           ...child,
-          itemCount: countResult.totalCount,
-          hasReleases: countResult.releasedCount > 0,
+          itemCount: countResult!.totalCount,
+          hasReleases: countResult!.releasedCount > 0,
           latestTag: latestTag?.name ?? null,
         }
       }),

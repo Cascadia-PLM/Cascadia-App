@@ -165,7 +165,7 @@ describe('ChangeOrderMergeService', () => {
       user.id,
     )
 
-    designId = design.id
+    designId = design.id!
   })
 
   afterEach(async () => {
@@ -277,7 +277,9 @@ describe('ChangeOrderMergeService', () => {
 
       expect(result.canMerge).toBe(false)
       expect(result.conflicts).toHaveLength(1)
-      expect(result.conflicts[0].conflictType).toBe('branch_not_found')
+      expect(result.conflicts[0]).toMatchObject({
+        conflictType: 'branch_not_found',
+      })
     })
 
     it('returns canMerge: false when no changes to merge', async () => {
@@ -724,9 +726,10 @@ describe('ChangeOrderMergeService', () => {
         .from(items)
         .where(eq(items.id, part.id))
         .limit(1)
-      expect(deletedItem).toBeDefined()
-      expect(deletedItem.state).toBe('Obsolete')
-      expect(deletedItem.isDeleted).toBe(true)
+      expect(deletedItem).toMatchObject({
+        state: 'Obsolete',
+        isDeleted: true,
+      })
     })
 
     it('creates merge commit with revision information', async () => {
@@ -818,10 +821,12 @@ describe('ChangeOrderMergeService', () => {
       const preview = await ChangeOrderMergeService.previewMerge(eco.id)
 
       expect(preview.designs).toHaveLength(1)
-      expect(preview.designs[0].designName).toBe('Test Design')
-      expect(preview.designs[0].items).toHaveLength(1)
-      expect(preview.designs[0].items[0].changeType).toBe('added')
-      expect(preview.designs[0].items[0].newRevision).toBe('A')
+      expect(preview.designs[0]!.designName).toBe('Test Design')
+      expect(preview.designs[0]!.items).toHaveLength(1)
+      expect(preview.designs[0]!.items[0]).toMatchObject({
+        changeType: 'added',
+        newRevision: 'A',
+      })
       expect(preview.totalItems).toBe(1)
     })
 
@@ -941,8 +946,10 @@ describe('ChangeOrderMergeService', () => {
 
       const preview = await ChangeOrderMergeService.previewMerge(eco.id)
 
-      expect(preview.designs[0].items[0].currentRevision).toBe('C')
-      expect(preview.designs[0].items[0].newRevision).toBe('D')
+      expect(preview.designs[0]!.items[0]).toMatchObject({
+        currentRevision: 'C',
+        newRevision: 'D',
+      })
     })
   })
 
@@ -1083,10 +1090,9 @@ describe('ChangeOrderMergeService', () => {
 
       // Create a new revision on main that only differs by revision (no field changes)
       // Get full item data to copy ALL fields and avoid false positive conflicts
-      const [originalItem] = await testDb.db
-        .select()
-        .from(items)
-        .where(eq(items.id, part.id))
+      const originalItem = takeFirst(
+        await testDb.db.select().from(items).where(eq(items.id, part.id)),
+      )
 
       const newRevision = takeFirst(
         await testDb.db
@@ -1239,9 +1245,10 @@ describe('ChangeOrderMergeService', () => {
         .from(changeOrders)
         .where(eq(changeOrders.itemId, eco.id))
 
-      expect(dbRecord).toBeDefined()
-      expect(dbRecord.isBaseline).toBe(false)
-      expect(dbRecord.baselineName).toBeNull()
+      expect(dbRecord).toMatchObject({
+        isBaseline: false,
+        baselineName: null,
+      })
     })
   })
 
@@ -1355,7 +1362,7 @@ describe('ChangeOrderMergeService', () => {
       const result = await ChangeOrderMergeService.merge(eco.id, user.id)
 
       expect(result.designs.length).toBe(1)
-      expect(result.designs[0].mergeResult.itemsMerged).toBe(1)
+      expect(result.designs[0]!.mergeResult.itemsMerged).toBe(1)
 
       // Verify working copy was released with revision B
       const releasedWorkingCopy = await ItemService.findById(workingCopy.id)
@@ -1419,11 +1426,11 @@ describe('ChangeOrderMergeService', () => {
       const result = await ChangeOrderMergeService.merge(eco.id, user.id)
 
       expect(result.designs.length).toBe(1)
-      expect(result.designs[0].mergeResult.itemsAdded).toBe(1)
+      expect(result.designs[0]!.mergeResult.itemsAdded).toBe(1)
 
       // Verify the revision was assigned as 'A'
       expect(
-        result.designs[0].mergeResult.revisionsAssigned[part.itemNumber],
+        result.designs[0]!.mergeResult.revisionsAssigned[part.itemNumber],
       ).toBe('A')
     })
   })
@@ -1823,7 +1830,7 @@ describe('ChangeOrderMergeService', () => {
         },
         user.id,
       )
-      secondDesignId = secondDesign.id
+      secondDesignId = secondDesign.id!
     })
 
     it('aggregates conflicts from all designs', async () => {

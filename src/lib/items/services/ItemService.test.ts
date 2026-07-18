@@ -108,7 +108,8 @@ describe('ItemService', () => {
       .where(eq(designs.id, createdDesign.id))
       .returning()
 
-    designId = updated.id
+    expect(updated).toBeDefined()
+    designId = updated!.id
   })
 
   afterEach(async () => {
@@ -777,7 +778,7 @@ describe('ItemService', () => {
       const related = await ItemService.getRelated(parentPart.id, 'BOM')
 
       expect(related.length).toBe(1)
-      expect(related[0].id).toBe(childPart.id)
+      expect(related[0]).toMatchObject({ id: childPart.id })
     })
 
     it('gets relationships with full details', async () => {
@@ -795,10 +796,12 @@ describe('ItemService', () => {
       )
 
       expect(relationships.length).toBe(1)
-      expect(parseFloat(relationships[0].quantity!)).toBe(5)
-      expect(relationships[0].findNumber).toBe(10)
-      expect(relationships[0].targetItem).toBeDefined()
-      expect(relationships[0].targetItem?.id).toBe(childPart.id)
+      const relationship = relationships[0]
+      expect(relationship).toBeDefined()
+      expect(parseFloat(relationship!.quantity!)).toBe(5)
+      expect(relationship!.findNumber).toBe(10)
+      expect(relationship!.targetItem).toBeDefined()
+      expect(relationship!.targetItem?.id).toBe(childPart.id)
     })
 
     it('removes a relationship', async () => {
@@ -814,7 +817,7 @@ describe('ItemService', () => {
       )
       expect(beforeRemove.length).toBe(1)
 
-      await ItemService.removeRelationship(beforeRemove[0].id)
+      await ItemService.removeRelationship(beforeRemove[0]!.id)
 
       const afterRemove = await ItemService.getRelated(parentPart.id)
       expect(afterRemove.length).toBe(0)
@@ -1400,7 +1403,7 @@ describe('ItemService', () => {
       const all = await ItemService.getRelated(parentPart.id)
 
       expect(bomOnly.length).toBe(1)
-      expect(bomOnly[0].id).toBe(child1.id)
+      expect(bomOnly[0]).toMatchObject({ id: child1.id })
       expect(all.length).toBe(2)
     })
   })
@@ -1442,8 +1445,8 @@ describe('ItemService', () => {
       )
 
       expect(details.length).toBe(1)
-      expect(details[0].relationshipType).toBe('BOM')
-      expect(details[0].targetItem).toBeDefined()
+      expect(details[0]).toMatchObject({ relationshipType: 'BOM' })
+      expect(details[0]?.targetItem).toBeDefined()
     })
   })
 

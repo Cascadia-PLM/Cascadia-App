@@ -352,40 +352,42 @@ export class MbomService {
       const sysmlType = UsageService.getSysmlType(sourceItem.itemType, true)
 
       // Create new usage item in MBOM that references the EBOM definition
-      const [newUsage] = await tx
-        .insert(items)
-        .values({
-          // New identity for this usage
-          masterId: crypto.randomUUID(),
-          designId: targetDesignId,
-          commitId: targetCommitId,
+      const newUsage = takeFirst(
+        await tx
+          .insert(items)
+          .values({
+            // New identity for this usage
+            masterId: crypto.randomUUID(),
+            designId: targetDesignId,
+            commitId: targetCommitId,
 
-          // Usage reference - this is the key for traceability!
-          usageOf: definitionId,
+            // Usage reference - this is the key for traceability!
+            usageOf: definitionId,
 
-          // Copy field values from source, optionally renumbering the design code suffix
-          itemNumber: renumberItems
-            ? this.renumberItemNumber(
-                sourceItem.itemNumber,
-                sourceDesignCode,
-                targetDesignCode,
-              )
-            : sourceItem.itemNumber,
-          revision: '-', // Fresh start for MBOM usage
-          itemType: sourceItem.itemType,
-          name: sourceItem.name,
-          state: 'Draft', // Start as Draft in MBOM
-          isCurrent: true,
-          inDesignStructure: sourceItem.inDesignStructure,
-          attributes: sourceItem.attributes,
-          metamodel: sourceItem.metamodel ?? 'cascadia',
-          sysmlType: sysmlType, // Auto-assigned based on item type
+            // Copy field values from source, optionally renumbering the design code suffix
+            itemNumber: renumberItems
+              ? this.renumberItemNumber(
+                  sourceItem.itemNumber,
+                  sourceDesignCode,
+                  targetDesignCode,
+                )
+              : sourceItem.itemNumber,
+            revision: '-', // Fresh start for MBOM usage
+            itemType: sourceItem.itemType,
+            name: sourceItem.name,
+            state: 'Draft', // Start as Draft in MBOM
+            isCurrent: true,
+            inDesignStructure: sourceItem.inDesignStructure,
+            attributes: sourceItem.attributes,
+            metamodel: sourceItem.metamodel ?? 'cascadia',
+            sysmlType: sysmlType, // Auto-assigned based on item type
 
-          // Audit
-          createdBy: userId,
-          modifiedBy: userId,
-        })
-        .returning()
+            // Audit
+            createdBy: userId,
+            modifiedBy: userId,
+          })
+          .returning(),
+      )
 
       itemIdMap.set(sourceItem.id, newUsage.id)
 

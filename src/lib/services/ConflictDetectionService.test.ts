@@ -86,7 +86,7 @@ describe('ConflictDetectionService', () => {
       user.id,
     )
 
-    designId = design.id
+    designId = design.id!
     mainBranchId = design.mainBranch!.id
   })
 
@@ -170,10 +170,12 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts).toHaveLength(1)
-      expect(conflicts[0].fieldName).toBe('name')
-      expect(conflicts[0].baseValue).toBe('Original')
-      expect(conflicts[0].ourValue).toBe('Our Name')
-      expect(conflicts[0].theirValue).toBe('Their Name')
+      expect(conflicts[0]).toMatchObject({
+        fieldName: 'name',
+        baseValue: 'Original',
+        ourValue: 'Our Name',
+        theirValue: 'Their Name',
+      })
     })
 
     it('does not report conflict when both branches make same change', () => {
@@ -288,7 +290,7 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts).toHaveLength(1)
-      expect(conflicts[0].fieldName).toBe('config')
+      expect(conflicts[0]).toMatchObject({ fieldName: 'config' })
     })
 
     it('handles array field comparison', () => {
@@ -303,7 +305,7 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts).toHaveLength(1)
-      expect(conflicts[0].fieldName).toBe('tags')
+      expect(conflicts[0]).toMatchObject({ fieldName: 'tags' })
     })
   })
 
@@ -316,8 +318,10 @@ describe('ConflictDetectionService', () => {
       expect(result.hasConflicts).toBe(true)
       expect(result.hasBlockingConflicts).toBe(true)
       expect(result.conflicts).toHaveLength(1)
-      expect(result.conflicts[0].conflictType).toBe('branch_not_found')
-      expect(result.conflicts[0].severity).toBe('error')
+      expect(result.conflicts[0]).toMatchObject({
+        conflictType: 'branch_not_found',
+        severity: 'error',
+      })
     })
 
     it('returns no conflicts for empty branch', async () => {
@@ -391,12 +395,14 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Update the part on our branch via direct DB update to avoid complex workflow
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'ECO Modified Name' })
@@ -625,10 +631,12 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get the branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Try to rebase to non-existent item
       const result = await ConflictDetectionService.rebaseItem(
@@ -662,10 +670,12 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Create a new base version
       const newBaseItem = takeFirst(
@@ -719,10 +729,12 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Create a new base version
       const newBaseItem = takeFirst(
@@ -776,13 +788,15 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Modify our working copy - change description
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'Our Changed Name' })
@@ -832,10 +846,12 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts.length).toBeGreaterThan(0)
-      expect(conflicts[0].fieldName).toBe('name')
-      expect(conflicts[0].baseValue).toBe('Original Name')
-      expect(conflicts[0].ourValue).toBe('Our Changed Name')
-      expect(conflicts[0].theirValue).toBe('Their Changed Name')
+      expect(conflicts[0]).toMatchObject({
+        fieldName: 'name',
+        baseValue: 'Original Name',
+        ourValue: 'Our Changed Name',
+        theirValue: 'Their Changed Name',
+      })
     })
 
     it('applies resolutions and succeeds when conflicts resolved', async () => {
@@ -859,13 +875,15 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Modify our working copy - change name
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'Our Changed Name' })
@@ -1052,12 +1070,14 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Update branch's working copy
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'Modified on ECO' })
@@ -1129,13 +1149,15 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Change name on ECO branch
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'ECO Changed Name' })
@@ -1199,13 +1221,15 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Change name on ECO branch
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'ECO Name' })
@@ -1269,8 +1293,7 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts.length).toBe(1)
-      expect(conflicts[0].fieldName).toBe('name')
-      expect(conflicts[0].baseValue).toBe(null)
+      expect(conflicts[0]).toMatchObject({ fieldName: 'name', baseValue: null })
     })
 
     it('handles undefined values in field comparison', () => {
@@ -1285,7 +1308,7 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts.length).toBe(1)
-      expect(conflicts[0].fieldName).toBe('newField')
+      expect(conflicts[0]).toMatchObject({ fieldName: 'newField' })
     })
 
     it('handles date field comparison', () => {
@@ -1304,7 +1327,7 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts.length).toBe(1)
-      expect(conflicts[0].fieldName).toBe('dueDate')
+      expect(conflicts[0]).toMatchObject({ fieldName: 'dueDate' })
     })
 
     it('handles deeply nested object comparison', () => {
@@ -1343,7 +1366,7 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts.length).toBe(1)
-      expect(conflicts[0].fieldName).toBe('config')
+      expect(conflicts[0]).toMatchObject({ fieldName: 'config' })
     })
 
     it('ignores itemId foreign key field', () => {
@@ -1484,12 +1507,14 @@ describe('ConflictDetectionService', () => {
         )
 
         // Modify in each ECO
-        const [branchItem] = await testDb.db
-          .select()
-          .from(branchItems)
-          .where(eq(branchItems.branchId, branch.id))
+        const branchItem = takeFirst(
+          await testDb.db
+            .select()
+            .from(branchItems)
+            .where(eq(branchItems.branchId, branch.id)),
+        )
 
-        if (branchItem?.currentItemId) {
+        if (branchItem.currentItemId) {
           await testDb.db
             .update(items)
             .set({ name: `ECO-${i + 1} Modified Name` })
@@ -1749,13 +1774,15 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, branch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, branch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, branch.id)),
+      )
 
       // Modify our copy
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'Changed Name' })
@@ -1805,12 +1832,14 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, branch.id, user.id)
 
       // Get branch item before rebase
-      const [branchItemBefore] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, branch.id))
+      const branchItemBefore = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, branch.id)),
+      )
 
-      const originalCurrentId = branchItemBefore?.currentItemId
+      const originalCurrentId = branchItemBefore.currentItemId
 
       // Create new base version
       const newBase = await ItemService.create(
@@ -1836,10 +1865,12 @@ describe('ConflictDetectionService', () => {
       expect(result.success).toBe(true)
 
       // Verify branch item references were updated
-      const [branchItemAfter] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.id, branchItemBefore.id))
+      const branchItemAfter = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.id, branchItemBefore.id)),
+      )
 
       expect(branchItemAfter.baseItemId).toBe(newBase.id)
       expect(branchItemAfter.currentItemId).not.toBe(originalCurrentId)

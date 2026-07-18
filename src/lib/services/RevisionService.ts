@@ -90,7 +90,7 @@ export class RevisionService {
         chars[i] = 'A'
         i--
       } else {
-        chars[i] = String.fromCharCode(chars[i].charCodeAt(0) + 1)
+        chars[i] = String.fromCharCode(chars[i]!.charCodeAt(0) + 1)
         return chars.join('')
       }
     }

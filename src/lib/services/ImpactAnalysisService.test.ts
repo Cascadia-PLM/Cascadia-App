@@ -76,7 +76,7 @@ describe('ImpactAnalysisService', () => {
       },
       user.id,
     )
-    designId = design.id
+    designId = design.id!
   })
 
   afterEach(async () => {
@@ -276,9 +276,11 @@ describe('ImpactAnalysisService', () => {
       })
 
       expect(result.impactedItems).toHaveLength(1)
-      expect(result.impactedItems[0].item.id).toBe(assembly.id)
-      expect(result.impactedItems[0].depth).toBe(1)
-      expect(result.impactedItems[0].impactType).toBe('direct')
+      expect(result.impactedItems[0]).toMatchObject({
+        item: { id: assembly.id },
+        depth: 1,
+        impactType: 'direct',
+      })
     })
 
     it('traverses multi-level BOM hierarchy upstream', async () => {
@@ -356,8 +358,10 @@ describe('ImpactAnalysisService', () => {
 
       // Should only find SubAssembly (depth 1), not Component (depth 2)
       expect(result.impactedItems).toHaveLength(1)
-      expect(result.impactedItems[0].item.id).toBe(subAssembly.id)
-      expect(result.impactedItems[0].depth).toBe(1)
+      expect(result.impactedItems[0]).toMatchObject({
+        item: { id: subAssembly.id },
+        depth: 1,
+      })
     })
 
     it('defaults to maxDepth=5 when not specified', async () => {
@@ -476,7 +480,7 @@ describe('ImpactAnalysisService', () => {
       })
 
       expect(result.impactedItems).toHaveLength(1)
-      expect(result.impactedItems[0].severity).toBe('high')
+      expect(result.impactedItems[0]).toMatchObject({ severity: 'high' })
     })
 
     it('assigns critical severity to Released items with obsolescence change type', async () => {
@@ -498,7 +502,7 @@ describe('ImpactAnalysisService', () => {
       })
 
       expect(result.impactedItems).toHaveLength(1)
-      expect(result.impactedItems[0].severity).toBe('critical')
+      expect(result.impactedItems[0]).toMatchObject({ severity: 'critical' })
     })
 
     it('assigns high severity to Released items with non-obsolescence change type', async () => {
@@ -519,7 +523,7 @@ describe('ImpactAnalysisService', () => {
       })
 
       expect(result.impactedItems).toHaveLength(1)
-      expect(result.impactedItems[0].severity).toBe('high')
+      expect(result.impactedItems[0]).toMatchObject({ severity: 'high' })
     })
 
     it('assigns medium severity to indirect impacts (depth 2-3)', async () => {
@@ -941,7 +945,7 @@ describe('ImpactAnalysisService', () => {
         direction: 'downstream',
       })
 
-      expect(result.impactedItems[0].reason).toContain('BOM')
+      expect(result.impactedItems[0]?.reason).toContain('BOM')
     })
 
     it('generates obsolescence action for BOM items', async () => {
@@ -956,7 +960,7 @@ describe('ImpactAnalysisService', () => {
         direction: 'downstream',
       })
 
-      expect(result.impactedItems[0].requiredAction).toContain(
+      expect(result.impactedItems[0]?.requiredAction).toContain(
         'replacement part',
       )
     })
@@ -1018,8 +1022,8 @@ describe('ImpactAnalysisService', () => {
         direction: 'downstream',
       })
 
-      expect(result.impactedItems[0].impactPath).toContain(assembly.itemNumber)
-      expect(result.impactedItems[0].impactPath).toContain(child.itemNumber)
+      expect(result.impactedItems[0]?.impactPath).toContain(assembly.itemNumber)
+      expect(result.impactedItems[0]?.impactPath).toContain(child.itemNumber)
     })
   })
 })

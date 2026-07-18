@@ -38,9 +38,7 @@ export const workflowTransitionHandler: JobHandler<
     let emailsFailed = 0
     const failedRecipients: Array<{ email: string; error: string }> = []
 
-    for (let i = 0; i < recipients.length; i++) {
-      const recipient = recipients[i]
-
+    for (const [i, recipient] of recipients.entries()) {
       // Check for cancellation
       if (context.signal.aborted) {
         throw new Error('Job was cancelled')

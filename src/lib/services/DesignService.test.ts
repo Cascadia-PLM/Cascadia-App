@@ -210,8 +210,10 @@ describe('DesignService', () => {
         user.id,
       )
 
-      expect(updated.name).toBe('Updated Name')
-      expect(updated.description).toBe('New description')
+      expect(updated).toMatchObject({
+        name: 'Updated Name',
+        description: 'New description',
+      })
     })
 
     it('should throw NotFoundError for non-existent design', async () => {
@@ -335,7 +337,7 @@ describe('DesignService', () => {
 
       expect(page1.length).toBe(2)
       expect(page2.length).toBe(2)
-      expect(page1[0].id).not.toBe(page2[0].id)
+      expect(page1[0]!.id).not.toBe(page2[0]!.id)
     })
   })
 
@@ -377,7 +379,7 @@ describe('DesignService', () => {
       })
 
       expect(result.items.length).toBeGreaterThanOrEqual(1)
-      expect(result.items[0].name).toBe(uniqueName)
+      expect(result.items[0]).toMatchObject({ name: uniqueName })
     })
 
     it('should filter by designType via column filters', async () => {
@@ -413,7 +415,7 @@ describe('DesignService', () => {
       // All items should be sorted by name ascending
       for (let i = 1; i < result.items.length; i++) {
         expect(
-          result.items[i].name.localeCompare(result.items[i - 1].name),
+          result.items[i]!.name.localeCompare(result.items[i - 1]!.name),
         ).toBeGreaterThanOrEqual(0)
       }
     })
@@ -526,7 +528,7 @@ describe('DesignService', () => {
 
     beforeEach(async () => {
       const design = await createDesign({ name: 'Tag Design' })
-      designId = design.id
+      designId = design.id!
     })
 
     it('should create a tag on the main branch HEAD', async () => {
@@ -574,8 +576,8 @@ describe('DesignService', () => {
       const tagList = await DesignService.listTags(designId)
       expect(tagList.length).toBe(2)
       // Most recent first (descending by createdAt)
-      expect(tagList[0].createdAt.getTime()).toBeGreaterThanOrEqual(
-        tagList[1].createdAt.getTime(),
+      expect(tagList[0]!.createdAt.getTime()).toBeGreaterThanOrEqual(
+        tagList[1]!.createdAt.getTime(),
       )
     })
 
@@ -707,7 +709,7 @@ describe('DesignService', () => {
         user.id,
       )
 
-      expect(updated.parentDesignId).toBe(family.id)
+      expect(updated).toMatchObject({ parentDesignId: family.id })
     })
 
     it('should throw when setting self as parent', async () => {
@@ -750,7 +752,7 @@ describe('DesignService', () => {
       })
 
       const updated = await DesignService.removeFromFamily(child.id, user.id)
-      expect(updated.parentDesignId).toBeNull()
+      expect(updated).toMatchObject({ parentDesignId: null })
     })
 
     it('should throw NotFoundError when design does not exist', async () => {
@@ -802,7 +804,7 @@ describe('DesignService', () => {
 
       expect(familyEntry).toBeDefined()
       expect(familyEntry!.children.length).toBe(1)
-      expect(familyEntry!.children[0].name).toBe('Child Design')
+      expect(familyEntry!.children[0]).toMatchObject({ name: 'Child Design' })
     })
 
     it('should include standalone designs with empty children array', async () => {
@@ -829,7 +831,7 @@ describe('DesignService', () => {
 
       const branchList = await DesignService.getBranches(design.id)
       expect(branchList.length).toBeGreaterThanOrEqual(1)
-      expect(branchList[0].name).toBe('main')
+      expect(branchList[0]).toMatchObject({ name: 'main' })
     })
 
     it('should throw NotFoundError for non-existent design', async () => {

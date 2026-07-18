@@ -23,6 +23,7 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { insertTestPart } from '@/__tests__/fixtures/items'
 import { items } from '@/lib/db/schema'
+import { takeFirst } from '@/lib/db/take-first'
 
 describe('WorkflowService', () => {
   const testDb = new TestDatabase()
@@ -506,8 +507,7 @@ describe('WorkflowService', () => {
       const history = await WorkflowService.getHistory(instance.id)
 
       expect(history).toHaveLength(1)
-      expect(history[0].action).toBe('started')
-      expect(history[0].toState).toBe('draft')
+      expect(history[0]).toMatchObject({ action: 'started', toState: 'draft' })
     })
 
     it('throws error for non-existent workflow', async () => {
@@ -782,7 +782,7 @@ describe('WorkflowService', () => {
         .select()
         .from(items)
         .where(eq(items.id, item.id))
-      expect(updatedItem.state).toBe('review')
+      expect(updatedItem).toMatchObject({ state: 'review' })
     })
 
     it('marks instance complete on final state', async () => {
@@ -1277,8 +1277,8 @@ describe('WorkflowService Edge Cases', () => {
       }
 
       const workflow = await WorkflowService.create(input)
-      expect(workflow.states[0].name).toBe('Draft (Initial)')
-      expect(workflow.states[1].name).toBe('In-Review / Pending')
+      expect(workflow.states[0]).toMatchObject({ name: 'Draft (Initial)' })
+      expect(workflow.states[1]).toMatchObject({ name: 'In-Review / Pending' })
     })
 
     it('handles unicode in state and transition names', async () => {
@@ -1321,7 +1321,7 @@ describe('WorkflowService Edge Cases', () => {
 
       const workflow = await WorkflowService.create(input)
       // Name may be truncated or accepted depending on DB constraints
-      expect(workflow.states[0].name.length).toBeGreaterThan(0)
+      expect(workflow.states[0]?.name.length).toBeGreaterThan(0)
     })
 
     it('handles empty state name', async () => {
@@ -2879,13 +2879,15 @@ describe('WorkflowService send_notification Action', () => {
   it('handles send_notification with role recipients', async () => {
     // Create a role and user with that role
     const { roles, userRoles } = await import('../db/schema')
-    const testRole = await testDb.db
-      .insert(roles)
-      .values({
-        name: `notif-role-${testPrefix}`,
-        description: 'Test notification role',
-      })
-      .returning()
+    const testRole = takeFirst(
+      await testDb.db
+        .insert(roles)
+        .values({
+          name: `notif-role-${testPrefix}`,
+          description: 'Test notification role',
+        })
+        .returning(),
+    )
 
     const roleUser = await insertTestUser(testDb.db, {
       name: 'Role User',
@@ -2893,7 +2895,7 @@ describe('WorkflowService send_notification Action', () => {
     })
     await testDb.db.insert(userRoles).values({
       userId: roleUser.id,
-      roleId: testRole[0].id,
+      roleId: testRole.id,
     })
 
     const workflow = await WorkflowService.create({
@@ -2917,7 +2919,7 @@ describe('WorkflowService send_notification Action', () => {
               type: 'send_notification',
               executeOn: 'after',
               config: {
-                recipients: [{ type: 'role', id: testRole[0].id }],
+                recipients: [{ type: 'role', id: testRole.id }],
                 templateId: 'workflow_transition',
               },
             },
@@ -3125,7 +3127,7 @@ describe('WorkflowService send_notification Design Access', () => {
     const { DesignService } = await import('../services/DesignService')
     const code =
       `DES-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`.toUpperCase()
-    return DesignService.create(
+    const design = await DesignService.create(
       {
         name: 'Test Design',
         code,
@@ -3134,6 +3136,8 @@ describe('WorkflowService send_notification Design Access', () => {
       },
       userId,
     )
+    expect(design).toBeDefined()
+    return design
   }
 
   // Helper to generate unique email
@@ -3442,13 +3446,15 @@ describe('WorkflowService send_notification Design Access', () => {
     const { roles, userRoles } = await import('../db/schema')
 
     // Create a role
-    const testRole = await testDb.db
-      .insert(roles)
-      .values({
-        name: `inactive-role-${testPrefix}`,
-        description: 'Test role for inactive users',
-      })
-      .returning()
+    const testRole = takeFirst(
+      await testDb.db
+        .insert(roles)
+        .values({
+          name: `inactive-role-${testPrefix}`,
+          description: 'Test role for inactive users',
+        })
+        .returning(),
+    )
 
     // Create an active user with the role
     const activeUser = await insertTestUser(testDb.db, {
@@ -3457,7 +3463,7 @@ describe('WorkflowService send_notification Design Access', () => {
     })
     await testDb.db.insert(userRoles).values({
       userId: activeUser.id,
-      roleId: testRole[0].id,
+      roleId: testRole.id,
     })
 
     // Create an inactive user with the role
@@ -3472,7 +3478,7 @@ describe('WorkflowService send_notification Design Access', () => {
       .where(eq(users.id, inactiveUser.id))
     await testDb.db.insert(userRoles).values({
       userId: inactiveUser.id,
-      roleId: testRole[0].id,
+      roleId: testRole.id,
     })
 
     const workflow = await WorkflowService.create({
@@ -3496,7 +3502,7 @@ describe('WorkflowService send_notification Design Access', () => {
               type: 'send_notification',
               executeOn: 'after',
               config: {
-                recipients: [{ type: 'role', id: testRole[0].id }],
+                recipients: [{ type: 'role', id: testRole.id }],
                 templateId: 'workflow_transition',
               },
             },
@@ -4046,8 +4052,9 @@ describe('WorkflowService send_notification Design Access', () => {
         )
 
         expect(transitions).toHaveLength(1)
-        expect(transitions[0].transition.name).toBe('Submit')
-        expect(transitions[0].transition.toStateId).toBe('review')
+        expect(transitions[0]).toMatchObject({
+          transition: { name: 'Submit', toStateId: 'review' },
+        })
       })
 
       it('executes transitions using instance structure', async () => {

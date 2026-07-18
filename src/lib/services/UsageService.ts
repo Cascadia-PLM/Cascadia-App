@@ -482,7 +482,7 @@ export class UsageService {
       .from(items)
       .where(and(eq(items.usageOf, definition.id), notDeleted()))
 
-    return Number(result.count)
+    return Number(result!.count)
   }
 
   // ============================================================================

@@ -8,6 +8,7 @@ import type {
   EnrichedItemConflict,
 } from './types/conflict-review'
 import { takeFirst } from '@/lib/db/take-first'
+import { NotFoundError } from '@/lib/errors'
 
 /**
  * Service for managing conflict reviews on ECOs.
@@ -87,6 +88,12 @@ export class ConflictReviewService {
         })
         .where(eq(conflictReviews.id, existing.id))
         .returning()
+
+      if (!updated) {
+        throw new NotFoundError('Conflict Review', existing.id, {
+          operation: 'markAsReviewed',
+        })
+      }
 
       return {
         ...updated,

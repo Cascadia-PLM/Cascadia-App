@@ -74,13 +74,14 @@ export class BranchService {
       .where(and(eq(items.id, changeOrderItemId), notDeleted()))
       .limit(1)
 
-    if (!changeOrderItem.at(0)) {
+    const changeOrder = changeOrderItem[0]
+    if (!changeOrder) {
       throw new NotFoundError('Change Order', changeOrderItemId, {
         operation: 'createEcoBranch',
       })
     }
 
-    const branchName = `eco/${changeOrderItem[0].itemNumber}`
+    const branchName = `eco/${changeOrder.itemNumber}`
 
     // Check if branch already exists
     const existing = await this.getByName(designId, branchName)
@@ -196,7 +197,8 @@ export class BranchService {
       .where(eq(tags.id, tagId))
       .limit(1)
 
-    if (!tag.at(0)) {
+    const sourceTag = tag[0]
+    if (!sourceTag) {
       throw new NotFoundError('Tag', tagId, {
         operation: 'createReleaseBranch',
       })
@@ -207,7 +209,7 @@ export class BranchService {
       name: branchName,
       branchType: 'release',
       sourceTagId: tagId,
-      baseCommitId: tag[0].commitId,
+      baseCommitId: sourceTag.commitId,
       userId,
     })
   }
@@ -229,13 +231,14 @@ export class BranchService {
       .where(and(eq(items.id, changeOrderItemId), notDeleted()))
       .limit(1)
 
-    if (!changeOrderItem.at(0)) {
+    const changeOrder = changeOrderItem[0]
+    if (!changeOrder) {
       throw new NotFoundError('Change Order', changeOrderItemId, {
         operation: 'getOrCreateEcoBranch',
       })
     }
 
-    const branchName = `eco/${changeOrderItem[0].itemNumber}`
+    const branchName = `eco/${changeOrder.itemNumber}`
 
     // Check if branch already exists
     const existing = await this.getByName(designId, branchName)

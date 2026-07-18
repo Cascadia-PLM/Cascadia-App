@@ -231,9 +231,9 @@ export class CommitService {
           fieldCategory: string
         }> = []
 
-        for (let i = 0; i < validated.itemChanges.length; i++) {
-          const change = validated.itemChanges[i]
+        for (const [i, change] of validated.itemChanges.entries()) {
           const itemVersion = insertedVersions[i]
+          if (!itemVersion) continue
 
           if (change.fieldChanges && change.fieldChanges.length > 0) {
             for (const fc of change.fieldChanges) {
@@ -461,9 +461,8 @@ export class CommitService {
         .where(eq(branches.id, branchId))
         .limit(1)
 
-      if (branch.length > 0) {
-        const branchInfo = branch[0]
-
+      const branchInfo = branch[0]
+      if (branchInfo) {
         if (branchInfo.branchType === 'main') {
           // Main branch: only show commits on main (exclude unmerged ECO commits)
           branchFilterCondition = eq(commits.branchId, branchId)
@@ -482,8 +481,9 @@ export class CommitService {
               .where(eq(commits.id, branchInfo.baseCommitId))
               .limit(1)
 
-            if (baseCommit.length > 0) {
-              const forkTimestamp = baseCommit[0].createdAt
+            const baseCommitRow = baseCommit[0]
+            if (baseCommitRow) {
+              const forkTimestamp = baseCommitRow.createdAt
               // ECO branch commits OR main branch commits at or before the fork
               branchFilterCondition = or(
                 eq(commits.branchId, branchId),

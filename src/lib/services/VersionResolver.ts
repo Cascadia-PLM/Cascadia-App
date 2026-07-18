@@ -269,12 +269,13 @@ export class VersionResolver {
       .where(eq(commits.id, commitId))
       .limit(1)
 
-    if (!commit.at(0)) {
+    const commitRow = commit[0]
+    if (!commitRow) {
       return null
     }
 
     // Walk backwards through commit history to find the item version
-    return this.walkCommitHistory(itemMasterId, commitId, commit[0].designId)
+    return this.walkCommitHistory(itemMasterId, commitId, commitRow.designId)
   }
 
   /**
@@ -286,11 +287,12 @@ export class VersionResolver {
   ): Promise<typeof items.$inferSelect | null> {
     const tag = await db.select().from(tags).where(eq(tags.id, tagId)).limit(1)
 
-    if (!tag.at(0)) {
+    const tagRow = tag[0]
+    if (!tagRow) {
       return null
     }
 
-    return this.getItemAtCommit(itemMasterId, tag[0].commitId)
+    return this.getItemAtCommit(itemMasterId, tagRow.commitId)
   }
 
   /**
@@ -390,8 +392,9 @@ export class VersionResolver {
           .from(items)
           .where(and(eq(items.id, branchItem.currentItemId), notDeleted()))
           .limit(1)
-        if (branchVersion.at(0)) {
-          result.push(branchVersion[0])
+        const branchVersionRow = branchVersion[0]
+        if (branchVersionRow) {
+          result.push(branchVersionRow)
         }
       } else if (!branchItem || branchItem.changeType !== 'deleted') {
         // Use released version
@@ -415,8 +418,9 @@ export class VersionResolver {
           .from(items)
           .where(and(eq(items.id, bi.currentItemId), notDeleted()))
           .limit(1)
-        if (addedItem.at(0)) {
-          result.push(addedItem[0])
+        const addedItemRow = addedItem[0]
+        if (addedItemRow) {
+          result.push(addedItemRow)
         }
       }
     }
@@ -439,11 +443,12 @@ export class VersionResolver {
       .where(eq(commits.id, commitId))
       .limit(1)
 
-    if (!commit.at(0)) {
+    const commitRow = commit[0]
+    if (!commitRow) {
       return { items: [], total: 0 }
     }
 
-    const designId = commit[0].designId
+    const designId = commitRow.designId
 
     // Get all commit ancestors in one query using recursive CTE
     const commitAncestors = await this.getCommitAncestors(commitId)
@@ -531,11 +536,12 @@ export class VersionResolver {
   ): Promise<PaginatedItemsResult> {
     const tag = await db.select().from(tags).where(eq(tags.id, tagId)).limit(1)
 
-    if (!tag.at(0)) {
+    const tagRow = tag[0]
+    if (!tagRow) {
       return { items: [], total: 0 }
     }
 
-    return this.getItemsAtCommit(tag[0].commitId, filters)
+    return this.getItemsAtCommit(tagRow.commitId, filters)
   }
 
   /**
@@ -674,7 +680,6 @@ export class VersionResolver {
       for (const [columnId, filterValue] of Object.entries(
         filters.columnFilters,
       )) {
-
         result = result.filter((item) => {
           const itemValue = this.getItemFieldValue(item, columnId)
 
@@ -765,8 +770,9 @@ export class VersionResolver {
       modifiedAt: 'modifiedAt',
     }
 
-    if (fieldName in baseFields) {
-      return item[baseFields[fieldName]]
+    const baseField = baseFields[fieldName]
+    if (baseField) {
+      return item[baseField]
     }
 
     // For type-specific fields, they would need to be joined/enriched
@@ -795,8 +801,9 @@ export class VersionResolver {
           .from(commits)
           .where(eq(commits.id, context.commitId))
           .limit(1)
-        return commit.at(0)
-          ? `Commit: ${commit[0].message.slice(0, 50)}`
+        const commitRow = commit[0]
+        return commitRow
+          ? `Commit: ${commitRow.message.slice(0, 50)}`
           : 'Unknown commit'
       }
 
@@ -806,7 +813,8 @@ export class VersionResolver {
           .from(tags)
           .where(eq(tags.id, context.tagId))
           .limit(1)
-        return tag.at(0) ? `Tag: ${tag[0].name}` : 'Unknown tag'
+        const tagRow = tag[0]
+        return tagRow ? `Tag: ${tagRow.name}` : 'Unknown tag'
       }
 
       default:
@@ -882,9 +890,10 @@ export class VersionResolver {
             )
             .limit(1)
 
+          const branchItemRow = branchItem[0]
           exists =
-            branchItem.at(0) !== undefined &&
-            branchItem[0].changeType !== 'deleted'
+            branchItemRow !== undefined &&
+            branchItemRow.changeType !== 'deleted'
         } else {
           // For workspace/release branches, check branchItems or base commit
           // First check if item was added/modified on this branch
@@ -899,9 +908,10 @@ export class VersionResolver {
             )
             .limit(1)
 
-          if (branchItem.at(0)) {
+          const branchItemRow = branchItem[0]
+          if (branchItemRow) {
             // Item is tracked on this branch
-            exists = branchItem[0].changeType !== 'deleted'
+            exists = branchItemRow.changeType !== 'deleted'
           } else if (branch.baseCommitId) {
             // Item not modified on branch - check if it exists in base commit ancestry
             const itemAtBase = await this.walkCommitHistory(

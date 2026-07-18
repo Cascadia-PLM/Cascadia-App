@@ -107,7 +107,7 @@ describe('CommitService', () => {
       const commits = await CommitService.getByBranch(design.mainBranch!.id)
 
       expect(commits.length).toBeGreaterThanOrEqual(1)
-      expect(commits[0].branchId).toBe(design.mainBranch!.id)
+      expect(commits[0]).toMatchObject({ branchId: design.mainBranch!.id })
     })
 
     it('supports pagination with limit and offset', async () => {
@@ -161,7 +161,7 @@ describe('CommitService', () => {
 
       expect(page1.length).toBe(1)
       expect(page2.length).toBe(1)
-      expect(page1[0].id).not.toBe(page2[0].id)
+      expect(page1[0]!.id).not.toBe(page2[0]!.id)
     })
 
     it('returns empty array for branch with no commits', async () => {
@@ -673,7 +673,7 @@ describe('CommitService', () => {
 
       expect(page1.length).toBe(2)
       if (page1.length > 0 && page2.length > 0) {
-        expect(page1[0].id).not.toBe(page2[0].id)
+        expect(page1[0]!.id).not.toBe(page2[0]!.id)
       }
     })
   })
@@ -723,7 +723,7 @@ describe('CommitService', () => {
       expect(diff).toBeDefined()
       expect(diff?.commit.id).toBe(commit.id)
       expect(diff?.items.length).toBe(1)
-      expect(diff?.items[0].changeType).toBe('added')
+      expect(diff?.items[0]).toMatchObject({ changeType: 'added' })
     })
 
     it('returns null for non-existent commit', async () => {
@@ -776,7 +776,7 @@ describe('CommitService', () => {
       const history = await CommitService.getItemCommits(masterId, design.id)
 
       expect(history.length).toBeGreaterThanOrEqual(1)
-      expect(history[0].item.masterId).toBe(masterId)
+      expect(history[0]!.item.masterId).toBe(masterId)
     })
 
     it('returns empty array for non-existent item', async () => {
@@ -1504,7 +1504,7 @@ describe('CommitService', () => {
 
         // Should only return the first commit
         expect(historyWithCutoff.length).toBe(1)
-        expect(historyWithCutoff[0].changeType).toBe('added')
+        expect(historyWithCutoff[0]).toMatchObject({ changeType: 'added' })
       })
 
       it('includes field changes in history entries', async () => {
@@ -1952,7 +1952,7 @@ describe('CommitService', () => {
         )
         expect(partChanges.length).toBe(1)
         // When added first, then modified, should keep 'added' type (original was added to branch)
-        expect(partChanges[0].changeType).toBe('added')
+        expect(partChanges[0]).toMatchObject({ changeType: 'added' })
       })
     })
   })

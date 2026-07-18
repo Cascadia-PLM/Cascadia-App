@@ -48,9 +48,9 @@ export class WorkOrderService {
       .leftJoin(items, eq(workOrders.partId, items.id))
       .where(eq(workOrders.id, id))
 
-    if (results.length === 0) return null
-
     const row = results[0]
+    if (!row) return null
+
     return {
       ...row.workOrder,
       part: row.partItemNumber
@@ -202,11 +202,11 @@ export class WorkOrderService {
       .from(workOrders)
       .where(eq(workOrders.id, id))
 
-    if (existing.length === 0) {
+    const current = existing[0]
+    if (!current) {
       throw new NotFoundError('Work Order', id)
     }
 
-    const current = existing[0]
     const currentStatus = current.status as WorkOrderStatus
 
     // Validate transitions

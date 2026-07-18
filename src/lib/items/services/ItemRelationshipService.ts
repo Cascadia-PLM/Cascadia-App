@@ -477,10 +477,10 @@ export class ItemRelationshipService {
       .where(eq(itemRelationships.id, relationshipId))
       .limit(1)
 
-    if (relationshipResults.length === 0) {
+    const relationship = relationshipResults[0]
+    if (!relationship) {
       throw new NotFoundError('ItemRelationship', relationshipId)
     }
-    const relationship = relationshipResults[0]
 
     await db
       .delete(itemRelationships)
@@ -595,6 +595,10 @@ export class ItemRelationshipService {
       .set(updateData)
       .where(eq(itemRelationships.id, relationshipId))
       .returning()
+
+    if (!updated) {
+      throw new NotFoundError('ItemRelationship', relationshipId)
+    }
 
     // Track relationship update in history
     const sourceItem = await ItemService.findById(existing.sourceId)

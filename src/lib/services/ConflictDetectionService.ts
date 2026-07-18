@@ -436,16 +436,17 @@ export class ConflictDetectionService {
       )
       .limit(1)
 
-    if (!mainBranchItem.at(0) || !mainBranchItem[0].currentItemId) {
+    const mainCurrentItemId = mainBranchItem[0]?.currentItemId
+    if (!mainCurrentItemId) {
       return null
     }
 
     // If main's current item is different from our base, there was a change
-    if (mainBranchItem[0].currentItemId !== baseItemId) {
+    if (mainCurrentItemId !== baseItemId) {
       const mainItem = await db
         .select()
         .from(items)
-        .where(eq(items.id, mainBranchItem[0].currentItemId))
+        .where(eq(items.id, mainCurrentItemId))
         .limit(1)
 
       return mainItem.at(0) || null
@@ -801,7 +802,8 @@ export class ConflictDetectionService {
       .where(eq(branchItems.id, branchItemId))
       .limit(1)
 
-    if (!branchItemResult.at(0)) {
+    const bi = branchItemResult[0]
+    if (!bi) {
       return {
         success: false,
         itemMasterId: '',
@@ -812,8 +814,6 @@ export class ConflictDetectionService {
         error: 'Branch item not found',
       }
     }
-
-    const bi = branchItemResult[0]
 
     // Get current working copy, old base, and new base
     const [ourItem, oldBase, newBase] = await Promise.all([
@@ -945,15 +945,14 @@ export class ConflictDetectionService {
       .where(eq(branchItems.id, branchItemId))
       .limit(1)
 
-    if (!branchItemResult.at(0)) {
+    const bi = branchItemResult[0]
+    if (!bi) {
       return {
         success: false,
         itemMasterId: '',
         error: 'Branch item not found',
       }
     }
-
-    const bi = branchItemResult[0]
 
     // Get our current working copy and main's item
     const [ourItem, mainItem] = await Promise.all([

@@ -436,7 +436,7 @@ describe('BranchService', () => {
       })
 
       expect(ecoBranches.length).toBe(1)
-      expect(ecoBranches[0].branchType).toBe('eco')
+      expect(ecoBranches[0]!.branchType).toBe('eco')
     })
 
     it('excludes archived branches by default', async () => {
@@ -481,8 +481,8 @@ describe('BranchService', () => {
       const branches = await BranchService.listByUser(user.id)
 
       expect(branches.length).toBe(1)
-      expect(branches[0].branchType).toBe('workspace')
-      expect(branches[0].ownerId).toBe(user.id)
+      expect(branches[0]!.branchType).toBe('workspace')
+      expect(branches[0]!.ownerId).toBe(user.id)
     })
   })
 
@@ -499,7 +499,7 @@ describe('BranchService', () => {
       const branches = await BranchService.listByChangeOrder(changeOrder.id)
 
       expect(branches.length).toBe(1)
-      expect(branches[0].changeOrderItemId).toBe(changeOrder.id)
+      expect(branches[0]!.changeOrderItemId).toBe(changeOrder.id)
     })
   })
 

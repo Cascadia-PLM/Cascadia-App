@@ -155,7 +155,8 @@ export class JobService {
       .where(eq(jobs.id, jobId))
       .limit(1)
 
-    return results.length > 0 ? this.mapToJob(results[0]) : null
+    const row = results[0]
+    return row ? this.mapToJob(row) : null
   }
 
   /**
@@ -290,6 +291,10 @@ export class JobService {
       })
       .where(eq(jobs.id, jobId))
       .returning()
+
+    if (!updated) {
+      throw new NotFoundError('Job', jobId, { operation: 'retry' })
+    }
 
     // Re-queue
     await RabbitMQClient.publish(config.routingKey, {

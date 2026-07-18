@@ -619,8 +619,8 @@ export class WorkflowService {
       .where(eq(workflowInstances.id, instanceId))
       .limit(1)
 
-    if (results.length === 0) return null
     const result = results[0]
+    if (!result) return null
     return {
       id: result.id,
       workflowDefinitionId: result.workflowDefinitionId!,
@@ -647,8 +647,8 @@ export class WorkflowService {
       .orderBy(desc(workflowInstances.startedAt))
       .limit(1)
 
-    if (instanceResults.length === 0) return null
     const result = instanceResults[0]
+    if (!result) return null
     return {
       id: result.id,
       workflowDefinitionId: result.workflowDefinitionId!,
@@ -1936,11 +1936,11 @@ export class WorkflowService {
       const latestEntry = history[0] // Most recent is first (ordered by desc)
 
       const fromStateName =
-        definition?.states.find((s) => s.id === latestEntry.fromState)?.name ??
-        latestEntry.fromState
+        definition?.states.find((s) => s.id === latestEntry?.fromState)?.name ??
+        latestEntry?.fromState
       const toStateName =
-        definition?.states.find((s) => s.id === latestEntry.toState)?.name ??
-        latestEntry.toState
+        definition?.states.find((s) => s.id === latestEntry?.toState)?.name ??
+        latestEntry?.toState
 
       // Submit notification job
       await JobService.submit(

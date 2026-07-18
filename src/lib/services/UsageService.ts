@@ -13,6 +13,7 @@ import {
 } from '../db/schema/items'
 import { NotFoundError } from '../errors'
 import type { BaseItem } from '../items/types/base'
+import type { TestStep } from '../items/types/testcase'
 
 /**
  * Transaction client type for database operations
@@ -213,7 +214,10 @@ export class UsageService {
     const client = tx ?? db
 
     // 1. Resolve the canonical definition (follows usageOf chain)
-    const definition = await this.resolveDefinition(input.definitionId, client)
+    // Pass tx, not client: resolveDefinition applies its own `?? db` fallback,
+    // and its param is TransactionClient (a transaction), which the
+    // `tx ?? db` union of `client` does not satisfy.
+    const definition = await this.resolveDefinition(input.definitionId, tx)
     if (!definition) {
       throw new NotFoundError('Definition', input.definitionId, {
         operation: 'createUsage',
@@ -742,7 +746,7 @@ export class UsageService {
           testPlanId: (data.testPlanId as string | undefined) ?? null,
           testType: (data.testType as string | undefined) ?? null,
           preconditions: (data.preconditions as string | undefined) ?? null,
-          steps: (data.steps as Array<unknown> | undefined) ?? null,
+          steps: (data.steps as Array<TestStep> | undefined) ?? null,
           executionStatus: (data.executionStatus as string | undefined) ?? null,
           lastExecutedAt: (data.lastExecutedAt as Date | undefined) ?? null,
           lastExecutedBy: (data.lastExecutedBy as string | undefined) ?? null,

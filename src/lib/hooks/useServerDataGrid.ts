@@ -126,7 +126,7 @@ export function useServerDataGrid<T>(
 
   // Debounced global search state
   const [debouncedSearch, setDebouncedSearch] = useState(urlState.search)
-  const debounceTimerRef = useRef<NodeJS.Timeout>()
+  const debounceTimerRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   // Update debounced search when URL search changes
   useEffect(() => {
@@ -145,7 +145,10 @@ export function useServerDataGrid<T>(
     // Convert column filters to server format
     const columnFiltersMap: ServerDataGridParams['columnFilters'] = {}
     for (const filter of urlState.columnFilters) {
-      columnFiltersMap[filter.id] = filter.value
+      // TanStack Table types a filter value as `unknown`; the DataGrid only
+      // ever stores the shapes ServerDataGridParams allows.
+      columnFiltersMap[filter.id] =
+        filter.value as NonNullable<ServerDataGridParams['columnFilters']>[string]
     }
 
     return {
@@ -169,6 +172,9 @@ export function useServerDataGrid<T>(
   // Update URL when state changes
   const updateUrl = useCallback(
     (updates: Record<string, unknown>, resetPage = false) => {
+      // Type assertion for the navigate options since this hook is
+      // route-agnostic and TanStack Router's strict typing requires knowing
+      // the specific route (see useVersionContext for the same pattern).
       navigate({
         search: (prev: Record<string, unknown>) => {
           const newParams = { ...prev, ...updates }
@@ -188,7 +194,7 @@ export function useServerDataGrid<T>(
           return newParams
         },
         replace: true, // Don't add to history stack for state changes
-      })
+      } as Parameters<typeof navigate>[0])
     },
     [navigate],
   )

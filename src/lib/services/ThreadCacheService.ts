@@ -213,7 +213,7 @@ export class ThreadCacheService {
 
     // Drizzle doesn't return row count directly, we need to count affected
     // This is a workaround since PostgreSQL UPDATE doesn't return count in Drizzle
-    return result.rowCount ?? 0
+    return result.count
   }
 
   /**
@@ -321,7 +321,7 @@ export class ThreadCacheService {
       ),
     )
 
-    return result.rowCount ?? 0
+    return result.count
   }
 
   /**
@@ -330,7 +330,7 @@ export class ThreadCacheService {
    */
   static async clearAll(): Promise<number> {
     const result = await db.delete(threadPathCache)
-    return result.rowCount ?? 0
+    return result.count
   }
 
   /**

@@ -2575,8 +2575,8 @@ app.get(
 app.get(
   '/:itemId/cad-files',
   adapt(
-    apiHandler({}, async ({ request, params }) => {
-      const { itemId } = params as { itemId: string }
+    apiHandler<{ itemId: string }>({}, async ({ request, params }) => {
+      const { itemId } = params
 
       const url = new URL(request.url)
       const branchId = url.searchParams.get('branchId') || undefined
@@ -2669,10 +2669,10 @@ app.get(
 app.get(
   '/:itemId/files',
   adapt(
-    apiHandler(
+    apiHandler<{ itemId: string }>(
       { permission: ['documents', 'read'] },
       async ({ request, params }) => {
-        const { itemId } = params as { itemId: string }
+        const { itemId } = params
 
         // Parse query parameters for version context
         const url = new URL(request.url)
@@ -2696,17 +2696,20 @@ app.get(
 app.get(
   '/:itemId/files/primary',
   adapt(
-    apiHandler({ permission: ['documents', 'read'] }, async ({ params }) => {
-      const { itemId } = params as { itemId: string }
+    apiHandler<{ itemId: string }>(
+      { permission: ['documents', 'read'] },
+      async ({ params }) => {
+        const { itemId } = params
 
-      const file = await FileService.getPrimaryModel(itemId)
+        const file = await FileService.getPrimaryModel(itemId)
 
-      if (!file) {
-        return { hasPrimary: false, file: null }
-      }
+        if (!file) {
+          return { hasPrimary: false, file: null }
+        }
 
-      return { hasPrimary: true, file }
-    }),
+        return { hasPrimary: true, file }
+      },
+    ),
   ),
 )
 
@@ -2714,9 +2717,9 @@ app.get(
 app.put(
   '/:itemId/files/primary',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ itemId: string }>({}, async ({ request, params, user }) => {
       const userId = user.id
-      const { itemId } = params as { itemId: string }
+      const { itemId } = params
 
       // Parse request body for fileId
       const body = await request.json()

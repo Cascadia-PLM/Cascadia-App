@@ -15,12 +15,15 @@ const app = new Hono()
 app.get(
   '/:id',
   adapt(
-    apiHandler({ permission: ['issues', 'read'] }, async ({ params }) => {
-      const id = params.id!
-      const issue = await ItemService.findById(id)
-      if (!issue) throw new NotFoundError('Issue', id)
-      return { issue }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['issues', 'read'] },
+      async ({ params }) => {
+        const { id } = params
+        const issue = await ItemService.findById(id)
+        if (!issue) throw new NotFoundError('Issue', id)
+        return { issue }
+      },
+    ),
   ),
 )
 
@@ -28,11 +31,11 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['issues', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
-        const issue = await ItemService.update<Issue>(params.id!, data, user.id)
+        const issue = await ItemService.update<Issue>(params.id, data, user.id)
         return { issue }
       },
     ),
@@ -43,10 +46,13 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({ permission: ['issues', 'delete'] }, async ({ params }) => {
-      await ItemService.delete(params.id!)
-      return { success: true }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['issues', 'delete'] },
+      async ({ params }) => {
+        await ItemService.delete(params.id)
+        return { success: true }
+      },
+    ),
   ),
 )
 

@@ -20,8 +20,8 @@ const app = new Hono()
 app.get(
   '/:itemId',
   adapt(
-    apiHandler({}, async ({ request, params }) => {
-      const itemId = params.itemId!
+    apiHandler<{ itemId: string }>({}, async ({ request, params }) => {
+      const { itemId } = params
 
       const url = new URL(request.url, 'http://localhost')
 
@@ -58,8 +58,8 @@ app.get(
 app.post(
   '/:itemId/compare',
   adapt(
-    apiHandler({}, async ({ request, params }) => {
-      const itemId = params.itemId!
+    apiHandler<{ itemId: string }>({}, async ({ request, params }) => {
+      const { itemId } = params
       const body = await request.json()
 
       // Parse and validate request body
@@ -80,8 +80,8 @@ app.post(
 app.get(
   '/:itemId/comparison-targets',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const itemId = params.itemId!
+    apiHandler<{ itemId: string }>({}, async ({ params }) => {
+      const { itemId } = params
 
       // Get item to find its designId and masterId
       const [item] = await db

@@ -52,24 +52,6 @@ import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('Designs')
 
-/**
- * Read a required path parameter.
- *
- * Route params are typed as an index signature, so every lookup widens to
- * `string | undefined`. Hono only invokes a handler once the path matched, so
- * a declared segment is always present — but we guard rather than assert so a
- * mis-declared route surfaces as a 400 instead of an `undefined` query.
- */
-function requireParam(params: Record<string, string>, name: string): string {
-  const value = params[name]
-  if (value === undefined) {
-    throw new ValidationError(`Missing route parameter: ${name}`, undefined, {
-      field: name,
-    })
-  }
-  return value
-}
-
 // ============================================
 // Types
 // ============================================
@@ -996,8 +978,8 @@ app.post(
 app.get(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) throw new NotFoundError('Design', designId)
 
@@ -1028,8 +1010,8 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) throw new NotFoundError('Design', designId)
 
@@ -1054,8 +1036,8 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) throw new NotFoundError('Design', designId)
 
@@ -1080,8 +1062,8 @@ app.delete(
 app.get(
   '/:id/details',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) throw new NotFoundError('Design', designId)
 
@@ -1151,8 +1133,8 @@ app.get(
 app.get(
   '/:id/branches',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -1177,8 +1159,8 @@ app.get(
 app.post(
   '/:id/branches',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -1243,8 +1225,8 @@ app.post(
 app.post(
   '/:id/clone',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       // Validate source design exists
       const sourceDesign = await DesignService.getById(designId)
       if (!sourceDesign) {
@@ -1318,8 +1300,8 @@ app.post(
 app.get(
   '/:id/cross-references',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -1345,8 +1327,8 @@ app.get(
 app.post(
   '/:id/cross-references',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -1569,8 +1551,8 @@ app.post(
 app.put(
   '/:id/cross-references',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -1604,8 +1586,8 @@ app.put(
 app.delete(
   '/:id/cross-references',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -1636,8 +1618,8 @@ app.delete(
 app.get(
   '/:id/ecos',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -1753,8 +1735,8 @@ app.get(
 app.get(
   '/:id/history/graph',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -1784,8 +1766,8 @@ app.get(
 app.get(
   '/:id/items',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -1910,8 +1892,8 @@ app.get(
 app.post(
   '/:id/items',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -2159,8 +2141,8 @@ app.post(
 app.delete(
   '/:id/items',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -2206,8 +2188,8 @@ app.delete(
 app.patch(
   '/:id/items',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -2252,8 +2234,8 @@ app.patch(
 app.get(
   '/:id/members',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -2277,8 +2259,8 @@ app.get(
 app.post(
   '/:id/members',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const familyDesignId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: familyDesignId } = params
       const familyDesign = await DesignService.getById(familyDesignId)
       if (!familyDesign) {
         throw new NotFoundError('Design', familyDesignId)
@@ -2334,8 +2316,8 @@ app.post(
 app.delete(
   '/:id/members',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const familyDesignId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: familyDesignId } = params
       const familyDesign = await DesignService.getById(familyDesignId)
       if (!familyDesign) {
         throw new NotFoundError('Design', familyDesignId)
@@ -2396,8 +2378,8 @@ app.delete(
 app.get(
   '/:id/status',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -2424,8 +2406,8 @@ app.get(
 app.get(
   '/:id/structure',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -3194,8 +3176,8 @@ app.get(
 app.get(
   '/:id/tags',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -3214,8 +3196,8 @@ app.get(
 app.post(
   '/:id/tags',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const designId = requireParam(params, 'id')
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -3254,8 +3236,8 @@ app.post(
 app.post(
   '/:designId/gap-analysis',
   adapt(
-    apiHandler({}, async ({ request, params }) => {
-      const designId = requireParam(params, 'designId')
+    apiHandler<{ designId: string }>({}, async ({ request, params }) => {
+      const { designId } = params
       const body = await request.json()
 
       // Validate request body
@@ -3275,8 +3257,8 @@ app.post(
 app.get(
   '/:designId/gap-analysis',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const designId = requireParam(params, 'designId')
+    apiHandler<{ designId: string }>({}, async ({ params }) => {
+      const { designId } = params
 
       // GET request runs with default settings
       const result = await GapAnalysisService.analyze({ designId })
@@ -3290,8 +3272,8 @@ app.get(
 app.get(
   '/:designId/requirements-coverage',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const designId = requireParam(params, 'designId')
+    apiHandler<{ designId: string }>({}, async ({ params }) => {
+      const { designId } = params
       const coverage = await RequirementService.getCoverage(designId)
 
       return coverage
@@ -3303,8 +3285,8 @@ app.get(
 app.get(
   '/:designId/test-coverage',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const designId = requireParam(params, 'designId')
+    apiHandler<{ designId: string }>({}, async ({ params }) => {
+      const { designId } = params
       const coverage = await VerificationService.getTestCoverage(designId)
 
       return { coverage }
@@ -3316,8 +3298,8 @@ app.get(
 app.get(
   '/:designId/verification-gaps',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const designId = requireParam(params, 'designId')
+    apiHandler<{ designId: string }>({}, async ({ params }) => {
+      const { designId } = params
       const gaps = await VerificationService.getVerificationGaps(designId)
 
       return { gaps }

@@ -55,12 +55,15 @@ app.post(
 app.get(
   '/:id',
   adapt(
-    apiHandler({ permission: ['users', 'read'] }, async ({ params }) => {
-      const { id } = params as { id: string }
-      const user = await UserService.getUserById(id)
-      if (!user) throw new NotFoundError('User', id)
-      return { user }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['users', 'read'] },
+      async ({ params }) => {
+        const { id } = params
+        const user = await UserService.getUserById(id)
+        if (!user) throw new NotFoundError('User', id)
+        return { user }
+      },
+    ),
   ),
 )
 
@@ -68,10 +71,10 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['users', 'update'] },
       async ({ params, request, user }) => {
-        const { id } = params as { id: string }
+        const { id } = params
         const data = await request.json()
         const updated = await UserService.updateUser(id, data, user.id)
         return { user: updated }
@@ -84,11 +87,14 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({ permission: ['users', 'delete'] }, async ({ params }) => {
-      const { id } = params as { id: string }
-      await UserService.deleteUser(id)
-      return { success: true }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['users', 'delete'] },
+      async ({ params }) => {
+        const { id } = params
+        await UserService.deleteUser(id)
+        return { success: true }
+      },
+    ),
   ),
 )
 
@@ -96,10 +102,10 @@ app.delete(
 app.post(
   '/:id/activate',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['users', 'manage'] },
       async ({ params, request }) => {
-        const { id } = params as { id: string }
+        const { id } = params
         const { active } = await request.json()
         if (typeof active !== 'boolean') {
           throw new ValidationError('active must be a boolean')
@@ -115,10 +121,10 @@ app.post(
 app.put(
   '/:id/password',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['users', 'manage'] },
       async ({ params, request }) => {
-        const { id } = params as { id: string }
+        const { id } = params
         const { password, currentPassword } = await request.json()
         if (!password || typeof password !== 'string') {
           throw new ValidationError('Password is required')
@@ -150,10 +156,10 @@ app.put(
 app.post(
   '/:id/reset-password',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['users', 'manage'] },
       async ({ params, request }) => {
-        const { id } = params as { id: string }
+        const { id } = params
         const { password } = await request.json()
         if (!password || typeof password !== 'string') {
           throw new ValidationError('Password is required')
@@ -170,12 +176,15 @@ app.post(
 app.get(
   '/:id/roles',
   adapt(
-    apiHandler({ permission: ['users', 'read'] }, async ({ params }) => {
-      const { id } = params as { id: string }
-      const user = await UserService.getUserById(id)
-      if (!user) throw new NotFoundError('User', id)
-      return { roles: user.roles }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['users', 'read'] },
+      async ({ params }) => {
+        const { id } = params
+        const user = await UserService.getUserById(id)
+        if (!user) throw new NotFoundError('User', id)
+        return { roles: user.roles }
+      },
+    ),
   ),
 )
 
@@ -183,10 +192,10 @@ app.get(
 app.put(
   '/:id/roles',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['users', 'manage'] },
       async ({ params, request }) => {
-        const { id } = params as { id: string }
+        const { id } = params
         const { roleIds } = await request.json()
         if (!Array.isArray(roleIds)) {
           throw new ValidationError('roleIds must be an array')

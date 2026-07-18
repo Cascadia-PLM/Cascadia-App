@@ -11,9 +11,9 @@ const app = new Hono()
 app.get(
   '/by-item-type/:itemType',
   adapt(
-    apiHandler({}, async ({ params }) => {
+    apiHandler<{ itemType: string }>({}, async ({ params }) => {
       const lifecycle = await LifecycleService.getLifecycleForItemType(
-        params.itemType!,
+        params.itemType,
       )
 
       if (!lifecycle) {

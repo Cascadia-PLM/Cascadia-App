@@ -574,12 +574,12 @@ app.post(
 app.put(
   '/component-catalog/categories/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['system', 'manage'] },
       async ({ params, request }) => {
         const body = await request.json()
         const data = catalogCategoryUpdateSchema.parse(body)
-        const { id } = params as { id: string }
+        const { id } = params
         return CatalogService.updateCategory(id, data)
       },
     ),
@@ -590,11 +590,14 @@ app.put(
 app.delete(
   '/component-catalog/categories/:id',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      const { id } = params as { id: string }
-      await CatalogService.deleteCategory(id)
-      return { deleted: true }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['system', 'manage'] },
+      async ({ params }) => {
+        const { id } = params
+        await CatalogService.deleteCategory(id)
+        return { deleted: true }
+      },
+    ),
   ),
 )
 
@@ -662,10 +665,13 @@ app.post(
 app.get(
   '/component-catalog/:id',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      const { id } = params as { id: string }
-      return CatalogService.getById(id)
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['system', 'manage'] },
+      async ({ params }) => {
+        const { id } = params
+        return CatalogService.getById(id)
+      },
+    ),
   ),
 )
 
@@ -673,12 +679,12 @@ app.get(
 app.put(
   '/component-catalog/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['system', 'manage'] },
       async ({ params, request }) => {
         const body = await request.json()
         const data = catalogEntryUpdateSchema.parse(body)
-        const { id } = params as { id: string }
+        const { id } = params
         return CatalogService.updateEntry(id, data)
       },
     ),
@@ -689,11 +695,14 @@ app.put(
 app.delete(
   '/component-catalog/:id',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      const { id } = params as { id: string }
-      await CatalogService.deleteEntry(id)
-      return { deleted: true }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['system', 'manage'] },
+      async ({ params }) => {
+        const { id } = params
+        await CatalogService.deleteEntry(id)
+        return { deleted: true }
+      },
+    ),
   ),
 )
 
@@ -828,63 +837,66 @@ app.post(
 app.get(
   '/item-type-configs/:itemType',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      const { itemType } = params as { itemType: string }
+    apiHandler<{ itemType: string }>(
+      { permission: ['system', 'manage'] },
+      async ({ params }) => {
+        const { itemType } = params
 
-      const codeDefinition = ItemTypeRegistry.getCodeDefinition(itemType)
+        const codeDefinition = ItemTypeRegistry.getCodeDefinition(itemType)
 
-      if (!codeDefinition) {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'NOT_FOUND',
-              message: `Item type "${itemType}" not found`,
-            },
-          }),
-          { status: 404, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
+        if (!codeDefinition) {
+          return new Response(
+            JSON.stringify({
+              error: {
+                code: 'NOT_FOUND',
+                message: `Item type "${itemType}" not found`,
+              },
+            }),
+            { status: 404, headers: { 'Content-Type': 'application/json' } },
+          )
+        }
 
-      const runtimeConfig = await ConfigService.getConfig(itemType)
-      const mergedConfig = ItemTypeRegistry.getType(itemType)
+        const runtimeConfig = await ConfigService.getConfig(itemType)
+        const mergedConfig = ItemTypeRegistry.getType(itemType)
 
-      return {
-        itemType,
-        codeConfig: {
-          label: codeDefinition.label,
-          pluralLabel: codeDefinition.pluralLabel,
-          icon: codeDefinition.icon,
-          defaultState: codeDefinition.defaultState,
-          states: codeDefinition.states,
-          permissions: codeDefinition.permissions,
-          relationships: codeDefinition.relationships,
-          searchableFields: codeDefinition.searchableFields,
-          displayField: codeDefinition.displayField,
-        },
-        runtimeConfig: runtimeConfig
-          ? {
-              id: runtimeConfig.id,
-              version: runtimeConfig.version,
-              isActive: runtimeConfig.isActive,
-              config: runtimeConfig.config,
-              modifiedAt: runtimeConfig.modifiedAt,
-              modifiedBy: runtimeConfig.modifiedBy,
-              createdAt: runtimeConfig.createdAt,
-            }
-          : null,
-        mergedConfig: mergedConfig
-          ? {
-              label: mergedConfig.label,
-              pluralLabel: mergedConfig.pluralLabel,
-              icon: mergedConfig.icon,
-              defaultState: mergedConfig.defaultState,
-              states: mergedConfig.states,
-              permissions: mergedConfig.permissions,
-              relationships: mergedConfig.relationships,
-            }
-          : null,
-      }
-    }),
+        return {
+          itemType,
+          codeConfig: {
+            label: codeDefinition.label,
+            pluralLabel: codeDefinition.pluralLabel,
+            icon: codeDefinition.icon,
+            defaultState: codeDefinition.defaultState,
+            states: codeDefinition.states,
+            permissions: codeDefinition.permissions,
+            relationships: codeDefinition.relationships,
+            searchableFields: codeDefinition.searchableFields,
+            displayField: codeDefinition.displayField,
+          },
+          runtimeConfig: runtimeConfig
+            ? {
+                id: runtimeConfig.id,
+                version: runtimeConfig.version,
+                isActive: runtimeConfig.isActive,
+                config: runtimeConfig.config,
+                modifiedAt: runtimeConfig.modifiedAt,
+                modifiedBy: runtimeConfig.modifiedBy,
+                createdAt: runtimeConfig.createdAt,
+              }
+            : null,
+          mergedConfig: mergedConfig
+            ? {
+                label: mergedConfig.label,
+                pluralLabel: mergedConfig.pluralLabel,
+                icon: mergedConfig.icon,
+                defaultState: mergedConfig.defaultState,
+                states: mergedConfig.states,
+                permissions: mergedConfig.permissions,
+                relationships: mergedConfig.relationships,
+              }
+            : null,
+        }
+      },
+    ),
   ),
 )
 
@@ -892,31 +904,34 @@ app.get(
 app.delete(
   '/item-type-configs/:itemType',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      const { itemType } = params as { itemType: string }
+    apiHandler<{ itemType: string }>(
+      { permission: ['system', 'manage'] },
+      async ({ params }) => {
+        const { itemType } = params
 
-      if (!ItemTypeRegistry.hasType(itemType)) {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'NOT_FOUND',
-              message: `Item type "${itemType}" not found`,
-            },
-          }),
-          { status: 404, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
+        if (!ItemTypeRegistry.hasType(itemType)) {
+          return new Response(
+            JSON.stringify({
+              error: {
+                code: 'NOT_FOUND',
+                message: `Item type "${itemType}" not found`,
+              },
+            }),
+            { status: 404, headers: { 'Content-Type': 'application/json' } },
+          )
+        }
 
-      await ConfigService.deleteConfig(itemType)
+        await ConfigService.deleteConfig(itemType)
 
-      // Reload registry to clear the runtime config
-      await ItemTypeRegistry.reload()
+        // Reload registry to clear the runtime config
+        await ItemTypeRegistry.reload()
 
-      return {
-        success: true,
-        message: `Runtime configuration for "${itemType}" deleted. Reverted to code defaults.`,
-      }
-    }),
+        return {
+          success: true,
+          message: `Runtime configuration for "${itemType}" deleted. Reverted to code defaults.`,
+        }
+      },
+    ),
   ),
 )
 
@@ -959,13 +974,16 @@ app.get(
 app.get(
   '/jobs/:id',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      const { id } = params as { id: string }
-      const job = await JobService.getOrThrow(id)
-      const logs = await JobService.getLogs(id)
+    apiHandler<{ id: string }>(
+      { permission: ['system', 'manage'] },
+      async ({ params }) => {
+        const { id } = params
+        const job = await JobService.getOrThrow(id)
+        const logs = await JobService.getLogs(id)
 
-      return { job, logs }
-    }),
+        return { job, logs }
+      },
+    ),
   ),
 )
 
@@ -973,12 +991,15 @@ app.get(
 app.post(
   '/jobs/:id/cancel',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      const { id } = params as { id: string }
-      await JobService.cancel(id)
+    apiHandler<{ id: string }>(
+      { permission: ['system', 'manage'] },
+      async ({ params }) => {
+        const { id } = params
+        await JobService.cancel(id)
 
-      return { success: true }
-    }),
+        return { success: true }
+      },
+    ),
   ),
 )
 
@@ -986,10 +1007,10 @@ app.post(
 app.post(
   '/jobs/:id/retry',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['system', 'manage'] },
       async ({ params, user }) => {
-        const { id } = params as { id: string }
+        const { id } = params
         const job = await JobService.retry(id, user.id)
 
         return { job }

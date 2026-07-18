@@ -21,12 +21,12 @@ const app = new Hono()
 app.post(
   '/:id/pull-from-main',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const body = await request.json()
       const validated = pullFromMainSchema.parse(body)
 
       const result = await ConflictDetectionService.pullChangesFromMain(
-        params.id!,
+        params.id,
         validated.mainItemId,
         user.id,
       )
@@ -53,12 +53,12 @@ app.post(
 app.post(
   '/:id/rebase',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const body = await request.json()
       const validated = rebaseSchema.parse(body)
 
       const result = await ConflictDetectionService.rebaseItem(
-        params.id!,
+        params.id,
         validated.newBaseItemId,
         user.id,
         validated.resolutions,

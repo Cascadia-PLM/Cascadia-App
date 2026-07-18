@@ -15,8 +15,8 @@ const app = new Hono()
 app.get(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const id = params.id!
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
       const commit = await CommitService.getById(id)
       if (!commit) throw new NotFoundError('Commit', id)
 
@@ -35,8 +35,8 @@ app.get(
 app.get(
   '/:id/diff',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const id = params.id!
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
       const commit = await CommitService.getById(id)
       if (!commit) throw new NotFoundError('Commit', id)
 
@@ -52,8 +52,8 @@ app.get(
 app.get(
   '/:id/items',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const id = params.id!
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
       const commit = await CommitService.getById(id)
       if (!commit) throw new NotFoundError('Commit', id)
 

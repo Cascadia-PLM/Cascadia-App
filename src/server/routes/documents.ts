@@ -15,12 +15,15 @@ const app = new Hono()
 app.get(
   '/:id',
   adapt(
-    apiHandler({ permission: ['documents', 'read'] }, async ({ params }) => {
-      const id = params.id!
-      const document = await ItemService.findById(id)
-      if (!document) throw new NotFoundError('Document', id)
-      return { document }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['documents', 'read'] },
+      async ({ params }) => {
+        const { id } = params
+        const document = await ItemService.findById(id)
+        if (!document) throw new NotFoundError('Document', id)
+        return { document }
+      },
+    ),
   ),
 )
 
@@ -28,12 +31,12 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['documents', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
         const document = await ItemService.update<Document>(
-          params.id!,
+          params.id,
           data,
           user.id,
         )
@@ -47,10 +50,13 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({ permission: ['documents', 'delete'] }, async ({ params }) => {
-      await ItemService.delete(params.id!)
-      return { success: true }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['documents', 'delete'] },
+      async ({ params }) => {
+        await ItemService.delete(params.id)
+        return { success: true }
+      },
+    ),
   ),
 )
 

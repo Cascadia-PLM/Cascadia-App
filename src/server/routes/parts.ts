@@ -38,7 +38,7 @@ const partResponseSchema = z
 app.get(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       {
         permission: ['parts', 'read'],
         openapi: {
@@ -50,7 +50,7 @@ app.get(
         },
       },
       async ({ params }) => {
-        const { id } = params as { id: string }
+        const { id } = params
         const part = await ItemService.findById(id)
         if (!part) throw new NotFoundError('Part', id)
         return { part }
@@ -63,7 +63,7 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       {
         permission: ['parts', 'update'],
         openapi: {
@@ -78,7 +78,7 @@ app.put(
         },
       },
       async ({ params, request, user }) => {
-        const { id } = params as { id: string }
+        const { id } = params
         const data = await request.json()
         const part = await ItemService.update<Part>(id, data, user.id)
         return { part }
@@ -91,7 +91,7 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       {
         permission: ['parts', 'delete'],
         openapi: {
@@ -103,7 +103,7 @@ app.delete(
         },
       },
       async ({ params }) => {
-        const { id } = params as { id: string }
+        const { id } = params
         await ItemService.delete(id)
         return { success: true }
       },
@@ -115,8 +115,8 @@ app.delete(
 app.post(
   '/:id/generate-cad',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
       const item = await ItemService.findById(id)
       if (!item) {
         throw new NotFoundError('Part', id)
@@ -202,8 +202,8 @@ app.post(
 app.post(
   '/:id/generate-cad/assess',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
       const item = await ItemService.findById(id)
       if (!item) {
         throw new NotFoundError('Part', id)
@@ -231,8 +231,8 @@ app.post(
 app.post(
   '/:id/generate-cad/convert',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
       const item = await ItemService.findById(id)
       if (!item) {
         throw new NotFoundError('Part', id)
@@ -269,13 +269,16 @@ app.post(
 app.get(
   '/:id/resolvable-attributes',
   adapt(
-    apiHandler({ permission: ['parts', 'read'] }, async ({ params }) => {
-      const { id } = params as { id: string }
-      const attributes =
-        await ParametricResolutionService.getResolvableAttributes(id)
+    apiHandler<{ id: string }>(
+      { permission: ['parts', 'read'] },
+      async ({ params }) => {
+        const { id } = params
+        const attributes =
+          await ParametricResolutionService.getResolvableAttributes(id)
 
-      return { attributes }
-    }),
+        return { attributes }
+      },
+    ),
   ),
 )
 
@@ -283,8 +286,8 @@ app.get(
 app.post(
   '/:id/validate',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id } = params
       const body = await request.json()
       const { testCaseIds } = body
 
@@ -306,8 +309,8 @@ app.post(
 app.delete(
   '/:id/validate',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id } = params
       const url = new URL(request.url)
       const testCaseId = url.searchParams.get('testCaseId')
 
@@ -326,8 +329,8 @@ app.delete(
 app.get(
   '/:id/validating-tests',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
       const tests = await VerificationService.getValidatingTests(id)
 
       return { tests }
@@ -339,69 +342,72 @@ app.get(
 app.get(
   '/:id/work-instructions',
   adapt(
-    apiHandler({ permission: ['parts', 'read'] }, async ({ params }) => {
-      const { id } = params as { id: string }
-      // Verify part exists
-      const [part] = await db
-        .select()
-        .from(items)
-        .where(eq(items.id, id))
-        .limit(1)
+    apiHandler<{ id: string }>(
+      { permission: ['parts', 'read'] },
+      async ({ params }) => {
+        const { id } = params
+        // Verify part exists
+        const [part] = await db
+          .select()
+          .from(items)
+          .where(eq(items.id, id))
+          .limit(1)
 
-      if (!part || part.itemType !== 'Part') {
-        throw new NotFoundError('Part', id)
-      }
+        if (!part || part.itemType !== 'Part') {
+          throw new NotFoundError('Part', id)
+        }
 
-      // Get work instructions attached to this part
-      const attachedWIs = await db
-        .select({
-          attachmentId: workInstructionPartAttachments.id,
-          inheritToMBOM: workInstructionPartAttachments.inheritToMBOM,
-          createdAt: workInstructionPartAttachments.createdAt,
-          workInstruction: {
-            id: items.id,
-            itemNumber: items.itemNumber,
-            name: items.name,
-            revision: items.revision,
-            state: items.state,
-          },
-          workInstructionDetails: {
-            description: workInstructions.description,
-            estimatedTime: workInstructions.estimatedTime,
-            difficulty: workInstructions.difficulty,
-          },
-        })
-        .from(workInstructionPartAttachments)
-        .innerJoin(
-          items,
-          eq(workInstructionPartAttachments.workInstructionId, items.id),
-        )
-        .innerJoin(
-          workInstructions,
-          eq(
-            workInstructionPartAttachments.workInstructionId,
-            workInstructions.itemId,
-          ),
-        )
-        .where(eq(workInstructionPartAttachments.partId, id))
+        // Get work instructions attached to this part
+        const attachedWIs = await db
+          .select({
+            attachmentId: workInstructionPartAttachments.id,
+            inheritToMBOM: workInstructionPartAttachments.inheritToMBOM,
+            createdAt: workInstructionPartAttachments.createdAt,
+            workInstruction: {
+              id: items.id,
+              itemNumber: items.itemNumber,
+              name: items.name,
+              revision: items.revision,
+              state: items.state,
+            },
+            workInstructionDetails: {
+              description: workInstructions.description,
+              estimatedTime: workInstructions.estimatedTime,
+              difficulty: workInstructions.difficulty,
+            },
+          })
+          .from(workInstructionPartAttachments)
+          .innerJoin(
+            items,
+            eq(workInstructionPartAttachments.workInstructionId, items.id),
+          )
+          .innerJoin(
+            workInstructions,
+            eq(
+              workInstructionPartAttachments.workInstructionId,
+              workInstructions.itemId,
+            ),
+          )
+          .where(eq(workInstructionPartAttachments.partId, id))
 
-      // Flatten the response
-      const workInstructionsList = attachedWIs.map((row) => ({
-        attachmentId: row.attachmentId,
-        inheritToMBOM: row.inheritToMBOM,
-        attachedAt: row.createdAt,
-        id: row.workInstruction.id,
-        itemNumber: row.workInstruction.itemNumber,
-        name: row.workInstruction.name,
-        revision: row.workInstruction.revision,
-        state: row.workInstruction.state,
-        description: row.workInstructionDetails.description,
-        estimatedTime: row.workInstructionDetails.estimatedTime,
-        difficulty: row.workInstructionDetails.difficulty,
-      }))
+        // Flatten the response
+        const workInstructionsList = attachedWIs.map((row) => ({
+          attachmentId: row.attachmentId,
+          inheritToMBOM: row.inheritToMBOM,
+          attachedAt: row.createdAt,
+          id: row.workInstruction.id,
+          itemNumber: row.workInstruction.itemNumber,
+          name: row.workInstruction.name,
+          revision: row.workInstruction.revision,
+          state: row.workInstruction.state,
+          description: row.workInstructionDetails.description,
+          estimatedTime: row.workInstructionDetails.estimatedTime,
+          difficulty: row.workInstructionDetails.difficulty,
+        }))
 
-      return { workInstructions: workInstructionsList }
-    }),
+        return { workInstructions: workInstructionsList }
+      },
+    ),
   ),
 )
 

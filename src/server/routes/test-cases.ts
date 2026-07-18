@@ -13,7 +13,7 @@ const app = new Hono()
 app.post(
   '/:id/execute',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const body = await request.json()
       const { status, duration, environment, actualResults, notes } = body
 
@@ -22,7 +22,7 @@ app.post(
       }
 
       const execution = await VerificationService.recordExecution(
-        params.id!,
+        params.id,
         {
           status,
           duration,
@@ -42,12 +42,12 @@ app.post(
 app.get(
   '/:id/executions',
   adapt(
-    apiHandler({}, async ({ request, params }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params }) => {
       const url = new URL(request.url)
       const limit = parseInt(url.searchParams.get('limit') || '20', 10)
 
       const executions = await VerificationService.getExecutionHistory(
-        params.id!,
+        params.id,
         limit,
       )
 

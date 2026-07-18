@@ -55,8 +55,8 @@ app.post(
 app.get(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const id = params.id!
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
       const report = await ReportService.findById(id)
 
       if (!report) {
@@ -72,14 +72,14 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
       const data = await request.json()
 
       // Validate input (partial validation for update)
       const validatedData = reportSchema.partial().parse(data)
 
       const report = await ReportService.update(
-        params.id!,
+        params.id,
         validatedData,
         user.id,
       )
@@ -93,8 +93,8 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      await ReportService.delete(params.id!)
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      await ReportService.delete(params.id)
 
       return { success: true }
     }),
@@ -105,8 +105,8 @@ app.delete(
 app.post(
   '/:id/execute',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
 
       let options = {}
       try {
@@ -127,8 +127,8 @@ app.post(
 app.post(
   '/:id/export',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
 
       let options = {}
       try {

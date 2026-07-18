@@ -12,8 +12,8 @@ const app = new Hono()
 app.get(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const id = params.id!
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
       const job = await JobService.get(id)
       if (!job) {
         throw new NotFoundError('Job', id)

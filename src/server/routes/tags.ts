@@ -14,8 +14,8 @@ const app = new Hono()
 app.get(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const id = params.id!
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
       const tag = await DesignService.getTag(id)
       if (!tag) throw new NotFoundError('Tag', id)
       return { tag }
@@ -27,8 +27,8 @@ app.get(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const id = params.id!
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
       const tag = await DesignService.getTag(id)
       if (!tag) throw new NotFoundError('Tag', id)
 

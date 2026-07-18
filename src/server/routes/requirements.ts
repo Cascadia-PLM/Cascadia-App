@@ -46,12 +46,15 @@ const app = new Hono()
 app.get(
   '/:id',
   adapt(
-    apiHandler({ permission: ['parts', 'read'] }, async ({ params }) => {
-      const { id } = params as { id: string }
-      const requirement = await ItemService.findById(id)
-      if (!requirement) throw new NotFoundError('Requirement', id)
-      return { requirement }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['parts', 'read'] },
+      async ({ params }) => {
+        const { id } = params
+        const requirement = await ItemService.findById(id)
+        if (!requirement) throw new NotFoundError('Requirement', id)
+        return { requirement }
+      },
+    ),
   ),
 )
 
@@ -59,11 +62,11 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['parts', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
-        const { id } = params as { id: string }
+        const { id } = params
         const requirement = await ItemService.update<Requirement>(
           id,
           data,
@@ -79,11 +82,14 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({ permission: ['parts', 'delete'] }, async ({ params }) => {
-      const { id } = params as { id: string }
-      await ItemService.delete(id)
-      return { success: true }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['parts', 'delete'] },
+      async ({ params }) => {
+        const { id } = params
+        await ItemService.delete(id)
+        return { success: true }
+      },
+    ),
   ),
 )
 
@@ -91,8 +97,8 @@ app.delete(
 app.get(
   '/:id/derive',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
       const childRequirements =
         await RequirementService.getChildRequirements(id)
 
@@ -105,10 +111,10 @@ app.get(
 app.post(
   '/:id/derive',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
       const body = await request.json()
       const childData = deriveRequirementSchema.parse(body)
-      const { id } = params as { id: string }
+      const { id } = params
 
       const derivedRequirement = await RequirementService.deriveRequirement(
         id,
@@ -133,8 +139,8 @@ app.post(
 app.get(
   '/:id/parent',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
       const parentRequirement =
         await RequirementService.getParentRequirement(id)
 
@@ -147,8 +153,8 @@ app.get(
 app.get(
   '/:id/satisfy',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
       const satisfyingItems = await RequirementService.getSatisfyingItems(id)
 
       return { items: satisfyingItems }
@@ -160,10 +166,10 @@ app.get(
 app.post(
   '/:id/satisfy',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
       const body = await request.json()
       const { itemIds } = linkSatisfactionSchema.parse(body)
-      const { id } = params as { id: string }
+      const { id } = params
 
       await RequirementService.linkSatisfaction(id, itemIds, user.id)
 
@@ -176,10 +182,10 @@ app.post(
 app.delete(
   '/:id/satisfy',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
       const body = await request.json()
       const { itemId } = unlinkSatisfactionSchema.parse(body)
-      const { id } = params as { id: string }
+      const { id } = params
 
       await RequirementService.unlinkSatisfaction(id, itemId, user.id)
 
@@ -192,7 +198,7 @@ app.delete(
 app.post(
   '/:id/verify',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const body = await request.json()
       const { testCaseIds } = body
 
@@ -200,7 +206,7 @@ app.post(
         throw new ValidationError('testCaseIds array is required')
       }
 
-      const { id } = params as { id: string }
+      const { id } = params
       await RequirementService.linkVerification(id, testCaseIds, user.id)
 
       return created({ success: true })
@@ -212,7 +218,7 @@ app.post(
 app.delete(
   '/:id/verify',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const url = new URL(request.url)
       const testCaseId = url.searchParams.get('testCaseId')
 
@@ -220,7 +226,7 @@ app.delete(
         throw new ValidationError('testCaseId query parameter is required')
       }
 
-      const { id } = params as { id: string }
+      const { id } = params
       await RequirementService.unlinkVerification(id, testCaseId, user.id)
 
       return { success: true }
@@ -232,8 +238,8 @@ app.delete(
 app.get(
   '/:id/verifying-tests',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
       const tests = await RequirementService.getVerifyingTests(id)
 
       return { tests }

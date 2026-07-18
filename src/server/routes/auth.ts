@@ -396,8 +396,8 @@ app.post(
 app.delete(
   '/api-keys/:keyId',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const keyId = params.keyId!
+    apiHandler<{ keyId: string }>({}, async ({ params, user }) => {
+      const { keyId } = params
 
       // Only allow revoking own keys
       const [key] = await db

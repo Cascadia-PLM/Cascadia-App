@@ -18,8 +18,8 @@ const app = new Hono()
 app.get(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
       const { branch } = await requireBranchAccess(user.id, id)
       return { branch }
     }),
@@ -30,8 +30,8 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
       const branch = await BranchService.getById(id)
       if (!branch) throw new NotFoundError('Branch', id)
 
@@ -68,8 +68,8 @@ app.put(
 app.get(
   '/:id/commits',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
       await requireBranchAccess(user.id, id)
 
       const url = new URL(request.url)
@@ -94,8 +94,8 @@ app.get(
 app.get(
   '/:id/items',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
       await requireBranchAccess(user.id, id)
 
       const query = parseQuery(request, itemListSchema)
@@ -118,8 +118,8 @@ app.get(
 app.get(
   '/:id/status',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
       await requireBranchAccess(user.id, id)
 
       const status = await BranchService.getBranchStatus(id)

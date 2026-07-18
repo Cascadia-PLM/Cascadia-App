@@ -14,12 +14,15 @@ const app = new Hono()
 app.get(
   '/:id',
   adapt(
-    apiHandler({ permission: ['tools', 'read'] }, async ({ params }) => {
-      const id = params.id!
-      const tool = await ItemService.findById(id)
-      if (!tool) throw new NotFoundError('Tool', id)
-      return { tool }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['tools', 'read'] },
+      async ({ params }) => {
+        const { id } = params
+        const tool = await ItemService.findById(id)
+        if (!tool) throw new NotFoundError('Tool', id)
+        return { tool }
+      },
+    ),
   ),
 )
 
@@ -27,11 +30,11 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['tools', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
-        const tool = await ItemService.update<Tool>(params.id!, data, user.id)
+        const tool = await ItemService.update<Tool>(params.id, data, user.id)
         return { tool }
       },
     ),
@@ -42,10 +45,13 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({ permission: ['tools', 'delete'] }, async ({ params }) => {
-      await ItemService.delete(params.id!)
-      return { success: true }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['tools', 'delete'] },
+      async ({ params }) => {
+        await ItemService.delete(params.id)
+        return { success: true }
+      },
+    ),
   ),
 )
 

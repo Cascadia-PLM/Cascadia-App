@@ -358,8 +358,8 @@ app.post(
 app.get(
   '/sessions/:id',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
 
       // Verify ownership
       const isOwner = await sessionService.verifySessionOwnership(id, user.id)
@@ -381,8 +381,8 @@ app.get(
 app.delete(
   '/sessions/:id',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
 
       // Verify ownership
       const isOwner = await sessionService.verifySessionOwnership(id, user.id)
@@ -401,8 +401,8 @@ app.delete(
 app.get(
   '/sessions/:id/messages',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const { id } = params as { id: string }
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
 
       // Verify ownership
       const isOwner = await sessionService.verifySessionOwnership(id, user.id)

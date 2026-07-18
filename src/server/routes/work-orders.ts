@@ -70,15 +70,18 @@ app.post(
 app.get(
   '/:id',
   adapt(
-    apiHandler({ permission: ['work_orders', 'read'] }, async ({ params }) => {
-      const id = params.id!
-      const workOrder = await WorkOrderService.findById(id)
-      if (!workOrder) {
-        throw new NotFoundError('Work Order', id)
-      }
+    apiHandler<{ id: string }>(
+      { permission: ['work_orders', 'read'] },
+      async ({ params }) => {
+        const { id } = params
+        const workOrder = await WorkOrderService.findById(id)
+        if (!workOrder) {
+          throw new NotFoundError('Work Order', id)
+        }
 
-      return { workOrder }
-    }),
+        return { workOrder }
+      },
+    ),
   ),
 )
 
@@ -86,14 +89,14 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_orders', 'update'] },
       async ({ params, request, user }) => {
         const body = await request.json()
         const data = workOrderUpdateSchema.parse(body)
 
         const workOrder = await WorkOrderService.update(
-          params.id!,
+          params.id,
           data,
           user.id,
         )
@@ -108,10 +111,10 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_orders', 'delete'] },
       async ({ params }) => {
-        await WorkOrderService.delete(params.id!)
+        await WorkOrderService.delete(params.id)
 
         return { success: true }
       },
@@ -123,7 +126,7 @@ app.delete(
 app.get(
   '/:id/executions',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_orders', 'read'] },
       async ({ params, request }) => {
         const url = new URL(request.url)
@@ -135,7 +138,7 @@ app.get(
           : undefined
 
         const result = await WorkInstructionExecutionService.listByWorkOrder(
-          params.id!,
+          params.id,
           { limit, offset },
         )
 
@@ -149,7 +152,7 @@ app.get(
 app.put(
   '/:id/status',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_orders', 'update'] },
       async ({ params, request, user }) => {
         const body = await request.json()
@@ -165,7 +168,7 @@ app.put(
         }
 
         const workOrder = await WorkOrderService.updateStatus(
-          params.id!,
+          params.id,
           status,
           user.id,
         )

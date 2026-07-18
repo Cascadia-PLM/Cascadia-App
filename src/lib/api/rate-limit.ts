@@ -47,7 +47,10 @@ export class RateLimiter {
     if (entry.timestamps.length >= this.config.maxRequests) {
       // Oldest timestamp in window determines when the next slot opens
       const oldestInWindow = entry.timestamps[0]
-      const retryAfterMs = oldestInWindow + this.config.windowMs - now
+      const retryAfterMs =
+        oldestInWindow === undefined
+          ? this.config.windowMs
+          : oldestInWindow + this.config.windowMs - now
       return {
         allowed: false,
         retryAfterSeconds: Math.ceil(retryAfterMs / 1000),
@@ -100,7 +103,8 @@ export function getClientIp(request: Request): string {
   const forwarded = request.headers.get('x-forwarded-for')
   if (forwarded) {
     // Take the first IP (original client) from the chain
-    return forwarded.split(',')[0].trim()
+    const first = forwarded.split(',')[0]?.trim()
+    if (first) return first
   }
   const realIp = request.headers.get('x-real-ip')
   if (realIp) {

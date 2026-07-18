@@ -255,13 +255,14 @@ export class AuthService {
         .where(eq(users.email, email))
         .limit(1)
 
-      if (existingByEmail.length > 0) {
-        user = existingByEmail[0]
+      const matchedByEmail = existingByEmail[0]
+      if (matchedByEmail) {
+        user = matchedByEmail
         // Link OAuth provider to existing account
         await db
           .update(users)
           .set({ provider, providerId })
-          .where(eq(users.id, user.id))
+          .where(eq(users.id, matchedByEmail.id))
       }
     }
 

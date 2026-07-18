@@ -119,6 +119,10 @@ export class UserService {
       .where(eq(users.id, id))
       .returning()
 
+    if (!updated) {
+      throw new NotFoundError('User', id)
+    }
+
     return updated
   }
 
@@ -367,6 +371,10 @@ export class UserService {
       .set({ active })
       .where(eq(users.id, userId))
       .returning()
+
+    if (!updated) {
+      throw new NotFoundError('User', userId)
+    }
 
     // Immediately revoke all sessions when deactivating
     if (!active) {

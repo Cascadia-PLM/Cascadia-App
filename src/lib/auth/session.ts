@@ -102,11 +102,12 @@ export class SessionManager {
         )
         .limit(1)
 
-      if (result.length === 0) {
+      const row = result[0]
+      if (!row) {
         return null
       }
 
-      const { session, user } = result[0]
+      const { session, user } = row
 
       // Check if user is active
       if (!user.active) {

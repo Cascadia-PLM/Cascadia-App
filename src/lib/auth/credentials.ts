@@ -88,9 +88,10 @@ async function resolveApiKey(
       .where(and(eq(apiKeys.keyHash, keyHash), isNull(apiKeys.revokedAt)))
       .limit(1)
 
-    if (result.length === 0) return null
+    const row = result[0]
+    if (!row) return null
 
-    const { key, user } = result[0]
+    const { key, user } = row
 
     // Check expiration
     if (key.expiresAt && key.expiresAt < new Date()) return null

@@ -137,10 +137,10 @@ describe('AuthService', () => {
         .from(users)
         .where(eq(users.id, user.id))
 
-      expect(updatedUser.lastLogin).toBeDefined()
-      expect(new Date(updatedUser.lastLogin!).getTime()).toBeGreaterThanOrEqual(
-        beforeLogin.getTime(),
-      )
+      expect(updatedUser?.lastLogin).toBeDefined()
+      expect(
+        new Date(updatedUser!.lastLogin!).getTime(),
+      ).toBeGreaterThanOrEqual(beforeLogin.getTime())
     })
 
     it('creates session in database', async () => {

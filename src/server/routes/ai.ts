@@ -4,7 +4,12 @@ import { eq, isNull } from 'drizzle-orm'
 import { tagged } from '../adapter'
 import type { AIProviderConfig } from '@/lib/db/schema/ai'
 import { apiHandler, created } from '@/lib/api/handler'
-import { getAdapter, getAvailableProviders, isAIEnabled, loadProviderConfig  } from '@/lib/ai/adapters'
+import {
+  getAdapter,
+  getAvailableProviders,
+  isAIEnabled,
+  loadProviderConfig,
+} from '@/lib/ai/adapters'
 import { knowledgeService } from '@/lib/ai/KnowledgeService'
 import { sessionService } from '@/lib/ai/SessionService'
 import { createSearchTools, createServerTools } from '@/lib/ai/tools'
@@ -17,6 +22,7 @@ import {
 import { aiSettings } from '@/lib/db/schema/ai'
 import { userRoles } from '@/lib/db/schema/users'
 import { db } from '@/lib/db'
+import { takeFirst } from '@/lib/db/take-first'
 // Register item types for KnowledgeService
 import '@/lib/items/registerItemTypes.server'
 
@@ -496,15 +502,17 @@ app.post(
         }
 
         // Create settings
-        const [newSettings] = await db
-          .insert(aiSettings)
-          .values({
-            programId: programId || null,
-            provider,
-            config,
-            enabled,
-          })
-          .returning()
+        const newSettings = takeFirst(
+          await db
+            .insert(aiSettings)
+            .values({
+              programId: programId || null,
+              provider,
+              config,
+              enabled,
+            })
+            .returning(),
+        )
 
         return created({
           id: newSettings.id,

@@ -14,6 +14,7 @@ import {
 import { NotFoundError } from '../errors'
 import type { BaseItem } from '../items/types/base'
 import type { TestStep } from '../items/types/testcase'
+import { takeFirst } from '@/lib/db/take-first'
 
 /**
  * Transaction client type for database operations
@@ -250,7 +251,9 @@ export class UsageService {
     }
 
     // 5. Insert usage item
-    const [usage] = await client.insert(items).values(usageData).returning()
+    const usage = takeFirst(
+      await client.insert(items).values(usageData).returning(),
+    )
 
     // 6. Copy type-specific data (respecting inherit vs copy config)
     const typeData = await this.copyTypeSpecificData(
@@ -727,7 +730,7 @@ export class UsageService {
           dueDate: (data.dueDate as Date | undefined) ?? null,
           estimatedHours: (data.estimatedHours as string | undefined) ?? null,
           actualHours: (data.actualHours as string | undefined) ?? null,
-          tags: (data.tags) ?? null,
+          tags: data.tags ?? null,
         })
         break
       case 'TestPlan':

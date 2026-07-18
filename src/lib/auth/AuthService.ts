@@ -19,6 +19,7 @@ import {
 } from '@/lib/auth/password'
 import { SessionManager } from '@/lib/auth/session'
 import { AuthenticationError, ValidationError } from '@/lib/errors'
+import { takeFirst } from '@/lib/db/take-first'
 
 export interface LoginInput {
   username: string
@@ -270,17 +271,19 @@ export class AuthService {
       const randomPassword = crypto.randomUUID() + crypto.randomUUID()
       const passwordHash = await hashPassword(randomPassword)
 
-      const [newUser] = await db
-        .insert(users)
-        .values({
-          email,
-          name: name || email.split('@')[0],
-          passwordHash,
-          provider,
-          providerId,
-          active: true,
-        })
-        .returning()
+      const newUser = takeFirst(
+        await db
+          .insert(users)
+          .values({
+            email,
+            name: name || email.split('@')[0],
+            passwordHash,
+            provider,
+            providerId,
+            active: true,
+          })
+          .returning(),
+      )
 
       user = newUser
 

@@ -22,6 +22,7 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { roles, userRoles } from '@/lib/db/schema/users'
 import { designs, programMembers, programs } from '@/lib/db/schema'
+import { takeFirst } from '@/lib/db/take-first'
 
 describe('AccessControlService', () => {
   const testDb = new TestDatabase()
@@ -48,15 +49,17 @@ describe('AccessControlService', () => {
     code: string,
     createdBy: string,
   ) {
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name,
-        code,
-        description: `${name} description`,
-        createdBy,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name,
+          code,
+          description: `${name} description`,
+          createdBy,
+        })
+        .returning(),
+    )
     return program
   }
 
@@ -80,16 +83,18 @@ describe('AccessControlService', () => {
     createdBy: string,
     options: { programId?: string | null; designType?: string } = {},
   ) {
-    const [design] = await testDb.db
-      .insert(designs)
-      .values({
-        name,
-        code,
-        programId: options.programId ?? null,
-        designType: options.designType ?? 'Engineering',
-        createdBy,
-      })
-      .returning()
+    const design = takeFirst(
+      await testDb.db
+        .insert(designs)
+        .values({
+          name,
+          code,
+          programId: options.programId ?? null,
+          designType: options.designType ?? 'Engineering',
+          createdBy,
+        })
+        .returning(),
+    )
     return design
   }
 
@@ -102,26 +107,35 @@ describe('AccessControlService', () => {
 
     if (!globalAdminRole) {
       // Create Global Admin role
-      const [newRole] = await testDb.db
-        .insert(roles)
-        .values({
-          name: GLOBAL_ADMIN_ROLE,
-          description: 'System-wide administrator',
-          permissions: {
-            parts: ['create', 'read', 'update', 'delete', 'approve', 'manage'],
-            documents: [
-              'create',
-              'read',
-              'update',
-              'delete',
-              'approve',
-              'manage',
-            ],
-            users: ['create', 'read', 'update', 'delete', 'manage'],
-            system: ['read', 'manage'],
-          },
-        })
-        .returning()
+      const newRole = takeFirst(
+        await testDb.db
+          .insert(roles)
+          .values({
+            name: GLOBAL_ADMIN_ROLE,
+            description: 'System-wide administrator',
+            permissions: {
+              parts: [
+                'create',
+                'read',
+                'update',
+                'delete',
+                'approve',
+                'manage',
+              ],
+              documents: [
+                'create',
+                'read',
+                'update',
+                'delete',
+                'approve',
+                'manage',
+              ],
+              users: ['create', 'read', 'update', 'delete', 'manage'],
+              system: ['read', 'manage'],
+            },
+          })
+          .returning(),
+      )
       globalAdminRole = newRole
     }
 

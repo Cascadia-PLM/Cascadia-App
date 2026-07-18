@@ -7,28 +7,31 @@ import type {
 import { db } from '@/lib/db'
 import { items, workOrders } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'
+import { takeFirst } from '@/lib/db/take-first'
 
 export class WorkOrderService {
   static async create(data: WorkOrderCreateInput, userId: string) {
     const workOrderNumber = await this.generateNumber()
 
-    const [workOrder] = await db
-      .insert(workOrders)
-      .values({
-        workOrderNumber,
-        partId: data.partId,
-        quantity: data.quantity,
-        priority: data.priority,
-        dueDate: data.dueDate ? new Date(data.dueDate) : null,
-        customerOrder: data.customerOrder ?? null,
-        notes: data.notes ?? null,
-        assignedTo: data.assignedTo,
-        programId: data.programId ?? null,
-        requiresSignOff: data.requiresSignOff,
-        createdBy: userId,
-        modifiedBy: userId,
-      })
-      .returning()
+    const workOrder = takeFirst(
+      await db
+        .insert(workOrders)
+        .values({
+          workOrderNumber,
+          partId: data.partId,
+          quantity: data.quantity,
+          priority: data.priority,
+          dueDate: data.dueDate ? new Date(data.dueDate) : null,
+          customerOrder: data.customerOrder ?? null,
+          notes: data.notes ?? null,
+          assignedTo: data.assignedTo,
+          programId: data.programId ?? null,
+          requiresSignOff: data.requiresSignOff,
+          createdBy: userId,
+          modifiedBy: userId,
+        })
+        .returning(),
+    )
 
     return workOrder
   }

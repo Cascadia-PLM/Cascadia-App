@@ -36,6 +36,7 @@ import {
 } from '@/lib/db/schema'
 import { ItemTypeRegistry } from '@/lib/items/registry'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
+import { takeFirst } from '@/lib/db/take-first'
 import {
   MergeConflictError,
   NotFoundError,
@@ -140,14 +141,16 @@ describe('ChangeOrderMergeService', () => {
     user = await insertTestUser(testDb.db)
 
     // Create test program
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Test Program',
-        code: `PROG-${uniquePrefix}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Test Program',
+          code: `PROG-${uniquePrefix}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     programId = program.id
 
@@ -1003,21 +1006,23 @@ describe('ChangeOrderMergeService', () => {
       })
 
       // Simulate concurrent modification: create a new revision on main with DIFFERENT name
-      const [newRevision] = await testDb.db
-        .insert(items)
-        .values({
-          itemNumber: part.itemNumber,
-          itemType: 'Part',
-          revision: 'B',
-          name: 'MODIFIED NAME', // Different name to trigger conflict
-          state: 'Released',
-          masterId: part.masterId,
-          designId: part.designId,
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newRevision = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            itemNumber: part.itemNumber,
+            itemType: 'Part',
+            revision: 'B',
+            name: 'MODIFIED NAME', // Different name to trigger conflict
+            state: 'Released',
+            masterId: part.masterId,
+            designId: part.designId,
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Update main branch to point to new revision
       await testDb.db
@@ -1083,28 +1088,30 @@ describe('ChangeOrderMergeService', () => {
         .from(items)
         .where(eq(items.id, part.id))
 
-      const [newRevision] = await testDb.db
-        .insert(items)
-        .values({
-          // Copy all fields from original item
-          itemNumber: originalItem.itemNumber,
-          itemType: originalItem.itemType,
-          name: originalItem.name,
-          state: originalItem.state,
-          masterId: originalItem.masterId,
-          designId: originalItem.designId,
-          inDesignStructure: originalItem.inDesignStructure,
-          attributes: originalItem.attributes,
-          metamodel: originalItem.metamodel,
-          sysmlType: originalItem.sysmlType,
-          usageOf: originalItem.usageOf,
-          // Only change the revision and metadata fields
-          revision: 'B',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newRevision = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            // Copy all fields from original item
+            itemNumber: originalItem.itemNumber,
+            itemType: originalItem.itemType,
+            name: originalItem.name,
+            state: originalItem.state,
+            masterId: originalItem.masterId,
+            designId: originalItem.designId,
+            inDesignStructure: originalItem.inDesignStructure,
+            attributes: originalItem.attributes,
+            metamodel: originalItem.metamodel,
+            sysmlType: originalItem.sysmlType,
+            usageOf: originalItem.usageOf,
+            // Only change the revision and metadata fields
+            revision: 'B',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Update main branch to point to new revision
       await testDb.db
@@ -1306,21 +1313,23 @@ describe('ChangeOrderMergeService', () => {
       )
 
       // Create a Draft working copy on the branch with placeholder revision
-      const [workingCopy] = await testDb.db
-        .insert(items)
-        .values({
-          itemNumber: part.itemNumber,
-          itemType: 'Part',
-          revision: '-', // Placeholder revision
-          name: 'Branch Working Copy',
-          state: 'Draft',
-          masterId: part.masterId,
-          designId: part.designId,
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const workingCopy = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            itemNumber: part.itemNumber,
+            itemType: 'Part',
+            revision: '-', // Placeholder revision
+            name: 'Branch Working Copy',
+            state: 'Draft',
+            masterId: part.masterId,
+            designId: part.designId,
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Track working copy on ECO branch as modified
       await testDb.db.insert(branchItems).values({
@@ -1366,21 +1375,23 @@ describe('ChangeOrderMergeService', () => {
 
       // Create a part with placeholder revision using a generated masterId
       const masterId = crypto.randomUUID()
-      const [part] = await testDb.db
-        .insert(items)
-        .values({
-          itemNumber: `PN-${uniquePrefix}-auto-checkin`,
-          masterId: masterId,
-          itemType: 'Part',
-          revision: '-', // Placeholder revision for new item
-          name: 'Test Part auto-checkin',
-          state: 'Draft',
-          designId: designId,
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const part = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            itemNumber: `PN-${uniquePrefix}-auto-checkin`,
+            masterId: masterId,
+            itemType: 'Part',
+            revision: '-', // Placeholder revision for new item
+            name: 'Test Part auto-checkin',
+            state: 'Draft',
+            designId: designId,
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Track it as checked out on the branch
       await testDb.db.insert(branchItems).values({
@@ -1584,21 +1595,23 @@ describe('ChangeOrderMergeService', () => {
       })
 
       // Simulate concurrent modification: create a new revision on main with DIFFERENT name
-      const [newRevision] = await testDb.db
-        .insert(items)
-        .values({
-          itemNumber: part.itemNumber,
-          itemType: 'Part',
-          revision: 'B',
-          name: 'MODIFIED NAME BY ANOTHER ECO', // Different name to trigger conflict
-          state: 'Released',
-          masterId: part.masterId,
-          designId: part.designId,
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newRevision = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            itemNumber: part.itemNumber,
+            itemType: 'Part',
+            revision: 'B',
+            name: 'MODIFIED NAME BY ANOTHER ECO', // Different name to trigger conflict
+            state: 'Released',
+            masterId: part.masterId,
+            designId: part.designId,
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Update main branch to point to new revision
       await testDb.db

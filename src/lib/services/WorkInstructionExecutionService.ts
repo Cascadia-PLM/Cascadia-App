@@ -9,6 +9,7 @@ import {
   workOrders,
 } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'
+import { takeFirst } from '@/lib/db/take-first'
 
 export class WorkInstructionExecutionService {
   static async start(wiId: string, userId: string, workOrderId?: string) {
@@ -20,18 +21,20 @@ export class WorkInstructionExecutionService {
 
     const revision = wiResult[0]?.revision || 'A'
 
-    const [execution] = await db
-      .insert(workInstructionExecutions)
-      .values({
-        workInstructionId: wiId,
-        workInstructionRevision: revision,
-        workOrderId: workOrderId || null,
-        executedBy: userId,
-        status: 'In Progress',
-        stepData: {},
-        currentStepIndex: 0,
-      })
-      .returning()
+    const execution = takeFirst(
+      await db
+        .insert(workInstructionExecutions)
+        .values({
+          workInstructionId: wiId,
+          workInstructionRevision: revision,
+          workOrderId: workOrderId || null,
+          executedBy: userId,
+          status: 'In Progress',
+          stepData: {},
+          currentStepIndex: 0,
+        })
+        .returning(),
+    )
 
     return execution
   }

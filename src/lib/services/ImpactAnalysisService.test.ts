@@ -27,6 +27,7 @@ import { insertTestUser } from '@/__tests__/fixtures/users'
 import { itemRelationships, items, programs } from '@/lib/db/schema'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { NotFoundError } from '@/lib/errors'
+import { takeFirst } from '@/lib/db/take-first'
 import '@/lib/items/registerItemTypes.server'
 
 describe('ImpactAnalysisService', () => {
@@ -53,14 +54,16 @@ describe('ImpactAnalysisService', () => {
     uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
 
     // Create program
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Test Program',
-        code: `PROG-${uniqueId}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Test Program',
+          code: `PROG-${uniqueId}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
     programId = program.id
 
     // Create design with main branch

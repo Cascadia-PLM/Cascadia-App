@@ -40,6 +40,7 @@ import {
   seedStandardPartLifecycle,
 } from '@/__tests__/fixtures/lifecycles'
 import { ValidationError } from '@/lib/errors'
+import { takeFirst } from '@/lib/db/take-first'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'
@@ -280,37 +281,43 @@ describe('ChangeOrderService', () => {
     user = await insertTestUser(testDb.db)
 
     // Create test design with branch structure
-    const [createdDesign] = await testDb.db
-      .insert(designs)
-      .values({
-        name: 'Test Design',
-        code: `PROD-${uniquePrefix}`,
-        designType: 'Engineering',
-        createdBy: user.id,
-      })
-      .returning()
+    const createdDesign = takeFirst(
+      await testDb.db
+        .insert(designs)
+        .values({
+          name: 'Test Design',
+          code: `PROD-${uniquePrefix}`,
+          designType: 'Engineering',
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
-    const [initialCommit] = await testDb.db
-      .insert(commits)
-      .values({
-        designId: createdDesign.id,
-        branchId: createdDesign.id,
-        message: 'Initial commit',
-        createdBy: user.id,
-      })
-      .returning()
+    const initialCommit = takeFirst(
+      await testDb.db
+        .insert(commits)
+        .values({
+          designId: createdDesign.id,
+          branchId: createdDesign.id,
+          message: 'Initial commit',
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
-    const [mainBranch] = await testDb.db
-      .insert(branches)
-      .values({
-        designId: createdDesign.id,
-        name: 'main',
-        branchType: 'main',
-        headCommitId: initialCommit.id,
-        baseCommitId: initialCommit.id,
-        createdBy: user.id,
-      })
-      .returning()
+    const mainBranch = takeFirst(
+      await testDb.db
+        .insert(branches)
+        .values({
+          designId: createdDesign.id,
+          name: 'main',
+          branchType: 'main',
+          headCommitId: initialCommit.id,
+          baseCommitId: initialCommit.id,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     await testDb.db
       .update(commits)
@@ -717,16 +724,18 @@ describe('ChangeOrderService', () => {
     it('records acknowledgement with user and timestamp', async () => {
       const changeOrder = await createChangeOrder()
 
-      const [risk] = await testDb.db
-        .insert(changeOrderRisks)
-        .values({
-          changeOrderId: changeOrder.id,
-          category: 'production',
-          severity: 'critical',
-          description: 'Critical risk requiring acknowledgement',
-          requiresAcknowledgement: true,
-        })
-        .returning()
+      const risk = takeFirst(
+        await testDb.db
+          .insert(changeOrderRisks)
+          .values({
+            changeOrderId: changeOrder.id,
+            category: 'production',
+            severity: 'critical',
+            description: 'Critical risk requiring acknowledgement',
+            requiresAcknowledgement: true,
+          })
+          .returning(),
+      )
 
       await ChangeOrderService.acknowledgeRisk(risk.id, user.id)
 

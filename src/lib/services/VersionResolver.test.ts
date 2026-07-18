@@ -25,6 +25,7 @@ import type { VersionContext } from './VersionResolver'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
+import { takeFirst } from '@/lib/db/take-first'
 import {
   branchItems,
   changeOrders,
@@ -62,14 +63,16 @@ describe('VersionResolver', () => {
     user = await insertTestUser(testDb.db)
 
     // Create test program
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Test Program',
-        code: `PROG-${uniquePrefix}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Test Program',
+          code: `PROG-${uniquePrefix}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     programId = program.id
   })
@@ -146,22 +149,24 @@ describe('VersionResolver', () => {
 
       // Create a part item (Rev A)
       const masterId = crypto.randomUUID()
-      const [itemRevA] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-PART-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Test Part Rev A',
-          state: 'Released',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId,
-          commitId: design.initialCommit!.id,
-        })
-        .returning()
+      const itemRevA = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-PART-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Test Part Rev A',
+            state: 'Released',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId,
+            commitId: design.initialCommit!.id,
+          })
+          .returning(),
+      )
 
       itemMasterId = masterId
       itemRevAId = itemRevA.id
@@ -219,21 +224,23 @@ describe('VersionResolver', () => {
       beforeEach(async () => {
         // Create a change order item first (required for ECO branch)
         const coMasterId = crypto.randomUUID()
-        const [coItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: coMasterId,
-            itemNumber: `${uniquePrefix}-ECO-001`,
-            revision: 'A',
-            itemType: 'ChangeOrder',
-            name: 'Test ECO',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId,
-          })
-          .returning()
+        const coItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: coMasterId,
+              itemNumber: `${uniquePrefix}-ECO-001`,
+              revision: 'A',
+              itemType: 'ChangeOrder',
+              name: 'Test ECO',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId,
+            })
+            .returning(),
+        )
 
         changeOrderItemId = coItem.id
 
@@ -253,21 +260,23 @@ describe('VersionResolver', () => {
         ecoBranchId = ecoBranch.id
 
         // Create Rev B on the ECO branch
-        const [itemRevB] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: itemMasterId,
-            itemNumber: `${uniquePrefix}-PART-001`,
-            revision: 'B',
-            itemType: 'Part',
-            name: 'Test Part Rev B',
-            state: 'Draft',
-            isCurrent: false,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId,
-          })
-          .returning()
+        const itemRevB = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: itemMasterId,
+              itemNumber: `${uniquePrefix}-PART-001`,
+              revision: 'B',
+              itemType: 'Part',
+              name: 'Test Part Rev B',
+              state: 'Draft',
+              isCurrent: false,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId,
+            })
+            .returning(),
+        )
 
         itemRevBId = itemRevB.id
 
@@ -308,21 +317,23 @@ describe('VersionResolver', () => {
       it('falls back to main branch when item not modified on branch', async () => {
         // Create a new item that only exists on main
         const newMasterId = crypto.randomUUID()
-        const [newItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: newMasterId,
-            itemNumber: `${uniquePrefix}-PART-002`,
-            revision: 'A',
-            itemType: 'Part',
-            name: 'Unmodified Part',
-            state: 'Released',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId,
-          })
-          .returning()
+        const newItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: newMasterId,
+              itemNumber: `${uniquePrefix}-PART-002`,
+              revision: 'A',
+              itemType: 'Part',
+              name: 'Unmodified Part',
+              state: 'Released',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId,
+            })
+            .returning(),
+        )
 
         // Get main branch HEAD commit
         const mainBranch = await DesignService.getDefaultBranch(designId)
@@ -358,15 +369,17 @@ describe('VersionResolver', () => {
       beforeEach(async () => {
         // Create a tag at the initial commit
         const mainBranch = await DesignService.getDefaultBranch(designId)
-        const [tag] = await testDb.db
-          .insert(tags)
-          .values({
-            designId,
-            name: 'v1.0',
-            commitId: mainBranch!.headCommitId!,
-            createdBy: user.id,
-          })
-          .returning()
+        const tag = takeFirst(
+          await testDb.db
+            .insert(tags)
+            .values({
+              designId,
+              name: 'v1.0',
+              commitId: mainBranch!.headCommitId!,
+              createdBy: user.id,
+            })
+            .returning(),
+        )
 
         tagId = tag.id
       })
@@ -442,21 +455,23 @@ describe('VersionResolver', () => {
 
       beforeEach(async () => {
         // Create Rev B
-        const [itemRevB] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: itemMasterId,
-            itemNumber: `${uniquePrefix}-PART-001`,
-            revision: 'B',
-            itemType: 'Part',
-            name: 'Test Part Rev B',
-            state: 'Released',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId,
-          })
-          .returning()
+        const itemRevB = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: itemMasterId,
+              itemNumber: `${uniquePrefix}-PART-001`,
+              revision: 'B',
+              itemType: 'Part',
+              name: 'Test Part Rev B',
+              state: 'Released',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId,
+            })
+            .returning(),
+        )
 
         itemRevBId = itemRevB.id
 
@@ -548,21 +563,23 @@ describe('VersionResolver', () => {
     it('returns branch context for named branch', async () => {
       // Create a change order item first (required for ECO branch)
       const coMasterId = crypto.randomUUID()
-      const [coItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: coMasterId,
-          itemNumber: `${uniquePrefix}-ECO-002`,
-          revision: 'A',
-          itemType: 'ChangeOrder',
-          name: 'Test ECO for Branch',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId,
-        })
-        .returning()
+      const coItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: coMasterId,
+            itemNumber: `${uniquePrefix}-ECO-002`,
+            revision: 'A',
+            itemType: 'ChangeOrder',
+            name: 'Test ECO for Branch',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId,
+          })
+          .returning(),
+      )
 
       // Create change order specific data
       await testDb.db.insert(changeOrders).values({
@@ -617,22 +634,24 @@ describe('VersionResolver', () => {
 
       // Create a part item
       const masterId = crypto.randomUUID()
-      const [itemRevA] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-IPART-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Test Part',
-          state: 'Released',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId,
-          commitId: initialCommitId,
-        })
-        .returning()
+      const itemRevA = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-IPART-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Test Part',
+            state: 'Released',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId,
+            commitId: initialCommitId,
+          })
+          .returning(),
+      )
 
       itemRevAId = itemRevA.id
 
@@ -753,22 +772,24 @@ describe('VersionResolver', () => {
       // Create multiple items
       for (let i = 0; i < 3; i++) {
         const masterId = crypto.randomUUID()
-        const [item] = await testDb.db
-          .insert(items)
-          .values({
-            masterId,
-            itemNumber: `${uniquePrefix}-PAGE-00${i}`,
-            revision: 'A',
-            itemType: 'Part',
-            name: `Pagination Part ${i}`,
-            state: 'Released',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId,
-            commitId: initialCommitId,
-          })
-          .returning()
+        const item = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId,
+              itemNumber: `${uniquePrefix}-PAGE-00${i}`,
+              revision: 'A',
+              itemType: 'Part',
+              name: `Pagination Part ${i}`,
+              state: 'Released',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId,
+              commitId: initialCommitId,
+            })
+            .returning(),
+        )
 
         await testDb.db.insert(itemVersions).values({
           itemId: item.id,
@@ -800,15 +821,17 @@ describe('VersionResolver', () => {
     it('returns items at tag context', async () => {
       // Create a tag
       const mainBranch = await DesignService.getDefaultBranch(designId)
-      const [tag] = await testDb.db
-        .insert(tags)
-        .values({
-          designId,
-          name: 'v1.0-items',
-          commitId: mainBranch!.headCommitId!,
-          createdBy: user.id,
-        })
-        .returning()
+      const tag = takeFirst(
+        await testDb.db
+          .insert(tags)
+          .values({
+            designId,
+            name: 'v1.0-items',
+            commitId: mainBranch!.headCommitId!,
+            createdBy: user.id,
+          })
+          .returning(),
+      )
 
       const context: VersionContext = { type: 'tag', tagId: tag.id }
 
@@ -843,21 +866,23 @@ describe('VersionResolver', () => {
 
       // Create a part assigned to this design
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-FALL-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Fallback Part',
-          state: 'Released',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-FALL-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Fallback Part',
+            state: 'Released',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       // Track on main branch via branchItems (but NOT in itemVersions)
       await testDb.db.insert(branchItems).values({
@@ -888,21 +913,23 @@ describe('VersionResolver', () => {
 
       // Create a part with isCurrent=true and designId set, but no branchItems tracking
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-ICPART-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'IsCurrent Part',
-          state: 'Released',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-ICPART-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'IsCurrent Part',
+            state: 'Released',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       // No branchItems, no itemVersions - should find via isCurrent fallback
       const context: VersionContext = { type: 'released', designId: design.id }
@@ -927,22 +954,24 @@ describe('VersionResolver', () => {
 
       // Create a part with itemVersion entry (standard path)
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-CPRI-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Commit Priority Part',
-          state: 'Released',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-          commitId: initialCommitId,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-CPRI-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Commit Priority Part',
+            state: 'Released',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+            commitId: initialCommitId,
+          })
+          .returning(),
+      )
 
       await testDb.db.insert(itemVersions).values({
         itemId: item.id,
@@ -1022,21 +1051,23 @@ describe('VersionResolver', () => {
     it('returns branch name for branch context', async () => {
       // Create ECO branch
       const coMasterId = crypto.randomUUID()
-      const [coItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: coMasterId,
-          itemNumber: `${uniquePrefix}-ECO-CTX`,
-          revision: 'A',
-          itemType: 'ChangeOrder',
-          name: 'Context ECO',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId,
-        })
-        .returning()
+      const coItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: coMasterId,
+            itemNumber: `${uniquePrefix}-ECO-CTX`,
+            revision: 'A',
+            itemType: 'ChangeOrder',
+            name: 'Context ECO',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId,
+          })
+          .returning(),
+      )
 
       await testDb.db.insert(changeOrders).values({
         itemId: coItem.id,
@@ -1093,15 +1124,17 @@ describe('VersionResolver', () => {
 
     it('returns tag name for tag context', async () => {
       const mainBranch = await DesignService.getDefaultBranch(designId)
-      const [tag] = await testDb.db
-        .insert(tags)
-        .values({
-          designId,
-          name: 'release-1.0',
-          commitId: mainBranch!.headCommitId!,
-          createdBy: user.id,
-        })
-        .returning()
+      const tag = takeFirst(
+        await testDb.db
+          .insert(tags)
+          .values({
+            designId,
+            name: 'release-1.0',
+            commitId: mainBranch!.headCommitId!,
+            createdBy: user.id,
+          })
+          .returning(),
+      )
 
       const context: VersionContext = { type: 'tag', tagId: tag.id }
 
@@ -1140,22 +1173,24 @@ describe('VersionResolver', () => {
 
       // Create a part
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-AVAIL-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Available Part',
-          state: 'Released',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId,
-          commitId: initialCommitId,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-AVAIL-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Available Part',
+            state: 'Released',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId,
+            commitId: initialCommitId,
+          })
+          .returning(),
+      )
 
       itemMasterId = masterId
 
@@ -1201,21 +1236,23 @@ describe('VersionResolver', () => {
     it('marks ECO branch with exists=true only when item is tracked', async () => {
       // Create ECO branch
       const coMasterId = crypto.randomUUID()
-      const [coItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: coMasterId,
-          itemNumber: `${uniquePrefix}-ECO-AVAIL`,
-          revision: 'A',
-          itemType: 'ChangeOrder',
-          name: 'Avail ECO',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId,
-        })
-        .returning()
+      const coItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: coMasterId,
+            itemNumber: `${uniquePrefix}-ECO-AVAIL`,
+            revision: 'A',
+            itemType: 'ChangeOrder',
+            name: 'Avail ECO',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId,
+          })
+          .returning(),
+      )
 
       await testDb.db.insert(changeOrders).values({
         itemId: coItem.id,
@@ -1296,22 +1333,24 @@ describe('VersionResolver', () => {
 
       // Create a part on main
       const masterId = crypto.randomUUID()
-      const [mainItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-BITEM-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Main Part',
-          state: 'Released',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId,
-          commitId: initialCommitId,
-        })
-        .returning()
+      const mainItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-BITEM-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Main Part',
+            state: 'Released',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId,
+            commitId: initialCommitId,
+          })
+          .returning(),
+      )
 
       itemMasterId = masterId
 
@@ -1323,21 +1362,23 @@ describe('VersionResolver', () => {
 
       // Create ECO branch
       const coMasterId = crypto.randomUUID()
-      const [coItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: coMasterId,
-          itemNumber: `${uniquePrefix}-ECO-BITEM`,
-          revision: 'A',
-          itemType: 'ChangeOrder',
-          name: 'Branch Items ECO',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId,
-        })
-        .returning()
+      const coItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: coMasterId,
+            itemNumber: `${uniquePrefix}-ECO-BITEM`,
+            revision: 'A',
+            itemType: 'ChangeOrder',
+            name: 'Branch Items ECO',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId,
+          })
+          .returning(),
+      )
 
       await testDb.db.insert(changeOrders).values({
         itemId: coItem.id,
@@ -1353,21 +1394,23 @@ describe('VersionResolver', () => {
       ecoBranchId = ecoBranch.id
 
       // Create modified version on branch
-      const [branchItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-BITEM-001`,
-          revision: 'B',
-          itemType: 'Part',
-          name: 'Modified Part',
-          state: 'Draft',
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId,
-        })
-        .returning()
+      const branchItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-BITEM-001`,
+            revision: 'B',
+            itemType: 'Part',
+            name: 'Modified Part',
+            state: 'Draft',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId,
+          })
+          .returning(),
+      )
 
       branchItemId = branchItem.id
 
@@ -1398,21 +1441,23 @@ describe('VersionResolver', () => {
     it('includes items added on branch', async () => {
       // Add a new item on the branch
       const newMasterId = crypto.randomUUID()
-      const [newItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: newMasterId,
-          itemNumber: `${uniquePrefix}-BITEM-NEW`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'New Branch Part',
-          state: 'Draft',
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId,
-        })
-        .returning()
+      const newItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: newMasterId,
+            itemNumber: `${uniquePrefix}-BITEM-NEW`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'New Branch Part',
+            state: 'Draft',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId,
+          })
+          .returning(),
+      )
 
       await testDb.db.insert(branchItems).values({
         branchId: ecoBranchId,

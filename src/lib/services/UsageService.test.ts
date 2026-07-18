@@ -31,6 +31,7 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { documents, items, parts, programs } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors'
+import { takeFirst } from '@/lib/db/take-first'
 import '@/lib/items/registerItemTypes.server'
 
 describe('UsageService', () => {
@@ -54,14 +55,16 @@ describe('UsageService', () => {
     user = await insertTestUser(testDb.db)
 
     // Create test program
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Test Program',
-        code: `PROG-${Date.now()}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Test Program',
+          code: `PROG-${Date.now()}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     programId = program.id
 
@@ -101,23 +104,25 @@ describe('UsageService', () => {
       overrides?.itemNumber ??
       `P-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 
-    const [item] = await testDb.db
-      .insert(items)
-      .values({
-        masterId,
-        itemNumber,
-        revision: 'A',
-        itemType: 'Part',
-        name: overrides?.name ?? 'Test Definition Part',
-        state: 'Draft',
-        designId,
-        sysmlType: 'PartDefinition',
-        metamodel: 'cascadia',
-        isCurrent: true,
-        createdBy: user.id,
-        modifiedBy: user.id,
-      })
-      .returning()
+    const item = takeFirst(
+      await testDb.db
+        .insert(items)
+        .values({
+          masterId,
+          itemNumber,
+          revision: 'A',
+          itemType: 'Part',
+          name: overrides?.name ?? 'Test Definition Part',
+          state: 'Draft',
+          designId,
+          sysmlType: 'PartDefinition',
+          metamodel: 'cascadia',
+          isCurrent: true,
+          createdBy: user.id,
+          modifiedBy: user.id,
+        })
+        .returning(),
+    )
 
     await testDb.db.insert(parts).values({
       itemId: item.id,
@@ -146,23 +151,25 @@ describe('UsageService', () => {
       overrides?.itemNumber ??
       `D-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 
-    const [item] = await testDb.db
-      .insert(items)
-      .values({
-        masterId,
-        itemNumber,
-        revision: 'A',
-        itemType: 'Document',
-        name: overrides?.name ?? 'Test Definition Document',
-        state: 'Draft',
-        designId,
-        sysmlType: 'ItemDefinition',
-        metamodel: 'cascadia',
-        isCurrent: true,
-        createdBy: user.id,
-        modifiedBy: user.id,
-      })
-      .returning()
+    const item = takeFirst(
+      await testDb.db
+        .insert(items)
+        .values({
+          masterId,
+          itemNumber,
+          revision: 'A',
+          itemType: 'Document',
+          name: overrides?.name ?? 'Test Definition Document',
+          state: 'Draft',
+          designId,
+          sysmlType: 'ItemDefinition',
+          metamodel: 'cascadia',
+          isCurrent: true,
+          createdBy: user.id,
+          modifiedBy: user.id,
+        })
+        .returning(),
+    )
 
     await testDb.db.insert(documents).values({
       itemId: item.id,
@@ -401,24 +408,26 @@ describe('UsageService', () => {
 
       // Create a usage pointing to the definition
       const usageMasterId = randomUUID()
-      const [usage] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: usageMasterId,
-          itemNumber: `P-USAGE-${Date.now()}`,
-          revision: '-',
-          itemType: 'Part',
-          name: 'Usage of Definition',
-          state: 'Draft',
-          designId,
-          usageOf: definition.id,
-          sysmlType: 'PartUsage',
-          metamodel: 'cascadia',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const usage = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: usageMasterId,
+            itemNumber: `P-USAGE-${Date.now()}`,
+            revision: '-',
+            itemType: 'Part',
+            name: 'Usage of Definition',
+            state: 'Draft',
+            designId,
+            usageOf: definition.id,
+            sysmlType: 'PartUsage',
+            metamodel: 'cascadia',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       const resolved = await UsageService.resolveDefinition(usage.id)
 
@@ -432,44 +441,48 @@ describe('UsageService', () => {
       const definition = await insertDefinitionPart({ name: 'Root Definition' })
 
       // Usage 1 pointing to definition
-      const [usage1] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: randomUUID(),
-          itemNumber: `P-U1-${Date.now()}`,
-          revision: '-',
-          itemType: 'Part',
-          name: 'First Level Usage',
-          state: 'Draft',
-          designId,
-          usageOf: definition.id,
-          sysmlType: 'PartUsage',
-          metamodel: 'cascadia',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const usage1 = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: randomUUID(),
+            itemNumber: `P-U1-${Date.now()}`,
+            revision: '-',
+            itemType: 'Part',
+            name: 'First Level Usage',
+            state: 'Draft',
+            designId,
+            usageOf: definition.id,
+            sysmlType: 'PartUsage',
+            metamodel: 'cascadia',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Usage 2 pointing to usage1
-      const [usage2] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: randomUUID(),
-          itemNumber: `P-U2-${Date.now()}`,
-          revision: '-',
-          itemType: 'Part',
-          name: 'Second Level Usage',
-          state: 'Draft',
-          designId,
-          usageOf: usage1.id,
-          sysmlType: 'PartUsage',
-          metamodel: 'cascadia',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const usage2 = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: randomUUID(),
+            itemNumber: `P-U2-${Date.now()}`,
+            revision: '-',
+            itemType: 'Part',
+            name: 'Second Level Usage',
+            state: 'Draft',
+            designId,
+            usageOf: usage1.id,
+            sysmlType: 'PartUsage',
+            metamodel: 'cascadia',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       const resolved = await UsageService.resolveDefinition(usage2.id)
 

@@ -21,7 +21,14 @@
  *   DEMO_SKIP_FILES  set to 'true' to skip vault file ingestion (DB rows + parts only)
  */
 
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+} from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHash, randomUUID } from 'node:crypto'
@@ -39,7 +46,11 @@ import {
   parts,
 } from '../src/lib/db/schema/items.ts'
 import { vaultFiles } from '../src/lib/db/schema/vault.ts'
-import { generateStoragePath, sanitizeFilename } from '../src/lib/vault/utils/file-utils.ts'
+import {
+  generateStoragePath,
+  sanitizeFilename,
+} from '../src/lib/vault/utils/file-utils.ts'
+import { takeFirst } from '../src/lib/db/take-first'
 
 // ============================================================================
 // Config
@@ -137,7 +148,9 @@ const adminRows = await db
 
 const admin = adminRows.at(0)
 if (!admin) {
-  console.error('Admin user (admin@cascadia.local) not found. Run scripts/seed-minimal.ts first.')
+  console.error(
+    'Admin user (admin@cascadia.local) not found. Run scripts/seed-minimal.ts first.',
+  )
   process.exit(1)
 }
 
@@ -158,14 +171,18 @@ if (existingProgram.length > 0) {
 
 if (!existsSync(MANIFEST_PATH)) {
   console.error(`Manifest not found at ${MANIFEST_PATH}.`)
-  console.error('The demo dataset lives in Cascadia-PLM/Demo-Data, not this repo.')
+  console.error(
+    'The demo dataset lives in Cascadia-PLM/Demo-Data, not this repo.',
+  )
   console.error('Fetch it with:  npm run demo:fetch')
   process.exit(1)
 }
 
 const manifest: Manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf-8'))
 
-console.log(`   parts: ${manifest.parts.length}, relationships: ${manifest.relationships.length}`)
+console.log(
+  `   parts: ${manifest.parts.length}, relationships: ${manifest.relationships.length}`,
+)
 
 // A half-fetched dataset used to seed "successfully" with zero vault files: every
 // part fell through the !haveGlb branch below and the demo came up with no 3D
@@ -173,12 +190,15 @@ console.log(`   parts: ${manifest.parts.length}, relationships: ${manifest.relat
 if (!SKIP_FILES) {
   const expectedGlb = manifest.parts.filter((p) => p.cadFileBase).length
   const actualGlb = existsSync(GLB_DIR)
-    ? readdirSync(GLB_DIR).filter((f) => f.toLowerCase().endsWith('.glb')).length
+    ? readdirSync(GLB_DIR).filter((f) => f.toLowerCase().endsWith('.glb'))
+        .length
     : -1
 
   if (actualGlb === -1) {
     console.error(`Manifest is present but ${GLB_DIR} is missing.`)
-    console.error('The dataset is incomplete. Re-fetch it with:  npm run demo:fetch')
+    console.error(
+      'The dataset is incomplete. Re-fetch it with:  npm run demo:fetch',
+    )
     process.exit(1)
   }
   if (actualGlb < expectedGlb) {
@@ -186,7 +206,9 @@ if (!SKIP_FILES) {
       `Dataset is incomplete: manifest expects ${expectedGlb} GLB files, found ${actualGlb} in ${GLB_DIR}.`,
     )
     console.error('Re-fetch it with:  npm run demo:fetch')
-    console.error('To seed database rows without any CAD files, set DEMO_SKIP_FILES=true.')
+    console.error(
+      'To seed database rows without any CAD files, set DEMO_SKIP_FILES=true.',
+    )
     process.exit(1)
   }
 }
@@ -199,7 +221,8 @@ await db
     id: IDS.program,
     name: 'Robot Arm Program',
     code: 'ROBOT-ARM',
-    description: 'TDJ-25 6-DOF robot arm — sample dataset for the Cascadia demo.',
+    description:
+      'TDJ-25 6-DOF robot arm — sample dataset for the Cascadia demo.',
     status: 'Active',
     customer: 'Cascadia Demo',
     createdBy: admin.id,
@@ -227,38 +250,51 @@ await db.insert(designs).values({
   programId: IDS.program,
   name: manifest.metadata.name,
   code: manifest.metadata.designCode,
-  description: 'TDJ-25 robot arm — 6-DOF demonstration assembly with ~88 parts.',
+  description:
+    'TDJ-25 robot arm — 6-DOF demonstration assembly with ~88 parts.',
   designType: 'Engineering',
   createdBy: admin.id,
 })
 
 // Insert temp commit (branchId placeholder — will be patched after branch insert).
-const [initialCommit] = await db
-  .insert(commits)
-  .values({
-    designId: IDS.design,
-    branchId: IDS.design, // placeholder; patched below
-    message: 'Initial commit',
-    createdBy: admin.id,
-  })
-  .returning()
+const initialCommit = takeFirst(
+  await db
+    .insert(commits)
+    .values({
+      designId: IDS.design,
+      branchId: IDS.design, // placeholder; patched below
+      message: 'Initial commit',
+      createdBy: admin.id,
+    })
+    .returning(),
+)
 
-const [mainBranch] = await db
-  .insert(branches)
-  .values({
-    designId: IDS.design,
-    name: 'main',
-    branchType: 'main',
-    headCommitId: initialCommit.id,
-    baseCommitId: initialCommit.id,
-    createdBy: admin.id,
-  })
-  .returning()
+const mainBranch = takeFirst(
+  await db
+    .insert(branches)
+    .values({
+      designId: IDS.design,
+      name: 'main',
+      branchType: 'main',
+      headCommitId: initialCommit.id,
+      baseCommitId: initialCommit.id,
+      createdBy: admin.id,
+    })
+    .returning(),
+)
 
-await db.update(commits).set({ branchId: mainBranch.id }).where(eq(commits.id, initialCommit.id))
-await db.update(designs).set({ defaultBranchId: mainBranch.id }).where(eq(designs.id, IDS.design))
+await db
+  .update(commits)
+  .set({ branchId: mainBranch.id })
+  .where(eq(commits.id, initialCommit.id))
+await db
+  .update(designs)
+  .set({ defaultBranchId: mainBranch.id })
+  .where(eq(designs.id, IDS.design))
 
-console.log(`✓ Design ${manifest.metadata.designCode} (main branch + initial commit)`)
+console.log(
+  `✓ Design ${manifest.metadata.designCode} (main branch + initial commit)`,
+)
 
 // ---- 6. Bulk-insert items + parts -----------------------------------------
 
@@ -305,8 +341,14 @@ const prepared: Array<PreparedItem> = sortedParts.map((p) => {
 })
 
 for (const batch of chunk(prepared, 200)) {
-  await db.insert(items).values(batch.map((p) => p.itemRow)).onConflictDoNothing()
-  await db.insert(parts).values(batch.map((p) => p.partRow)).onConflictDoNothing()
+  await db
+    .insert(items)
+    .values(batch.map((p) => p.itemRow))
+    .onConflictDoNothing()
+  await db
+    .insert(parts)
+    .values(batch.map((p) => p.partRow))
+    .onConflictDoNothing()
 }
 
 console.log(`✓ Inserted ${prepared.length} parts`)
@@ -344,7 +386,9 @@ for (const batch of chunk(relRows, 500)) {
   await db.insert(itemRelationships).values(batch)
 }
 
-console.log(`✓ Inserted ${relRows.length} BOM relationships${skippedRels ? ` (skipped ${skippedRels})` : ''}`)
+console.log(
+  `✓ Inserted ${relRows.length} BOM relationships${skippedRels ? ` (skipped ${skippedRels})` : ''}`,
+)
 
 // ---- 8. Vault files (GLB + thumbnail per part; STEP optional) ------------
 //
@@ -353,9 +397,9 @@ console.log(`✓ Inserted ${relRows.length} BOM relationships${skippedRels ? ` (
 // the primary model; users get a 3D viewer immediately. If a STEP file IS on
 // disk (developer workflow), it's ingested as a secondary cad_model row.
 
-let vaultComplete = 0     // GLB + thumbnail both present
-let vaultGlbOnly = 0      // GLB but no thumbnail
-let vaultMissing = 0      // no GLB at all
+let vaultComplete = 0 // GLB + thumbnail both present
+let vaultGlbOnly = 0 // GLB but no thumbnail
+let vaultMissing = 0 // no GLB at all
 
 if (SKIP_FILES) {
   console.log('   DEMO_SKIP_FILES=true → skipping vault file ingestion')
@@ -394,7 +438,13 @@ if (SKIP_FILES) {
       const buf = readFileSync(src)
       const hash = createHash('sha256').update(buf).digest('hex')
       const sanitized = sanitizeFilename(origName)
-      const storagePath = generateStoragePath(masterId, 'A', fileId, 1, sanitized)
+      const storagePath = generateStoragePath(
+        masterId,
+        'A',
+        fileId,
+        1,
+        sanitized,
+      )
       const dst = join(VAULT_ROOT, storagePath)
       mkdirSync(dirname(dst), { recursive: true })
       copyFileSync(src, dst)
@@ -424,14 +474,36 @@ if (SKIP_FILES) {
     // GLB is always the primary cad_model — that's what the 3D viewer renders.
     // hasColors=true tells the viewer to keep the embedded glTF materials
     // instead of overriding with its uniform gray preset.
-    await ingest(glbFileId, glbSrc, `${part.cadFileBase}.glb`, 'cad_model', true, { units: 'mm', hasColors: true })
+    await ingest(
+      glbFileId,
+      glbSrc,
+      `${part.cadFileBase}.glb`,
+      'cad_model',
+      true,
+      { units: 'mm', hasColors: true },
+    )
     // STEP secondary, only if developer kept it locally.
     if (stepFileId) {
-      await ingest(stepFileId, stepSrc, `${part.cadFileBase}.step`, 'cad_model', false, { units: 'mm' })
+      await ingest(
+        stepFileId,
+        stepSrc,
+        `${part.cadFileBase}.step`,
+        'cad_model',
+        false,
+        { units: 'mm' },
+      )
     }
     if (thumbFileId) {
-      await ingest(thumbFileId, thumbSrc, `${part.cadFileBase}.png`, 'thumbnail', false)
-      const linkIds = [glbFileId, stepFileId].filter((x): x is NonNullable<typeof x> => x !== null)
+      await ingest(
+        thumbFileId,
+        thumbSrc,
+        `${part.cadFileBase}.png`,
+        'thumbnail',
+        false,
+      )
+      const linkIds = [glbFileId, stepFileId].filter(
+        (x): x is NonNullable<typeof x> => x !== null,
+      )
       for (const id of linkIds) {
         await db
           .update(vaultFiles)
@@ -445,9 +517,9 @@ if (SKIP_FILES) {
   }
 
   console.log(
-    `✓ Vault files: ${vaultComplete} complete (GLB + thumbnail)`
-    + (vaultGlbOnly ? `, ${vaultGlbOnly} GLB-only` : '')
-    + (vaultMissing ? `, ${vaultMissing} parts had no GLB on disk` : ''),
+    `✓ Vault files: ${vaultComplete} complete (GLB + thumbnail)` +
+      (vaultGlbOnly ? `, ${vaultGlbOnly} GLB-only` : '') +
+      (vaultMissing ? `, ${vaultMissing} parts had no GLB on disk` : ''),
   )
 }
 
@@ -477,7 +549,8 @@ if (SKIP_ECO) {
     priority: 'medium',
     reasonForChange:
       'Initial release of the TDJ-25 robot arm assembly to baseline the demo dataset.',
-    impactDescription: 'Establishes the first released revision (A) for all parts.',
+    impactDescription:
+      'Establishes the first released revision (A) for all parts.',
     submittedAt: new Date(),
     approvedAt: new Date(),
     approvedBy: admin.id,
@@ -512,7 +585,9 @@ if (SKIP_ECO) {
     }
   }
 
-  console.log(`✓ ECO-2026-001 released (${affectedRows.length} parts → Released)`)
+  console.log(
+    `✓ ECO-2026-001 released (${affectedRows.length} parts → Released)`,
+  )
 }
 
 // ---- Summary --------------------------------------------------------------

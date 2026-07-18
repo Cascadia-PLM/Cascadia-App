@@ -22,6 +22,7 @@ import type {
   CatalogStockSize,
   CatalogSupplier,
 } from '../db/schema/componentCatalog'
+import { takeFirst } from '@/lib/db/take-first'
 
 // ============================================================================
 // Zod Schemas
@@ -354,10 +355,12 @@ export class CatalogService {
       tags: validated.tags,
       verified: validated.verified,
     }
-    const [inserted] = await db
-      .insert(componentCatalogEntries)
-      .values(values as any)
-      .returning()
+    const inserted = takeFirst(
+      await db
+        .insert(componentCatalogEntries)
+        .values(values as any)
+        .returning(),
+    )
 
     // Fetch with category joined
     return this.getById(inserted.id)
@@ -457,15 +460,17 @@ export class CatalogService {
   }> {
     const validated = catalogCategoryCreateSchema.parse(data)
 
-    const [inserted] = await db
-      .insert(componentCatalogCategories)
-      .values({
-        name: validated.name,
-        slug: validated.slug,
-        parentId: validated.parentId ?? null,
-        sortOrder: validated.sortOrder,
-      })
-      .returning()
+    const inserted = takeFirst(
+      await db
+        .insert(componentCatalogCategories)
+        .values({
+          name: validated.name,
+          slug: validated.slug,
+          parentId: validated.parentId ?? null,
+          sortOrder: validated.sortOrder,
+        })
+        .returning(),
+    )
 
     return {
       id: inserted.id,

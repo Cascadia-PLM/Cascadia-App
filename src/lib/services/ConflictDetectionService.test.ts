@@ -26,6 +26,7 @@ import { ConflictDetectionService } from './ConflictDetectionService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
+import { takeFirst } from '@/lib/db/take-first'
 import {
   branchItems,
   changeOrderAffectedItems,
@@ -61,14 +62,16 @@ describe('ConflictDetectionService', () => {
 
     // Create test program with unique code (timestamp + random suffix for parallel test isolation)
     const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Test Program',
-        code: `PROG-${uniqueId}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Test Program',
+          code: `PROG-${uniqueId}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     programId = program.id
 
@@ -665,21 +668,23 @@ describe('ConflictDetectionService', () => {
         .where(eq(branchItems.branchId, ecoBranch.id))
 
       // Create a new base version
-      const [newBaseItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: part.masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: part.itemNumber,
-          revision: 'B',
-          name: 'New Base Name',
-          state: 'Draft',
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newBaseItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: part.masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: part.itemNumber,
+            revision: 'B',
+            name: 'New Base Name',
+            state: 'Draft',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Attempt rebase
       const result = await ConflictDetectionService.rebaseItem(
@@ -720,21 +725,23 @@ describe('ConflictDetectionService', () => {
         .where(eq(branchItems.branchId, ecoBranch.id))
 
       // Create a new base version
-      const [newBaseItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: part.masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: part.itemNumber,
-          revision: 'B',
-          name: 'New Base Name',
-          state: 'Draft',
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newBaseItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: part.masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: part.itemNumber,
+            revision: 'B',
+            name: 'New Base Name',
+            state: 'Draft',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Provide resolution
       const result = await ConflictDetectionService.rebaseItem(
@@ -783,21 +790,23 @@ describe('ConflictDetectionService', () => {
       }
 
       // Create new base with non-conflicting change (different field)
-      const [newBaseItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: part.masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: part.itemNumber,
-          revision: 'B',
-          name: 'Original Name', // Same as original
-          state: 'Active', // Different field changed
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newBaseItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: part.masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: part.itemNumber,
+            revision: 'B',
+            name: 'Original Name', // Same as original
+            state: 'Active', // Different field changed
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       const result = await ConflictDetectionService.rebaseItem(
         branchItem.id,
@@ -864,21 +873,23 @@ describe('ConflictDetectionService', () => {
       }
 
       // Create new base with conflicting change
-      const [newBaseItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: part.masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: part.itemNumber,
-          revision: 'B',
-          name: 'Their Changed Name',
-          state: 'Draft',
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newBaseItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: part.masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: part.itemNumber,
+            revision: 'B',
+            name: 'Their Changed Name',
+            state: 'Draft',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Rebase with resolution provided
       const result = await ConflictDetectionService.rebaseItem(
@@ -1061,21 +1072,23 @@ describe('ConflictDetectionService', () => {
 
       if (mainBranchItem?.currentItemId) {
         // Create a new item version on main with only revision changed
-        const [newMainItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: part.masterId,
-            designId,
-            itemType: 'Part',
-            itemNumber: part.itemNumber,
-            revision: 'B', // Only revision changed
-            name: part.name, // Same name
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-          })
-          .returning()
+        const newMainItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: part.masterId,
+              designId,
+              itemType: 'Part',
+              itemNumber: part.itemNumber,
+              revision: 'B', // Only revision changed
+              name: part.name, // Same name
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+            })
+            .returning(),
+        )
 
         // Update main branch item to point to new version
         await testDb.db
@@ -1136,21 +1149,23 @@ describe('ConflictDetectionService', () => {
         .where(eq(branchItems.branchId, mainBranchId))
 
       if (mainBranchItem?.currentItemId) {
-        const [newMainItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: part.masterId,
-            designId,
-            itemType: 'Part',
-            itemNumber: part.itemNumber,
-            revision: 'B',
-            name: part.name, // Same name
-            state: 'Active', // Different field changed
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-          })
-          .returning()
+        const newMainItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: part.masterId,
+              designId,
+              itemType: 'Part',
+              itemNumber: part.itemNumber,
+              revision: 'B',
+              name: part.name, // Same name
+              state: 'Active', // Different field changed
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+            })
+            .returning(),
+        )
 
         await testDb.db
           .update(branchItems)
@@ -1204,21 +1219,23 @@ describe('ConflictDetectionService', () => {
         .where(eq(branchItems.branchId, mainBranchId))
 
       if (mainBranchItem?.currentItemId) {
-        const [newMainItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: part.masterId,
-            designId,
-            itemType: 'Part',
-            itemNumber: part.itemNumber,
-            revision: 'B',
-            name: 'Main Name', // Same field, different value = conflict
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-          })
-          .returning()
+        const newMainItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: part.masterId,
+              designId,
+              itemType: 'Part',
+              itemNumber: part.itemNumber,
+              revision: 'B',
+              name: 'Main Name', // Same field, different value = conflict
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+            })
+            .returning(),
+        )
 
         await testDb.db
           .update(branchItems)
@@ -1577,16 +1594,18 @@ describe('ConflictDetectionService', () => {
       )
 
       // Add to branch items with no base (simulating new item added on branch)
-      const [branchItem] = await testDb.db
-        .insert(branchItems)
-        .values({
-          branchId: branch.id,
-          itemMasterId: newPart.masterId,
-          currentItemId: newPart.id,
-          baseItemId: null, // No base - new item
-          changeType: 'added',
-        })
-        .returning()
+      const branchItem = takeFirst(
+        await testDb.db
+          .insert(branchItems)
+          .values({
+            branchId: branch.id,
+            itemMasterId: newPart.masterId,
+            currentItemId: newPart.id,
+            baseItemId: null, // No base - new item
+            changeType: 'added',
+          })
+          .returning(),
+      )
 
       // Create a version on main that this new item could rebase to
       const newBaseItem = await ItemService.create(
@@ -1619,21 +1638,23 @@ describe('ConflictDetectionService', () => {
       partCounter++
       const baseItemNumber = `PART-${Date.now()}-${partCounter}`
       const masterId = crypto.randomUUID()
-      const [basePart] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: baseItemNumber,
-          name: 'Original Name',
-          state: 'Released',
-          revision: 'A',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const basePart = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: baseItemNumber,
+            name: 'Original Name',
+            state: 'Released',
+            revision: 'A',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Create ECO and branch
       const eco = await createChangeOrder('Name Conflict ECO')
@@ -1644,50 +1665,56 @@ describe('ConflictDetectionService', () => {
       )
 
       // Create working copy with different name (direct insert)
-      const [ourWorkingCopy] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: baseItemNumber,
-          name: 'Our Different Name',
-          state: 'Draft',
-          revision: 'DRAFT',
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const ourWorkingCopy = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: baseItemNumber,
+            name: 'Our Different Name',
+            state: 'Draft',
+            revision: 'DRAFT',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Manually create branch item with explicit base reference
-      const [branchItem] = await testDb.db
-        .insert(branchItems)
-        .values({
-          branchId: branch.id,
-          itemMasterId: masterId,
-          currentItemId: ourWorkingCopy.id,
-          baseItemId: basePart.id, // Explicit base for three-way merge
-          changeType: 'modified',
-        })
-        .returning()
+      const branchItem = takeFirst(
+        await testDb.db
+          .insert(branchItems)
+          .values({
+            branchId: branch.id,
+            itemMasterId: masterId,
+            currentItemId: ourWorkingCopy.id,
+            baseItemId: basePart.id, // Explicit base for three-way merge
+            changeType: 'modified',
+          })
+          .returning(),
+      )
 
       // Create new base version with a different name change (direct insert)
-      const [newBaseItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: baseItemNumber,
-          name: 'Their Different Name',
-          state: 'Released',
-          revision: 'B',
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newBaseItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: baseItemNumber,
+            name: 'Their Different Name',
+            state: 'Released',
+            revision: 'B',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // First attempt without resolutions - should detect name conflict
       const conflictResult = await ConflictDetectionService.rebaseItem(

@@ -7,6 +7,7 @@ import type {
   ConflictReview,
   EnrichedItemConflict,
 } from './types/conflict-review'
+import { takeFirst } from '@/lib/db/take-first'
 
 /**
  * Service for managing conflict reviews on ECOs.
@@ -94,18 +95,20 @@ export class ConflictReviewService {
     }
 
     // Insert new review
-    const [review] = await db
-      .insert(conflictReviews)
-      .values({
-        changeOrderId,
-        itemMasterId: conflict.itemMasterId,
-        conflictType: conflict.conflictType,
-        theirEcoId: conflict.theirEcoId || null,
-        conflictSignature: signature,
-        reviewedBy: userId,
-        notes: notes || null,
-      })
-      .returning()
+    const review = takeFirst(
+      await db
+        .insert(conflictReviews)
+        .values({
+          changeOrderId,
+          itemMasterId: conflict.itemMasterId,
+          conflictType: conflict.conflictType,
+          theirEcoId: conflict.theirEcoId || null,
+          conflictSignature: signature,
+          reviewedBy: userId,
+          notes: notes || null,
+        })
+        .returning(),
+    )
 
     return {
       ...review,

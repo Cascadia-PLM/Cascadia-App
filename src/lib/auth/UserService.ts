@@ -11,6 +11,7 @@ import type { UserWithRoles } from './types'
 import type { z } from 'zod'
 import { db } from '@/lib/db'
 import { roles, userRoles, users } from '@/lib/db/schema/users'
+import { takeFirst } from '@/lib/db/take-first'
 import {
   AlreadyExistsError,
   InvalidCredentialsError,
@@ -51,17 +52,19 @@ export class UserService {
     const passwordHash = await hashPassword(validated.password)
 
     // Create user
-    const [user] = await db
-      .insert(users)
-      .values({
-        email: validated.email,
-        name: validated.name,
-        passwordHash,
-        provider: validated.provider,
-        providerId: validated.providerId,
-        active: validated.active,
-      })
-      .returning()
+    const user = takeFirst(
+      await db
+        .insert(users)
+        .values({
+          email: validated.email,
+          name: validated.name,
+          passwordHash,
+          provider: validated.provider,
+          providerId: validated.providerId,
+          active: validated.active,
+        })
+        .returning(),
+    )
 
     // Assign default "User" role to new users
     const defaultRole = await db.query.roles.findFirst({

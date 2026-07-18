@@ -19,6 +19,7 @@ import { ParametricResolutionService } from '@/lib/services/ParametricResolution
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { apiHandler } from '@/lib/api/handler'
 import { db } from '@/lib/db'
+import { takeFirst } from '@/lib/db/take-first'
 import {
   items,
   workInstructionOperations,
@@ -463,17 +464,19 @@ app.post(
             ? Math.max(...existing.map((o) => o.orderIndex))
             : -1
 
-        const [operation] = await db
-          .insert(workInstructionOperations)
-          .values({
-            id: randomUUID(),
-            workInstructionId: params.id,
-            orderIndex: maxIndex + 1,
-            title: data.title.trim(),
-            description: data.description || null,
-            estimatedTime: data.estimatedTime || null,
-          })
-          .returning()
+        const operation = takeFirst(
+          await db
+            .insert(workInstructionOperations)
+            .values({
+              id: randomUUID(),
+              workInstructionId: params.id,
+              orderIndex: maxIndex + 1,
+              title: data.title.trim(),
+              description: data.description || null,
+              estimatedTime: data.estimatedTime || null,
+            })
+            .returning(),
+        )
 
         return new Response(JSON.stringify({ data: { operation } }), {
           status: 201,
@@ -737,16 +740,18 @@ app.post(
           throw new ValidationError('Part is already attached')
         }
 
-        const [attachment] = await db
-          .insert(workInstructionPartAttachments)
-          .values({
-            id: randomUUID(),
-            workInstructionId: params.id,
-            partId: data.partId,
-            inheritToMBOM: data.inheritToMBOM ?? false,
-            createdBy: user.id,
-          })
-          .returning()
+        const attachment = takeFirst(
+          await db
+            .insert(workInstructionPartAttachments)
+            .values({
+              id: randomUUID(),
+              workInstructionId: params.id,
+              partId: data.partId,
+              inheritToMBOM: data.inheritToMBOM ?? false,
+              createdBy: user.id,
+            })
+            .returning(),
+        )
 
         return new Response(JSON.stringify({ data: { attachment } }), {
           status: 201,
@@ -959,16 +964,18 @@ app.post(
         const stepId = randomUUID()
         const content: StepContent = data.content || { blocks: [] }
 
-        const [newStep] = await db
-          .insert(workInstructionSteps)
-          .values({
-            id: stepId,
-            workInstructionId: params.id,
-            orderIndex: newOrderIndex,
-            title: data.title || null,
-            content,
-          })
-          .returning()
+        const newStep = takeFirst(
+          await db
+            .insert(workInstructionSteps)
+            .values({
+              id: stepId,
+              workInstructionId: params.id,
+              orderIndex: newOrderIndex,
+              title: data.title || null,
+              content,
+            })
+            .returning(),
+        )
 
         return new Response(JSON.stringify({ data: { step: newStep } }), {
           status: 201,

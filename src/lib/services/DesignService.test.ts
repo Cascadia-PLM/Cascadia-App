@@ -23,6 +23,7 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { items, programs } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'
+import { takeFirst } from '@/lib/db/take-first'
 import '@/lib/items/registerItemTypes.server'
 
 describe('DesignService', () => {
@@ -41,14 +42,16 @@ describe('DesignService', () => {
   beforeEach(async () => {
     await testDb.beginTransaction()
     user = await insertTestUser(testDb.db)
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Test Program',
-        code: `PROG-${Date.now()}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Test Program',
+          code: `PROG-${Date.now()}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
     programId = program.id
   })
 
@@ -289,14 +292,16 @@ describe('DesignService', () => {
     })
 
     it('should filter by programId', async () => {
-      const [otherProgram] = await testDb.db
-        .insert(programs)
-        .values({
-          name: 'Other Program',
-          code: `OTHER-${Date.now()}`,
-          createdBy: user.id,
-        })
-        .returning()
+      const otherProgram = takeFirst(
+        await testDb.db
+          .insert(programs)
+          .values({
+            name: 'Other Program',
+            code: `OTHER-${Date.now()}`,
+            createdBy: user.id,
+          })
+          .returning(),
+      )
 
       await createDesign({ name: 'In Test Program' })
       await createDesign({
@@ -434,14 +439,16 @@ describe('DesignService', () => {
     })
 
     it('should scope by programIds for access control', async () => {
-      const [otherProgram] = await testDb.db
-        .insert(programs)
-        .values({
-          name: 'Access Program',
-          code: `ACPG-${Date.now()}`,
-          createdBy: user.id,
-        })
-        .returning()
+      const otherProgram = takeFirst(
+        await testDb.db
+          .insert(programs)
+          .values({
+            name: 'Access Program',
+            code: `ACPG-${Date.now()}`,
+            createdBy: user.id,
+          })
+          .returning(),
+      )
 
       await createDesign({ name: 'In Program' })
       await createDesign({

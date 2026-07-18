@@ -35,6 +35,7 @@ import { decryptCadApiKey } from '@/lib/cad-generation/settings'
 import { CAD_PROVIDER_KEYS } from '@/lib/cad-generation/settings-types'
 import { ThreadCacheService } from '@/lib/services/ThreadCacheService'
 import { StorageFactory } from '@/lib/vault/storage/storage-factory'
+import { takeFirst } from '@/lib/db/take-first'
 import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('Admin')
@@ -172,15 +173,17 @@ app.post(
         result = updated
       } else {
         // Create new
-        const [created] = await db
-          .insert(aiSettings)
-          .values({
-            enabled,
-            provider,
-            config: configToStore,
-            programId: null, // Global settings
-          })
-          .returning()
+        const created = takeFirst(
+          await db
+            .insert(aiSettings)
+            .values({
+              enabled,
+              provider,
+              config: configToStore,
+              programId: null, // Global settings
+            })
+            .returning(),
+        )
         result = created
       }
 

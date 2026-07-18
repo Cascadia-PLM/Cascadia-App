@@ -4,6 +4,7 @@ import { designCrossReferences } from '../db/schema/crossReferences'
 import { items } from '../db/schema/items'
 import { designs } from '../db/schema/designs'
 import { NotFoundError, ValidationError } from '../errors'
+import { takeFirst } from '@/lib/db/take-first'
 
 /**
  * Transaction client type for database operations
@@ -76,19 +77,21 @@ export class CrossDesignReferenceService {
       )
     }
 
-    const [ref] = await dbClient
-      .insert(designCrossReferences)
-      .values({
-        referencingDesignId: input.referencingDesignId,
-        referencedItemId: input.referencedItemId,
-        sourceDesignId: item.designId,
-        branchId: input.branchId || null,
-        changeType: input.branchId ? 'added' : null,
-        notes: input.notes || null,
-        createdBy: userId,
-        modifiedBy: userId,
-      })
-      .returning()
+    const ref = takeFirst(
+      await dbClient
+        .insert(designCrossReferences)
+        .values({
+          referencingDesignId: input.referencingDesignId,
+          referencedItemId: input.referencedItemId,
+          sourceDesignId: item.designId,
+          branchId: input.branchId || null,
+          changeType: input.branchId ? 'added' : null,
+          notes: input.notes || null,
+          createdBy: userId,
+          modifiedBy: userId,
+        })
+        .returning(),
+    )
 
     return ref
   }

@@ -17,6 +17,7 @@ import { db } from '../db'
 import { branches, commits, designs, items, tags } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import type { SQL } from 'drizzle-orm'
+import { takeFirst } from '@/lib/db/take-first'
 
 // Zod schemas for validation
 export const designCreateSchema = z.object({
@@ -189,21 +190,23 @@ export class DesignService {
 
     // Family designs don't have branches/commits - they're just containers
     if (designType === 'Family') {
-      const [design] = await db
-        .insert(designs)
-        .values({
-          programId: validated.programId,
-          name: validated.name,
-          code: validated.code,
-          description: validated.description,
-          designType: 'Family',
-          parentDesignId: validated.parentDesignId,
-          cloneSourceDesignId: validated.cloneSourceDesignId,
-          plannedQuantity: validated.plannedQuantity,
-          attributes: validated.attributes || {},
-          createdBy: userId,
-        })
-        .returning()
+      const design = takeFirst(
+        await db
+          .insert(designs)
+          .values({
+            programId: validated.programId,
+            name: validated.name,
+            code: validated.code,
+            description: validated.description,
+            designType: 'Family',
+            parentDesignId: validated.parentDesignId,
+            cloneSourceDesignId: validated.cloneSourceDesignId,
+            plannedQuantity: validated.plannedQuantity,
+            attributes: validated.attributes || {},
+            createdBy: userId,
+          })
+          .returning(),
+      )
 
       return {
         ...design,
@@ -215,45 +218,51 @@ export class DesignService {
     // Use a transaction to ensure atomicity for regular designs
     return db.transaction(async (tx) => {
       // 1. Insert design
-      const [design] = await tx
-        .insert(designs)
-        .values({
-          programId: validated.programId,
-          name: validated.name,
-          code: validated.code,
-          description: validated.description,
-          designType: designType,
-          parentDesignId: validated.parentDesignId,
-          cloneSourceDesignId: validated.cloneSourceDesignId,
-          plannedQuantity: validated.plannedQuantity,
-          attributes: validated.attributes || {},
-          createdBy: userId,
-        })
-        .returning()
+      const design = takeFirst(
+        await tx
+          .insert(designs)
+          .values({
+            programId: validated.programId,
+            name: validated.name,
+            code: validated.code,
+            description: validated.description,
+            designType: designType,
+            parentDesignId: validated.parentDesignId,
+            cloneSourceDesignId: validated.cloneSourceDesignId,
+            plannedQuantity: validated.plannedQuantity,
+            attributes: validated.attributes || {},
+            createdBy: userId,
+          })
+          .returning(),
+      )
 
       // 2. Create initial commit (with temporary branchId)
-      const [initialCommit] = await tx
-        .insert(commits)
-        .values({
-          designId: design.id,
-          branchId: design.id, // Temporary - will update after branch creation
-          message: 'Initial commit',
-          createdBy: userId,
-        })
-        .returning()
+      const initialCommit = takeFirst(
+        await tx
+          .insert(commits)
+          .values({
+            designId: design.id,
+            branchId: design.id, // Temporary - will update after branch creation
+            message: 'Initial commit',
+            createdBy: userId,
+          })
+          .returning(),
+      )
 
       // 3. Create main branch pointing to initial commit
-      const [mainBranch] = await tx
-        .insert(branches)
-        .values({
-          designId: design.id,
-          name: 'main',
-          branchType: 'main',
-          headCommitId: initialCommit.id,
-          baseCommitId: initialCommit.id,
-          createdBy: userId,
-        })
-        .returning()
+      const mainBranch = takeFirst(
+        await tx
+          .insert(branches)
+          .values({
+            designId: design.id,
+            name: 'main',
+            branchType: 'main',
+            headCommitId: initialCommit.id,
+            baseCommitId: initialCommit.id,
+            createdBy: userId,
+          })
+          .returning(),
+      )
 
       // 4. Update commit with correct branchId
       await tx
@@ -798,17 +807,19 @@ export class DesignService {
       throw new ValidationError('Design has no main branch or commits')
     }
 
-    const [tag] = await db
-      .insert(tags)
-      .values({
-        designId,
-        name: validated.name,
-        description: validated.description,
-        commitId: mainBranch.headCommitId,
-        tagType: validated.tagType,
-        createdBy: userId,
-      })
-      .returning()
+    const tag = takeFirst(
+      await db
+        .insert(tags)
+        .values({
+          designId,
+          name: validated.name,
+          description: validated.description,
+          commitId: mainBranch.headCommitId,
+          tagType: validated.tagType,
+          createdBy: userId,
+        })
+        .returning(),
+    )
 
     return tag
   }

@@ -8,6 +8,7 @@ import { notDeleted } from '../db/filters'
 import { branchItems, branches, items, tags } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import { DesignService } from './DesignService'
+import { takeFirst } from '@/lib/db/take-first'
 
 // Zod schemas for validation
 export const branchCreateSchema = z.object({
@@ -513,20 +514,22 @@ export class BranchService {
     return db.transaction(
       async (tx) => {
         // 1. Create the branch
-        const [branch] = await tx
-          .insert(branches)
-          .values({
-            designId: data.designId,
-            name: data.name,
-            branchType: data.branchType,
-            headCommitId: baseCommitId,
-            baseCommitId: baseCommitId,
-            changeOrderItemId: data.changeOrderItemId,
-            ownerId: data.ownerId,
-            sourceTagId: data.sourceTagId,
-            createdBy: data.userId,
-          })
-          .returning()
+        const branch = takeFirst(
+          await tx
+            .insert(branches)
+            .values({
+              designId: data.designId,
+              name: data.name,
+              branchType: data.branchType,
+              headCommitId: baseCommitId,
+              baseCommitId: baseCommitId,
+              changeOrderItemId: data.changeOrderItemId,
+              ownerId: data.ownerId,
+              sourceTagId: data.sourceTagId,
+              createdBy: data.userId,
+            })
+            .returning(),
+        )
 
         // 2. Note: branchItems are created lazily when items are first checked out
         // This avoids copying all items upfront for large designs

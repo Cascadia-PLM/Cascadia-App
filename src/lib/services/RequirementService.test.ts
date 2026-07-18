@@ -28,6 +28,7 @@ import { insertTestUser } from '@/__tests__/fixtures/users'
 import { programs } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { ItemService } from '@/lib/items/services/ItemService'
+import { takeFirst } from '@/lib/db/take-first'
 import '@/lib/items/registerItemTypes.server'
 
 describe('RequirementService', () => {
@@ -48,14 +49,16 @@ describe('RequirementService', () => {
     user = await insertTestUser(testDb.db)
 
     // Create program + design
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Test Program',
-        code: `PROG-${Date.now()}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Test Program',
+          code: `PROG-${Date.now()}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     const design = await DesignService.create(
       {

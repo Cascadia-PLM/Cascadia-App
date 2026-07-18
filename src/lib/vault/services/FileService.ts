@@ -21,6 +21,7 @@ import { BranchService } from '../../services/BranchService'
 import { ItemService } from '../../items/services/ItemService'
 import type { FileUploadMetadata, VaultStorage } from '../storage'
 import { vaultLogger } from '@/lib/logging/logger'
+import { takeFirst } from '@/lib/db/take-first'
 import {
   AlreadyExistsError,
   FileTooLargeError,
@@ -244,28 +245,30 @@ export class FileService {
     }
 
     // Insert file record
-    const [fileRecord] = await db
-      .insert(vaultFiles)
-      .values({
-        id: fileId,
-        itemId,
-        branchId: branchId ?? null,
-        fileName: sanitized,
-        originalFileName: metadata.originalFileName,
-        fileSize: file.length,
-        mimeType: metadata.mimeType,
-        fileHash,
-        storageType: (process.env.VAULT_TYPE as string) || 'local',
-        storagePath,
-        fileVersion: 1,
-        isLatestVersion: true,
-        isCheckedOut: false,
-        uploadedBy,
-        metadata: combinedMetadata,
-        fileCategory,
-        isPrimaryModel,
-      })
-      .returning()
+    const fileRecord = takeFirst(
+      await db
+        .insert(vaultFiles)
+        .values({
+          id: fileId,
+          itemId,
+          branchId: branchId ?? null,
+          fileName: sanitized,
+          originalFileName: metadata.originalFileName,
+          fileSize: file.length,
+          mimeType: metadata.mimeType,
+          fileHash,
+          storageType: (process.env.VAULT_TYPE as string) || 'local',
+          storagePath,
+          fileVersion: 1,
+          isLatestVersion: true,
+          isCheckedOut: false,
+          uploadedBy,
+          metadata: combinedMetadata,
+          fileCategory,
+          isPrimaryModel,
+        })
+        .returning(),
+    )
 
     // Log upload action
     await this.logAction({
@@ -807,26 +810,28 @@ export class FileService {
       )
 
       // Insert new version record (preserve branchId from original file)
-      const [newRecord] = await db
-        .insert(vaultFiles)
-        .values({
-          id: newFileId,
-          itemId: file.itemId,
-          branchId: file.branchId,
-          fileName: sanitized,
-          originalFileName: metadata.originalFileName,
-          fileSize: newFileData.length,
-          mimeType: metadata.mimeType,
-          fileHash,
-          storageType: (process.env.VAULT_TYPE as string) || 'local',
-          storagePath,
-          fileVersion: newVersionNumber,
-          isLatestVersion: true,
-          isCheckedOut: false,
-          uploadedBy: userId,
-          metadata: { ...extractedMetadata, ...metadata },
-        })
-        .returning()
+      const newRecord = takeFirst(
+        await db
+          .insert(vaultFiles)
+          .values({
+            id: newFileId,
+            itemId: file.itemId,
+            branchId: file.branchId,
+            fileName: sanitized,
+            originalFileName: metadata.originalFileName,
+            fileSize: newFileData.length,
+            mimeType: metadata.mimeType,
+            fileHash,
+            storageType: (process.env.VAULT_TYPE as string) || 'local',
+            storagePath,
+            fileVersion: newVersionNumber,
+            isLatestVersion: true,
+            isCheckedOut: false,
+            uploadedBy: userId,
+            metadata: { ...extractedMetadata, ...metadata },
+          })
+          .returning(),
+      )
 
       newVersion = newRecord as FileRecord
     } else {

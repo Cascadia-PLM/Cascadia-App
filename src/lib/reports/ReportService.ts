@@ -45,6 +45,7 @@ import type {
   ReportFilter,
   ReportSort,
 } from './types'
+import { takeFirst } from '@/lib/db/take-first'
 
 // Type-specific table mapping
 const typeTableMap = {
@@ -74,20 +75,22 @@ export class ReportService {
   ): Promise<Report> {
     return db.transaction(async (tx) => {
       // Insert main report
-      const [report] = await tx
-        .insert(reports)
-        .values({
-          name: data.name,
-          description: data.description,
-          itemType: data.itemType,
-          isPublic: data.isPublic,
-          sharedWithRoles: data.sharedWithRoles,
-          sharedWithUsers: data.sharedWithUsers,
-          config: data.config,
-          createdBy: userId,
-          modifiedBy: userId,
-        })
-        .returning()
+      const report = takeFirst(
+        await tx
+          .insert(reports)
+          .values({
+            name: data.name,
+            description: data.description,
+            itemType: data.itemType,
+            isPublic: data.isPublic,
+            sharedWithRoles: data.sharedWithRoles,
+            sharedWithUsers: data.sharedWithUsers,
+            config: data.config,
+            createdBy: userId,
+            modifiedBy: userId,
+          })
+          .returning(),
+      )
 
       // Insert columns (columns is required and must have at least one)
       await tx.insert(reportColumns).values(
@@ -351,17 +354,19 @@ export class ReportService {
       const durationMs = Date.now() - startTime
 
       // Log execution
-      const [execution] = await db
-        .insert(reportExecutions)
-        .values({
-          reportId,
-          executedBy: userId,
-          rowCount: result.totalRows,
-          durationMs,
-          parameters: options as Record<string, unknown>,
-          success: true,
-        })
-        .returning()
+      const execution = takeFirst(
+        await db
+          .insert(reportExecutions)
+          .values({
+            reportId,
+            executedBy: userId,
+            rowCount: result.totalRows,
+            durationMs,
+            parameters: options as Record<string, unknown>,
+            success: true,
+          })
+          .returning(),
+      )
 
       return {
         ...result,

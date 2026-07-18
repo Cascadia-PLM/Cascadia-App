@@ -12,6 +12,7 @@ import {
 } from '../db/schema'
 import { ItemService } from '../items/services/ItemService'
 import { BranchService } from './BranchService'
+import { takeFirst } from '@/lib/db/take-first'
 
 // ============================================
 // Types
@@ -880,18 +881,20 @@ export class ConflictDetectionService {
         }
 
         // Create new item with merged data
-        const [newWorkingCopy] = await tx
-          .insert(items)
-          .values({
-            ...(mergedData as typeof items.$inferInsert),
-            id: undefined,
-            masterId: bi.itemMasterId,
-            revision: 'DRAFT',
-            isCurrent: false,
-            modifiedAt: new Date(),
-            modifiedBy: userId,
-          })
-          .returning()
+        const newWorkingCopy = takeFirst(
+          await tx
+            .insert(items)
+            .values({
+              ...(mergedData as typeof items.$inferInsert),
+              id: undefined,
+              masterId: bi.itemMasterId,
+              revision: 'DRAFT',
+              isCurrent: false,
+              modifiedAt: new Date(),
+              modifiedBy: userId,
+            })
+            .returning(),
+        )
 
         // Update branch item
         await tx
@@ -977,18 +980,20 @@ export class ConflictDetectionService {
         const mergedData: Record<string, unknown> = { ...mainData }
 
         // Create new item version with merged data
-        const [newWorkingCopy] = await tx
-          .insert(items)
-          .values({
-            ...(mergedData as typeof items.$inferInsert),
-            id: undefined, // Generate new ID
-            masterId: bi.itemMasterId,
-            revision: 'DRAFT', // Keep as draft on branch
-            isCurrent: false,
-            modifiedAt: new Date(),
-            modifiedBy: userId,
-          })
-          .returning()
+        const newWorkingCopy = takeFirst(
+          await tx
+            .insert(items)
+            .values({
+              ...(mergedData as typeof items.$inferInsert),
+              id: undefined, // Generate new ID
+              masterId: bi.itemMasterId,
+              revision: 'DRAFT', // Keep as draft on branch
+              isCurrent: false,
+              modifiedAt: new Date(),
+              modifiedBy: userId,
+            })
+            .returning(),
+        )
 
         // Update branch item to point to new working copy and new base
         await tx

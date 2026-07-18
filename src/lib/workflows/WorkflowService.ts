@@ -38,6 +38,7 @@ import type {
   WorkflowState,
   WorkflowTransition,
 } from './types'
+import { takeFirst } from '@/lib/db/take-first'
 
 /**
  * Service layer for workflow/lifecycle operations
@@ -83,18 +84,20 @@ export class WorkflowService {
       phases: input.phases,
     }
 
-    const [result] = await db
-      .insert(workflowDefinitions)
-      .values({
-        name: input.name,
-        version: 1,
-        workflowType: input.workflowType,
-        definition,
-        isActive: input.isActive ?? true,
-        lifecycleType,
-        drivers: input.drivers ?? [],
-      })
-      .returning()
+    const result = takeFirst(
+      await db
+        .insert(workflowDefinitions)
+        .values({
+          name: input.name,
+          version: 1,
+          workflowType: input.workflowType,
+          definition,
+          isActive: input.isActive ?? true,
+          lifecycleType,
+          drivers: input.drivers ?? [],
+        })
+        .returning(),
+    )
 
     return this.mapToWorkflowDefinition(result)
   }
@@ -563,18 +566,22 @@ export class WorkflowService {
     // For flexible workflows, copy the structure to the instance
     const isFlexible = definition.workflowType === 'flexible'
 
-    const [instance] = await db
-      .insert(workflowInstances)
-      .values({
-        workflowDefinitionId,
-        itemId,
-        currentState: initialState.id,
-        context: context || {},
-        // Initialize instance structure for flexible workflows
-        instanceStates: isFlexible ? definition.states : null,
-        instanceTransitions: isFlexible ? (definition.transitions ?? []) : null,
-      })
-      .returning()
+    const instance = takeFirst(
+      await db
+        .insert(workflowInstances)
+        .values({
+          workflowDefinitionId,
+          itemId,
+          currentState: initialState.id,
+          context: context || {},
+          // Initialize instance structure for flexible workflows
+          instanceStates: isFlexible ? definition.states : null,
+          instanceTransitions: isFlexible
+            ? (definition.transitions ?? [])
+            : null,
+        })
+        .returning(),
+    )
 
     // Record initial history entry
     await db.insert(workflowHistory).values({

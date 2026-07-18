@@ -13,6 +13,7 @@ import { and, desc, eq } from 'drizzle-orm'
 import type { ToolCall } from '@/lib/db/schema/ai'
 import { aiChatMessages, aiChatSessions } from '@/lib/db/schema/ai'
 import { db } from '@/lib/db'
+import { takeFirst } from '@/lib/db/take-first'
 
 // Message role types
 export type MessageRole = 'system' | 'user' | 'assistant' | 'tool'
@@ -80,14 +81,16 @@ export class SessionService {
     programId?: string,
     designId?: string,
   ): Promise<ChatSession> {
-    const [session] = await db
-      .insert(aiChatSessions)
-      .values({
-        userId,
-        programId: programId || null,
-        designId: designId || null,
-      })
-      .returning()
+    const session = takeFirst(
+      await db
+        .insert(aiChatSessions)
+        .values({
+          userId,
+          programId: programId || null,
+          designId: designId || null,
+        })
+        .returning(),
+    )
 
     return {
       id: session.id,
@@ -184,17 +187,19 @@ export class SessionService {
     sessionId: string,
     message: MessageInput,
   ): Promise<ChatMessage> {
-    const [newMessage] = await db
-      .insert(aiChatMessages)
-      .values({
-        sessionId,
-        role: message.role,
-        content: message.content,
-        toolCalls: message.toolCalls || null,
-        toolCallId: message.toolCallId || null,
-        toolName: message.toolName || null,
-      })
-      .returning()
+    const newMessage = takeFirst(
+      await db
+        .insert(aiChatMessages)
+        .values({
+          sessionId,
+          role: message.role,
+          content: message.content,
+          toolCalls: message.toolCalls || null,
+          toolCallId: message.toolCallId || null,
+          toolName: message.toolName || null,
+        })
+        .returning(),
+    )
 
     // Update session's updatedAt timestamp
     await db

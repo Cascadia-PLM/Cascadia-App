@@ -63,6 +63,7 @@ import type {
   TestTask,
 } from './items'
 import { branches, commits, designs } from '@/lib/db/schema'
+import { takeFirst } from '@/lib/db/take-first'
 
 type DbSchema = typeof schema
 type TestDbInstance = PostgresJsDatabase<DbSchema>
@@ -213,42 +214,48 @@ export class TestDataBuilder {
       const code = input.code ?? `PROD-${Date.now()}`
 
       // Create the design
-      const [created] = await this.db
-        .insert(designs)
-        .values({
-          id: designId,
-          programId: input.programId ?? null,
-          name: input.name ?? 'Test Design',
-          code,
-          description: input.description ?? null,
-          designType: input.designType ?? 'Engineering',
-          createdBy: this.defaultUserId!,
-        })
-        .returning()
+      const created = takeFirst(
+        await this.db
+          .insert(designs)
+          .values({
+            id: designId,
+            programId: input.programId ?? null,
+            name: input.name ?? 'Test Design',
+            code,
+            description: input.description ?? null,
+            designType: input.designType ?? 'Engineering',
+            createdBy: this.defaultUserId!,
+          })
+          .returning(),
+      )
 
       // Create initial commit
-      const [initialCommit] = await this.db
-        .insert(commits)
-        .values({
-          designId: created.id,
-          branchId: created.id, // Temporary
-          message: 'Initial commit',
-          createdBy: this.defaultUserId!,
-        })
-        .returning()
+      const initialCommit = takeFirst(
+        await this.db
+          .insert(commits)
+          .values({
+            designId: created.id,
+            branchId: created.id, // Temporary
+            message: 'Initial commit',
+            createdBy: this.defaultUserId!,
+          })
+          .returning(),
+      )
 
       // Create main branch
-      const [mainBranch] = await this.db
-        .insert(branches)
-        .values({
-          designId: created.id,
-          name: 'main',
-          branchType: 'main',
-          headCommitId: initialCommit.id,
-          baseCommitId: initialCommit.id,
-          createdBy: this.defaultUserId!,
-        })
-        .returning()
+      const mainBranch = takeFirst(
+        await this.db
+          .insert(branches)
+          .values({
+            designId: created.id,
+            name: 'main',
+            branchType: 'main',
+            headCommitId: initialCommit.id,
+            baseCommitId: initialCommit.id,
+            createdBy: this.defaultUserId!,
+          })
+          .returning(),
+      )
 
       // Update commit with correct branchId
       await this.db
@@ -293,9 +300,7 @@ export class TestDataBuilder {
       this.ensureUser()
 
       const designId = designKey
-        ? ((
-            this.data.designs[designKey]
-          )?.id ?? null)
+        ? (this.data.designs[designKey]?.id ?? null)
         : this.defaultDesignId
 
       const result = await insertTestPart(
@@ -327,9 +332,7 @@ export class TestDataBuilder {
       this.ensureUser()
 
       const designId = designKey
-        ? ((
-            this.data.designs[designKey]
-          )?.id ?? null)
+        ? (this.data.designs[designKey]?.id ?? null)
         : this.defaultDesignId
 
       const result = await insertTestDocument(
@@ -361,9 +364,7 @@ export class TestDataBuilder {
       this.ensureUser()
 
       const designId = designKey
-        ? ((
-            this.data.designs[designKey]
-          )?.id ?? null)
+        ? (this.data.designs[designKey]?.id ?? null)
         : this.defaultDesignId
 
       const result = await insertTestChangeOrder(
@@ -395,9 +396,7 @@ export class TestDataBuilder {
       this.ensureUser()
 
       const designId = designKey
-        ? ((
-            this.data.designs[designKey]
-          )?.id ?? null)
+        ? (this.data.designs[designKey]?.id ?? null)
         : this.defaultDesignId
 
       const result = await insertTestRequirement(
@@ -484,13 +483,13 @@ export class TestDataBuilder {
     this.pendingActions.push(async () => {
       const source =
         sourceType === 'part'
-          ? (this.data.parts[sourceKey])
-          : (this.data.documents[sourceKey])
+          ? this.data.parts[sourceKey]
+          : this.data.documents[sourceKey]
 
       const target =
         targetType === 'part'
-          ? (this.data.parts[targetKey])
-          : (this.data.documents[targetKey])
+          ? this.data.parts[targetKey]
+          : this.data.documents[targetKey]
 
       if (!source) {
         throw new Error(`Source ${sourceType} "${sourceKey}" not found.`)

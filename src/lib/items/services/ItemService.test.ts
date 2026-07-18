@@ -24,6 +24,7 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { branches, commits, designs } from '@/lib/db/schema'
+import { takeFirst } from '@/lib/db/take-first'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'
@@ -54,39 +55,45 @@ describe('ItemService', () => {
     user = await insertTestUser(testDb.db)
 
     // Create test design
-    const [createdDesign] = await testDb.db
-      .insert(designs)
-      .values({
-        name: 'Test Design',
-        code: `PROD-${uniquePrefix}`,
-        designType: 'Engineering',
-        createdBy: user.id,
-      })
-      .returning()
+    const createdDesign = takeFirst(
+      await testDb.db
+        .insert(designs)
+        .values({
+          name: 'Test Design',
+          code: `PROD-${uniquePrefix}`,
+          designType: 'Engineering',
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     // Create initial commit
-    const [initialCommit] = await testDb.db
-      .insert(commits)
-      .values({
-        designId: createdDesign.id,
-        branchId: createdDesign.id, // Temporary
-        message: 'Initial commit',
-        createdBy: user.id,
-      })
-      .returning()
+    const initialCommit = takeFirst(
+      await testDb.db
+        .insert(commits)
+        .values({
+          designId: createdDesign.id,
+          branchId: createdDesign.id, // Temporary
+          message: 'Initial commit',
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     // Create main branch
-    const [mainBranch] = await testDb.db
-      .insert(branches)
-      .values({
-        designId: createdDesign.id,
-        name: 'main',
-        branchType: 'main',
-        headCommitId: initialCommit.id,
-        baseCommitId: initialCommit.id,
-        createdBy: user.id,
-      })
-      .returning()
+    const mainBranch = takeFirst(
+      await testDb.db
+        .insert(branches)
+        .values({
+          designId: createdDesign.id,
+          name: 'main',
+          branchType: 'main',
+          headCommitId: initialCommit.id,
+          baseCommitId: initialCommit.id,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     // Update commit with correct branchId
     await testDb.db
@@ -868,15 +875,17 @@ describe('ItemService', () => {
 
     it('filters by multiple designIds', async () => {
       // Create another design
-      const [design2] = await testDb.db
-        .insert(designs)
-        .values({
-          name: 'Second Design',
-          code: `PROD2-${uniquePrefix}`,
-          designType: 'Engineering',
-          createdBy: user.id,
-        })
-        .returning()
+      const design2 = takeFirst(
+        await testDb.db
+          .insert(designs)
+          .values({
+            name: 'Second Design',
+            code: `PROD2-${uniquePrefix}`,
+            designType: 'Engineering',
+            createdBy: user.id,
+          })
+          .returning(),
+      )
 
       await ItemService.create(
         'Part',
@@ -1440,15 +1449,17 @@ describe('ItemService', () => {
 
   describe('searchByItemNumber advanced options', () => {
     it('filters by multiple designIds', async () => {
-      const [design2] = await testDb.db
-        .insert(designs)
-        .values({
-          name: 'Search Design',
-          code: `SRCH-${uniquePrefix}`,
-          designType: 'Engineering',
-          createdBy: user.id,
-        })
-        .returning()
+      const design2 = takeFirst(
+        await testDb.db
+          .insert(designs)
+          .values({
+            name: 'Search Design',
+            code: `SRCH-${uniquePrefix}`,
+            designType: 'Engineering',
+            createdBy: user.id,
+          })
+          .returning(),
+      )
 
       await ItemService.create(
         'Part',

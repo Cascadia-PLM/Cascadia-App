@@ -37,6 +37,7 @@ import type { ItemHistoryEntry } from '../../services/CommitService'
 import type { BaseItem, PersistedItem } from '../types/base'
 import type { SearchCriteria, SearchResult } from './ItemSearchService'
 import { itemLogger } from '@/lib/logging/logger'
+import { takeFirst } from '@/lib/db/take-first'
 
 export type { SearchCriteria, SearchResult } from './ItemSearchService'
 
@@ -148,26 +149,30 @@ export class ItemService {
     // Wrap all database operations in a transaction for atomicity
     return db.transaction(async (tx) => {
       // Insert base item
-      const [item] = await tx
-        .insert(items)
-        .values({
-          masterId,
-          designId: validatedData.designId,
-          itemNumber: validatedData.itemNumber!,
-          revision: validatedData.revision,
-          itemType: type,
-          name: validatedData.name,
-          state: validatedData.state || typeConfig.defaultState,
-          attributes: (
-            validatedData as unknown as { attributes?: Record<string, unknown> }
-          ).attributes,
-          isCurrent: true,
-          sysmlType: sysmlType,
-          usageOf: (validatedData as unknown as { usageOf?: string }).usageOf,
-          createdBy: userId,
-          modifiedBy: userId,
-        })
-        .returning()
+      const item = takeFirst(
+        await tx
+          .insert(items)
+          .values({
+            masterId,
+            designId: validatedData.designId,
+            itemNumber: validatedData.itemNumber!,
+            revision: validatedData.revision,
+            itemType: type,
+            name: validatedData.name,
+            state: validatedData.state || typeConfig.defaultState,
+            attributes: (
+              validatedData as unknown as {
+                attributes?: Record<string, unknown>
+              }
+            ).attributes,
+            isCurrent: true,
+            sysmlType: sysmlType,
+            usageOf: (validatedData as unknown as { usageOf?: string }).usageOf,
+            createdBy: userId,
+            modifiedBy: userId,
+          })
+          .returning(),
+      )
 
       // Insert type-specific data
       await this.insertTypeSpecificData(type, item.id, validatedData, tx)
@@ -443,24 +448,26 @@ export class ItemService {
       )
 
       // Create new revision
-      const [newItem] = await tx
-        .insert(items)
-        .values({
-          masterId: currentItem.masterId,
-          itemNumber: currentItem.itemNumber,
-          revision: newRevision,
-          itemType: currentItem.itemType,
-          name: currentItem.name,
-          state: 'Draft',
-          isCurrent: true,
-          attributes: currentItem.attributes || {},
-          sysmlType: currentItem.sysmlType,
-          metamodel: currentItem.metamodel,
-          usageOf: currentItem.usageOf,
-          createdBy: userId,
-          modifiedBy: userId,
-        })
-        .returning()
+      const newItem = takeFirst(
+        await tx
+          .insert(items)
+          .values({
+            masterId: currentItem.masterId,
+            itemNumber: currentItem.itemNumber,
+            revision: newRevision,
+            itemType: currentItem.itemType,
+            name: currentItem.name,
+            state: 'Draft',
+            isCurrent: true,
+            attributes: currentItem.attributes || {},
+            sysmlType: currentItem.sysmlType,
+            metamodel: currentItem.metamodel,
+            usageOf: currentItem.usageOf,
+            createdBy: userId,
+            modifiedBy: userId,
+          })
+          .returning(),
+      )
 
       // Copy type-specific data
       if (typeSpecificData) {

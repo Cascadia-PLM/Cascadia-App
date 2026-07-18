@@ -17,6 +17,7 @@ import type {
   StateApprover,
   WorkflowState,
 } from './types'
+import { takeFirst } from '@/lib/db/take-first'
 
 /**
  * Service for managing workflow approvals
@@ -186,17 +187,19 @@ export class WorkflowApprovalService {
       throw new Error('Approver already exists for this state')
     }
 
-    const [inserted] = await db
-      .insert(workflowStateApprovers)
-      .values({
-        workflowDefinitionId: definitionId,
-        stateId,
-        approverType: approver.type,
-        approverId: approver.id,
-        isRequired: approver.isRequired,
-        createdBy: userId,
-      })
-      .returning()
+    const inserted = takeFirst(
+      await db
+        .insert(workflowStateApprovers)
+        .values({
+          workflowDefinitionId: definitionId,
+          stateId,
+          approverType: approver.type,
+          approverId: approver.id,
+          isRequired: approver.isRequired,
+          createdBy: userId,
+        })
+        .returning(),
+    )
 
     return {
       id: inserted.id,
@@ -428,17 +431,19 @@ export class WorkflowApprovalService {
     }
 
     // Insert the vote
-    const [inserted] = await db
-      .insert(workflowApprovalVotes)
-      .values({
-        workflowInstanceId: instanceId,
-        stateId,
-        userId,
-        roleId: roleId || null,
-        vote,
-        comments: comments || null,
-      })
-      .returning()
+    const inserted = takeFirst(
+      await db
+        .insert(workflowApprovalVotes)
+        .values({
+          workflowInstanceId: instanceId,
+          stateId,
+          userId,
+          roleId: roleId || null,
+          vote,
+          comments: comments || null,
+        })
+        .returning(),
+    )
 
     return {
       id: inserted.id,

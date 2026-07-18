@@ -1090,7 +1090,6 @@ describe('ChangeOrderMergeService', () => {
           itemNumber: originalItem.itemNumber,
           itemType: originalItem.itemType,
           name: originalItem.name,
-          description: originalItem.description,
           state: originalItem.state,
           masterId: originalItem.masterId,
           designId: originalItem.designId,

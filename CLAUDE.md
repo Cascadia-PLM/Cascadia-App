@@ -151,18 +151,20 @@ Keep it at zero. **Do not raise `--max-warnings` in `package.json` to accommodat
 
 ## Typecheck Ratchet
 
-`tsc --noEmit` is not clean yet, so CI ratchets it instead of demanding zero. `npm run typecheck:ci` (`scripts/typecheck.mjs`, run in the **Build** job) enforces two ceilings:
+CI enforces two typecheck ceilings via `npm run typecheck:ci` (`scripts/typecheck.mjs`, run in the **Build** job):
 
-| Ceiling | Config | Start | Behaviour |
-| ------- | ------ | ----- | --------- |
-| **CORE** | `tsconfig.ci.json` (`noUncheckedIndexedAccess` **off**) | 170 | Fails if it rises **or** falls. Fix errors → lower `CORE_MAX` in the same PR. |
-| **STRICT** | `tsconfig.json` (what your editor sees) | 2032 | Fails if it rises; only **warns** when it can be lowered. |
+| Ceiling | Config | Now | Behaviour |
+| ------- | ------ | --- | --------- |
+| **CORE** | `tsconfig.ci.json` (`noUncheckedIndexedAccess` **off**) | **0** | A plain zero gate. Any new error fails CI, exactly like `eslint --max-warnings 0`. |
+| **STRICT** | `tsconfig.json` (what your editor sees) | ~1859 | Fails if it rises; only **warns** when it can be lowered. |
 
-**Neither ceiling may ever be raised to accommodate a new error** — fix the error, exactly like the lint ratchet above. CORE is the priority: it excludes the ~1862 `noUncheckedIndexedAccess` artifacts (`arr[0]`, `map.get()`, loop indices) and isolates the ~170 substantive errors, several of which are real user-visible bugs. STRICT only warns when lowerable because those artifacts shift under any refactor, and a hard lower bound would mean constant line-churn and conflicts between concurrent PRs.
+**CORE is at zero** — the substantive type errors are gone (cleared over PRs #32–#44; several were real user-visible bugs). It now behaves like the lint gate: fix any new error, never raise the ceiling.
 
-**Expect `npm run typecheck` and your editor to disagree.** Your editor and ESLint read `tsconfig.json` (nUIA on, ~2032 errors); `npm run typecheck` reads `tsconfig.ci.json` (nUIA off, ~170). This gap is deliberate. `noUncheckedIndexedAccess` **must** stay on in `tsconfig.json`: `@tanstack/eslint-config` sets `project: true`, which resolves to the nearest file named `tsconfig.json`, and turning it off there makes every legitimate `if (arr[0])` guard a `no-unnecessary-condition` warning — measured at **266 lint problems (35 errors, 231 warnings)**, which `--max-warnings 0` rejects. That is why the CI config is a separate file, not a flag flip.
+**STRICT is the remaining `noUncheckedIndexedAccess` grind** (~1859 `arr[0]`, `map.get()`, loop-index artifacts). It only warns when lowerable because those shift under any refactor, and a hard lower bound would mean constant line-churn and conflicts between concurrent PRs. Lower `STRICT_MAX` deliberately in cleanup PRs; never raise it.
 
-A TypeScript version bump can legitimately shift both counts — review such a change, never rubber-stamp it. When CORE reaches zero, delete `scripts/typecheck.mjs` and `tsconfig.ci.json` and let CI run `npm run typecheck:strict` directly.
+**Expect `npm run typecheck` and your editor to disagree.** Your editor and ESLint read `tsconfig.json` (nUIA on, ~1859 errors); `npm run typecheck` reads `tsconfig.ci.json` (nUIA off, 0). This gap is deliberate. `noUncheckedIndexedAccess` **must** stay on in `tsconfig.json`: `@tanstack/eslint-config` sets `project: true`, which resolves to the nearest file named `tsconfig.json`, and turning it off there makes every legitimate `if (arr[0])` guard a `no-unnecessary-condition` warning — measured at **266 lint problems (35 errors, 231 warnings)**, which `--max-warnings 0` rejects. That is why the CI config is a separate file, not a flag flip.
+
+A TypeScript version bump can legitimately shift both counts — review such a change, never rubber-stamp it. When STRICT also reaches zero, delete `scripts/typecheck.mjs` and `tsconfig.ci.json` and let CI run `npm run typecheck:strict` directly.
 
 ## Documentation Reference
 

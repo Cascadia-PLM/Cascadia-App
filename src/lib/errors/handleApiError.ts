@@ -198,7 +198,7 @@ function logError(
           pgCause.cause instanceof Error
             ? {
                 message: pgCause.cause.message,
-                ...(pgCause.cause as Record<string, unknown>),
+                ...(pgCause.cause as unknown as Record<string, unknown>),
               }
             : pgCause.cause
       }

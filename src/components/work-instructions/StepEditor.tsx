@@ -37,7 +37,7 @@ interface StepEditorProps {
     stepId: string,
     data: Partial<WorkInstructionStep>,
   ) => Promise<void>
-  onDeleteStep: (stepId: string) => Promise<void>
+  onDeleteStep: (stepId: string) => void | Promise<void>
   onReorderSteps: (
     steps: Array<{ id: string; orderIndex: number }>,
   ) => Promise<void>

@@ -590,7 +590,7 @@ app.post(
           // Create the item using ItemService
           // Use createOnBranch if branchId is provided (for ECO/workspace branches)
           let createdItem: BaseItem
-          const itemData = data as BaseItem & {
+          const itemData = data as unknown as BaseItem & {
             branchId?: string
             commitMessage?: string
           }

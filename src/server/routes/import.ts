@@ -207,11 +207,10 @@ app.post(
           // Issues use free lifecycle - created directly with 'Open' state
           // Issues don't follow Part/Document versioning, so revision is always '-'
 
-          // Convert date strings to Date objects for Drizzle timestamp columns
+          // Convert date strings to Date objects for Drizzle timestamp columns.
+          // Import rows are parsed from CSV/JSON, so this is always a string.
           const reportedDate = row.reportedDate
-            ? row.reportedDate instanceof Date
-              ? row.reportedDate
-              : new Date(row.reportedDate)
+            ? new Date(row.reportedDate)
             : undefined
 
           const issueData = {

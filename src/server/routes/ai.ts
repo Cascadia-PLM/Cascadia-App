@@ -201,10 +201,13 @@ app.post(
           ? createSearchTools(toolContext)
           : createServerTools(toolContext)
 
-      // Stream chat response with tools
+      // Stream chat response with tools.
+      // The local ModelMessage shape matches at runtime; TanStack AI's
+      // ConstrainedModelMessage narrows role/content in a way this plain
+      // {role, content} list doesn't satisfy structurally.
       const stream = chat({
         adapter,
-        messages,
+        messages: messages as Parameters<typeof chat>[0]['messages'],
         tools,
         abortController,
       })

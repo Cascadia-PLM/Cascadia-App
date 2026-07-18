@@ -8,26 +8,26 @@
  * hand-diffing tsc output against a baseline; this automates exactly that.
  *
  *   CORE   (tsconfig.ci.json, noUncheckedIndexedAccess off)
- *          The substantive errors. Drive to zero first - they include real
- *          user-visible bugs. Hard ratchet in BOTH directions: fixing errors
- *          without lowering the ceiling fails, so the number cannot go stale.
+ *          The substantive errors - now at ZERO. This is a plain gate: any
+ *          new error fails CI, exactly like `eslint --max-warnings 0`. It
+ *          reached zero over PRs #32-#44; several were real user-visible bugs.
  *
  *   STRICT (tsconfig.json, as the editor and ESLint see it)
- *          CORE plus the noUncheckedIndexedAccess artifacts. Blocks
- *          regressions, but only WARNS when it could be lowered: these
+ *          CORE plus the noUncheckedIndexedAccess artifacts (~1859 left).
+ *          Blocks regressions, but only WARNS when it could be lowered: these
  *          shift under any refactor, and a hard lower bound would mean
  *          constant line-churn and conflicts between concurrent PRs for
  *          little gain. Lower it deliberately in cleanup PRs.
  *
  * Neither number may be raised to accommodate a new error - fix the error.
- * When CORE reaches 0, delete this script and tsconfig.ci.json and let CI run
- * `npm run typecheck:strict` directly, exactly like `eslint --max-warnings 0`.
+ * When STRICT also reaches 0, delete this script and tsconfig.ci.json and let
+ * CI run `npm run typecheck:strict` directly.
  */
 
 import { spawnSync } from 'node:child_process'
 
-const CORE_MAX = 19
-const STRICT_MAX = 1881
+const CORE_MAX = 0
+const STRICT_MAX = 1859
 
 /** Runs tsc against one config and returns its error count plus raw output. */
 function typecheck(project) {

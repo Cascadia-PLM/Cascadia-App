@@ -155,6 +155,9 @@ export const affectedItemSchema = z.object({
   affectedItemId: z.string().uuid().nullable(),
   affectedItemMasterId: z.string().uuid().nullable(),
   changeAction: changeActionSchema,
+  // The working copy checked out for this affected item (branch_items row),
+  // present on the persisted record returned by addAffectedItem.
+  workingCopyId: z.string().uuid().nullable().optional(),
   currentState: z.string().max(50).nullable(),
   currentRevision: z.string().max(10).nullable(),
   targetState: z.string().max(50).nullable(),

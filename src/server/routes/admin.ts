@@ -303,6 +303,7 @@ app.post(
         // Make a simple test request with minimal tokens using chatStream
         const testMessage = { role: 'user' as const, content: 'Hi' }
         const stream = adapter.chatStream({
+          model,
           messages: [testMessage],
           // `maxTokens` is TanStack AI's portable option; it maps to each
           // provider's native field. `maxOutputTokens` is Gemini's native name
@@ -912,7 +913,9 @@ app.delete(
 // ============================================
 
 const jobListQuerySchema = z.object({
-  status: z.string().optional(),
+  status: z
+    .enum(['pending', 'queued', 'running', 'completed', 'failed', 'cancelled'])
+    .optional(),
   type: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(1000).optional().default(100),
   offset: z.coerce.number().int().min(0).optional().default(0),

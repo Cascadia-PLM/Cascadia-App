@@ -391,9 +391,7 @@ export function generateCloudDatabaseCompose(
   }
 
   // Add volume and env vars based on vault type
-  const appService = (
-    compose.services as Record<string, Record<string, unknown>>
-  ).app
+  const appService = (compose.services as { app: Record<string, unknown> }).app
   if (config.vaultType === 'local') {
     appService.environment = {
       ...(appService.environment as Record<string, unknown>),

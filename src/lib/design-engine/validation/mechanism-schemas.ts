@@ -31,10 +31,14 @@ export const MECHANISM_SCHEMAS: Record<string, MechanismSchema> = {
     ],
     roles: ['rack', 'pinion'],
     validate: (params) => {
-      if (params.pinion_teeth < 6) {
+      const pinionTeeth = params.pinion_teeth
+      if (pinionTeeth === undefined) {
+        return 'pinion_teeth is required'
+      }
+      if (pinionTeeth < 6) {
         return 'pinion_teeth must be >= 6 to avoid undercut'
       }
-      if (params.pinion_teeth % 1 !== 0) {
+      if (pinionTeeth % 1 !== 0) {
         return 'pinion_teeth must be an integer'
       }
       const pressureAngle = params.pressure_angle
@@ -113,7 +117,9 @@ export function validateMechanismParameters(
 /**
  * Get the expected output roles for a mechanism type.
  */
-export function getMechanismRoles(mechanismType: string): Array<string> | undefined {
+export function getMechanismRoles(
+  mechanismType: string,
+): Array<string> | undefined {
   return MECHANISM_SCHEMAS[mechanismType]?.roles
 }
 
@@ -125,11 +131,14 @@ export function computeMechanismPreview(
   parameters: Record<string, number>,
 ): Record<string, unknown> {
   if (mechanismType === 'rack_and_pinion') {
-    const mod = parameters.module
-    const teeth = parameters.pinion_teeth
+    // Callers validate first; NaN fallbacks keep the arithmetic identical to
+    // what missing (undefined) parameters would have produced.
+    const mod = parameters.module ?? NaN
+    const teeth = parameters.pinion_teeth ?? NaN
+    const rackLength = parameters.rack_length ?? NaN
     const pitchDiameter = mod * teeth
     const toothPitch = mod * Math.PI
-    const rackToothCount = Math.ceil(parameters.rack_length / toothPitch)
+    const rackToothCount = Math.ceil(rackLength / toothPitch)
     const addendum = mod
     const dedendum = 1.25 * mod
     return {

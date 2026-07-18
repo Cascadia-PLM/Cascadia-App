@@ -147,9 +147,8 @@ export function validateRows(
   const validatedRows: Array<ValidatedRow> = []
   const seenItemNumbers = new Map<string, number>() // itemNumber -> rowNumber
 
-  for (let i = 0; i < rows.length; i++) {
-    const mappedData = rows[i]
-    const rawData = rawRows[i] || {}
+  for (const [i, mappedData] of rows.entries()) {
+    const rawData = rawRows[i] ?? {}
     const rowNumber = i + 2 // +2 because row 1 is header, and we're 0-indexed
 
     // Coerce values

@@ -951,10 +951,6 @@ async function createProgramHandlerImpl(
       },
       context.userId,
     )
-    if (!program) {
-      return errorResponse('Failed to create program')
-    }
-
     return {
       requiresConfirmation: false,
       success: true,

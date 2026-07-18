@@ -126,13 +126,13 @@ export class ZooClient {
     }
 
     // The outputs map contains filename -> base64-encoded content
-    const entries = Object.entries(response.outputs)
-    if (entries.length === 0) {
+    // Take the first output file (base64 string)
+    const firstEntry = Object.entries(response.outputs)[0]
+    if (!firstEntry) {
       throw new Error('Empty outputs in Zoo response')
     }
 
-    // Take the first output file (base64 string)
-    const [, base64Content] = entries[0]
+    const [, base64Content] = firstEntry
     return Buffer.from(base64Content, 'base64')
   }
 }

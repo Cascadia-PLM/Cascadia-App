@@ -34,9 +34,10 @@ export function dataGridStateToUrlParams(
   }
 
   // Sorting (only first sort column for URL simplicity)
-  if (sorting.length > 0) {
-    params.sortBy = sorting[0].id
-    params.sortOrder = sorting[0].desc ? 'desc' : 'asc'
+  const primarySort = sorting[0]
+  if (primarySort) {
+    params.sortBy = primarySort.id
+    params.sortOrder = primarySort.desc ? 'desc' : 'asc'
   }
 
   // Pagination (1-based for URL readability)
@@ -130,8 +131,8 @@ export function getDataGridStateSummary(
     parts.push(`Searching for "${globalFilter}"`)
   }
 
-  if (sorting.length > 0) {
-    const sort = sorting[0]
+  const sort = sorting[0]
+  if (sort) {
     parts.push(`Sorted by ${sort.id} (${sort.desc ? 'desc' : 'asc'})`)
   }
 

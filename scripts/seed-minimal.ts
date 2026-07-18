@@ -140,8 +140,9 @@ try {
     .where(eq(users.email, 'admin@cascadia.local'))
     .limit(1)
 
+  const existingAdmin = existingUser[0]
   let adminId: string
-  if (existingUser.length > 0) {
+  if (existingAdmin) {
     await db
       .update(users)
       .set({
@@ -151,7 +152,7 @@ try {
         provider: 'local',
       })
       .where(eq(users.email, 'admin@cascadia.local'))
-    adminId = existingUser[0].id
+    adminId = existingAdmin.id
   } else {
     const created = takeFirst(
       await db
@@ -182,13 +183,16 @@ try {
   }
 
   // Also assign Administrator role for backward compatibility
-  await db
-    .insert(userRoles)
-    .values({
-      userId: adminId,
-      roleId: createdRoles['Administrator'],
-    })
-    .onConflictDoNothing()
+  const administratorRoleId = createdRoles['Administrator']
+  if (administratorRoleId) {
+    await db
+      .insert(userRoles)
+      .values({
+        userId: adminId,
+        roleId: administratorRoleId,
+      })
+      .onConflictDoNothing()
+  }
 
   // ============================================================================
   // 3. Create Default Program
@@ -199,9 +203,10 @@ try {
     .where(eq(programs.code, 'DEFAULT'))
     .limit(1)
 
+  const existingDefaultProgram = existingProgram[0]
   let program
-  if (existingProgram.length > 0) {
-    program = existingProgram[0]
+  if (existingDefaultProgram) {
+    program = existingDefaultProgram
   } else {
     const created = takeFirst(
       await db
@@ -243,9 +248,10 @@ try {
     .where(eq(designs.code, 'STD-LIB'))
     .limit(1)
 
+  const existingStandardLibrary = existingLibrary[0]
   let standardLibrary
-  if (existingLibrary.length > 0) {
-    standardLibrary = existingLibrary[0]
+  if (existingStandardLibrary) {
+    standardLibrary = existingStandardLibrary
   } else {
     // Create the design (global library - no programId)
     const created = takeFirst(
@@ -303,6 +309,10 @@ try {
       .set({ defaultBranchId: mainBranch.id })
       .where(eq(designs.id, created.id))
       .returning()
+
+    if (!updated) {
+      throw new Error('Failed to update Standard Parts Library design')
+    }
 
     standardLibrary = updated
   }

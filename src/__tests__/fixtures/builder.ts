@@ -270,6 +270,10 @@ export class TestDataBuilder {
         .where(eq(designs.id, created.id))
         .returning()
 
+      if (!updated) {
+        throw new Error(`Failed to update design ${code} with default branch`)
+      }
+
       const designKey = key ?? code
       this.data.designs[designKey] = {
         ...updated,

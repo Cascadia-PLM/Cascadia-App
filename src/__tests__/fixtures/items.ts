@@ -1012,11 +1012,11 @@ export async function createBOMStructure(
 
   // Create BOM relationships
   const relationships: Array<TestRelationship> = []
-  for (let i = 0; i < components.length; i++) {
+  for (const [i, component] of components.entries()) {
     const rel = await createBOMRelationship(
       db,
       assembly.item.id,
-      components[i].item.id,
+      component.item.id,
       userId,
       { quantity: i + 1, findNumber: (i + 1) * 10 },
     )

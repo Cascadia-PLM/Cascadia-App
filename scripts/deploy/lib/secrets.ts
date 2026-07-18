@@ -21,8 +21,8 @@ export function generatePassword(length: number = 16): string {
     'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   const randomBytes = crypto.randomBytes(length)
   let password = ''
-  for (let i = 0; i < length; i++) {
-    password += charset[randomBytes[i] % charset.length]
+  for (const byte of randomBytes) {
+    password += charset[byte % charset.length]
   }
   return password
 }

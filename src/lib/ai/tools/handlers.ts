@@ -58,10 +58,11 @@ async function resolveProgramId(
     columnFilters: { code: programIdOrCode },
     limit: 1,
   })
-  if (result.items.length === 0) {
+  const match = result.items[0]
+  if (!match) {
     throw new Error(`Program not found: "${programIdOrCode}"`)
   }
-  return result.items[0].id
+  return match.id
 }
 
 // Input types for handlers - we manually apply defaults since TanStack AI

@@ -81,7 +81,7 @@ app.post(
 
       // Import each row
       for (let i = 0; i < rows.length; i++) {
-        const row = rows[i]
+        const row = rows[i]!
         const rowNumber = i + 2 // Row 1 is header, data starts at row 2
 
         try {
@@ -199,7 +199,7 @@ app.post(
 
       // Import each row
       for (let i = 0; i < rows.length; i++) {
-        const row = rows[i]
+        const row = rows[i]!
         const rowNumber = i + 2 // Row 1 is header, data starts at row 2
 
         try {
@@ -338,7 +338,7 @@ app.post(
 
       // Import each row
       for (let i = 0; i < rows.length; i++) {
-        const row = rows[i]
+        const row = rows[i]!
         const rowNumber = i + 2 // Row 1 is header, data starts at row 2
 
         try {
@@ -375,12 +375,9 @@ app.post(
             createdItem = branchResult.item
           } else {
             // Create directly (pre-release or bypass)
-            createdItem = await ItemService.create(
-              'Part',
-              partData,
-              userId,
-              { bypassBranchProtection: bypassBranchProtection || false },
-            )
+            createdItem = await ItemService.create('Part', partData, userId, {
+              bypassBranchProtection: bypassBranchProtection || false,
+            })
           }
 
           result.successCount++

@@ -71,9 +71,10 @@ app.get(
   '/:id',
   adapt(
     apiHandler({ permission: ['work_orders', 'read'] }, async ({ params }) => {
-      const workOrder = await WorkOrderService.findById(params.id)
+      const id = params.id!
+      const workOrder = await WorkOrderService.findById(id)
       if (!workOrder) {
-        throw new NotFoundError('Work Order', params.id)
+        throw new NotFoundError('Work Order', id)
       }
 
       return { workOrder }
@@ -92,7 +93,7 @@ app.put(
         const data = workOrderUpdateSchema.parse(body)
 
         const workOrder = await WorkOrderService.update(
-          params.id,
+          params.id!,
           data,
           user.id,
         )
@@ -110,7 +111,7 @@ app.delete(
     apiHandler(
       { permission: ['work_orders', 'delete'] },
       async ({ params }) => {
-        await WorkOrderService.delete(params.id)
+        await WorkOrderService.delete(params.id!)
 
         return { success: true }
       },
@@ -134,7 +135,7 @@ app.get(
           : undefined
 
         const result = await WorkInstructionExecutionService.listByWorkOrder(
-          params.id,
+          params.id!,
           { limit, offset },
         )
 
@@ -164,7 +165,7 @@ app.put(
         }
 
         const workOrder = await WorkOrderService.updateStatus(
-          params.id,
+          params.id!,
           status,
           user.id,
         )

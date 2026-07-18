@@ -13,9 +13,10 @@ app.get(
   '/:id',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const job = await JobService.get(params.id)
+      const id = params.id!
+      const job = await JobService.get(id)
       if (!job) {
-        throw new NotFoundError('Job', params.id)
+        throw new NotFoundError('Job', id)
       }
 
       return {

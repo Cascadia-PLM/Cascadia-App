@@ -64,16 +64,17 @@ app.get(
   '/:id',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const branch = await BranchService.getById(params.id)
+      const { id } = params as { id: string }
+      const branch = await BranchService.getById(id)
       if (!branch) {
-        throw new NotFoundError('Workspace', params.id)
+        throw new NotFoundError('Workspace', id)
       }
 
       if (branch.branchType !== 'workspace') {
         throw new ValidationError('Not a workspace branch')
       }
 
-      const itemCount = await BranchService.getWorkspaceOnlyItemCount(params.id)
+      const itemCount = await BranchService.getWorkspaceOnlyItemCount(id)
 
       return {
         id: branch.id,
@@ -90,7 +91,8 @@ app.delete(
   '/:id',
   adapt(
     apiHandler({}, async ({ params, user }) => {
-      await BranchService.deleteWorkspaceBranch(params.id, user.id)
+      const { id } = params as { id: string }
+      await BranchService.deleteWorkspaceBranch(id, user.id)
 
       return { success: true }
     }),
@@ -102,7 +104,7 @@ app.post(
   '/:id/convert-to-eco',
   adapt(
     apiHandler({}, async ({ request, params, user }) => {
-      const workspaceId = params.id
+      const { id: workspaceId } = params as { id: string }
       const body = await request.json()
       const {
         ecoTitle,
@@ -225,7 +227,7 @@ app.get(
   '/:id/items',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const workspaceId = params.id
+      const { id: workspaceId } = params as { id: string }
 
       // Fetch all items on this workspace branch
       const workspaceItems = await db
@@ -256,7 +258,7 @@ app.post(
   '/:id/merge-to-eco',
   adapt(
     apiHandler({}, async ({ request, params, user }) => {
-      const workspaceId = params.id
+      const { id: workspaceId } = params as { id: string }
       const body = await request.json()
       const { ecoId, deleteWorkspace = false } = body
 

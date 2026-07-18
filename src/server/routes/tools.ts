@@ -15,8 +15,9 @@ app.get(
   '/:id',
   adapt(
     apiHandler({ permission: ['tools', 'read'] }, async ({ params }) => {
-      const tool = await ItemService.findById(params.id)
-      if (!tool) throw new NotFoundError('Tool', params.id)
+      const id = params.id!
+      const tool = await ItemService.findById(id)
+      if (!tool) throw new NotFoundError('Tool', id)
       return { tool }
     }),
   ),
@@ -30,7 +31,7 @@ app.put(
       { permission: ['tools', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
-        const tool = await ItemService.update<Tool>(params.id, data, user.id)
+        const tool = await ItemService.update<Tool>(params.id!, data, user.id)
         return { tool }
       },
     ),
@@ -42,7 +43,7 @@ app.delete(
   '/:id',
   adapt(
     apiHandler({ permission: ['tools', 'delete'] }, async ({ params }) => {
-      await ItemService.delete(params.id)
+      await ItemService.delete(params.id!)
       return { success: true }
     }),
   ),

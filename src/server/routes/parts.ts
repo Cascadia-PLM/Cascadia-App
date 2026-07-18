@@ -50,8 +50,9 @@ app.get(
         },
       },
       async ({ params }) => {
-        const part = await ItemService.findById(params.id)
-        if (!part) throw new NotFoundError('Part', params.id)
+        const { id } = params as { id: string }
+        const part = await ItemService.findById(id)
+        if (!part) throw new NotFoundError('Part', id)
         return { part }
       },
     ),
@@ -77,8 +78,9 @@ app.put(
         },
       },
       async ({ params, request, user }) => {
+        const { id } = params as { id: string }
         const data = await request.json()
-        const part = await ItemService.update<Part>(params.id, data, user.id)
+        const part = await ItemService.update<Part>(id, data, user.id)
         return { part }
       },
     ),
@@ -101,7 +103,8 @@ app.delete(
         },
       },
       async ({ params }) => {
-        await ItemService.delete(params.id)
+        const { id } = params as { id: string }
+        await ItemService.delete(id)
         return { success: true }
       },
     ),
@@ -113,9 +116,10 @@ app.post(
   '/:id/generate-cad',
   adapt(
     apiHandler({}, async ({ params, request, user }) => {
-      const item = await ItemService.findById(params.id)
+      const { id } = params as { id: string }
+      const item = await ItemService.findById(id)
       if (!item) {
-        throw new NotFoundError('Part', params.id)
+        throw new NotFoundError('Part', id)
       }
 
       const part = item as Part
@@ -161,9 +165,9 @@ app.post(
         job = await JobService.submit(
           'generation.cad.parametric',
           {
-            partTempId: params.id,
+            partTempId: id,
             partName: part.name || part.itemNumber,
-            itemId: params.id,
+            itemId: id,
             branchId,
             userId: user.id,
             spec: {
@@ -173,19 +177,19 @@ app.post(
             },
           },
           user.id,
-          { priority: 'high', itemId: params.id },
+          { priority: 'high', itemId: id },
         )
       } else {
         job = await JobService.submit(
           'generation.cad.zoo',
           {
-            itemId: params.id,
+            itemId: id,
             partName: part.name || part.itemNumber,
             partDescription: part.description || part.name || part.itemNumber,
             userId: user.id,
           },
           user.id,
-          { priority: 'normal', itemId: params.id },
+          { priority: 'normal', itemId: id },
         )
       }
 
@@ -199,9 +203,10 @@ app.post(
   '/:id/generate-cad/assess',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const item = await ItemService.findById(params.id)
+      const { id } = params as { id: string }
+      const item = await ItemService.findById(id)
       if (!item) {
-        throw new NotFoundError('Part', params.id)
+        throw new NotFoundError('Part', id)
       }
 
       const part = item as Part
@@ -227,9 +232,10 @@ app.post(
   '/:id/generate-cad/convert',
   adapt(
     apiHandler({}, async ({ params, request, user }) => {
-      const item = await ItemService.findById(params.id)
+      const { id } = params as { id: string }
+      const item = await ItemService.findById(id)
       if (!item) {
-        throw new NotFoundError('Part', params.id)
+        throw new NotFoundError('Part', id)
       }
 
       const body = await request.json()
@@ -244,14 +250,14 @@ app.post(
         'conversion.cad.step-to-stl',
         {
           vaultFileId,
-          itemId: params.id,
+          itemId: id,
           outputFormat: 'stl',
           meshQuality: 'standard',
           decompose: false,
           userId: user.id,
         },
         user.id,
-        { priority: 'high', itemId: params.id },
+        { priority: 'high', itemId: id },
       )
 
       return created({ jobId: job.id })
@@ -264,8 +270,9 @@ app.get(
   '/:id/resolvable-attributes',
   adapt(
     apiHandler({ permission: ['parts', 'read'] }, async ({ params }) => {
+      const { id } = params as { id: string }
       const attributes =
-        await ParametricResolutionService.getResolvableAttributes(params.id)
+        await ParametricResolutionService.getResolvableAttributes(id)
 
       return { attributes }
     }),
@@ -277,6 +284,7 @@ app.post(
   '/:id/validate',
   adapt(
     apiHandler({}, async ({ request, params, user }) => {
+      const { id } = params as { id: string }
       const body = await request.json()
       const { testCaseIds } = body
 
@@ -286,11 +294,7 @@ app.post(
 
       // Link each test case to this part (testCase -> part)
       for (const testCaseId of testCaseIds) {
-        await VerificationService.linkValidation(
-          testCaseId,
-          [params.id],
-          user.id,
-        )
+        await VerificationService.linkValidation(testCaseId, [id], user.id)
       }
 
       return created({ success: true })
@@ -303,6 +307,7 @@ app.delete(
   '/:id/validate',
   adapt(
     apiHandler({}, async ({ request, params, user }) => {
+      const { id } = params as { id: string }
       const url = new URL(request.url)
       const testCaseId = url.searchParams.get('testCaseId')
 
@@ -310,7 +315,7 @@ app.delete(
         throw new ValidationError('testCaseId query parameter is required')
       }
 
-      await VerificationService.unlinkValidation(testCaseId, params.id, user.id)
+      await VerificationService.unlinkValidation(testCaseId, id, user.id)
 
       return { success: true }
     }),
@@ -322,7 +327,8 @@ app.get(
   '/:id/validating-tests',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const tests = await VerificationService.getValidatingTests(params.id)
+      const { id } = params as { id: string }
+      const tests = await VerificationService.getValidatingTests(id)
 
       return { tests }
     }),
@@ -334,15 +340,16 @@ app.get(
   '/:id/work-instructions',
   adapt(
     apiHandler({ permission: ['parts', 'read'] }, async ({ params }) => {
+      const { id } = params as { id: string }
       // Verify part exists
       const [part] = await db
         .select()
         .from(items)
-        .where(eq(items.id, params.id))
+        .where(eq(items.id, id))
         .limit(1)
 
       if (!part || part.itemType !== 'Part') {
-        throw new NotFoundError('Part', params.id)
+        throw new NotFoundError('Part', id)
       }
 
       // Get work instructions attached to this part
@@ -376,7 +383,7 @@ app.get(
             workInstructions.itemId,
           ),
         )
-        .where(eq(workInstructionPartAttachments.partId, params.id))
+        .where(eq(workInstructionPartAttachments.partId, id))
 
       // Flatten the response
       const workInstructionsList = attachedWIs.map((row) => ({

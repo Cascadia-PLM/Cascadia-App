@@ -12,12 +12,17 @@ import { and, asc, eq, gt, sql } from 'drizzle-orm'
 import { tagged } from '../adapter'
 import type { WorkInstruction } from '@/lib/items/types/work-instruction'
 import type { StepContent } from '@/lib/db/schema/items'
+import type {
+  AnnotatedHandler,
+  HandlerFn,
+  HandlerOptions,
+} from '@/lib/api/handler'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { WorkInstructionExecutionService } from '@/lib/services/WorkInstructionExecutionService'
 import { WorkInstructionChangeAlertService } from '@/lib/services/WorkInstructionChangeAlertService'
 import { ParametricResolutionService } from '@/lib/services/ParametricResolutionService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
-import { apiHandler } from '@/lib/api/handler'
+import { apiHandler as baseApiHandler } from '@/lib/api/handler'
 import { db } from '@/lib/db'
 import { takeFirst } from '@/lib/db/take-first'
 import {
@@ -31,6 +36,26 @@ import {
 import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('Work Instructions')
+
+/** Path params used by the routes in this module. */
+type RouteParams = Record<
+  'id' | 'executionId' | 'operationId' | 'stepId',
+  string
+>
+
+/**
+ * `apiHandler` types params as a loose `Record<string, string>`, which makes
+ * every `params.id` read `string | undefined`. Hono only dispatches to a route
+ * once every `:name` segment in its pattern is bound, so the params this
+ * module's routes read are always present. Narrow once here instead of
+ * asserting at each of the ~60 use sites below.
+ */
+function apiHandler(
+  options: HandlerOptions,
+  handler: HandlerFn<RouteParams>,
+): AnnotatedHandler {
+  return baseApiHandler(options, handler as HandlerFn)
+}
 
 const app = new Hono()
 

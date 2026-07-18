@@ -36,6 +36,7 @@ import { CAD_PROVIDER_KEYS } from '@/lib/cad-generation/settings-types'
 import { ThreadCacheService } from '@/lib/services/ThreadCacheService'
 import { StorageFactory } from '@/lib/vault/storage/storage-factory'
 import { takeFirst } from '@/lib/db/take-first'
+import { NotFoundError } from '@/lib/errors'
 import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('Admin')
@@ -170,6 +171,9 @@ app.post(
           })
           .where(eq(aiSettings.id, existing.id))
           .returning()
+        // Zero rows here means the row was deleted between the read above and
+        // this update — surface it rather than dereferencing undefined below.
+        if (!updated) throw new NotFoundError('AI settings', existing.id)
         result = updated
       } else {
         // Create new
@@ -575,7 +579,8 @@ app.put(
       async ({ params, request }) => {
         const body = await request.json()
         const data = catalogCategoryUpdateSchema.parse(body)
-        return CatalogService.updateCategory(params.id, data)
+        const { id } = params as { id: string }
+        return CatalogService.updateCategory(id, data)
       },
     ),
   ),
@@ -586,7 +591,8 @@ app.delete(
   '/component-catalog/categories/:id',
   adapt(
     apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      await CatalogService.deleteCategory(params.id)
+      const { id } = params as { id: string }
+      await CatalogService.deleteCategory(id)
       return { deleted: true }
     }),
   ),
@@ -657,7 +663,8 @@ app.get(
   '/component-catalog/:id',
   adapt(
     apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      return CatalogService.getById(params.id)
+      const { id } = params as { id: string }
+      return CatalogService.getById(id)
     }),
   ),
 )
@@ -671,7 +678,8 @@ app.put(
       async ({ params, request }) => {
         const body = await request.json()
         const data = catalogEntryUpdateSchema.parse(body)
-        return CatalogService.updateEntry(params.id, data)
+        const { id } = params as { id: string }
+        return CatalogService.updateEntry(id, data)
       },
     ),
   ),
@@ -682,7 +690,8 @@ app.delete(
   '/component-catalog/:id',
   adapt(
     apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      await CatalogService.deleteEntry(params.id)
+      const { id } = params as { id: string }
+      await CatalogService.deleteEntry(id)
       return { deleted: true }
     }),
   ),
@@ -820,7 +829,7 @@ app.get(
   '/item-type-configs/:itemType',
   adapt(
     apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      const { itemType } = params
+      const { itemType } = params as { itemType: string }
 
       const codeDefinition = ItemTypeRegistry.getCodeDefinition(itemType)
 
@@ -884,7 +893,7 @@ app.delete(
   '/item-type-configs/:itemType',
   adapt(
     apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      const { itemType } = params
+      const { itemType } = params as { itemType: string }
 
       if (!ItemTypeRegistry.hasType(itemType)) {
         return new Response(
@@ -951,8 +960,9 @@ app.get(
   '/jobs/:id',
   adapt(
     apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      const job = await JobService.getOrThrow(params.id)
-      const logs = await JobService.getLogs(params.id)
+      const { id } = params as { id: string }
+      const job = await JobService.getOrThrow(id)
+      const logs = await JobService.getLogs(id)
 
       return { job, logs }
     }),
@@ -964,7 +974,8 @@ app.post(
   '/jobs/:id/cancel',
   adapt(
     apiHandler({ permission: ['system', 'manage'] }, async ({ params }) => {
-      await JobService.cancel(params.id)
+      const { id } = params as { id: string }
+      await JobService.cancel(id)
 
       return { success: true }
     }),
@@ -978,7 +989,8 @@ app.post(
     apiHandler(
       { permission: ['system', 'manage'] },
       async ({ params, user }) => {
-        const job = await JobService.retry(params.id, user.id)
+        const { id } = params as { id: string }
+        const job = await JobService.retry(id, user.id)
 
         return { job }
       },

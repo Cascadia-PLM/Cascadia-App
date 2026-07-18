@@ -56,8 +56,9 @@ app.get(
   '/:id',
   adapt(
     apiHandler({ permission: ['users', 'read'] }, async ({ params }) => {
-      const user = await UserService.getUserById(params.id)
-      if (!user) throw new NotFoundError('User', params.id)
+      const { id } = params as { id: string }
+      const user = await UserService.getUserById(id)
+      if (!user) throw new NotFoundError('User', id)
       return { user }
     }),
   ),
@@ -70,8 +71,9 @@ app.put(
     apiHandler(
       { permission: ['users', 'update'] },
       async ({ params, request, user }) => {
+        const { id } = params as { id: string }
         const data = await request.json()
-        const updated = await UserService.updateUser(params.id, data, user.id)
+        const updated = await UserService.updateUser(id, data, user.id)
         return { user: updated }
       },
     ),
@@ -83,7 +85,8 @@ app.delete(
   '/:id',
   adapt(
     apiHandler({ permission: ['users', 'delete'] }, async ({ params }) => {
-      await UserService.deleteUser(params.id)
+      const { id } = params as { id: string }
+      await UserService.deleteUser(id)
       return { success: true }
     }),
   ),
@@ -96,11 +99,12 @@ app.post(
     apiHandler(
       { permission: ['users', 'manage'] },
       async ({ params, request }) => {
+        const { id } = params as { id: string }
         const { active } = await request.json()
         if (typeof active !== 'boolean') {
           throw new ValidationError('active must be a boolean')
         }
-        const user = await UserService.toggleActive(params.id, active)
+        const user = await UserService.toggleActive(id, active)
         return { user }
       },
     ),
@@ -114,6 +118,7 @@ app.put(
     apiHandler(
       { permission: ['users', 'manage'] },
       async ({ params, request }) => {
+        const { id } = params as { id: string }
         const { password, currentPassword } = await request.json()
         if (!password || typeof password !== 'string') {
           throw new ValidationError('Password is required')
@@ -130,7 +135,7 @@ app.put(
           : undefined
 
         await UserService.changePassword(
-          params.id,
+          id,
           password,
           currentPassword,
           currentSessionId,
@@ -148,12 +153,13 @@ app.post(
     apiHandler(
       { permission: ['users', 'manage'] },
       async ({ params, request }) => {
+        const { id } = params as { id: string }
         const { password } = await request.json()
         if (!password || typeof password !== 'string') {
           throw new ValidationError('Password is required')
         }
 
-        await UserService.adminResetPassword(params.id, password)
+        await UserService.adminResetPassword(id, password)
         return { success: true }
       },
     ),
@@ -165,8 +171,9 @@ app.get(
   '/:id/roles',
   adapt(
     apiHandler({ permission: ['users', 'read'] }, async ({ params }) => {
-      const user = await UserService.getUserById(params.id)
-      if (!user) throw new NotFoundError('User', params.id)
+      const { id } = params as { id: string }
+      const user = await UserService.getUserById(id)
+      if (!user) throw new NotFoundError('User', id)
       return { roles: user.roles }
     }),
   ),
@@ -179,11 +186,12 @@ app.put(
     apiHandler(
       { permission: ['users', 'manage'] },
       async ({ params, request }) => {
+        const { id } = params as { id: string }
         const { roleIds } = await request.json()
         if (!Array.isArray(roleIds)) {
           throw new ValidationError('roleIds must be an array')
         }
-        await UserService.assignRoles(params.id, roleIds)
+        await UserService.assignRoles(id, roleIds)
         return { success: true }
       },
     ),

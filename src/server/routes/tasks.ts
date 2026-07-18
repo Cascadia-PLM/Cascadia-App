@@ -16,8 +16,9 @@ app.get(
   '/:id',
   adapt(
     apiHandler({ permission: ['parts', 'read'] }, async ({ params }) => {
-      const task = await ItemService.findById(params.id)
-      if (!task) throw new NotFoundError('Task', params.id)
+      const id = params.id!
+      const task = await ItemService.findById(id)
+      if (!task) throw new NotFoundError('Task', id)
       return { task }
     }),
   ),
@@ -31,7 +32,7 @@ app.put(
       { permission: ['parts', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
-        const task = await ItemService.update<Task>(params.id, data, user.id)
+        const task = await ItemService.update<Task>(params.id!, data, user.id)
         return { task }
       },
     ),
@@ -43,7 +44,7 @@ app.delete(
   '/:id',
   adapt(
     apiHandler({ permission: ['parts', 'delete'] }, async ({ params }) => {
-      await ItemService.delete(params.id)
+      await ItemService.delete(params.id!)
       return { success: true }
     }),
   ),

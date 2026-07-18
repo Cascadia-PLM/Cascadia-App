@@ -15,6 +15,11 @@ import type {
   InstanceWorkflowTransition,
   WorkflowState,
 } from '@/lib/workflows/types'
+import type {
+  AnnotatedHandler,
+  HandlerFn,
+  HandlerOptions,
+} from '@/lib/api/handler'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
 import { ChangeOrderMergeService } from '@/lib/services/ChangeOrderMergeService'
@@ -30,7 +35,7 @@ import { VersionResolver } from '@/lib/services/VersionResolver'
 import { WorkflowService } from '@/lib/workflows/WorkflowService'
 import { WorkflowApprovalService } from '@/lib/workflows/WorkflowApprovalService'
 import { UserService } from '@/lib/auth/UserService'
-import { apiHandler, created } from '@/lib/api/handler'
+import { apiHandler as baseApiHandler, created } from '@/lib/api/handler'
 import {
   AlreadyExistsError,
   NotFoundError,
@@ -52,6 +57,23 @@ import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('Change Orders')
 
+/** Path params used by the routes in this module. */
+type RouteParams = Record<'id' | 'stateId' | 'designId' | 'itemId', string>
+
+/**
+ * `apiHandler` types params as a loose `Record<string, string>`, which makes
+ * every `params.id` read `string | undefined`. Hono only dispatches to a route
+ * once every `:name` segment in its pattern is bound, so the params this
+ * module's routes read are always present. Narrow once here instead of
+ * asserting at each of the ~90 use sites below.
+ */
+function apiHandler(
+  options: HandlerOptions,
+  handler: HandlerFn<RouteParams>,
+): AnnotatedHandler {
+  return baseApiHandler(options, handler as HandlerFn)
+}
+
 const app = new Hono()
 
 // ============================================
@@ -71,8 +93,7 @@ app.get(
         const programId = url.searchParams.get('programId')
         const limit = parseInt(url.searchParams.get('limit') || '50', 10)
         const offset = parseInt(url.searchParams.get('offset') || '0', 10)
-        const includeCounts =
-          url.searchParams.get('includeCounts') === 'true'
+        const includeCounts = url.searchParams.get('includeCounts') === 'true'
 
         const getStateCounts = async (changeOrderIds?: Array<string>) => {
           if (changeOrderIds && changeOrderIds.length > 0) {
@@ -755,13 +776,13 @@ app.delete(
         }
 
         // Get the relationship to verify the parent is an affected item
-        const relationship = await db
+        const [relationship] = await db
           .select()
           .from(itemRelationships)
           .where(eq(itemRelationships.id, relationshipId))
           .limit(1)
 
-        if (!relationship[0]) {
+        if (!relationship) {
           throw new NotFoundError('Relationship', relationshipId)
         }
 
@@ -769,12 +790,12 @@ app.delete(
         // Match by affectedItemId or masterId (working copy IDs differ from originals)
         const affectedItems =
           await ChangeOrderService.getAffectedItems(changeOrderId)
-        const sourceItem = await ItemService.findById(relationship[0].sourceId)
+        const sourceItem = await ItemService.findById(relationship.sourceId)
         const sourceMasterId = sourceItem?.masterId
 
         const parentAffectedItem = affectedItems.find(
           (ai) =>
-            ai.affectedItemId === relationship[0].sourceId ||
+            ai.affectedItemId === relationship.sourceId ||
             (sourceMasterId && ai.affectedItemMasterId === sourceMasterId),
         )
 
@@ -1091,8 +1112,7 @@ function extractItemType(message: string): string {
   const match = message.match(
     /^(Part|Document|ChangeOrder|Requirement|Task)\s+/i,
   )
-  if (match) return match[1]
-  return 'Item'
+  return match?.[1] ?? 'Item'
 }
 
 /**
@@ -1136,7 +1156,8 @@ function consolidateCommits(
   let i = 0
 
   while (i < sortedNodes.length) {
-    const currentNode = sortedNodes[i]
+    // `i` is bounded by the loop condition, so the node is always present
+    const currentNode = sortedNodes[i]!
 
     // If this is an important commit, don't consolidate it
     if (isImportantCommit(currentNode.data)) {
@@ -1153,7 +1174,7 @@ function consolidateCommits(
 
     let j = i + 1
     while (j < sortedNodes.length) {
-      const nextNode = sortedNodes[j]
+      const nextNode = sortedNodes[j]!
 
       // Stop if next commit is important
       if (isImportantCommit(nextNode.data)) break
@@ -1180,8 +1201,9 @@ function consolidateCommits(
 
     if (group.length >= MIN_COMMITS_TO_CONSOLIDATE) {
       // Create consolidated node
-      const firstCommit = group[0]
-      const lastCommit = group[group.length - 1]
+      // The group holds at least MIN_COMMITS_TO_CONSOLIDATE entries here
+      const firstCommit = group[0]!
+      const lastCommit = group[group.length - 1]!
 
       // Aggregate stats
       const totalStats = group.reduce(
@@ -1500,7 +1522,8 @@ async function buildEcoGraph(
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     )
-    const oldestEcoCommit = sortedEcoCommits[0]
+    // Non-empty per the `ecoBranchCommits.length > 0` guard above
+    const oldestEcoCommit = sortedEcoCommits[0]!
 
     if (includedCommitIds.has(forkPoint)) {
       const edgeId = `${forkPoint}-${oldestEcoCommit.id}`
@@ -1576,10 +1599,11 @@ app.get(
         }
 
         // Select which design to show (first one or specified)
+        // Non-empty per the `affectedDesigns.length === 0` early return above
         const targetDesign = selectedDesignId
           ? affectedDesigns.find((d) => d.designId === selectedDesignId) ||
-            affectedDesigns[0]
-          : affectedDesigns[0]
+            affectedDesigns[0]!
+          : affectedDesigns[0]!
 
         if (!targetDesign.branchId) {
           return {

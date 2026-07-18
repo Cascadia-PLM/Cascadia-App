@@ -68,8 +68,9 @@ app.get(
   '/:id',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const workflow = await WorkflowService.getById(params.id)
-      if (!workflow) throw new NotFoundError('Workflow', params.id)
+      const { id } = params as { id: string }
+      const workflow = await WorkflowService.getById(id)
+      if (!workflow) throw new NotFoundError('Workflow', id)
       return { workflow }
     }),
   ),
@@ -81,7 +82,8 @@ app.put(
   adapt(
     apiHandler({}, async ({ params, request }) => {
       const data = await request.json()
-      const workflow = await WorkflowService.update(params.id, {
+      const { id } = params as { id: string }
+      const workflow = await WorkflowService.update(id, {
         name: data.name,
         description: data.description,
         applicableItemTypes: data.applicableItemTypes,
@@ -99,7 +101,8 @@ app.delete(
   '/:id',
   adapt(
     apiHandler({}, async ({ params }) => {
-      await WorkflowService.delete(params.id)
+      const { id } = params as { id: string }
+      await WorkflowService.delete(id)
       return { success: true }
     }),
   ),
@@ -110,9 +113,8 @@ app.get(
   '/:id/approvers',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const approvers = await WorkflowApprovalService.getAllStateApprovers(
-        params.id,
-      )
+      const { id } = params as { id: string }
+      const approvers = await WorkflowApprovalService.getAllStateApprovers(id)
 
       return { approvers }
     }),
@@ -124,9 +126,10 @@ app.get(
   '/:id/states/:stateId/approvers',
   adapt(
     apiHandler({}, async ({ params }) => {
+      const { id, stateId } = params as { id: string; stateId: string }
       const approvers = await WorkflowApprovalService.getStateApprovers(
-        params.id,
-        params.stateId,
+        id,
+        stateId,
       )
 
       return { approvers }
@@ -145,9 +148,10 @@ app.put(
         throw new ValidationError('approvers must be an array')
       }
 
+      const { id, stateId } = params as { id: string; stateId: string }
       const approvers = await WorkflowApprovalService.setStateApprovers(
-        params.id,
-        params.stateId,
+        id,
+        stateId,
         data.approvers,
         user.id,
       )
@@ -168,9 +172,10 @@ app.post(
         throw new ValidationError('type and id are required')
       }
 
+      const { id, stateId } = params as { id: string; stateId: string }
       const approver = await WorkflowApprovalService.addStateApprover(
-        params.id,
-        params.stateId,
+        id,
+        stateId,
         {
           type: data.type,
           id: data.id,
@@ -195,8 +200,9 @@ app.patch(
         throw new ValidationError('isRequired must be a boolean')
       }
 
+      const { approverId } = params as { approverId: string }
       const approver = await WorkflowApprovalService.updateStateApprover(
-        params.approverId,
+        approverId,
         data.isRequired,
       )
 
@@ -210,7 +216,8 @@ app.delete(
   '/:id/states/:stateId/approvers/:approverId',
   adapt(
     apiHandler({}, async ({ params }) => {
-      await WorkflowApprovalService.removeStateApprover(params.approverId)
+      const { approverId } = params as { approverId: string }
+      await WorkflowApprovalService.removeStateApprover(approverId)
 
       return { success: true }
     }),
@@ -222,10 +229,11 @@ app.post(
   '/:id/validate',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const workflow = await WorkflowService.getById(params.id)
+      const { id } = params as { id: string }
+      const workflow = await WorkflowService.getById(id)
 
       if (!workflow) {
-        throw new NotFoundError('Workflow', params.id)
+        throw new NotFoundError('Workflow', id)
       }
 
       const validation = WorkflowService.validateDefinition(workflow)

@@ -13,7 +13,7 @@ app.get(
   adapt(
     apiHandler({}, async ({ params }) => {
       const lifecycle = await LifecycleService.getLifecycleForItemType(
-        params.itemType,
+        params.itemType!,
       )
 
       if (!lifecycle) {

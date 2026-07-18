@@ -26,7 +26,7 @@ app.post(
       const validated = pullFromMainSchema.parse(body)
 
       const result = await ConflictDetectionService.pullChangesFromMain(
-        params.id,
+        params.id!,
         validated.mainItemId,
         user.id,
       )
@@ -58,7 +58,7 @@ app.post(
       const validated = rebaseSchema.parse(body)
 
       const result = await ConflictDetectionService.rebaseItem(
-        params.id,
+        params.id!,
         validated.newBaseItemId,
         user.id,
         validated.resolutions,

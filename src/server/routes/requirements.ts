@@ -47,8 +47,9 @@ app.get(
   '/:id',
   adapt(
     apiHandler({ permission: ['parts', 'read'] }, async ({ params }) => {
-      const requirement = await ItemService.findById(params.id)
-      if (!requirement) throw new NotFoundError('Requirement', params.id)
+      const { id } = params as { id: string }
+      const requirement = await ItemService.findById(id)
+      if (!requirement) throw new NotFoundError('Requirement', id)
       return { requirement }
     }),
   ),
@@ -62,8 +63,9 @@ app.put(
       { permission: ['parts', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
+        const { id } = params as { id: string }
         const requirement = await ItemService.update<Requirement>(
-          params.id,
+          id,
           data,
           user.id,
         )
@@ -78,7 +80,8 @@ app.delete(
   '/:id',
   adapt(
     apiHandler({ permission: ['parts', 'delete'] }, async ({ params }) => {
-      await ItemService.delete(params.id)
+      const { id } = params as { id: string }
+      await ItemService.delete(id)
       return { success: true }
     }),
   ),
@@ -89,9 +92,9 @@ app.get(
   '/:id/derive',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const childRequirements = await RequirementService.getChildRequirements(
-        params.id,
-      )
+      const { id } = params as { id: string }
+      const childRequirements =
+        await RequirementService.getChildRequirements(id)
 
       return { requirements: childRequirements }
     }),
@@ -105,9 +108,10 @@ app.post(
     apiHandler({}, async ({ params, request, user }) => {
       const body = await request.json()
       const childData = deriveRequirementSchema.parse(body)
+      const { id } = params as { id: string }
 
       const derivedRequirement = await RequirementService.deriveRequirement(
-        params.id,
+        id,
         {
           ...childData,
           itemType: 'Requirement',
@@ -130,9 +134,9 @@ app.get(
   '/:id/parent',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const parentRequirement = await RequirementService.getParentRequirement(
-        params.id,
-      )
+      const { id } = params as { id: string }
+      const parentRequirement =
+        await RequirementService.getParentRequirement(id)
 
       return { parent: parentRequirement }
     }),
@@ -144,9 +148,8 @@ app.get(
   '/:id/satisfy',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const satisfyingItems = await RequirementService.getSatisfyingItems(
-        params.id,
-      )
+      const { id } = params as { id: string }
+      const satisfyingItems = await RequirementService.getSatisfyingItems(id)
 
       return { items: satisfyingItems }
     }),
@@ -160,8 +163,9 @@ app.post(
     apiHandler({}, async ({ params, request, user }) => {
       const body = await request.json()
       const { itemIds } = linkSatisfactionSchema.parse(body)
+      const { id } = params as { id: string }
 
-      await RequirementService.linkSatisfaction(params.id, itemIds, user.id)
+      await RequirementService.linkSatisfaction(id, itemIds, user.id)
 
       return { success: true }
     }),
@@ -175,8 +179,9 @@ app.delete(
     apiHandler({}, async ({ params, request, user }) => {
       const body = await request.json()
       const { itemId } = unlinkSatisfactionSchema.parse(body)
+      const { id } = params as { id: string }
 
-      await RequirementService.unlinkSatisfaction(params.id, itemId, user.id)
+      await RequirementService.unlinkSatisfaction(id, itemId, user.id)
 
       return { success: true }
     }),
@@ -195,7 +200,8 @@ app.post(
         throw new ValidationError('testCaseIds array is required')
       }
 
-      await RequirementService.linkVerification(params.id, testCaseIds, user.id)
+      const { id } = params as { id: string }
+      await RequirementService.linkVerification(id, testCaseIds, user.id)
 
       return created({ success: true })
     }),
@@ -214,11 +220,8 @@ app.delete(
         throw new ValidationError('testCaseId query parameter is required')
       }
 
-      await RequirementService.unlinkVerification(
-        params.id,
-        testCaseId,
-        user.id,
-      )
+      const { id } = params as { id: string }
+      await RequirementService.unlinkVerification(id, testCaseId, user.id)
 
       return { success: true }
     }),
@@ -230,7 +233,8 @@ app.get(
   '/:id/verifying-tests',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const tests = await RequirementService.getVerifyingTests(params.id)
+      const { id } = params as { id: string }
+      const tests = await RequirementService.getVerifyingTests(id)
 
       return { tests }
     }),

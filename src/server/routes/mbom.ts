@@ -35,7 +35,7 @@ app.get(
   '/:designId/upstream-changes',
   adapt(
     apiHandler({}, async ({ params, user }) => {
-      const { designId } = params
+      const designId = params.designId!
 
       // Verify design exists and is a Manufacturing design
       const design = await DesignService.getById(designId)
@@ -62,7 +62,8 @@ app.post(
   '/:designId/upstream-changes/:id/review',
   adapt(
     apiHandler({}, async ({ request, params, user }) => {
-      const { designId, id } = params
+      const designId = params.designId!
+      const id = params.id!
 
       // Verify design exists and is a Manufacturing design
       const design = await DesignService.getById(designId)

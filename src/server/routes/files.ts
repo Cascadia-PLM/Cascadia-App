@@ -420,7 +420,7 @@ app.get(
     apiHandler(
       { permission: ['documents', 'read'] },
       async ({ params, user }) => {
-        const { fileId } = params
+        const fileId = params.fileId!
 
         // Get file metadata first
         const file = await FileService.getFileMetadata(fileId)
@@ -561,7 +561,7 @@ app.get(
     apiHandler(
       { permission: ['documents', 'read'] },
       async ({ params, user }) => {
-        const { fileId } = params
+        const fileId = params.fileId!
 
         const file = await FileService.getFileMetadata(fileId)
         if (!file) {

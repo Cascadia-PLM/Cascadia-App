@@ -359,7 +359,7 @@ app.get(
   '/sessions/:id',
   adapt(
     apiHandler({}, async ({ params, user }) => {
-      const { id } = params
+      const { id } = params as { id: string }
 
       // Verify ownership
       const isOwner = await sessionService.verifySessionOwnership(id, user.id)
@@ -382,7 +382,7 @@ app.delete(
   '/sessions/:id',
   adapt(
     apiHandler({}, async ({ params, user }) => {
-      const { id } = params
+      const { id } = params as { id: string }
 
       // Verify ownership
       const isOwner = await sessionService.verifySessionOwnership(id, user.id)
@@ -402,7 +402,7 @@ app.get(
   '/sessions/:id/messages',
   adapt(
     apiHandler({}, async ({ params, user }) => {
-      const { id } = params
+      const { id } = params as { id: string }
 
       // Verify ownership
       const isOwner = await sessionService.verifySessionOwnership(id, user.id)
@@ -576,6 +576,9 @@ app.put(
           })
           .where(eq(aiSettings.id, existing.id))
           .returning()
+        // Zero rows means the row was deleted between the read above and this
+        // update — surface it rather than dereferencing undefined below.
+        if (!updated) throw new NotFoundError('AI settings', existing.id)
 
         return {
           id: updated.id,

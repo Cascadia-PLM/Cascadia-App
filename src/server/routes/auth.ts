@@ -397,7 +397,7 @@ app.delete(
   '/api-keys/:keyId',
   adapt(
     apiHandler({}, async ({ params, user }) => {
-      const { keyId } = params
+      const keyId = params.keyId!
 
       // Only allow revoking own keys
       const [key] = await db

@@ -56,10 +56,11 @@ app.get(
   '/:id',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const report = await ReportService.findById(params.id)
+      const id = params.id!
+      const report = await ReportService.findById(id)
 
       if (!report) {
-        throw new NotFoundError('Report', params.id)
+        throw new NotFoundError('Report', id)
       }
 
       return { report }
@@ -78,7 +79,7 @@ app.put(
       const validatedData = reportSchema.partial().parse(data)
 
       const report = await ReportService.update(
-        params.id,
+        params.id!,
         validatedData,
         user.id,
       )
@@ -93,7 +94,7 @@ app.delete(
   '/:id',
   adapt(
     apiHandler({}, async ({ params }) => {
-      await ReportService.delete(params.id)
+      await ReportService.delete(params.id!)
 
       return { success: true }
     }),

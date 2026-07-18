@@ -285,7 +285,7 @@ app.put(
       async ({ params, request, user }) => {
         const data = await request.json()
         const updated = await ItemService.updateRelationship(
-          params.relationshipId,
+          params.relationshipId!,
           user.id,
           {
             quantity: data.quantity,
@@ -306,7 +306,7 @@ app.delete(
     apiHandler(
       { permission: ['parts', 'delete'] },
       async ({ params, user }) => {
-        await ItemService.removeRelationship(params.relationshipId, user.id)
+        await ItemService.removeRelationship(params.relationshipId!, user.id)
         return { success: true, message: 'Relationship deleted successfully' }
       },
     ),

@@ -16,8 +16,9 @@ app.get(
   '/:id',
   adapt(
     apiHandler({ permission: ['documents', 'read'] }, async ({ params }) => {
-      const document = await ItemService.findById(params.id)
-      if (!document) throw new NotFoundError('Document', params.id)
+      const id = params.id!
+      const document = await ItemService.findById(id)
+      if (!document) throw new NotFoundError('Document', id)
       return { document }
     }),
   ),
@@ -32,7 +33,7 @@ app.put(
       async ({ params, request, user }) => {
         const data = await request.json()
         const document = await ItemService.update<Document>(
-          params.id,
+          params.id!,
           data,
           user.id,
         )
@@ -47,7 +48,7 @@ app.delete(
   '/:id',
   adapt(
     apiHandler({ permission: ['documents', 'delete'] }, async ({ params }) => {
-      await ItemService.delete(params.id)
+      await ItemService.delete(params.id!)
       return { success: true }
     }),
   ),

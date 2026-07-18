@@ -22,7 +22,7 @@ app.post(
       }
 
       const execution = await VerificationService.recordExecution(
-        params.id,
+        params.id!,
         {
           status,
           duration,
@@ -47,7 +47,7 @@ app.get(
       const limit = parseInt(url.searchParams.get('limit') || '20', 10)
 
       const executions = await VerificationService.getExecutionHistory(
-        params.id,
+        params.id!,
         limit,
       )
 

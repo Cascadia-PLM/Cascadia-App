@@ -21,7 +21,7 @@ app.get(
   '/:itemId',
   adapt(
     apiHandler({}, async ({ request, params }) => {
-      const { itemId } = params
+      const itemId = params.itemId!
 
       const url = new URL(request.url, 'http://localhost')
 
@@ -59,7 +59,7 @@ app.post(
   '/:itemId/compare',
   adapt(
     apiHandler({}, async ({ request, params }) => {
-      const { itemId } = params
+      const itemId = params.itemId!
       const body = await request.json()
 
       // Parse and validate request body
@@ -81,7 +81,7 @@ app.get(
   '/:itemId/comparison-targets',
   adapt(
     apiHandler({}, async ({ params }) => {
-      const { itemId } = params
+      const itemId = params.itemId!
 
       // Get item to find its designId and masterId
       const [item] = await db

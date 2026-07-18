@@ -14,6 +14,7 @@ import {
   tags,
   users,
 } from '../db/schema'
+import { takeFirst } from '../db/take-first'
 import { NotFoundError, ValidationError } from '../errors'
 import { notDeleted } from '../db/filters'
 import { BranchService } from './BranchService'
@@ -189,7 +190,7 @@ export class CommitService {
     const run = outerTx ?? db
     return run.transaction(async (tx) => {
       // 1. Create the commit
-      const [commit] = await tx
+      const commitRows = await tx
         .insert(commits)
         .values({
           designId: branch.designId,
@@ -204,6 +205,7 @@ export class CommitService {
           createdBy: userId,
         })
         .returning()
+      const commit = takeFirst(commitRows, 'commit')
 
       // 2. Create itemVersion entries for each change
       if (validated.itemChanges.length > 0) {
@@ -318,7 +320,7 @@ export class CommitService {
           )
 
           // 2. Create merge commit with two parents
-          const [mergeCommit] = await tx
+          const mergeCommitRows = await tx
             .insert(commits)
             .values({
               designId: targetBranch.designId,
@@ -334,6 +336,7 @@ export class CommitService {
               createdBy: userId,
             })
             .returning()
+          const mergeCommit = takeFirst(mergeCommitRows, 'merge commit')
 
           // 3. Create itemVersion entries for merged changes
           if (itemChangesToRecord.length > 0) {

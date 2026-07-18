@@ -5,6 +5,7 @@ import { and, eq, isNotNull } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
 import { branchItems, branches, items, users } from '../db/schema'
+import { takeFirst } from '../db/take-first'
 import { NotFoundError, ValidationError } from '../errors'
 import { BranchService } from './BranchService'
 import { CommitService } from './CommitService'
@@ -101,7 +102,7 @@ export function computeInitialFieldValues(
     let category: 'core' | 'type' | 'attribute' | 'relationship' = 'attribute'
     if (coreFields.includes(field)) {
       category = 'core'
-    } else if (itemType in typeFields && typeFields[itemType].includes(field)) {
+    } else if (typeFields[itemType]?.includes(field)) {
       category = 'type'
     }
 
@@ -164,7 +165,7 @@ export function computeFieldChanges(
     let category: 'core' | 'type' | 'attribute' | 'relationship' = 'attribute'
     if (coreFields.includes(field)) {
       category = 'core'
-    } else if (itemType in typeFields && typeFields[itemType].includes(field)) {
+    } else if (typeFields[itemType]?.includes(field)) {
       category = 'type'
     }
 
@@ -282,8 +283,8 @@ export class CheckoutService {
       )
       .limit(1)
 
-    if (existingBranchItem.at(0)) {
-      const bi = existingBranchItem[0]
+    const bi = existingBranchItem[0]
+    if (bi) {
       if (bi.checkedOutBy) {
         if (bi.checkedOutBy === userId) {
           // Already checked out by same user - return existing
@@ -302,7 +303,7 @@ export class CheckoutService {
       }
 
       // BranchItem exists but not checked out - update it
-      const [updated] = await db
+      const updated = await db
         .update(branchItems)
         .set({
           checkedOutBy: userId,
@@ -311,7 +312,7 @@ export class CheckoutService {
         .where(eq(branchItems.id, bi.id))
         .returning()
 
-      return updated
+      return takeFirst(updated, 'updated branchItem')
     }
 
     // No branchItem exists - get the current released version
@@ -326,7 +327,7 @@ export class CheckoutService {
     }
 
     // Create branchItem entry
-    const [branchItem] = await db
+    const branchItem = await db
       .insert(branchItems)
       .values({
         branchId: validated.branchId,
@@ -339,7 +340,7 @@ export class CheckoutService {
       })
       .returning()
 
-    return branchItem
+    return takeFirst(branchItem, 'branchItem')
   }
 
   /**
@@ -360,15 +361,15 @@ export class CheckoutService {
       )
       .limit(1)
 
-    if (!branchItem.at(0) || !branchItem[0].checkedOutBy) {
+    const bi = branchItem[0]
+    if (!bi?.checkedOutBy) {
       return { isCheckedOut: false }
     }
 
-    const bi = branchItem[0]
     const user = await db
       .select({ id: users.id, name: users.name, email: users.email })
       .from(users)
-      .where(eq(users.id, bi.checkedOutBy!))
+      .where(eq(users.id, bi.checkedOutBy))
       .limit(1)
 
     return {
@@ -398,13 +399,13 @@ export class CheckoutService {
       )
       .limit(1)
 
-    if (!branchItem.at(0)) {
+    const bi = branchItem[0]
+    if (!bi) {
       throw new NotFoundError('BranchItem', `${branchId}/${itemMasterId}`, {
         operation: 'cancelCheckout',
       })
     }
 
-    const bi = branchItem[0]
     if (bi.checkedOutBy !== userId) {
       throw new ValidationError('You do not have this item checked out')
     }
@@ -448,8 +449,9 @@ export class CheckoutService {
           .where(eq(items.id, branchItem.currentItemId))
           .limit(1)
 
-        if (item.at(0)) {
-          result.push({ branchItem, item: item[0], branch })
+        const found = item[0]
+        if (found) {
+          result.push({ branchItem, item: found, branch })
         }
       }
     }
@@ -489,8 +491,9 @@ export class CheckoutService {
           .where(eq(items.id, branchItem.currentItemId))
           .limit(1)
 
-        if (item.at(0)) {
-          result.push({ branchItem, item: item[0], branch })
+        const found = item[0]
+        if (found) {
+          result.push({ branchItem, item: found, branch })
         }
       }
     }
@@ -531,13 +534,12 @@ export class CheckoutService {
       .where(eq(items.id, validated.itemId))
       .limit(1)
 
-    if (!currentItem.at(0)) {
+    const item = currentItem[0]
+    if (!item) {
       throw new NotFoundError('Item', validated.itemId, {
         operation: 'saveChanges',
       })
     }
-
-    const item = currentItem[0]
 
     // Check if item is checked out by this user
     const branchItem = await db
@@ -551,11 +553,11 @@ export class CheckoutService {
       )
       .limit(1)
 
-    if (!branchItem.at(0)) {
+    const bi = branchItem[0]
+    if (!bi) {
       throw new ValidationError('Item is not checked out on this branch')
     }
 
-    const bi = branchItem[0]
     if (bi.checkedOutBy !== userId) {
       throw new ValidationError('You do not have this item checked out')
     }
@@ -578,10 +580,13 @@ export class CheckoutService {
         delete (newItemData as { id?: string }).id
         delete (newItemData as { commitId?: string }).commitId
 
-        const [newItem] = await tx
-          .insert(items)
-          .values(newItemData as typeof items.$inferInsert)
-          .returning()
+        const newItem = takeFirst(
+          await tx
+            .insert(items)
+            .values(newItemData as typeof items.$inferInsert)
+            .returning(),
+          'item',
+        )
 
         // 2. Determine change type
         const isNewItem = bi.changeType === 'added'
@@ -687,7 +692,7 @@ export class CheckoutService {
       const masterId = crypto.randomUUID()
 
       // 2. Create the item
-      const [newItem] = await tx
+      const newItemRows = await tx
         .insert(items)
         .values({
           masterId,
@@ -707,6 +712,7 @@ export class CheckoutService {
           modifiedBy: userId,
         })
         .returning()
+      const newItem = takeFirst(newItemRows, 'item')
 
       // 3. Create branchItem entry
       await tx.insert(branchItems).values({
@@ -783,10 +789,12 @@ export class CheckoutService {
       )
       .limit(1)
 
+    const existing = branchItem[0]
+
     // If item was added on this branch, we can actually remove the branchItem
-    if (branchItem.at(0)?.changeType === 'added') {
+    if (existing?.changeType === 'added') {
       return db.transaction(async (tx) => {
-        await tx.delete(branchItems).where(eq(branchItems.id, branchItem[0].id))
+        await tx.delete(branchItems).where(eq(branchItems.id, existing.id))
 
         // Create commit for the removal
         return CommitService.create(
@@ -795,7 +803,7 @@ export class CheckoutService {
             message: commitMessage,
             itemChanges: [
               {
-                itemId: branchItem[0].currentItemId!,
+                itemId: existing.currentItemId!,
                 changeType: 'deleted',
               },
             ],
@@ -819,7 +827,7 @@ export class CheckoutService {
 
     return db.transaction(async (tx) => {
       // Update branchItem to mark as deleted
-      if (branchItem.at(0)) {
+      if (existing) {
         await tx
           .update(branchItems)
           .set({
@@ -827,7 +835,7 @@ export class CheckoutService {
             checkedOutBy: null,
             checkedOutAt: null,
           })
-          .where(eq(branchItems.id, branchItem[0].id))
+          .where(eq(branchItems.id, existing.id))
       } else {
         // Create branchItem with deleted status
         await tx.insert(branchItems).values({
@@ -876,13 +884,13 @@ export class CheckoutService {
       )
       .limit(1)
 
-    if (!branchItem.at(0)) {
+    const bi = branchItem[0]
+    if (!bi) {
       throw new NotFoundError('BranchItem', `${branchId}/${itemMasterId}`, {
         operation: 'checkin',
       })
     }
 
-    const bi = branchItem[0]
     if (bi.checkedOutBy !== userId) {
       throw new ValidationError('You do not have this item checked out')
     }

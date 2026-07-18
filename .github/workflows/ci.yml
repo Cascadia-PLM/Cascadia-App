@@ -175,7 +175,7 @@ jobs:
       # would report a number unrelated to the ceilings and gate nothing.
       # Running here reuses the route tree the real build just produced.
       - name: Typecheck
-        run: npm run typecheck:ci
+        run: npm run typecheck:strict
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
 

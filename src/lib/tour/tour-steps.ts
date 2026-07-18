@@ -7,7 +7,6 @@ export const tourSteps: Array<DriveStep> = [
       title: 'Welcome to Cascadia PLM',
       description:
         "Let's take a quick tour of the key features to help you get started with your product lifecycle management.",
-      side: 'over',
       align: 'center',
     },
   },
@@ -114,7 +113,6 @@ export const tourSteps: Array<DriveStep> = [
       title: "You're Ready!",
       description:
         "That's the basics! Start by exploring the Parts library or creating your first Design. You can restart this tour anytime from the help button in the header.",
-      side: 'over',
       align: 'center',
     },
   },

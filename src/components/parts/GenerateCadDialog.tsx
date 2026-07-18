@@ -115,7 +115,7 @@ export function GenerateCadDialog({
         )
         const job = response.data
         setJobProgress(job.progress)
-        setJobMessage(job.progressMessage)
+        setJobMessage(job.progressMessage ?? '')
 
         if (job.status === 'completed' && job.result) {
           cleanup()

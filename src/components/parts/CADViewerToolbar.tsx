@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { BACKGROUND_PRESETS, MATERIAL_PRESETS } from './CADViewerTypes'
 import type { BackgroundPreset, MaterialPreset } from './CADViewerTypes'
+import { cn } from '@/lib/utils'
 import {
   Button,
   DropdownMenu,
@@ -181,19 +182,18 @@ export function CADViewerToolbar({
               ).map(([key, config]) => (
                 <DropdownMenuRadioItem key={key} value={key}>
                   <span
-                    className="inline-block w-3 h-3 rounded-full mr-2 border border-slate-300 dark:border-slate-600"
+                    className={cn(
+                      'inline-block w-3 h-3 rounded-full mr-2 border border-slate-300 dark:border-slate-600',
+                      key === 'default' &&
+                        hasEmbeddedColors &&
+                        'bg-gradient-to-br from-red-400 via-green-400 to-blue-400',
+                    )}
                     style={{
                       backgroundColor:
                         key === 'default' && hasEmbeddedColors
                           ? undefined
                           : config.color,
                     }}
-                    {...(key === 'default' && hasEmbeddedColors
-                      ? {
-                          className:
-                            'inline-block w-3 h-3 rounded-full mr-2 border border-slate-300 dark:border-slate-600 bg-gradient-to-br from-red-400 via-green-400 to-blue-400',
-                        }
-                      : {})}
                   />
                   {key === 'default' && hasEmbeddedColors
                     ? 'Original Colors'

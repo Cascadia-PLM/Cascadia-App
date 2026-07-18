@@ -93,7 +93,7 @@ export function ChangeOrdersChart({ data }: { data: Array<WeeklyDataPoint> }) {
                 className="text-slate-600 dark:text-slate-400"
               />
               <Tooltip
-                labelFormatter={formatDate}
+                labelFormatter={(value) => formatDate(String(value))}
                 contentStyle={{
                   backgroundColor: 'var(--tooltip-bg, #fff)',
                   borderColor: 'var(--tooltip-border, #e2e8f0)',
@@ -146,7 +146,7 @@ export function PartsReleasedChart({ data }: { data: Array<WeeklyDataPoint> }) {
                 className="text-slate-600 dark:text-slate-400"
               />
               <Tooltip
-                labelFormatter={formatDate}
+                labelFormatter={(value) => formatDate(String(value))}
                 contentStyle={{
                   backgroundColor: 'var(--tooltip-bg, #fff)',
                   borderColor: 'var(--tooltip-border, #e2e8f0)',

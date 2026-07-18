@@ -111,11 +111,21 @@ function ComponentCatalogPage() {
     categories.filter((c) => c.parentId === parentId)
 
   return (
-    <PageContainer
-      title="Component Catalog"
-      icon={<Database className="w-6 h-6" />}
-      description="Manage the reference library of real, purchasable components and raw stock materials"
-    >
+    <PageContainer>
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Database className="w-8 h-8 text-slate-700 dark:text-slate-300" />
+        <div>
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-white">
+            Component Catalog
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">
+            Manage the reference library of real, purchasable components and raw
+            stock materials
+          </p>
+        </div>
+      </div>
+
       <div className="flex gap-6 h-[calc(100vh-12rem)]">
         {/* Category Sidebar */}
         <div className="w-64 flex-shrink-0 overflow-y-auto border-r border-slate-200 dark:border-slate-700 pr-4">

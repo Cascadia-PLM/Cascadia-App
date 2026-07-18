@@ -145,7 +145,7 @@ export function DocumentTable({
       cell: ({ row }) => (
         <PhaseBadge
           itemType="Document"
-          state={row.original.state}
+          state={row.original.state ?? ''}
           className="text-xs"
         />
       ),

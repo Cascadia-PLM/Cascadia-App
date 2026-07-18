@@ -24,6 +24,7 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { changeOrders, items, programs, tags } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'
+import { takeFirst } from '@/lib/db/take-first'
 
 const NON_EXISTENT_UUID = '00000000-0000-0000-0000-000000000000'
 
@@ -48,14 +49,16 @@ describe('CommitService', () => {
 
     user = await insertTestUser(testDb.db)
 
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Test Program',
-        code: `PROG-${uniquePrefix}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Test Program',
+          code: `PROG-${uniquePrefix}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     programId = program.id
   })
@@ -104,7 +107,7 @@ describe('CommitService', () => {
       const commits = await CommitService.getByBranch(design.mainBranch!.id)
 
       expect(commits.length).toBeGreaterThanOrEqual(1)
-      expect(commits[0].branchId).toBe(design.mainBranch!.id)
+      expect(commits[0]).toMatchObject({ branchId: design.mainBranch!.id })
     })
 
     it('supports pagination with limit and offset', async () => {
@@ -120,21 +123,23 @@ describe('CommitService', () => {
 
       // Create additional commits
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-PART-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Test Part',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-PART-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Test Part',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       await CommitService.create(
         {
@@ -156,7 +161,7 @@ describe('CommitService', () => {
 
       expect(page1.length).toBe(1)
       expect(page2.length).toBe(1)
-      expect(page1[0].id).not.toBe(page2[0].id)
+      expect(page1[0]!.id).not.toBe(page2[0]!.id)
     })
 
     it('returns empty array for branch with no commits', async () => {
@@ -179,21 +184,23 @@ describe('CommitService', () => {
       )
 
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-PART-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Test Part',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-PART-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Test Part',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       const commit = await CommitService.create(
         {
@@ -223,21 +230,23 @@ describe('CommitService', () => {
       )
 
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-PART-002`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Field Change Part',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-PART-002`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Field Change Part',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       const commit = await CommitService.create(
         {
@@ -286,21 +295,23 @@ describe('CommitService', () => {
       await BranchService.lockBranch(workspaceBranch.id)
 
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-PART-003`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Locked Part',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-PART-003`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Locked Part',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       await expect(
         CommitService.create(
@@ -341,21 +352,23 @@ describe('CommitService', () => {
       const originalHead = design.mainBranch!.headCommitId
 
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-PART-004`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'HEAD Update Part',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-PART-004`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'HEAD Update Part',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       const commit = await CommitService.create(
         {
@@ -387,21 +400,23 @@ describe('CommitService', () => {
 
       // Create ECO branch
       const coMasterId = crypto.randomUUID()
-      const [coItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: coMasterId,
-          itemNumber: `${uniquePrefix}-ECO-001`,
-          revision: 'A',
-          itemType: 'ChangeOrder',
-          name: 'Test ECO',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const coItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: coMasterId,
+            itemNumber: `${uniquePrefix}-ECO-001`,
+            revision: 'A',
+            itemType: 'ChangeOrder',
+            name: 'Test ECO',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       await testDb.db.insert(changeOrders).values({
         itemId: coItem.id,
@@ -417,21 +432,23 @@ describe('CommitService', () => {
 
       // Create a test item to include in the merge
       const partMasterId = crypto.randomUUID()
-      const [partItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: partMasterId,
-          itemNumber: `${uniquePrefix}-MERGE-PART`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Merge Test Part',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const partItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: partMasterId,
+            itemNumber: `${uniquePrefix}-MERGE-PART`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Merge Test Part',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       // Provide non-empty itemChanges to avoid getBranchChanges call that can cause deadlock in tests
       const mergeCommit = await CommitService.createMergeCommit(
@@ -462,21 +479,23 @@ describe('CommitService', () => {
 
       // Create two ECO branches
       const coMasterId1 = crypto.randomUUID()
-      const [coItem1] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: coMasterId1,
-          itemNumber: `${uniquePrefix}-ECO-002`,
-          revision: 'A',
-          itemType: 'ChangeOrder',
-          name: 'ECO 1',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const coItem1 = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: coMasterId1,
+            itemNumber: `${uniquePrefix}-ECO-002`,
+            revision: 'A',
+            itemType: 'ChangeOrder',
+            name: 'ECO 1',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       await testDb.db.insert(changeOrders).values({
         itemId: coItem1.id,
@@ -491,21 +510,23 @@ describe('CommitService', () => {
       )
 
       const coMasterId2 = crypto.randomUUID()
-      const [coItem2] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: coMasterId2,
-          itemNumber: `${uniquePrefix}-ECO-003`,
-          revision: 'A',
-          itemType: 'ChangeOrder',
-          name: 'ECO 2',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const coItem2 = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: coMasterId2,
+            itemNumber: `${uniquePrefix}-ECO-003`,
+            revision: 'A',
+            itemType: 'ChangeOrder',
+            name: 'ECO 2',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       await testDb.db.insert(changeOrders).values({
         itemId: coItem2.id,
@@ -613,21 +634,23 @@ describe('CommitService', () => {
       // Create additional commits
       for (let i = 0; i < 3; i++) {
         const masterId = crypto.randomUUID()
-        const [item] = await testDb.db
-          .insert(items)
-          .values({
-            masterId,
-            itemNumber: `${uniquePrefix}-HIST-00${i}`,
-            revision: 'A',
-            itemType: 'Part',
-            name: `History Part ${i}`,
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const item = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId,
+              itemNumber: `${uniquePrefix}-HIST-00${i}`,
+              revision: 'A',
+              itemType: 'Part',
+              name: `History Part ${i}`,
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         await CommitService.create(
           {
@@ -650,7 +673,7 @@ describe('CommitService', () => {
 
       expect(page1.length).toBe(2)
       if (page1.length > 0 && page2.length > 0) {
-        expect(page1[0].id).not.toBe(page2[0].id)
+        expect(page1[0]!.id).not.toBe(page2[0]!.id)
       }
     })
   })
@@ -668,21 +691,23 @@ describe('CommitService', () => {
       )
 
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-DIFF-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Diff Part',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-DIFF-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Diff Part',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       const commit = await CommitService.create(
         {
@@ -698,7 +723,7 @@ describe('CommitService', () => {
       expect(diff).toBeDefined()
       expect(diff?.commit.id).toBe(commit.id)
       expect(diff?.items.length).toBe(1)
-      expect(diff?.items[0].changeType).toBe('added')
+      expect(diff?.items[0]).toMatchObject({ changeType: 'added' })
     })
 
     it('returns null for non-existent commit', async () => {
@@ -721,21 +746,23 @@ describe('CommitService', () => {
       )
 
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-ITEM-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Item Commits Part',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-ITEM-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Item Commits Part',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       await CommitService.create(
         {
@@ -749,7 +776,7 @@ describe('CommitService', () => {
       const history = await CommitService.getItemCommits(masterId, design.id)
 
       expect(history.length).toBeGreaterThanOrEqual(1)
-      expect(history[0].item.masterId).toBe(masterId)
+      expect(history[0]!.item.masterId).toBe(masterId)
     })
 
     it('returns empty array for non-existent item', async () => {
@@ -783,21 +810,23 @@ describe('CommitService', () => {
       )
 
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-BRANCH-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Branch Filter Part',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-BRANCH-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Branch Filter Part',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       await CommitService.create(
         {
@@ -832,33 +861,37 @@ describe('CommitService', () => {
       )
 
       // Create first tag
-      const [tag1] = await testDb.db
-        .insert(tags)
-        .values({
-          designId: design.id,
-          name: 'v1.0',
-          commitId: design.initialCommit!.id,
-          createdBy: user.id,
-        })
-        .returning()
+      const tag1 = takeFirst(
+        await testDb.db
+          .insert(tags)
+          .values({
+            designId: design.id,
+            name: 'v1.0',
+            commitId: design.initialCommit!.id,
+            createdBy: user.id,
+          })
+          .returning(),
+      )
 
       // Add a commit
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-TAG-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Tag Part',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-TAG-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Tag Part',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       const commit2 = await CommitService.create(
         {
@@ -870,15 +903,17 @@ describe('CommitService', () => {
       )
 
       // Create second tag
-      const [tag2] = await testDb.db
-        .insert(tags)
-        .values({
-          designId: design.id,
-          name: 'v2.0',
-          commitId: commit2.id,
-          createdBy: user.id,
-        })
-        .returning()
+      const tag2 = takeFirst(
+        await testDb.db
+          .insert(tags)
+          .values({
+            designId: design.id,
+            name: 'v2.0',
+            commitId: commit2.id,
+            createdBy: user.id,
+          })
+          .returning(),
+      )
 
       const diffs = await CommitService.compareTags(tag1.id, tag2.id)
 
@@ -896,15 +931,17 @@ describe('CommitService', () => {
         user.id,
       )
 
-      const [tag1] = await testDb.db
-        .insert(tags)
-        .values({
-          designId: design.id,
-          name: 'v1.0',
-          commitId: design.initialCommit!.id,
-          createdBy: user.id,
-        })
-        .returning()
+      const tag1 = takeFirst(
+        await testDb.db
+          .insert(tags)
+          .values({
+            designId: design.id,
+            name: 'v1.0',
+            commitId: design.initialCommit!.id,
+            createdBy: user.id,
+          })
+          .returning(),
+      )
 
       await expect(
         CommitService.compareTags(tag1.id, NON_EXISTENT_UUID),
@@ -926,21 +963,23 @@ describe('CommitService', () => {
 
       // Create ECO branch
       const coMasterId = crypto.randomUUID()
-      const [coItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: coMasterId,
-          itemNumber: `${uniquePrefix}-ECO-CHANGES`,
-          revision: 'A',
-          itemType: 'ChangeOrder',
-          name: 'Changes ECO',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const coItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: coMasterId,
+            itemNumber: `${uniquePrefix}-ECO-CHANGES`,
+            revision: 'A',
+            itemType: 'ChangeOrder',
+            name: 'Changes ECO',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       await testDb.db.insert(changeOrders).values({
         itemId: coItem.id,
@@ -956,21 +995,23 @@ describe('CommitService', () => {
 
       // Add item on ECO branch
       const masterId = crypto.randomUUID()
-      const [item] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          itemNumber: `${uniquePrefix}-CHANGES-001`,
-          revision: 'A',
-          itemType: 'Part',
-          name: 'Changes Part',
-          state: 'Draft',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-          designId: design.id,
-        })
-        .returning()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-CHANGES-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Changes Part',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
 
       await CommitService.create(
         {
@@ -1061,55 +1102,61 @@ describe('CommitService', () => {
 
         // Create items for different change types
         const addedMasterId = crypto.randomUUID()
-        const [addedItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: addedMasterId,
-            itemNumber: `${uniquePrefix}-MULTI-ADD`,
-            revision: 'A',
-            itemType: 'Part',
-            name: 'Added Part',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const addedItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: addedMasterId,
+              itemNumber: `${uniquePrefix}-MULTI-ADD`,
+              revision: 'A',
+              itemType: 'Part',
+              name: 'Added Part',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         const modifiedMasterId = crypto.randomUUID()
-        const [modifiedItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: modifiedMasterId,
-            itemNumber: `${uniquePrefix}-MULTI-MOD`,
-            revision: 'A',
-            itemType: 'Part',
-            name: 'Modified Part',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const modifiedItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: modifiedMasterId,
+              itemNumber: `${uniquePrefix}-MULTI-MOD`,
+              revision: 'A',
+              itemType: 'Part',
+              name: 'Modified Part',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         const deletedMasterId = crypto.randomUUID()
-        const [deletedItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: deletedMasterId,
-            itemNumber: `${uniquePrefix}-MULTI-DEL`,
-            revision: 'A',
-            itemType: 'Part',
-            name: 'Deleted Part',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const deletedItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: deletedMasterId,
+              itemNumber: `${uniquePrefix}-MULTI-DEL`,
+              revision: 'A',
+              itemType: 'Part',
+              name: 'Deleted Part',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         const commit = await CommitService.create(
           {
@@ -1141,38 +1188,42 @@ describe('CommitService', () => {
         )
 
         const coMasterId = crypto.randomUUID()
-        const [coItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: coMasterId,
-            itemNumber: `${uniquePrefix}-ECO-REV`,
-            revision: 'A',
-            itemType: 'ChangeOrder',
-            name: 'Revision ECO',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const coItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: coMasterId,
+              itemNumber: `${uniquePrefix}-ECO-REV`,
+              revision: 'A',
+              itemType: 'ChangeOrder',
+              name: 'Revision ECO',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         const masterId = crypto.randomUUID()
-        const [item] = await testDb.db
-          .insert(items)
-          .values({
-            masterId,
-            itemNumber: `${uniquePrefix}-REV-PART`,
-            revision: 'A',
-            itemType: 'Part',
-            name: 'Revision Part',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const item = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId,
+              itemNumber: `${uniquePrefix}-REV-PART`,
+              revision: 'A',
+              itemType: 'Part',
+              name: 'Revision Part',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         const commit = await CommitService.create(
           {
@@ -1214,21 +1265,23 @@ describe('CommitService', () => {
 
         // Create ECO branch on design2
         const coMasterId = crypto.randomUUID()
-        const [coItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: coMasterId,
-            itemNumber: `${uniquePrefix}-ECO-CROSS`,
-            revision: 'A',
-            itemType: 'ChangeOrder',
-            name: 'Cross Design ECO',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design2.id,
-          })
-          .returning()
+        const coItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: coMasterId,
+              itemNumber: `${uniquePrefix}-ECO-CROSS`,
+              revision: 'A',
+              itemType: 'ChangeOrder',
+              name: 'Cross Design ECO',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design2.id,
+            })
+            .returning(),
+        )
 
         await testDb.db.insert(changeOrders).values({
           itemId: coItem.id,
@@ -1291,21 +1344,23 @@ describe('CommitService', () => {
         )
 
         const coMasterId = crypto.randomUUID()
-        const [coItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: coMasterId,
-            itemNumber: `${uniquePrefix}-ECO-MERGE-REV`,
-            revision: 'A',
-            itemType: 'ChangeOrder',
-            name: 'Merge Rev ECO',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const coItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: coMasterId,
+              itemNumber: `${uniquePrefix}-ECO-MERGE-REV`,
+              revision: 'A',
+              itemType: 'ChangeOrder',
+              name: 'Merge Rev ECO',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         await testDb.db.insert(changeOrders).values({
           itemId: coItem.id,
@@ -1320,21 +1375,23 @@ describe('CommitService', () => {
         )
 
         const partMasterId = crypto.randomUUID()
-        const [partItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: partMasterId,
-            itemNumber: `${uniquePrefix}-MERGE-REV-PART`,
-            revision: 'A',
-            itemType: 'Part',
-            name: 'Merge Rev Part',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const partItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: partMasterId,
+              itemNumber: `${uniquePrefix}-MERGE-REV-PART`,
+              revision: 'A',
+              itemType: 'Part',
+              name: 'Merge Rev Part',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         const mergeCommit = await CommitService.createMergeCommit(
           {
@@ -1368,21 +1425,23 @@ describe('CommitService', () => {
         )
 
         const masterId = crypto.randomUUID()
-        const [item] = await testDb.db
-          .insert(items)
-          .values({
-            masterId,
-            itemNumber: `${uniquePrefix}-CUTOFF-001`,
-            revision: 'A',
-            itemType: 'Part',
-            name: 'Cutoff Part',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const item = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId,
+              itemNumber: `${uniquePrefix}-CUTOFF-001`,
+              revision: 'A',
+              itemType: 'Part',
+              name: 'Cutoff Part',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         // Create first commit
         const commit1 = await CommitService.create(
@@ -1395,21 +1454,23 @@ describe('CommitService', () => {
         )
 
         // Create a second item version
-        const [item2] = await testDb.db
-          .insert(items)
-          .values({
-            masterId,
-            itemNumber: `${uniquePrefix}-CUTOFF-001`,
-            revision: 'B',
-            itemType: 'Part',
-            name: 'Cutoff Part Modified',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const item2 = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId,
+              itemNumber: `${uniquePrefix}-CUTOFF-001`,
+              revision: 'B',
+              itemType: 'Part',
+              name: 'Cutoff Part Modified',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         // Mark original as not current
         await testDb.db
@@ -1443,7 +1504,7 @@ describe('CommitService', () => {
 
         // Should only return the first commit
         expect(historyWithCutoff.length).toBe(1)
-        expect(historyWithCutoff[0].changeType).toBe('added')
+        expect(historyWithCutoff[0]).toMatchObject({ changeType: 'added' })
       })
 
       it('includes field changes in history entries', async () => {
@@ -1458,21 +1519,23 @@ describe('CommitService', () => {
         )
 
         const masterId = crypto.randomUUID()
-        const [item] = await testDb.db
-          .insert(items)
-          .values({
-            masterId,
-            itemNumber: `${uniquePrefix}-FIELD-HISTORY`,
-            revision: 'A',
-            itemType: 'Part',
-            name: 'Field History Part',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const item = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId,
+              itemNumber: `${uniquePrefix}-FIELD-HISTORY`,
+              revision: 'A',
+              itemType: 'Part',
+              name: 'Field History Part',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         await CommitService.create(
           {
@@ -1528,21 +1591,23 @@ describe('CommitService', () => {
         )
 
         const masterId = crypto.randomUUID()
-        const [item] = await testDb.db
-          .insert(items)
-          .values({
-            masterId,
-            itemNumber: `${uniquePrefix}-ECO-HIST`,
-            revision: 'A',
-            itemType: 'Part',
-            name: 'ECO History Part',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const item = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId,
+              itemNumber: `${uniquePrefix}-ECO-HIST`,
+              revision: 'A',
+              itemType: 'Part',
+              name: 'ECO History Part',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         // Create commit on main
         await CommitService.create(
@@ -1556,21 +1621,23 @@ describe('CommitService', () => {
 
         // Create ECO branch
         const coMasterId = crypto.randomUUID()
-        const [coItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: coMasterId,
-            itemNumber: `${uniquePrefix}-ECO-HIST-ECO`,
-            revision: 'A',
-            itemType: 'ChangeOrder',
-            name: 'History ECO',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const coItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: coMasterId,
+              itemNumber: `${uniquePrefix}-ECO-HIST-ECO`,
+              revision: 'A',
+              itemType: 'ChangeOrder',
+              name: 'History ECO',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         await testDb.db.insert(changeOrders).values({
           itemId: coItem.id,
@@ -1585,21 +1652,23 @@ describe('CommitService', () => {
         )
 
         // Create second version on ECO branch
-        const [item2] = await testDb.db
-          .insert(items)
-          .values({
-            masterId,
-            itemNumber: `${uniquePrefix}-ECO-HIST`,
-            revision: 'B',
-            itemType: 'Part',
-            name: 'ECO History Part Modified',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const item2 = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId,
+              itemNumber: `${uniquePrefix}-ECO-HIST`,
+              revision: 'B',
+              itemType: 'Part',
+              name: 'ECO History Part Modified',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         await testDb.db
           .update(items)
@@ -1655,33 +1724,37 @@ describe('CommitService', () => {
         )
 
         // Create first tag on initial commit
-        const [tag1] = await testDb.db
-          .insert(tags)
-          .values({
-            designId: design.id,
-            name: 'v1.0-reverse',
-            commitId: design.initialCommit!.id,
-            createdBy: user.id,
-          })
-          .returning()
+        const tag1 = takeFirst(
+          await testDb.db
+            .insert(tags)
+            .values({
+              designId: design.id,
+              name: 'v1.0-reverse',
+              commitId: design.initialCommit!.id,
+              createdBy: user.id,
+            })
+            .returning(),
+        )
 
         // Add commit
         const masterId = crypto.randomUUID()
-        const [item] = await testDb.db
-          .insert(items)
-          .values({
-            masterId,
-            itemNumber: `${uniquePrefix}-REVERSE-001`,
-            revision: 'A',
-            itemType: 'Part',
-            name: 'Reverse Part',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const item = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId,
+              itemNumber: `${uniquePrefix}-REVERSE-001`,
+              revision: 'A',
+              itemType: 'Part',
+              name: 'Reverse Part',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         const commit2 = await CommitService.create(
           {
@@ -1693,15 +1766,17 @@ describe('CommitService', () => {
         )
 
         // Create second tag
-        const [tag2] = await testDb.db
-          .insert(tags)
-          .values({
-            designId: design.id,
-            name: 'v2.0-reverse',
-            commitId: commit2.id,
-            createdBy: user.id,
-          })
-          .returning()
+        const tag2 = takeFirst(
+          await testDb.db
+            .insert(tags)
+            .values({
+              designId: design.id,
+              name: 'v2.0-reverse',
+              commitId: commit2.id,
+              createdBy: user.id,
+            })
+            .returning(),
+        )
 
         // Compare tags in reverse order (newer to older)
         const diffsReverse = await CommitService.compareTags(tag2.id, tag1.id)
@@ -1725,25 +1800,29 @@ describe('CommitService', () => {
         )
 
         // Create two tags pointing to the same commit
-        const [tag1] = await testDb.db
-          .insert(tags)
-          .values({
-            designId: design.id,
-            name: 'v1.0-same',
-            commitId: design.initialCommit!.id,
-            createdBy: user.id,
-          })
-          .returning()
+        const tag1 = takeFirst(
+          await testDb.db
+            .insert(tags)
+            .values({
+              designId: design.id,
+              name: 'v1.0-same',
+              commitId: design.initialCommit!.id,
+              createdBy: user.id,
+            })
+            .returning(),
+        )
 
-        const [tag2] = await testDb.db
-          .insert(tags)
-          .values({
-            designId: design.id,
-            name: 'v1.0-alias',
-            commitId: design.initialCommit!.id,
-            createdBy: user.id,
-          })
-          .returning()
+        const tag2 = takeFirst(
+          await testDb.db
+            .insert(tags)
+            .values({
+              designId: design.id,
+              name: 'v1.0-alias',
+              commitId: design.initialCommit!.id,
+              createdBy: user.id,
+            })
+            .returning(),
+        )
 
         const diffs = await CommitService.compareTags(tag1.id, tag2.id)
 
@@ -1766,21 +1845,23 @@ describe('CommitService', () => {
         )
 
         const coMasterId = crypto.randomUUID()
-        const [coItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: coMasterId,
-            itemNumber: `${uniquePrefix}-ECO-MULTI-MOD`,
-            revision: 'A',
-            itemType: 'ChangeOrder',
-            name: 'Multi Mod ECO',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const coItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: coMasterId,
+              itemNumber: `${uniquePrefix}-ECO-MULTI-MOD`,
+              revision: 'A',
+              itemType: 'ChangeOrder',
+              name: 'Multi Mod ECO',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         await testDb.db.insert(changeOrders).values({
           itemId: coItem.id,
@@ -1795,21 +1876,23 @@ describe('CommitService', () => {
         )
 
         const partMasterId = crypto.randomUUID()
-        const [item1] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: partMasterId,
-            itemNumber: `${uniquePrefix}-MULTI-MOD-PART`,
-            revision: 'A',
-            itemType: 'Part',
-            name: 'Multi Mod Part v1',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const item1 = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: partMasterId,
+              itemNumber: `${uniquePrefix}-MULTI-MOD-PART`,
+              revision: 'A',
+              itemType: 'Part',
+              name: 'Multi Mod Part v1',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         // First commit - add
         await CommitService.create(
@@ -1822,21 +1905,23 @@ describe('CommitService', () => {
         )
 
         // Create second version
-        const [item2] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: partMasterId,
-            itemNumber: `${uniquePrefix}-MULTI-MOD-PART`,
-            revision: 'B',
-            itemType: 'Part',
-            name: 'Multi Mod Part v2',
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-            designId: design.id,
-          })
-          .returning()
+        const item2 = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: partMasterId,
+              itemNumber: `${uniquePrefix}-MULTI-MOD-PART`,
+              revision: 'B',
+              itemType: 'Part',
+              name: 'Multi Mod Part v2',
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId: design.id,
+            })
+            .returning(),
+        )
 
         await testDb.db
           .update(items)
@@ -1867,7 +1952,7 @@ describe('CommitService', () => {
         )
         expect(partChanges.length).toBe(1)
         // When added first, then modified, should keep 'added' type (original was added to branch)
-        expect(partChanges[0].changeType).toBe('added')
+        expect(partChanges[0]).toMatchObject({ changeType: 'added' })
       })
     })
   })

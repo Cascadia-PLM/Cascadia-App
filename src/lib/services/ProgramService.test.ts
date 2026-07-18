@@ -174,9 +174,11 @@ describe('ProgramService', () => {
         user.id,
       )
 
-      expect(updated.name).toBe('Updated Name')
-      expect(updated.customer).toBe('New Customer')
-      expect(updated.updatedBy).toBe(user.id)
+      expect(updated).toMatchObject({
+        name: 'Updated Name',
+        customer: 'New Customer',
+        updatedBy: user.id,
+      })
     })
 
     it('throws NotFoundError for non-existent program', async () => {
@@ -216,7 +218,7 @@ describe('ProgramService', () => {
         { name: 'Renamed', code },
         user.id,
       )
-      expect(updated.name).toBe('Renamed')
+      expect(updated).toMatchObject({ name: 'Renamed' })
     })
   })
 
@@ -393,7 +395,7 @@ describe('ProgramService', () => {
       })
 
       expect(result.items.length).toBe(1)
-      expect(result.items[0].id).toBe(programA.id)
+      expect(result.items[0]).toMatchObject({ id: programA.id })
     })
 
     it('returns empty when programIds is empty array (no access)', async () => {
@@ -534,7 +536,7 @@ describe('ProgramService', () => {
         { role: 'lead' },
       )
 
-      expect(updated.role).toBe('lead')
+      expect(updated).toMatchObject({ role: 'lead' })
     })
 
     it('updates permissions (canCreateEco, canApproveEco)', async () => {
@@ -556,8 +558,7 @@ describe('ProgramService', () => {
         { canCreateEco: true, canApproveEco: true },
       )
 
-      expect(updated.canCreateEco).toBe(true)
-      expect(updated.canApproveEco).toBe(true)
+      expect(updated).toMatchObject({ canCreateEco: true, canApproveEco: true })
     })
 
     it('throws NotFoundError when member does not exist', async () => {

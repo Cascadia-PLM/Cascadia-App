@@ -70,14 +70,18 @@ app.post(
 app.get(
   '/:id',
   adapt(
-    apiHandler({ permission: ['work_orders', 'read'] }, async ({ params }) => {
-      const workOrder = await WorkOrderService.findById(params.id)
-      if (!workOrder) {
-        throw new NotFoundError('Work Order', params.id)
-      }
+    apiHandler<{ id: string }>(
+      { permission: ['work_orders', 'read'] },
+      async ({ params }) => {
+        const { id } = params
+        const workOrder = await WorkOrderService.findById(id)
+        if (!workOrder) {
+          throw new NotFoundError('Work Order', id)
+        }
 
-      return { workOrder }
-    }),
+        return { workOrder }
+      },
+    ),
   ),
 )
 
@@ -85,7 +89,7 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_orders', 'update'] },
       async ({ params, request, user }) => {
         const body = await request.json()
@@ -107,7 +111,7 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_orders', 'delete'] },
       async ({ params }) => {
         await WorkOrderService.delete(params.id)
@@ -122,7 +126,7 @@ app.delete(
 app.get(
   '/:id/executions',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_orders', 'read'] },
       async ({ params, request }) => {
         const url = new URL(request.url)
@@ -148,7 +152,7 @@ app.get(
 app.put(
   '/:id/status',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_orders', 'update'] },
       async ({ params, request, user }) => {
         const body = await request.json()

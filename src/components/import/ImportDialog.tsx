@@ -178,8 +178,9 @@ export function ImportDialog({
 
   const goBack = () => {
     const idx = getCurrentStepIndex()
-    if (idx > 0) {
-      setCurrentStep(STEPS[idx - 1].id)
+    const previousStep = idx > 0 ? STEPS[idx - 1] : undefined
+    if (previousStep) {
+      setCurrentStep(previousStep.id)
     }
   }
 

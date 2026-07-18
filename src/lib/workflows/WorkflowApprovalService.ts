@@ -17,6 +17,7 @@ import type {
   StateApprover,
   WorkflowState,
 } from './types'
+import { takeFirst } from '@/lib/db/take-first'
 
 /**
  * Service for managing workflow approvals
@@ -81,11 +82,9 @@ export class WorkflowApprovalService {
     const grouped: Record<string, Array<StateApprover>> = {}
 
     for (const approver of approvers) {
-      if (!grouped[approver.stateId]) {
-        grouped[approver.stateId] = []
-      }
+      const bucket = (grouped[approver.stateId] ??= [])
 
-      grouped[approver.stateId].push({
+      bucket.push({
         id: approver.id,
         workflowDefinitionId: approver.workflowDefinitionId,
         stateId: approver.stateId,
@@ -186,17 +185,19 @@ export class WorkflowApprovalService {
       throw new Error('Approver already exists for this state')
     }
 
-    const [inserted] = await db
-      .insert(workflowStateApprovers)
-      .values({
-        workflowDefinitionId: definitionId,
-        stateId,
-        approverType: approver.type,
-        approverId: approver.id,
-        isRequired: approver.isRequired,
-        createdBy: userId,
-      })
-      .returning()
+    const inserted = takeFirst(
+      await db
+        .insert(workflowStateApprovers)
+        .values({
+          workflowDefinitionId: definitionId,
+          stateId,
+          approverType: approver.type,
+          approverId: approver.id,
+          isRequired: approver.isRequired,
+          createdBy: userId,
+        })
+        .returning(),
+    )
 
     return {
       id: inserted.id,
@@ -269,11 +270,12 @@ export class WorkflowApprovalService {
       .where(eq(workflowInstances.id, instanceId))
       .limit(1)
 
-    if (instance.length === 0) {
+    const instanceRow = instance[0]
+    if (!instanceRow) {
       throw new Error('Workflow instance not found')
     }
 
-    const definitionId = instance[0].workflowDefinitionId
+    const definitionId = instanceRow.workflowDefinitionId
     if (!definitionId) {
       throw new Error('Workflow instance has no definition')
     }
@@ -285,12 +287,13 @@ export class WorkflowApprovalService {
       .where(eq(workflowDefinitions.id, definitionId))
       .limit(1)
 
-    if (definition.length === 0) {
+    const definitionRow = definition[0]
+    if (!definitionRow) {
       throw new Error('Workflow definition not found')
     }
 
     const states = (
-      definition[0].definition as { states: Array<WorkflowState> }
+      definitionRow.definition as { states: Array<WorkflowState> }
     ).states
 
     // Get all approvers for this definition
@@ -333,11 +336,12 @@ export class WorkflowApprovalService {
       .where(eq(workflowInstances.id, instanceId))
       .limit(1)
 
-    if (instance.length === 0) {
+    const instanceRow = instance[0]
+    if (!instanceRow) {
       throw new Error('Workflow instance not found')
     }
 
-    const definitionId = instance[0].workflowDefinitionId
+    const definitionId = instanceRow.workflowDefinitionId
     if (!definitionId) {
       throw new Error('Workflow instance has no definition')
     }
@@ -349,12 +353,13 @@ export class WorkflowApprovalService {
       .where(eq(workflowDefinitions.id, definitionId))
       .limit(1)
 
-    if (definition.length === 0) {
+    const definitionRow = definition[0]
+    if (!definitionRow) {
       throw new Error('Workflow definition not found')
     }
 
     const states = (
-      definition[0].definition as { states: Array<WorkflowState> }
+      definitionRow.definition as { states: Array<WorkflowState> }
     ).states
     const state = states.find((s) => s.id === stateId)
 
@@ -428,17 +433,19 @@ export class WorkflowApprovalService {
     }
 
     // Insert the vote
-    const [inserted] = await db
-      .insert(workflowApprovalVotes)
-      .values({
-        workflowInstanceId: instanceId,
-        stateId,
-        userId,
-        roleId: roleId || null,
-        vote,
-        comments: comments || null,
-      })
-      .returning()
+    const inserted = takeFirst(
+      await db
+        .insert(workflowApprovalVotes)
+        .values({
+          workflowInstanceId: instanceId,
+          stateId,
+          userId,
+          roleId: roleId || null,
+          vote,
+          comments: comments || null,
+        })
+        .returning(),
+    )
 
     return {
       id: inserted.id,
@@ -462,7 +469,8 @@ export class WorkflowApprovalService {
       .where(eq(workflowInstances.id, instanceId))
       .limit(1)
 
-    if (instance.length === 0) {
+    const instanceRow = instance[0]
+    if (!instanceRow) {
       return {
         canApprove: false,
         asUser: false,
@@ -471,7 +479,7 @@ export class WorkflowApprovalService {
       }
     }
 
-    const definitionId = instance[0].workflowDefinitionId
+    const definitionId = instanceRow.workflowDefinitionId
     if (!definitionId) {
       return {
         canApprove: false,
@@ -507,7 +515,8 @@ export class WorkflowApprovalService {
       )
       .limit(1)
 
-    const alreadyVoted = existingVote.length > 0
+    const priorVote = existingVote[0]
+    const alreadyVoted = priorVote !== undefined
 
     // Check if user is a direct approver
     const isDirectApprover = stateApprovers.some(
@@ -537,9 +546,7 @@ export class WorkflowApprovalService {
       asUser: isDirectApprover,
       asRoles: matchingRoles,
       alreadyVoted,
-      existingVote: alreadyVoted
-        ? (existingVote[0].vote as 'approved' | 'rejected')
-        : undefined,
+      existingVote: priorVote?.vote as 'approved' | 'rejected' | undefined,
     }
   }
 
@@ -558,11 +565,12 @@ export class WorkflowApprovalService {
       .where(eq(workflowInstances.id, instanceId))
       .limit(1)
 
-    if (instance.length === 0) {
+    const instanceRow = instance[0]
+    if (!instanceRow) {
       return { met: false, required: 0, current: 0, pending: [] }
     }
 
-    const definitionId = instance[0].workflowDefinitionId
+    const definitionId = instanceRow.workflowDefinitionId
     if (!definitionId) {
       return { met: true, required: 0, current: 0, pending: [] }
     }
@@ -678,7 +686,8 @@ export class WorkflowApprovalService {
         .where(eq(users.id, id))
         .limit(1)
 
-      return user.length > 0 ? user[0].name || user[0].email : 'Unknown User'
+      const row = user[0]
+      return row ? row.name || row.email : 'Unknown User'
     } else {
       const role = await db
         .select({ name: roles.name })
@@ -686,7 +695,7 @@ export class WorkflowApprovalService {
         .where(eq(roles.id, id))
         .limit(1)
 
-      return role.length > 0 ? role[0].name : 'Unknown Role'
+      return role[0]?.name ?? 'Unknown Role'
     }
   }
 

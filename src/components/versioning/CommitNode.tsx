@@ -6,16 +6,22 @@ import type { CommitGraphNode } from '@/lib/versioning/graph-types'
 import { Badge } from '@/components/ui/Badge'
 
 // Color schemes for different branch types
-const branchColors: Record<
-  string,
-  { bg: string; border: string; text: string; icon: string }
-> = {
-  main: {
-    bg: 'bg-green-50 dark:bg-green-900/30',
-    border: 'border-green-300 dark:border-green-700',
-    text: 'text-green-700 dark:text-green-300',
-    icon: 'text-green-600 dark:text-green-400',
-  },
+interface BranchColorScheme {
+  bg: string
+  border: string
+  text: string
+  icon: string
+}
+
+const mainBranchColors: BranchColorScheme = {
+  bg: 'bg-green-50 dark:bg-green-900/30',
+  border: 'border-green-300 dark:border-green-700',
+  text: 'text-green-700 dark:text-green-300',
+  icon: 'text-green-600 dark:text-green-400',
+}
+
+const branchColors: Record<string, BranchColorScheme> = {
+  main: mainBranchColors,
   eco: {
     bg: 'bg-orange-50 dark:bg-orange-900/30',
     border: 'border-orange-300 dark:border-orange-700',
@@ -36,8 +42,8 @@ const branchColors: Record<
   },
 }
 
-function getColorClasses(branchType: string) {
-  return branchColors[branchType] ?? branchColors.main
+function getColorClasses(branchType: string): BranchColorScheme {
+  return branchColors[branchType] ?? mainBranchColors
 }
 
 /**

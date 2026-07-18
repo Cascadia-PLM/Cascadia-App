@@ -14,9 +14,10 @@ const app = new Hono()
 app.get(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const tag = await DesignService.getTag(params.id)
-      if (!tag) throw new NotFoundError('Tag', params.id)
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
+      const tag = await DesignService.getTag(id)
+      if (!tag) throw new NotFoundError('Tag', id)
       return { tag }
     }),
   ),
@@ -26,9 +27,10 @@ app.get(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const tag = await DesignService.getTag(params.id)
-      if (!tag) throw new NotFoundError('Tag', params.id)
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
+      const tag = await DesignService.getTag(id)
+      if (!tag) throw new NotFoundError('Tag', id)
 
       const design = await DesignService.getById(tag.designId)
       if (!design) throw new NotFoundError('Design', tag.designId)
@@ -50,7 +52,7 @@ app.delete(
         }
       }
 
-      await DesignService.deleteTag(params.id)
+      await DesignService.deleteTag(id)
       return { success: true }
     }),
   ),

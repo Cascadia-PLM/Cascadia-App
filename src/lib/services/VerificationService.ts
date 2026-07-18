@@ -13,6 +13,7 @@ import { NotFoundError, ValidationError } from '../errors'
 import { ItemService } from '../items/services/ItemService'
 import { VERIFIED_BY_RELATIONSHIP } from './RequirementService'
 import type { ExecutionStatus } from '../items/types/testcase'
+import { takeFirst } from '@/lib/db/take-first'
 
 /**
  * Relationship type constant for test-to-part validation
@@ -114,18 +115,20 @@ export class VerificationService {
     }
 
     // Create execution record
-    const [execution] = await db
-      .insert(testExecutions)
-      .values({
-        testCaseId,
-        executorId: userId,
-        status: result.status,
-        duration: result.duration ?? null,
-        environment: result.environment ?? null,
-        actualResults: result.actualResults ?? null,
-        notes: result.notes ?? null,
-      })
-      .returning()
+    const execution = takeFirst(
+      await db
+        .insert(testExecutions)
+        .values({
+          testCaseId,
+          executorId: userId,
+          status: result.status,
+          duration: result.duration ?? null,
+          environment: result.environment ?? null,
+          actualResults: result.actualResults ?? null,
+          notes: result.notes ?? null,
+        })
+        .returning(),
+    )
 
     // Update test case with latest execution status
     await db

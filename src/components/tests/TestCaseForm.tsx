@@ -164,7 +164,9 @@ export function TestCaseForm({
     value: string | number,
   ) => {
     const newSteps = [...steps]
-    newSteps[index] = { ...newSteps[index], [field]: value }
+    const existing = newSteps[index]
+    if (!existing) return
+    newSteps[index] = { ...existing, [field]: value }
     setSteps(newSteps)
   }
 
@@ -366,10 +368,7 @@ export function TestCaseForm({
         {/* Test Type */}
         <form.Field name="testType">
           {(field) => (
-            <FormField
-              label="Test Type"
-              error={field.state.meta.errors[0]}
-            >
+            <FormField label="Test Type" error={field.state.meta.errors[0]}>
               <Select
                 value={field.state.value}
                 onValueChange={(value) =>

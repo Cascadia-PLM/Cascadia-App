@@ -8,6 +8,7 @@ import { notDeleted } from '../db/filters'
 import { branchItems, branches, items, tags } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import { DesignService } from './DesignService'
+import { takeFirst } from '@/lib/db/take-first'
 
 // Zod schemas for validation
 export const branchCreateSchema = z.object({
@@ -73,13 +74,14 @@ export class BranchService {
       .where(and(eq(items.id, changeOrderItemId), notDeleted()))
       .limit(1)
 
-    if (!changeOrderItem.at(0)) {
+    const changeOrder = changeOrderItem[0]
+    if (!changeOrder) {
       throw new NotFoundError('Change Order', changeOrderItemId, {
         operation: 'createEcoBranch',
       })
     }
 
-    const branchName = `eco/${changeOrderItem[0].itemNumber}`
+    const branchName = `eco/${changeOrder.itemNumber}`
 
     // Check if branch already exists
     const existing = await this.getByName(designId, branchName)
@@ -195,7 +197,8 @@ export class BranchService {
       .where(eq(tags.id, tagId))
       .limit(1)
 
-    if (!tag.at(0)) {
+    const sourceTag = tag[0]
+    if (!sourceTag) {
       throw new NotFoundError('Tag', tagId, {
         operation: 'createReleaseBranch',
       })
@@ -206,7 +209,7 @@ export class BranchService {
       name: branchName,
       branchType: 'release',
       sourceTagId: tagId,
-      baseCommitId: tag[0].commitId,
+      baseCommitId: sourceTag.commitId,
       userId,
     })
   }
@@ -228,13 +231,14 @@ export class BranchService {
       .where(and(eq(items.id, changeOrderItemId), notDeleted()))
       .limit(1)
 
-    if (!changeOrderItem.at(0)) {
+    const changeOrder = changeOrderItem[0]
+    if (!changeOrder) {
       throw new NotFoundError('Change Order', changeOrderItemId, {
         operation: 'getOrCreateEcoBranch',
       })
     }
 
-    const branchName = `eco/${changeOrderItem[0].itemNumber}`
+    const branchName = `eco/${changeOrder.itemNumber}`
 
     // Check if branch already exists
     const existing = await this.getByName(designId, branchName)
@@ -513,20 +517,22 @@ export class BranchService {
     return db.transaction(
       async (tx) => {
         // 1. Create the branch
-        const [branch] = await tx
-          .insert(branches)
-          .values({
-            designId: data.designId,
-            name: data.name,
-            branchType: data.branchType,
-            headCommitId: baseCommitId,
-            baseCommitId: baseCommitId,
-            changeOrderItemId: data.changeOrderItemId,
-            ownerId: data.ownerId,
-            sourceTagId: data.sourceTagId,
-            createdBy: data.userId,
-          })
-          .returning()
+        const branch = takeFirst(
+          await tx
+            .insert(branches)
+            .values({
+              designId: data.designId,
+              name: data.name,
+              branchType: data.branchType,
+              headCommitId: baseCommitId,
+              baseCommitId: baseCommitId,
+              changeOrderItemId: data.changeOrderItemId,
+              ownerId: data.ownerId,
+              sourceTagId: data.sourceTagId,
+              createdBy: data.userId,
+            })
+            .returning(),
+        )
 
         // 2. Note: branchItems are created lazily when items are first checked out
         // This avoids copying all items upfront for large designs

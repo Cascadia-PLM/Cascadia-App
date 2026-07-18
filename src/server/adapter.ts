@@ -6,12 +6,13 @@ import type { Context, Handler } from 'hono'
 import type { OpenApiMetadata } from '@/lib/api/openapi-helpers'
 import { metadataToSpec } from '@/lib/api/openapi-helpers'
 
-type LegacyHandler = (ctx: {
-  params: Record<string, string>
+type LegacyHandler<TParams = Record<string, string>> = (ctx: {
+  params: TParams
   request: Request
 }) => Promise<Response>
 
-type AnnotatableHandler = LegacyHandler & { openapi?: OpenApiMetadata }
+type AnnotatableHandler<TParams = Record<string, string>> =
+  LegacyHandler<TParams> & { openapi?: OpenApiMetadata }
 
 /**
  * Bridges a Hono route handler to the existing apiHandler() signature.
@@ -27,9 +28,18 @@ type AnnotatableHandler = LegacyHandler & { openapi?: OpenApiMetadata }
  * 300+ existing `app.METHOD(path, adapt(apiHandler(...)))` call sites
  * unchanged.
  */
-export function adapt(handler: AnnotatableHandler): Handler {
+export function adapt<TParams = Record<string, string>>(
+  handler: AnnotatableHandler<TParams>,
+): Handler {
   const honoHandler: Handler = async (c: Context) => {
-    const params = c.req.param()
+    // Hono only dispatches to a route once every `:name` segment in its path
+    // pattern has been bound, so the runtime bag always carries the keys the
+    // handler declares. That lets a handler name its own params -
+    // `apiHandler<{ id: string }>` - and read `params.id` as `string` rather
+    // than `string | undefined`, which is what `Record<string, string>` would
+    // give under `noUncheckedIndexedAccess`. This cast is the single point
+    // where that guarantee is asserted.
+    const params = c.req.param() as TParams
     const request = c.req.raw
     return await handler({ params, request })
   }
@@ -51,7 +61,9 @@ export function adapt(handler: AnnotatableHandler): Handler {
  * keep precedence.
  */
 export function tagged(tag: string): typeof adapt {
-  return (handler: AnnotatableHandler): Handler => {
+  return <TParams = Record<string, string>>(
+    handler: AnnotatableHandler<TParams>,
+  ): Handler => {
     const existing = handler.openapi
     if (!existing) {
       handler.openapi = { tags: [tag] }

@@ -19,6 +19,7 @@ import { BranchService } from './BranchService'
 import { UsageService } from './UsageService'
 import { VersionResolver } from './VersionResolver'
 import type { UpstreamChangeItem } from '../db/schema'
+import { takeFirst } from '@/lib/db/take-first'
 
 /**
  * Relationship type for linking MBOM items back to their EBOM source
@@ -147,44 +148,50 @@ export class MbomService {
     // Create the Manufacturing design with transaction
     return db.transaction(async (tx) => {
       // 1. Create Manufacturing design
-      const [mbomDesign] = await tx
-        .insert(designs)
-        .values({
-          programId: sourceDesign.programId,
-          name: validated.name,
-          code: validated.code,
-          description: validated.description,
-          designType: 'Manufacturing',
-          sourceDesignId: validated.sourceDesignId,
-          sourceTagId: validated.sourceTagId ?? null,
-          sourceCommitId: sourceCommitId,
-          createdBy: userId,
-        })
-        .returning()
+      const mbomDesign = takeFirst(
+        await tx
+          .insert(designs)
+          .values({
+            programId: sourceDesign.programId,
+            name: validated.name,
+            code: validated.code,
+            description: validated.description,
+            designType: 'Manufacturing',
+            sourceDesignId: validated.sourceDesignId,
+            sourceTagId: validated.sourceTagId ?? null,
+            sourceCommitId: sourceCommitId,
+            createdBy: userId,
+          })
+          .returning(),
+      )
 
       // 2. Create initial commit (with temporary branchId)
-      const [initialCommit] = await tx
-        .insert(commits)
-        .values({
-          designId: mbomDesign.id,
-          branchId: mbomDesign.id, // Temporary - will update after branch creation
-          message: `Initial MBOM created from ${sourceDesign.code}`,
-          createdBy: userId,
-        })
-        .returning()
+      const initialCommit = takeFirst(
+        await tx
+          .insert(commits)
+          .values({
+            designId: mbomDesign.id,
+            branchId: mbomDesign.id, // Temporary - will update after branch creation
+            message: `Initial MBOM created from ${sourceDesign.code}`,
+            createdBy: userId,
+          })
+          .returning(),
+      )
 
       // 3. Create main branch
-      const [mainBranch] = await tx
-        .insert(branches)
-        .values({
-          designId: mbomDesign.id,
-          name: 'main',
-          branchType: 'main',
-          headCommitId: initialCommit.id,
-          baseCommitId: initialCommit.id,
-          createdBy: userId,
-        })
-        .returning()
+      const mainBranch = takeFirst(
+        await tx
+          .insert(branches)
+          .values({
+            designId: mbomDesign.id,
+            name: 'main',
+            branchType: 'main',
+            headCommitId: initialCommit.id,
+            baseCommitId: initialCommit.id,
+            createdBy: userId,
+          })
+          .returning(),
+      )
 
       // 4. Update commit with correct branchId
       await tx
@@ -345,40 +352,42 @@ export class MbomService {
       const sysmlType = UsageService.getSysmlType(sourceItem.itemType, true)
 
       // Create new usage item in MBOM that references the EBOM definition
-      const [newUsage] = await tx
-        .insert(items)
-        .values({
-          // New identity for this usage
-          masterId: crypto.randomUUID(),
-          designId: targetDesignId,
-          commitId: targetCommitId,
+      const newUsage = takeFirst(
+        await tx
+          .insert(items)
+          .values({
+            // New identity for this usage
+            masterId: crypto.randomUUID(),
+            designId: targetDesignId,
+            commitId: targetCommitId,
 
-          // Usage reference - this is the key for traceability!
-          usageOf: definitionId,
+            // Usage reference - this is the key for traceability!
+            usageOf: definitionId,
 
-          // Copy field values from source, optionally renumbering the design code suffix
-          itemNumber: renumberItems
-            ? this.renumberItemNumber(
-                sourceItem.itemNumber,
-                sourceDesignCode,
-                targetDesignCode,
-              )
-            : sourceItem.itemNumber,
-          revision: '-', // Fresh start for MBOM usage
-          itemType: sourceItem.itemType,
-          name: sourceItem.name,
-          state: 'Draft', // Start as Draft in MBOM
-          isCurrent: true,
-          inDesignStructure: sourceItem.inDesignStructure,
-          attributes: sourceItem.attributes,
-          metamodel: sourceItem.metamodel ?? 'cascadia',
-          sysmlType: sysmlType, // Auto-assigned based on item type
+            // Copy field values from source, optionally renumbering the design code suffix
+            itemNumber: renumberItems
+              ? this.renumberItemNumber(
+                  sourceItem.itemNumber,
+                  sourceDesignCode,
+                  targetDesignCode,
+                )
+              : sourceItem.itemNumber,
+            revision: '-', // Fresh start for MBOM usage
+            itemType: sourceItem.itemType,
+            name: sourceItem.name,
+            state: 'Draft', // Start as Draft in MBOM
+            isCurrent: true,
+            inDesignStructure: sourceItem.inDesignStructure,
+            attributes: sourceItem.attributes,
+            metamodel: sourceItem.metamodel ?? 'cascadia',
+            sysmlType: sysmlType, // Auto-assigned based on item type
 
-          // Audit
-          createdBy: userId,
-          modifiedBy: userId,
-        })
-        .returning()
+            // Audit
+            createdBy: userId,
+            modifiedBy: userId,
+          })
+          .returning(),
+      )
 
       itemIdMap.set(sourceItem.id, newUsage.id)
 

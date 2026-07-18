@@ -29,6 +29,7 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { itemVersions, programs } from '@/lib/db/schema'
+import { takeFirst } from '@/lib/db/take-first'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'
@@ -65,14 +66,16 @@ describe('CheckoutService', () => {
     otherUser = await insertTestUser(testDb.db)
 
     // Create test program
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Test Program',
-        code: `PROG-${uniquePrefix}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Test Program',
+          code: `PROG-${uniquePrefix}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     programId = program.id
 

@@ -71,8 +71,7 @@ app.get(
         const programId = url.searchParams.get('programId')
         const limit = parseInt(url.searchParams.get('limit') || '50', 10)
         const offset = parseInt(url.searchParams.get('offset') || '0', 10)
-        const includeCounts =
-          url.searchParams.get('includeCounts') === 'true'
+        const includeCounts = url.searchParams.get('includeCounts') === 'true'
 
         const getStateCounts = async (changeOrderIds?: Array<string>) => {
           if (changeOrderIds && changeOrderIds.length > 0) {
@@ -231,7 +230,7 @@ app.get(
 app.get(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
         const changeOrder = await ItemService.findById(params.id)
@@ -246,7 +245,7 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
@@ -265,7 +264,7 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'delete'] },
       async ({ params }) => {
         await ItemService.delete(params.id)
@@ -283,10 +282,10 @@ app.delete(
 app.get(
   '/:id/affected-items',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
-        const { id } = params as { id: string }
+        const { id } = params
 
         const affectedItems = await ChangeOrderService.getAffectedItems(id)
 
@@ -300,10 +299,10 @@ app.get(
 app.post(
   '/:id/affected-items',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ params, request, user }) => {
-        const { id } = params as { id: string }
+        const { id } = params
         const data = await request.json()
 
         // Check if this is a batch request
@@ -334,7 +333,7 @@ app.post(
 app.delete(
   '/:id/affected-items',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ request }) => {
         const url = new URL(request.url)
@@ -360,7 +359,7 @@ app.delete(
 app.get(
   '/:id/approvals/can-approve',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params, user }) => {
         // Get the workflow instance for this change order
@@ -394,7 +393,7 @@ app.get(
 app.get(
   '/:id/approvals',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params, user }) => {
         // Get the workflow instance for this change order
@@ -434,7 +433,7 @@ app.get(
 app.post(
   '/:id/approvals',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ request, params, user }) => {
         const data = await request.json()
@@ -479,7 +478,7 @@ app.post(
 app.get(
   '/:id/approvals/:stateId',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; stateId: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params, user }) => {
         // Get the workflow instance for this change order
@@ -519,7 +518,7 @@ app.get(
 app.post(
   '/:id/approvals/:stateId',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; stateId: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ request, params, user }) => {
         const data = await request.json()
@@ -596,7 +595,7 @@ const addBomChangeSchema = z.object({
 app.post(
   '/:id/bom-changes',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ params, request, user }) => {
         const changeOrderId = params.id
@@ -718,7 +717,7 @@ app.post(
 app.delete(
   '/:id/bom-changes',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ params, request, user }) => {
         const changeOrderId = params.id
@@ -755,13 +754,13 @@ app.delete(
         }
 
         // Get the relationship to verify the parent is an affected item
-        const relationship = await db
+        const [relationship] = await db
           .select()
           .from(itemRelationships)
           .where(eq(itemRelationships.id, relationshipId))
           .limit(1)
 
-        if (!relationship[0]) {
+        if (!relationship) {
           throw new NotFoundError('Relationship', relationshipId)
         }
 
@@ -769,12 +768,12 @@ app.delete(
         // Match by affectedItemId or masterId (working copy IDs differ from originals)
         const affectedItems =
           await ChangeOrderService.getAffectedItems(changeOrderId)
-        const sourceItem = await ItemService.findById(relationship[0].sourceId)
+        const sourceItem = await ItemService.findById(relationship.sourceId)
         const sourceMasterId = sourceItem?.masterId
 
         const parentAffectedItem = affectedItems.find(
           (ai) =>
-            ai.affectedItemId === relationship[0].sourceId ||
+            ai.affectedItemId === relationship.sourceId ||
             (sourceMasterId && ai.affectedItemMasterId === sourceMasterId),
         )
 
@@ -859,7 +858,7 @@ interface EcoBranchHistory {
 app.get(
   '/:id/branch-history',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
         // Get the change order
@@ -1091,8 +1090,7 @@ function extractItemType(message: string): string {
   const match = message.match(
     /^(Part|Document|ChangeOrder|Requirement|Task)\s+/i,
   )
-  if (match) return match[1]
-  return 'Item'
+  return match?.[1] ?? 'Item'
 }
 
 /**
@@ -1136,7 +1134,8 @@ function consolidateCommits(
   let i = 0
 
   while (i < sortedNodes.length) {
-    const currentNode = sortedNodes[i]
+    // `i` is bounded by the loop condition, so the node is always present
+    const currentNode = sortedNodes[i]!
 
     // If this is an important commit, don't consolidate it
     if (isImportantCommit(currentNode.data)) {
@@ -1153,7 +1152,7 @@ function consolidateCommits(
 
     let j = i + 1
     while (j < sortedNodes.length) {
-      const nextNode = sortedNodes[j]
+      const nextNode = sortedNodes[j]!
 
       // Stop if next commit is important
       if (isImportantCommit(nextNode.data)) break
@@ -1180,8 +1179,9 @@ function consolidateCommits(
 
     if (group.length >= MIN_COMMITS_TO_CONSOLIDATE) {
       // Create consolidated node
-      const firstCommit = group[0]
-      const lastCommit = group[group.length - 1]
+      // The group holds at least MIN_COMMITS_TO_CONSOLIDATE entries here
+      const firstCommit = group[0]!
+      const lastCommit = group[group.length - 1]!
 
       // Aggregate stats
       const totalStats = group.reduce(
@@ -1500,7 +1500,8 @@ async function buildEcoGraph(
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     )
-    const oldestEcoCommit = sortedEcoCommits[0]
+    // Non-empty per the `ecoBranchCommits.length > 0` guard above
+    const oldestEcoCommit = sortedEcoCommits[0]!
 
     if (includedCommitIds.has(forkPoint)) {
       const edgeId = `${forkPoint}-${oldestEcoCommit.id}`
@@ -1533,7 +1534,7 @@ async function buildEcoGraph(
 app.get(
   '/:id/branch-history/graph',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ request, params }) => {
         // Get the change order
@@ -1576,10 +1577,11 @@ app.get(
         }
 
         // Select which design to show (first one or specified)
+        // Non-empty per the `affectedDesigns.length === 0` early return above
         const targetDesign = selectedDesignId
           ? affectedDesigns.find((d) => d.designId === selectedDesignId) ||
-            affectedDesigns[0]
-          : affectedDesigns[0]
+            affectedDesigns[0]!
+          : affectedDesigns[0]!
 
         if (!targetDesign.branchId) {
           return {
@@ -1640,7 +1642,7 @@ app.get(
 app.post(
   '/:id/checkout',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ request, params, user }) => {
         const { itemId } = await request.json()
@@ -1669,7 +1671,7 @@ app.post(
 app.get(
   '/:id/conflict-reviews',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
         const reviews = await ConflictReviewService.getReviewsForEco(params.id)
@@ -1684,7 +1686,7 @@ app.get(
 app.post(
   '/:id/conflict-reviews',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ request, params, user }) => {
         const body = await request.json()
@@ -1731,7 +1733,7 @@ app.post(
 app.delete(
   '/:id/conflict-reviews',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ request }) => {
         // Get review ID from query params
@@ -1758,7 +1760,7 @@ app.delete(
 app.get(
   '/:id/conflicts',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
         const result = await ConflictDetectionService.detectConflictsForEco(
@@ -1803,7 +1805,7 @@ app.get(
 app.get(
   '/:id/designs',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
         const ecoDesigns = await ChangeOrderService.getEcoDesigns(params.id)
@@ -1818,7 +1820,7 @@ app.get(
 app.post(
   '/:id/designs',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ request, params, user }) => {
         const { designId } = await request.json()
@@ -1880,13 +1882,10 @@ interface OrphanItem {
 app.get(
   '/:id/designs/:designId/structure',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; designId: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ request, params }) => {
-        const { id: changeOrderId, designId } = params as {
-          id: string
-          designId: string
-        }
+        const { id: changeOrderId, designId } = params
 
         // Verify design exists
         const design = await DesignService.getById(designId)
@@ -2761,10 +2760,10 @@ app.get(
 app.get(
   '/:id/impact-assessment',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
-        const { id } = params as { id: string }
+        const { id } = params
 
         const impactReport = await ChangeOrderService.getImpactReport(id)
 
@@ -2799,10 +2798,10 @@ app.get(
 app.post(
   '/:id/impact-assessment',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ params, request }) => {
-        const { id } = params as { id: string }
+        const { id } = params
         const body = await request.json().catch(() => ({}))
 
         const options = {
@@ -2830,13 +2829,10 @@ app.post(
 app.get(
   '/:id/items/:itemId/ancestors',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; itemId: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params, request }) => {
-        const { id: changeOrderId, itemId } = params as {
-          id: string
-          itemId: string
-        }
+        const { id: changeOrderId, itemId } = params
 
         // Get designId from query params
         const url = new URL(request.url)
@@ -2900,7 +2896,7 @@ app.get(
 app.get(
   '/:id/release',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
         const preview = await ChangeOrderMergeService.previewMerge(params.id)
@@ -2926,7 +2922,7 @@ interface ResolveConflictRequest {
 app.post(
   '/:id/resolve-conflicts',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ request, params }) => {
         const changeOrderId = params.id
@@ -3099,10 +3095,10 @@ app.post(
 app.get(
   '/:id/risks',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
-        const { id } = params as { id: string }
+        const { id } = params
 
         const risks = await ChangeOrderService.getRisks(id)
 
@@ -3116,7 +3112,7 @@ app.get(
 app.post(
   '/:id/risks',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ request, user }) => {
         const url = new URL(request.url)
@@ -3142,7 +3138,7 @@ app.post(
 app.get(
   '/:id/summary',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
         const summary = await ChangeOrderService.getEcoSummary(params.id)
@@ -3161,7 +3157,7 @@ app.get(
 app.get(
   '/:id/workflow/history',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
         const instance = await WorkflowService.getInstanceByItemId(params.id)
@@ -3182,7 +3178,7 @@ app.get(
 app.get(
   '/:id/workflow/structure',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
         const instance = await WorkflowService.getInstanceByItemId(params.id)
@@ -3208,7 +3204,7 @@ app.get(
 app.put(
   '/:id/workflow/structure',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ request, params, user }) => {
         const instance = await WorkflowService.getInstanceByItemId(params.id)
@@ -3256,7 +3252,7 @@ app.put(
 app.get(
   '/:id/workflow/transition',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params, user }) => {
         const instance = await WorkflowService.getInstanceByItemId(params.id)
@@ -3290,7 +3286,7 @@ app.get(
 app.post(
   '/:id/workflow/transition',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
@@ -3382,7 +3378,7 @@ app.post(
 app.post(
   '/:id/workflow/validate-transition',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ request, params, user }) => {
         const data = await request.json()
@@ -3533,7 +3529,7 @@ app.post(
 app.get(
   '/:id/workflow',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params }) => {
         const instance = await WorkflowService.getInstanceByItemId(params.id)
@@ -3575,7 +3571,7 @@ app.get(
 app.post(
   '/:id/workflow',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ request, params, user }) => {
         const data = await request.json()

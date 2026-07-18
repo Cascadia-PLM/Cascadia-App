@@ -64,8 +64,9 @@ export function EcoCheckoutDialog({
         setChangeOrders(ecos)
 
         // Auto-select if only one ECO
-        if (ecos.length === 1) {
-          setSelectedEcoId(ecos[0].id)
+        const onlyEco = ecos.length === 1 ? ecos[0] : undefined
+        if (onlyEco) {
+          setSelectedEcoId(onlyEco.id)
         }
       } catch {
         setError('Unable to load active change orders')

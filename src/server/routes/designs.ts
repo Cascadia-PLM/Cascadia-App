@@ -171,8 +171,7 @@ function extractItemType(message: string): string {
   const match = message.match(
     /^(Part|Document|ChangeOrder|Requirement|Task)\s+/i,
   )
-  if (match) return match[1]
-  return 'Item'
+  return match?.[1] ?? 'Item'
 }
 
 /**
@@ -217,7 +216,8 @@ function consolidateCommits(
   let i = 0
 
   while (i < sortedNodes.length) {
-    const currentNode = sortedNodes[i]
+    // Safe: the while condition guarantees i is in bounds
+    const currentNode = sortedNodes[i]!
 
     // If this is an important commit, don't consolidate it
     if (isImportantCommit(currentNode.data)) {
@@ -234,7 +234,8 @@ function consolidateCommits(
 
     let j = i + 1
     while (j < sortedNodes.length) {
-      const nextNode = sortedNodes[j]
+      // Safe: the while condition guarantees j is in bounds
+      const nextNode = sortedNodes[j]!
 
       // Stop if next commit is important
       if (isImportantCommit(nextNode.data)) break
@@ -261,8 +262,9 @@ function consolidateCommits(
 
     if (group.length >= MIN_COMMITS_TO_CONSOLIDATE) {
       // Create consolidated node
-      const firstCommit = group[0]
-      const lastCommit = group[group.length - 1]
+      // Safe: this branch only runs when group.length >= MIN_COMMITS_TO_CONSOLIDATE
+      const firstCommit = group[0]!
+      const lastCommit = group[group.length - 1]!
 
       // Aggregate stats
       const totalStats = group.reduce(
@@ -605,16 +607,20 @@ async function buildCommitGraph(
       branchType = 'main'
     } else if (selectedBranch && commit.branchId === selectedBranch.id) {
       branchName = selectedBranch.name
-      branchType = (selectedBranch.branchType ||
-        'eco') as 'eco' | 'workspace' | 'release'
+      branchType = (selectedBranch.branchType || 'eco') as
+        | 'eco'
+        | 'workspace'
+        | 'release'
     } else {
       // Look up from open ECO branches first, then historical branches
       const openEcoInfo = openEcoBranchInfo.get(commit.branchId)
       const histInfo = historicalBranchInfo.get(commit.branchId)
       const branchInfo = openEcoInfo || histInfo
       branchName = branchInfo?.name || 'Unknown Branch'
-      branchType = (branchInfo?.branchType ||
-        'eco') as 'eco' | 'workspace' | 'release'
+      branchType = (branchInfo?.branchType || 'eco') as
+        | 'eco'
+        | 'workspace'
+        | 'release'
     }
 
     nodes.push({
@@ -677,7 +683,8 @@ async function buildCommitGraph(
   // 9. Add edge from fork point to first branch commit (for selected branch)
   if (forkPoint && selectedBranch && branchCommits.length > 0) {
     // Find the oldest commit on the branch (closest to fork point)
-    const oldestBranchCommit = branchCommits[branchCommits.length - 1]
+    // Safe: guarded by branchCommits.length > 0 above
+    const oldestBranchCommit = branchCommits[branchCommits.length - 1]!
 
     // Only add if fork point is in our nodes
     if (includedCommitIds.has(forkPoint)) {
@@ -712,7 +719,8 @@ async function buildCommitGraph(
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     )
-    const oldestCommit = sortedCommits[0]
+    // Safe: guarded by branchHistoryCommits.length === 0 continue above
+    const oldestCommit = sortedCommits[0]!
 
     // Add edge from fork point to first branch commit if not already connected
     if (includedCommitIds.has(branch.baseCommitId)) {
@@ -745,7 +753,8 @@ async function buildCommitGraph(
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     )
-    const oldestCommit = sortedCommits[0]
+    // Safe: guarded by ecoBranchCommits.length === 0 continue above
+    const oldestCommit = sortedCommits[0]!
 
     // Add edge from fork point to first branch commit if not already connected
     if (includedCommitIds.has(branchInfo.baseCommitId)) {
@@ -969,9 +978,10 @@ app.post(
 app.get(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const design = await DesignService.getById(params.id)
-      if (!design) throw new NotFoundError('Design', params.id)
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
+      if (!design) throw new NotFoundError('Design', designId)
 
       // Check access - Global Admin bypasses program membership check
       if (design.programId) {
@@ -989,7 +999,7 @@ app.get(
       }
 
       // Get default branch info
-      const defaultBranch = await DesignService.getDefaultBranch(params.id)
+      const defaultBranch = await DesignService.getDefaultBranch(designId)
 
       return { design: { ...design, defaultBranch } }
     }),
@@ -1000,9 +1010,10 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const design = await DesignService.getById(params.id)
-      if (!design) throw new NotFoundError('Design', params.id)
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
+      if (!design) throw new NotFoundError('Design', designId)
 
       // Check permission
       if (design.programId) {
@@ -1015,7 +1026,7 @@ app.put(
       }
 
       const data = await request.json()
-      const updated = await DesignService.update(params.id, data, user.id)
+      const updated = await DesignService.update(designId, data, user.id)
       return { design: updated }
     }),
   ),
@@ -1025,9 +1036,10 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const design = await DesignService.getById(params.id)
-      if (!design) throw new NotFoundError('Design', params.id)
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
+      if (!design) throw new NotFoundError('Design', designId)
 
       // Check permission
       if (design.programId) {
@@ -1039,7 +1051,7 @@ app.delete(
         await requirePermission(request, 'designs', 'delete')
       }
 
-      await DesignService.archive(params.id, user.id)
+      await DesignService.archive(designId, user.id)
       return { success: true }
     }),
   ),
@@ -1050,23 +1062,24 @@ app.delete(
 app.get(
   '/:id/details',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const design = await DesignService.getById(params.id)
-      if (!design) throw new NotFoundError('Design', params.id)
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
+      if (!design) throw new NotFoundError('Design', designId)
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       const [branchList, tagList, programs] = await Promise.all([
-        DesignService.getBranches(params.id).catch((err) => {
+        DesignService.getBranches(designId).catch((err) => {
           serviceLogger.error(
-            { err, designId: params.id },
+            { err, designId: designId },
             'Failed to fetch branches for design',
           )
           return []
         }),
-        DesignService.listTags(params.id).catch((err) => {
+        DesignService.listTags(designId).catch((err) => {
           serviceLogger.error(
-            { err, designId: params.id },
+            { err, designId: designId },
             'Failed to fetch tags for design',
           )
           return []
@@ -1078,10 +1091,10 @@ app.get(
       ])
 
       const defaultBranch = await DesignService.getDefaultBranch(
-        params.id,
+        designId,
       ).catch((err) => {
         serviceLogger.error(
-          { err, designId: params.id },
+          { err, designId: designId },
           'Failed to fetch default branch for design',
         )
         return null
@@ -1120,19 +1133,20 @@ app.get(
 app.get(
   '/:id/branches',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       const url = new URL(request.url, 'http://localhost')
       const includeArchived = url.searchParams.get('includeArchived') === 'true'
 
       const branchesList = await DesignService.getBranches(
-        params.id,
+        designId,
         includeArchived,
       )
 
@@ -1145,13 +1159,14 @@ app.get(
 app.post(
   '/:id/branches',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       const data = await request.json()
 
@@ -1164,7 +1179,7 @@ app.post(
             )
           }
           branch = await BranchService.createEcoBranch(
-            params.id,
+            designId,
             data.changeOrderItemId,
             user.id,
           )
@@ -1175,7 +1190,7 @@ app.post(
             throw new ValidationError('name is required for workspace branches')
           }
           branch = await BranchService.createWorkspaceBranch(
-            params.id,
+            designId,
             user.id,
             data.name,
           )
@@ -1188,7 +1203,7 @@ app.post(
             )
           }
           branch = await BranchService.createReleaseBranch(
-            params.id,
+            designId,
             data.name,
             data.sourceTagId,
             user.id,
@@ -1210,15 +1225,16 @@ app.post(
 app.post(
   '/:id/clone',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
       // Validate source design exists
-      const sourceDesign = await DesignService.getById(params.id)
+      const sourceDesign = await DesignService.getById(designId)
       if (!sourceDesign) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
       // Check read access to source design
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       // Parse and validate input
       const body = await request.json()
@@ -1263,7 +1279,7 @@ app.post(
       const job = await JobService.submit(
         'design.clone',
         {
-          sourceDesignId: params.id,
+          sourceDesignId: designId,
           targetCode: input.code,
           targetName: input.name,
           targetDescription: input.description,
@@ -1284,20 +1300,21 @@ app.post(
 app.get(
   '/:id/cross-references',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       const url = new URL(request.url, 'http://localhost')
       const branchId = url.searchParams.get('branch')
 
       const references =
         await CrossDesignReferenceService.getReferencesForDesign(
-          params.id,
+          designId,
           branchId,
         )
 
@@ -1310,13 +1327,14 @@ app.get(
 app.post(
   '/:id/cross-references',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       const body = await request.json()
       const {
@@ -1372,7 +1390,7 @@ app.post(
       )
 
       const result = await db.transaction(async (tx) => {
-        const targetMainBranch = await BranchService.getMainBranch(params.id)
+        const targetMainBranch = await BranchService.getMainBranch(designId)
         if (!targetMainBranch) {
           throw new ValidationError('Target design has no main branch')
         }
@@ -1386,12 +1404,13 @@ app.post(
           const existingUsages = await UsageService.getUsagesOfDefinition(
             chainItem.id,
             {
-              designId: params.id,
+              designId: designId,
             },
           )
 
           if (existingUsages.length > 0) {
-            usageCopyMap.set(chainItem.id, existingUsages[0].id)
+            // Safe: guarded by existingUsages.length > 0
+            usageCopyMap.set(chainItem.id, existingUsages[0]!.id)
           } else {
             const overrides: { itemNumber?: string } = {}
             if (suffixItemNumber && design.code) {
@@ -1401,7 +1420,7 @@ app.post(
             const usageResult = await UsageService.createUsage(
               {
                 definitionId: chainItem.id,
-                targetDesignId: params.id,
+                targetDesignId: designId,
                 ...(overrides.itemNumber ? { overrides } : {}),
               },
               user.id,
@@ -1502,7 +1521,8 @@ app.post(
         // If parentBomRelationshipId provided, update that BOM rel to point to
         // the topmost chain item's usage copy
         if (parentBomRelationshipId) {
-          const topmostUsageId = usageCopyMap.get(chainItemIds[0])
+          // Safe: chainItemIds is non-empty (validated above)
+          const topmostUsageId = usageCopyMap.get(chainItemIds[0]!)
           if (topmostUsageId) {
             await tx
               .update(itemRelationships)
@@ -1531,13 +1551,14 @@ app.post(
 app.put(
   '/:id/cross-references',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       const body = await request.json()
       const { referencedItemId, branchId: inputBranchId, notes } = body
@@ -1548,7 +1569,7 @@ app.put(
 
       const ref = await CrossDesignReferenceService.createReference(
         {
-          referencingDesignId: params.id,
+          referencingDesignId: designId,
           referencedItemId,
           branchId: inputBranchId || null,
           notes,
@@ -1565,13 +1586,14 @@ app.put(
 app.delete(
   '/:id/cross-references',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       const url = new URL(request.url, 'http://localhost')
       const refId = url.searchParams.get('refId')
@@ -1596,13 +1618,14 @@ app.delete(
 app.get(
   '/:id/ecos',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       // Parse query params - use a base URL for relative paths
       const url = new URL(request.url, 'http://localhost')
@@ -1612,7 +1635,7 @@ app.get(
       const allBranches = await db
         .select()
         .from(branches)
-        .where(eq(branches.designId, params.id))
+        .where(eq(branches.designId, designId))
 
       // Filter to ECO branches and get their change order item IDs
       const ecoItemIds = allBranches
@@ -1712,10 +1735,11 @@ app.get(
 app.get(
   '/:id/history/graph',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
       // Check access via design access control (handles Global Admin bypass)
@@ -1728,7 +1752,7 @@ app.get(
 
       // Build the graph data
       const graphData = await buildCommitGraph(
-        params.id,
+        designId,
         selectedBranchId,
         limit,
       )
@@ -1742,13 +1766,14 @@ app.get(
 app.get(
   '/:id/items',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       // Parse query params
       const url = new URL(request.url, 'http://localhost')
@@ -1776,7 +1801,7 @@ app.get(
           : { type: 'commit' as const, commitId: commitId! }
 
         const historicalResult = await VersionResolver.getItemsAtContext(
-          params.id,
+          designId,
           context,
           {
             itemType: type || undefined,
@@ -1801,7 +1826,7 @@ app.get(
       } else {
         // Build query conditions for current/branch view
         const conditions = [
-          eq(items.designId, params.id),
+          eq(items.designId, designId),
           eq(items.isCurrent, true),
         ]
 
@@ -1867,13 +1892,14 @@ app.get(
 app.post(
   '/:id/items',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       const body = await request.json()
       const {
@@ -1897,7 +1923,7 @@ app.post(
       if (mode === 'cross_design_ref') {
         const ref = await CrossDesignReferenceService.createReference(
           {
-            referencingDesignId: params.id,
+            referencingDesignId: designId,
             referencedItemId: itemId,
             branchId: bodyBranchId || null,
           },
@@ -1917,7 +1943,7 @@ app.post(
       // Check if a usage of the root item already exists in this design
       const existingRootUsages = await UsageService.getUsagesOfDefinition(
         itemId,
-        { designId: params.id },
+        { designId: designId },
       )
       if (existingRootUsages.length > 0) {
         throw new ValidationError(
@@ -1975,7 +2001,7 @@ app.post(
         )
         if (tooLong.length > 0) {
           throw new ValidationError(
-            `${tooLong.length} item number(s) would exceed 100 characters when suffixed (e.g., "${tooLong[0].itemNumber}${suffix}")`,
+            `${tooLong.length} item number(s) would exceed 100 characters when suffixed (e.g., "${tooLong[0]!.itemNumber}${suffix}")`,
           )
         }
       }
@@ -1993,7 +2019,7 @@ app.post(
           trackingBranchId = bodyBranchId
           isEcoBranch = true
         } else {
-          const targetMainBranch = await BranchService.getMainBranch(params.id)
+          const targetMainBranch = await BranchService.getMainBranch(designId)
           if (!targetMainBranch) {
             throw new ValidationError('Target design has no main branch')
           }
@@ -2009,13 +2035,14 @@ app.post(
           const existingUsages = await UsageService.getUsagesOfDefinition(
             sourceItem.id,
             {
-              designId: params.id,
+              designId: designId,
             },
           )
 
           if (existingUsages.length > 0) {
             // Already exists — use the existing usage ID for relationship remapping
-            itemIdMap.set(sourceItem.id, existingUsages[0].id)
+            // Safe: guarded by existingUsages.length > 0
+            itemIdMap.set(sourceItem.id, existingUsages[0]!.id)
             continue
           }
 
@@ -2029,7 +2056,7 @@ app.post(
           const usageResult = await UsageService.createUsage(
             {
               definitionId: sourceItem.id,
-              targetDesignId: params.id,
+              targetDesignId: designId,
               ...(overrides.itemNumber ? { overrides } : {}),
             },
             user.id,
@@ -2114,13 +2141,14 @@ app.post(
 app.delete(
   '/:id/items',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       // Get item ID from query params
       const url = new URL(request.url, 'http://localhost')
@@ -2136,7 +2164,7 @@ app.delete(
         throw new NotFoundError('Item', itemId)
       }
 
-      if (item.designId !== params.id) {
+      if (item.designId !== designId) {
         throw new ValidationError('Item does not belong to this design')
       }
 
@@ -2160,13 +2188,14 @@ app.delete(
 app.patch(
   '/:id/items',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       // Get item ID from request body
       const body = await request.json()
@@ -2182,7 +2211,7 @@ app.patch(
         throw new NotFoundError('Item', itemId)
       }
 
-      if (item.designId !== params.id) {
+      if (item.designId !== designId) {
         throw new ValidationError('Item does not belong to this design')
       }
 
@@ -2205,10 +2234,11 @@ app.patch(
 app.get(
   '/:id/members',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
       // Only family designs can have members
@@ -2216,9 +2246,9 @@ app.get(
         throw new ValidationError('Only family designs can have members')
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
-      const members = await DesignService.getMembers(params.id)
+      const members = await DesignService.getMembers(designId)
 
       return { members }
     }),
@@ -2229,10 +2259,11 @@ app.get(
 app.post(
   '/:id/members',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const familyDesign = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: familyDesignId } = params
+      const familyDesign = await DesignService.getById(familyDesignId)
       if (!familyDesign) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', familyDesignId)
       }
 
       // Only family designs can have members
@@ -2272,7 +2303,7 @@ app.post(
       // Use setParent which handles validation
       const updated = await DesignService.setParent(
         designId,
-        params.id,
+        familyDesignId,
         user.id,
       )
 
@@ -2285,10 +2316,11 @@ app.post(
 app.delete(
   '/:id/members',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const familyDesign = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: familyDesignId } = params
+      const familyDesign = await DesignService.getById(familyDesignId)
       if (!familyDesign) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', familyDesignId)
       }
 
       // Check permission
@@ -2324,7 +2356,7 @@ app.delete(
         })
       }
 
-      if (childDesign.parentDesignId !== params.id) {
+      if (childDesign.parentDesignId !== familyDesignId) {
         throw new ValidationError(
           'Design is not a member of this family',
           undefined,
@@ -2346,21 +2378,21 @@ app.delete(
 app.get(
   '/:id/status',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       // Get protection status
-      const protection = await DesignService.getProtectionStatus(params.id)
+      const protection = await DesignService.getProtectionStatus(designId)
 
       // Get available branch types based on protection
-      const branchOptions = await BranchService.getAvailableBranchTypes(
-        params.id,
-      )
+      const branchOptions =
+        await BranchService.getAvailableBranchTypes(designId)
 
       return {
         protection,
@@ -2374,13 +2406,14 @@ app.get(
 app.get(
   '/:id/structure',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
       // Parse version context from query params
       const url = new URL(request.url, 'http://localhost')
@@ -2390,7 +2423,7 @@ app.get(
       const expandExternal = url.searchParams.get('expandExternal') !== 'false' // default true
 
       // Get main branch for this design
-      const mainBranch = await BranchService.getMainBranch(params.id)
+      const mainBranch = await BranchService.getMainBranch(designId)
 
       // Check if this is a historical view (tag or commit)
       // For historical views, use VersionResolver to get items at that point in time
@@ -2424,7 +2457,7 @@ app.get(
           : { type: 'commit' as const, commitId: commitId! }
 
         const historicalResult = await VersionResolver.getItemsAtContext(
-          params.id,
+          designId,
           context,
         )
 
@@ -2596,7 +2629,7 @@ app.get(
                 })
                 .from(items)
                 .where(
-                  and(eq(items.designId, params.id), eq(items.isCurrent, true)),
+                  and(eq(items.designId, designId), eq(items.isCurrent, true)),
                 )
 
               // Build masterId mappings for these items
@@ -2622,9 +2655,7 @@ app.get(
               masterId: items.masterId,
             })
             .from(items)
-            .where(
-              and(eq(items.designId, params.id), eq(items.isCurrent, true)),
-            )
+            .where(and(eq(items.designId, designId), eq(items.isCurrent, true)))
         }
       } // end else (!isHistoricalView)
 
@@ -2888,7 +2919,7 @@ app.get(
         visitedSet.add(itemId)
 
         // Check if this is an external item (from a different design)
-        const isExternal = item.designId !== params.id
+        const isExternal = item.designId !== designId
         const designInfo = isExternal ? externalDesignMap.get(itemId) : null
 
         const children = childrenMap.get(itemId) || []
@@ -2925,7 +2956,7 @@ app.get(
       // =====================================================================
       const crossRefs =
         await CrossDesignReferenceService.getReferencesForDesign(
-          params.id,
+          designId,
           branchId,
         )
 
@@ -2947,7 +2978,7 @@ app.get(
         const resolvedCrossRefItems =
           await VersionResolver.resolveRelationshipTargets(
             Array.from(crossRefItemIds),
-            { type: 'released', designId: params.id },
+            { type: 'released', designId: designId },
           )
 
         // Rebuild crossRefItemIds and crossRefIdMap with resolved IDs
@@ -3145,15 +3176,16 @@ app.get(
 app.get(
   '/:id/tags',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
-      await requireDesignAccess(user.id, params.id)
+      await requireDesignAccess(user.id, designId)
 
-      const tagsList = await DesignService.listTags(params.id)
+      const tagsList = await DesignService.listTags(designId)
 
       return { tags: tagsList }
     }),
@@ -3164,10 +3196,11 @@ app.get(
 app.post(
   '/:id/tags',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const design = await DesignService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: designId } = params
+      const design = await DesignService.getById(designId)
       if (!design) {
-        throw new NotFoundError('Design', params.id)
+        throw new NotFoundError('Design', designId)
       }
 
       // Check permission - Global Admin or program admin/lead can create tags
@@ -3188,7 +3221,7 @@ app.post(
       }
 
       const data = await request.json()
-      const tag = await DesignService.createTag(params.id, data, user.id)
+      const tag = await DesignService.createTag(designId, data, user.id)
 
       return created({ tag })
     }),
@@ -3203,7 +3236,7 @@ app.post(
 app.post(
   '/:designId/gap-analysis',
   adapt(
-    apiHandler({}, async ({ request, params }) => {
+    apiHandler<{ designId: string }>({}, async ({ request, params }) => {
       const { designId } = params
       const body = await request.json()
 
@@ -3224,7 +3257,7 @@ app.post(
 app.get(
   '/:designId/gap-analysis',
   adapt(
-    apiHandler({}, async ({ params }) => {
+    apiHandler<{ designId: string }>({}, async ({ params }) => {
       const { designId } = params
 
       // GET request runs with default settings
@@ -3239,7 +3272,7 @@ app.get(
 app.get(
   '/:designId/requirements-coverage',
   adapt(
-    apiHandler({}, async ({ params }) => {
+    apiHandler<{ designId: string }>({}, async ({ params }) => {
       const { designId } = params
       const coverage = await RequirementService.getCoverage(designId)
 
@@ -3252,10 +3285,9 @@ app.get(
 app.get(
   '/:designId/test-coverage',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const coverage = await VerificationService.getTestCoverage(
-        params.designId,
-      )
+    apiHandler<{ designId: string }>({}, async ({ params }) => {
+      const { designId } = params
+      const coverage = await VerificationService.getTestCoverage(designId)
 
       return { coverage }
     }),
@@ -3266,10 +3298,9 @@ app.get(
 app.get(
   '/:designId/verification-gaps',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const gaps = await VerificationService.getVerificationGaps(
-        params.designId,
-      )
+    apiHandler<{ designId: string }>({}, async ({ params }) => {
+      const { designId } = params
+      const gaps = await VerificationService.getVerificationGaps(designId)
 
       return { gaps }
     }),

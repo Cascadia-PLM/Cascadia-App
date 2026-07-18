@@ -522,7 +522,7 @@ export function PartDetail({
           )
           const anyPrimary = cad.find((f) => f.isPrimaryModel)
           setSelectedCADFile(
-            glbWithColors ?? primaryDirect ?? anyPrimary ?? cad[0],
+            glbWithColors ?? primaryDirect ?? anyPrimary ?? cad[0] ?? null,
           )
         } else {
           setSelectedCADFile(null)

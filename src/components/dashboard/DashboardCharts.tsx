@@ -26,7 +26,9 @@ interface WeeklyDataPoint {
   count: number
 }
 
-interface CategoryDataPoint {
+// A type alias, not an interface: Recharts' `ChartDataInput` requires a string
+// index signature, and TypeScript only infers an implicit one for type aliases.
+type CategoryDataPoint = {
   name: string
   value: number
 }

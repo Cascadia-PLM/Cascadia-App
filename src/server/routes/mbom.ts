@@ -34,7 +34,7 @@ app.post(
 app.get(
   '/:designId/upstream-changes',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
+    apiHandler<{ designId: string }>({}, async ({ params, user }) => {
       const { designId } = params
 
       // Verify design exists and is a Manufacturing design
@@ -61,27 +61,30 @@ app.get(
 app.post(
   '/:designId/upstream-changes/:id/review',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const { designId, id } = params
+    apiHandler<{ designId: string; id: string }>(
+      {},
+      async ({ request, params, user }) => {
+        const { designId, id } = params
 
-      // Verify design exists and is a Manufacturing design
-      const design = await DesignService.getById(designId)
-      if (!design) {
-        throw new NotFoundError('Design', designId)
-      }
+        // Verify design exists and is a Manufacturing design
+        const design = await DesignService.getById(designId)
+        if (!design) {
+          throw new NotFoundError('Design', designId)
+        }
 
-      if (design.designType !== 'Manufacturing') {
-        throw new ValidationError('Design is not a Manufacturing design')
-      }
+        if (design.designType !== 'Manufacturing') {
+          throw new ValidationError('Design is not a Manufacturing design')
+        }
 
-      // Verify user has access to the design
-      await requireDesignAccess(user.id, designId)
+        // Verify user has access to the design
+        await requireDesignAccess(user.id, designId)
 
-      const data = await request.json()
-      const result = await MbomService.reviewUpstreamChange(id, data, user.id)
+        const data = await request.json()
+        const result = await MbomService.reviewUpstreamChange(id, data, user.id)
 
-      return result
-    }),
+        return result
+      },
+    ),
   ),
 )
 

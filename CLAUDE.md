@@ -149,22 +149,22 @@ npm run demo:logs     # Tail demo app logs
 
 Keep it at zero. **Do not raise `--max-warnings` in `package.json` to accommodate a new warning** — fix the warning instead. If a warning is genuinely unavoidable (legitimately-defensive code at a system boundary), disable it per-line with `// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- <reason>` so the suppression is visible and reviewable. The threshold may only ever move down, never up.
 
-## Typecheck Ratchet
+## Typecheck
 
-CI enforces two typecheck ceilings via `npm run typecheck:ci` (`scripts/typecheck.mjs`, run in the **Build** job):
+`npm run typecheck` is a **plain zero gate** against `tsconfig.json` — the same config your editor and ESLint see, with `noUncheckedIndexedAccess` on. Any error fails CI, exactly like `eslint --max-warnings 0`. Fix the error; there is no ceiling to raise.
 
-| Ceiling | Config | Now | Behaviour |
-| ------- | ------ | --- | --------- |
-| **CORE** | `tsconfig.ci.json` (`noUncheckedIndexedAccess` **off**) | **0** | A plain zero gate. Any new error fails CI, exactly like `eslint --max-warnings 0`. |
-| **STRICT** | `tsconfig.json` (what your editor sees) | ~1859 | Fails if it rises; only **warns** when it can be lowered. |
+CI runs it as `npm run typecheck:strict` in the **Build** job (not standalone: `src/routeTree.gen.ts` is gitignored and generated during `vite build`, and it carries the module augmentation typing every `createFileRoute()` site — so a fresh-checkout tsc job would report a number unrelated to the code).
 
-**CORE is at zero** — the substantive type errors are gone (cleared over PRs #32–#44; several were real user-visible bugs). It now behaves like the lint gate: fix any new error, never raise the ceiling.
+`noUncheckedIndexedAccess` **must** stay on in `tsconfig.json`. `@tanstack/eslint-config` sets `project: true`, which resolves to the nearest file named `tsconfig.json`; turning it off there makes every legitimate `if (arr[0])` guard a `no-unnecessary-condition` warning — measured at **266 lint problems**, which `--max-warnings 0` rejects.
 
-**STRICT is the remaining `noUncheckedIndexedAccess` grind** (~1859 `arr[0]`, `map.get()`, loop-index artifacts). It only warns when lowerable because those shift under any refactor, and a hard lower bound would mean constant line-churn and conflicts between concurrent PRs. Lower `STRICT_MAX` deliberately in cleanup PRs; never raise it.
+**History.** This was a two-tier ratchet (`scripts/typecheck.mjs`, `tsconfig.ci.json`) while the counts came down: CORE (nUIA off) reached zero over PRs #32–#44, then STRICT (nUIA on) went 1860 → 0 in one PR. Both files are now deleted. A few notes from that work, since the same shapes will recur:
 
-**Expect `npm run typecheck` and your editor to disagree.** Your editor and ESLint read `tsconfig.json` (nUIA on, ~1859 errors); `npm run typecheck` reads `tsconfig.ci.json` (nUIA off, 0). This gap is deliberate. `noUncheckedIndexedAccess` **must** stay on in `tsconfig.json`: `@tanstack/eslint-config` sets `project: true`, which resolves to the nearest file named `tsconfig.json`, and turning it off there makes every legitimate `if (arr[0])` guard a `no-unnecessary-condition` warning — measured at **266 lint problems (35 errors, 231 warnings)**, which `--max-warnings 0` rejects. That is why the CI config is a separate file, not a flag flip.
+- `db.insert(...).returning()` destructures use `takeFirst()` from `@/lib/db/take-first`, which throws on an empty result rather than letting `undefined` propagate. Do **not** use it on `.update()`/`.delete()` with a `.where()` — those can legitimately match nothing, so guard and throw `NotFoundError` instead.
+- The dominant bug-shape was `if (rows.at(0)) { const x = rows[0] }` — guarding a parallel expression rather than the binding, so nothing narrows. Bind first, then guard.
+- `if (k in obj)` does **not** narrow `obj[k]`. This one masked two real crashes in permission checks.
+- Route handlers can name their own params (`apiHandler<{ id: string }>`); `adapt()` is generic and asserts the Hono guarantee in one documented place.
 
-A TypeScript version bump can legitimately shift both counts — review such a change, never rubber-stamp it. When STRICT also reaches zero, delete `scripts/typecheck.mjs` and `tsconfig.ci.json` and let CI run `npm run typecheck:strict` directly.
+A TypeScript version bump can legitimately surface new errors — review such a change, never rubber-stamp it.
 
 ## Documentation Reference
 

@@ -1,11 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition --
- * This file contains many `const [x] = await db.select()...limit(1); if (!x)` patterns.
- * Under the current tsconfig (no `noUncheckedIndexedAccess`), TypeScript narrows
- * destructured array elements to non-undefined, so the runtime guards look
- * "unnecessary" to the rule. They are not — empty result sets still produce
- * undefined at runtime. Remove this directive when the project enables
- * `noUncheckedIndexedAccess`.
- */
 import { randomUUID } from 'node:crypto'
 import { Hono } from 'hono'
 import { and, asc, eq, gt, sql } from 'drizzle-orm'
@@ -19,6 +11,7 @@ import { ParametricResolutionService } from '@/lib/services/ParametricResolution
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { apiHandler } from '@/lib/api/handler'
 import { db } from '@/lib/db'
+import { takeFirst } from '@/lib/db/take-first'
 import {
   items,
   workInstructionOperations,
@@ -37,7 +30,7 @@ const app = new Hono()
 app.get(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
       async ({ params }) => {
         const workInstruction = await ItemService.findById(params.id)
@@ -67,7 +60,7 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
@@ -88,7 +81,7 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'delete'] },
       async ({ params }) => {
         await ItemService.delete(params.id)
@@ -103,7 +96,7 @@ app.delete(
 app.get(
   '/:id/alerts',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
       async ({ params, request }) => {
         const [wi] = await db
@@ -136,7 +129,7 @@ app.get(
 app.put(
   '/:id/alerts',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ request, user }) => {
         const data = await request.json()
@@ -172,7 +165,7 @@ app.put(
 app.post(
   '/:id/alerts',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, user }) => {
         const result = await WorkInstructionChangeAlertService.bulkAcknowledge(
@@ -190,7 +183,7 @@ app.post(
 app.get(
   '/:id/executions',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
       async ({ params, request }) => {
         const url = new URL(request.url)
@@ -217,7 +210,7 @@ app.get(
 app.post(
   '/:id/executions',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
       async ({ params, request, user }) => {
         const body = await request.json()
@@ -258,7 +251,7 @@ app.post(
 app.get(
   '/:id/executions/:executionId',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; executionId: string }>(
       { permission: ['work_instructions', 'read'] },
       async ({ params }) => {
         const execution = await WorkInstructionExecutionService.findById(
@@ -278,7 +271,7 @@ app.get(
 app.put(
   '/:id/executions/:executionId',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; executionId: string }>(
       { permission: ['work_instructions', 'read'] },
       async ({ params, request }) => {
         const body = await request.json()
@@ -314,7 +307,7 @@ app.put(
 app.post(
   '/:id/executions/:executionId/complete',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; executionId: string }>(
       { permission: ['work_instructions', 'read'] },
       async ({ params, request, user }) => {
         const body = await request.json().catch(() => ({}))
@@ -336,7 +329,7 @@ app.post(
 app.post(
   '/:id/executions/:executionId/resubmit',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; executionId: string }>(
       { permission: ['work_orders', 'update'] },
       async ({ params, user }) => {
         const execution =
@@ -355,13 +348,16 @@ app.post(
 app.get(
   '/:id/executions/:executionId/sign-off',
   adapt(
-    apiHandler({ permission: ['work_orders', 'read'] }, async ({ params }) => {
-      const signOffs = await WorkInstructionExecutionService.getSignOff(
-        params.executionId,
-      )
+    apiHandler<{ id: string; executionId: string }>(
+      { permission: ['work_orders', 'read'] },
+      async ({ params }) => {
+        const signOffs = await WorkInstructionExecutionService.getSignOff(
+          params.executionId,
+        )
 
-      return { signOffs }
-    }),
+        return { signOffs }
+      },
+    ),
   ),
 )
 
@@ -369,16 +365,19 @@ app.get(
 app.post(
   '/:id/executions/:executionId/sign-off',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; executionId: string }>(
       { permission: ['work_orders', 'update'] },
       async ({ params, request, user }) => {
         const body = await request.json()
+        // `decision` is untrusted input, so it is typed as `unknown` until the
+        // check below narrows it. Casting it to the union up front would assert
+        // the very thing this handler is validating.
         const { decision, comments } = body as {
-          decision: 'approved' | 'rejected'
+          decision?: unknown
           comments?: string
         }
 
-        if (!decision || !['approved', 'rejected'].includes(decision)) {
+        if (decision !== 'approved' && decision !== 'rejected') {
           throw new ValidationError('Decision must be "approved" or "rejected"')
         }
 
@@ -403,7 +402,7 @@ app.post(
 app.get(
   '/:id/operations',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
       async ({ params }) => {
         const [wi] = await db
@@ -432,7 +431,7 @@ app.get(
 app.post(
   '/:id/operations',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, request }) => {
         const data = await request.json()
@@ -463,17 +462,19 @@ app.post(
             ? Math.max(...existing.map((o) => o.orderIndex))
             : -1
 
-        const [operation] = await db
-          .insert(workInstructionOperations)
-          .values({
-            id: randomUUID(),
-            workInstructionId: params.id,
-            orderIndex: maxIndex + 1,
-            title: data.title.trim(),
-            description: data.description || null,
-            estimatedTime: data.estimatedTime || null,
-          })
-          .returning()
+        const operation = takeFirst(
+          await db
+            .insert(workInstructionOperations)
+            .values({
+              id: randomUUID(),
+              workInstructionId: params.id,
+              orderIndex: maxIndex + 1,
+              title: data.title.trim(),
+              description: data.description || null,
+              estimatedTime: data.estimatedTime || null,
+            })
+            .returning(),
+        )
 
         return new Response(JSON.stringify({ data: { operation } }), {
           status: 201,
@@ -488,7 +489,7 @@ app.post(
 app.put(
   '/:id/operations',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, request }) => {
         const data = await request.json()
@@ -540,7 +541,7 @@ app.put(
 app.put(
   '/:id/operations/:operationId',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; operationId: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, request }) => {
         const data = await request.json()
@@ -593,7 +594,7 @@ app.put(
 app.delete(
   '/:id/operations/:operationId',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; operationId: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params }) => {
         const [existing] = await db
@@ -639,7 +640,7 @@ app.delete(
 app.get(
   '/:id/parts',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
       async ({ params }) => {
         // Verify work instruction exists
@@ -686,7 +687,7 @@ app.get(
 app.post(
   '/:id/parts',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
@@ -737,16 +738,18 @@ app.post(
           throw new ValidationError('Part is already attached')
         }
 
-        const [attachment] = await db
-          .insert(workInstructionPartAttachments)
-          .values({
-            id: randomUUID(),
-            workInstructionId: params.id,
-            partId: data.partId,
-            inheritToMBOM: data.inheritToMBOM ?? false,
-            createdBy: user.id,
-          })
-          .returning()
+        const attachment = takeFirst(
+          await db
+            .insert(workInstructionPartAttachments)
+            .values({
+              id: randomUUID(),
+              workInstructionId: params.id,
+              partId: data.partId,
+              inheritToMBOM: data.inheritToMBOM ?? false,
+              createdBy: user.id,
+            })
+            .returning(),
+        )
 
         return new Response(JSON.stringify({ data: { attachment } }), {
           status: 201,
@@ -763,7 +766,7 @@ app.post(
 app.patch(
   '/:id/parts',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, request }) => {
         const data = await request.json()
@@ -808,7 +811,7 @@ app.patch(
 app.delete(
   '/:id/parts',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, request }) => {
         // Get partId from URL search params or body
@@ -853,7 +856,7 @@ app.delete(
 app.get(
   '/:id/resolve-parametric',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
       async ({ params }) => {
         const [wi] = await db
@@ -880,7 +883,7 @@ app.get(
 app.get(
   '/:id/steps',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
       async ({ params }) => {
         // Verify work instruction exists
@@ -910,7 +913,7 @@ app.get(
 app.post(
   '/:id/steps',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, request }) => {
         const data = await request.json()
@@ -959,16 +962,18 @@ app.post(
         const stepId = randomUUID()
         const content: StepContent = data.content || { blocks: [] }
 
-        const [newStep] = await db
-          .insert(workInstructionSteps)
-          .values({
-            id: stepId,
-            workInstructionId: params.id,
-            orderIndex: newOrderIndex,
-            title: data.title || null,
-            content,
-          })
-          .returning()
+        const newStep = takeFirst(
+          await db
+            .insert(workInstructionSteps)
+            .values({
+              id: stepId,
+              workInstructionId: params.id,
+              orderIndex: newOrderIndex,
+              title: data.title || null,
+              content,
+            })
+            .returning(),
+        )
 
         return new Response(JSON.stringify({ data: { step: newStep } }), {
           status: 201,
@@ -985,7 +990,7 @@ app.post(
 app.put(
   '/:id/steps',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, request }) => {
         const data = await request.json()
@@ -1043,7 +1048,7 @@ app.put(
 app.get(
   '/:id/steps/:stepId',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; stepId: string }>(
       { permission: ['work_instructions', 'read'] },
       async ({ params }) => {
         const [step] = await db
@@ -1071,7 +1076,7 @@ app.get(
 app.put(
   '/:id/steps/:stepId',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; stepId: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, request }) => {
         const data = await request.json()
@@ -1125,7 +1130,7 @@ app.put(
 app.delete(
   '/:id/steps/:stepId',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string; stepId: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params }) => {
         // Verify step exists

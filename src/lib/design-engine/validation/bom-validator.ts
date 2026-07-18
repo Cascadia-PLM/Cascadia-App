@@ -69,8 +69,7 @@ export function validateBomDraft(
 
     // Check unique find numbers within parent
     const findNumbers = new Map<number, string>()
-    for (let i = 0; i < node.children.length; i++) {
-      const child = node.children[i]
+    for (const [i, child] of node.children.entries()) {
       if (child.findNumber !== undefined) {
         if (findNumbers.has(child.findNumber)) {
           issues.push({

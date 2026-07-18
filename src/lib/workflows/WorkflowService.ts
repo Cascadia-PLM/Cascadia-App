@@ -38,6 +38,7 @@ import type {
   WorkflowState,
   WorkflowTransition,
 } from './types'
+import { takeFirst } from '@/lib/db/take-first'
 
 /**
  * Service layer for workflow/lifecycle operations
@@ -83,18 +84,20 @@ export class WorkflowService {
       phases: input.phases,
     }
 
-    const [result] = await db
-      .insert(workflowDefinitions)
-      .values({
-        name: input.name,
-        version: 1,
-        workflowType: input.workflowType,
-        definition,
-        isActive: input.isActive ?? true,
-        lifecycleType,
-        drivers: input.drivers ?? [],
-      })
-      .returning()
+    const result = takeFirst(
+      await db
+        .insert(workflowDefinitions)
+        .values({
+          name: input.name,
+          version: 1,
+          workflowType: input.workflowType,
+          definition,
+          isActive: input.isActive ?? true,
+          lifecycleType,
+          drivers: input.drivers ?? [],
+        })
+        .returning(),
+    )
 
     return this.mapToWorkflowDefinition(result)
   }
@@ -563,18 +566,22 @@ export class WorkflowService {
     // For flexible workflows, copy the structure to the instance
     const isFlexible = definition.workflowType === 'flexible'
 
-    const [instance] = await db
-      .insert(workflowInstances)
-      .values({
-        workflowDefinitionId,
-        itemId,
-        currentState: initialState.id,
-        context: context || {},
-        // Initialize instance structure for flexible workflows
-        instanceStates: isFlexible ? definition.states : null,
-        instanceTransitions: isFlexible ? (definition.transitions ?? []) : null,
-      })
-      .returning()
+    const instance = takeFirst(
+      await db
+        .insert(workflowInstances)
+        .values({
+          workflowDefinitionId,
+          itemId,
+          currentState: initialState.id,
+          context: context || {},
+          // Initialize instance structure for flexible workflows
+          instanceStates: isFlexible ? definition.states : null,
+          instanceTransitions: isFlexible
+            ? (definition.transitions ?? [])
+            : null,
+        })
+        .returning(),
+    )
 
     // Record initial history entry
     await db.insert(workflowHistory).values({
@@ -612,8 +619,8 @@ export class WorkflowService {
       .where(eq(workflowInstances.id, instanceId))
       .limit(1)
 
-    if (results.length === 0) return null
     const result = results[0]
+    if (!result) return null
     return {
       id: result.id,
       workflowDefinitionId: result.workflowDefinitionId!,
@@ -640,8 +647,8 @@ export class WorkflowService {
       .orderBy(desc(workflowInstances.startedAt))
       .limit(1)
 
-    if (instanceResults.length === 0) return null
     const result = instanceResults[0]
+    if (!result) return null
     return {
       id: result.id,
       workflowDefinitionId: result.workflowDefinitionId!,
@@ -1929,11 +1936,11 @@ export class WorkflowService {
       const latestEntry = history[0] // Most recent is first (ordered by desc)
 
       const fromStateName =
-        definition?.states.find((s) => s.id === latestEntry.fromState)?.name ??
-        latestEntry.fromState
+        definition?.states.find((s) => s.id === latestEntry?.fromState)?.name ??
+        latestEntry?.fromState
       const toStateName =
-        definition?.states.find((s) => s.id === latestEntry.toState)?.name ??
-        latestEntry.toState
+        definition?.states.find((s) => s.id === latestEntry?.toState)?.name ??
+        latestEntry?.toState
 
       // Submit notification job
       await JobService.submit(

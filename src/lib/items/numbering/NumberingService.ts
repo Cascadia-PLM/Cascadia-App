@@ -174,7 +174,13 @@ export class NumberingService {
 
     // db.execute returns rows directly as an array
     const rows = result as unknown as Array<{ current_value: number }>
-    return rows[0].current_value
+    const row = rows[0]
+    if (!row) {
+      throw new Error(
+        `Failed to reserve number for ${itemType} (scope: ${scopeKey})`,
+      )
+    }
+    return row.current_value
   }
 
   /**

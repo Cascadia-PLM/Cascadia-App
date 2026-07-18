@@ -589,11 +589,12 @@ function Model({
               }
             })
 
-            if (meshes.length === 0) {
+            const firstMesh = meshes[0]
+            if (!firstMesh) {
               throw new Error('No geometry found in OBJ file')
             }
 
-            loadedGeometry = meshes[0]
+            loadedGeometry = firstMesh
           } else {
             throw new Error(`Unsupported file type: ${ext}`)
           }
@@ -613,7 +614,7 @@ function Model({
 
           const polygonCount = loadedGeometry.index
             ? loadedGeometry.index.count / 3
-            : loadedGeometry.attributes.position.count / 3
+            : (loadedGeometry.attributes.position?.count ?? 0) / 3
 
           disposablesRef.current = { geometry: loadedGeometry, gltfScene: null }
           setGeometry(loadedGeometry)

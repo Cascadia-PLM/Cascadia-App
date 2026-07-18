@@ -6,6 +6,7 @@ import { db } from '../db'
 import { sessions, users } from '../db/schema'
 import { generateSessionToken, hashSessionToken } from './password'
 import { authLogger } from '@/lib/logging/logger'
+import { takeFirst } from '@/lib/db/take-first'
 
 export interface Session {
   id: string
@@ -49,16 +50,18 @@ export class SessionManager {
     const expiresAt = new Date(Date.now() + this.SESSION_DURATION)
 
     // Store session in database
-    const [session] = await db
-      .insert(sessions)
-      .values({
-        id: sessionId,
-        userId,
-        expiresAt,
-        ipAddress,
-        userAgent,
-      })
-      .returning()
+    const session = takeFirst(
+      await db
+        .insert(sessions)
+        .values({
+          id: sessionId,
+          userId,
+          expiresAt,
+          ipAddress,
+          userAgent,
+        })
+        .returning(),
+    )
 
     return {
       sessionToken,
@@ -99,11 +102,12 @@ export class SessionManager {
         )
         .limit(1)
 
-      if (result.length === 0) {
+      const row = result[0]
+      if (!row) {
         return null
       }
 
-      const { session, user } = result[0]
+      const { session, user } = row
 
       // Check if user is active
       if (!user.active) {

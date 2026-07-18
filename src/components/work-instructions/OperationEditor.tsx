@@ -131,6 +131,7 @@ export function OperationEditor({
 
     const newOps = [...sortedOps]
     const [moved] = newOps.splice(currentIndex, 1)
+    if (!moved) return
     newOps.splice(targetIndex, 0, moved)
 
     const reordered = newOps.map((op, idx) => ({

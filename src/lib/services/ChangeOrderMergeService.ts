@@ -24,6 +24,7 @@ import type { commits } from '../db/schema'
 import type { PromoteActionMapping, RevisionScheme } from '../types/lifecycle'
 import type { ChangeOrder } from '../items/types/change-order'
 import { serviceLogger } from '@/lib/logging/logger'
+import { takeFirst } from '@/lib/db/take-first'
 
 // ============================================
 // Types
@@ -925,18 +926,20 @@ export class ChangeOrderMergeService {
               )
 
               // Create new item version with assigned revision
-              const [releasedItem] = await tx
-                .insert(items)
-                .values({
-                  ...currentItem,
-                  id: undefined,
-                  revision: newRevision,
-                  state: lifecycleStates.releaseState,
-                  isCurrent: true,
-                  modifiedAt: new Date(),
-                  modifiedBy: userId,
-                } as typeof items.$inferInsert)
-                .returning()
+              const releasedItem = takeFirst(
+                await tx
+                  .insert(items)
+                  .values({
+                    ...currentItem,
+                    id: undefined,
+                    revision: newRevision,
+                    state: lifecycleStates.releaseState,
+                    isCurrent: true,
+                    modifiedAt: new Date(),
+                    modifiedBy: userId,
+                  } as typeof items.$inferInsert)
+                  .returning(),
+              )
 
               // Mark old item as not current
               await tx
@@ -1042,18 +1045,20 @@ export class ChangeOrderMergeService {
                   currentItem.revision,
                   lifecycleStates.revisionScheme,
                 )
-                const [releasedItem] = await tx
-                  .insert(items)
-                  .values({
-                    ...currentItem,
-                    id: undefined,
-                    revision: newRevision,
-                    state: lifecycleStates.releaseState,
-                    isCurrent: true,
-                    modifiedAt: new Date(),
-                    modifiedBy: userId,
-                  } as typeof items.$inferInsert)
-                  .returning()
+                const releasedItem = takeFirst(
+                  await tx
+                    .insert(items)
+                    .values({
+                      ...currentItem,
+                      id: undefined,
+                      revision: newRevision,
+                      state: lifecycleStates.releaseState,
+                      isCurrent: true,
+                      modifiedAt: new Date(),
+                      modifiedBy: userId,
+                    } as typeof items.$inferInsert)
+                    .returning(),
+                )
 
                 releasedItemId = releasedItem.id
                 finalRevision = newRevision

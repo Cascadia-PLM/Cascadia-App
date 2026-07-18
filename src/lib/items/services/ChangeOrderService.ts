@@ -40,6 +40,7 @@ import type {
 import type { WorkflowService as WorkflowServiceType } from '../../workflows/WorkflowService'
 import type { ConflictDetectionService as ConflictDetectionServiceType } from '../../services/ConflictDetectionService'
 import type { ItemTypeRegistry as ItemTypeRegistryType } from '../registry'
+import { takeFirst } from '@/lib/db/take-first'
 
 export interface AffectedItemInput {
   affectedItemId?: string | null
@@ -229,26 +230,28 @@ export class ChangeOrderService {
       }
     }
 
-    const [affectedItemRecord] = await db
-      .insert(changeOrderAffectedItems)
-      .values({
-        changeOrderId,
-        affectedItemId: item.affectedItemId || null,
-        affectedItemMasterId:
-          item.affectedItemMasterId || (affectedItem?.masterId ?? null),
-        changeAction: item.changeAction,
-        currentState: item.currentState || null,
-        currentRevision: item.currentRevision || null,
-        targetState: item.targetState || null,
-        targetRevision,
-        replacementItemId: item.replacementItemId || null,
-        newItemData: item.newItemData || null,
-        newItemType: item.newItemType || null,
-        changeDescription: item.changeDescription || null,
-        workingCopyId,
-        createdBy: userId,
-      })
-      .returning()
+    const affectedItemRecord = takeFirst(
+      await db
+        .insert(changeOrderAffectedItems)
+        .values({
+          changeOrderId,
+          affectedItemId: item.affectedItemId || null,
+          affectedItemMasterId:
+            item.affectedItemMasterId || (affectedItem?.masterId ?? null),
+          changeAction: item.changeAction,
+          currentState: item.currentState || null,
+          currentRevision: item.currentRevision || null,
+          targetState: item.targetState || null,
+          targetRevision,
+          replacementItemId: item.replacementItemId || null,
+          newItemData: item.newItemData || null,
+          newItemType: item.newItemType || null,
+          changeDescription: item.changeDescription || null,
+          workingCopyId,
+          createdBy: userId,
+        })
+        .returning(),
+    )
 
     return affectedItemRecord as AffectedItem
   }
@@ -324,7 +327,8 @@ export class ChangeOrderService {
       )
       .limit(1)
 
-    if (existing.at(0)) {
+    const existingAssociation = existing[0]
+    if (existingAssociation) {
       // Update itemsAffected count (skip for cross-design associations)
       if (!options?.skipCount) {
         await db
@@ -333,9 +337,9 @@ export class ChangeOrderService {
             itemsAffected: sql`${changeOrderDesigns.itemsAffected} + 1`,
             updatedAt: new Date(),
           })
-          .where(eq(changeOrderDesigns.id, existing[0].id))
+          .where(eq(changeOrderDesigns.id, existingAssociation.id))
       }
-      return existing[0]
+      return existingAssociation
     }
 
     // Get or create ECO branch for this design (idempotent)
@@ -362,16 +366,18 @@ export class ChangeOrderService {
     }
 
     // Create the changeOrderDesigns record
-    const [ecoDesign] = await db
-      .insert(changeOrderDesigns)
-      .values({
-        changeOrderId,
-        designId,
-        branchId: branch.id,
-        mergeStatus: 'pending',
-        itemsAffected: options?.skipCount ? 0 : 1,
-      })
-      .returning()
+    const ecoDesign = takeFirst(
+      await db
+        .insert(changeOrderDesigns)
+        .values({
+          changeOrderId,
+          designId,
+          branchId: branch.id,
+          mergeStatus: 'pending',
+          itemsAffected: options?.skipCount ? 0 : 1,
+        })
+        .returning(),
+    )
 
     return ecoDesign
   }
@@ -559,7 +565,9 @@ export class ChangeOrderService {
         modifiedBy: userId,
       }
 
-      const [wc] = await tx.insert(items).values(workingCopyData).returning()
+      const wc = takeFirst(
+        await tx.insert(items).values(workingCopyData).returning(),
+      )
 
       // 2. Copy type-specific data (parts table, documents table, etc.)
       await this.copyTypeSpecificDataTx(
@@ -570,16 +578,18 @@ export class ChangeOrderService {
       )
 
       // 3. Create branchItem entry to track this on the ECO branch
-      const [bi] = await tx
-        .insert(branchItems)
-        .values({
-          branchId,
-          itemMasterId: sourceItem.masterId,
-          currentItemId: wc.id,
-          baseItemId: sourceItem.id, // The Released version we're revising from
-          changeType: 'modified',
-        })
-        .returning()
+      const bi = takeFirst(
+        await tx
+          .insert(branchItems)
+          .values({
+            branchId,
+            itemMasterId: sourceItem.masterId,
+            currentItemId: wc.id,
+            baseItemId: sourceItem.id, // The Released version we're revising from
+            changeType: 'modified',
+          })
+          .returning(),
+      )
 
       return { workingCopy: wc, branchItem: bi }
     })
@@ -1295,16 +1305,18 @@ export class ChangeOrderService {
 
     // 5. Create or update changeOrderDesign record
     if (!ecoDesign) {
-      const [newEcoDesign] = await db
-        .insert(changeOrderDesigns)
-        .values({
-          changeOrderId,
-          designId: item.designId,
-          branchId: branch.id,
-          mergeStatus: 'pending',
-          itemsAffected: 1,
-        })
-        .returning()
+      const newEcoDesign = takeFirst(
+        await db
+          .insert(changeOrderDesigns)
+          .values({
+            changeOrderId,
+            designId: item.designId,
+            branchId: branch.id,
+            mergeStatus: 'pending',
+            itemsAffected: 1,
+          })
+          .returning(),
+      )
       ecoDesign = newEcoDesign
     } else if (!ecoDesign.branchId && created) {
       // Update the branchId if it was just created
@@ -1344,6 +1356,11 @@ export class ChangeOrderService {
             ),
           )
           .limit(1)
+        if (!existingBranchItem) {
+          throw new Error(
+            `Working copy ${existingWorkingCopy.id} exists on branch ${branch.id} but has no branchItem entry for master ${item.masterId}`,
+          )
+        }
         branchItem = existingBranchItem
       } else {
         // Create working copy with proper branchItem
@@ -1581,8 +1598,9 @@ export class ChangeOrderService {
       )
       .limit(1)
 
-    if (existing.at(0)) {
-      return existing[0]
+    const existingAssociation = existing[0]
+    if (existingAssociation) {
+      return existingAssociation
     }
 
     // Create the ECO branch immediately so it shows up in branch selectors
@@ -1606,16 +1624,18 @@ export class ChangeOrderService {
     }
 
     // Create the association with the branch ID
-    const [ecoDesign] = await db
-      .insert(changeOrderDesigns)
-      .values({
-        changeOrderId,
-        designId,
-        branchId: branch.id,
-        mergeStatus: 'pending',
-        itemsAffected: 0,
-      })
-      .returning()
+    const ecoDesign = takeFirst(
+      await db
+        .insert(changeOrderDesigns)
+        .values({
+          changeOrderId,
+          designId,
+          branchId: branch.id,
+          mergeStatus: 'pending',
+          itemsAffected: 0,
+        })
+        .returning(),
+    )
 
     return ecoDesign
   }

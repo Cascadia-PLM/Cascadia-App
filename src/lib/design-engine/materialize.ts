@@ -216,8 +216,8 @@ export class MaterializationService {
         },
         userId,
       )
-      resolvedDesignId = design.id ?? null
-      designName = design.name ?? null
+      resolvedDesignId = design.id
+      designName = design.name
     }
     if (!resolvedDesignId) {
       throw new ValidationError('Failed to create design for materialization')

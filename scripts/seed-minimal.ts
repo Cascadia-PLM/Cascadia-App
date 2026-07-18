@@ -22,6 +22,7 @@ import {
   roleToDbFormat,
 } from '../src/lib/auth/permissions.ts'
 import { LIFECYCLE_IDS } from '../src/lib/items/lifecycle-ids.ts'
+import { takeFirst } from '../src/lib/db/take-first'
 
 // ============================================================================
 // Auto-layout utility using dagre
@@ -103,21 +104,23 @@ try {
   for (const [roleName, roleDef] of Object.entries(ROLE_DEFINITIONS)) {
     const dbPermissions = roleToDbFormat(roleDef)
 
-    const [createdRole] = await db
-      .insert(roles)
-      .values({
-        name: roleDef.name,
-        description: roleDef.description,
-        permissions: dbPermissions,
-      })
-      .onConflictDoUpdate({
-        target: roles.name,
-        set: {
+    const createdRole = takeFirst(
+      await db
+        .insert(roles)
+        .values({
+          name: roleDef.name,
           description: roleDef.description,
           permissions: dbPermissions,
-        },
-      })
-      .returning()
+        })
+        .onConflictDoUpdate({
+          target: roles.name,
+          set: {
+            description: roleDef.description,
+            permissions: dbPermissions,
+          },
+        })
+        .returning(),
+    )
 
     createdRoles[roleName] = createdRole.id
   }
@@ -137,8 +140,9 @@ try {
     .where(eq(users.email, 'admin@cascadia.local'))
     .limit(1)
 
+  const existingAdmin = existingUser[0]
   let adminId: string
-  if (existingUser.length > 0) {
+  if (existingAdmin) {
     await db
       .update(users)
       .set({
@@ -148,19 +152,21 @@ try {
         provider: 'local',
       })
       .where(eq(users.email, 'admin@cascadia.local'))
-    adminId = existingUser[0].id
+    adminId = existingAdmin.id
   } else {
-    const [created] = await db
-      .insert(users)
-      .values({
-        id: IDS.admin,
-        email: 'admin@cascadia.local',
-        name: 'System Admin',
-        passwordHash: adminPassword,
-        active: true,
-        provider: 'local',
-      })
-      .returning()
+    const created = takeFirst(
+      await db
+        .insert(users)
+        .values({
+          id: IDS.admin,
+          email: 'admin@cascadia.local',
+          name: 'System Admin',
+          passwordHash: adminPassword,
+          active: true,
+          provider: 'local',
+        })
+        .returning(),
+    )
     adminId = created.id
   }
   console.log('✓ Admin User (admin@cascadia.local / Cascadia)')
@@ -177,13 +183,16 @@ try {
   }
 
   // Also assign Administrator role for backward compatibility
-  await db
-    .insert(userRoles)
-    .values({
-      userId: adminId,
-      roleId: createdRoles['Administrator'],
-    })
-    .onConflictDoNothing()
+  const administratorRoleId = createdRoles['Administrator']
+  if (administratorRoleId) {
+    await db
+      .insert(userRoles)
+      .values({
+        userId: adminId,
+        roleId: administratorRoleId,
+      })
+      .onConflictDoNothing()
+  }
 
   // ============================================================================
   // 3. Create Default Program
@@ -194,21 +203,24 @@ try {
     .where(eq(programs.code, 'DEFAULT'))
     .limit(1)
 
+  const existingDefaultProgram = existingProgram[0]
   let program
-  if (existingProgram.length > 0) {
-    program = existingProgram[0]
+  if (existingDefaultProgram) {
+    program = existingDefaultProgram
   } else {
-    const [created] = await db
-      .insert(programs)
-      .values({
-        id: IDS.program,
-        name: 'Default Program',
-        code: 'DEFAULT',
-        description: 'Default program for general use',
-        status: 'Active',
-        createdBy: adminId,
-      })
-      .returning()
+    const created = takeFirst(
+      await db
+        .insert(programs)
+        .values({
+          id: IDS.program,
+          name: 'Default Program',
+          code: 'DEFAULT',
+          description: 'Default program for general use',
+          status: 'Active',
+          createdBy: adminId,
+        })
+        .returning(),
+    )
     program = created
   }
 
@@ -236,47 +248,54 @@ try {
     .where(eq(designs.code, 'STD-LIB'))
     .limit(1)
 
+  const existingStandardLibrary = existingLibrary[0]
   let standardLibrary
-  if (existingLibrary.length > 0) {
-    standardLibrary = existingLibrary[0]
+  if (existingStandardLibrary) {
+    standardLibrary = existingStandardLibrary
   } else {
     // Create the design (global library - no programId)
-    const [created] = await db
-      .insert(designs)
-      .values({
-        id: IDS.standardLibrary,
-        programId: null, // Global library - not tied to any program
-        name: 'Standard Parts Library',
-        code: 'STD-LIB',
-        description: 'System-wide standard parts, materials, and components',
-        designType: 'Library',
-        createdBy: adminId,
-      })
-      .returning()
+    const created = takeFirst(
+      await db
+        .insert(designs)
+        .values({
+          id: IDS.standardLibrary,
+          programId: null, // Global library - not tied to any program
+          name: 'Standard Parts Library',
+          code: 'STD-LIB',
+          description: 'System-wide standard parts, materials, and components',
+          designType: 'Library',
+          createdBy: adminId,
+        })
+        .returning(),
+    )
 
     // Create initial commit
-    const [initialCommit] = await db
-      .insert(commits)
-      .values({
-        designId: created.id,
-        branchId: created.id, // Temporary
-        message: 'Initial commit',
-        createdBy: adminId,
-      })
-      .returning()
+    const initialCommit = takeFirst(
+      await db
+        .insert(commits)
+        .values({
+          designId: created.id,
+          branchId: created.id, // Temporary
+          message: 'Initial commit',
+          createdBy: adminId,
+        })
+        .returning(),
+    )
 
     // Create main branch
-    const [mainBranch] = await db
-      .insert(branches)
-      .values({
-        designId: created.id,
-        name: 'main',
-        branchType: 'main',
-        headCommitId: initialCommit.id,
-        baseCommitId: initialCommit.id,
-        createdBy: adminId,
-      })
-      .returning()
+    const mainBranch = takeFirst(
+      await db
+        .insert(branches)
+        .values({
+          designId: created.id,
+          name: 'main',
+          branchType: 'main',
+          headCommitId: initialCommit.id,
+          baseCommitId: initialCommit.id,
+          createdBy: adminId,
+        })
+        .returning(),
+    )
 
     // Update commit with correct branchId
     await db
@@ -290,6 +309,10 @@ try {
       .set({ defaultBranchId: mainBranch.id })
       .where(eq(designs.id, created.id))
       .returning()
+
+    if (!updated) {
+      throw new Error('Failed to update Standard Parts Library design')
+    }
 
     standardLibrary = updated
   }

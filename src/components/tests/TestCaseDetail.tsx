@@ -421,7 +421,9 @@ export function TestCaseDetail({
     value: string | number,
   ) => {
     const newSteps = [...steps]
-    newSteps[index] = { ...newSteps[index], [field]: value }
+    const existing = newSteps[index]
+    if (!existing) return
+    newSteps[index] = { ...existing, [field]: value }
     setSteps(newSteps)
   }
 

@@ -21,7 +21,7 @@ const app = new Hono()
 app.post(
   '/:id/pull-from-main',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const body = await request.json()
       const validated = pullFromMainSchema.parse(body)
 
@@ -53,7 +53,7 @@ app.post(
 app.post(
   '/:id/rebase',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const body = await request.json()
       const validated = rebaseSchema.parse(body)
 

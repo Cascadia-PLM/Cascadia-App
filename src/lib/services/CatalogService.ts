@@ -22,6 +22,7 @@ import type {
   CatalogStockSize,
   CatalogSupplier,
 } from '../db/schema/componentCatalog'
+import { takeFirst } from '@/lib/db/take-first'
 
 // ============================================================================
 // Zod Schemas
@@ -237,7 +238,8 @@ export class CatalogService {
       .where(eq(componentCatalogEntries.id, id))
       .limit(1)
 
-    if (rows.length === 0) {
+    const row = rows[0]
+    if (!row) {
       throw new NotFoundError('Catalog entry')
     }
 
@@ -248,7 +250,7 @@ export class CatalogService {
       .orderBy(asc(componentCatalogMedia.sortOrder))
 
     return {
-      ...hydrateEntry(rows[0]),
+      ...hydrateEntry(row),
       media: media.map((m) => ({
         id: m.id,
         type: m.type,
@@ -256,8 +258,8 @@ export class CatalogService {
         label: m.label,
         sortOrder: m.sortOrder,
       })),
-      createdAt: rows[0].entry.createdAt,
-      updatedAt: rows[0].entry.updatedAt,
+      createdAt: row.entry.createdAt,
+      updatedAt: row.entry.updatedAt,
     }
   }
 
@@ -354,10 +356,12 @@ export class CatalogService {
       tags: validated.tags,
       verified: validated.verified,
     }
-    const [inserted] = await db
-      .insert(componentCatalogEntries)
-      .values(values as any)
-      .returning()
+    const inserted = takeFirst(
+      await db
+        .insert(componentCatalogEntries)
+        .values(values as any)
+        .returning(),
+    )
 
     // Fetch with category joined
     return this.getById(inserted.id)
@@ -457,15 +461,17 @@ export class CatalogService {
   }> {
     const validated = catalogCategoryCreateSchema.parse(data)
 
-    const [inserted] = await db
-      .insert(componentCatalogCategories)
-      .values({
-        name: validated.name,
-        slug: validated.slug,
-        parentId: validated.parentId ?? null,
-        sortOrder: validated.sortOrder,
-      })
-      .returning()
+    const inserted = takeFirst(
+      await db
+        .insert(componentCatalogCategories)
+        .values({
+          name: validated.name,
+          slug: validated.slug,
+          parentId: validated.parentId ?? null,
+          sortOrder: validated.sortOrder,
+        })
+        .returning(),
+    )
 
     return {
       id: inserted.id,
@@ -569,17 +575,18 @@ export class CatalogService {
         .split('-')
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
         .join(' ')
-      const [created] = await db
-        .insert(componentCatalogCategories)
-        .values({ name, slug })
-        .returning({ id: componentCatalogCategories.id })
+      const created = takeFirst(
+        await db
+          .insert(componentCatalogCategories)
+          .values({ name, slug })
+          .returning({ id: componentCatalogCategories.id }),
+        'catalog category',
+      )
       slugToId.set(slug, created.id)
     }
 
-    for (let i = 0; i < rows.length; i++) {
+    for (const [i, row] of rows.entries()) {
       try {
-        const row = rows[i]
-
         // Resolve categorySlug to categoryId if needed
         let categoryId = row.categoryId
         if (!categoryId && row.categorySlug) {
@@ -636,15 +643,18 @@ export class CatalogService {
     type: 'thumbnail' | 'diagram' | 'datasheet',
     label?: string,
   ): Promise<{ id: string }> {
-    const [inserted] = await db
-      .insert(componentCatalogMedia)
-      .values({
-        componentId: catalogEntryId,
-        fileId,
-        type,
-        label: label ?? null,
-      })
-      .returning({ id: componentCatalogMedia.id })
+    const inserted = takeFirst(
+      await db
+        .insert(componentCatalogMedia)
+        .values({
+          componentId: catalogEntryId,
+          fileId,
+          type,
+          label: label ?? null,
+        })
+        .returning({ id: componentCatalogMedia.id }),
+      'catalog media',
+    )
 
     return { id: inserted.id }
   }

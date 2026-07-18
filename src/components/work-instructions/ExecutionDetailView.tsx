@@ -137,12 +137,10 @@ export function ExecutionDetailView({
         const dataFields = step.content.blocks.filter(
           (b) => b.type === 'dataField',
         )
-        const capturedData = dataFields
-          .map((block) => ({
-            block,
-            entry: stepData[block.id],
-          }))
-          .filter((d) => d.entry)
+        const capturedData = dataFields.flatMap((block) => {
+          const entry = stepData[block.id]
+          return entry ? [{ block, entry }] : []
+        })
 
         if (capturedData.length === 0) return null
 

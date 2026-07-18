@@ -24,6 +24,7 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { branchItems, programs } from '@/lib/db/schema'
+import { takeFirst } from '@/lib/db/take-first'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'
@@ -50,14 +51,16 @@ describe('BranchService', () => {
     user = await insertTestUser(testDb.db)
 
     // Create test program
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Test Program',
-        code: `PROG-${Date.now()}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Test Program',
+          code: `PROG-${Date.now()}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     programId = program.id
 
@@ -433,7 +436,7 @@ describe('BranchService', () => {
       })
 
       expect(ecoBranches.length).toBe(1)
-      expect(ecoBranches[0].branchType).toBe('eco')
+      expect(ecoBranches[0]!.branchType).toBe('eco')
     })
 
     it('excludes archived branches by default', async () => {
@@ -478,8 +481,8 @@ describe('BranchService', () => {
       const branches = await BranchService.listByUser(user.id)
 
       expect(branches.length).toBe(1)
-      expect(branches[0].branchType).toBe('workspace')
-      expect(branches[0].ownerId).toBe(user.id)
+      expect(branches[0]!.branchType).toBe('workspace')
+      expect(branches[0]!.ownerId).toBe(user.id)
     })
   })
 
@@ -496,7 +499,7 @@ describe('BranchService', () => {
       const branches = await BranchService.listByChangeOrder(changeOrder.id)
 
       expect(branches.length).toBe(1)
-      expect(branches[0].changeOrderItemId).toBe(changeOrder.id)
+      expect(branches[0]!.changeOrderItemId).toBe(changeOrder.id)
     })
   })
 
@@ -990,14 +993,16 @@ describe('BranchService Edge Cases', () => {
     await testDb.beginTransaction()
     user = await insertTestUser(testDb.db)
 
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Edge Case Program',
-        code: `EDGE-${Date.now()}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Edge Case Program',
+          code: `EDGE-${Date.now()}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
     programId = program.id
 
     const design = await DesignService.create(

@@ -787,9 +787,7 @@ export function PartRelationshipsPanel({
       expandingNodeRef.current = null
 
       // Inject expand data and apply layout (visible = everything on initial load)
-      const withExpandData = injectExpandDataRef.current(
-        flowNodes,
-      )
+      const withExpandData = injectExpandDataRef.current(flowNodes)
       const { nodes: layoutedNodes, edges: layoutedEdges } =
         getLayoutedElements(withExpandData, flowEdges)
 
@@ -953,10 +951,7 @@ export function PartRelationshipsPanel({
   const groupedRelationships = useMemo(() => {
     return relationships.reduce(
       (acc, rel) => {
-        if (!(rel.relationshipType in acc)) {
-          acc[rel.relationshipType] = []
-        }
-        acc[rel.relationshipType].push(rel)
+        ;(acc[rel.relationshipType] ??= []).push(rel)
         return acc
       },
       {} as Record<string, Array<Relationship>>,
@@ -993,9 +988,12 @@ export function PartRelationshipsPanel({
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/v1/relationships/${relationshipId}`, {
-            method: 'DELETE',
-          })
+          const response = await fetch(
+            `/api/v1/relationships/${relationshipId}`,
+            {
+              method: 'DELETE',
+            },
+          )
 
           if (response.ok) {
             await loadRelationships()

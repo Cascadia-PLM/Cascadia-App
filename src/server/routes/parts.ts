@@ -38,7 +38,7 @@ const partResponseSchema = z
 app.get(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       {
         permission: ['parts', 'read'],
         openapi: {
@@ -50,8 +50,9 @@ app.get(
         },
       },
       async ({ params }) => {
-        const part = await ItemService.findById(params.id)
-        if (!part) throw new NotFoundError('Part', params.id)
+        const { id } = params
+        const part = await ItemService.findById(id)
+        if (!part) throw new NotFoundError('Part', id)
         return { part }
       },
     ),
@@ -62,7 +63,7 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       {
         permission: ['parts', 'update'],
         openapi: {
@@ -77,8 +78,9 @@ app.put(
         },
       },
       async ({ params, request, user }) => {
+        const { id } = params
         const data = await request.json()
-        const part = await ItemService.update<Part>(params.id, data, user.id)
+        const part = await ItemService.update<Part>(id, data, user.id)
         return { part }
       },
     ),
@@ -89,7 +91,7 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       {
         permission: ['parts', 'delete'],
         openapi: {
@@ -101,7 +103,8 @@ app.delete(
         },
       },
       async ({ params }) => {
-        await ItemService.delete(params.id)
+        const { id } = params
+        await ItemService.delete(id)
         return { success: true }
       },
     ),
@@ -112,10 +115,11 @@ app.delete(
 app.post(
   '/:id/generate-cad',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const item = await ItemService.findById(params.id)
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
+      const item = await ItemService.findById(id)
       if (!item) {
-        throw new NotFoundError('Part', params.id)
+        throw new NotFoundError('Part', id)
       }
 
       const part = item as Part
@@ -161,9 +165,9 @@ app.post(
         job = await JobService.submit(
           'generation.cad.parametric',
           {
-            partTempId: params.id,
+            partTempId: id,
             partName: part.name || part.itemNumber,
-            itemId: params.id,
+            itemId: id,
             branchId,
             userId: user.id,
             spec: {
@@ -173,19 +177,19 @@ app.post(
             },
           },
           user.id,
-          { priority: 'high', itemId: params.id },
+          { priority: 'high', itemId: id },
         )
       } else {
         job = await JobService.submit(
           'generation.cad.zoo',
           {
-            itemId: params.id,
+            itemId: id,
             partName: part.name || part.itemNumber,
             partDescription: part.description || part.name || part.itemNumber,
             userId: user.id,
           },
           user.id,
-          { priority: 'normal', itemId: params.id },
+          { priority: 'normal', itemId: id },
         )
       }
 
@@ -198,10 +202,11 @@ app.post(
 app.post(
   '/:id/generate-cad/assess',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const item = await ItemService.findById(params.id)
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
+      const item = await ItemService.findById(id)
       if (!item) {
-        throw new NotFoundError('Part', params.id)
+        throw new NotFoundError('Part', id)
       }
 
       const part = item as Part
@@ -226,10 +231,11 @@ app.post(
 app.post(
   '/:id/generate-cad/convert',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const item = await ItemService.findById(params.id)
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
+      const item = await ItemService.findById(id)
       if (!item) {
-        throw new NotFoundError('Part', params.id)
+        throw new NotFoundError('Part', id)
       }
 
       const body = await request.json()
@@ -244,14 +250,14 @@ app.post(
         'conversion.cad.step-to-stl',
         {
           vaultFileId,
-          itemId: params.id,
+          itemId: id,
           outputFormat: 'stl',
           meshQuality: 'standard',
           decompose: false,
           userId: user.id,
         },
         user.id,
-        { priority: 'high', itemId: params.id },
+        { priority: 'high', itemId: id },
       )
 
       return created({ jobId: job.id })
@@ -263,12 +269,16 @@ app.post(
 app.get(
   '/:id/resolvable-attributes',
   adapt(
-    apiHandler({ permission: ['parts', 'read'] }, async ({ params }) => {
-      const attributes =
-        await ParametricResolutionService.getResolvableAttributes(params.id)
+    apiHandler<{ id: string }>(
+      { permission: ['parts', 'read'] },
+      async ({ params }) => {
+        const { id } = params
+        const attributes =
+          await ParametricResolutionService.getResolvableAttributes(id)
 
-      return { attributes }
-    }),
+        return { attributes }
+      },
+    ),
   ),
 )
 
@@ -276,7 +286,8 @@ app.get(
 app.post(
   '/:id/validate',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id } = params
       const body = await request.json()
       const { testCaseIds } = body
 
@@ -286,11 +297,7 @@ app.post(
 
       // Link each test case to this part (testCase -> part)
       for (const testCaseId of testCaseIds) {
-        await VerificationService.linkValidation(
-          testCaseId,
-          [params.id],
-          user.id,
-        )
+        await VerificationService.linkValidation(testCaseId, [id], user.id)
       }
 
       return created({ success: true })
@@ -302,7 +309,8 @@ app.post(
 app.delete(
   '/:id/validate',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id } = params
       const url = new URL(request.url)
       const testCaseId = url.searchParams.get('testCaseId')
 
@@ -310,7 +318,7 @@ app.delete(
         throw new ValidationError('testCaseId query parameter is required')
       }
 
-      await VerificationService.unlinkValidation(testCaseId, params.id, user.id)
+      await VerificationService.unlinkValidation(testCaseId, id, user.id)
 
       return { success: true }
     }),
@@ -321,8 +329,9 @@ app.delete(
 app.get(
   '/:id/validating-tests',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const tests = await VerificationService.getValidatingTests(params.id)
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
+      const tests = await VerificationService.getValidatingTests(id)
 
       return { tests }
     }),
@@ -333,68 +342,72 @@ app.get(
 app.get(
   '/:id/work-instructions',
   adapt(
-    apiHandler({ permission: ['parts', 'read'] }, async ({ params }) => {
-      // Verify part exists
-      const [part] = await db
-        .select()
-        .from(items)
-        .where(eq(items.id, params.id))
-        .limit(1)
+    apiHandler<{ id: string }>(
+      { permission: ['parts', 'read'] },
+      async ({ params }) => {
+        const { id } = params
+        // Verify part exists
+        const [part] = await db
+          .select()
+          .from(items)
+          .where(eq(items.id, id))
+          .limit(1)
 
-      if (!part || part.itemType !== 'Part') {
-        throw new NotFoundError('Part', params.id)
-      }
+        if (!part || part.itemType !== 'Part') {
+          throw new NotFoundError('Part', id)
+        }
 
-      // Get work instructions attached to this part
-      const attachedWIs = await db
-        .select({
-          attachmentId: workInstructionPartAttachments.id,
-          inheritToMBOM: workInstructionPartAttachments.inheritToMBOM,
-          createdAt: workInstructionPartAttachments.createdAt,
-          workInstruction: {
-            id: items.id,
-            itemNumber: items.itemNumber,
-            name: items.name,
-            revision: items.revision,
-            state: items.state,
-          },
-          workInstructionDetails: {
-            description: workInstructions.description,
-            estimatedTime: workInstructions.estimatedTime,
-            difficulty: workInstructions.difficulty,
-          },
-        })
-        .from(workInstructionPartAttachments)
-        .innerJoin(
-          items,
-          eq(workInstructionPartAttachments.workInstructionId, items.id),
-        )
-        .innerJoin(
-          workInstructions,
-          eq(
-            workInstructionPartAttachments.workInstructionId,
-            workInstructions.itemId,
-          ),
-        )
-        .where(eq(workInstructionPartAttachments.partId, params.id))
+        // Get work instructions attached to this part
+        const attachedWIs = await db
+          .select({
+            attachmentId: workInstructionPartAttachments.id,
+            inheritToMBOM: workInstructionPartAttachments.inheritToMBOM,
+            createdAt: workInstructionPartAttachments.createdAt,
+            workInstruction: {
+              id: items.id,
+              itemNumber: items.itemNumber,
+              name: items.name,
+              revision: items.revision,
+              state: items.state,
+            },
+            workInstructionDetails: {
+              description: workInstructions.description,
+              estimatedTime: workInstructions.estimatedTime,
+              difficulty: workInstructions.difficulty,
+            },
+          })
+          .from(workInstructionPartAttachments)
+          .innerJoin(
+            items,
+            eq(workInstructionPartAttachments.workInstructionId, items.id),
+          )
+          .innerJoin(
+            workInstructions,
+            eq(
+              workInstructionPartAttachments.workInstructionId,
+              workInstructions.itemId,
+            ),
+          )
+          .where(eq(workInstructionPartAttachments.partId, id))
 
-      // Flatten the response
-      const workInstructionsList = attachedWIs.map((row) => ({
-        attachmentId: row.attachmentId,
-        inheritToMBOM: row.inheritToMBOM,
-        attachedAt: row.createdAt,
-        id: row.workInstruction.id,
-        itemNumber: row.workInstruction.itemNumber,
-        name: row.workInstruction.name,
-        revision: row.workInstruction.revision,
-        state: row.workInstruction.state,
-        description: row.workInstructionDetails.description,
-        estimatedTime: row.workInstructionDetails.estimatedTime,
-        difficulty: row.workInstructionDetails.difficulty,
-      }))
+        // Flatten the response
+        const workInstructionsList = attachedWIs.map((row) => ({
+          attachmentId: row.attachmentId,
+          inheritToMBOM: row.inheritToMBOM,
+          attachedAt: row.createdAt,
+          id: row.workInstruction.id,
+          itemNumber: row.workInstruction.itemNumber,
+          name: row.workInstruction.name,
+          revision: row.workInstruction.revision,
+          state: row.workInstruction.state,
+          description: row.workInstructionDetails.description,
+          estimatedTime: row.workInstructionDetails.estimatedTime,
+          difficulty: row.workInstructionDetails.difficulty,
+        }))
 
-      return { workInstructions: workInstructionsList }
-    }),
+        return { workInstructions: workInstructionsList }
+      },
+    ),
   ),
 )
 

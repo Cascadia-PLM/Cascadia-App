@@ -12,6 +12,7 @@ import {
 } from '../db/schema'
 import { ItemService } from '../items/services/ItemService'
 import { BranchService } from './BranchService'
+import { takeFirst } from '@/lib/db/take-first'
 
 // ============================================
 // Types
@@ -435,16 +436,17 @@ export class ConflictDetectionService {
       )
       .limit(1)
 
-    if (!mainBranchItem.at(0) || !mainBranchItem[0].currentItemId) {
+    const mainCurrentItemId = mainBranchItem[0]?.currentItemId
+    if (!mainCurrentItemId) {
       return null
     }
 
     // If main's current item is different from our base, there was a change
-    if (mainBranchItem[0].currentItemId !== baseItemId) {
+    if (mainCurrentItemId !== baseItemId) {
       const mainItem = await db
         .select()
         .from(items)
-        .where(eq(items.id, mainBranchItem[0].currentItemId))
+        .where(eq(items.id, mainCurrentItemId))
         .limit(1)
 
       return mainItem.at(0) || null
@@ -800,7 +802,8 @@ export class ConflictDetectionService {
       .where(eq(branchItems.id, branchItemId))
       .limit(1)
 
-    if (!branchItemResult.at(0)) {
+    const bi = branchItemResult[0]
+    if (!bi) {
       return {
         success: false,
         itemMasterId: '',
@@ -811,8 +814,6 @@ export class ConflictDetectionService {
         error: 'Branch item not found',
       }
     }
-
-    const bi = branchItemResult[0]
 
     // Get current working copy, old base, and new base
     const [ourItem, oldBase, newBase] = await Promise.all([
@@ -880,18 +881,20 @@ export class ConflictDetectionService {
         }
 
         // Create new item with merged data
-        const [newWorkingCopy] = await tx
-          .insert(items)
-          .values({
-            ...(mergedData as typeof items.$inferInsert),
-            id: undefined,
-            masterId: bi.itemMasterId,
-            revision: 'DRAFT',
-            isCurrent: false,
-            modifiedAt: new Date(),
-            modifiedBy: userId,
-          })
-          .returning()
+        const newWorkingCopy = takeFirst(
+          await tx
+            .insert(items)
+            .values({
+              ...(mergedData as typeof items.$inferInsert),
+              id: undefined,
+              masterId: bi.itemMasterId,
+              revision: 'DRAFT',
+              isCurrent: false,
+              modifiedAt: new Date(),
+              modifiedBy: userId,
+            })
+            .returning(),
+        )
 
         // Update branch item
         await tx
@@ -942,15 +945,14 @@ export class ConflictDetectionService {
       .where(eq(branchItems.id, branchItemId))
       .limit(1)
 
-    if (!branchItemResult.at(0)) {
+    const bi = branchItemResult[0]
+    if (!bi) {
       return {
         success: false,
         itemMasterId: '',
         error: 'Branch item not found',
       }
     }
-
-    const bi = branchItemResult[0]
 
     // Get our current working copy and main's item
     const [ourItem, mainItem] = await Promise.all([
@@ -977,18 +979,20 @@ export class ConflictDetectionService {
         const mergedData: Record<string, unknown> = { ...mainData }
 
         // Create new item version with merged data
-        const [newWorkingCopy] = await tx
-          .insert(items)
-          .values({
-            ...(mergedData as typeof items.$inferInsert),
-            id: undefined, // Generate new ID
-            masterId: bi.itemMasterId,
-            revision: 'DRAFT', // Keep as draft on branch
-            isCurrent: false,
-            modifiedAt: new Date(),
-            modifiedBy: userId,
-          })
-          .returning()
+        const newWorkingCopy = takeFirst(
+          await tx
+            .insert(items)
+            .values({
+              ...(mergedData as typeof items.$inferInsert),
+              id: undefined, // Generate new ID
+              masterId: bi.itemMasterId,
+              revision: 'DRAFT', // Keep as draft on branch
+              isCurrent: false,
+              modifiedAt: new Date(),
+              modifiedBy: userId,
+            })
+            .returning(),
+        )
 
         // Update branch item to point to new working copy and new base
         await tx

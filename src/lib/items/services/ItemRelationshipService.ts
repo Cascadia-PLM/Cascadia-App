@@ -10,6 +10,7 @@ import { CommitService } from '../../services/CommitService'
 import { ThreadCacheService } from '../../services/ThreadCacheService'
 import type { PersistedItem } from '../types/base'
 import { itemLogger } from '@/lib/logging/logger'
+import { takeFirst } from '@/lib/db/take-first'
 
 /**
  * Service layer for item relationship operations
@@ -213,18 +214,20 @@ export class ItemRelationshipService {
     // Lazy import to avoid circular dependency
     const { ItemService } = await import('./ItemService')
 
-    const [relationship] = await db
-      .insert(itemRelationships)
-      .values({
-        sourceId,
-        targetId,
-        relationshipType,
-        quantity: data?.quantity,
-        referenceDesignator: data?.referenceDesignator,
-        findNumber: data?.findNumber,
-        createdBy: userId,
-      })
-      .returning()
+    const relationship = takeFirst(
+      await db
+        .insert(itemRelationships)
+        .values({
+          sourceId,
+          targetId,
+          relationshipType,
+          quantity: data?.quantity,
+          referenceDesignator: data?.referenceDesignator,
+          findNumber: data?.findNumber,
+          createdBy: userId,
+        })
+        .returning(),
+    )
 
     // Track relationship change in history
     const sourceItem = await ItemService.findById(sourceId)
@@ -474,10 +477,10 @@ export class ItemRelationshipService {
       .where(eq(itemRelationships.id, relationshipId))
       .limit(1)
 
-    if (relationshipResults.length === 0) {
+    const relationship = relationshipResults[0]
+    if (!relationship) {
       throw new NotFoundError('ItemRelationship', relationshipId)
     }
-    const relationship = relationshipResults[0]
 
     await db
       .delete(itemRelationships)
@@ -592,6 +595,10 @@ export class ItemRelationshipService {
       .set(updateData)
       .where(eq(itemRelationships.id, relationshipId))
       .returning()
+
+    if (!updated) {
+      throw new NotFoundError('ItemRelationship', relationshipId)
+    }
 
     // Track relationship update in history
     const sourceItem = await ItemService.findById(existing.sourceId)

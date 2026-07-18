@@ -14,7 +14,10 @@ export { ISSUE_FIELDS } from './issue-fields'
 /**
  * Registry of all import type configurations
  */
-const IMPORT_TYPE_CONFIGS: Record<string, ImportTypeConfig> = {
+const IMPORT_TYPE_CONFIGS: Record<
+  'Part' | 'Document' | 'Issue',
+  ImportTypeConfig
+> = {
   Part: {
     itemType: 'Part',
     fields: PART_FIELDS,

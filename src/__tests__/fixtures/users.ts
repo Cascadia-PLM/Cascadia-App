@@ -24,6 +24,7 @@ import type * as schema from '@/lib/db/schema'
 import type { RoleName } from '@/lib/auth/permissions'
 import { roles, sessions, userRoles, users } from '@/lib/db/schema'
 import { ROLE_DEFINITIONS, roleToDbFormat } from '@/lib/auth/permissions'
+import { takeFirst } from '@/lib/db/take-first'
 
 type DbSchema = typeof schema
 type TestDbInstance = PostgresJsDatabase<DbSchema>
@@ -119,18 +120,20 @@ export async function insertTestUser(
 ): Promise<TestUser> {
   const userData = createTestUser(overrides)
 
-  const [inserted] = await db
-    .insert(users)
-    .values({
-      id: userData.id,
-      email: userData.email,
-      name: userData.name,
-      passwordHash: userData.passwordHash,
-      provider: userData.provider,
-      providerId: userData.providerId,
-      active: userData.active,
-    })
-    .returning()
+  const inserted = takeFirst(
+    await db
+      .insert(users)
+      .values({
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        passwordHash: userData.passwordHash,
+        provider: userData.provider,
+        providerId: userData.providerId,
+        active: userData.active,
+      })
+      .returning(),
+  )
 
   return {
     ...inserted,
@@ -176,15 +179,17 @@ export async function insertTestRole(
   db: TestDbInstance,
   role: TestRole,
 ): Promise<TestRole> {
-  const [inserted] = await db
-    .insert(roles)
-    .values({
-      id: role.id,
-      name: role.name,
-      description: role.description,
-      permissions: role.permissions,
-    })
-    .returning()
+  const inserted = takeFirst(
+    await db
+      .insert(roles)
+      .values({
+        id: role.id,
+        name: role.name,
+        description: role.description,
+        permissions: role.permissions,
+      })
+      .returning(),
+  )
 
   return {
     ...inserted,
@@ -274,16 +279,18 @@ export async function insertTestSession(
 ): Promise<TestSession> {
   const sessionData = createTestSession(userId, overrides)
 
-  const [inserted] = await db
-    .insert(sessions)
-    .values({
-      id: sessionData.id,
-      userId: sessionData.userId,
-      expiresAt: sessionData.expiresAt,
-      ipAddress: sessionData.ipAddress,
-      userAgent: sessionData.userAgent,
-    })
-    .returning()
+  const inserted = takeFirst(
+    await db
+      .insert(sessions)
+      .values({
+        id: sessionData.id,
+        userId: sessionData.userId,
+        expiresAt: sessionData.expiresAt,
+        ipAddress: sessionData.ipAddress,
+        userAgent: sessionData.userAgent,
+      })
+      .returning(),
+  )
 
   return {
     ...inserted,

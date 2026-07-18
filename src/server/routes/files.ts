@@ -259,10 +259,10 @@ app.get(
 app.delete(
   '/:fileId',
   adapt(
-    apiHandler(
+    apiHandler<{ fileId: string }>(
       { permission: ['documents', 'delete'] },
       async ({ params, user }) => {
-        const { fileId } = params as { fileId: string }
+        const { fileId } = params
 
         await FileService.deleteFile(fileId, user.id)
 
@@ -279,10 +279,10 @@ app.delete(
 app.post(
   '/:fileId/checkin',
   adapt(
-    apiHandler(
+    apiHandler<{ fileId: string }>(
       { permission: ['documents', 'update'] },
       async ({ request, params, user }) => {
-        const { fileId } = params as { fileId: string }
+        const { fileId } = params
 
         // Check if multipart (new version) or just unlock
         const contentType = request.headers.get('content-type') || ''
@@ -334,10 +334,10 @@ app.post(
 app.post(
   '/:fileId/checkout',
   adapt(
-    apiHandler(
+    apiHandler<{ fileId: string }>(
       { permission: ['documents', 'update'] },
       async ({ params, user }) => {
-        const { fileId } = params as { fileId: string }
+        const { fileId } = params
 
         await FileService.checkOutFile(fileId, user.id)
 
@@ -354,10 +354,10 @@ app.post(
 app.post(
   '/:fileId/convert',
   adapt(
-    apiHandler(
+    apiHandler<{ fileId: string }>(
       { permission: ['documents', 'read'] },
       async ({ request, params, user }) => {
-        const { fileId } = params as { fileId: string }
+        const { fileId } = params
 
         // Fetch the vault file to validate it exists and is a CAD format
         const file = await FileService.getFileMetadata(fileId)
@@ -417,7 +417,7 @@ app.post(
 app.get(
   '/:fileId/download',
   adapt(
-    apiHandler(
+    apiHandler<{ fileId: string }>(
       { permission: ['documents', 'read'] },
       async ({ params, user }) => {
         const { fileId } = params
@@ -474,10 +474,10 @@ app.get(
 app.post(
   '/:fileId/force-unlock',
   adapt(
-    apiHandler(
+    apiHandler<{ fileId: string }>(
       { permission: ['documents', 'manage'] },
       async ({ params, user }) => {
-        const { fileId } = params as { fileId: string }
+        const { fileId } = params
 
         const file = await FileService.getFileMetadata(fileId)
         if (!file) {
@@ -504,10 +504,10 @@ app.post(
 app.get(
   '/:fileId/lock-status',
   adapt(
-    apiHandler(
+    apiHandler<{ fileId: string }>(
       { permission: ['documents', 'read'] },
       async ({ params, user }) => {
-        const { fileId } = params as { fileId: string }
+        const { fileId } = params
 
         try {
           // Check design access via file -> item -> design
@@ -540,17 +540,20 @@ app.get(
 app.get(
   '/:fileId/metadata',
   adapt(
-    apiHandler({ permission: ['documents', 'read'] }, async ({ params }) => {
-      const { fileId } = params as { fileId: string }
+    apiHandler<{ fileId: string }>(
+      { permission: ['documents', 'read'] },
+      async ({ params }) => {
+        const { fileId } = params
 
-      const file = await FileService.getFileMetadata(fileId)
+        const file = await FileService.getFileMetadata(fileId)
 
-      if (!file) {
-        throw new NotFoundError('File', fileId)
-      }
+        if (!file) {
+          throw new NotFoundError('File', fileId)
+        }
 
-      return { file }
-    }),
+        return { file }
+      },
+    ),
   ),
 )
 
@@ -558,7 +561,7 @@ app.get(
 app.get(
   '/:fileId/thumbnail',
   adapt(
-    apiHandler(
+    apiHandler<{ fileId: string }>(
       { permission: ['documents', 'read'] },
       async ({ params, user }) => {
         const { fileId } = params
@@ -601,23 +604,26 @@ app.get(
 app.get(
   '/:fileId/versions',
   adapt(
-    apiHandler({ permission: ['documents', 'read'] }, async ({ params }) => {
-      const { fileId } = params as { fileId: string }
+    apiHandler<{ fileId: string }>(
+      { permission: ['documents', 'read'] },
+      async ({ params }) => {
+        const { fileId } = params
 
-      try {
-        const versions = await FileService.listFileVersions(fileId)
+        try {
+          const versions = await FileService.listFileVersions(fileId)
 
-        return {
-          versions,
-          totalVersions: versions.length,
+          return {
+            versions,
+            totalVersions: versions.length,
+          }
+        } catch (error) {
+          if (error instanceof Error && error.message === 'File not found') {
+            throw new NotFoundError('File', fileId)
+          }
+          throw error
         }
-      } catch (error) {
-        if (error instanceof Error && error.message === 'File not found') {
-          throw new NotFoundError('File', fileId)
-        }
-        throw error
-      }
-    }),
+      },
+    ),
   ),
 )
 
@@ -625,13 +631,10 @@ app.get(
 app.get(
   '/:fileId/versions/:version/download',
   adapt(
-    apiHandler(
+    apiHandler<{ fileId: string; version: string }>(
       { permission: ['documents', 'read'] },
       async ({ params, user }) => {
-        const { fileId, version } = params as {
-          fileId: string
-          version: string
-        }
+        const { fileId, version } = params
 
         const versionNumber = parseInt(version, 10)
         if (isNaN(versionNumber) || versionNumber < 1) {

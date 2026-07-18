@@ -14,6 +14,7 @@ import {
   tags,
   users,
 } from '../db/schema'
+import { takeFirst } from '../db/take-first'
 import { NotFoundError, ValidationError } from '../errors'
 import { notDeleted } from '../db/filters'
 import { BranchService } from './BranchService'
@@ -189,7 +190,7 @@ export class CommitService {
     const run = outerTx ?? db
     return run.transaction(async (tx) => {
       // 1. Create the commit
-      const [commit] = await tx
+      const commitRows = await tx
         .insert(commits)
         .values({
           designId: branch.designId,
@@ -204,6 +205,7 @@ export class CommitService {
           createdBy: userId,
         })
         .returning()
+      const commit = takeFirst(commitRows, 'commit')
 
       // 2. Create itemVersion entries for each change
       if (validated.itemChanges.length > 0) {
@@ -229,9 +231,9 @@ export class CommitService {
           fieldCategory: string
         }> = []
 
-        for (let i = 0; i < validated.itemChanges.length; i++) {
-          const change = validated.itemChanges[i]
+        for (const [i, change] of validated.itemChanges.entries()) {
           const itemVersion = insertedVersions[i]
+          if (!itemVersion) continue
 
           if (change.fieldChanges && change.fieldChanges.length > 0) {
             for (const fc of change.fieldChanges) {
@@ -318,7 +320,7 @@ export class CommitService {
           )
 
           // 2. Create merge commit with two parents
-          const [mergeCommit] = await tx
+          const mergeCommitRows = await tx
             .insert(commits)
             .values({
               designId: targetBranch.designId,
@@ -334,6 +336,7 @@ export class CommitService {
               createdBy: userId,
             })
             .returning()
+          const mergeCommit = takeFirst(mergeCommitRows, 'merge commit')
 
           // 3. Create itemVersion entries for merged changes
           if (itemChangesToRecord.length > 0) {
@@ -458,9 +461,8 @@ export class CommitService {
         .where(eq(branches.id, branchId))
         .limit(1)
 
-      if (branch.length > 0) {
-        const branchInfo = branch[0]
-
+      const branchInfo = branch[0]
+      if (branchInfo) {
         if (branchInfo.branchType === 'main') {
           // Main branch: only show commits on main (exclude unmerged ECO commits)
           branchFilterCondition = eq(commits.branchId, branchId)
@@ -479,8 +481,9 @@ export class CommitService {
               .where(eq(commits.id, branchInfo.baseCommitId))
               .limit(1)
 
-            if (baseCommit.length > 0) {
-              const forkTimestamp = baseCommit[0].createdAt
+            const baseCommitRow = baseCommit[0]
+            if (baseCommitRow) {
+              const forkTimestamp = baseCommitRow.createdAt
               // ECO branch commits OR main branch commits at or before the fork
               branchFilterCondition = or(
                 eq(commits.branchId, branchId),

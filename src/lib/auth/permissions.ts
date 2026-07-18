@@ -322,8 +322,8 @@ export function hasPermission(
   resource: ResourceType,
   action: PermissionAction,
 ): boolean {
-  if (!(resource in rolePermissions)) return false
-
   const actions = rolePermissions[resource]
+  if (!actions) return false
+
   return actions.includes(action) || actions.includes('manage')
 }

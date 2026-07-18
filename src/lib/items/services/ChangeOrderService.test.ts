@@ -40,6 +40,7 @@ import {
   seedStandardPartLifecycle,
 } from '@/__tests__/fixtures/lifecycles'
 import { ValidationError } from '@/lib/errors'
+import { takeFirst } from '@/lib/db/take-first'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'
@@ -280,37 +281,43 @@ describe('ChangeOrderService', () => {
     user = await insertTestUser(testDb.db)
 
     // Create test design with branch structure
-    const [createdDesign] = await testDb.db
-      .insert(designs)
-      .values({
-        name: 'Test Design',
-        code: `PROD-${uniquePrefix}`,
-        designType: 'Engineering',
-        createdBy: user.id,
-      })
-      .returning()
+    const createdDesign = takeFirst(
+      await testDb.db
+        .insert(designs)
+        .values({
+          name: 'Test Design',
+          code: `PROD-${uniquePrefix}`,
+          designType: 'Engineering',
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
-    const [initialCommit] = await testDb.db
-      .insert(commits)
-      .values({
-        designId: createdDesign.id,
-        branchId: createdDesign.id,
-        message: 'Initial commit',
-        createdBy: user.id,
-      })
-      .returning()
+    const initialCommit = takeFirst(
+      await testDb.db
+        .insert(commits)
+        .values({
+          designId: createdDesign.id,
+          branchId: createdDesign.id,
+          message: 'Initial commit',
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
-    const [mainBranch] = await testDb.db
-      .insert(branches)
-      .values({
-        designId: createdDesign.id,
-        name: 'main',
-        branchType: 'main',
-        headCommitId: initialCommit.id,
-        baseCommitId: initialCommit.id,
-        createdBy: user.id,
-      })
-      .returning()
+    const mainBranch = takeFirst(
+      await testDb.db
+        .insert(branches)
+        .values({
+          designId: createdDesign.id,
+          name: 'main',
+          branchType: 'main',
+          headCommitId: initialCommit.id,
+          baseCommitId: initialCommit.id,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     await testDb.db
       .update(commits)
@@ -323,7 +330,8 @@ describe('ChangeOrderService', () => {
       .where(eq(designs.id, createdDesign.id))
       .returning()
 
-    designId = updated.id
+    expect(updated).toBeDefined()
+    designId = updated!.id
   })
 
   afterEach(async () => {
@@ -499,7 +507,7 @@ describe('ChangeOrderService', () => {
       const branchCommits = await testDb.db
         .select()
         .from(commits)
-        .where(eq(commits.branchId, ecoDesigns[0].branchId!))
+        .where(eq(commits.branchId, ecoDesigns[0]!.branchId!))
 
       // Should have a commit with "ChangeOrder xxx created" message
       const creationCommit = branchCommits.find(
@@ -591,7 +599,7 @@ describe('ChangeOrderService', () => {
       const items = await ChangeOrderService.getAffectedItems(changeOrder.id)
 
       expect(items).toHaveLength(2)
-      expect(items[0].affectedItemDetails).toBeDefined()
+      expect(items[0]?.affectedItemDetails).toBeDefined()
       expect(
         items.some((i) => i.affectedItemDetails?.name === 'Part One'),
       ).toBe(true)
@@ -700,8 +708,10 @@ describe('ChangeOrderService', () => {
       const risks = await ChangeOrderService.getRisks(changeOrder.id)
 
       expect(risks).toHaveLength(1)
-      expect(risks[0].category).toBe('production')
-      expect(risks[0].severity).toBe('high')
+      expect(risks[0]).toMatchObject({
+        category: 'production',
+        severity: 'high',
+      })
     })
 
     it('returns empty array when no risks', async () => {
@@ -717,23 +727,25 @@ describe('ChangeOrderService', () => {
     it('records acknowledgement with user and timestamp', async () => {
       const changeOrder = await createChangeOrder()
 
-      const [risk] = await testDb.db
-        .insert(changeOrderRisks)
-        .values({
-          changeOrderId: changeOrder.id,
-          category: 'production',
-          severity: 'critical',
-          description: 'Critical risk requiring acknowledgement',
-          requiresAcknowledgement: true,
-        })
-        .returning()
+      const risk = takeFirst(
+        await testDb.db
+          .insert(changeOrderRisks)
+          .values({
+            changeOrderId: changeOrder.id,
+            category: 'production',
+            severity: 'critical',
+            description: 'Critical risk requiring acknowledgement',
+            requiresAcknowledgement: true,
+          })
+          .returning(),
+      )
 
       await ChangeOrderService.acknowledgeRisk(risk.id, user.id)
 
       const risks = await ChangeOrderService.getRisks(changeOrder.id)
 
-      expect(risks[0].acknowledgedBy).toBe(user.id)
-      expect(risks[0].acknowledgedAt).toBeDefined()
+      expect(risks[0]).toMatchObject({ acknowledgedBy: user.id })
+      expect(risks[0]?.acknowledgedAt).toBeDefined()
     })
   })
 
@@ -780,7 +792,7 @@ describe('ChangeOrderService', () => {
         .where(eq(changeOrders.itemId, changeOrder.id))
         .limit(1)
 
-      expect(coRecord[0].submittedAt).toBeDefined()
+      expect(coRecord[0]?.submittedAt).toBeDefined()
     })
   })
 
@@ -846,8 +858,8 @@ describe('ChangeOrderService', () => {
         .where(eq(changeOrders.itemId, changeOrder.id))
         .limit(1)
 
-      expect(coRecord[0].approvedAt).toBeDefined()
-      expect(coRecord[0].approvedBy).toBe(user.id)
+      expect(coRecord[0]?.approvedAt).toBeDefined()
+      expect(coRecord[0]).toMatchObject({ approvedBy: user.id })
     })
   })
 
@@ -921,7 +933,7 @@ describe('ChangeOrderService', () => {
         .where(eq(changeOrders.itemId, changeOrder.id))
         .limit(1)
 
-      expect(coRecord[0].closedAt).toBeDefined()
+      expect(coRecord[0]?.closedAt).toBeDefined()
     })
   })
 

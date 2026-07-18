@@ -15,13 +15,14 @@ const app = new Hono()
 app.get(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const commit = await CommitService.getById(params.id)
-      if (!commit) throw new NotFoundError('Commit', params.id)
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
+      const commit = await CommitService.getById(id)
+      if (!commit) throw new NotFoundError('Commit', id)
 
       await requireDesignAccess(user.id, commit.designId)
 
-      const commitWithAuthor = await CommitService.getWithAuthor(params.id)
+      const commitWithAuthor = await CommitService.getWithAuthor(id)
       return {
         commit: commitWithAuthor?.commit,
         author: commitWithAuthor?.author,
@@ -34,13 +35,14 @@ app.get(
 app.get(
   '/:id/diff',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const commit = await CommitService.getById(params.id)
-      if (!commit) throw new NotFoundError('Commit', params.id)
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
+      const commit = await CommitService.getById(id)
+      if (!commit) throw new NotFoundError('Commit', id)
 
       await requireDesignAccess(user.id, commit.designId)
 
-      const diff = await CommitService.getDiff(params.id)
+      const diff = await CommitService.getDiff(id)
       return { diff }
     }),
   ),
@@ -50,15 +52,16 @@ app.get(
 app.get(
   '/:id/items',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const commit = await CommitService.getById(params.id)
-      if (!commit) throw new NotFoundError('Commit', params.id)
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
+      const commit = await CommitService.getById(id)
+      if (!commit) throw new NotFoundError('Commit', id)
 
       await requireDesignAccess(user.id, commit.designId)
 
       const query = parseQuery(request, itemListSchema)
 
-      const result = await VersionResolver.getItemsAtCommit(params.id, {
+      const result = await VersionResolver.getItemsAtCommit(id, {
         itemType: query.itemType,
         state: query.state,
         search: query.search,

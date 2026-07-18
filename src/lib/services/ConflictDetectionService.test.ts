@@ -26,6 +26,7 @@ import { ConflictDetectionService } from './ConflictDetectionService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
+import { takeFirst } from '@/lib/db/take-first'
 import {
   branchItems,
   changeOrderAffectedItems,
@@ -61,14 +62,16 @@ describe('ConflictDetectionService', () => {
 
     // Create test program with unique code (timestamp + random suffix for parallel test isolation)
     const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Test Program',
-        code: `PROG-${uniqueId}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Test Program',
+          code: `PROG-${uniqueId}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     programId = program.id
 
@@ -83,7 +86,7 @@ describe('ConflictDetectionService', () => {
       user.id,
     )
 
-    designId = design.id
+    designId = design.id!
     mainBranchId = design.mainBranch!.id
   })
 
@@ -167,10 +170,12 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts).toHaveLength(1)
-      expect(conflicts[0].fieldName).toBe('name')
-      expect(conflicts[0].baseValue).toBe('Original')
-      expect(conflicts[0].ourValue).toBe('Our Name')
-      expect(conflicts[0].theirValue).toBe('Their Name')
+      expect(conflicts[0]).toMatchObject({
+        fieldName: 'name',
+        baseValue: 'Original',
+        ourValue: 'Our Name',
+        theirValue: 'Their Name',
+      })
     })
 
     it('does not report conflict when both branches make same change', () => {
@@ -285,7 +290,7 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts).toHaveLength(1)
-      expect(conflicts[0].fieldName).toBe('config')
+      expect(conflicts[0]).toMatchObject({ fieldName: 'config' })
     })
 
     it('handles array field comparison', () => {
@@ -300,7 +305,7 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts).toHaveLength(1)
-      expect(conflicts[0].fieldName).toBe('tags')
+      expect(conflicts[0]).toMatchObject({ fieldName: 'tags' })
     })
   })
 
@@ -313,8 +318,10 @@ describe('ConflictDetectionService', () => {
       expect(result.hasConflicts).toBe(true)
       expect(result.hasBlockingConflicts).toBe(true)
       expect(result.conflicts).toHaveLength(1)
-      expect(result.conflicts[0].conflictType).toBe('branch_not_found')
-      expect(result.conflicts[0].severity).toBe('error')
+      expect(result.conflicts[0]).toMatchObject({
+        conflictType: 'branch_not_found',
+        severity: 'error',
+      })
     })
 
     it('returns no conflicts for empty branch', async () => {
@@ -388,12 +395,14 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Update the part on our branch via direct DB update to avoid complex workflow
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'ECO Modified Name' })
@@ -622,10 +631,12 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get the branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Try to rebase to non-existent item
       const result = await ConflictDetectionService.rebaseItem(
@@ -659,27 +670,31 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Create a new base version
-      const [newBaseItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: part.masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: part.itemNumber,
-          revision: 'B',
-          name: 'New Base Name',
-          state: 'Draft',
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newBaseItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: part.masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: part.itemNumber,
+            revision: 'B',
+            name: 'New Base Name',
+            state: 'Draft',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Attempt rebase
       const result = await ConflictDetectionService.rebaseItem(
@@ -714,27 +729,31 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Create a new base version
-      const [newBaseItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: part.masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: part.itemNumber,
-          revision: 'B',
-          name: 'New Base Name',
-          state: 'Draft',
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newBaseItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: part.masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: part.itemNumber,
+            revision: 'B',
+            name: 'New Base Name',
+            state: 'Draft',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Provide resolution
       const result = await ConflictDetectionService.rebaseItem(
@@ -769,13 +788,15 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Modify our working copy - change description
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'Our Changed Name' })
@@ -783,21 +804,23 @@ describe('ConflictDetectionService', () => {
       }
 
       // Create new base with non-conflicting change (different field)
-      const [newBaseItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: part.masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: part.itemNumber,
-          revision: 'B',
-          name: 'Original Name', // Same as original
-          state: 'Active', // Different field changed
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newBaseItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: part.masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: part.itemNumber,
+            revision: 'B',
+            name: 'Original Name', // Same as original
+            state: 'Active', // Different field changed
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       const result = await ConflictDetectionService.rebaseItem(
         branchItem.id,
@@ -823,10 +846,12 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts.length).toBeGreaterThan(0)
-      expect(conflicts[0].fieldName).toBe('name')
-      expect(conflicts[0].baseValue).toBe('Original Name')
-      expect(conflicts[0].ourValue).toBe('Our Changed Name')
-      expect(conflicts[0].theirValue).toBe('Their Changed Name')
+      expect(conflicts[0]).toMatchObject({
+        fieldName: 'name',
+        baseValue: 'Original Name',
+        ourValue: 'Our Changed Name',
+        theirValue: 'Their Changed Name',
+      })
     })
 
     it('applies resolutions and succeeds when conflicts resolved', async () => {
@@ -850,13 +875,15 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Modify our working copy - change name
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'Our Changed Name' })
@@ -864,21 +891,23 @@ describe('ConflictDetectionService', () => {
       }
 
       // Create new base with conflicting change
-      const [newBaseItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId: part.masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: part.itemNumber,
-          revision: 'B',
-          name: 'Their Changed Name',
-          state: 'Draft',
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newBaseItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: part.masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: part.itemNumber,
+            revision: 'B',
+            name: 'Their Changed Name',
+            state: 'Draft',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Rebase with resolution provided
       const result = await ConflictDetectionService.rebaseItem(
@@ -1041,12 +1070,14 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Update branch's working copy
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'Modified on ECO' })
@@ -1061,21 +1092,23 @@ describe('ConflictDetectionService', () => {
 
       if (mainBranchItem?.currentItemId) {
         // Create a new item version on main with only revision changed
-        const [newMainItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: part.masterId,
-            designId,
-            itemType: 'Part',
-            itemNumber: part.itemNumber,
-            revision: 'B', // Only revision changed
-            name: part.name, // Same name
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-          })
-          .returning()
+        const newMainItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: part.masterId,
+              designId,
+              itemType: 'Part',
+              itemNumber: part.itemNumber,
+              revision: 'B', // Only revision changed
+              name: part.name, // Same name
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+            })
+            .returning(),
+        )
 
         // Update main branch item to point to new version
         await testDb.db
@@ -1116,13 +1149,15 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Change name on ECO branch
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'ECO Changed Name' })
@@ -1136,21 +1171,23 @@ describe('ConflictDetectionService', () => {
         .where(eq(branchItems.branchId, mainBranchId))
 
       if (mainBranchItem?.currentItemId) {
-        const [newMainItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: part.masterId,
-            designId,
-            itemType: 'Part',
-            itemNumber: part.itemNumber,
-            revision: 'B',
-            name: part.name, // Same name
-            state: 'Active', // Different field changed
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-          })
-          .returning()
+        const newMainItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: part.masterId,
+              designId,
+              itemType: 'Part',
+              itemNumber: part.itemNumber,
+              revision: 'B',
+              name: part.name, // Same name
+              state: 'Active', // Different field changed
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+            })
+            .returning(),
+        )
 
         await testDb.db
           .update(branchItems)
@@ -1184,13 +1221,15 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, ecoBranch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
 
       // Change name on ECO branch
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'ECO Name' })
@@ -1204,21 +1243,23 @@ describe('ConflictDetectionService', () => {
         .where(eq(branchItems.branchId, mainBranchId))
 
       if (mainBranchItem?.currentItemId) {
-        const [newMainItem] = await testDb.db
-          .insert(items)
-          .values({
-            masterId: part.masterId,
-            designId,
-            itemType: 'Part',
-            itemNumber: part.itemNumber,
-            revision: 'B',
-            name: 'Main Name', // Same field, different value = conflict
-            state: 'Draft',
-            isCurrent: true,
-            createdBy: user.id,
-            modifiedBy: user.id,
-          })
-          .returning()
+        const newMainItem = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: part.masterId,
+              designId,
+              itemType: 'Part',
+              itemNumber: part.itemNumber,
+              revision: 'B',
+              name: 'Main Name', // Same field, different value = conflict
+              state: 'Draft',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+            })
+            .returning(),
+        )
 
         await testDb.db
           .update(branchItems)
@@ -1252,8 +1293,7 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts.length).toBe(1)
-      expect(conflicts[0].fieldName).toBe('name')
-      expect(conflicts[0].baseValue).toBe(null)
+      expect(conflicts[0]).toMatchObject({ fieldName: 'name', baseValue: null })
     })
 
     it('handles undefined values in field comparison', () => {
@@ -1268,7 +1308,7 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts.length).toBe(1)
-      expect(conflicts[0].fieldName).toBe('newField')
+      expect(conflicts[0]).toMatchObject({ fieldName: 'newField' })
     })
 
     it('handles date field comparison', () => {
@@ -1287,7 +1327,7 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts.length).toBe(1)
-      expect(conflicts[0].fieldName).toBe('dueDate')
+      expect(conflicts[0]).toMatchObject({ fieldName: 'dueDate' })
     })
 
     it('handles deeply nested object comparison', () => {
@@ -1326,7 +1366,7 @@ describe('ConflictDetectionService', () => {
       )
 
       expect(conflicts.length).toBe(1)
-      expect(conflicts[0].fieldName).toBe('config')
+      expect(conflicts[0]).toMatchObject({ fieldName: 'config' })
     })
 
     it('ignores itemId foreign key field', () => {
@@ -1467,12 +1507,14 @@ describe('ConflictDetectionService', () => {
         )
 
         // Modify in each ECO
-        const [branchItem] = await testDb.db
-          .select()
-          .from(branchItems)
-          .where(eq(branchItems.branchId, branch.id))
+        const branchItem = takeFirst(
+          await testDb.db
+            .select()
+            .from(branchItems)
+            .where(eq(branchItems.branchId, branch.id)),
+        )
 
-        if (branchItem?.currentItemId) {
+        if (branchItem.currentItemId) {
           await testDb.db
             .update(items)
             .set({ name: `ECO-${i + 1} Modified Name` })
@@ -1577,16 +1619,18 @@ describe('ConflictDetectionService', () => {
       )
 
       // Add to branch items with no base (simulating new item added on branch)
-      const [branchItem] = await testDb.db
-        .insert(branchItems)
-        .values({
-          branchId: branch.id,
-          itemMasterId: newPart.masterId,
-          currentItemId: newPart.id,
-          baseItemId: null, // No base - new item
-          changeType: 'added',
-        })
-        .returning()
+      const branchItem = takeFirst(
+        await testDb.db
+          .insert(branchItems)
+          .values({
+            branchId: branch.id,
+            itemMasterId: newPart.masterId,
+            currentItemId: newPart.id,
+            baseItemId: null, // No base - new item
+            changeType: 'added',
+          })
+          .returning(),
+      )
 
       // Create a version on main that this new item could rebase to
       const newBaseItem = await ItemService.create(
@@ -1619,21 +1663,23 @@ describe('ConflictDetectionService', () => {
       partCounter++
       const baseItemNumber = `PART-${Date.now()}-${partCounter}`
       const masterId = crypto.randomUUID()
-      const [basePart] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: baseItemNumber,
-          name: 'Original Name',
-          state: 'Released',
-          revision: 'A',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const basePart = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: baseItemNumber,
+            name: 'Original Name',
+            state: 'Released',
+            revision: 'A',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Create ECO and branch
       const eco = await createChangeOrder('Name Conflict ECO')
@@ -1644,50 +1690,56 @@ describe('ConflictDetectionService', () => {
       )
 
       // Create working copy with different name (direct insert)
-      const [ourWorkingCopy] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: baseItemNumber,
-          name: 'Our Different Name',
-          state: 'Draft',
-          revision: 'DRAFT',
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const ourWorkingCopy = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: baseItemNumber,
+            name: 'Our Different Name',
+            state: 'Draft',
+            revision: 'DRAFT',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Manually create branch item with explicit base reference
-      const [branchItem] = await testDb.db
-        .insert(branchItems)
-        .values({
-          branchId: branch.id,
-          itemMasterId: masterId,
-          currentItemId: ourWorkingCopy.id,
-          baseItemId: basePart.id, // Explicit base for three-way merge
-          changeType: 'modified',
-        })
-        .returning()
+      const branchItem = takeFirst(
+        await testDb.db
+          .insert(branchItems)
+          .values({
+            branchId: branch.id,
+            itemMasterId: masterId,
+            currentItemId: ourWorkingCopy.id,
+            baseItemId: basePart.id, // Explicit base for three-way merge
+            changeType: 'modified',
+          })
+          .returning(),
+      )
 
       // Create new base version with a different name change (direct insert)
-      const [newBaseItem] = await testDb.db
-        .insert(items)
-        .values({
-          masterId,
-          designId,
-          itemType: 'Part',
-          itemNumber: baseItemNumber,
-          name: 'Their Different Name',
-          state: 'Released',
-          revision: 'B',
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newBaseItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: baseItemNumber,
+            name: 'Their Different Name',
+            state: 'Released',
+            revision: 'B',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // First attempt without resolutions - should detect name conflict
       const conflictResult = await ConflictDetectionService.rebaseItem(
@@ -1722,13 +1774,15 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, branch.id, user.id)
 
       // Get branch item
-      const [branchItem] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, branch.id))
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, branch.id)),
+      )
 
       // Modify our copy
-      if (branchItem?.currentItemId) {
+      if (branchItem.currentItemId) {
         await testDb.db
           .update(items)
           .set({ name: 'Changed Name' })
@@ -1778,12 +1832,14 @@ describe('ConflictDetectionService', () => {
       await CheckoutService.checkin(part.masterId, branch.id, user.id)
 
       // Get branch item before rebase
-      const [branchItemBefore] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.branchId, branch.id))
+      const branchItemBefore = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, branch.id)),
+      )
 
-      const originalCurrentId = branchItemBefore?.currentItemId
+      const originalCurrentId = branchItemBefore.currentItemId
 
       // Create new base version
       const newBase = await ItemService.create(
@@ -1809,10 +1865,12 @@ describe('ConflictDetectionService', () => {
       expect(result.success).toBe(true)
 
       // Verify branch item references were updated
-      const [branchItemAfter] = await testDb.db
-        .select()
-        .from(branchItems)
-        .where(eq(branchItems.id, branchItemBefore.id))
+      const branchItemAfter = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.id, branchItemBefore.id)),
+      )
 
       expect(branchItemAfter.baseItemId).toBe(newBase.id)
       expect(branchItemAfter.currentItemId).not.toBe(originalCurrentId)

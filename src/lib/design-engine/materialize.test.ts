@@ -377,7 +377,7 @@ describe('MaterializationService', () => {
       },
       user.id,
     )
-    const designId = design.id!
+    const designId = design.id
 
     // Release an item to put the design in post-release (protected) phase
     const releasedPart = await ItemService.create<BaseItem>(

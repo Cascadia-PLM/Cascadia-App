@@ -759,11 +759,7 @@ app.post(
           }
 
           // Update the item using ItemService
-          const updatedItem = await ItemService.update(
-            id,
-            updateData,
-            userId,
-          )
+          const updatedItem = await ItemService.update(id, updateData, userId)
           updated.push(updatedItem)
         } catch (error) {
           errors.push({
@@ -798,7 +794,7 @@ app.post(
 app.get(
   '/by-filename/:filename',
   adapt(
-    apiHandler({}, async ({ params }) => {
+    apiHandler<{ filename: string }>({}, async ({ params }) => {
       const { filename } = params
 
       // Search for files matching the filename
@@ -1051,8 +1047,8 @@ app.get(
           ),
         )
         const counts: Record<string, number> = {}
-        for (let i = 0; i < stateNames.length; i++) {
-          counts[stateNames[i]] = countResults[i].total
+        for (const [i, stateName] of stateNames.entries()) {
+          counts[stateName] = countResults[i]!.total
         }
         response.counts = counts
       }
@@ -1179,7 +1175,7 @@ app.post(
 app.get(
   '/:id',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const url = new URL(request.url)
       const branchName = url.searchParams.get('branch')
       const commitId = url.searchParams.get('commit')
@@ -1277,7 +1273,7 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const url = new URL(request.url)
       const branchId = url.searchParams.get('branchId')
 
@@ -1342,7 +1338,7 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const url = new URL(request.url)
       const branchId = url.searchParams.get('branchId')
       const commitMessage = url.searchParams.get('commitMessage')
@@ -1402,7 +1398,7 @@ app.delete(
 app.get(
   '/:id/at-context',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const url = new URL(request.url)
       const commitId = url.searchParams.get('commitId')
       const tagId = url.searchParams.get('tagId')
@@ -1547,7 +1543,7 @@ app.get(
 app.get(
   '/:id/available-contexts',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
       // Get the item to find masterId and designId
       const item = await ItemService.findById(params.id)
       if (!item) {
@@ -1579,7 +1575,7 @@ app.get(
 app.post(
   '/:id/cancel-checkout',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const data = await request.json()
       const { branchId } = data
 
@@ -1607,7 +1603,7 @@ app.post(
 app.post(
   '/:id/checkin',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const data = await request.json()
       const { branchId } = data
 
@@ -1635,7 +1631,7 @@ app.post(
 app.get(
   '/:id/checkout',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const url = new URL(request.url)
       const branchId = url.searchParams.get('branchId')
 
@@ -1666,7 +1662,7 @@ app.get(
 app.post(
   '/:id/checkout',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const data = await request.json()
       const { branchId } = data
 
@@ -1697,7 +1693,7 @@ app.post(
 app.delete(
   '/:id/checkout',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const url = new URL(request.url)
       const branchId = url.searchParams.get('branchId')
 
@@ -1722,7 +1718,7 @@ app.delete(
 app.get(
   '/:id/graph',
   adapt(
-    apiHandler({}, async ({ params, request }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request }) => {
       const url = new URL(request.url)
       const depth = parseInt(url.searchParams.get('depth') || '2', 10)
       const direction = url.searchParams.get('direction') || 'all' // 'all', 'outgoing', 'incoming'
@@ -2056,7 +2052,7 @@ app.get(
 app.get(
   '/:id/history',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const url = new URL(request.url)
       const commitId = url.searchParams.get('commitId')
       const tagId = url.searchParams.get('tagId')
@@ -2090,6 +2086,7 @@ app.get(
           .select({ commitId: tags.commitId })
           .from(tags)
           .where(eq(tags.id, tagId))
+        if (!tag) throw new NotFoundError('Tag', tagId)
         untilCommitId = tag.commitId
       } else if (branchId) {
         // Get the head commit ID from the branch
@@ -2134,7 +2131,7 @@ app.get(
 app.post(
   '/:id/impact-analysis',
   adapt(
-    apiHandler({}, async ({ params, request }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request }) => {
       // Parse and validate request body
       const body = await request.json()
       let validatedBody
@@ -2162,7 +2159,7 @@ app.post(
 app.get(
   '/:id/lock-status',
   adapt(
-    apiHandler({}, async ({ params }) => {
+    apiHandler<{ id: string }>({}, async ({ params }) => {
       const { id } = params
 
       // Get item with lock info
@@ -2215,7 +2212,7 @@ app.get(
 app.post(
   '/:id/lock',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const { id } = params
       const userId = user.id
 
@@ -2283,7 +2280,7 @@ app.post(
 app.get(
   '/:id/relationships',
   adapt(
-    apiHandler({}, async ({ params, request }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request }) => {
       const url = new URL(request.url)
       const relationshipType = url.searchParams.get('type') || undefined
       const branchId = url.searchParams.get('branch') || undefined
@@ -2308,7 +2305,7 @@ app.get(
 app.post(
   '/:id/relationships',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
       const data = await request.json()
 
       await ItemService.addRelationship(
@@ -2332,7 +2329,7 @@ app.post(
 app.get(
   '/:id/satisfied-requirements',
   adapt(
-    apiHandler({}, async ({ params }) => {
+    apiHandler<{ id: string }>({}, async ({ params }) => {
       const { id } = params
       const satisfiedRequirements =
         await RequirementService.getRequirementsSatisfiedBy(id)
@@ -2346,7 +2343,7 @@ app.get(
 app.post(
   '/:id/sync-properties',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
       const { id } = params
       const userId = user.id
 
@@ -2459,31 +2456,34 @@ app.post(
 app.get(
   '/:id/thumbnail',
   adapt(
-    apiHandler({ permission: ['parts', 'read'] }, async ({ params, user }) => {
-      const { id } = params
+    apiHandler<{ id: string }>(
+      { permission: ['parts', 'read'] },
+      async ({ params, user }) => {
+        const { id } = params
 
-      // Find any thumbnail for this item (primary model first, then fallback)
-      const thumbnailFileId = await FileService.getItemThumbnailFileId(id)
-      if (!thumbnailFileId) {
-        return new Response(null, { status: 404 })
-      }
+        // Find any thumbnail for this item (primary model first, then fallback)
+        const thumbnailFileId = await FileService.getItemThumbnailFileId(id)
+        if (!thumbnailFileId) {
+          return new Response(null, { status: 404 })
+        }
 
-      const thumbnailFile = await FileService.getFileMetadata(thumbnailFileId)
-      if (!thumbnailFile) {
-        return new Response(null, { status: 404 })
-      }
+        const thumbnailFile = await FileService.getFileMetadata(thumbnailFileId)
+        if (!thumbnailFile) {
+          return new Response(null, { status: 404 })
+        }
 
-      const data = await FileService.downloadFile(thumbnailFileId, user.id)
+        const data = await FileService.downloadFile(thumbnailFileId, user.id)
 
-      return new Response(new Uint8Array(data), {
-        headers: {
-          'Content-Type': 'image/png',
-          'Content-Length': data.length.toString(),
-          'Cache-Control': 'public, max-age=86400',
-          'X-Content-Type-Options': 'nosniff',
-        },
-      })
-    }),
+        return new Response(new Uint8Array(data), {
+          headers: {
+            'Content-Type': 'image/png',
+            'Content-Length': data.length.toString(),
+            'Cache-Control': 'public, max-age=86400',
+            'X-Content-Type-Options': 'nosniff',
+          },
+        })
+      },
+    ),
   ),
 )
 
@@ -2491,7 +2491,7 @@ app.get(
 app.post(
   '/:id/unlock',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const { id } = params
       const userId = user.id
 
@@ -2547,7 +2547,7 @@ app.post(
 app.get(
   '/:id/where-used',
   adapt(
-    apiHandler({}, async ({ params, request }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request }) => {
       const url = new URL(request.url, 'http://localhost')
       const maxDepthParam = url.searchParams.get('maxDepth')
       const maxDepth = maxDepthParam
@@ -2575,8 +2575,8 @@ app.get(
 app.get(
   '/:itemId/cad-files',
   adapt(
-    apiHandler({}, async ({ request, params }) => {
-      const { itemId } = params as { itemId: string }
+    apiHandler<{ itemId: string }>({}, async ({ request, params }) => {
+      const { itemId } = params
 
       const url = new URL(request.url)
       const branchId = url.searchParams.get('branchId') || undefined
@@ -2669,10 +2669,10 @@ app.get(
 app.get(
   '/:itemId/files',
   adapt(
-    apiHandler(
+    apiHandler<{ itemId: string }>(
       { permission: ['documents', 'read'] },
       async ({ request, params }) => {
-        const { itemId } = params as { itemId: string }
+        const { itemId } = params
 
         // Parse query parameters for version context
         const url = new URL(request.url)
@@ -2696,17 +2696,20 @@ app.get(
 app.get(
   '/:itemId/files/primary',
   adapt(
-    apiHandler({ permission: ['documents', 'read'] }, async ({ params }) => {
-      const { itemId } = params as { itemId: string }
+    apiHandler<{ itemId: string }>(
+      { permission: ['documents', 'read'] },
+      async ({ params }) => {
+        const { itemId } = params
 
-      const file = await FileService.getPrimaryModel(itemId)
+        const file = await FileService.getPrimaryModel(itemId)
 
-      if (!file) {
-        return { hasPrimary: false, file: null }
-      }
+        if (!file) {
+          return { hasPrimary: false, file: null }
+        }
 
-      return { hasPrimary: true, file }
-    }),
+        return { hasPrimary: true, file }
+      },
+    ),
   ),
 )
 
@@ -2714,9 +2717,9 @@ app.get(
 app.put(
   '/:itemId/files/primary',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ itemId: string }>({}, async ({ request, params, user }) => {
       const userId = user.id
-      const { itemId } = params as { itemId: string }
+      const { itemId } = params
 
       // Parse request body for fileId
       const body = await request.json()
@@ -2751,7 +2754,7 @@ app.put(
 app.post(
   '/:itemId/files/upload',
   adapt(
-    apiHandler(
+    apiHandler<{ itemId: string }>(
       { permission: ['documents', 'update'] },
       async ({ request, params, user }) => {
         const { itemId } = params

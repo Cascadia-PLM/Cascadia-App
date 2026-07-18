@@ -95,7 +95,7 @@ async function verifyPasswordPbkdf2(
 
     let result = 0
     for (let i = 0; i < newHash.length; i++) {
-      result |= newHash[i] ^ originalHash[i]
+      result |= newHash[i]! ^ originalHash[i]!
     }
 
     return result === 0

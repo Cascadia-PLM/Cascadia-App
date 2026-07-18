@@ -511,13 +511,16 @@ export function ImpactAssessmentPanel({
     async (node: WhereUsedNode) => {
       const nodeKey = node.masterId ?? node.itemId
       try {
-        await apiFetch(`/api/v1/change-orders/${changeOrderId}/affected-items`, {
-          method: 'POST',
-          body: JSON.stringify({
-            affectedItemId: node.itemId,
-            changeAction: 'revise',
-          }),
-        })
+        await apiFetch(
+          `/api/v1/change-orders/${changeOrderId}/affected-items`,
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              affectedItemId: node.itemId,
+              changeAction: 'revise',
+            }),
+          },
+        )
         setAddedToEco((prev) => new Set(prev).add(nodeKey))
         setAddToEcoErrors((prev) => {
           const next = { ...prev }
@@ -575,13 +578,11 @@ export function ImpactAssessmentPanel({
   // Group where-used by depth for hierarchical display (with defensive dedup for old reports)
   const whereUsedByDepth = impactData.whereUsed.reduce(
     (acc, node) => {
-      if (!(node.depth in acc)) {
-        acc[node.depth] = []
-      }
+      const bucket = (acc[node.depth] ??= [])
       // Dedup by masterId (falls back to itemId for old reports without masterId)
       const dedupKey = node.masterId ?? node.itemId
-      if (!acc[node.depth].some((n) => (n.masterId ?? n.itemId) === dedupKey)) {
-        acc[node.depth].push(node)
+      if (!bucket.some((n) => (n.masterId ?? n.itemId) === dedupKey)) {
+        bucket.push(node)
       }
       return acc
     },

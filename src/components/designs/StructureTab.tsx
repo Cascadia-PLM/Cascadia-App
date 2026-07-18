@@ -476,7 +476,8 @@ export function StructureTab({
     let refId: string | null = null
     let parentBomRelationshipId: string | null = null
 
-    const topmostNode = chain[0]
+    // `chain` is seeded with `node`, so index 0 always exists.
+    const topmostNode = chain[0] ?? node
     if (topmostNode.isCrossDesignRef && topmostNode.crossReferenceId) {
       refId = topmostNode.crossReferenceId
     } else {
@@ -577,7 +578,8 @@ export function StructureTab({
 
         let refId: string | null = null
         let parentBomRelationshipId: string | null = null
-        const topmostNode = chain[0]
+        // `chain` is seeded with `targetNode`, so index 0 always exists.
+        const topmostNode = chain[0] ?? targetNode
         if (topmostNode.isCrossDesignRef && topmostNode.crossReferenceId) {
           refId = topmostNode.crossReferenceId
         } else {
@@ -1100,7 +1102,7 @@ export function StructureTab({
                 Suffix item numbers with design code
               </Label>
             </div>
-            {batchPullInSuffix && designCode && batchChains.length > 0 && (
+            {batchPullInSuffix && designCode && batchChains[0] && (
               <p className="text-xs text-slate-500 dark:text-slate-400 ml-6">
                 e.g., {batchChains[0].targetNode.itemNumber}-{designCode}
               </p>

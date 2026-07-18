@@ -36,6 +36,7 @@ import {
 } from '@/lib/db/schema'
 import { ItemTypeRegistry } from '@/lib/items/registry'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
+import { takeFirst } from '@/lib/db/take-first'
 import {
   MergeConflictError,
   NotFoundError,
@@ -140,14 +141,16 @@ describe('ChangeOrderMergeService', () => {
     user = await insertTestUser(testDb.db)
 
     // Create test program
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Test Program',
-        code: `PROG-${uniquePrefix}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Test Program',
+          code: `PROG-${uniquePrefix}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     programId = program.id
 
@@ -162,7 +165,7 @@ describe('ChangeOrderMergeService', () => {
       user.id,
     )
 
-    designId = design.id
+    designId = design.id!
   })
 
   afterEach(async () => {
@@ -274,7 +277,9 @@ describe('ChangeOrderMergeService', () => {
 
       expect(result.canMerge).toBe(false)
       expect(result.conflicts).toHaveLength(1)
-      expect(result.conflicts[0].conflictType).toBe('branch_not_found')
+      expect(result.conflicts[0]).toMatchObject({
+        conflictType: 'branch_not_found',
+      })
     })
 
     it('returns canMerge: false when no changes to merge', async () => {
@@ -721,9 +726,10 @@ describe('ChangeOrderMergeService', () => {
         .from(items)
         .where(eq(items.id, part.id))
         .limit(1)
-      expect(deletedItem).toBeDefined()
-      expect(deletedItem.state).toBe('Obsolete')
-      expect(deletedItem.isDeleted).toBe(true)
+      expect(deletedItem).toMatchObject({
+        state: 'Obsolete',
+        isDeleted: true,
+      })
     })
 
     it('creates merge commit with revision information', async () => {
@@ -815,10 +821,12 @@ describe('ChangeOrderMergeService', () => {
       const preview = await ChangeOrderMergeService.previewMerge(eco.id)
 
       expect(preview.designs).toHaveLength(1)
-      expect(preview.designs[0].designName).toBe('Test Design')
-      expect(preview.designs[0].items).toHaveLength(1)
-      expect(preview.designs[0].items[0].changeType).toBe('added')
-      expect(preview.designs[0].items[0].newRevision).toBe('A')
+      expect(preview.designs[0]!.designName).toBe('Test Design')
+      expect(preview.designs[0]!.items).toHaveLength(1)
+      expect(preview.designs[0]!.items[0]).toMatchObject({
+        changeType: 'added',
+        newRevision: 'A',
+      })
       expect(preview.totalItems).toBe(1)
     })
 
@@ -938,8 +946,10 @@ describe('ChangeOrderMergeService', () => {
 
       const preview = await ChangeOrderMergeService.previewMerge(eco.id)
 
-      expect(preview.designs[0].items[0].currentRevision).toBe('C')
-      expect(preview.designs[0].items[0].newRevision).toBe('D')
+      expect(preview.designs[0]!.items[0]).toMatchObject({
+        currentRevision: 'C',
+        newRevision: 'D',
+      })
     })
   })
 
@@ -1003,21 +1013,23 @@ describe('ChangeOrderMergeService', () => {
       })
 
       // Simulate concurrent modification: create a new revision on main with DIFFERENT name
-      const [newRevision] = await testDb.db
-        .insert(items)
-        .values({
-          itemNumber: part.itemNumber,
-          itemType: 'Part',
-          revision: 'B',
-          name: 'MODIFIED NAME', // Different name to trigger conflict
-          state: 'Released',
-          masterId: part.masterId,
-          designId: part.designId,
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newRevision = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            itemNumber: part.itemNumber,
+            itemType: 'Part',
+            revision: 'B',
+            name: 'MODIFIED NAME', // Different name to trigger conflict
+            state: 'Released',
+            masterId: part.masterId,
+            designId: part.designId,
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Update main branch to point to new revision
       await testDb.db
@@ -1078,33 +1090,34 @@ describe('ChangeOrderMergeService', () => {
 
       // Create a new revision on main that only differs by revision (no field changes)
       // Get full item data to copy ALL fields and avoid false positive conflicts
-      const [originalItem] = await testDb.db
-        .select()
-        .from(items)
-        .where(eq(items.id, part.id))
+      const originalItem = takeFirst(
+        await testDb.db.select().from(items).where(eq(items.id, part.id)),
+      )
 
-      const [newRevision] = await testDb.db
-        .insert(items)
-        .values({
-          // Copy all fields from original item
-          itemNumber: originalItem.itemNumber,
-          itemType: originalItem.itemType,
-          name: originalItem.name,
-          state: originalItem.state,
-          masterId: originalItem.masterId,
-          designId: originalItem.designId,
-          inDesignStructure: originalItem.inDesignStructure,
-          attributes: originalItem.attributes,
-          metamodel: originalItem.metamodel,
-          sysmlType: originalItem.sysmlType,
-          usageOf: originalItem.usageOf,
-          // Only change the revision and metadata fields
-          revision: 'B',
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newRevision = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            // Copy all fields from original item
+            itemNumber: originalItem.itemNumber,
+            itemType: originalItem.itemType,
+            name: originalItem.name,
+            state: originalItem.state,
+            masterId: originalItem.masterId,
+            designId: originalItem.designId,
+            inDesignStructure: originalItem.inDesignStructure,
+            attributes: originalItem.attributes,
+            metamodel: originalItem.metamodel,
+            sysmlType: originalItem.sysmlType,
+            usageOf: originalItem.usageOf,
+            // Only change the revision and metadata fields
+            revision: 'B',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Update main branch to point to new revision
       await testDb.db
@@ -1232,9 +1245,10 @@ describe('ChangeOrderMergeService', () => {
         .from(changeOrders)
         .where(eq(changeOrders.itemId, eco.id))
 
-      expect(dbRecord).toBeDefined()
-      expect(dbRecord.isBaseline).toBe(false)
-      expect(dbRecord.baselineName).toBeNull()
+      expect(dbRecord).toMatchObject({
+        isBaseline: false,
+        baselineName: null,
+      })
     })
   })
 
@@ -1306,21 +1320,23 @@ describe('ChangeOrderMergeService', () => {
       )
 
       // Create a Draft working copy on the branch with placeholder revision
-      const [workingCopy] = await testDb.db
-        .insert(items)
-        .values({
-          itemNumber: part.itemNumber,
-          itemType: 'Part',
-          revision: '-', // Placeholder revision
-          name: 'Branch Working Copy',
-          state: 'Draft',
-          masterId: part.masterId,
-          designId: part.designId,
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const workingCopy = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            itemNumber: part.itemNumber,
+            itemType: 'Part',
+            revision: '-', // Placeholder revision
+            name: 'Branch Working Copy',
+            state: 'Draft',
+            masterId: part.masterId,
+            designId: part.designId,
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Track working copy on ECO branch as modified
       await testDb.db.insert(branchItems).values({
@@ -1346,7 +1362,7 @@ describe('ChangeOrderMergeService', () => {
       const result = await ChangeOrderMergeService.merge(eco.id, user.id)
 
       expect(result.designs.length).toBe(1)
-      expect(result.designs[0].mergeResult.itemsMerged).toBe(1)
+      expect(result.designs[0]!.mergeResult.itemsMerged).toBe(1)
 
       // Verify working copy was released with revision B
       const releasedWorkingCopy = await ItemService.findById(workingCopy.id)
@@ -1366,21 +1382,23 @@ describe('ChangeOrderMergeService', () => {
 
       // Create a part with placeholder revision using a generated masterId
       const masterId = crypto.randomUUID()
-      const [part] = await testDb.db
-        .insert(items)
-        .values({
-          itemNumber: `PN-${uniquePrefix}-auto-checkin`,
-          masterId: masterId,
-          itemType: 'Part',
-          revision: '-', // Placeholder revision for new item
-          name: 'Test Part auto-checkin',
-          state: 'Draft',
-          designId: designId,
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const part = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            itemNumber: `PN-${uniquePrefix}-auto-checkin`,
+            masterId: masterId,
+            itemType: 'Part',
+            revision: '-', // Placeholder revision for new item
+            name: 'Test Part auto-checkin',
+            state: 'Draft',
+            designId: designId,
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Track it as checked out on the branch
       await testDb.db.insert(branchItems).values({
@@ -1408,11 +1426,11 @@ describe('ChangeOrderMergeService', () => {
       const result = await ChangeOrderMergeService.merge(eco.id, user.id)
 
       expect(result.designs.length).toBe(1)
-      expect(result.designs[0].mergeResult.itemsAdded).toBe(1)
+      expect(result.designs[0]!.mergeResult.itemsAdded).toBe(1)
 
       // Verify the revision was assigned as 'A'
       expect(
-        result.designs[0].mergeResult.revisionsAssigned[part.itemNumber],
+        result.designs[0]!.mergeResult.revisionsAssigned[part.itemNumber],
       ).toBe('A')
     })
   })
@@ -1584,21 +1602,23 @@ describe('ChangeOrderMergeService', () => {
       })
 
       // Simulate concurrent modification: create a new revision on main with DIFFERENT name
-      const [newRevision] = await testDb.db
-        .insert(items)
-        .values({
-          itemNumber: part.itemNumber,
-          itemType: 'Part',
-          revision: 'B',
-          name: 'MODIFIED NAME BY ANOTHER ECO', // Different name to trigger conflict
-          state: 'Released',
-          masterId: part.masterId,
-          designId: part.designId,
-          isCurrent: true,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const newRevision = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            itemNumber: part.itemNumber,
+            itemType: 'Part',
+            revision: 'B',
+            name: 'MODIFIED NAME BY ANOTHER ECO', // Different name to trigger conflict
+            state: 'Released',
+            masterId: part.masterId,
+            designId: part.designId,
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       // Update main branch to point to new revision
       await testDb.db
@@ -1810,7 +1830,7 @@ describe('ChangeOrderMergeService', () => {
         },
         user.id,
       )
-      secondDesignId = secondDesign.id
+      secondDesignId = secondDesign.id!
     })
 
     it('aggregates conflicts from all designs', async () => {

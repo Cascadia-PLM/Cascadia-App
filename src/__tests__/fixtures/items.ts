@@ -25,6 +25,7 @@
 
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type * as schema from '@/lib/db/schema'
+import { takeFirst } from '@/lib/db/take-first'
 import {
   changeOrders,
   documents,
@@ -301,40 +302,44 @@ export async function insertTestPart(
     overrides,
   )
 
-  const [insertedItem] = await db
-    .insert(items)
-    .values({
-      id: itemData.id,
-      masterId: itemData.masterId,
-      itemNumber: itemData.itemNumber,
-      revision: itemData.revision,
-      itemType: itemData.itemType,
-      name: itemData.name,
-      state: itemData.state,
-      isCurrent: itemData.isCurrent,
-      createdBy: itemData.createdBy,
-      modifiedBy: itemData.modifiedBy,
-      designId: itemData.designId,
-    })
-    .returning()
+  const insertedItem = takeFirst(
+    await db
+      .insert(items)
+      .values({
+        id: itemData.id,
+        masterId: itemData.masterId,
+        itemNumber: itemData.itemNumber,
+        revision: itemData.revision,
+        itemType: itemData.itemType,
+        name: itemData.name,
+        state: itemData.state,
+        isCurrent: itemData.isCurrent,
+        createdBy: itemData.createdBy,
+        modifiedBy: itemData.modifiedBy,
+        designId: itemData.designId,
+      })
+      .returning(),
+  )
 
-  const [insertedPart] = await db
-    .insert(parts)
-    .values({
-      itemId: insertedItem.id,
-      description: partData.description,
-      partType: partData.partType,
-      material: partData.material,
-      weight: partData.weight,
-      weightUnit: partData.weightUnit,
-      cost: partData.cost,
-      costCurrency: partData.costCurrency,
-      leadTimeDays: partData.leadTimeDays,
-      quantityOnHand: partData.quantityOnHand,
-      reorderPoint: partData.reorderPoint,
-      location: partData.location,
-    })
-    .returning()
+  const insertedPart = takeFirst(
+    await db
+      .insert(parts)
+      .values({
+        itemId: insertedItem.id,
+        description: partData.description,
+        partType: partData.partType,
+        material: partData.material,
+        weight: partData.weight,
+        weightUnit: partData.weightUnit,
+        cost: partData.cost,
+        costCurrency: partData.costCurrency,
+        leadTimeDays: partData.leadTimeDays,
+        quantityOnHand: partData.quantityOnHand,
+        reorderPoint: partData.reorderPoint,
+        location: partData.location,
+      })
+      .returning(),
+  )
 
   return {
     item: {
@@ -449,35 +454,39 @@ export async function insertTestDocument(
     overrides,
   )
 
-  const [insertedItem] = await db
-    .insert(items)
-    .values({
-      id: itemData.id,
-      masterId: itemData.masterId,
-      itemNumber: itemData.itemNumber,
-      revision: itemData.revision,
-      itemType: itemData.itemType,
-      name: itemData.name,
-      state: itemData.state,
-      isCurrent: itemData.isCurrent,
-      createdBy: itemData.createdBy,
-      modifiedBy: itemData.modifiedBy,
-      designId: itemData.designId,
-    })
-    .returning()
+  const insertedItem = takeFirst(
+    await db
+      .insert(items)
+      .values({
+        id: itemData.id,
+        masterId: itemData.masterId,
+        itemNumber: itemData.itemNumber,
+        revision: itemData.revision,
+        itemType: itemData.itemType,
+        name: itemData.name,
+        state: itemData.state,
+        isCurrent: itemData.isCurrent,
+        createdBy: itemData.createdBy,
+        modifiedBy: itemData.modifiedBy,
+        designId: itemData.designId,
+      })
+      .returning(),
+  )
 
-  const [insertedDoc] = await db
-    .insert(documents)
-    .values({
-      itemId: insertedItem.id,
-      description: docData.description,
-      fileId: docData.fileId,
-      fileName: docData.fileName,
-      fileSize: docData.fileSize,
-      mimeType: docData.mimeType,
-      storagePath: docData.storagePath,
-    })
-    .returning()
+  const insertedDoc = takeFirst(
+    await db
+      .insert(documents)
+      .values({
+        itemId: insertedItem.id,
+        description: docData.description,
+        fileId: docData.fileId,
+        fileName: docData.fileName,
+        fileSize: docData.fileSize,
+        mimeType: docData.mimeType,
+        storagePath: docData.storagePath,
+      })
+      .returning(),
+  )
 
   return {
     item: {
@@ -576,35 +585,39 @@ export async function insertTestChangeOrder(
     overrides,
   )
 
-  const [insertedItem] = await db
-    .insert(items)
-    .values({
-      id: itemData.id,
-      masterId: itemData.masterId,
-      itemNumber: itemData.itemNumber,
-      revision: itemData.revision,
-      itemType: itemData.itemType,
-      name: itemData.name,
-      state: itemData.state,
-      isCurrent: itemData.isCurrent,
-      createdBy: itemData.createdBy,
-      modifiedBy: itemData.modifiedBy,
-      designId: itemData.designId,
-    })
-    .returning()
+  const insertedItem = takeFirst(
+    await db
+      .insert(items)
+      .values({
+        id: itemData.id,
+        masterId: itemData.masterId,
+        itemNumber: itemData.itemNumber,
+        revision: itemData.revision,
+        itemType: itemData.itemType,
+        name: itemData.name,
+        state: itemData.state,
+        isCurrent: itemData.isCurrent,
+        createdBy: itemData.createdBy,
+        modifiedBy: itemData.modifiedBy,
+        designId: itemData.designId,
+      })
+      .returning(),
+  )
 
-  const [insertedCO] = await db
-    .insert(changeOrders)
-    .values({
-      itemId: insertedItem.id,
-      changeType: coData.changeType,
-      priority: coData.priority,
-      reasonForChange: coData.reasonForChange,
-      impactDescription: coData.impactDescription,
-      implementationDate: coData.implementationDate,
-      impactAssessmentStatus: coData.impactAssessmentStatus,
-    })
-    .returning()
+  const insertedCO = takeFirst(
+    await db
+      .insert(changeOrders)
+      .values({
+        itemId: insertedItem.id,
+        changeType: coData.changeType,
+        priority: coData.priority,
+        reasonForChange: coData.reasonForChange,
+        impactDescription: coData.impactDescription,
+        implementationDate: coData.implementationDate,
+        impactAssessmentStatus: coData.impactAssessmentStatus,
+      })
+      .returning(),
+  )
 
   return {
     item: {
@@ -715,36 +728,40 @@ export async function insertTestRequirement(
     overrides,
   )
 
-  const [insertedItem] = await db
-    .insert(items)
-    .values({
-      id: itemData.id,
-      masterId: itemData.masterId,
-      itemNumber: itemData.itemNumber,
-      revision: itemData.revision,
-      itemType: itemData.itemType,
-      name: itemData.name,
-      state: itemData.state,
-      isCurrent: itemData.isCurrent,
-      createdBy: itemData.createdBy,
-      modifiedBy: itemData.modifiedBy,
-      designId: itemData.designId,
-    })
-    .returning()
+  const insertedItem = takeFirst(
+    await db
+      .insert(items)
+      .values({
+        id: itemData.id,
+        masterId: itemData.masterId,
+        itemNumber: itemData.itemNumber,
+        revision: itemData.revision,
+        itemType: itemData.itemType,
+        name: itemData.name,
+        state: itemData.state,
+        isCurrent: itemData.isCurrent,
+        createdBy: itemData.createdBy,
+        modifiedBy: itemData.modifiedBy,
+        designId: itemData.designId,
+      })
+      .returning(),
+  )
 
-  const [insertedReq] = await db
-    .insert(requirements)
-    .values({
-      itemId: insertedItem.id,
-      description: reqData.description,
-      type: reqData.type,
-      priority: reqData.priority,
-      status: reqData.status,
-      acceptanceCriteria: reqData.acceptanceCriteria,
-      source: reqData.source,
-      category: reqData.category,
-    })
-    .returning()
+  const insertedReq = takeFirst(
+    await db
+      .insert(requirements)
+      .values({
+        itemId: insertedItem.id,
+        description: reqData.description,
+        type: reqData.type,
+        priority: reqData.priority,
+        status: reqData.status,
+        acceptanceCriteria: reqData.acceptanceCriteria,
+        source: reqData.source,
+        category: reqData.category,
+      })
+      .returning(),
+  )
 
   return {
     item: {
@@ -808,36 +825,40 @@ export async function insertTestTask(
 ): Promise<{ item: TestBaseItem; task: TestTask }> {
   const { item: itemData, task: taskData } = createTestTask(userId, overrides)
 
-  const [insertedItem] = await db
-    .insert(items)
-    .values({
-      id: itemData.id,
-      masterId: itemData.masterId,
-      itemNumber: itemData.itemNumber,
-      revision: itemData.revision,
-      itemType: itemData.itemType,
-      name: itemData.name,
-      state: itemData.state,
-      isCurrent: itemData.isCurrent,
-      createdBy: itemData.createdBy,
-      modifiedBy: itemData.modifiedBy,
-      designId: itemData.designId,
-    })
-    .returning()
+  const insertedItem = takeFirst(
+    await db
+      .insert(items)
+      .values({
+        id: itemData.id,
+        masterId: itemData.masterId,
+        itemNumber: itemData.itemNumber,
+        revision: itemData.revision,
+        itemType: itemData.itemType,
+        name: itemData.name,
+        state: itemData.state,
+        isCurrent: itemData.isCurrent,
+        createdBy: itemData.createdBy,
+        modifiedBy: itemData.modifiedBy,
+        designId: itemData.designId,
+      })
+      .returning(),
+  )
 
-  const [insertedTask] = await db
-    .insert(tasks)
-    .values({
-      itemId: insertedItem.id,
-      programId: taskData.programId,
-      parentTaskId: taskData.parentTaskId,
-      description: taskData.description,
-      assignee: taskData.assignee,
-      priority: taskData.priority,
-      dueDate: taskData.dueDate,
-      estimatedHours: taskData.estimatedHours,
-    })
-    .returning()
+  const insertedTask = takeFirst(
+    await db
+      .insert(tasks)
+      .values({
+        itemId: insertedItem.id,
+        programId: taskData.programId,
+        parentTaskId: taskData.parentTaskId,
+        description: taskData.description,
+        assignee: taskData.assignee,
+        priority: taskData.priority,
+        dueDate: taskData.dueDate,
+        estimatedHours: taskData.estimatedHours,
+      })
+      .returning(),
+  )
 
   return {
     item: {
@@ -867,17 +888,19 @@ export async function createBOMRelationship(
   userId: string,
   options: { quantity?: number; findNumber?: number } = {},
 ): Promise<TestRelationship> {
-  const [relationship] = await db
-    .insert(itemRelationships)
-    .values({
-      sourceId: parentId,
-      targetId: childId,
-      relationshipType: 'BOM',
-      quantity: options.quantity?.toString() ?? '1',
-      findNumber: options.findNumber ?? null,
-      createdBy: userId,
-    })
-    .returning()
+  const relationship = takeFirst(
+    await db
+      .insert(itemRelationships)
+      .values({
+        sourceId: parentId,
+        targetId: childId,
+        relationshipType: 'BOM',
+        quantity: options.quantity?.toString() ?? '1',
+        findNumber: options.findNumber ?? null,
+        createdBy: userId,
+      })
+      .returning(),
+  )
 
   return {
     ...relationship,
@@ -894,15 +917,17 @@ export async function createReferenceRelationship(
   targetId: string,
   userId: string,
 ): Promise<TestRelationship> {
-  const [relationship] = await db
-    .insert(itemRelationships)
-    .values({
-      sourceId,
-      targetId,
-      relationshipType: 'Reference',
-      createdBy: userId,
-    })
-    .returning()
+  const relationship = takeFirst(
+    await db
+      .insert(itemRelationships)
+      .values({
+        sourceId,
+        targetId,
+        relationshipType: 'Reference',
+        createdBy: userId,
+      })
+      .returning(),
+  )
 
   return {
     ...relationship,
@@ -919,15 +944,17 @@ export async function createDerivationRelationship(
   targetId: string,
   userId: string,
 ): Promise<TestRelationship> {
-  const [relationship] = await db
-    .insert(itemRelationships)
-    .values({
-      sourceId,
-      targetId,
-      relationshipType: 'Derives',
-      createdBy: userId,
-    })
-    .returning()
+  const relationship = takeFirst(
+    await db
+      .insert(itemRelationships)
+      .values({
+        sourceId,
+        targetId,
+        relationshipType: 'Derives',
+        createdBy: userId,
+      })
+      .returning(),
+  )
 
   return {
     ...relationship,
@@ -985,11 +1012,11 @@ export async function createBOMStructure(
 
   // Create BOM relationships
   const relationships: Array<TestRelationship> = []
-  for (let i = 0; i < components.length; i++) {
+  for (const [i, component] of components.entries()) {
     const rel = await createBOMRelationship(
       db,
       assembly.item.id,
-      components[i].item.id,
+      component.item.id,
       userId,
       { quantity: i + 1, findNumber: (i + 1) * 10 },
     )

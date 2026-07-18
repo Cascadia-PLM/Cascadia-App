@@ -7,6 +7,7 @@ import { db } from '../db'
 import { programMembers, programs } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import type { SQL } from 'drizzle-orm'
+import { takeFirst } from '@/lib/db/take-first'
 
 // Zod schemas for validation
 export const programCreateSchema = z.object({
@@ -96,22 +97,24 @@ export class ProgramService {
     }
 
     // Insert program
-    const [program] = await db
-      .insert(programs)
-      .values({
-        name: validated.name,
-        code: validated.code,
-        description: validated.description,
-        contractNumber: validated.contractNumber,
-        customer: validated.customer,
-        startDate: validated.startDate,
-        targetEndDate: validated.targetEndDate,
-        status: validated.status || 'Active',
-        attributes: validated.attributes || {},
-        createdBy: userId,
-        updatedBy: userId,
-      })
-      .returning()
+    const program = takeFirst(
+      await db
+        .insert(programs)
+        .values({
+          name: validated.name,
+          code: validated.code,
+          description: validated.description,
+          contractNumber: validated.contractNumber,
+          customer: validated.customer,
+          startDate: validated.startDate,
+          targetEndDate: validated.targetEndDate,
+          status: validated.status || 'Active',
+          attributes: validated.attributes || {},
+          createdBy: userId,
+          updatedBy: userId,
+        })
+        .returning(),
+    )
 
     // Automatically add creator as admin
     await db.insert(programMembers).values({
@@ -314,7 +317,7 @@ export class ProgramService {
 
     return {
       items: results,
-      total: countResult.count,
+      total: countResult!.count,
     }
   }
 
@@ -429,18 +432,20 @@ export class ProgramService {
     // Set default permissions based on role
     const permissions = this.getDefaultPermissions(role)
 
-    const [member] = await db
-      .insert(programMembers)
-      .values({
-        programId,
-        userId,
-        role,
-        canCreateEco: permissions.canCreateEco,
-        canApproveEco: permissions.canApproveEco,
-        canManageProducts: permissions.canManageProducts,
-        invitedBy,
-      })
-      .returning()
+    const member = takeFirst(
+      await db
+        .insert(programMembers)
+        .values({
+          programId,
+          userId,
+          role,
+          canCreateEco: permissions.canCreateEco,
+          canApproveEco: permissions.canApproveEco,
+          canManageProducts: permissions.canManageProducts,
+          invitedBy,
+        })
+        .returning(),
+    )
 
     return member
   }

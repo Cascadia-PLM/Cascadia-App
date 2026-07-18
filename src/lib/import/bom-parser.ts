@@ -90,8 +90,7 @@ function extractLevelBasedRelationships(
   const stack: Array<{ level: number; itemNumber: string; rowIndex: number }> =
     []
 
-  for (let i = 0; i < validRows.length; i++) {
-    const row = validRows[i]
+  for (const [i, row] of validRows.entries()) {
     const level = Number(row.mappedData.level) || 0
     const itemNumber = String(row.mappedData.itemNumber)
     const quantity = Number(row.mappedData.quantity) || 1
@@ -105,13 +104,14 @@ function extractLevelBasedRelationships(
         : undefined
 
     // Pop items from stack until we find a parent (level < current level)
-    while (stack.length > 0 && stack[stack.length - 1].level >= level) {
+    let parent = stack[stack.length - 1]
+    while (parent && parent.level >= level) {
       stack.pop()
+      parent = stack[stack.length - 1]
     }
 
     // If stack has items, top is the parent
-    if (stack.length > 0) {
-      const parent = stack[stack.length - 1]
+    if (parent) {
       relationships.push({
         parentRowIndex: parent.rowIndex,
         childRowIndex: i,
@@ -147,13 +147,12 @@ function extractParentChildRelationships(
 
   // Build map of itemNumber -> rowIndex for all valid rows
   const itemNumberToRowIndex = new Map<string, number>()
-  for (let i = 0; i < validRows.length; i++) {
-    const itemNumber = String(validRows[i].mappedData.itemNumber).toLowerCase()
+  for (const [i, row] of validRows.entries()) {
+    const itemNumber = String(row.mappedData.itemNumber).toLowerCase()
     itemNumberToRowIndex.set(itemNumber, i)
   }
 
-  for (let i = 0; i < validRows.length; i++) {
-    const row = validRows[i]
+  for (const [i, row] of validRows.entries()) {
     const parentItemNumber = row.mappedData.parentItemNumber
 
     // Skip rows without parent reference

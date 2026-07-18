@@ -72,10 +72,7 @@ export function RelationshipSection({ itemId }: RelationshipSectionProps) {
   // Group relationships by type
   const groupedRelationships = relationships.reduce(
     (acc, rel) => {
-      if (!(rel.relationshipType in acc)) {
-        acc[rel.relationshipType] = []
-      }
-      acc[rel.relationshipType].push(rel)
+      ;(acc[rel.relationshipType] ??= []).push(rel)
       return acc
     },
     {} as Record<string, Array<Relationship>>,
@@ -110,9 +107,12 @@ export function RelationshipSection({ itemId }: RelationshipSectionProps) {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/v1/relationships/${relationshipId}`, {
-            method: 'DELETE',
-          })
+          const response = await fetch(
+            `/api/v1/relationships/${relationshipId}`,
+            {
+              method: 'DELETE',
+            },
+          )
 
           if (response.ok) {
             await loadRelationships()

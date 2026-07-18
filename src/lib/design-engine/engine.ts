@@ -14,7 +14,7 @@
 
 import { DesignSessionService } from './session-service'
 import { DesignSnapshotService } from './snapshot-service'
-import { effectiveReviewStatus, stageIndex  } from './types'
+import { effectiveReviewStatus, stageIndex } from './types'
 import { runToolsetEstablishmentStage } from './stages/toolset-establishment'
 import { runRequirementsStage } from './stages/requirements'
 import { runBomStage } from './stages/bom'
@@ -256,9 +256,10 @@ export class CollaborativeDesignEngine implements DesignEngine {
         const idx = artifacts.requirements.findIndex(
           (r) => r.tempId === edit.tempId,
         )
-        if (idx >= 0) {
+        const existingRequirement = artifacts.requirements[idx]
+        if (existingRequirement) {
           artifacts.requirements[idx] = {
-            ...artifacts.requirements[idx],
+            ...existingRequirement,
             reviewStatus: 'edited',
             ...edit.data,
           }
@@ -348,8 +349,7 @@ export class CollaborativeDesignEngine implements DesignEngine {
       )
     }
     if (
-      stageIndex(targetStage) >=
-      stageIndex(session.stage as DesignSessionStage)
+      stageIndex(targetStage) >= stageIndex(session.stage as DesignSessionStage)
     ) {
       throw new ValidationError(
         `Cannot reopen ${targetStage}: it is not earlier than the current stage (${session.stage})`,

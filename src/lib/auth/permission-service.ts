@@ -127,12 +127,14 @@ export class PermissionService {
 
       if (rolePermissions) {
         for (const [resource, actions] of Object.entries(rolePermissions)) {
-          if (!(resource in allPermissions)) {
-            allPermissions[resource] = new Set()
+          let resourceActions = allPermissions[resource]
+          if (!resourceActions) {
+            resourceActions = new Set()
+            allPermissions[resource] = resourceActions
           }
 
           for (const action of actions) {
-            allPermissions[resource].add(action as PermissionAction)
+            resourceActions.add(action as PermissionAction)
           }
         }
       }

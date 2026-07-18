@@ -288,7 +288,7 @@ function ComponentCatalogPage() {
                         {entry.category.name}
                       </td>
                       <td className="py-2 px-3">
-                        {entry.suppliers.length > 0 ? (
+                        {entry.suppliers[0] ? (
                           <span className="text-slate-600 dark:text-slate-400">
                             {entry.suppliers[0].name}
                             {` ~$${entry.suppliers[0].approximatePrice}`}
@@ -296,7 +296,9 @@ function ComponentCatalogPage() {
                               ` +${entry.suppliers.length - 1}`}
                           </span>
                         ) : (
-                          <span className="text-slate-400 dark:text-slate-500">-</span>
+                          <span className="text-slate-400 dark:text-slate-500">
+                            -
+                          </span>
                         )}
                       </td>
                       <td className="py-2 px-3">

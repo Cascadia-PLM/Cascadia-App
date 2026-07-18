@@ -181,7 +181,12 @@ export class SysMLSerializer {
     relationships?: Array<CascadiaRelationship>,
     productCode?: string,
   ): SysMLElement {
-    const sysmlType = item.sysmlType || CASCADIA_TO_SYSML_MAP[item.itemType]
+    // CASCADIA_TO_SYSML_MAP only covers a subset of item types (Part, Document,
+    // Requirement, Task, ChangeOrder). Unmapped types (WorkInstruction, Issue,
+    // Tool, ...) fall back to the generic ItemDefinition so '@type' is never
+    // emitted as undefined, which would produce structurally invalid SysML.
+    const sysmlType =
+      item.sysmlType || CASCADIA_TO_SYSML_MAP[item.itemType] || 'ItemDefinition'
 
     const element: SysMLElement = {
       '@id': item.id,

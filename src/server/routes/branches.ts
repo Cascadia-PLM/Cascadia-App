@@ -18,8 +18,9 @@ const app = new Hono()
 app.get(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      const { branch } = await requireBranchAccess(user.id, params.id)
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
+      const { branch } = await requireBranchAccess(user.id, id)
       return { branch }
     }),
   ),
@@ -29,9 +30,10 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const branch = await BranchService.getById(params.id)
-      if (!branch) throw new NotFoundError('Branch', params.id)
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
+      const branch = await BranchService.getById(id)
+      if (!branch) throw new NotFoundError('Branch', id)
 
       const design = await DesignService.getById(branch.designId)
       if (!design) throw new NotFoundError('Design', branch.designId)
@@ -47,16 +49,16 @@ app.put(
       const data = await request.json()
 
       if (data.isLocked === true) {
-        await BranchService.lockBranch(params.id)
+        await BranchService.lockBranch(id)
       } else if (data.isLocked === false) {
-        await BranchService.unlockBranch(params.id)
+        await BranchService.unlockBranch(id)
       }
 
       if (data.isArchived === true) {
-        await BranchService.archiveBranch(params.id)
+        await BranchService.archiveBranch(id)
       }
 
-      const updatedBranch = await BranchService.getById(params.id)
+      const updatedBranch = await BranchService.getById(id)
       return { branch: updatedBranch }
     }),
   ),
@@ -66,8 +68,9 @@ app.put(
 app.get(
   '/:id/commits',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      await requireBranchAccess(user.id, params.id)
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
+      await requireBranchAccess(user.id, id)
 
       const url = new URL(request.url)
       const limit = parseInt(url.searchParams.get('limit') || '50', 10)
@@ -75,7 +78,7 @@ app.get(
       const since = url.searchParams.get('since')
       const until = url.searchParams.get('until')
 
-      const commits = await CommitService.getHistory(params.id, {
+      const commits = await CommitService.getHistory(id, {
         limit,
         offset,
         since: since ? new Date(since) : undefined,
@@ -91,12 +94,13 @@ app.get(
 app.get(
   '/:id/items',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      await requireBranchAccess(user.id, params.id)
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      const { id } = params
+      await requireBranchAccess(user.id, id)
 
       const query = parseQuery(request, itemListSchema)
 
-      const result = await VersionResolver.getBranchItems(params.id, {
+      const result = await VersionResolver.getBranchItems(id, {
         itemType: query.itemType,
         state: query.state,
         search: query.search,
@@ -114,10 +118,11 @@ app.get(
 app.get(
   '/:id/status',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      await requireBranchAccess(user.id, params.id)
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
+      await requireBranchAccess(user.id, id)
 
-      const status = await BranchService.getBranchStatus(params.id)
+      const status = await BranchService.getBranchStatus(id)
       return { status }
     }),
   ),

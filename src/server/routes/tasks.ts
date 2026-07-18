@@ -15,11 +15,15 @@ const app = new Hono()
 app.get(
   '/:id',
   adapt(
-    apiHandler({ permission: ['parts', 'read'] }, async ({ params }) => {
-      const task = await ItemService.findById(params.id)
-      if (!task) throw new NotFoundError('Task', params.id)
-      return { task }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['parts', 'read'] },
+      async ({ params }) => {
+        const { id } = params
+        const task = await ItemService.findById(id)
+        if (!task) throw new NotFoundError('Task', id)
+        return { task }
+      },
+    ),
   ),
 )
 
@@ -27,7 +31,7 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler(
+    apiHandler<{ id: string }>(
       { permission: ['parts', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
@@ -42,10 +46,13 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({ permission: ['parts', 'delete'] }, async ({ params }) => {
-      await ItemService.delete(params.id)
-      return { success: true }
-    }),
+    apiHandler<{ id: string }>(
+      { permission: ['parts', 'delete'] },
+      async ({ params }) => {
+        await ItemService.delete(params.id)
+        return { success: true }
+      },
+    ),
   ),
 )
 

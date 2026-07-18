@@ -63,17 +63,18 @@ app.post(
 app.get(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const branch = await BranchService.getById(params.id)
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
+      const branch = await BranchService.getById(id)
       if (!branch) {
-        throw new NotFoundError('Workspace', params.id)
+        throw new NotFoundError('Workspace', id)
       }
 
       if (branch.branchType !== 'workspace') {
         throw new ValidationError('Not a workspace branch')
       }
 
-      const itemCount = await BranchService.getWorkspaceOnlyItemCount(params.id)
+      const itemCount = await BranchService.getWorkspaceOnlyItemCount(id)
 
       return {
         id: branch.id,
@@ -89,8 +90,9 @@ app.get(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
-      await BranchService.deleteWorkspaceBranch(params.id, user.id)
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
+      await BranchService.deleteWorkspaceBranch(id, user.id)
 
       return { success: true }
     }),
@@ -101,8 +103,8 @@ app.delete(
 app.post(
   '/:id/convert-to-eco',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const workspaceId = params.id
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: workspaceId } = params
       const body = await request.json()
       const {
         ecoTitle,
@@ -224,8 +226,8 @@ app.post(
 app.get(
   '/:id/items',
   adapt(
-    apiHandler({}, async ({ params }) => {
-      const workspaceId = params.id
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id: workspaceId } = params
 
       // Fetch all items on this workspace branch
       const workspaceItems = await db
@@ -255,8 +257,8 @@ app.get(
 app.post(
   '/:id/merge-to-eco',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
-      const workspaceId = params.id
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
+      const { id: workspaceId } = params
       const body = await request.json()
       const { ecoId, deleteWorkspace = false } = body
 

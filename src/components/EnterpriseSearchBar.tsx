@@ -256,10 +256,9 @@ export function EnterpriseSearchBar() {
             <div className="py-2">
               {results.results.map((group, groupIndex) => {
                 const Icon = getIcon(group.icon)
-                let currentFlatIndex = 0
-                for (let i = 0; i < groupIndex; i++) {
-                  currentFlatIndex += results.results[i].items.length
-                }
+                const currentFlatIndex = results.results
+                  .slice(0, groupIndex)
+                  .reduce((sum, g) => sum + g.items.length, 0)
 
                 return (
                   <div key={group.itemType} className="mb-2 last:mb-0">

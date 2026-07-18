@@ -23,10 +23,24 @@ const itemTypeIcons: Record<string, LucideIcon> = {
   Task: ListChecks,
 }
 
-const domainColors: Record<
-  string,
-  { bg: string; border: string; header: string; text: string; badge: string }
-> = {
+interface DomainColors {
+  bg: string
+  border: string
+  header: string
+  text: string
+  badge: string
+}
+
+/** Fallback palette for unrecognized domains. */
+const engineeringColors: DomainColors = {
+  bg: 'bg-blue-50 dark:bg-blue-950',
+  border: 'border-blue-300 dark:border-blue-700',
+  header: 'bg-blue-100 dark:bg-blue-900',
+  text: 'text-blue-700 dark:text-blue-300',
+  badge: 'bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300',
+}
+
+const domainColors: Record<string, DomainColors> = {
   requirements: {
     bg: 'bg-purple-50 dark:bg-purple-950',
     border: 'border-purple-300 dark:border-purple-700',
@@ -35,13 +49,7 @@ const domainColors: Record<
     badge:
       'bg-purple-100 dark:bg-purple-800 text-purple-700 dark:text-purple-300',
   },
-  engineering: {
-    bg: 'bg-blue-50 dark:bg-blue-950',
-    border: 'border-blue-300 dark:border-blue-700',
-    header: 'bg-blue-100 dark:bg-blue-900',
-    text: 'text-blue-700 dark:text-blue-300',
-    badge: 'bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300',
-  },
+  engineering: engineeringColors,
   manufacturing: {
     bg: 'bg-amber-50 dark:bg-amber-950',
     border: 'border-amber-300 dark:border-amber-700',
@@ -96,7 +104,7 @@ function ThreadNodeComponent({
   targetPosition = Position.Top,
 }: ThreadNodeProps) {
   const data = rawData as unknown as ThreadNodeData & { onClick?: () => void }
-  const colors = domainColors[data.domain] || domainColors.engineering
+  const colors = domainColors[data.domain] ?? engineeringColors
   const Icon = itemTypeIcons[data.itemType] || Box
   const DomainIcon = domainIcons[data.domain] || Wrench
   const route = itemTypeRoutes[data.itemType]

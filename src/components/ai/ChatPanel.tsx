@@ -49,7 +49,7 @@ export function ChatPanel() {
   const handleNavigate = useCallback(
     (url: string) => {
       // Parse the URL to extract path and search params
-      const [path, search] = url.split('?')
+      const [path = url, search] = url.split('?')
       navigate({
         to: path,
         search: search

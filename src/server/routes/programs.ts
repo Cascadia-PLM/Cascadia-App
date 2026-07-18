@@ -58,8 +58,7 @@ function extractItemType(message: string): string {
   const match = message.match(
     /^(Part|Document|ChangeOrder|Requirement|Task)\s+/i,
   )
-  if (match) return match[1]
-  return 'Item'
+  return match?.[1] ?? 'Item'
 }
 
 function generateConsolidatedMessage(
@@ -96,7 +95,7 @@ function consolidateCommits(
   let i = 0
 
   while (i < sortedNodes.length) {
-    const currentNode = sortedNodes[i]
+    const currentNode = sortedNodes[i]!
 
     if (isImportantCommit(currentNode.data)) {
       consolidatedNodes.push(currentNode)
@@ -111,7 +110,7 @@ function consolidateCommits(
 
     let j = i + 1
     while (j < sortedNodes.length) {
-      const nextNode = sortedNodes[j]
+      const nextNode = sortedNodes[j]!
       if (isImportantCommit(nextNode.data)) break
       if (nextNode.data.branchId !== currentNode.data.branchId) break
       if (nextNode.data.designId !== currentNode.data.designId) break
@@ -125,8 +124,8 @@ function consolidateCommits(
     }
 
     if (group.length >= MIN_COMMITS_TO_CONSOLIDATE) {
-      const firstCommit = group[0]
-      const lastCommit = group[group.length - 1]
+      const firstCommit = group[0]!
+      const lastCommit = group[group.length - 1]!
       const totalStats = group.reduce(
         (acc, n) => ({
           added: acc.added + (n.data.changeStats?.added || 0),
@@ -362,8 +361,11 @@ async function buildProgramGraph(
     // Build nodes for this design
     for (const commit of designCommits) {
       const branch = designBranches.find((b) => b.id === commit.branchId)
-      const branchType = (branch?.branchType ||
-        'main') as 'main' | 'eco' | 'workspace' | 'release'
+      const branchType = (branch?.branchType || 'main') as
+        | 'main'
+        | 'eco'
+        | 'workspace'
+        | 'release'
 
       allNodes.push({
         id: commit.id,
@@ -432,7 +434,7 @@ async function buildProgramGraph(
         (a, b) =>
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       )
-      const oldestCommit = sortedBranchCommits[0]
+      const oldestCommit = sortedBranchCommits[0]!
 
       if (designCommitIds.has(branch.baseCommitId)) {
         const edgeId = `${branch.baseCommitId}-${oldestCommit.id}`
@@ -547,7 +549,7 @@ async function buildProgramGraph(
             n.data.branchType === 'eco',
         )
         if (ecoCommitsForDesign.length > 0) {
-          ecoBranchId = ecoCommitsForDesign[0].data.branchId
+          ecoBranchId = ecoCommitsForDesign[0]!.data.branchId
           ecoBranch = designBranches.find((b) => b.id === ecoBranchId) || null
         }
       }
@@ -590,7 +592,7 @@ async function buildProgramGraph(
                 new Date(b.data.date).getTime() -
                 new Date(a.data.date).getTime(),
             )
-            forkPointId = sortedMain[0].id
+            forkPointId = sortedMain[0]!.id
           }
         }
 
@@ -603,7 +605,7 @@ async function buildProgramGraph(
               new Date(a.data.date).getTime() - new Date(b.data.date).getTime(),
           )
           // Place synthetic node slightly before the oldest ECO commit
-          const oldestDate = new Date(sortedEcoNodes[0].data.date)
+          const oldestDate = new Date(sortedEcoNodes[0]!.data.date)
           oldestDate.setSeconds(oldestDate.getSeconds() - 1)
           nodeDate = oldestDate.toISOString()
         }
@@ -652,7 +654,7 @@ async function buildProgramGraph(
             (a, b) =>
               new Date(a.data.date).getTime() - new Date(b.data.date).getTime(),
           )
-          const oldestEcoCommit = sortedEcoNodes[0]
+          const oldestEcoCommit = sortedEcoNodes[0]!
 
           // Remove any existing fork edge to this commit and replace with edge from synthetic
           const existingForkEdgeIndex = allEdges.findIndex(
@@ -740,7 +742,7 @@ async function buildProgramGraph(
             (a, b) =>
               new Date(b.data.date).getTime() - new Date(a.data.date).getTime(),
           )
-          forkPointId = sortedMain[0].id
+          forkPointId = sortedMain[0]!.id
         }
       }
 
@@ -751,7 +753,7 @@ async function buildProgramGraph(
           (a, b) =>
             new Date(a.data.date).getTime() - new Date(b.data.date).getTime(),
         )
-        const oldestDate = new Date(sortedNodes[0].data.date)
+        const oldestDate = new Date(sortedNodes[0]!.data.date)
         oldestDate.setSeconds(oldestDate.getSeconds() - 1)
         nodeDate = oldestDate.toISOString()
       }
@@ -798,7 +800,7 @@ async function buildProgramGraph(
           (a, b) =>
             new Date(a.data.date).getTime() - new Date(b.data.date).getTime(),
         )
-        const oldestCommit = sortedNodes[0]
+        const oldestCommit = sortedNodes[0]!
 
         // Remove existing fork edge
         const existingEdgeIndex = allEdges.findIndex(
@@ -938,7 +940,10 @@ app.get(
       const globalSearch = url.searchParams.get('globalSearch') || undefined
 
       let columnFilters:
-        | Record<string, string | Array<string> | { min?: number; max?: number }>
+        | Record<
+            string,
+            string | Array<string> | { min?: number; max?: number }
+          >
         | undefined
       const columnFiltersRaw = url.searchParams.get('columnFilters')
       if (columnFiltersRaw) {
@@ -1019,7 +1024,7 @@ app.post(
 app.get(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
       // Check if user is a member (or has global permission)
       const canAccess = await ProgramService.canUserAccess(user.id, params.id)
       if (!canAccess) {
@@ -1041,7 +1046,7 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
       // Check if user is an admin of the program
       const userRole = await ProgramService.getUserRole(user.id, params.id)
       if (userRole !== 'admin') {
@@ -1059,7 +1064,7 @@ app.put(
 app.delete(
   '/:id',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
       // Check if user is an admin of the program AND has org-level permission
       const userRole = await ProgramService.getUserRole(user.id, params.id)
       if (userRole !== 'admin') {
@@ -1076,7 +1081,7 @@ app.delete(
 app.get(
   '/:id/history/graph',
   adapt(
-    apiHandler({}, async ({ request, params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const program = await ProgramService.getById(params.id)
       if (!program) {
         throw new NotFoundError('Program', params.id)
@@ -1118,7 +1123,7 @@ app.get(
 app.get(
   '/:id/members',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
       const canAccess = await ProgramService.canUserAccess(user.id, params.id)
       if (!canAccess) {
         throw new PermissionDeniedError('program members', 'read')
@@ -1134,7 +1139,7 @@ app.get(
 app.post(
   '/:id/members',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
       // Check if user is an admin of the program
       const userRole = await ProgramService.getUserRole(user.id, params.id)
       if (userRole !== 'admin' && userRole !== 'lead') {
@@ -1164,20 +1169,23 @@ app.post(
 app.put(
   '/:id/members/:userId',
   adapt(
-    apiHandler({}, async ({ params, request, user }) => {
-      const userRole = await ProgramService.getUserRole(user.id, params.id)
-      if (userRole !== 'admin') {
-        throw new PermissionDeniedError('program member', 'update')
-      }
+    apiHandler<{ id: string; userId: string }>(
+      {},
+      async ({ params, request, user }) => {
+        const userRole = await ProgramService.getUserRole(user.id, params.id)
+        if (userRole !== 'admin') {
+          throw new PermissionDeniedError('program member', 'update')
+        }
 
-      const data = await request.json()
-      const member = await ProgramService.updateMember(
-        params.id,
-        params.userId,
-        data,
-      )
-      return { member }
-    }),
+        const data = await request.json()
+        const member = await ProgramService.updateMember(
+          params.id,
+          params.userId,
+          data,
+        )
+        return { member }
+      },
+    ),
   ),
 )
 
@@ -1185,7 +1193,7 @@ app.put(
 app.delete(
   '/:id/members/:userId',
   adapt(
-    apiHandler({}, async ({ params, user }) => {
+    apiHandler<{ id: string; userId: string }>({}, async ({ params, user }) => {
       const userRole = await ProgramService.getUserRole(user.id, params.id)
       if (userRole !== 'admin') {
         throw new PermissionDeniedError('program member', 'remove')

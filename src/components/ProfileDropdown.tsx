@@ -33,7 +33,7 @@ export function ProfileDropdown({ user, onLogout }: ProfileDropdownProps) {
         .toUpperCase()
         .slice(0, 2)
     }
-    return user.email[0].toUpperCase()
+    return user.email[0]?.toUpperCase() ?? ''
   }
 
   return (

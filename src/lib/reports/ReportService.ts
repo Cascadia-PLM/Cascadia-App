@@ -17,6 +17,7 @@ import {
   sql,
 } from 'drizzle-orm'
 import { db } from '../db'
+import { takeFirst } from '../db/take-first'
 import {
   changeOrders,
   documents,
@@ -74,20 +75,22 @@ export class ReportService {
   ): Promise<Report> {
     return db.transaction(async (tx) => {
       // Insert main report
-      const [report] = await tx
-        .insert(reports)
-        .values({
-          name: data.name,
-          description: data.description,
-          itemType: data.itemType,
-          isPublic: data.isPublic,
-          sharedWithRoles: data.sharedWithRoles,
-          sharedWithUsers: data.sharedWithUsers,
-          config: data.config,
-          createdBy: userId,
-          modifiedBy: userId,
-        })
-        .returning()
+      const report = takeFirst(
+        await tx
+          .insert(reports)
+          .values({
+            name: data.name,
+            description: data.description,
+            itemType: data.itemType,
+            isPublic: data.isPublic,
+            sharedWithRoles: data.sharedWithRoles,
+            sharedWithUsers: data.sharedWithUsers,
+            config: data.config,
+            createdBy: userId,
+            modifiedBy: userId,
+          })
+          .returning(),
+      )
 
       // Insert columns (columns is required and must have at least one)
       await tx.insert(reportColumns).values(
@@ -209,11 +212,12 @@ export class ReportService {
         .from(reports)
         .where(eq(reports.id, reportId))
         .limit(1)
-      if (results.length === 0) {
+      const updated = results[0]
+      if (!updated) {
         throw new Error('Report not found after update')
       }
 
-      return this.enrichReport(results[0], tx)
+      return this.enrichReport(updated, tx)
     })
   }
 
@@ -233,10 +237,11 @@ export class ReportService {
       .from(reports)
       .where(eq(reports.id, reportId))
       .limit(1)
-    if (result.length === 0) {
+    const report = result[0]
+    if (!report) {
       return null
     }
-    return this.enrichReport(result[0])
+    return this.enrichReport(report)
   }
 
   /**
@@ -276,10 +281,13 @@ export class ReportService {
     const accessConditions = this.buildAccessConditions(userId, userRoles)
     const whereClause = or(...accessConditions)
 
-    const [{ count: total }] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(reports)
-      .where(whereClause)
+    const { count: total } = takeFirst(
+      await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(reports)
+        .where(whereClause),
+      'report count',
+    )
 
     const limit = options?.limit ?? 50
     const offset = options?.offset ?? 0
@@ -311,10 +319,13 @@ export class ReportService {
       eq(reports.itemType, itemType),
     )
 
-    const [{ count: total }] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(reports)
-      .where(whereClause)
+    const { count: total } = takeFirst(
+      await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(reports)
+        .where(whereClause),
+      'report count',
+    )
 
     const limit = options?.limit ?? 50
     const offset = options?.offset ?? 0
@@ -351,17 +362,19 @@ export class ReportService {
       const durationMs = Date.now() - startTime
 
       // Log execution
-      const [execution] = await db
-        .insert(reportExecutions)
-        .values({
-          reportId,
-          executedBy: userId,
-          rowCount: result.totalRows,
-          durationMs,
-          parameters: options as Record<string, unknown>,
-          success: true,
-        })
-        .returning()
+      const execution = takeFirst(
+        await db
+          .insert(reportExecutions)
+          .values({
+            reportId,
+            executedBy: userId,
+            rowCount: result.totalRows,
+            durationMs,
+            parameters: options as Record<string, unknown>,
+            success: true,
+          })
+          .returning(),
+      )
 
       return {
         ...result,
@@ -586,15 +599,15 @@ export class ReportService {
     const pathParts = fieldPath.split('.')
 
     if (pathParts.length === 1) {
-      // Base table field
-      const fieldName = pathParts[0]
-      const baseField = (items as unknown as Record<string, unknown>)[fieldName]
+      // Base table field (single-segment path — the whole path is the field)
+      const baseField = (items as unknown as Record<string, unknown>)[fieldPath]
       if (baseField) {
         return baseField as SQL
       }
     } else if (pathParts.length === 2) {
       // Type-specific table field
       const [tableName, fieldName] = pathParts
+      if (tableName === undefined || fieldName === undefined) return null
       const expectedTable = tableName.toLowerCase()
 
       // Map table name to actual table
@@ -642,10 +655,11 @@ export class ReportService {
     if (pathParts.length === 1) {
       // Base table field - data is in 'items' key
       const itemsData = row.items as Record<string, unknown> | undefined
-      return itemsData?.[pathParts[0]]
+      return itemsData?.[fieldPath]
     } else if (pathParts.length === 2) {
       // Type-specific table field
       const [tableName, fieldName] = pathParts
+      if (tableName === undefined || fieldName === undefined) return undefined
 
       // Get the type-specific data from the row
       // The key matches the table name (e.g., 'parts', 'documents')

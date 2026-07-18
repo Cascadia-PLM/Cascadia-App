@@ -104,6 +104,9 @@ function processRows(
 
   // Extract headers from first row
   const headerRow = rawData[0]
+  if (!headerRow) {
+    throw new ParseError('File is empty or has no readable data', 'EMPTY_FILE')
+  }
   const headers = headerRow.map((h, index) => {
     if (h === null || h === undefined || h === '') {
       return `Column ${index + 1}`

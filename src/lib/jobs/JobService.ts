@@ -7,6 +7,7 @@ import { JobTypeRegistry } from './registry'
 import { RabbitMQClient } from './rabbitmq/client'
 import { PRIORITY_MAP } from './types'
 import type { JobPriority, JobStatus } from '../db/schema/jobs'
+import { takeFirst } from '@/lib/db/take-first'
 
 // Register all job type definitions when JobService is imported
 import './definitions/register'
@@ -98,18 +99,20 @@ export class JobService {
     const priority = options.priority ?? config.priority
 
     // Insert job record
-    const [job] = await db
-      .insert(jobs)
-      .values({
-        type,
-        status: 'pending',
-        priority,
-        payload: payload as Record<string, unknown>,
-        itemId: options.itemId ?? null,
-        createdBy: userId,
-        maxAttempts: config.maxAttempts,
-      })
-      .returning()
+    const job = takeFirst(
+      await db
+        .insert(jobs)
+        .values({
+          type,
+          status: 'pending',
+          priority,
+          payload: payload as Record<string, unknown>,
+          itemId: options.itemId ?? null,
+          createdBy: userId,
+          maxAttempts: config.maxAttempts,
+        })
+        .returning(),
+    )
 
     // Publish to RabbitMQ
     try {
@@ -152,7 +155,8 @@ export class JobService {
       .where(eq(jobs.id, jobId))
       .limit(1)
 
-    return results.length > 0 ? this.mapToJob(results[0]) : null
+    const row = results[0]
+    return row ? this.mapToJob(row) : null
   }
 
   /**
@@ -287,6 +291,10 @@ export class JobService {
       })
       .where(eq(jobs.id, jobId))
       .returning()
+
+    if (!updated) {
+      throw new NotFoundError('Job', jobId, { operation: 'retry' })
+    }
 
     // Re-queue
     await RabbitMQClient.publish(config.routingKey, {

@@ -7,6 +7,8 @@ import type {
   ConflictReview,
   EnrichedItemConflict,
 } from './types/conflict-review'
+import { takeFirst } from '@/lib/db/take-first'
+import { NotFoundError } from '@/lib/errors'
 
 /**
  * Service for managing conflict reviews on ECOs.
@@ -87,6 +89,12 @@ export class ConflictReviewService {
         .where(eq(conflictReviews.id, existing.id))
         .returning()
 
+      if (!updated) {
+        throw new NotFoundError('Conflict Review', existing.id, {
+          operation: 'markAsReviewed',
+        })
+      }
+
       return {
         ...updated,
         notes: updated.notes,
@@ -94,18 +102,20 @@ export class ConflictReviewService {
     }
 
     // Insert new review
-    const [review] = await db
-      .insert(conflictReviews)
-      .values({
-        changeOrderId,
-        itemMasterId: conflict.itemMasterId,
-        conflictType: conflict.conflictType,
-        theirEcoId: conflict.theirEcoId || null,
-        conflictSignature: signature,
-        reviewedBy: userId,
-        notes: notes || null,
-      })
-      .returning()
+    const review = takeFirst(
+      await db
+        .insert(conflictReviews)
+        .values({
+          changeOrderId,
+          itemMasterId: conflict.itemMasterId,
+          conflictType: conflict.conflictType,
+          theirEcoId: conflict.theirEcoId || null,
+          conflictSignature: signature,
+          reviewedBy: userId,
+          notes: notes || null,
+        })
+        .returning(),
+    )
 
     return {
       ...review,

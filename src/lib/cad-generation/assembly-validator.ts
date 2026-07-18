@@ -146,10 +146,10 @@ export function validateAssemblyPlan(
   }
 
   // O(n^2) overlap check — fine for typical assembly sizes
-  for (let i = 0; i < placedBoxes.length; i++) {
+  for (const [i, a] of placedBoxes.entries()) {
     for (let j = i + 1; j < placedBoxes.length; j++) {
-      const a = placedBoxes[i]
       const b = placedBoxes[j]
+      if (!b) continue
 
       if (boxesOverlap(a.min, a.max, b.min, b.max)) {
         issues.push({

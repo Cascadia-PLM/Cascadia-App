@@ -15,15 +15,17 @@ interface StateNodeData extends Record<string, unknown> {
 
 export type StateNodeType = Node<StateNodeData, 'stateNode'>
 
+const grayStateColors = {
+  bg: 'bg-slate-100 dark:bg-slate-800',
+  border: 'border-slate-300 dark:border-slate-600',
+  text: 'text-slate-700 dark:text-slate-300',
+}
+
 const stateColors: Record<
   string,
   { bg: string; border: string; text: string }
 > = {
-  gray: {
-    bg: 'bg-slate-100 dark:bg-slate-800',
-    border: 'border-slate-300 dark:border-slate-600',
-    text: 'text-slate-700 dark:text-slate-300',
-  },
+  gray: grayStateColors,
   blue: {
     bg: 'bg-blue-100 dark:bg-blue-900/50',
     border: 'border-blue-300 dark:border-blue-700',
@@ -77,7 +79,7 @@ function getColorClasses(color?: string) {
     }
     color = hexToName[color] || 'gray'
   }
-  return stateColors[color ?? 'gray'] ?? stateColors.gray
+  return stateColors[color ?? 'gray'] ?? grayStateColors
 }
 
 function StateNodeComponent({ data, selected }: NodeProps<StateNodeType>) {

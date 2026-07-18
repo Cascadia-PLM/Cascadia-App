@@ -103,8 +103,7 @@ export function autoDetectMappings(
   const usedFields = new Set<string>()
   const allFields = getFieldsForType(itemType)
 
-  for (let i = 0; i < headers.length; i++) {
-    const header = headers[i]
+  for (const [i, header] of headers.entries()) {
     let bestMatch: { field: string; confidence: number } | null = null
 
     // Find the best matching field

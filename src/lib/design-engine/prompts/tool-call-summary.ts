@@ -41,7 +41,7 @@ function parseToolEntry(content: string): ParsedToolEntry | null {
       typeof parsed === 'object' &&
       parsed !== null &&
       'toolName' in parsed &&
-      typeof (parsed).toolName === 'string'
+      typeof parsed.toolName === 'string'
     ) {
       return parsed as ParsedToolEntry
     }
@@ -129,9 +129,8 @@ export function summarizeToolCalls(
   const seen = new Set<string>()
   const used = new Set<number>()
 
-  for (let i = 0; i < toolEntries.length; i++) {
+  for (const [i, entry] of toolEntries.entries()) {
     if (used.has(i)) continue
-    const entry = toolEntries[i]
     if (entry.result !== undefined) continue
     if (entry.args === undefined) continue
 
@@ -139,6 +138,7 @@ export function summarizeToolCalls(
     for (let j = i + 1; j < toolEntries.length; j++) {
       if (used.has(j)) continue
       const candidate = toolEntries[j]
+      if (!candidate) continue
       if (candidate.toolName !== entry.toolName) continue
       if (candidate.result === undefined) continue
       resultDesc = describeResult(entry.toolName, candidate.result)

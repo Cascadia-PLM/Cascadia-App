@@ -98,8 +98,7 @@ export function useTreeSelection(
 
           setSelectedIds((prev) => {
             const next = new Set(prev)
-            for (let i = start; i <= end; i++) {
-              const n = flat[i]
+            for (const n of flat.slice(start, end + 1)) {
               if (isEligible(n)) {
                 next.add(n.itemId)
               }

@@ -58,15 +58,16 @@ export function FileUploadStep({
     e.stopPropagation()
     setIsDragging(false)
 
-    const files = Array.from(e.dataTransfer.files)
-    if (files.length > 0) {
-      await processFile(files[0])
+    const [file] = Array.from(e.dataTransfer.files)
+    if (file) {
+      await processFile(file)
     }
   }
 
   const handleFileInput = async (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      await processFile(e.target.files[0])
+    const file = e.target.files?.[0]
+    if (file) {
+      await processFile(file)
     }
   }
 

@@ -12,16 +12,18 @@ interface PhaseGroupNodeData extends Record<string, unknown> {
 
 export type PhaseGroupNodeType = Node<PhaseGroupNodeData, 'phaseGroup'>
 
+const grayPhaseColors = {
+  border: 'border-slate-400 dark:border-slate-500',
+  bg: 'bg-slate-50/50 dark:bg-slate-900/30',
+  headerBg: 'bg-slate-100 dark:bg-slate-800/60',
+  text: 'text-slate-700 dark:text-slate-300',
+}
+
 const phaseColors: Record<
   string,
   { border: string; bg: string; headerBg: string; text: string }
 > = {
-  gray: {
-    border: 'border-slate-400 dark:border-slate-500',
-    bg: 'bg-slate-50/50 dark:bg-slate-900/30',
-    headerBg: 'bg-slate-100 dark:bg-slate-800/60',
-    text: 'text-slate-700 dark:text-slate-300',
-  },
+  gray: grayPhaseColors,
   blue: {
     border: 'border-blue-400 dark:border-blue-600',
     bg: 'bg-blue-50/30 dark:bg-blue-950/20',
@@ -67,7 +69,7 @@ const phaseColors: Record<
 }
 
 function getPhaseColors(color?: string) {
-  return phaseColors[color ?? 'gray'] ?? phaseColors.gray
+  return phaseColors[color ?? 'gray'] ?? grayPhaseColors
 }
 
 /** Short label for revision scheme type */

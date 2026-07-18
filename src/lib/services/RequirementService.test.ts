@@ -28,6 +28,7 @@ import { insertTestUser } from '@/__tests__/fixtures/users'
 import { programs } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { ItemService } from '@/lib/items/services/ItemService'
+import { takeFirst } from '@/lib/db/take-first'
 import '@/lib/items/registerItemTypes.server'
 
 describe('RequirementService', () => {
@@ -48,14 +49,16 @@ describe('RequirementService', () => {
     user = await insertTestUser(testDb.db)
 
     // Create program + design
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        name: 'Test Program',
-        code: `PROG-${Date.now()}`,
-        createdBy: user.id,
-      })
-      .returning()
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Test Program',
+          code: `PROG-${Date.now()}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     const design = await DesignService.create(
       {
@@ -143,7 +146,7 @@ describe('RequirementService', () => {
 
       const satisfying = await RequirementService.getSatisfyingItems(req.id!)
       expect(satisfying).toHaveLength(1)
-      expect(satisfying[0].id).toBe(part.id)
+      expect(satisfying[0]!.id).toBe(part.id)
     })
 
     it('should link multiple items to a requirement', async () => {
@@ -237,7 +240,7 @@ describe('RequirementService', () => {
         itemType: 'Part',
         name: 'Satisfying Part',
       })
-      expect(result[0].relationshipId).toBeDefined()
+      expect(result[0]!.relationshipId).toBeDefined()
     })
 
     it('should return empty array when no items satisfy', async () => {
@@ -664,7 +667,7 @@ describe('RequirementService', () => {
 
       const tests = await RequirementService.getVerifyingTests(req.id!)
       expect(tests).toHaveLength(1)
-      expect(tests[0].id).toBe(tc.id)
+      expect(tests[0]!.id).toBe(tc.id)
     })
 
     it('should link multiple test cases to a requirement', async () => {
@@ -769,7 +772,7 @@ describe('RequirementService', () => {
         id: tc.id,
         name: 'Verify Performance',
       })
-      expect(result[0].relationshipId).toBeDefined()
+      expect(result[0]!.relationshipId).toBeDefined()
     })
 
     it('should return empty array when no test cases verify the requirement', async () => {

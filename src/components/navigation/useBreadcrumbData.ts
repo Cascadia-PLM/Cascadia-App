@@ -41,7 +41,7 @@ type ItemResponse = {
  */
 function extractIdFromPath(pathname: string, pattern: RegExp): string | null {
   const match = pathname.match(pattern)
-  return match ? match[1] : null
+  return match?.[1] ?? null
 }
 
 /**

@@ -109,8 +109,8 @@ export function FileTable({
       analysis: { label: 'Analysis', variant: 'warning' },
     }
 
-    if (!(category in categoryLabels)) return null
     const config = categoryLabels[category]
+    if (!config) return null
 
     return (
       <div className="flex items-center gap-1">
@@ -380,9 +380,7 @@ export function FileTable({
           )}
           <DropdownMenuItem asChild>
             <Link
-              to={
-                `${getItemTypeRoute(file.item.itemType)}/${file.item.id}`
-              }
+              to={`${getItemTypeRoute(file.item.itemType)}/${file.item.id}`}
             >
               <FileIcon className="mr-2 h-4 w-4" />
               View Item
@@ -423,11 +421,7 @@ export function FileTable({
           </ContextMenuItem>
         )}
         <ContextMenuItem asChild>
-          <Link
-            to={
-              `${getItemTypeRoute(file.item.itemType)}/${file.item.id}`
-            }
-          >
+          <Link to={`${getItemTypeRoute(file.item.itemType)}/${file.item.id}`}>
             <FileIcon className="mr-2 h-4 w-4" />
             View Item
           </Link>

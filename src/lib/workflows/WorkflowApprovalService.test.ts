@@ -142,10 +142,12 @@ describe('WorkflowApprovalService', () => {
         )
 
         expect(approvers).toHaveLength(1)
-        expect(approvers[0].approverType).toBe('user')
-        expect(approvers[0].approverId).toBe(user.id)
-        expect(approvers[0].isRequired).toBe(true)
-        expect(approvers[0].approverName).toBe(user.name)
+        expect(approvers[0]).toMatchObject({
+          approverType: 'user',
+          approverId: user.id,
+          isRequired: true,
+          approverName: user.name,
+        })
       })
 
       it('returns both user and role approvers', async () => {
@@ -222,8 +224,12 @@ describe('WorkflowApprovalService', () => {
         expect(Object.keys(allApprovers)).toHaveLength(2)
         expect(allApprovers['review']).toHaveLength(1)
         expect(allApprovers['approved']).toHaveLength(1)
-        expect(allApprovers['review'][0].approverId).toBe(user1.id)
-        expect(allApprovers['approved'][0].approverId).toBe(user2.id)
+        expect(allApprovers['review']![0]).toMatchObject({
+          approverId: user1.id,
+        })
+        expect(allApprovers['approved']![0]).toMatchObject({
+          approverId: user2.id,
+        })
       })
     })
 
@@ -276,8 +282,10 @@ describe('WorkflowApprovalService', () => {
         )
 
         expect(approvers).toHaveLength(1)
-        expect(approvers[0].approverId).toBe(user2.id)
-        expect(approvers[0].isRequired).toBe(false)
+        expect(approvers[0]).toMatchObject({
+          approverId: user2.id,
+          isRequired: false,
+        })
       })
 
       it('clears all approvers when empty array passed', async () => {
@@ -472,8 +480,10 @@ describe('WorkflowApprovalService', () => {
         expect(result.canApprove).toBe(true)
         expect(result.asUser).toBe(false)
         expect(result.asRoles).toHaveLength(1)
-        expect(result.asRoles[0].id).toBe(role.id)
-        expect(result.asRoles[0].name).toBe('Reviewer Role')
+        expect(result.asRoles[0]).toMatchObject({
+          id: role.id,
+          name: 'Reviewer Role',
+        })
       })
 
       it('returns false when user is not an approver', async () => {
@@ -590,8 +600,10 @@ describe('WorkflowApprovalService', () => {
           'draft',
         )
         const approverStatus = status.requiredApprovers[0]
-        expect(approverStatus.vote).toBe('rejected')
-        expect(approverStatus.comments).toBe('Needs more details')
+        expect(approverStatus).toMatchObject({
+          vote: 'rejected',
+          comments: 'Needs more details',
+        })
       })
 
       it('submits approval on behalf of a role', async () => {
@@ -623,7 +635,7 @@ describe('WorkflowApprovalService', () => {
           instance.id,
           'draft',
         )
-        expect(status.requiredApprovers[0].vote).toBe('approved')
+        expect(status.requiredApprovers[0]).toMatchObject({ vote: 'approved' })
       })
 
       it('throws error when user is not authorized', async () => {
@@ -717,8 +729,8 @@ describe('WorkflowApprovalService', () => {
         expect(Object.keys(approvals)).toContain('approved')
         expect(Object.keys(approvals)).toContain('rejected')
 
-        expect(approvals['review'].requiredApprovers).toHaveLength(1)
-        expect(approvals['draft'].requiredApprovers).toHaveLength(0)
+        expect(approvals['review']!.requiredApprovers).toHaveLength(1)
+        expect(approvals['draft']!.requiredApprovers).toHaveLength(0)
       })
 
       it('includes vote information in approval status', async () => {
@@ -745,12 +757,16 @@ describe('WorkflowApprovalService', () => {
         )
 
         const draftApproval = approvals['draft']
-        expect(draftApproval.isComplete).toBe(true)
-        expect(draftApproval.approvedCount).toBe(1)
-        expect(draftApproval.requiredCount).toBe(1)
-        expect(draftApproval.requiredApprovers[0].vote).toBe('approved')
-        expect(draftApproval.requiredApprovers[0].comments).toBe('Looks good!')
-        expect(draftApproval.requiredApprovers[0].votedBy?.id).toBe(user.id)
+        expect(draftApproval).toMatchObject({
+          isComplete: true,
+          approvedCount: 1,
+          requiredCount: 1,
+        })
+        expect(draftApproval!.requiredApprovers[0]).toMatchObject({
+          vote: 'approved',
+          comments: 'Looks good!',
+        })
+        expect(draftApproval!.requiredApprovers[0]?.votedBy?.id).toBe(user.id)
       })
 
       it('throws error for non-existent instance', async () => {
@@ -811,8 +827,12 @@ describe('WorkflowApprovalService', () => {
 
         expect(status.requiredApprovers).toHaveLength(1)
         expect(status.optionalApprovers).toHaveLength(1)
-        expect(status.requiredApprovers[0].approverId).toBe(user.id)
-        expect(status.optionalApprovers[0].approverId).toBe(optionalApprover.id)
+        expect(status.requiredApprovers[0]).toMatchObject({
+          approverId: user.id,
+        })
+        expect(status.optionalApprovers[0]).toMatchObject({
+          approverId: optionalApprover.id,
+        })
       })
 
       it('throws error for non-existent state', async () => {
@@ -861,8 +881,10 @@ describe('WorkflowApprovalService', () => {
         expect(result.required).toBe(1)
         expect(result.current).toBe(0)
         expect(result.pending).toHaveLength(1)
-        expect(result.pending[0].type).toBe('user')
-        expect(result.pending[0].id).toBe(user.id)
+        expect(result.pending[0]).toMatchObject({
+          type: 'user',
+          id: user.id,
+        })
       })
 
       it('returns met=true when all required approvals obtained', async () => {
@@ -946,7 +968,7 @@ describe('WorkflowApprovalService', () => {
         expect(result.required).toBe(2)
         expect(result.current).toBe(1)
         expect(result.pending).toHaveLength(1)
-        expect(result.pending[0].id).toBe(user2.id)
+        expect(result.pending[0]).toMatchObject({ id: user2.id })
       })
 
       it('counts role-based approval correctly', async () => {

@@ -58,9 +58,12 @@ export function useCADViewerKeyboard(
       } else if (key === 'g' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault()
         actions.toggleGrid()
-      } else if (VIEW_KEY_MAP[e.key]) {
-        e.preventDefault()
-        actions.setView(VIEW_KEY_MAP[e.key])
+      } else {
+        const mappedView = VIEW_KEY_MAP[e.key]
+        if (mappedView) {
+          e.preventDefault()
+          actions.setView(mappedView)
+        }
       }
     }
 

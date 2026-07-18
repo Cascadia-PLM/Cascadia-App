@@ -149,7 +149,6 @@ export class ItemSearchService {
       for (const [columnId, filterValue] of Object.entries(
         criteria.columnFilters,
       )) {
-
         // Map column IDs to actual database columns
         const columnCondition = this.buildColumnFilterCondition(
           type,
@@ -202,11 +201,11 @@ export class ItemSearchService {
         // Optionally count usages of this definition
         let usageCount: number | undefined
         if (criteria.includeUsageCount) {
-          const [{ count }] = await db
+          const usageRows = await db
             .select({ count: sql<number>`count(*)` })
             .from(items)
             .where(eq(items.usageOf, item.id))
-          usageCount = Number(count)
+          usageCount = Number(usageRows[0]?.count ?? 0)
         }
 
         return {
@@ -224,18 +223,18 @@ export class ItemSearchService {
       this.hasTypeSpecificFilters(criteria.columnFilters, type)
     ) {
       // Need to join for accurate count when filtering on type-specific columns
-      const [{ count }] = await db
+      const countRows = await db
         .select({ count: sql<number>`count(*)` })
         .from(items)
         .leftJoin(typeTable, eq(typeTable.itemId, items.id))
         .where(and(...conditions))
-      totalCount = Number(count)
+      totalCount = Number(countRows[0]?.count ?? 0)
     } else {
-      const [{ count }] = await db
+      const countRows = await db
         .select({ count: sql<number>`count(*)` })
         .from(items)
         .where(and(...conditions))
-      totalCount = Number(count)
+      totalCount = Number(countRows[0]?.count ?? 0)
     }
 
     return {

@@ -280,7 +280,7 @@ app.post(
 app.put(
   '/:relationshipId',
   adapt(
-    apiHandler(
+    apiHandler<{ relationshipId: string }>(
       { permission: ['parts', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
@@ -303,7 +303,7 @@ app.put(
 app.delete(
   '/:relationshipId',
   adapt(
-    apiHandler(
+    apiHandler<{ relationshipId: string }>(
       { permission: ['parts', 'delete'] },
       async ({ params, user }) => {
         await ItemService.removeRelationship(params.relationshipId, user.id)

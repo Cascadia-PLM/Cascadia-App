@@ -24,6 +24,7 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { branches, commits, designs } from '@/lib/db/schema'
+import { takeFirst } from '@/lib/db/take-first'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'
@@ -54,39 +55,45 @@ describe('ItemService', () => {
     user = await insertTestUser(testDb.db)
 
     // Create test design
-    const [createdDesign] = await testDb.db
-      .insert(designs)
-      .values({
-        name: 'Test Design',
-        code: `PROD-${uniquePrefix}`,
-        designType: 'Engineering',
-        createdBy: user.id,
-      })
-      .returning()
+    const createdDesign = takeFirst(
+      await testDb.db
+        .insert(designs)
+        .values({
+          name: 'Test Design',
+          code: `PROD-${uniquePrefix}`,
+          designType: 'Engineering',
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     // Create initial commit
-    const [initialCommit] = await testDb.db
-      .insert(commits)
-      .values({
-        designId: createdDesign.id,
-        branchId: createdDesign.id, // Temporary
-        message: 'Initial commit',
-        createdBy: user.id,
-      })
-      .returning()
+    const initialCommit = takeFirst(
+      await testDb.db
+        .insert(commits)
+        .values({
+          designId: createdDesign.id,
+          branchId: createdDesign.id, // Temporary
+          message: 'Initial commit',
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     // Create main branch
-    const [mainBranch] = await testDb.db
-      .insert(branches)
-      .values({
-        designId: createdDesign.id,
-        name: 'main',
-        branchType: 'main',
-        headCommitId: initialCommit.id,
-        baseCommitId: initialCommit.id,
-        createdBy: user.id,
-      })
-      .returning()
+    const mainBranch = takeFirst(
+      await testDb.db
+        .insert(branches)
+        .values({
+          designId: createdDesign.id,
+          name: 'main',
+          branchType: 'main',
+          headCommitId: initialCommit.id,
+          baseCommitId: initialCommit.id,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
 
     // Update commit with correct branchId
     await testDb.db
@@ -101,7 +108,8 @@ describe('ItemService', () => {
       .where(eq(designs.id, createdDesign.id))
       .returning()
 
-    designId = updated.id
+    expect(updated).toBeDefined()
+    designId = updated!.id
   })
 
   afterEach(async () => {
@@ -770,7 +778,7 @@ describe('ItemService', () => {
       const related = await ItemService.getRelated(parentPart.id, 'BOM')
 
       expect(related.length).toBe(1)
-      expect(related[0].id).toBe(childPart.id)
+      expect(related[0]).toMatchObject({ id: childPart.id })
     })
 
     it('gets relationships with full details', async () => {
@@ -788,10 +796,12 @@ describe('ItemService', () => {
       )
 
       expect(relationships.length).toBe(1)
-      expect(parseFloat(relationships[0].quantity!)).toBe(5)
-      expect(relationships[0].findNumber).toBe(10)
-      expect(relationships[0].targetItem).toBeDefined()
-      expect(relationships[0].targetItem?.id).toBe(childPart.id)
+      const relationship = relationships[0]
+      expect(relationship).toBeDefined()
+      expect(parseFloat(relationship!.quantity!)).toBe(5)
+      expect(relationship!.findNumber).toBe(10)
+      expect(relationship!.targetItem).toBeDefined()
+      expect(relationship!.targetItem?.id).toBe(childPart.id)
     })
 
     it('removes a relationship', async () => {
@@ -807,7 +817,7 @@ describe('ItemService', () => {
       )
       expect(beforeRemove.length).toBe(1)
 
-      await ItemService.removeRelationship(beforeRemove[0].id)
+      await ItemService.removeRelationship(beforeRemove[0]!.id)
 
       const afterRemove = await ItemService.getRelated(parentPart.id)
       expect(afterRemove.length).toBe(0)
@@ -868,15 +878,17 @@ describe('ItemService', () => {
 
     it('filters by multiple designIds', async () => {
       // Create another design
-      const [design2] = await testDb.db
-        .insert(designs)
-        .values({
-          name: 'Second Design',
-          code: `PROD2-${uniquePrefix}`,
-          designType: 'Engineering',
-          createdBy: user.id,
-        })
-        .returning()
+      const design2 = takeFirst(
+        await testDb.db
+          .insert(designs)
+          .values({
+            name: 'Second Design',
+            code: `PROD2-${uniquePrefix}`,
+            designType: 'Engineering',
+            createdBy: user.id,
+          })
+          .returning(),
+      )
 
       await ItemService.create(
         'Part',
@@ -1391,7 +1403,7 @@ describe('ItemService', () => {
       const all = await ItemService.getRelated(parentPart.id)
 
       expect(bomOnly.length).toBe(1)
-      expect(bomOnly[0].id).toBe(child1.id)
+      expect(bomOnly[0]).toMatchObject({ id: child1.id })
       expect(all.length).toBe(2)
     })
   })
@@ -1433,22 +1445,24 @@ describe('ItemService', () => {
       )
 
       expect(details.length).toBe(1)
-      expect(details[0].relationshipType).toBe('BOM')
-      expect(details[0].targetItem).toBeDefined()
+      expect(details[0]).toMatchObject({ relationshipType: 'BOM' })
+      expect(details[0]?.targetItem).toBeDefined()
     })
   })
 
   describe('searchByItemNumber advanced options', () => {
     it('filters by multiple designIds', async () => {
-      const [design2] = await testDb.db
-        .insert(designs)
-        .values({
-          name: 'Search Design',
-          code: `SRCH-${uniquePrefix}`,
-          designType: 'Engineering',
-          createdBy: user.id,
-        })
-        .returning()
+      const design2 = takeFirst(
+        await testDb.db
+          .insert(designs)
+          .values({
+            name: 'Search Design',
+            code: `SRCH-${uniquePrefix}`,
+            designType: 'Engineering',
+            createdBy: user.id,
+          })
+          .returning(),
+      )
 
       await ItemService.create(
         'Part',

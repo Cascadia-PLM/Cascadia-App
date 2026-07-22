@@ -29,8 +29,10 @@ import {
   branchItems,
   changeOrderAffectedItems,
   changeOrderDesigns,
+  changeOrders,
   items,
   programs,
+  tags,
   workflowDefinitions,
   workflowInstances,
 } from '@/lib/db/schema'
@@ -551,6 +553,54 @@ describe('ChangeOrderMergeService', () => {
       // Verify the part was released
       const releasedPart = await ItemService.findById(part.id)
       expect(releasedPart?.state).toBe('Released')
+    })
+
+    it('persists isBaseline/baselineName and tags the design on release (regression: type-handler dropped both)', async () => {
+      const part = await createPart('baseline-tag-test', 'Draft')
+      const baselineName = `BL-${uniquePrefix}`
+
+      const eco = await ItemService.create(
+        'ChangeOrder',
+        {
+          revision: '-',
+          name: 'Baseline ECO',
+          changeType: 'ECO',
+          priority: 'medium',
+          reasonForChange: 'Baseline test',
+          isBaseline: true,
+          baselineName,
+        } as any,
+        user.id,
+      )
+      await testDb.db.insert(workflowInstances).values({
+        workflowDefinitionId: workflowId,
+        itemId: eco.id,
+        currentState: 'Draft',
+      })
+
+      // The fix: the ChangeOrder type-handler must persist these, or the
+      // merge-time auto-tag never fires.
+      const [coRow] = await testDb.db
+        .select()
+        .from(changeOrders)
+        .where(eq(changeOrders.itemId, eco.id))
+      expect(coRow?.isBaseline).toBe(true)
+      expect(coRow?.baselineName).toBe(baselineName)
+
+      await ChangeOrderService.addAffectedItem(
+        eco.id,
+        { affectedItemId: part.id, changeAction: 'release' },
+        user.id,
+      )
+      await approveEco(eco.id)
+      await ChangeOrderMergeService.merge(eco.id, user.id)
+
+      // On release the baseline tag lands on the affected design.
+      const designTags = await testDb.db
+        .select()
+        .from(tags)
+        .where(eq(tags.designId, designId))
+      expect(designTags.some((t) => t.name === baselineName)).toBe(true)
     })
   })
 
@@ -1239,7 +1289,6 @@ describe('ChangeOrderMergeService', () => {
       const eco = await createChangeOrder()
 
       // Query change_orders table directly to verify default behavior
-      const { changeOrders } = await import('@/lib/db/schema')
       const [dbRecord] = await testDb.db
         .select()
         .from(changeOrders)

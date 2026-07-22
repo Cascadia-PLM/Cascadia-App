@@ -120,3 +120,59 @@ class MechanismGenerationResult(BaseModel):
     generationTimeMs: int
     outputs: dict[str, MechanismPartOutput]
     metadata: dict[str, Any]
+
+
+# ---------------------------------------------------------------------------
+# Assembly composition models
+# ---------------------------------------------------------------------------
+
+
+class Vector3(BaseModel):
+    """3D vector — translation in mm or Euler rotation in degrees."""
+
+    x: float
+    y: float
+    z: float
+
+
+class PlacementTransform(BaseModel):
+    """Child placement transform.
+
+    Rotation is Euler XYZ in degrees, applied rotateX -> rotateY -> rotateZ
+    about the GLOBAL origin, then translated — the same convention the
+    TypeScript KCL generator serializes (src/lib/cad-generation/kcl-generator.ts).
+    """
+
+    translation: Vector3
+    rotation: Vector3
+
+
+class AssemblyPlacement(BaseModel):
+    """One child part placement within an assembly."""
+
+    tempId: str
+    partName: str
+    stepFileKey: str  # vault_files.id of the child STEP
+    transform: PlacementTransform
+    quantity: int = 1
+
+
+class AssemblyComposePayload(BaseModel):
+    """Payload for assembly STEP composition jobs."""
+
+    assemblyTempId: str
+    assemblyName: str
+    itemId: str
+    branchId: str
+    userId: str
+    placements: list[AssemblyPlacement]
+
+
+class AssemblyComposeResult(BaseModel):
+    """Result for assembly STEP composition jobs."""
+
+    assemblyTempId: str
+    vaultFileId: str
+    fileName: str
+    generationTimeMs: int
+    boundingBox: Optional[BoundingBox6] = None

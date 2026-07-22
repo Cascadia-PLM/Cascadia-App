@@ -15,16 +15,23 @@ import tempfile
 import time
 from typing import Optional
 
+import cadquery as cq
 import pika
 import pika.channel
 import pika.spec
 
+from .assembly import (
+    apply_placement_transform,
+    compose_assembly,
+    compute_assembly_bounding_box,
+)
 from .config import settings
 from .db import (
     add_job_log,
     close_connection,
     compute_file_hash,
     get_job,
+    get_vault_file,
     insert_vault_file,
     mark_job_completed,
     mark_job_failed,
@@ -34,6 +41,8 @@ from .db import (
 from .export import compute_bounding_box, export_step
 from .health import set_health_check, start_health_server
 from .models import (
+    AssemblyComposePayload,
+    AssemblyComposeResult,
     JobMessage,
     MechanismGenerationPayload,
     MechanismGenerationResult,
@@ -55,6 +64,7 @@ DLQ_QUEUE = "jobs.dead-letter"
 MAX_PRIORITY = 10
 BINDING_PATTERN = "jobs.generation.cad.parametric.#"
 BINDING_PATTERN_MECHANISM = "jobs.generation.cad.mechanism.#"
+BINDING_PATTERN_ASSEMBLE = "jobs.generation.cad.assemble.#"
 
 # Worker state
 _shutdown_requested = False
@@ -138,7 +148,27 @@ def _process_message(
         )
 
         # Dispatch based on job type
-        if msg.type == "generation.cad.mechanism":
+        if msg.type == "generation.cad.assemble":
+            payload_asm = AssemblyComposePayload(**job.payload)
+            result = _execute_assembly_composition(msg.jobId, payload_asm)
+            mark_job_completed(msg.jobId, result.model_dump())
+            add_job_log(
+                msg.jobId,
+                "info",
+                "Assembly STEP composition completed",
+                {
+                    "assemblyTempId": result.assemblyTempId,
+                    "fileName": result.fileName,
+                    "generationTimeMs": result.generationTimeMs,
+                },
+            )
+            logger.info(
+                "Job %s completed: %s in %dms",
+                msg.jobId,
+                result.fileName,
+                result.generationTimeMs,
+            )
+        elif msg.type == "generation.cad.mechanism":
             payload_mech = MechanismGenerationPayload(**job.payload)
             result = _execute_mechanism_generation(msg.jobId, payload_mech)
             mark_job_completed(msg.jobId, result.model_dump())
@@ -436,6 +466,116 @@ def _execute_mechanism_generation(
     )
 
 
+def _execute_assembly_composition(
+    job_id: str, payload: AssemblyComposePayload
+) -> AssemblyComposeResult:
+    """Compose child STEP files into one assembly STEP and store it in vault."""
+    start_time = time.monotonic()
+
+    if not payload.placements:
+        raise ValueError("Assembly composition requires at least one placement")
+
+    update_job_progress(job_id, 5, "Loading child STEP files...")
+
+    total = len(payload.placements)
+    parts = []
+    for idx, placement in enumerate(payload.placements):
+        record = get_vault_file(placement.stepFileKey)
+        if not record:
+            raise ValueError(
+                f"Vault file {placement.stepFileKey} not found "
+                f"(part '{placement.partName}')"
+            )
+        step_path = os.path.join(settings.vault_root, record.storage_path)
+        if not os.path.exists(step_path):
+            raise ValueError(
+                f"STEP file missing on disk: {record.storage_path} "
+                f"(part '{placement.partName}')"
+            )
+
+        workplane = cq.importers.importStep(step_path)
+        workplane = apply_placement_transform(workplane, placement.transform)
+
+        if placement.quantity > 1:
+            # The plan carries one transform per placement, so duplicate
+            # instances have nowhere distinct to go (same gap as the KCL
+            # clone() output). Place a single instance and record the gap.
+            add_job_log(
+                job_id,
+                "warning",
+                f"Placement '{placement.partName}' has quantity "
+                f"{placement.quantity} but only one transform — "
+                "placing a single instance",
+            )
+
+        parts.append((placement.partName, workplane))
+        progress = 5 + int(50 * (idx + 1) / total)
+        update_job_progress(
+            job_id, progress, f"Loaded {placement.partName} ({idx + 1}/{total})"
+        )
+
+    update_job_progress(job_id, 60, "Composing assembly...")
+    assembly = compose_assembly(payload.assemblyName, parts)
+    bbox = compute_assembly_bounding_box(assembly)
+
+    update_job_progress(job_id, 75, "Exporting assembly STEP...")
+
+    with tempfile.TemporaryDirectory(prefix="cad_asm_") as tmp_dir:
+        safe_name = payload.assemblyName.replace(" ", "_")
+        step_filename = f"{safe_name}_assembly.step"
+        tmp_step_path = os.path.join(tmp_dir, step_filename)
+        assembly.save(tmp_step_path, exportType="STEP")
+
+        update_job_progress(job_id, 85, "Storing in vault...")
+
+        vault_subdir = os.path.join("cad-output", job_id)
+        vault_storage_path = os.path.join(vault_subdir, step_filename)
+        dest_path = os.path.join(settings.vault_root, vault_storage_path)
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        shutil.copy2(tmp_step_path, dest_path)
+
+        file_size = os.path.getsize(dest_path)
+        file_hash = compute_file_hash(dest_path)
+
+        cad_metadata = {
+            "software": "cadquery",
+            "composition": "assembly",
+            "childCount": total,
+            "boundingBox": bbox.model_dump(),
+        }
+
+        vault_file_id = insert_vault_file(
+            item_id=payload.itemId,
+            branch_id=payload.branchId,
+            file_name=step_filename,
+            original_file_name=step_filename,
+            file_size=file_size,
+            mime_type="application/step",
+            file_hash=file_hash,
+            storage_path=vault_storage_path,
+            uploaded_by=payload.userId,
+            file_category="cad_model",
+            cad_metadata=cad_metadata,
+        )
+
+        add_job_log(
+            job_id,
+            "info",
+            f"Assembly STEP stored: {step_filename}",
+            {"vaultFileId": vault_file_id, "size": file_size},
+        )
+
+    elapsed_ms = int((time.monotonic() - start_time) * 1000)
+
+    return AssemblyComposeResult(
+        assemblyTempId=payload.assemblyTempId,
+        vaultFileId=vault_file_id,
+        fileName=step_filename,
+        generationTimeMs=elapsed_ms,
+        boundingBox=bbox,
+    )
+
+
 def run_worker() -> None:
     """Start the RabbitMQ consumer worker."""
     global _connection, _channel, _shutdown_requested
@@ -450,7 +590,7 @@ def run_worker() -> None:
 
     queue_name = _generate_queue_name()
     logger.info(
-        "Starting CAD generator worker (queue=%s, concurrency=%d, types=[parametric, mechanism])",
+        "Starting CAD generator worker (queue=%s, concurrency=%d, types=[parametric, mechanism, assemble])",
         queue_name,
         settings.worker_concurrency,
     )
@@ -494,6 +634,11 @@ def run_worker() -> None:
                 queue=queue_name,
                 exchange=EXCHANGE_NAME,
                 routing_key=BINDING_PATTERN_MECHANISM,
+            )
+            _channel.queue_bind(
+                queue=queue_name,
+                exchange=EXCHANGE_NAME,
+                routing_key=BINDING_PATTERN_ASSEMBLE,
             )
 
             # Set prefetch (concurrency limit)

@@ -395,6 +395,15 @@ export interface AssemblyCompositionStatus {
   kclProjectRef?: string
   assemblyStepFileKey?: string
   errorMessage?: string
+  /** Composed-assembly bounds from the render job — parent planning context */
+  boundingBox?: {
+    minX: number
+    minY: number
+    minZ: number
+    maxX: number
+    maxY: number
+    maxZ: number
+  }
 }
 
 // ============================================================================

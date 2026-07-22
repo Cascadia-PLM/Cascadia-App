@@ -52,6 +52,7 @@ export function markAssembliesStale(
           ...node.assemblyComposition,
           status: 'pending',
           assemblyStepFileKey: undefined,
+          boundingBox: undefined,
         }
       }
     }

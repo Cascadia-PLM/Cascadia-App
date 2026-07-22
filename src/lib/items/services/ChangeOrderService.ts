@@ -148,8 +148,13 @@ export class ChangeOrderService {
           affectedItem.designId,
           userId,
         )
-        // Auto-associate all other designs containing usage copies of this part
-        if (affectedItem.id) {
+        // Auto-associate all other designs containing usage copies of this
+        // part — but NOT for a `release`. Releasing a definition must not pull
+        // designs that merely hold usage copies of it into the release ECO:
+        // they would be associated (an ECO branch created on each) and the
+        // ECO's baseline stamped onto them, even though they have no affected
+        // items in this ECO. Revise/obsolete/promote still propagate.
+        if (affectedItem.id && item.changeAction !== 'release') {
           await this.associateRelatedDesigns(
             changeOrderId,
             {

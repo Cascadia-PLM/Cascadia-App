@@ -3,9 +3,11 @@
  *
  * Composes assemblies bottom-up: for each assembly node where all children
  * have STEP files, generates an assembly plan via LLM, produces KCL code,
- * and stores the assembled STEP file in the vault.
+ * renders the composed STEP via the CadQuery/OCCT worker
+ * (generation.cad.assemble), and stores the assembled STEP file in the vault.
  *
- * Multi-level assemblies are processed in topological order (leaves first).
+ * Multi-level assemblies are processed in topological order (leaves first);
+ * a composed sub-assembly's STEP + bounding box feed its parent's planning.
  */
 
 import { DesignSessionService } from '../session-service'
@@ -27,6 +29,7 @@ import {
 } from '@/lib/cad-generation/assembly-validator'
 import { generateKclProject } from '@/lib/cad-generation/kcl-generator'
 import { computeExposedInterfaces } from '@/lib/cad-generation/interface-propagation'
+import { renderAssemblyStep } from '@/lib/cad-generation/assembly-render'
 
 export async function* runAssemblyCompositionStage(
   session: DesignSession,
@@ -60,6 +63,36 @@ export async function* runAssemblyCompositionStage(
   }
 
   const rootAssembly = artifacts.bom.rootAssembly
+
+  // tempId → itemId from materialization, for attaching assembly STEP files
+  const tempIdToItemId = new Map<string, string>()
+  for (const item of artifacts.materializationResult.createdItems) {
+    tempIdToItemId.set(item.tempId, item.itemId)
+  }
+
+  // Resolve branchId from the materialized design's ECO-design relationship
+  // (assembly STEP files are written into the ECO branch, like part CAD).
+  let branchId: string | undefined
+  if (artifacts.materializationResult.ecoId) {
+    try {
+      const { db } = await import('@/lib/db')
+      const { changeOrderDesigns } = await import('@/lib/db/schema/items')
+      const { eq } = await import('drizzle-orm')
+      const [cod] = await db
+        .select({ branchId: changeOrderDesigns.branchId })
+        .from(changeOrderDesigns)
+        .where(
+          eq(
+            changeOrderDesigns.changeOrderId,
+            artifacts.materializationResult.ecoId,
+          ),
+        )
+        .limit(1)
+      branchId = cod?.branchId ?? undefined
+    } catch {
+      // Non-critical — assemblies fall back to KCL-only below
+    }
+  }
 
   try {
     // Compute bottom-up processing order
@@ -95,9 +128,11 @@ export async function* runAssemblyCompositionStage(
       if (signal?.aborted) break
 
       // Resume-idempotent: skip assemblies that already composed (a
-      // clarification pause must not redo finished work).
+      // clarification pause must not redo finished work). Legacy
+      // 'code_only' nodes are NOT skipped — re-running now renders the
+      // geometry they never got.
       const priorStatus = assemblyNode.assemblyComposition?.status
-      if (priorStatus === 'complete' || priorStatus === 'code_only') {
+      if (priorStatus === 'complete') {
         completed++
         continue
       }
@@ -174,7 +209,10 @@ export async function* runAssemblyCompositionStage(
               child.cadGeneration?.stepFileKey ??
               child.assemblyComposition?.assemblyStepFileKey ??
               '',
-            boundingBox: child.cadGeneration?.boundingBox,
+            // Sub-assemblies carry their bounds on assemblyComposition
+            boundingBox:
+              child.cadGeneration?.boundingBox ??
+              child.assemblyComposition?.boundingBox,
             interfaces: (child.interfaces ?? []).map((i) => ({
               id: i.id,
               description: i.description,
@@ -248,11 +286,11 @@ export async function* runAssemblyCompositionStage(
         // Validate the plan
         const childBoundingBoxes = new Map<string, BoundingBox3D>()
         for (const child of assemblyNode.children) {
-          if (child.cadGeneration?.boundingBox) {
-            childBoundingBoxes.set(
-              child.tempId,
-              child.cadGeneration.boundingBox,
-            )
+          const bb =
+            child.cadGeneration?.boundingBox ??
+            child.assemblyComposition?.boundingBox
+          if (bb) {
+            childBoundingBoxes.set(child.tempId, bb)
           }
         }
 
@@ -279,7 +317,7 @@ export async function* runAssemblyCompositionStage(
 
         yield {
           type: 'llm_text',
-          text: `Generated KCL project for "${assemblyNode.name}" (${kclProject.files.length} file(s)). Assembly rendering via external engine would happen here.`,
+          text: `Generated KCL project for "${assemblyNode.name}" (${kclProject.files.length} file(s)).`,
         }
 
         // Compute exposed interfaces for parent-level use
@@ -291,16 +329,57 @@ export async function* runAssemblyCompositionStage(
           }
         }
 
-        // KCL code generated but no STEP file produced — requires Zoo Modeling API
-        // or local KittyCAD engine to render KCL to STEP. Until then, multi-level
-        // assembly composition cannot find sub-assembly geometry.
-        assemblyNode.assemblyComposition = {
-          status: 'code_only',
-          assemblyPlan: JSON.stringify(plan),
-          kclProjectRef: plan.kclCode,
-        }
+        // Render the composed STEP via the CadQuery/OCCT worker. Without a
+        // materialized item + branch there is nowhere to attach the file, so
+        // fall back to the KCL-only result rather than failing the node.
+        const assemblyItemId =
+          tempIdToItemId.get(assemblyNode.tempId) ??
+          assemblyNode.existingItemId
+        if (!assemblyItemId || !branchId) {
+          assemblyNode.assemblyComposition = {
+            status: 'code_only',
+            assemblyPlan: JSON.stringify(plan),
+            kclProjectRef: plan.kclCode,
+          }
+          yield {
+            type: 'llm_text',
+            text: `No materialized item or branch for "${assemblyNode.name}" — keeping KCL only, no STEP rendered.`,
+          }
+          completed++
+        } else {
+          yield {
+            type: 'llm_text',
+            text: `Rendering assembly "${assemblyNode.name}" (${childData.length} children)...`,
+          }
 
-        completed++
+          const rendered = await renderAssemblyStep({
+            plan,
+            assemblyName: assemblyNode.name,
+            children: childData.map((c) => ({
+              tempId: c.tempId,
+              name: c.name,
+              stepFileKey: c.stepFileKey,
+            })),
+            itemId: assemblyItemId,
+            branchId,
+            userId: session.userId,
+            signal,
+          })
+
+          assemblyNode.assemblyComposition = {
+            status: 'complete',
+            assemblyPlan: JSON.stringify(plan),
+            kclProjectRef: plan.kclCode,
+            assemblyStepFileKey: rendered.vaultFileId,
+            boundingBox: rendered.boundingBox,
+          }
+
+          yield {
+            type: 'llm_text',
+            text: `Assembly "${assemblyNode.name}" composed → ${rendered.fileName}.`,
+          }
+          completed++
+        }
       } catch (error) {
         const errMsg =
           error instanceof Error ? error.message : 'Assembly composition failed'
@@ -308,7 +387,9 @@ export async function* runAssemblyCompositionStage(
           type: 'llm_text',
           text: `Failed to compose "${assemblyNode.name}": ${errMsg}`,
         }
+        // Preserve any plan/KCL captured before the failure
         assemblyNode.assemblyComposition = {
+          ...assemblyNode.assemblyComposition,
           status: 'failed',
           errorMessage: errMsg,
         }

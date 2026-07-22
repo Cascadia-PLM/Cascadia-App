@@ -223,7 +223,7 @@ When satisfied, the user clicks **Confirm CAD & Proceed to Assembly**.
 
 **Stage key**: `assembly_composition`
 
-Composes assemblies bottom-up using LLM-planned transforms and KCL code generation.
+Composes assemblies bottom-up: LLM-planned transforms, KCL code generation, and STEP rendering via the CadQuery/OCCT worker.
 
 **Processing order**: Assemblies are processed via post-order traversal (deepest sub-assemblies first, root last) computed by `computeAssemblyOrder()`.
 
@@ -236,8 +236,9 @@ Composes assemblies bottom-up using LLM-planned transforms and KCL code generati
    - Placement transforms (translation + rotation) for each child
    - KCL code that imports each child STEP file and applies transforms
 4. **Plan validation**: `validateAssemblyPlan()` checks for collisions, out-of-bounds placements, and missing children.
-5. **KCL project generation**: `generateKclProject()` produces a multi-file KCL project from the plan.
+5. **KCL project generation**: `generateKclProject()` produces a multi-file KCL project from the plan (kept as a portable side artifact).
 6. **Interface propagation**: `computeExposedInterfaces()` determines which child interfaces are not consumed by internal mappings and propagates them up for parent-level use.
+7. **STEP rendering**: `renderAssemblyStep()` submits a `generation.cad.assemble` job to the CadQuery/OCCT worker, which imports each child STEP from the vault, applies the plan's transforms, and stores one composed STEP assembly back in the vault. On success the node gets `status: 'complete'` with `assemblyStepFileKey` and a `boundingBox` (used by the parent assembly's planning). Without a materialized item or ECO branch the node falls back to `status: 'code_only'` (plan + KCL, no geometry). See `docs/features/cad-services.md` for the rendering details and rotation convention.
 
 ### Stage 9: Assembly Review
 

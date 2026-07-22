@@ -245,13 +245,13 @@ The stage:
 
 When a part is regenerated, `cascade-recompose.ts` identifies all ancestor assemblies and marks them as stale for recomposition.
 
-## Assembly Composition (KCL)
+## Assembly Composition
 
-After individual part STEP files are generated, assemblies must be composed by positioning child parts relative to each other.
+After individual part STEP files are generated, assemblies are composed by positioning child parts relative to each other. Composition has three parts: an LLM **plans** placements, the plan is serialized to **KCL** as a portable artifact, and the CadQuery/OCCT worker **renders** the composed STEP file into the vault.
 
 ### KCL (KittyCAD Language)
 
-KCL is a domain-specific language for describing CAD assemblies. Cascadia generates KCL code that imports child STEP files and applies spatial transforms (translation, rotation).
+KCL is a domain-specific language for describing CAD assemblies. Cascadia generates KCL code that imports child STEP files and applies spatial transforms (translation, rotation). The KCL is stored on the BOM node (`kclProjectRef`) as a portable side artifact — actual geometry rendering happens in-house via the OCCT worker (below), not via a KittyCAD engine.
 
 A generated KCL project looks like:
 
@@ -289,6 +289,28 @@ The LLM produces a JSON response with:
 - `reasoning`: explanation of the assembly strategy.
 - `placements`: list of transforms (translation + rotation) for each child.
 - `kclCode`: KCL assembly code.
+
+The `placements` list is the engine-agnostic source of truth: each entry carries a `Transform3D` (translation in mm, rotation as Euler XYZ in degrees) plus the child's vault STEP file key. KCL is one serialization of it; the OCCT render consumes it directly.
+
+### STEP Rendering (OCCT Worker)
+
+After planning, the stage submits a `generation.cad.assemble` job (`src/lib/cad-generation/assembly-render.ts`) to the CadQuery worker at `workers/cad-generator/`, which:
+
+1. Resolves each child STEP from the vault by file ID (`get_vault_file()` in the worker's `db.py` — the workers' only vault *read* path; everything else is write-only).
+2. Imports each child with `cq.importers.importStep()` and applies the placement transform (`assembly.py`).
+3. Combines the transformed shapes into a structured `cq.Assembly` with deduplicated part names, exported via XDE so the CAD converter's decomposer can read the output back.
+4. Stores the composed STEP in the vault and returns `{ vaultFileId, fileName, boundingBox }`.
+
+On success the BOM node gets `assemblyComposition = { status: 'complete', assemblyStepFileKey, boundingBox, ... }`. The bounding box feeds the *parent* assembly's planning and overlap validation — this is what makes multi-level composition work, since sub-assemblies have no `cadGeneration.boundingBox` of their own.
+
+**Rotation convention** (pinned by `workers/cad-generator/tests/test_assembly.py`): rotateX → rotateY → rotateZ, each about the **global** axis through the origin, in degrees, followed by translation — identical to the KCL serialization in `kcl-generator.ts`. Transforms are baked into each shape before it joins the assembly, so the exported XDE holds identity locations plus part names.
+
+Two deliberate fallbacks:
+
+- The stage re-keys every placement's `stepFileKey` from its own child data before submission — LLM-echoed file keys are never trusted.
+- If the assembly has no materialized item or ECO branch to attach a file to, the node falls back to `status: 'code_only'` (plan + KCL retained, no geometry). `code_only` nodes are not skipped on re-run, so they gain geometry once the context exists.
+
+`quantity > 1` placements currently render a single instance (the plan carries one transform per placement); the worker logs a warning when this happens.
 
 ### Bottom-Up Assembly Order
 
@@ -340,7 +362,7 @@ Each vault file record includes:
 
 ### Background Job Processing
 
-CAD operations use two job types registered in the background job system:
+CAD operations use these job types registered in the background job system:
 
 **`conversion.cad.step-to-stl`**: Converts existing STEP/IGES files to STL + GLB.
 
@@ -356,7 +378,20 @@ CAD operations use two job types registered in the background job system:
 - Timeout: 1 minute
 - Max attempts: 3
 - Retry delays: 5s, 15s, 30s
-- Consumed by a CadQuery worker.
+- Consumed by the CadQuery worker (`workers/cad-generator/`).
+
+**`generation.cad.mechanism`**: Generates coordinated multi-part mechanisms (e.g. rack-and-pinion via cq-gears), one STEP per role.
+
+- Routing key: `jobs.generation.cad.mechanism`
+- Consumed by the CadQuery worker.
+
+**`generation.cad.assemble`**: Composes child STEP files into one structured assembly STEP from planned placements.
+
+- Routing key: `jobs.generation.cad.assemble`
+- Timeout: 3 minutes
+- Max attempts: 3
+- Retry delays: 5s, 15s, 30s
+- Consumed by the CadQuery worker.
 
 Jobs are submitted via `JobService.submit()` and tracked in the `jobs` table with progress updates, log entries, and result storage.
 
@@ -397,6 +432,7 @@ Jobs are submitted via `JobService.submit()` and tracked in the `jobs` table wit
 | `src/lib/cad-generation/assembly-order.ts`        | Bottom-up traversal order computation          |
 | `src/lib/cad-generation/assembly-validator.ts`    | Pre/post assembly plan validation              |
 | `src/lib/cad-generation/kcl-generator.ts`         | KCL project generation from assembly plans     |
+| `src/lib/cad-generation/assembly-render.ts`       | Assembly STEP render job submission + polling  |
 | `src/lib/cad-generation/interface-propagation.ts` | Exposed interface computation                  |
 | `src/lib/cad-generation/cascade-recompose.ts`     | Stale assembly detection on part regeneration  |
 | `src/lib/cad-generation/types.ts`                 | Shared type definitions                        |
@@ -409,6 +445,23 @@ Jobs are submitted via `JobService.submit()` and tracked in the `jobs` table wit
 | `src/lib/jobs/definitions/conversion/types.ts`             | Payload and result Zod schemas               |
 | `src/lib/jobs/definitions/parametric-generation/config.ts` | `generation.cad.parametric` job type config  |
 | `src/lib/jobs/definitions/parametric-generation/types.ts`  | Payload and result Zod schemas               |
+| `src/lib/jobs/definitions/mechanism-generation/config.ts`  | `generation.cad.mechanism` job type config   |
+| `src/lib/jobs/definitions/mechanism-generation/types.ts`   | Payload and result Zod schemas               |
+| `src/lib/jobs/definitions/assembly-composition/config.ts`  | `generation.cad.assemble` job type config    |
+| `src/lib/jobs/definitions/assembly-composition/types.ts`   | Payload and result Zod schemas               |
+
+### CAD Generator (Python)
+
+| File                                                              | Purpose                                          |
+| ----------------------------------------------------------------- | ------------------------------------------------ |
+| `workers/cad-generator/src/cad_generator/worker.py`               | RabbitMQ consumer: parametric/mechanism/assemble |
+| `workers/cad-generator/src/cad_generator/templates/`              | CadQuery parametric part templates               |
+| `workers/cad-generator/src/cad_generator/mechanism_generators/`   | Multi-part mechanism generators (cq-gears)       |
+| `workers/cad-generator/src/cad_generator/assembly.py`             | Placement transforms + structured STEP assembly  |
+| `workers/cad-generator/src/cad_generator/export.py`               | STEP export and bounding box computation         |
+| `workers/cad-generator/src/cad_generator/models.py`               | Pydantic models for payloads and results         |
+| `workers/cad-generator/src/cad_generator/db.py`                   | PostgreSQL operations (jobs, vault_files)        |
+| `workers/cad-generator/tests/test_assembly.py`                    | Rotation-convention and STEP round-trip tests    |
 
 ### Design Engine Stages
 

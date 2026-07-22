@@ -32,6 +32,9 @@ import { parametricGenerationConfig } from './parametric-generation/config'
 // Mechanism CAD generation jobs (Python CadQuery worker)
 import { mechanismGenerationConfig } from './mechanism-generation/config'
 
+// Assembly STEP composition jobs (Python CadQuery/OCCT worker)
+import { assemblyComposeConfig } from './assembly-composition/config'
+
 // Zoo Text-to-CAD generation jobs (Node.js worker)
 import { zooGenerationConfig } from './zoo-generation/config'
 import { jobLogger } from '@/lib/logging/logger'
@@ -45,6 +48,7 @@ JobTypeRegistry.register(wiPartChangedConfig)
 JobTypeRegistry.register(cadConversionConfig)
 JobTypeRegistry.register(parametricGenerationConfig)
 JobTypeRegistry.register(mechanismGenerationConfig)
+JobTypeRegistry.register(assemblyComposeConfig)
 JobTypeRegistry.register(zooGenerationConfig)
 
 // Mark registry definitions as loaded

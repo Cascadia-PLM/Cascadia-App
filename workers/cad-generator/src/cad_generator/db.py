@@ -175,6 +175,28 @@ def insert_vault_file(
     return file_id
 
 
+def get_vault_file(file_id: str) -> Optional[VaultFileRecord]:
+    """Fetch a vault file record by ID (to read previously generated STEPs)."""
+    conn = get_connection()
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, item_id, branch_id, file_name, storage_path, uploaded_by "
+            "FROM vault_files WHERE id = %s",
+            (file_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        return VaultFileRecord(
+            id=str(row[0]),
+            item_id=str(row[1]),
+            branch_id=str(row[2]) if row[2] else None,
+            file_name=row[3],
+            storage_path=row[4],
+            uploaded_by=str(row[5]),
+        )
+
+
 def compute_file_hash(file_path: str) -> str:
     """Compute SHA-256 hash of a file."""
     h = hashlib.sha256()

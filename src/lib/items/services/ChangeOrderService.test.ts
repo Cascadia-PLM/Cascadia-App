@@ -388,35 +388,41 @@ describe('ChangeOrderService', () => {
 
   // Helper: create a second design with a main branch (mirrors beforeEach).
   async function createDesign(codeSuffix: string): Promise<string> {
-    const [d] = await testDb.db
-      .insert(designs)
-      .values({
-        name: `Test Design ${codeSuffix}`,
-        code: `PROD-${uniquePrefix}-${codeSuffix}`,
-        designType: 'Engineering',
-        createdBy: user.id,
-      })
-      .returning()
-    const [c] = await testDb.db
-      .insert(commits)
-      .values({
-        designId: d.id,
-        branchId: d.id,
-        message: 'Initial commit',
-        createdBy: user.id,
-      })
-      .returning()
-    const [b] = await testDb.db
-      .insert(branches)
-      .values({
-        designId: d.id,
-        name: 'main',
-        branchType: 'main',
-        headCommitId: c.id,
-        baseCommitId: c.id,
-        createdBy: user.id,
-      })
-      .returning()
+    const d = takeFirst(
+      await testDb.db
+        .insert(designs)
+        .values({
+          name: `Test Design ${codeSuffix}`,
+          code: `PROD-${uniquePrefix}-${codeSuffix}`,
+          designType: 'Engineering',
+          createdBy: user.id,
+        })
+        .returning(),
+    )
+    const c = takeFirst(
+      await testDb.db
+        .insert(commits)
+        .values({
+          designId: d.id,
+          branchId: d.id,
+          message: 'Initial commit',
+          createdBy: user.id,
+        })
+        .returning(),
+    )
+    const b = takeFirst(
+      await testDb.db
+        .insert(branches)
+        .values({
+          designId: d.id,
+          name: 'main',
+          branchType: 'main',
+          headCommitId: c.id,
+          baseCommitId: c.id,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
     await testDb.db
       .update(commits)
       .set({ branchId: b.id })

@@ -763,7 +763,7 @@ export class ChangeOrderMergeService {
       for (const affected of affectedItems) {
         if (!affected.affectedItemId) continue
 
-        const action = affected.changeAction as ChangeAction
+        const action = affected.changeAction
         if (action !== 'obsolete' && action !== 'release') continue
 
         const item = await ItemService.findById(affected.affectedItemId)

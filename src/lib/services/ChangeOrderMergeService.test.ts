@@ -1627,21 +1627,23 @@ describe('ChangeOrderMergeService', () => {
       )
 
       // Branch content: a working copy of the assembly, so a branch merges.
-      const [workingCopy] = await testDb.db
-        .insert(items)
-        .values({
-          itemNumber: assembly.itemNumber,
-          itemType: 'Part',
-          revision: '-',
-          name: 'Branch Working Copy',
-          state: 'Draft',
-          masterId: assembly.masterId,
-          designId: assembly.designId,
-          isCurrent: false,
-          createdBy: user.id,
-          modifiedBy: user.id,
-        })
-        .returning()
+      const workingCopy = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            itemNumber: assembly.itemNumber,
+            itemType: 'Part',
+            revision: '-',
+            name: 'Branch Working Copy',
+            state: 'Draft',
+            masterId: assembly.masterId,
+            designId: assembly.designId,
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
 
       await testDb.db.insert(branchItems).values({
         branchId: branch.id,
@@ -1687,7 +1689,7 @@ describe('ChangeOrderMergeService', () => {
 
       // The branch still merged — this does not replace the branch path.
       expect(result.designs.length).toBe(1)
-      expect(result.designs[0].mergeResult.itemsMerged).toBe(1)
+      expect(result.designs[0]!.mergeResult.itemsMerged).toBe(1)
       const releasedAssembly = await ItemService.findById(workingCopy.id)
       expect(releasedAssembly?.state).toBe('Released')
 

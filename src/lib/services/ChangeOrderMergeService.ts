@@ -1223,18 +1223,39 @@ export class ChangeOrderMergeService {
 
             if (!releasedItemId) continue
 
-            // Get source of BOM relationships:
-            // - For modified items: copy from baseItemId (old revision)
-            // - For added items: copy from currentItemId (draft item may have relationships)
-            const sourceItemId =
-              bi.changeType === 'modified' ? bi.baseItemId : bi.currentItemId
-            if (!sourceItemId) continue
+            // The branch's own version of the item is the authority on its
+            // structure: it is created carrying the item's relationships and is
+            // what the user edits on the ECO branch (adding, re-quantifying or
+            // DELETING lines). Reading from baseItemId instead would resurrect
+            // every line deleted on the branch.
+            let sourceItemId = bi.currentItemId
 
-            // Get all relationships where source item is the parent
-            const parentRelationships = await tx
+            let parentRelationships = await tx
               .select()
               .from(itemRelationships)
               .where(eq(itemRelationships.sourceId, sourceItemId))
+
+            // Compatibility: working copies created before branch checkout
+            // carried relationships have none of their own. Fall back to the
+            // previous revision so an in-flight ECO does not lose its BOM.
+            if (parentRelationships.length === 0 && bi.baseItemId) {
+              const baseRelationships = await tx
+                .select()
+                .from(itemRelationships)
+                .where(eq(itemRelationships.sourceId, bi.baseItemId))
+              if (baseRelationships.length > 0) {
+                sourceItemId = bi.baseItemId
+                parentRelationships = baseRelationships
+              }
+            }
+
+            // Replace the released item's structure with the branch's, so a
+            // line deleted on the branch does not come back.
+            if (releasedItemId !== sourceItemId) {
+              await tx
+                .delete(itemRelationships)
+                .where(eq(itemRelationships.sourceId, releasedItemId))
+            }
 
             // Copy each relationship, resolving child references to new revisions
             for (const rel of parentRelationships) {
@@ -1265,18 +1286,30 @@ export class ChangeOrderMergeService {
                 }
               }
 
-              await tx
-                .insert(itemRelationships)
-                .values({
-                  sourceId: releasedItemId,
-                  targetId: resolvedTargetId,
-                  relationshipType: rel.relationshipType,
-                  quantity: rel.quantity,
-                  findNumber: rel.findNumber,
-                  referenceDesignator: rel.referenceDesignator,
-                  createdBy: userId,
-                })
-                .onConflictDoNothing()
+              if (releasedItemId === sourceItemId) {
+                // The working copy was released in place, so its rows already
+                // hang off the released item — only re-point a child that was
+                // revised in this same ECO.
+                if (resolvedTargetId !== rel.targetId) {
+                  await tx
+                    .update(itemRelationships)
+                    .set({ targetId: resolvedTargetId })
+                    .where(eq(itemRelationships.id, rel.id))
+                }
+              } else {
+                await tx
+                  .insert(itemRelationships)
+                  .values({
+                    sourceId: releasedItemId,
+                    targetId: resolvedTargetId,
+                    relationshipType: rel.relationshipType,
+                    quantity: rel.quantity,
+                    findNumber: rel.findNumber,
+                    referenceDesignator: rel.referenceDesignator,
+                    createdBy: userId,
+                  })
+                  .onConflictDoNothing()
+              }
             }
           }
         },

@@ -13,6 +13,7 @@ import {
   changeOrders,
   designs,
   documents,
+  itemRelationships,
   items,
   parts,
   requirements,
@@ -582,7 +583,36 @@ export class ChangeOrderService {
         wc.id,
       )
 
-      // 3. Create branchItem entry to track this on the ECO branch
+      // 3. Copy the item's outgoing relationships (BOM lines, document links)
+      //    onto the working copy. Without this the branch copy of an assembly
+      //    has an empty structure: you cannot see its children on the ECO
+      //    branch, let alone re-quantify or DELETE a line there. With it, the
+      //    working copy carries the real structure and is the thing the merge
+      //    releases, so edits made on the branch are what ship.
+      const sourceRelationships = await tx
+        .select()
+        .from(itemRelationships)
+        .where(eq(itemRelationships.sourceId, sourceItem.id))
+
+      if (sourceRelationships.length > 0) {
+        await tx
+          .insert(itemRelationships)
+          .values(
+            sourceRelationships.map((rel) => ({
+              sourceId: wc.id,
+              targetId: rel.targetId,
+              relationshipType: rel.relationshipType,
+              quantity: rel.quantity,
+              referenceDesignator: rel.referenceDesignator,
+              findNumber: rel.findNumber,
+              metadata: rel.metadata,
+              createdBy: userId,
+            })),
+          )
+          .onConflictDoNothing()
+      }
+
+      // 4. Create branchItem entry to track this on the ECO branch
       const bi = takeFirst(
         await tx
           .insert(branchItems)

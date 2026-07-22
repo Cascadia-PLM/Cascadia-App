@@ -307,15 +307,20 @@ export type KnownToolSubtype = keyof typeof TOOL_SUBTYPES
 // Capability schemas per subtype
 // ============================================================================
 
+// Capabilities are optional, supplemental metadata: none of these fields is
+// required to create a Tool. Each schema validates the *type/shape* of any
+// value that is provided, but leaving a field blank never blocks submission.
+// (The bare minimum to create a Tool is name + toolType + toolSubtype.)
+
 export const fdmPrinterCapabilitiesSchema = z.object({
-  buildVolume: z.tuple([z.number(), z.number(), z.number()]), // [x, y, z] mm
-  nozzleDiameter: z.number().positive().default(0.4), // mm
-  layerHeightRange: z.tuple([z.number(), z.number()]), // [min, max] mm
-  heatedBed: z.boolean(),
+  buildVolume: z.tuple([z.number(), z.number(), z.number()]).optional(), // [x, y, z] mm
+  nozzleDiameter: z.number().positive().optional(), // mm
+  layerHeightRange: z.tuple([z.number(), z.number()]).optional(), // [min, max] mm
+  heatedBed: z.boolean().optional(),
   maxBedTemp: z.number().positive().optional(), // °C
   maxHotendTemp: z.number().positive().optional(), // °C
   enclosedChamber: z.boolean().optional(),
-  compatibleMaterials: z.array(z.string()), // ["PLA", "PETG", "ABS", ...]
+  compatibleMaterials: z.array(z.string()).optional(), // ["PLA", "PETG", "ABS", ...]
   multiMaterial: z
     .object({
       type: z.string(),
@@ -325,92 +330,94 @@ export const fdmPrinterCapabilitiesSchema = z.object({
 })
 
 export const slaPrinterCapabilitiesSchema = z.object({
-  buildVolume: z.tuple([z.number(), z.number(), z.number()]),
-  xyResolution: z.number().positive(), // µm (pixel size)
-  layerHeightRange: z.tuple([z.number(), z.number()]), // mm
-  resinTypes: z.array(z.string()), // ["standard", "tough", "flexible", "castable"]
+  buildVolume: z.tuple([z.number(), z.number(), z.number()]).optional(),
+  xyResolution: z.number().positive().optional(), // µm (pixel size)
+  layerHeightRange: z.tuple([z.number(), z.number()]).optional(), // mm
+  resinTypes: z.array(z.string()).optional(), // ["standard", "tough", "flexible", "castable"]
 })
 
 export const cncMillCapabilitiesSchema = z.object({
-  workVolume: z.tuple([z.number(), z.number(), z.number()]), // mm
-  spindleSpeedRange: z.tuple([z.number(), z.number()]), // RPM
+  workVolume: z.tuple([z.number(), z.number(), z.number()]).optional(), // mm
+  spindleSpeedRange: z.tuple([z.number(), z.number()]).optional(), // RPM
   toolChangerSlots: z.number().int().positive().optional(),
-  axes: z.union([z.literal(3), z.literal(4), z.literal(5)]),
-  compatibleMaterials: z.array(z.string()),
+  axes: z.union([z.literal(3), z.literal(4), z.literal(5)]).optional(),
+  compatibleMaterials: z.array(z.string()).optional(),
 })
 
 export const laserCutterCapabilitiesSchema = z.object({
-  bedSize: z.tuple([z.number(), z.number()]), // [x, y] mm
-  laserType: z.enum(['co2', 'fiber', 'diode']),
-  maxPower: z.number().positive(), // watts
-  cuttableMaterials: z.array(
-    z.object({
-      material: z.string(),
-      maxThickness: z.number().positive(), // mm
-    }),
-  ),
+  bedSize: z.tuple([z.number(), z.number()]).optional(), // [x, y] mm
+  laserType: z.enum(['co2', 'fiber', 'diode']).optional(),
+  maxPower: z.number().positive().optional(), // watts
+  cuttableMaterials: z
+    .array(
+      z.object({
+        material: z.string(),
+        maxThickness: z.number().positive(), // mm
+      }),
+    )
+    .optional(),
 })
 
 export const miterSawCapabilitiesSchema = z.object({
-  bladeSize: z.number().positive(), // mm
-  maxCrosscutWidth: z.number().positive(), // mm at 90°
+  bladeSize: z.number().positive().optional(), // mm
+  maxCrosscutWidth: z.number().positive().optional(), // mm at 90°
   maxCrosscutAt45: z.number().positive().optional(), // mm at 45° miter
-  maxCutDepth: z.number().positive(), // mm at 90°
-  slidingCompound: z.boolean(),
-  dualBevel: z.boolean(),
+  maxCutDepth: z.number().positive().optional(), // mm at 90°
+  slidingCompound: z.boolean().optional(),
+  dualBevel: z.boolean().optional(),
 })
 
 export const drillPressCapabilitiesSchema = z.object({
-  maxDrillDiameter: z.number().positive(), // mm
-  spindleSpeedRange: z.tuple([z.number(), z.number()]), // RPM
-  throatDepth: z.number().positive(), // mm
-  maxStrokeDepth: z.number().positive(), // mm
-  tableSize: z.tuple([z.number(), z.number()]), // mm
+  maxDrillDiameter: z.number().positive().optional(), // mm
+  spindleSpeedRange: z.tuple([z.number(), z.number()]).optional(), // RPM
+  throatDepth: z.number().positive().optional(), // mm
+  maxStrokeDepth: z.number().positive().optional(), // mm
+  tableSize: z.tuple([z.number(), z.number()]).optional(), // mm
 })
 
 export const cncLatheCapabilitiesSchema = z.object({
-  maxSwingDiameter: z.number().positive(), // mm — max workpiece diameter
-  maxTurningLength: z.number().positive(), // mm
-  spindleSpeedRange: z.tuple([z.number(), z.number()]), // RPM
+  maxSwingDiameter: z.number().positive().optional(), // mm — max workpiece diameter
+  maxTurningLength: z.number().positive().optional(), // mm
+  spindleSpeedRange: z.tuple([z.number(), z.number()]).optional(), // RPM
   spindleBore: z.number().positive().optional(), // mm — bar stock capacity
   toolChangerSlots: z.number().int().positive().optional(),
   liveTooling: z.boolean().optional(),
   subSpindle: z.boolean().optional(),
-  compatibleMaterials: z.array(z.string()),
+  compatibleMaterials: z.array(z.string()).optional(),
 })
 
 export const manualMillCapabilitiesSchema = z.object({
-  tableSize: z.tuple([z.number(), z.number()]), // [x, y] mm
-  maxSpindleToTable: z.number().positive(), // mm — Z travel
-  spindleSpeedRange: z.tuple([z.number(), z.number()]), // RPM
+  tableSize: z.tuple([z.number(), z.number()]).optional(), // [x, y] mm
+  maxSpindleToTable: z.number().positive().optional(), // mm — Z travel
+  spindleSpeedRange: z.tuple([z.number(), z.number()]).optional(), // RPM
   spindleTaper: z.string().optional(), // "R8", "NT30", "CAT40"
   powerFeed: z.boolean().optional(),
   dro: z.boolean().optional(), // digital readout
-  compatibleMaterials: z.array(z.string()),
+  compatibleMaterials: z.array(z.string()).optional(),
 })
 
 export const manualLatheCapabilitiesSchema = z.object({
-  maxSwingDiameter: z.number().positive(), // mm
-  distanceBetweenCenters: z.number().positive(), // mm
-  spindleSpeedRange: z.tuple([z.number(), z.number()]), // RPM
+  maxSwingDiameter: z.number().positive().optional(), // mm
+  distanceBetweenCenters: z.number().positive().optional(), // mm
+  spindleSpeedRange: z.tuple([z.number(), z.number()]).optional(), // RPM
   spindleBore: z.number().positive().optional(), // mm
   threading: z.boolean().optional(),
   dro: z.boolean().optional(),
-  compatibleMaterials: z.array(z.string()),
+  compatibleMaterials: z.array(z.string()).optional(),
 })
 
 export const pressBrakeCapabilitiesSchema = z.object({
-  maxForce: z.number().positive(), // tonnes
-  bendLength: z.number().positive(), // mm
-  maxSheetThickness: z.number().positive(), // mm (for mild steel)
+  maxForce: z.number().positive().optional(), // tonnes
+  bendLength: z.number().positive().optional(), // mm
+  maxSheetThickness: z.number().positive().optional(), // mm (for mild steel)
   backGaugeRange: z.tuple([z.number(), z.number()]).optional(), // mm
   cnc: z.boolean().optional(),
-  compatibleMaterials: z.array(z.string()),
+  compatibleMaterials: z.array(z.string()).optional(),
 })
 
 export const surfaceGrinderCapabilitiesSchema = z.object({
-  tableSize: z.tuple([z.number(), z.number()]), // [x, y] mm
-  maxGrindingHeight: z.number().positive(), // mm
+  tableSize: z.tuple([z.number(), z.number()]).optional(), // [x, y] mm
+  maxGrindingHeight: z.number().positive().optional(), // mm
   magneticChuck: z.boolean().optional(),
   wheelDiameter: z.number().positive().optional(), // mm
 })

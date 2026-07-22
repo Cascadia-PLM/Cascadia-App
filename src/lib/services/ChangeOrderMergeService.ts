@@ -743,6 +743,68 @@ export class ChangeOrderMergeService {
       }) // end db.transaction
     }
 
+    // 3c. State-only affected-item actions, when branches DID merge.
+    //
+    // 'revise' creates a NEW version of an item, which is exactly what a
+    // branch merge performs — so on the branch path the merge owns it.
+    // 'release' and 'obsolete' are different in kind: they take the version
+    // that already exists and only change its state. A branch merge neither
+    // performs those nor conflicts with them, so gating them behind
+    // "no branches merged" silently dropped them. An ECO that both edits a
+    // BOM on its branch and obsoletes a part is an ordinary end-of-life
+    // change, and it must do both.
+    //
+    // Items the merge already moved into the target state are skipped, which
+    // keeps this idempotent and stops it double-handling branch content.
+    if (branchesMerged > 0) {
+      const affectedItems =
+        await ChangeOrderService.getAffectedItems(changeOrderId)
+
+      for (const affected of affectedItems) {
+        if (!affected.affectedItemId) continue
+
+        const action = affected.changeAction as ChangeAction
+        if (action !== 'obsolete' && action !== 'release') continue
+
+        const item = await ItemService.findById(affected.affectedItemId)
+        if (!item) continue
+
+        const targetState = await LifecycleService.getTargetState(
+          item.itemType,
+          action,
+        )
+        const resolvedState =
+          targetState || (action === 'obsolete' ? 'Obsolete' : 'Released')
+
+        if (item.state === resolvedState) continue
+
+        const updates: { state: string; revision?: string } = {
+          state: resolvedState,
+        }
+
+        // Releasing a version that never carried one still needs a revision;
+        // obsoleting keeps whatever revision the item already has.
+        if (action === 'release') {
+          const needsRevision =
+            !item.revision ||
+            item.revision === '-' ||
+            item.revision === 'DRAFT' ||
+            item.revision.startsWith('-')
+          if (needsRevision) {
+            const releaseScheme = await LifecycleService.getRevisionScheme(
+              item.itemType,
+            )
+            updates.revision = RevisionService.getInitialRevision(releaseScheme)
+            results.totalRevisionsAssigned++
+          }
+        }
+
+        await ItemService.update(affected.affectedItemId, updates, userId, {
+          bypassBranchProtection: true,
+        })
+      }
+    }
+
     // Note: Don't update ECO state here - let the workflow handle it via ChangeOrderService.close()
     // The workflow will transition from Approved -> Released
 

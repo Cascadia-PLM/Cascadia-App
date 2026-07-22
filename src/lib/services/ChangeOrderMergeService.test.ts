@@ -16,7 +16,7 @@ import {
   expect,
   it,
 } from 'vitest'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { ItemService } from '../items/services/ItemService'
 import { ChangeOrderService } from '../items/services/ChangeOrderService'
 import { ChangeOrderMergeService } from './ChangeOrderMergeService'
@@ -1590,6 +1590,114 @@ describe('ChangeOrderMergeService', () => {
         releasedPartForObsolete.id,
       )
       expect(obsoletedPart?.state).toBe('Obsolete')
+    })
+
+    it('applies release/obsolete actions even when the ECO also merges a branch', async () => {
+      // Regression: these actions used to be gated behind "no branches
+      // merged", so an end-of-life ECO that both edited an assembly on its
+      // branch AND obsoleted the superseded part silently dropped the
+      // obsoletion. 'revise' stays the merge's job — it creates a new
+      // version — but release/obsolete only restate an existing one.
+      // Create every part while the design is still clean — branch protection
+      // blocks creating on main once it holds released items — then release
+      // the two that need to start out Released.
+      const assembly = await createPart('branch-and-obsolete-assy')
+      const eolPart = await createPart('branch-and-obsolete-eol')
+      const draftPart = await createPart('branch-and-obsolete-draft')
+      await testDb.db
+        .update(items)
+        .set({ state: 'Released' })
+        .where(inArray(items.id, [assembly.id, eolPart.id]))
+
+      const mainBranch = await BranchService.getMainBranch(designId)
+
+      await testDb.db.insert(branchItems).values({
+        branchId: mainBranch!.id,
+        itemMasterId: assembly.masterId!,
+        currentItemId: assembly.id,
+        baseItemId: assembly.id,
+        changeType: null,
+      })
+
+      const eco = await createChangeOrder()
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+
+      // Branch content: a working copy of the assembly, so a branch merges.
+      const [workingCopy] = await testDb.db
+        .insert(items)
+        .values({
+          itemNumber: assembly.itemNumber,
+          itemType: 'Part',
+          revision: '-',
+          name: 'Branch Working Copy',
+          state: 'Draft',
+          masterId: assembly.masterId,
+          designId: assembly.designId,
+          isCurrent: false,
+          createdBy: user.id,
+          modifiedBy: user.id,
+        })
+        .returning()
+
+      await testDb.db.insert(branchItems).values({
+        branchId: branch.id,
+        itemMasterId: assembly.masterId!,
+        currentItemId: workingCopy.id,
+        baseItemId: assembly.id,
+        changeType: 'modified',
+      })
+
+      await testDb.db.insert(changeOrderDesigns).values({
+        changeOrderId: eco.id,
+        designId: designId,
+        branchId: branch.id,
+        mergeStatus: 'pending',
+        itemsAffected: 1,
+      })
+
+      // Affected items that are NOT branch content: state-only actions.
+      await testDb.db.insert(changeOrderAffectedItems).values([
+        {
+          changeOrderId: eco.id,
+          affectedItemId: eolPart.id,
+          affectedItemMasterId: eolPart.masterId,
+          changeAction: 'obsolete',
+          currentState: 'Released',
+          targetState: 'Obsolete',
+          createdBy: user.id,
+        },
+        {
+          changeOrderId: eco.id,
+          affectedItemId: draftPart.id,
+          affectedItemMasterId: draftPart.masterId,
+          changeAction: 'release',
+          currentState: 'Draft',
+          targetState: 'Released',
+          createdBy: user.id,
+        },
+      ])
+
+      await approveEco(eco.id)
+
+      const result = await ChangeOrderMergeService.merge(eco.id, user.id)
+
+      // The branch still merged — this does not replace the branch path.
+      expect(result.designs.length).toBe(1)
+      expect(result.designs[0].mergeResult.itemsMerged).toBe(1)
+      const releasedAssembly = await ItemService.findById(workingCopy.id)
+      expect(releasedAssembly?.state).toBe('Released')
+
+      // ...and the state-only actions were applied rather than dropped.
+      const obsoleted = await ItemService.findById(eolPart.id)
+      expect(obsoleted?.state).toBe('Obsolete')
+
+      const released = await ItemService.findById(draftPart.id)
+      expect(released?.state).toBe('Released')
+      expect(released?.revision).not.toBe('-')
     })
   })
 

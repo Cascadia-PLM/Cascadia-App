@@ -30,10 +30,12 @@ import {
   changeOrderAffectedItems,
   changeOrderDesigns,
   changeOrders,
+  designs,
   itemRelationships,
   items,
   programs,
   tags,
+  upstreamChanges,
   workflowDefinitions,
   workflowInstances,
 } from '@/lib/db/schema'
@@ -1494,6 +1496,169 @@ describe('ChangeOrderMergeService', () => {
       const releasedWorkingCopy = await ItemService.findById(workingCopy.id)
       expect(releasedWorkingCopy?.state).toBe('Released')
       expect(releasedWorkingCopy?.revision).toBe('B')
+    })
+  })
+
+  describe('upstream change notification to derived MBOMs', () => {
+    it('notifies MBOMs derived from the design when an ECO branch merges', async () => {
+      // Regression: notifyDerivedMboms had no caller anywhere, so
+      // upstream_changes was never written and the whole MBOM
+      // upstream-review feature was unreachable — GET upstream-changes could
+      // only ever return empty.
+      const part = await createPart('upstream-notify', 'Released')
+      const mainBranch = await BranchService.getMainBranch(designId)
+
+      await testDb.db.insert(branchItems).values({
+        branchId: mainBranch!.id,
+        itemMasterId: part.masterId!,
+        currentItemId: part.id,
+        baseItemId: part.id,
+        changeType: null,
+      })
+
+      // A Manufacturing design derived from this one. Inserted directly:
+      // MbomService.createFromEbom is the only legal producer, and this test
+      // only needs the sourceDesignId link it establishes.
+      const mbom = takeFirst(
+        await testDb.db
+          .insert(designs)
+          .values({
+            programId,
+            name: 'Derived MBOM',
+            code: `MBOM-${uniquePrefix}`,
+            designType: 'Manufacturing',
+            sourceDesignId: designId,
+            createdBy: user.id,
+          })
+          .returning(),
+      )
+
+      const eco = await createChangeOrder()
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+
+      const workingCopy = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            itemNumber: part.itemNumber,
+            itemType: 'Part',
+            revision: '-',
+            name: 'Branch Working Copy',
+            state: 'Draft',
+            masterId: part.masterId,
+            designId: part.designId,
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
+
+      await testDb.db.insert(branchItems).values({
+        branchId: branch.id,
+        itemMasterId: part.masterId!,
+        currentItemId: workingCopy.id,
+        baseItemId: part.id,
+        changeType: 'modified',
+      })
+
+      await testDb.db.insert(changeOrderDesigns).values({
+        changeOrderId: eco.id,
+        designId: designId,
+        branchId: branch.id,
+        mergeStatus: 'pending',
+        itemsAffected: 1,
+      })
+
+      await approveEco(eco.id)
+      await ChangeOrderMergeService.merge(eco.id, user.id)
+
+      const notifications = await testDb.db
+        .select()
+        .from(upstreamChanges)
+        .where(eq(upstreamChanges.targetDesignId, mbom.id))
+
+      expect(notifications.length).toBe(1)
+      expect(notifications[0]!.sourceDesignId).toBe(designId)
+      expect(notifications[0]!.sourceEcoId).toBe(eco.id)
+      expect(notifications[0]!.status).toBe('pending')
+
+      // The payload must describe the change well enough to review it.
+      const changed = notifications[0]!.changedItems
+      expect(changed.length).toBe(1)
+      expect(changed[0]!.masterId).toBe(part.masterId)
+      expect(changed[0]!.itemNumber).toBe(part.itemNumber)
+      expect(changed[0]!.changeType).toBe('modified')
+      expect(changed[0]!.previousRevision).toBe('A')
+      expect(changed[0]!.newRevision).toBe('B')
+    })
+
+    it('does not notify when the design has no derived MBOMs', async () => {
+      const part = await createPart('upstream-none', 'Released')
+      const mainBranch = await BranchService.getMainBranch(designId)
+
+      await testDb.db.insert(branchItems).values({
+        branchId: mainBranch!.id,
+        itemMasterId: part.masterId!,
+        currentItemId: part.id,
+        baseItemId: part.id,
+        changeType: null,
+      })
+
+      const eco = await createChangeOrder()
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+
+      const workingCopy = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            itemNumber: part.itemNumber,
+            itemType: 'Part',
+            revision: '-',
+            name: 'Branch Working Copy',
+            state: 'Draft',
+            masterId: part.masterId,
+            designId: part.designId,
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
+
+      await testDb.db.insert(branchItems).values({
+        branchId: branch.id,
+        itemMasterId: part.masterId!,
+        currentItemId: workingCopy.id,
+        baseItemId: part.id,
+        changeType: 'modified',
+      })
+
+      await testDb.db.insert(changeOrderDesigns).values({
+        changeOrderId: eco.id,
+        designId: designId,
+        branchId: branch.id,
+        mergeStatus: 'pending',
+        itemsAffected: 1,
+      })
+
+      await approveEco(eco.id)
+      await ChangeOrderMergeService.merge(eco.id, user.id)
+
+      const notifications = await testDb.db
+        .select()
+        .from(upstreamChanges)
+        .where(eq(upstreamChanges.sourceDesignId, designId))
+
+      expect(notifications.length).toBe(0)
     })
   })
 

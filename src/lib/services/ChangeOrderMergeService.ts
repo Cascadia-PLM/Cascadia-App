@@ -19,8 +19,9 @@ import { CommitService } from './CommitService'
 import { CrossDesignReferenceService } from './CrossDesignReferenceService'
 import { DesignService } from './DesignService'
 import { LifecycleService } from './LifecycleService'
+import { MbomService } from './MbomService'
 import { RevisionService } from './RevisionService'
-import type { commits } from '../db/schema'
+import type { UpstreamChangeItem, commits } from '../db/schema'
 import type { PromoteActionMapping, RevisionScheme } from '../types/lifecycle'
 import type { ChangeOrder } from '../items/types/change-order'
 import { serviceLogger } from '@/lib/logging/logger'
@@ -36,6 +37,8 @@ export interface MergeResult {
   itemsMerged: number
   itemsAdded: number
   itemsDeleted: number
+  /** What this merge changed, as notified to MBOMs derived from the design. */
+  changedItems: Array<UpstreamChangeItem>
 }
 
 export interface ChangeOrderMergeResult {
@@ -205,6 +208,34 @@ export class ChangeOrderMergeService {
           designName: design?.name || 'Unknown',
           mergeResult,
         })
+
+        // Tell any Manufacturing designs derived from this design that their
+        // source moved. This is the only point that knows an engineering
+        // change actually released, so it is where the notification belongs;
+        // MBOM owners then accept or defer each change on their own schedule.
+        if (mergeResult.changedItems.length > 0) {
+          try {
+            const notified = await MbomService.notifyDerivedMboms(
+              ecoDesign.designId,
+              mergeResult.mergeCommit.id,
+              changeOrderId,
+              mergeResult.changedItems,
+            )
+            if (notified > 0) {
+              serviceLogger.info(
+                { designId: ecoDesign.designId, notified, changeOrderId },
+                'Notified derived MBOMs of upstream change',
+              )
+            }
+          } catch (error) {
+            // A derived-MBOM notification must never block the release it
+            // describes — the change is already merged and valid.
+            serviceLogger.warn(
+              { err: error, designId: ecoDesign.designId, changeOrderId },
+              'Failed to notify derived MBOMs of upstream change',
+            )
+          }
+        }
 
         results.totalRevisionsAssigned += Object.keys(
           mergeResult.revisionsAssigned,
@@ -1371,12 +1402,48 @@ export class ChangeOrderMergeService {
     // 8. Archive ECO branch
     await BranchService.archiveBranch(branchId)
 
+    // 9. Describe what this merge changed, for MBOMs derived from this design.
+    // Resolved here because this is the only scope that still knows both the
+    // released item and the revision it superseded.
+    const upstreamItems: Array<UpstreamChangeItem> = []
+    for (const change of itemChanges) {
+      const released = await db
+        .select()
+        .from(items)
+        .where(eq(items.id, change.itemId))
+        .limit(1)
+        .then((r) => r.at(0))
+      if (!released) continue
+
+      let previousRevision = ''
+      if (change.previousItemId) {
+        const previous = await db
+          .select({ revision: items.revision })
+          .from(items)
+          .where(eq(items.id, change.previousItemId))
+          .limit(1)
+          .then((r) => r.at(0))
+        previousRevision = previous?.revision ?? ''
+      }
+
+      upstreamItems.push({
+        masterId: change.itemMasterId,
+        itemNumber: released.itemNumber,
+        name: released.name,
+        itemType: released.itemType,
+        previousRevision,
+        newRevision: released.revision,
+        changeType: change.changeType,
+      })
+    }
+
     return {
       mergeCommit,
       revisionsAssigned,
       itemsMerged,
       itemsAdded,
       itemsDeleted,
+      changedItems: upstreamItems,
     }
   }
 

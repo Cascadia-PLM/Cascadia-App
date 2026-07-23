@@ -14,20 +14,25 @@ import {
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
+// Mirrors the server's ReleasePreview shape (ChangeOrderMergeService).
+// Defined locally rather than imported so no server/db code is pulled into
+// the client bundle. Fields sourced from the fetched JSON are optional because
+// the response is untyped at this boundary — guard before use.
+interface ReleasePreviewItem {
+  itemNumber: string
+  currentRevision: string
+  newRevision: string
+}
+
 interface ReleasePreview {
-  designs: Array<{
+  designs?: Array<{
     designId: string
     designName: string
-    itemCount: number
-    revisionsToAssign: Array<{
-      itemNumber: string
-      currentRevision: string
-      newRevision: string
-    }>
+    items?: Array<ReleasePreviewItem>
   }>
   totalItems: number
   canRelease: boolean
-  validationIssues: Array<{ severity: string; message: string }>
+  validationIssues?: Array<string>
 }
 
 interface WorkflowTransitionDialogProps {
@@ -271,48 +276,53 @@ export function WorkflowTransitionDialog({
                 </div>
               ) : releasePreview ? (
                 <div className="space-y-2 text-sm">
-                  {releasePreview.validationIssues.length > 0 && (
+                  {(releasePreview.validationIssues ?? []).length > 0 && (
                     <div className="space-y-1">
-                      {releasePreview.validationIssues.map((issue, idx) => (
-                        <div
-                          key={idx}
-                          className={cn(
-                            'text-xs',
-                            issue.severity === 'error'
-                              ? 'text-red-600 dark:text-red-400'
-                              : 'text-amber-600 dark:text-amber-400',
-                          )}
-                        >
-                          {issue.message}
-                        </div>
-                      ))}
+                      {(releasePreview.validationIssues ?? []).map(
+                        (issue, idx) => (
+                          <div
+                            key={idx}
+                            className={cn(
+                              'text-xs',
+                              releasePreview.canRelease
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : 'text-red-600 dark:text-red-400',
+                            )}
+                          >
+                            {issue}
+                          </div>
+                        ),
+                      )}
                     </div>
                   )}
                   <div className="text-amber-800 dark:text-amber-200">
-                    {releasePreview.designs.length} design(s),{' '}
+                    {(releasePreview.designs ?? []).length} design(s),{' '}
                     {releasePreview.totalItems} item(s) will be merged to main
                   </div>
-                  {releasePreview.designs.map((design) => (
-                    <div
-                      key={design.designId}
-                      className="ml-2 text-xs text-amber-700 dark:text-amber-300"
-                    >
-                      <span className="font-medium">{design.designName}</span>
-                      {' — '}
-                      {design.itemCount} item(s)
-                      {design.revisionsToAssign.length > 0 && (
-                        <span>
-                          , revisions:{' '}
-                          {design.revisionsToAssign
-                            .map(
-                              (r) =>
-                                `${r.itemNumber} ${r.currentRevision}→${r.newRevision}`,
-                            )
-                            .join(', ')}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                  {(releasePreview.designs ?? []).map((design) => {
+                    const items = design.items ?? []
+                    return (
+                      <div
+                        key={design.designId}
+                        className="ml-2 text-xs text-amber-700 dark:text-amber-300"
+                      >
+                        <span className="font-medium">{design.designName}</span>
+                        {' — '}
+                        {items.length} item(s)
+                        {items.length > 0 && (
+                          <span>
+                            , revisions:{' '}
+                            {items
+                              .map(
+                                (r) =>
+                                  `${r.itemNumber} ${r.currentRevision}→${r.newRevision}`,
+                              )
+                              .join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               ) : (
                 <div className="text-sm text-amber-700 dark:text-amber-300">

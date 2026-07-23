@@ -252,7 +252,7 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 **Item types**: Part, Document, ChangeOrder, Requirement, Task, WorkInstruction, Issue, Tool, Software. All extend `BaseItem` and register via `ItemTypeRegistry`.
 
-**Software items**: firmware/software configuration items with a content-addressed source store (`software_blobs` + immutable `software_manifests`). The `software.manifestId` pointer rides the item version, so branch isolation and time travel work with no special cases. `SoftwareSourceService` handles imports (files/zip) and tree/file/diff reads. See `docs/proposals/software-management.md`.
+**Software items**: firmware/software configuration items with a content-addressed source store (`software_blobs` + immutable `software_manifests`). The `software.manifestId` pointer rides the item version, so branch isolation and time travel work with no special cases. `SoftwareSourceService` handles imports (files/zip), tree/file/diff reads, and checkout-gated draft editing (`draftManifestId` accumulates edits; an explicit commit promotes the draft and records per-file `source`-category field changes). Software manifest conflicts are sharpened to per-file granularity in `ConflictDetectionService`. See `docs/proposals/software-management.md`.
 
 **Part types**: Parts have a `partType` field: `Manufacture`, `Purchase`, `Phantom` (logical grouping), or `Software`.
 

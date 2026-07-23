@@ -15,6 +15,7 @@ registerTypeHandler('Software', {
       targetHardware: data.targetHardware || null,
       toolchain: data.toolchain || null,
       manifestId: data.manifestId || null,
+      draftManifestId: data.draftManifestId || null,
       buildArtifactFileId: data.buildArtifactFileId || null,
     })
   },
@@ -46,6 +47,8 @@ registerTypeHandler('Software', {
       updateData.toolchain = data.toolchain || null
     if (data.manifestId !== undefined)
       updateData.manifestId = data.manifestId || null
+    if (data.draftManifestId !== undefined)
+      updateData.draftManifestId = data.draftManifestId || null
     if (data.buildArtifactFileId !== undefined)
       updateData.buildArtifactFileId = data.buildArtifactFileId || null
 

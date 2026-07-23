@@ -1,8 +1,11 @@
 import { Hono } from 'hono'
+import { desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../adapter'
 import type { Software } from '@/lib/items/types/software'
 import type { VersionContext } from '@/lib/services/VersionResolver'
+import { items, software } from '@/lib/db/schema'
+import { db } from '@/lib/db'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { SoftwareSourceService } from '@/lib/services/SoftwareSourceService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
@@ -103,7 +106,8 @@ app.delete(
   ),
 )
 
-// GET /api/v1/software/:id/tree - source tree at an optional version context
+// GET /api/v1/software/:id/tree - source tree at an optional version context.
+// draft=true returns the uncommitted draft tree when one exists.
 app.get(
   '/:id/tree',
   adapt(
@@ -114,7 +118,9 @@ app.get(
           summary: 'Get the source tree of a software item',
           request: {
             params: softwareIdParamSchema,
-            query: contextQuerySchema,
+            query: contextQuerySchema.extend({
+              draft: z.enum(['true', 'false']).optional(),
+            }),
           },
           responses: {
             200: {
@@ -122,6 +128,8 @@ app.get(
                 itemId: z.string(),
                 revision: z.string(),
                 manifestId: z.string().nullable(),
+                draftManifestId: z.string().nullable(),
+                isDraft: z.boolean(),
                 fileCount: z.number(),
                 totalSize: z.number(),
                 entries: z.array(manifestEntrySchema),
@@ -131,18 +139,31 @@ app.get(
         },
       },
       async ({ params, request }) => {
-        const query = parseQuery(request, contextQuerySchema)
+        const query = parseQuery(
+          request,
+          contextQuerySchema.extend({
+            draft: z.enum(['true', 'false']).optional(),
+          }),
+        )
         const { item, manifest } = await SoftwareSourceService.getTree(
           params.id,
           toVersionContext(query),
         )
+
+        const useDraft = query.draft === 'true' && !!item.draftManifestId
+        const effective = useDraft
+          ? await SoftwareSourceService.getManifestById(item.draftManifestId!)
+          : manifest
+
         return {
           itemId: item.id,
           revision: item.revision,
           manifestId: item.manifestId ?? null,
-          fileCount: manifest?.fileCount ?? 0,
-          totalSize: manifest?.totalSize ?? 0,
-          entries: manifest?.entries ?? [],
+          draftManifestId: item.draftManifestId ?? null,
+          isDraft: useDraft,
+          fileCount: effective?.fileCount ?? 0,
+          totalSize: effective?.totalSize ?? 0,
+          entries: effective?.entries ?? [],
         }
       },
     ),
@@ -167,22 +188,241 @@ app.get(
       async ({ params, request }) => {
         const query = parseQuery(
           request,
-          contextQuerySchema.extend({ path: z.string().min(1) }),
+          contextQuerySchema.extend({
+            path: z.string().min(1),
+            draft: z.enum(['true', 'false']).optional(),
+          }),
         )
         const { item } = await SoftwareSourceService.getTree(
           params.id,
           toVersionContext(query),
         )
-        if (!item.manifestId) {
+        const manifestId =
+          query.draft === 'true' && item.draftManifestId
+            ? item.draftManifestId
+            : item.manifestId
+        if (!manifestId) {
           throw new NotFoundError('SourceFile', query.path, {
             detail: 'Software item has no source tree',
           })
         }
         const file = await SoftwareSourceService.getFileContent(
-          item.manifestId,
+          manifestId,
           query.path,
         )
         return { file }
+      },
+    ),
+  ),
+)
+
+// PUT /api/v1/software/:id/file - save one file into the draft tree
+app.put(
+  '/:id/file',
+  adapt(
+    apiHandler<{ id: string }>(
+      {
+        permission: ['software', 'update'],
+        openapi: {
+          summary: 'Save a source file to the draft tree',
+          request: {
+            params: softwareIdParamSchema,
+            body: {
+              schema: z.object({
+                path: z.string().min(1),
+                content: z.string(),
+                encoding: z.enum(['utf8', 'base64']).optional(),
+              }),
+            },
+          },
+        },
+      },
+      async ({ params, request, user }) => {
+        const body = (await request.json()) as {
+          path?: string
+          content?: string
+          encoding?: 'utf8' | 'base64'
+        }
+        if (!body.path || body.content === undefined) {
+          throw new ValidationError('path and content are required')
+        }
+        const data = Buffer.from(
+          body.content,
+          body.encoding === 'base64' ? 'base64' : 'utf8',
+        )
+        const { item, manifest } = await SoftwareSourceService.saveFileToDraft(
+          params.id,
+          body.path,
+          data,
+          user.id,
+        )
+        return {
+          draftManifestId: manifest.id,
+          fileCount: manifest.fileCount,
+          itemId: item.id,
+        }
+      },
+    ),
+  ),
+)
+
+// DELETE /api/v1/software/:id/file?path=... - delete from the draft tree
+app.delete(
+  '/:id/file',
+  adapt(
+    apiHandler<{ id: string }>(
+      {
+        permission: ['software', 'update'],
+        openapi: {
+          summary: 'Delete a source file from the draft tree',
+          request: {
+            params: softwareIdParamSchema,
+            query: z.object({ path: z.string().min(1) }),
+          },
+        },
+      },
+      async ({ params, request, user }) => {
+        const query = parseQuery(request, z.object({ path: z.string().min(1) }))
+        const { item, manifest } =
+          await SoftwareSourceService.deleteFileFromDraft(
+            params.id,
+            query.path,
+            user.id,
+          )
+        return {
+          draftManifestId: manifest.id,
+          fileCount: manifest.fileCount,
+          itemId: item.id,
+        }
+      },
+    ),
+  ),
+)
+
+// POST /api/v1/software/:id/file/rename - rename/move within the draft tree
+app.post(
+  '/:id/file/rename',
+  adapt(
+    apiHandler<{ id: string }>(
+      {
+        permission: ['software', 'update'],
+        openapi: {
+          summary: 'Rename a source file in the draft tree',
+          request: {
+            params: softwareIdParamSchema,
+            body: {
+              schema: z.object({
+                fromPath: z.string().min(1),
+                toPath: z.string().min(1),
+              }),
+            },
+          },
+        },
+      },
+      async ({ params, request, user }) => {
+        const body = (await request.json()) as {
+          fromPath?: string
+          toPath?: string
+        }
+        if (!body.fromPath || !body.toPath) {
+          throw new ValidationError('fromPath and toPath are required')
+        }
+        const { item, manifest } = await SoftwareSourceService.renameFileInDraft(
+          params.id,
+          body.fromPath,
+          body.toPath,
+          user.id,
+        )
+        return {
+          draftManifestId: manifest.id,
+          fileCount: manifest.fileCount,
+          itemId: item.id,
+        }
+      },
+    ),
+  ),
+)
+
+// POST /api/v1/software/:id/commit - promote the draft with a message
+app.post(
+  '/:id/commit',
+  adapt(
+    apiHandler<{ id: string }>(
+      {
+        permission: ['software', 'update'],
+        openapi: {
+          summary: 'Commit the draft source tree',
+          request: {
+            params: softwareIdParamSchema,
+            body: { schema: z.object({ message: z.string().min(1) }) },
+          },
+        },
+      },
+      async ({ params, request, user }) => {
+        const body = (await request.json()) as { message?: string }
+        if (!body.message) {
+          throw new ValidationError('A commit message is required')
+        }
+        const { item, manifest } = await SoftwareSourceService.commitDraft(
+          params.id,
+          body.message,
+          user.id,
+        )
+        return {
+          itemId: item.id,
+          manifestId: manifest?.id ?? null,
+          fileCount: manifest?.fileCount ?? 0,
+        }
+      },
+    ),
+  ),
+)
+
+// POST /api/v1/software/:id/draft/discard - throw away uncommitted edits
+app.post(
+  '/:id/draft/discard',
+  adapt(
+    apiHandler<{ id: string }>(
+      {
+        permission: ['software', 'update'],
+        openapi: {
+          summary: 'Discard the draft source tree',
+          request: { params: softwareIdParamSchema },
+        },
+      },
+      async ({ params, user }) => {
+        const item = await SoftwareSourceService.discardDraft(
+          params.id,
+          user.id,
+        )
+        return { itemId: item.id, draftManifestId: null }
+      },
+    ),
+  ),
+)
+
+// GET /api/v1/software/:id/blob/:hash - blob content by hash (history diffs)
+app.get(
+  '/:id/blob/:hash',
+  adapt(
+    apiHandler<{ id: string; hash: string }>(
+      {
+        permission: ['software', 'read'],
+        openapi: {
+          summary: 'Get source blob content by hash',
+          request: {
+            params: softwareIdParamSchema.extend({
+              hash: z.string().regex(/^[a-f0-9]{64}$/),
+            }),
+          },
+        },
+      },
+      async ({ params }) => {
+        if (!/^[a-f0-9]{64}$/.test(params.hash)) {
+          throw new ValidationError('Invalid blob hash')
+        }
+        const blob = await SoftwareSourceService.getBlob(params.hash)
+        return { blob }
       },
     ),
   ),
@@ -246,6 +486,43 @@ app.post(
           { replace },
         )
         return { import: toImportResponse(result) }
+      },
+    ),
+  ),
+)
+
+// GET /api/v1/software/:id/versions - all versions of this software master
+// (for revision compare pickers)
+app.get(
+  '/:id/versions',
+  adapt(
+    apiHandler<{ id: string }>(
+      {
+        permission: ['software', 'read'],
+        openapi: {
+          summary: 'List all versions of a software item',
+          request: { params: softwareIdParamSchema },
+        },
+      },
+      async ({ params }) => {
+        const item = await ItemService.findById(params.id)
+        if (!item || item.itemType !== 'Software') {
+          throw new NotFoundError('Software', params.id)
+        }
+        const versions = await db
+          .select({
+            id: items.id,
+            revision: items.revision,
+            state: items.state,
+            isCurrent: items.isCurrent,
+            modifiedAt: items.modifiedAt,
+            manifestId: software.manifestId,
+          })
+          .from(items)
+          .leftJoin(software, eq(software.itemId, items.id))
+          .where(eq(items.masterId, item.masterId))
+          .orderBy(desc(items.modifiedAt))
+        return { versions }
       },
     ),
   ),

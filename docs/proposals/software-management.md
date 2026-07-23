@@ -1,6 +1,6 @@
 # Proposal: Software as a First-Class Item Type
 
-**Status**: Phase 1 implemented (Software item type, content-addressed source store, import + read-only viewer). Phases 2-4 (in-app editing, per-file conflicts, external repos) not yet started.
+**Status**: Phases 1-2 implemented. Phase 1: Software item type, content-addressed source store, import + read-only viewer. Phase 2: checkout-gated in-app editing with draft manifests, per-file `source` history rows, revision/line diff views, per-file conflict sharpening, build-artifact slot. Phases 3-4 (external repos, drift alerts) not yet started.
 **Scope**: Firmware/embedded software management inside Cascadia — in-app code viewing and editing, full participation in the Design/Part/Document versioning model, and integration with external repositories (GitHub, Bitbucket, GitLab).
 
 ---

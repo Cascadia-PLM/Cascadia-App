@@ -144,6 +144,7 @@ const IGNORED_COMPARISON_FIELDS = [
   'revision',
   'itemId',
   'state', // Lifecycle state changes are managed by workflow, not user-editable
+  'draftManifestId', // Uncommitted editor state - only committed manifests conflict
 ] as const
 
 // ============================================
@@ -340,10 +341,16 @@ export class ConflictDetectionService {
         }
 
         // Detect field-level conflicts using three-way comparison
-        const fieldConflicts = this.detectFieldConflicts(
+        // (Software manifest conflicts are refined to per-file granularity)
+        const fieldConflicts = await this.refineSourceConflicts(
           baseItem as unknown as Record<string, unknown> | null,
           ourFullItem as unknown as Record<string, unknown>,
           latestMainItem as unknown as Record<string, unknown>,
+          this.detectFieldConflicts(
+            baseItem as unknown as Record<string, unknown> | null,
+            ourFullItem as unknown as Record<string, unknown>,
+            latestMainItem as unknown as Record<string, unknown>,
+          ),
         )
 
         const hasFieldConflicts = fieldConflicts.length > 0
@@ -453,6 +460,67 @@ export class ConflictDetectionService {
     }
 
     return null
+  }
+
+  /**
+   * Sharpen Software manifest conflicts to per-file granularity.
+   *
+   * A raw three-way comparison reports one opaque `manifestId` conflict when
+   * both branches changed the source tree. Here we diff each side's manifest
+   * against the base: only paths changed *differently on both sides* are true
+   * conflicts, emitted as one FieldConflict per file (fieldPath = the file).
+   * If the two branches touched disjoint files, the manifestId conflict is
+   * dropped entirely - the caller's existing logic then downgrades the item
+   * to a concurrent-modification/cross-ECO warning instead of an error.
+   */
+  static async refineSourceConflicts(
+    baseItem: Record<string, unknown> | null,
+    ourItem: Record<string, unknown>,
+    theirItem: Record<string, unknown>,
+    fieldConflicts: Array<FieldConflict>,
+  ): Promise<Array<FieldConflict>> {
+    if (ourItem.itemType !== 'Software') return fieldConflicts
+    const manifestConflict = fieldConflicts.find(
+      (c) => c.fieldName === 'manifestId',
+    )
+    if (!manifestConflict) return fieldConflicts
+
+    // Lazy import: SoftwareSourceService pulls in ItemService, which this
+    // module must not import at top level.
+    const { SoftwareSourceService } = await import('./SoftwareSourceService')
+
+    const baseManifest = (baseItem?.manifestId as string | null) ?? null
+    const [ourDiff, theirDiff] = await Promise.all([
+      SoftwareSourceService.diffManifests(
+        baseManifest,
+        (ourItem.manifestId as string | null) ?? null,
+      ),
+      SoftwareSourceService.diffManifests(
+        baseManifest,
+        (theirItem.manifestId as string | null) ?? null,
+      ),
+    ])
+
+    const theirByPath = new Map(theirDiff.map((d) => [d.path, d]))
+    const perFile: Array<FieldConflict> = []
+    for (const ours of ourDiff) {
+      const theirs = theirByPath.get(ours.path)
+      if (!theirs) continue
+      // Same path changed on both sides - only a conflict if the results differ
+      if ((ours.newHash ?? null) === (theirs.newHash ?? null)) continue
+      perFile.push({
+        fieldName: 'source',
+        fieldPath: ours.path,
+        baseValue: ours.oldHash ?? null,
+        ourValue: ours.newHash ?? null,
+        theirValue: theirs.newHash ?? null,
+      })
+    }
+
+    return [
+      ...fieldConflicts.filter((c) => c.fieldName !== 'manifestId'),
+      ...perFile,
+    ]
   }
 
   /**
@@ -734,10 +802,16 @@ export class ConflictDetectionService {
         // Base = common ancestor (what both branched from)
         // Ours = our working copy
         // Theirs = other ECO's working copy
-        const fieldConflicts = this.detectFieldConflicts(
+        // (Software manifest conflicts are refined to per-file granularity)
+        const fieldConflicts = await this.refineSourceConflicts(
           baseItem as unknown as Record<string, unknown>,
           ourFullItem as unknown as Record<string, unknown>,
           otherFullItem as unknown as Record<string, unknown>,
+          this.detectFieldConflicts(
+            baseItem as unknown as Record<string, unknown>,
+            ourFullItem as unknown as Record<string, unknown>,
+            otherFullItem as unknown as Record<string, unknown>,
+          ),
         )
 
         const hasFieldConflicts = fieldConflicts.length > 0

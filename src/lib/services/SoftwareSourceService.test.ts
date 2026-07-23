@@ -25,6 +25,8 @@ import { strToU8, zipSync } from 'fflate'
 import { ItemService } from '../items/services/ItemService'
 import { ChangeOrderService } from '../items/services/ChangeOrderService'
 import { ChangeOrderMergeService } from './ChangeOrderMergeService'
+import { CheckoutService } from './CheckoutService'
+import { ConflictDetectionService } from './ConflictDetectionService'
 import { SoftwareSourceService } from './SoftwareSourceService'
 import { BranchService } from './BranchService'
 import { DesignService } from './DesignService'
@@ -34,6 +36,10 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
   branchItems,
+  branches,
+  commits,
+  itemFieldChanges,
+  itemVersions,
   items,
   programs,
   software,
@@ -44,7 +50,11 @@ import {
 import { ItemTypeRegistry } from '@/lib/items/registry'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
 import { takeFirst } from '@/lib/db/take-first'
-import { ValidationError } from '@/lib/errors'
+import {
+  BranchProtectionError,
+  ResourceLockedError,
+  ValidationError,
+} from '@/lib/errors'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'
@@ -651,6 +661,523 @@ describe('SoftwareSourceService', () => {
           user.id,
         ),
       ).rejects.toThrow(ValidationError)
+    })
+  })
+
+  // ==========================================================================
+  // Phase 2: draft editing (edit -> commit) and source field-change history
+  // ==========================================================================
+
+  describe('draft editing', () => {
+    async function countCommits(branchId: string) {
+      const rows = await testDb.db
+        .select({ id: commits.id })
+        .from(commits)
+        .where(eq(commits.branchId, branchId))
+      return rows.length
+    }
+
+    it('draft saves accumulate without commits; commitDraft promotes with per-file source history', async () => {
+      const sw = await createSoftware()
+      const r1 = await SoftwareSourceService.importFiles(
+        sw.id!,
+        [
+          file('src/main.c', 'int main() {}\n'),
+          file('src/pid.c', 'float pid() { return 0; }\n'),
+        ],
+        user.id,
+      )
+      const m1 = r1.manifest
+
+      const mainBranch = await BranchService.getMainBranch(designId)
+      const commitsBefore = await countCommits(mainBranch!.id)
+
+      // Two draft saves - no commits, committed manifest untouched
+      await SoftwareSourceService.saveFileToDraft(
+        sw.id!,
+        'src/pid.c',
+        Buffer.from('float pid() { return 1; }\n'),
+        user.id,
+      )
+      const d2 = await SoftwareSourceService.saveFileToDraft(
+        sw.id!,
+        'src/util.c',
+        Buffer.from('int util() { return 2; }\n'),
+        user.id,
+      )
+
+      expect(await countCommits(mainBranch!.id)).toBe(commitsBefore)
+      const rowMid = await getSoftwareRow(sw.id!)
+      expect(rowMid!.manifestId).toBe(m1.id)
+      expect(rowMid!.draftManifestId).toBe(d2.manifest.id)
+      // Draft builds on draft: second save sees the first save's edit
+      expect(d2.manifest.fileCount).toBe(3)
+
+      // Commit with a message
+      const { item: committed } = await SoftwareSourceService.commitDraft(
+        sw.id!,
+        'Clamp integrator on saturation',
+        user.id,
+      )
+      expect(committed.manifestId).toBe(d2.manifest.id)
+      expect(committed.draftManifestId ?? null).toBeNull()
+      expect(await countCommits(mainBranch!.id)).toBe(commitsBefore + 1)
+
+      // The commit carries per-file source rows, not an opaque manifestId row
+      const [commit] = await testDb.db
+        .select()
+        .from(commits)
+        .where(
+          and(
+            eq(commits.branchId, mainBranch!.id),
+            eq(commits.message, 'Clamp integrator on saturation'),
+          ),
+        )
+        .limit(1)
+      expect(commit).toBeDefined()
+
+      const versions = await testDb.db
+        .select()
+        .from(itemVersions)
+        .where(eq(itemVersions.commitId, commit!.id))
+      expect(versions).toHaveLength(1)
+
+      const changes = await testDb.db
+        .select()
+        .from(itemFieldChanges)
+        .where(eq(itemFieldChanges.itemVersionId, versions[0]!.id))
+
+      const sourceRows = changes.filter((c) => c.fieldCategory === 'source')
+      expect(sourceRows.map((c) => `${c.fieldName}:${c.fieldPath}`).sort())
+        .toEqual(['added:src/util.c', 'modified:src/pid.c'])
+
+      const modified = sourceRows.find((c) => c.fieldPath === 'src/pid.c')!
+      const oldEntry = m1.entries.find((e) => e.path === 'src/pid.c')!
+      const newEntry = d2.manifest.entries.find(
+        (e) => e.path === 'src/pid.c',
+      )!
+      expect(modified.oldValue).toEqual({
+        hash: oldEntry.hash,
+        size: oldEntry.size,
+      })
+      expect(modified.newValue).toEqual({
+        hash: newEntry.hash,
+        size: newEntry.size,
+      })
+
+      expect(changes.some((c) => c.fieldName === 'manifestId')).toBe(false)
+      expect(changes.some((c) => c.fieldName === 'draftManifestId')).toBe(
+        false,
+      )
+    })
+
+    it('delete and rename operate on the draft tree', async () => {
+      const sw = await createSoftware()
+      await SoftwareSourceService.importFiles(
+        sw.id!,
+        [file('a.c', 'a\n'), file('b.c', 'b\n')],
+        user.id,
+      )
+
+      await SoftwareSourceService.renameFileInDraft(
+        sw.id!,
+        'a.c',
+        'src/a.c',
+        user.id,
+      )
+      const afterDelete = await SoftwareSourceService.deleteFileFromDraft(
+        sw.id!,
+        'b.c',
+        user.id,
+      )
+
+      const paths = afterDelete.manifest.entries.map((e) => e.path)
+      expect(paths).toEqual(['src/a.c'])
+
+      // Committed tree untouched until commit
+      const row = await getSoftwareRow(sw.id!)
+      const committedManifest = await SoftwareSourceService.getManifestById(
+        row!.manifestId!,
+      )
+      expect(committedManifest!.entries.map((e) => e.path).sort()).toEqual([
+        'a.c',
+        'b.c',
+      ])
+    })
+
+    it('discardDraft reverts to the committed tree', async () => {
+      const sw = await createSoftware()
+      await SoftwareSourceService.importFiles(
+        sw.id!,
+        [file('main.c', 'v1\n')],
+        user.id,
+      )
+      await SoftwareSourceService.saveFileToDraft(
+        sw.id!,
+        'main.c',
+        Buffer.from('v2\n'),
+        user.id,
+      )
+
+      const item = await SoftwareSourceService.discardDraft(sw.id!, user.id)
+      expect(item.draftManifestId ?? null).toBeNull()
+    })
+
+    it('commitDraft refuses without a draft; import refuses while a draft exists', async () => {
+      const sw = await createSoftware()
+      await SoftwareSourceService.importFiles(
+        sw.id!,
+        [file('main.c', 'v1\n')],
+        user.id,
+      )
+
+      await expect(
+        SoftwareSourceService.commitDraft(sw.id!, 'nothing to do', user.id),
+      ).rejects.toThrow(ValidationError)
+
+      await SoftwareSourceService.saveFileToDraft(
+        sw.id!,
+        'main.c',
+        Buffer.from('v2\n'),
+        user.id,
+      )
+      await expect(
+        SoftwareSourceService.importFiles(
+          sw.id!,
+          [file('other.c', 'x\n')],
+          user.id,
+        ),
+      ).rejects.toThrow(ValidationError)
+    })
+  })
+
+  // ==========================================================================
+  // Phase 2: checkout gating (security gate)
+  // ==========================================================================
+
+  describe('checkout gating', () => {
+    it("another user's checkout blocks draft edits; the holder can edit", async () => {
+      const sw = await createSoftware()
+      await SoftwareSourceService.importFiles(
+        sw.id!,
+        [file('main.c', 'v1\n')],
+        user.id,
+      )
+      await releaseOnMain(sw)
+
+      const eco = await createChangeOrder()
+      await ChangeOrderService.addAffectedItem(
+        eco.id,
+        { affectedItemId: sw.id!, changeAction: 'revise' },
+        user.id,
+      )
+      const [workingCopy] = await testDb.db
+        .select()
+        .from(items)
+        .where(
+          and(eq(items.masterId, sw.masterId!), like(items.revision, '-%')),
+        )
+        .limit(1)
+
+      // Another user takes the checkout lock
+      const otherUser = await insertTestUser(testDb.db)
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+      await CheckoutService.checkout(
+        { branchId: branch.id, itemMasterId: sw.masterId! },
+        otherUser.id,
+      )
+
+      await expect(
+        SoftwareSourceService.saveFileToDraft(
+          workingCopy!.id,
+          'main.c',
+          Buffer.from('v2\n'),
+          user.id,
+        ),
+      ).rejects.toThrow(ResourceLockedError)
+
+      // The checkout holder can edit
+      const saved = await SoftwareSourceService.saveFileToDraft(
+        workingCopy!.id,
+        'main.c',
+        Buffer.from('v2\n'),
+        otherUser.id,
+      )
+      expect(saved.manifest.fileCount).toBe(1)
+    })
+
+    it('a locked branch blocks draft edits', async () => {
+      const sw = await createSoftware()
+      await SoftwareSourceService.importFiles(
+        sw.id!,
+        [file('main.c', 'v1\n')],
+        user.id,
+      )
+      await releaseOnMain(sw)
+
+      const eco = await createChangeOrder()
+      await ChangeOrderService.addAffectedItem(
+        eco.id,
+        { affectedItemId: sw.id!, changeAction: 'revise' },
+        user.id,
+      )
+      const [workingCopy] = await testDb.db
+        .select()
+        .from(items)
+        .where(
+          and(eq(items.masterId, sw.masterId!), like(items.revision, '-%')),
+        )
+        .limit(1)
+
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+      await testDb.db
+        .update(branches)
+        .set({ isLocked: true })
+        .where(eq(branches.id, branch.id))
+
+      await expect(
+        SoftwareSourceService.saveFileToDraft(
+          workingCopy!.id,
+          'main.c',
+          Buffer.from('v2\n'),
+          user.id,
+        ),
+      ).rejects.toThrow(BranchProtectionError)
+    })
+
+    it('released items on protected main cannot be edited', async () => {
+      const sw = await createSoftware()
+      await SoftwareSourceService.importFiles(
+        sw.id!,
+        [file('main.c', 'v1\n')],
+        user.id,
+      )
+      await releaseOnMain(sw) // design now has a Released item -> main protected
+
+      await expect(
+        SoftwareSourceService.saveFileToDraft(
+          sw.id!,
+          'main.c',
+          Buffer.from('v2\n'),
+          user.id,
+        ),
+      ).rejects.toThrow(BranchProtectionError)
+    })
+  })
+
+  // ==========================================================================
+  // Phase 2: per-file conflict sharpening (complex algorithm gate)
+  // ==========================================================================
+
+  describe('per-file conflict sharpening', () => {
+    // Build three manifests (base / ours / theirs) via replace imports on a
+    // scratch item, then exercise refineSourceConflicts directly.
+    async function buildManifests() {
+      const scratch = await createSoftware('scratch')
+      const base = (
+        await SoftwareSourceService.importFiles(
+          scratch.id!,
+          [file('a.c', 'a v1\n'), file('b.c', 'b v1\n')],
+          user.id,
+          { replace: true },
+        )
+      ).manifest
+      const oursAC = (
+        await SoftwareSourceService.importFiles(
+          scratch.id!,
+          [file('a.c', 'a v2-ours\n'), file('b.c', 'b v1\n')],
+          user.id,
+          { replace: true },
+        )
+      ).manifest
+      const theirsBC = (
+        await SoftwareSourceService.importFiles(
+          scratch.id!,
+          [file('a.c', 'a v1\n'), file('b.c', 'b v2-theirs\n')],
+          user.id,
+          { replace: true },
+        )
+      ).manifest
+      const theirsAC = (
+        await SoftwareSourceService.importFiles(
+          scratch.id!,
+          [file('a.c', 'a v2-theirs\n'), file('b.c', 'b v1\n')],
+          user.id,
+          { replace: true },
+        )
+      ).manifest
+      return { base, oursAC, theirsBC, theirsAC }
+    }
+
+    const swRecord = (manifestId: string | null) => ({
+      itemType: 'Software',
+      manifestId,
+    })
+
+    const manifestConflict = (
+      base: string,
+      ours: string,
+      theirs: string,
+    ) => [
+      {
+        fieldName: 'manifestId',
+        baseValue: base,
+        ourValue: ours,
+        theirValue: theirs,
+      },
+    ]
+
+    it('drops the manifest conflict when branches touched disjoint files', async () => {
+      const { base, oursAC, theirsBC } = await buildManifests()
+
+      const refined = await ConflictDetectionService.refineSourceConflicts(
+        swRecord(base.id),
+        swRecord(oursAC.id),
+        swRecord(theirsBC.id),
+        manifestConflict(base.id, oursAC.id, theirsBC.id),
+      )
+
+      expect(refined).toEqual([])
+    })
+
+    it('emits one per-file conflict when the same file changed differently', async () => {
+      const { base, oursAC, theirsAC } = await buildManifests()
+
+      const refined = await ConflictDetectionService.refineSourceConflicts(
+        swRecord(base.id),
+        swRecord(oursAC.id),
+        swRecord(theirsAC.id),
+        manifestConflict(base.id, oursAC.id, theirsAC.id),
+      )
+
+      expect(refined).toHaveLength(1)
+      expect(refined[0]).toMatchObject({
+        fieldName: 'source',
+        fieldPath: 'a.c',
+      })
+    })
+
+    it('does not conflict when both sides made the identical change', async () => {
+      const { base, oursAC } = await buildManifests()
+
+      const refined = await ConflictDetectionService.refineSourceConflicts(
+        swRecord(base.id),
+        swRecord(oursAC.id),
+        swRecord(oursAC.id),
+        manifestConflict(base.id, oursAC.id, oursAC.id),
+      )
+
+      expect(refined).toEqual([])
+    })
+
+    it('cross-ECO detection reports file-level conflicts through the real flow', async () => {
+      // Released software with two files, revised by two concurrent ECOs
+      const sw = await createSoftware('xeco')
+      await SoftwareSourceService.importFiles(
+        sw.id!,
+        [file('main.c', 'int main() {}\n'), file('pid.c', 'v1\n')],
+        user.id,
+      )
+      await releaseOnMain(sw)
+
+      const eco1 = await createChangeOrder()
+      await ChangeOrderService.addAffectedItem(
+        eco1.id,
+        { affectedItemId: sw.id!, changeAction: 'revise' },
+        user.id,
+      )
+      const eco2 = await createChangeOrder()
+      await ChangeOrderService.addAffectedItem(
+        eco2.id,
+        { affectedItemId: sw.id!, changeAction: 'revise' },
+        user.id,
+      )
+
+      const { branch: branch1 } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco1.id,
+        user.id,
+      )
+      const { branch: branch2 } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco2.id,
+        user.id,
+      )
+
+      const wcOn = async (branchId: string) => {
+        const [bi] = await testDb.db
+          .select()
+          .from(branchItems)
+          .where(
+            and(
+              eq(branchItems.branchId, branchId),
+              eq(branchItems.itemMasterId, sw.masterId!),
+            ),
+          )
+          .limit(1)
+        return bi!.currentItemId!
+      }
+
+      const wc1 = await wcOn(branch1.id)
+      const wc2 = await wcOn(branch2.id)
+
+      // ECO1 edits pid.c; ECO2 edits main.c (disjoint) -> warning only
+      await SoftwareSourceService.saveFileToDraft(
+        wc1,
+        'pid.c',
+        Buffer.from('v2-eco1\n'),
+        user.id,
+      )
+      await SoftwareSourceService.commitDraft(wc1, 'eco1 pid fix', user.id)
+
+      await SoftwareSourceService.saveFileToDraft(
+        wc2,
+        'main.c',
+        Buffer.from('int main() { return 1; }\n'),
+        user.id,
+      )
+      await SoftwareSourceService.commitDraft(wc2, 'eco2 main fix', user.id)
+
+      const disjoint = await ConflictDetectionService.detectConflictsForEco(
+        eco1.id,
+      )
+      const swConflicts = disjoint.conflicts.filter(
+        (c) => c.itemMasterId === sw.masterId,
+      )
+      expect(swConflicts.some((c) => c.conflictType === 'field_conflict')).toBe(
+        false,
+      )
+      expect(swConflicts.some((c) => c.conflictType === 'cross_eco')).toBe(true)
+
+      // ECO2 now also edits pid.c differently -> real per-file conflict
+      await SoftwareSourceService.saveFileToDraft(
+        wc2,
+        'pid.c',
+        Buffer.from('v2-eco2\n'),
+        user.id,
+      )
+      await SoftwareSourceService.commitDraft(wc2, 'eco2 pid tweak', user.id)
+
+      const overlapping = await ConflictDetectionService.detectConflictsForEco(
+        eco1.id,
+      )
+      const fileConflict = overlapping.conflicts.find(
+        (c) =>
+          c.itemMasterId === sw.masterId &&
+          c.conflictType === 'field_conflict',
+      )
+      expect(fileConflict).toBeDefined()
+      expect(fileConflict!.fieldConflicts).toEqual([
+        expect.objectContaining({ fieldName: 'source', fieldPath: 'pid.c' }),
+      ])
     })
   })
 })

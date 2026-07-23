@@ -23,13 +23,14 @@ import {
   CardTitle,
 } from '@/components/ui'
 import { apiFetch } from '@/lib/api/client'
+import { SourceChangesList } from '@/components/software/SourceChangesList'
 
 interface FieldChange {
   fieldName: string
   fieldPath?: string
   oldValue: unknown
   newValue: unknown
-  fieldCategory: 'core' | 'type' | 'attribute' | 'relationship'
+  fieldCategory: 'core' | 'type' | 'attribute' | 'relationship' | 'source'
 }
 
 interface HistoryEntry {
@@ -188,7 +189,13 @@ function RelationshipChange({ change }: { change: FieldChange }) {
 }
 
 // Field changes display component
-function FieldChangesList({ changes }: { changes: Array<FieldChange> }) {
+function FieldChangesList({
+  changes,
+  itemId,
+}: {
+  changes: Array<FieldChange>
+  itemId: string
+}) {
   if (changes.length === 0) return null
 
   // Group by category
@@ -206,6 +213,7 @@ function FieldChangesList({ changes }: { changes: Array<FieldChange> }) {
     type: 'Type-Specific Fields',
     attribute: 'Custom Attributes',
     relationship: 'Relationships',
+    source: 'Source Files',
   }
 
   return (
@@ -216,11 +224,14 @@ function FieldChangesList({ changes }: { changes: Array<FieldChange> }) {
             {categoryLabels[category] || category}
           </div>
           <div className="space-y-1">
-            {category === 'relationship'
-              ? categoryChanges.map((change, idx) => (
-                  <RelationshipChange key={idx} change={change} />
-                ))
-              : categoryChanges.map((change, idx) => (
+            {category === 'source' ? (
+              <SourceChangesList itemId={itemId} changes={categoryChanges} />
+            ) : category === 'relationship' ? (
+              categoryChanges.map((change, idx) => (
+                <RelationshipChange key={idx} change={change} />
+              ))
+            ) : (
+              categoryChanges.map((change, idx) => (
                   <div key={idx} className="flex items-start gap-2 text-sm">
                     <span className="font-medium text-slate-700 dark:text-slate-300 min-w-[120px]">
                       {formatFieldName(change.fieldPath || change.fieldName)}:
@@ -235,7 +246,8 @@ function FieldChangesList({ changes }: { changes: Array<FieldChange> }) {
                       {formatValue(change.newValue)}
                     </span>
                   </div>
-                ))}
+              ))
+            )}
           </div>
         </div>
       ))}
@@ -517,6 +529,7 @@ export function ItemHistoryTab({
                                 {expandedCommits.has(entry.commit.id) && (
                                   <FieldChangesList
                                     changes={entry.fieldChanges}
+                                    itemId={itemId}
                                   />
                                 )}
                               </>

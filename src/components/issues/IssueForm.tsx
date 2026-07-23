@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { Issue } from '@/lib/items/types/issue'
 import { issueSchema } from '@/lib/items/types/issue'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
+import { ItemNumberField } from '@/components/items/ItemNumberField'
 import { zodValidator } from '@/lib/form-validation'
 import {
   Button,
@@ -75,20 +76,15 @@ export function IssueForm({
         {/* Item Number */}
         <form.Field name="itemNumber">
           {(field) => (
-            <FormField
+            <ItemNumberField
+              itemType="Issue"
               label="Issue Number"
+              name={field.name}
+              value={field.state.value}
+              onChange={field.handleChange}
+              onBlur={field.handleBlur}
               error={field.state.meta.errors[0]}
-              helpText="Leave blank to auto-generate (e.g., ISS-000001)"
-            >
-              <Input
-                name={field.name}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                placeholder="Auto-generated if blank"
-                error={!!field.state.meta.errors.length}
-              />
-            </FormField>
+            />
           )}
         </form.Field>
 

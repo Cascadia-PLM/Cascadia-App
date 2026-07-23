@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { ChangeOrder } from '@/lib/items/types/change-order'
 import { changeOrderSchema } from '@/lib/items/types/change-order'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
+import { getItemNumberHelpText } from '@/lib/items/numbering/format'
 import { zodValidator } from '@/lib/form-validation'
 import {
   Button,
@@ -85,7 +86,7 @@ export function ChangeOrderForm({
         {/* Item Number - Always auto-generated for Change Orders */}
         <FormField
           label="Change Order Number"
-          helpText="Will be auto-generated (e.g., ECO-000001)"
+          helpText={getItemNumberHelpText('ChangeOrder')}
         >
           <div className="flex items-center h-10 px-3 rounded-md border border-input bg-muted text-muted-foreground">
             Auto-generated on creation

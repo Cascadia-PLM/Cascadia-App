@@ -9,6 +9,7 @@ import { DesignSelector } from '@/components/versioning/DesignSelector'
 import { DesignPhaseIndicator } from '@/components/versioning/DesignPhaseIndicator'
 import { BranchSelector } from '@/components/versioning/BranchSelector'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
+import { ItemNumberField } from '@/components/items/ItemNumberField'
 import { apiFetch } from '@/lib/api/client'
 import { zodValidator } from '@/lib/form-validation'
 import {
@@ -218,21 +219,15 @@ export function RequirementForm({
         {/* Item Number */}
         <form.Field name="itemNumber">
           {(field) => (
-            <FormField
-              label="Item Number"
+            <ItemNumberField
+              itemType="Requirement"
+              name={field.name}
+              value={field.state.value}
+              onChange={field.handleChange}
+              onBlur={field.handleBlur}
               error={field.state.meta.errors[0]}
-              helpText="Leave blank to auto-generate (e.g., REQ-000001)"
-            >
-              <Input
-                name={field.name}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                placeholder="Auto-generated if blank"
-                error={!!field.state.meta.errors.length}
-                data-testid="requirement-item-number"
-              />
-            </FormField>
+              data-testid="requirement-item-number"
+            />
           )}
         </form.Field>
 

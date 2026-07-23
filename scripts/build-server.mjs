@@ -9,6 +9,7 @@
 import * as esbuild from 'esbuild'
 import { existsSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { assertBundleParses, cjsInteropBanner } from './build-shared.mjs'
 
 const outfile = '.output/server/index.mjs'
 
@@ -24,13 +25,7 @@ await esbuild.build({
   target: 'node20',
   format: 'esm',
   outfile,
-  // CommonJS interop shim — many transitive deps use require()
-  banner: {
-    js: `
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-`,
-  },
+  banner: { js: cjsInteropBanner },
   // Packages that must be loaded from node_modules at runtime
   // (native bindings, dynamic requires, or pulled in by admin scripts only).
   external: [
@@ -57,5 +52,7 @@ const require = createRequire(import.meta.url);
   },
   logLevel: 'info',
 })
+
+await assertBundleParses(outfile)
 
 console.log(`✅ Server built: ${outfile}`)

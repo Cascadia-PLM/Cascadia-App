@@ -8,6 +8,7 @@
 import * as esbuild from 'esbuild'
 import { existsSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { assertBundleParses, cjsInteropBanner } from './build-shared.mjs'
 
 const outfile = '.output/server/jobs-worker.mjs'
 
@@ -25,12 +26,7 @@ await esbuild.build({
   format: 'esm',
   outfile,
   // Banner to support require() in ESM for packages that need it
-  banner: {
-    js: `
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-`,
-  },
+  banner: { js: cjsInteropBanner },
   // Externalize packages that should come from node_modules at runtime
   external: [
     // Native modules
@@ -62,5 +58,7 @@ const require = createRequire(import.meta.url);
   // Log level
   logLevel: 'info',
 })
+
+await assertBundleParses(outfile)
 
 console.log(`✅ Jobs worker built: ${outfile}`)

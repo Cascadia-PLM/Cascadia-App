@@ -28,7 +28,9 @@ export interface FieldChange {
   fieldPath?: string
   oldValue: unknown
   newValue: unknown
-  fieldCategory: 'core' | 'type' | 'attribute' | 'relationship'
+  // 'source' = per-file source-tree changes on Software items (fieldPath is
+  // the file path, fieldName is added|modified|deleted, values are {hash,size})
+  fieldCategory: 'core' | 'type' | 'attribute' | 'relationship' | 'source'
 }
 
 // Zod schemas for validation
@@ -37,7 +39,7 @@ const fieldChangeSchema = z.object({
   fieldPath: z.string().optional(),
   oldValue: z.unknown(),
   newValue: z.unknown(),
-  fieldCategory: z.enum(['core', 'type', 'attribute', 'relationship']),
+  fieldCategory: z.enum(['core', 'type', 'attribute', 'relationship', 'source']),
 })
 
 export const commitCreateSchema = z.object({

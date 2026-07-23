@@ -9,6 +9,7 @@ import {
   changeOrderDesigns,
   itemRelationships,
   items,
+  software,
 } from '../db/schema'
 import { MergeConflictError, NotFoundError, ValidationError } from '../errors'
 import { getTypeHandler } from '../items/type-handlers'
@@ -111,9 +112,13 @@ async function copyExtensionRow(
 ): Promise<void> {
   const handler = getTypeHandler(itemType)
   if (!handler) return
-  const data = await handler.get(sourceItemId, tx)
+  const data = (await handler.get(sourceItemId, tx)) as
+    | Record<string, unknown>
+    | undefined
   if (data) {
-    await handler.insert(targetItemId, data, tx)
+    // Released versions never carry uncommitted editor state
+    const { draftManifestId: _draft, ...clean } = data
+    await handler.insert(targetItemId, clean, tx)
   }
 }
 
@@ -1160,6 +1165,15 @@ export class ChangeOrderMergeService {
                     modifiedBy: userId,
                   })
                   .where(eq(items.id, currentItem.id))
+
+                // Working copy promoted in place: drop any uncommitted draft -
+                // only the committed manifest is what the release means
+                if (currentItem.itemType === 'Software') {
+                  await tx
+                    .update(software)
+                    .set({ draftManifestId: null })
+                    .where(eq(software.itemId, currentItem.id))
+                }
 
                 releasedItemId = currentItem.id
               } else {

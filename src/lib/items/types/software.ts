@@ -41,6 +41,8 @@ export interface Software extends BaseItem {
   toolchain?: string
   // Immutable source-tree snapshot for THIS item version (internal mode)
   manifestId?: string | null
+  // In-progress (uncommitted) edits on a working copy
+  draftManifestId?: string | null
   // Primary build artifact (vault file)
   buildArtifactFileId?: string | null
 }
@@ -55,6 +57,7 @@ export const softwareSchema = baseItemSchema.extend({
   targetHardware: z.string().max(200).optional(),
   toolchain: z.string().max(200).optional(),
   manifestId: z.string().uuid().nullable().optional(),
+  draftManifestId: z.string().uuid().nullable().optional(),
   buildArtifactFileId: z.string().uuid().nullable().optional(),
 })
 

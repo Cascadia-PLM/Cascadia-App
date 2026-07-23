@@ -20,13 +20,15 @@
  */
 
 import { createHash } from 'node:crypto'
-import { eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { unzipSync } from 'fflate'
 import { db } from '../db'
-import { softwareBlobs, softwareManifests } from '../db/schema'
-import { NotFoundError, ValidationError } from '../errors'
+import { branchItems, softwareBlobs, softwareManifests } from '../db/schema'
+import { NotFoundError, ResourceLockedError, ValidationError } from '../errors'
 import { ItemService } from '../items/services/ItemService'
 import { VersionResolver } from './VersionResolver'
+import { diffManifestEntries } from './software-source-changes'
+import type { ManifestDiffEntry } from './software-source-changes'
 import type { TransactionClient } from '../db'
 import type {
   SoftwareManifest,
@@ -35,6 +37,8 @@ import type {
 import type { Software } from '../items/types/software'
 import type { VersionContext } from './VersionResolver'
 import { takeFirst } from '@/lib/db/take-first'
+
+export type { ManifestDiffEntry } from './software-source-changes'
 
 // Size guardrails (proposal §3.2): firmware-scale trees, not monorepos.
 const MAX_FILE_SIZE = 1024 * 1024 // 1 MB per file
@@ -58,15 +62,6 @@ export interface SourceFileContent {
   /** UTF-8 text for text files, base64 for binary files */
   content: string
   encoding: 'utf8' | 'base64'
-}
-
-export interface ManifestDiffEntry {
-  path: string
-  status: 'added' | 'removed' | 'modified'
-  oldHash?: string
-  newHash?: string
-  oldSize?: number
-  newSize?: number
 }
 
 export interface ImportResult {
@@ -98,19 +93,10 @@ export class SoftwareSourceService {
     userId: string,
     options?: { replace?: boolean },
   ): Promise<ImportResult> {
-    const item = await ItemService.findById(itemId)
-    if (!item) {
-      throw new NotFoundError('Software', itemId, { operation: 'importFiles' })
-    }
-    if (item.itemType !== 'Software') {
+    const softwareItem = await this.getEditableSoftware(itemId, userId)
+    if (softwareItem.draftManifestId) {
       throw new ValidationError(
-        `Item ${itemId} is not a Software item (got ${item.itemType})`,
-      )
-    }
-    const softwareItem = item as unknown as Software
-    if ((softwareItem.sourceMode ?? 'internal') !== 'internal') {
-      throw new ValidationError(
-        'Source files can only be imported into internal-mode Software items',
+        'This item has uncommitted draft changes. Commit or discard the draft before importing.',
       )
     }
 
@@ -228,6 +214,223 @@ export class SoftwareSourceService {
   }
 
   // ==========================================================================
+  // Draft editing (checkout-gated write path)
+  //
+  // Edits accumulate on software.draftManifestId without commits; an explicit
+  // commitDraft() promotes the draft to manifestId through the standard
+  // update path, which records the per-file 'source' field changes. This
+  // mirrors the platform's edit -> commit model for item fields.
+  // ==========================================================================
+
+  /** Save one file into the item's draft tree. */
+  static async saveFileToDraft(
+    itemId: string,
+    path: string,
+    data: Buffer,
+    userId: string,
+  ): Promise<{ item: Software; manifest: SoftwareManifest }> {
+    const item = await this.getEditableSoftware(itemId, userId)
+    const normalized = this.normalizePath(path)
+    if (data.length > MAX_FILE_SIZE) {
+      throw new ValidationError(
+        `File "${normalized}" exceeds the ${MAX_FILE_SIZE / 1024 / 1024} MB source file limit`,
+      )
+    }
+
+    const baseEntries = await this.getEffectiveEntries(item)
+    const manifest = await db.transaction(async (tx) => {
+      await this.storeBlobs([{ path: normalized, data }], tx)
+      const merged = new Map(baseEntries.map((e) => [e.path, e]))
+      merged.set(normalized, {
+        path: normalized,
+        hash: sha256(data),
+        size: data.length,
+      })
+      return this.createManifest(Array.from(merged.values()), userId, tx)
+    })
+
+    const updated = await this.setDraft(itemId, manifest.id, userId)
+    return { item: updated, manifest }
+  }
+
+  /** Delete one file from the item's draft tree. */
+  static async deleteFileFromDraft(
+    itemId: string,
+    path: string,
+    userId: string,
+  ): Promise<{ item: Software; manifest: SoftwareManifest }> {
+    const item = await this.getEditableSoftware(itemId, userId)
+    const normalized = this.normalizePath(path)
+
+    const baseEntries = await this.getEffectiveEntries(item)
+    if (!baseEntries.some((e) => e.path === normalized)) {
+      throw new NotFoundError('SourceFile', normalized, {
+        operation: 'deleteFileFromDraft',
+      })
+    }
+
+    const manifest = await db.transaction(async (tx) =>
+      this.createManifest(
+        baseEntries.filter((e) => e.path !== normalized),
+        userId,
+        tx,
+      ),
+    )
+
+    const updated = await this.setDraft(itemId, manifest.id, userId)
+    return { item: updated, manifest }
+  }
+
+  /** Rename/move one file within the item's draft tree (content untouched). */
+  static async renameFileInDraft(
+    itemId: string,
+    fromPath: string,
+    toPath: string,
+    userId: string,
+  ): Promise<{ item: Software; manifest: SoftwareManifest }> {
+    const item = await this.getEditableSoftware(itemId, userId)
+    const from = this.normalizePath(fromPath)
+    const to = this.normalizePath(toPath)
+
+    const baseEntries = await this.getEffectiveEntries(item)
+    const source = baseEntries.find((e) => e.path === from)
+    if (!source) {
+      throw new NotFoundError('SourceFile', from, {
+        operation: 'renameFileInDraft',
+      })
+    }
+    if (baseEntries.some((e) => e.path === to)) {
+      throw new ValidationError(`A file already exists at "${to}"`)
+    }
+
+    const manifest = await db.transaction(async (tx) =>
+      this.createManifest(
+        baseEntries.map((e) => (e.path === from ? { ...e, path: to } : e)),
+        userId,
+        tx,
+      ),
+    )
+
+    const updated = await this.setDraft(itemId, manifest.id, userId)
+    return { item: updated, manifest }
+  }
+
+  /** Throw away the item's uncommitted draft. */
+  static async discardDraft(itemId: string, userId: string): Promise<Software> {
+    const item = await this.getEditableSoftware(itemId, userId)
+    if (!item.draftManifestId) return item
+    return ItemService.update<Software>(
+      itemId,
+      { draftManifestId: null },
+      userId,
+      { skipCommit: true },
+    )
+  }
+
+  /**
+   * Promote the draft to the committed manifest with a required message.
+   * Runs through ItemService.update, so branch protection applies and the
+   * commit records per-file 'source' field changes.
+   */
+  static async commitDraft(
+    itemId: string,
+    message: string,
+    userId: string,
+  ): Promise<{ item: Software; manifest: SoftwareManifest | null }> {
+    if (!message.trim()) {
+      throw new ValidationError('A commit message is required')
+    }
+    const item = await this.getEditableSoftware(itemId, userId)
+    if (!item.draftManifestId) {
+      throw new ValidationError('No draft changes to commit')
+    }
+
+    const updated = await ItemService.update<Software>(
+      itemId,
+      { manifestId: item.draftManifestId, draftManifestId: null },
+      userId,
+      { commitMessage: message.trim() },
+    )
+    const manifest = updated.manifestId
+      ? await this.getManifestById(updated.manifestId)
+      : null
+    return { item: updated, manifest }
+  }
+
+  /**
+   * Editability gate for source writes: must be an internal-mode Software
+   * item not checked out by another user. Branch locks and main-branch
+   * protection are enforced by ItemService.update on the actual write.
+   */
+  private static async getEditableSoftware(
+    itemId: string,
+    userId: string,
+  ): Promise<Software> {
+    const item = await ItemService.findById(itemId)
+    if (!item) {
+      throw new NotFoundError('Software', itemId, {
+        operation: 'editSource',
+      })
+    }
+    if (item.itemType !== 'Software') {
+      throw new ValidationError(
+        `Item ${itemId} is not a Software item (got ${item.itemType})`,
+      )
+    }
+    const softwareItem = item as unknown as Software
+    if ((softwareItem.sourceMode ?? 'internal') !== 'internal') {
+      throw new ValidationError(
+        'Source can only be edited on internal-mode Software items',
+      )
+    }
+
+    // Checkout lock IS the concurrency model: a checkout held by another
+    // user blocks edits (holding it yourself, or nobody holding it, allows
+    // them - consistent with how working-copy field edits behave).
+    const branchInfo = await ItemService.getItemBranchInfo(itemId)
+    if (branchInfo) {
+      const [bi] = await db
+        .select()
+        .from(branchItems)
+        .where(
+          and(
+            eq(branchItems.branchId, branchInfo.branchId),
+            eq(branchItems.itemMasterId, item.masterId),
+          ),
+        )
+        .limit(1)
+      if (bi?.checkedOutBy && bi.checkedOutBy !== userId) {
+        throw new ResourceLockedError(
+          `${item.itemNumber}`,
+          'checked out by another user',
+          { operation: 'editSource', itemId },
+        )
+      }
+    }
+
+    return softwareItem
+  }
+
+  /** The tree the editor sees: draft if present, else the committed manifest. */
+  private static async getEffectiveEntries(
+    item: Software,
+  ): Promise<Array<SoftwareManifestEntry>> {
+    const manifestId = item.draftManifestId ?? item.manifestId
+    if (!manifestId) return []
+    return (await this.getManifestById(manifestId))?.entries ?? []
+  }
+
+  private static async setDraft(
+    itemId: string,
+    draftManifestId: string,
+    userId: string,
+  ): Promise<Software> {
+    return ItemService.update<Software>(itemId, { draftManifestId }, userId, {
+      skipCommit: true,
+    })
+  }
+
+  // ==========================================================================
   // Read path
   // ==========================================================================
 
@@ -334,6 +537,34 @@ export class SoftwareSourceService {
   }
 
   /**
+   * Read one blob's content by hash (for history diffs of superseded
+   * versions, where the path may no longer exist in any current manifest).
+   */
+  static async getBlob(hash: string): Promise<{
+    hash: string
+    size: number
+    isBinary: boolean
+    content: string
+    encoding: 'utf8' | 'base64'
+  }> {
+    const [blob] = await db
+      .select()
+      .from(softwareBlobs)
+      .where(eq(softwareBlobs.hash, hash))
+      .limit(1)
+    if (!blob || blob.content === null) {
+      throw new NotFoundError('SoftwareBlob', hash, { operation: 'getBlob' })
+    }
+    return {
+      hash: blob.hash,
+      size: blob.size,
+      isBinary: blob.isBinary,
+      content: blob.content,
+      encoding: blob.isBinary ? 'base64' : 'utf8',
+    }
+  }
+
+  /**
    * Path-level diff between two manifests (either side may be null for
    * "empty tree"). Line-level diffs are computed client-side from the two
    * file contents.
@@ -349,42 +580,7 @@ export class SoftwareSourceService {
       ? ((await this.getManifestById(toManifestId))?.entries ?? [])
       : []
 
-    const fromMap = new Map(fromEntries.map((e) => [e.path, e]))
-    const toMap = new Map(toEntries.map((e) => [e.path, e]))
-
-    const diff: Array<ManifestDiffEntry> = []
-    for (const [path, from] of fromMap) {
-      const to = toMap.get(path)
-      if (!to) {
-        diff.push({
-          path,
-          status: 'removed',
-          oldHash: from.hash,
-          oldSize: from.size,
-        })
-      } else if (to.hash !== from.hash) {
-        diff.push({
-          path,
-          status: 'modified',
-          oldHash: from.hash,
-          newHash: to.hash,
-          oldSize: from.size,
-          newSize: to.size,
-        })
-      }
-    }
-    for (const [path, to] of toMap) {
-      if (!fromMap.has(path)) {
-        diff.push({
-          path,
-          status: 'added',
-          newHash: to.hash,
-          newSize: to.size,
-        })
-      }
-    }
-
-    return diff.sort((a, b) => a.path.localeCompare(b.path))
+    return diffManifestEntries(fromEntries, toEntries)
   }
 
   // ==========================================================================

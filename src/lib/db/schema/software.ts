@@ -94,6 +94,13 @@ export const software = pgTable(
     // Internal mode: the immutable source-tree snapshot for THIS item version
     manifestId: uuid('manifest_id').references(() => softwareManifests.id),
 
+    // In-progress edits on a working copy: saved without a commit, promoted
+    // to manifestId by an explicit commit (with message), discarded on
+    // release. Never copied to new versions and never in field history.
+    draftManifestId: uuid('draft_manifest_id').references(
+      () => softwareManifests.id,
+    ),
+
     // Primary build artifact (vault file: .bin/.hex/.elf/.zip)
     buildArtifactFileId: uuid('build_artifact_file_id'),
   },

@@ -17,6 +17,7 @@ import {
   ValidationError,
 } from '../../errors'
 import { CommitService } from '../../services/CommitService'
+import { expandSourceFieldChanges } from '../../services/software-source-changes'
 import {
   computeFieldChanges,
   computeInitialFieldValues,
@@ -247,12 +248,17 @@ export class ItemService {
    *   - Exception: ECO release operations can bypass this with bypassBranchProtection option
    *
    * @param options.skipCommit - Skip creating a commit for this update (for bulk operations)
+   * @param options.commitMessage - Override the auto-generated commit message
    */
   static async update<T extends BaseItem>(
     id: string,
     data: Partial<T>,
     userId: string,
-    options?: { bypassBranchProtection?: boolean; skipCommit?: boolean },
+    options?: {
+      bypassBranchProtection?: boolean
+      skipCommit?: boolean
+      commitMessage?: string
+    },
   ): Promise<T> {
     // Get current item with type-specific data (for computing field changes)
     const oldItem = await this.findById(id)
@@ -353,10 +359,14 @@ export class ItemService {
       // Create commit for history tracking if item has a designId and skipCommit is not set
       if (oldItem.designId && !options?.skipCommit) {
         try {
-          const fieldChanges = computeFieldChanges(
-            oldItem as unknown as Record<string, unknown>,
-            completeItem as unknown as Record<string, unknown>,
+          // Software manifest changes become per-file 'source' rows
+          const fieldChanges = await expandSourceFieldChanges(
             oldItem.itemType,
+            computeFieldChanges(
+              oldItem as unknown as Record<string, unknown>,
+              completeItem as unknown as Record<string, unknown>,
+              oldItem.itemType,
+            ),
           )
 
           if (fieldChanges.length > 0) {
@@ -375,7 +385,9 @@ export class ItemService {
               const commit = await CommitService.create(
                 {
                   branchId,
-                  message: `${oldItem.itemType} ${oldItem.itemNumber || 'item'} updated`,
+                  message:
+                    options?.commitMessage ??
+                    `${oldItem.itemType} ${oldItem.itemNumber || 'item'} updated`,
                   itemChanges: [
                     {
                       itemId: id,

@@ -12,6 +12,7 @@ import { NotFoundError, ValidationError } from '../errors'
 import { BranchService } from './BranchService'
 import { CommitService } from './CommitService'
 import { VersionResolver } from './VersionResolver'
+import { expandSourceFieldChanges } from './software-source-changes'
 import type { commits } from '../db/schema'
 import type { FieldChange } from './CommitService'
 
@@ -63,6 +64,9 @@ const ignoreFields = [
   'designId',
   'commitId',
   'itemType',
+  // Uncommitted editor state on Software working copies - never part of the
+  // committed history (the commit records the manifestId change instead)
+  'draftManifestId',
   'createdAt',
   'createdBy',
   'modifiedAt',
@@ -625,13 +629,17 @@ export class CheckoutService {
 
         // 3. Compute field-level changes (only for modified items)
         // Include extension fields on both sides so type-category changes
-        // (weight, manifestId, ...) are recorded in the commit.
+        // (weight, manifestId, ...) are recorded in the commit. Software
+        // manifest changes expand into per-file 'source' rows.
         const fieldChanges =
           changeType === 'modified'
-            ? computeFieldChanges(
-                { ...item, ...extData },
-                { ...newItem, ...extData, ...validated.changes },
+            ? await expandSourceFieldChanges(
                 item.itemType,
+                computeFieldChanges(
+                  { ...item, ...extData },
+                  { ...newItem, ...extData, ...validated.changes },
+                  item.itemType,
+                ),
               )
             : []
 

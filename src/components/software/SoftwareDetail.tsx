@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Edit, Save, Trash2, X } from 'lucide-react'
+import { BuildArtifactCard } from './BuildArtifactCard'
 import { SourceViewer } from './SourceViewer'
 import type { Software } from '@/lib/items/types/software'
 import type { Design } from '@/lib/types/design'
@@ -381,8 +382,18 @@ export function SoftwareDetail({
                         : 'No source imported yet'
                     }
                   />
+                  {current.draftManifestId && (
+                    <ViewEditStatic
+                      label="Draft"
+                      value="Uncommitted changes (see Source tab)"
+                    />
+                  )}
                 </CardContent>
               </Card>
+
+              {!isCreateMode && current.id && (
+                <BuildArtifactCard software={current} />
+              )}
 
               {isEditing ? (
                 <Card>
@@ -467,6 +478,12 @@ export function SoftwareDetail({
             <SourceViewer
               itemId={current.id}
               canImport={(current.sourceMode ?? 'internal') === 'internal'}
+              canEdit={
+                (current.sourceMode ?? 'internal') === 'internal' &&
+                !['Released', 'Obsolete', 'Superseded'].includes(
+                  current.state ?? '',
+                )
+              }
             />
           </TabsContent>
         )}

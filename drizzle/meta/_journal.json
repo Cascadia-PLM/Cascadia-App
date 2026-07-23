@@ -36,6 +36,13 @@
       "when": 1784766168867,
       "tag": "0004_swift_hedge_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784769975536,
+      "tag": "0005_steady_rhodey",
+      "breakpoints": true
     }
   ]
 }

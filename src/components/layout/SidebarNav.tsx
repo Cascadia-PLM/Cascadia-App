@@ -8,6 +8,7 @@ import {
   Briefcase,
   CheckSquare,
   ClipboardCheck,
+  Cpu,
   FileText,
   GitBranch,
   GitFork,
@@ -147,6 +148,16 @@ export function SidebarNav({
         iconSize={iconSize}
         onClick={onNavClick}
         testId="nav-parts"
+      />
+
+      <SidebarNavItem
+        to="/software"
+        icon={Cpu}
+        label="Software"
+        isOpen={isOpen}
+        iconSize={iconSize}
+        onClick={onNavClick}
+        testId="nav-software"
       />
 
       <SidebarNavItem

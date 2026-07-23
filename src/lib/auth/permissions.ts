@@ -23,6 +23,7 @@ export type ResourceType =
   | 'requirements'
   | 'tasks'
   | 'tools'
+  | 'software'
   // Mapped to from itemType in server/routes/items.ts. No role grants these
   // yet, and hasPermission() denies any resource a role does not declare, so
   // TestPlan/TestCase items stay inaccessible until those features land and
@@ -106,6 +107,10 @@ export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
         actions: ['create', 'read', 'update', 'delete', 'manage'],
       },
       {
+        resource: 'software',
+        actions: ['create', 'read', 'update', 'delete', 'approve', 'manage'],
+      },
+      {
         resource: 'work_instructions',
         actions: ['create', 'read', 'update', 'delete', 'manage'],
       },
@@ -164,6 +169,10 @@ export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
       { resource: 'tasks', actions: ['create', 'read', 'update', 'delete'] },
       { resource: 'tools', actions: ['create', 'read', 'update', 'delete'] },
       {
+        resource: 'software',
+        actions: ['create', 'read', 'update', 'delete', 'approve'],
+      },
+      {
         resource: 'work_instructions',
         actions: ['create', 'read', 'update', 'delete'],
       },
@@ -212,6 +221,7 @@ export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
       },
       { resource: 'tasks', actions: ['create', 'read', 'update', 'delete'] },
       { resource: 'tools', actions: ['create', 'read', 'update', 'delete'] },
+      { resource: 'software', actions: ['create', 'read', 'update', 'delete'] },
       {
         resource: 'work_instructions',
         actions: ['create', 'read', 'update', 'delete'],
@@ -241,6 +251,7 @@ export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
       { resource: 'requirements', actions: ['read', 'update', 'approve'] },
       { resource: 'tasks', actions: ['read', 'update'] },
       { resource: 'tools', actions: ['read', 'update'] },
+      { resource: 'software', actions: ['read', 'update', 'approve'] },
       { resource: 'work_instructions', actions: ['read', 'update', 'approve'] },
       { resource: 'work_orders', actions: ['read', 'update', 'approve'] },
       { resource: 'issues', actions: ['read', 'update', 'approve'] },
@@ -263,6 +274,7 @@ export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
       { resource: 'requirements', actions: ['create', 'read', 'update'] },
       { resource: 'tasks', actions: ['create', 'read', 'update'] },
       { resource: 'tools', actions: ['create', 'read', 'update'] },
+      { resource: 'software', actions: ['create', 'read', 'update'] },
       { resource: 'work_instructions', actions: ['create', 'read', 'update'] },
       { resource: 'work_orders', actions: ['create', 'read', 'update'] },
       { resource: 'issues', actions: ['create', 'read', 'update'] },
@@ -285,6 +297,7 @@ export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
       { resource: 'requirements', actions: ['read'] },
       { resource: 'tasks', actions: ['read'] },
       { resource: 'tools', actions: ['read'] },
+      { resource: 'software', actions: ['read'] },
       { resource: 'work_instructions', actions: ['read'] },
       { resource: 'work_orders', actions: ['read'] },
       { resource: 'issues', actions: ['read'] },

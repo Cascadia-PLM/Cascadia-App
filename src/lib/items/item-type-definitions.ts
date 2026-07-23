@@ -44,6 +44,11 @@ import {
 } from './types/work-instruction'
 import { issueRelationships, issueSchema, issueStates } from './types/issue'
 import { toolRelationships, toolSchema, toolStates } from './types/tool'
+import {
+  softwareRelationships,
+  softwareSchema,
+  softwareStates,
+} from './types/software'
 import type { RelationshipConfig, StateConfig } from './types/base'
 import type { z } from 'zod'
 
@@ -284,6 +289,33 @@ export const ITEM_TYPE_DEFINITIONS: Record<string, SharedItemTypeDef> = {
       'description',
       'safetyNotes',
       'requiredTools',
+    ],
+    displayField: 'itemNumber',
+  },
+
+  Software: {
+    name: 'Software',
+    label: 'Software',
+    pluralLabel: 'Software',
+    icon: 'Cpu',
+    table: 'software',
+    schema: softwareSchema,
+    defaultState: 'Draft',
+    states: softwareStates,
+    lifecycleDefinitionId: LIFECYCLE_IDS.part,
+    relationships: softwareRelationships,
+    permissions: {
+      create: ['*'],
+      read: ['*'],
+      update: ['*'],
+      delete: ['Admin', 'Engineer'],
+    },
+    searchableFields: [
+      'itemNumber',
+      'name',
+      'description',
+      'version',
+      'targetHardware',
     ],
     displayField: 'itemNumber',
   },

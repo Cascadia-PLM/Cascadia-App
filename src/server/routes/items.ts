@@ -67,6 +67,7 @@ function getResourceType(itemType: string): ResourceType {
     Requirement: 'requirements',
     Task: 'tasks',
     Tool: 'tools',
+    Software: 'software',
     TestPlan: 'test_plans',
     TestCase: 'test_cases',
   }
@@ -83,6 +84,7 @@ function itemTypeToResource(itemType: string): ResourceType | null {
     Task: 'tasks',
     WorkInstruction: 'work_instructions',
     Issue: 'issues',
+    Software: 'software',
   }
   return map[itemType] ?? null
 }

@@ -59,6 +59,14 @@ export const partRelationships = [
     targetTypes: ['ChangeOrder'],
     allowMultiple: true,
   },
+  // Links a BOM-line Part (partType 'Software') to the Software configuration
+  // item(s) behind it - a software part may aggregate bootloader + app image.
+  {
+    type: 'Software',
+    label: 'Software',
+    targetTypes: ['Software'],
+    allowMultiple: true,
+  },
 ]
 
 // Export type for use in other modules

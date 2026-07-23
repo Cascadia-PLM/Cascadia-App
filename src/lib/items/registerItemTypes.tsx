@@ -15,6 +15,7 @@ import { TaskTable } from '@/components/tasks/TaskTable'
 import { ChangeOrderForm, ChangeOrderTable } from '@/components/change-orders'
 import { ToolForm } from '@/components/tools/ToolForm'
 import { ToolTable } from '@/components/tools/ToolTable'
+import { SoftwareTable } from '@/components/software/SoftwareTable'
 
 // Placeholder components for types without dedicated UI yet
 const PlaceholderDetail = ({ item }: any) => (
@@ -36,6 +37,11 @@ const clientComponents: Record<string, { form: any; table: any; detail: any }> =
     Tool: {
       form: ToolForm,
       table: ToolTable,
+      detail: PlaceholderDetail,
+    },
+    Software: {
+      form: PlaceholderForm,
+      table: SoftwareTable,
       detail: PlaceholderDetail,
     },
   }

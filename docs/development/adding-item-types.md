@@ -401,3 +401,5 @@ export function WidgetForm({ onSubmit, item, disabled }: WidgetFormProps) {
 | TestCase        | `test_cases`        | `types/testcase.ts`         | Free                      |
 | Issue           | `issues`            | `types/issue.ts`            | Free                      |
 | WorkInstruction | `work_instructions` | `types/work-instruction.ts` | Free                      |
+| Tool            | `tools`             | `types/tool.ts`             | Free                      |
+| Software        | `software`          | `types/software.ts`         | Driven (shares Part lifecycle) |

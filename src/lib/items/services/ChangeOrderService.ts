@@ -17,6 +17,7 @@ import {
   items,
   parts,
   requirements,
+  software,
   workflowInstances,
 } from '../../db/schema'
 import { BranchService } from '../../services/BranchService'
@@ -512,6 +513,32 @@ export class ChangeOrderService {
               acceptanceCriteria: sourceReq.acceptanceCriteria,
               source: sourceReq.source,
               category: sourceReq.category,
+            })
+            .onConflictDoNothing()
+        }
+        break
+      }
+      case 'Software': {
+        const [sourceSw] = await tx
+          .select()
+          .from(software)
+          .where(eq(software.itemId, sourceId))
+          .limit(1)
+        if (sourceSw) {
+          // manifestId carries over so the working copy starts from the
+          // released source tree; edits repoint it to a new manifest.
+          await tx
+            .insert(software)
+            .values({
+              itemId: targetId,
+              description: sourceSw.description,
+              softwareType: sourceSw.softwareType,
+              sourceMode: sourceSw.sourceMode,
+              version: sourceSw.version,
+              targetHardware: sourceSw.targetHardware,
+              toolchain: sourceSw.toolchain,
+              manifestId: sourceSw.manifestId,
+              buildArtifactFileId: sourceSw.buildArtifactFileId,
             })
             .onConflictDoNothing()
         }

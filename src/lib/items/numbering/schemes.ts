@@ -125,6 +125,14 @@ export const numberingSchemes: Record<string, NumberingScheme> = {
     ],
     allowManualEntry: true,
   },
+
+  Software: {
+    segments: [
+      { type: 'literal', value: 'SW' },
+      { type: 'sequence', scope: 'global', padding: 6 },
+    ],
+    allowManualEntry: true,
+  },
 }
 
 /**
@@ -162,6 +170,9 @@ export const familyNumberingConfig: Record<string, FamilyNumberingConfig> = {
     enabled: false,
   },
   Tool: {
+    enabled: false,
+  },
+  Software: {
     enabled: false,
   },
 }

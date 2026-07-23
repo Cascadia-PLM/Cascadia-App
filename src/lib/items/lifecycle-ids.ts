@@ -39,4 +39,6 @@ export const ITEM_TYPE_LIFECYCLES: Record<string, string> = {
   WorkInstruction: LIFECYCLE_IDS.workInstruction,
   Issue: LIFECYCLE_IDS.issue,
   Tool: LIFECYCLE_IDS.tool,
+  // Software shares the Part lifecycle: driven, ECO-controlled release
+  Software: LIFECYCLE_IDS.part,
 }

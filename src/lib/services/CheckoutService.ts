@@ -6,6 +6,8 @@ import { z } from 'zod'
 import { db } from '../db'
 import { branchItems, branches, items, users } from '../db/schema'
 import { takeFirst } from '../db/take-first'
+import { getTypeHandler } from '../items/type-handlers'
+import '../items/type-handlers/init'
 import { NotFoundError, ValidationError } from '../errors'
 import { BranchService } from './BranchService'
 import { CommitService } from './CommitService'
@@ -42,6 +44,16 @@ const typeFields: Record<string, Array<string>> = {
     'proposedSolution',
   ],
   Task: ['taskType', 'description', 'priority', 'dueDate', 'assignee'],
+  Software: [
+    'description',
+    'softwareType',
+    'sourceMode',
+    'version',
+    'targetHardware',
+    'toolchain',
+    'manifestId',
+    'buildArtifactFileId',
+  ],
 }
 
 // Fields to ignore (metadata)
@@ -562,6 +574,13 @@ export class CheckoutService {
       throw new ValidationError('You do not have this item checked out')
     }
 
+    // Extension-table data of the version being edited - the items row alone
+    // is not the item (weight, manifestId, ... live in the extension table).
+    const typeHandler = getTypeHandler(item.itemType)
+    const extData = (await typeHandler?.get(item.id)) as
+      | Record<string, unknown>
+      | undefined
+
     return db.transaction(
       async (tx) => {
         // 1. Create new item record with changes
@@ -588,14 +607,32 @@ export class CheckoutService {
           'item',
         )
 
+        // 1b. Carry the extension row onto the new version, applying any
+        // extension-field changes - otherwise the new version silently loses
+        // all type-specific data.
+        if (typeHandler && extData) {
+          const { itemId: _oldItemId, ...extFields } = extData
+          await typeHandler.insert(
+            newItem.id,
+            { ...extFields, ...validated.changes },
+            tx,
+          )
+        }
+
         // 2. Determine change type
         const isNewItem = bi.changeType === 'added'
         const changeType = isNewItem ? 'added' : 'modified'
 
         // 3. Compute field-level changes (only for modified items)
+        // Include extension fields on both sides so type-category changes
+        // (weight, manifestId, ...) are recorded in the commit.
         const fieldChanges =
           changeType === 'modified'
-            ? computeFieldChanges(item, newItem, item.itemType)
+            ? computeFieldChanges(
+                { ...item, ...extData },
+                { ...newItem, ...extData, ...validated.changes },
+                item.itemType,
+              )
             : []
 
         // 4. Update branchItem

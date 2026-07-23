@@ -22,6 +22,7 @@ import {
   items,
   parts,
   requirements,
+  software,
   tasks,
   testCases,
   testPlans,
@@ -347,6 +348,8 @@ export class ItemSearchService {
         return issues
       case 'WorkInstruction':
         return workInstructions
+      case 'Software':
+        return software
       default:
         return null
     }
@@ -391,6 +394,14 @@ export class ItemSearchService {
         'difficulty',
         'safetyNotes',
         'requiredTools',
+      ],
+      Software: [
+        'description',
+        'softwareType',
+        'sourceMode',
+        'version',
+        'targetHardware',
+        'toolchain',
       ],
     }
 
@@ -481,6 +492,14 @@ export class ItemSearchService {
         difficulty: workInstructions.difficulty,
         safetyNotes: workInstructions.safetyNotes,
         requiredTools: workInstructions.requiredTools,
+      },
+      Software: {
+        description: software.description,
+        softwareType: software.softwareType,
+        sourceMode: software.sourceMode,
+        version: software.version,
+        targetHardware: software.targetHardware,
+        toolchain: software.toolchain,
       },
     }
 
@@ -628,6 +647,14 @@ export class ItemSearchService {
         safetyNotes: workInstructions.safetyNotes,
         requiredTools: workInstructions.requiredTools,
       },
+      Software: {
+        description: software.description,
+        softwareType: software.softwareType,
+        sourceMode: software.sourceMode,
+        version: software.version,
+        targetHardware: software.targetHardware,
+        toolchain: software.toolchain,
+      },
     }
 
     // Check base columns
@@ -716,6 +743,14 @@ export class ItemSearchService {
           .where(eq(issues.itemId, itemId))
           .limit(1)
         return issue
+      }
+      case 'Software': {
+        const [sw] = await db
+          .select()
+          .from(software)
+          .where(eq(software.itemId, itemId))
+          .limit(1)
+        return sw
       }
       default:
         return null

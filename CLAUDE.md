@@ -250,7 +250,9 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 **Revision assignment**: Revision letters (A, B, C...) are assigned only when merging ECO branch to main, not during work.
 
-**Item types**: Part, Document, ChangeOrder, Requirement, Task, WorkInstruction, Issue. All extend `BaseItem` and register via `ItemTypeRegistry`.
+**Item types**: Part, Document, ChangeOrder, Requirement, Task, WorkInstruction, Issue, Tool, Software. All extend `BaseItem` and register via `ItemTypeRegistry`.
+
+**Software items**: firmware/software configuration items with a content-addressed source store (`software_blobs` + immutable `software_manifests`). The `software.manifestId` pointer rides the item version, so branch isolation and time travel work with no special cases. `SoftwareSourceService` handles imports (files/zip) and tree/file/diff reads. See `docs/proposals/software-management.md`.
 
 **Part types**: Parts have a `partType` field: `Manufacture`, `Purchase`, `Phantom` (logical grouping), or `Software`.
 

@@ -11,6 +11,8 @@ import {
   items,
 } from '../db/schema'
 import { MergeConflictError, NotFoundError, ValidationError } from '../errors'
+import { getTypeHandler } from '../items/type-handlers'
+import '../items/type-handlers/init'
 import { ItemService } from '../items/services/ItemService'
 import { ChangeOrderService } from '../items/services/ChangeOrderService'
 import { FileService } from '../vault/services/FileService'
@@ -92,6 +94,27 @@ export interface ReleasePreview {
   validationIssues: Array<string>
   /** All conflicts across all designs */
   allConflicts: Array<MergeConflict>
+}
+
+/**
+ * Copy an item's type-specific extension row (parts, software, ...) to a
+ * newly inserted item version. Merge paths that promote a working copy in
+ * place keep its extension row automatically; paths that INSERT a fresh
+ * items row must copy it explicitly or the released version loses its
+ * type-specific data.
+ */
+async function copyExtensionRow(
+  itemType: string,
+  sourceItemId: string,
+  targetItemId: string,
+  tx?: Parameters<Parameters<typeof db.transaction>[0]>[0],
+): Promise<void> {
+  const handler = getTypeHandler(itemType)
+  if (!handler) return
+  const data = await handler.get(sourceItemId, tx)
+  if (data) {
+    await handler.insert(targetItemId, data, tx)
+  }
 }
 
 // ============================================
@@ -1034,6 +1057,13 @@ export class ChangeOrderMergeService {
                   .returning(),
               )
 
+              await copyExtensionRow(
+                currentItem.itemType,
+                currentItem.id,
+                releasedItem.id,
+                tx,
+              )
+
               // Mark old item as not current
               await tx
                 .update(items)
@@ -1151,6 +1181,13 @@ export class ChangeOrderMergeService {
                       modifiedBy: userId,
                     } as typeof items.$inferInsert)
                     .returning(),
+                )
+
+                await copyExtensionRow(
+                  currentItem.itemType,
+                  currentItem.id,
+                  releasedItem.id,
+                  tx,
                 )
 
                 releasedItemId = releasedItem.id

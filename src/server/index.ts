@@ -30,6 +30,7 @@ import reports from './routes/reports'
 import requirements from './routes/requirements'
 import roles from './routes/roles'
 import setup from './routes/setup'
+import software from './routes/software'
 import sysml from './routes/sysml'
 import tags from './routes/tags'
 import tasks from './routes/tasks'
@@ -73,6 +74,7 @@ app.route('/api/v1/reports', reports)
 app.route('/api/v1/requirements', requirements)
 app.route('/api/v1/roles', roles)
 app.route('/api/v1/setup', setup)
+app.route('/api/v1/software', software)
 app.route('/api/v1/sysml', sysml)
 app.route('/api/v1/tags', tags)
 app.route('/api/v1/tasks', tasks)

@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui'
+import { getNumberingInfo } from '@/lib/items/numbering/format'
 
 export const Route = createFileRoute('/admin/item-types/$itemType')({
   component: ItemTypeConfigEditPage,
@@ -86,6 +87,9 @@ const CHANGE_ORDER_TYPES = ['ECO', 'ECN', 'Deviation', 'MCO', 'XCO'] as const
 
 function ItemTypeConfigEditPage() {
   const { itemType } = Route.useParams()
+
+  // Read-only view of the code-defined numbering scheme for this item type.
+  const numbering = getNumberingInfo(itemType)
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -451,6 +455,66 @@ function ItemTypeConfigEditPage() {
               {codeConfig && <span>Code default: {codeConfig.icon}</span>}
             </p>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Numbering Scheme (read-only) */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Item Numbering</CardTitle>
+          <CardDescription>
+            How item numbers are generated for this type. Defined in code (
+            <code className="text-xs">src/lib/items/numbering/schemes.ts</code>
+            ).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {numbering ? (
+            <>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  Example
+                </span>
+                <code className="text-base font-mono bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded">
+                  {numbering.example ?? '—'}
+                </code>
+                <Badge variant="secondary">
+                  {numbering.allowManualEntry
+                    ? 'Manual entry allowed'
+                    : 'Always auto-generated'}
+                </Badge>
+                {numbering.familyVariants.enabled && (
+                  <Badge variant="secondary">
+                    Family variants (e.g. {numbering.familyVariants.example})
+                  </Badge>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Pattern</Label>
+                <ol className="space-y-1.5">
+                  {numbering.segments.map((seg, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300"
+                    >
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs dark:bg-slate-700">
+                        {i + 1}
+                      </span>
+                      <span>{seg.description}</span>
+                    </li>
+                  ))}
+                </ol>
+                <p className="text-xs text-slate-500">
+                  Segments are joined with{' '}
+                  <code className="text-xs">"{numbering.separator}"</code>.
+                </p>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              No numbering scheme is defined for this item type.
+            </p>
+          )}
         </CardContent>
       </Card>
 

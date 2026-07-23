@@ -48,7 +48,15 @@ export const baseItemSchema = z.object({
   id: z.string().uuid().optional(),
   masterId: z.string().uuid().optional(),
   designId: z.string().uuid().optional(), // Nullable at DB level. Part, Document, Requirement override to required. Task and Issue leave optional/omitted.
-  itemNumber: z.string().min(1).max(100).optional(), // Optional - auto-generated if not provided
+  // Optional - auto-generated if not provided. A blank/whitespace-only string
+  // (what an untouched form field submits) is coerced to `undefined` so the
+  // service auto-generates instead of failing `.min(1)` validation. This makes
+  // "leave blank to auto-generate" work uniformly for every item type, on both
+  // the client (zodValidator) and the server (schema.parse).
+  itemNumber: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().min(1).max(100).optional(),
+  ),
   revision: z.string().min(1).max(10),
   itemType: z.string().min(1).max(50),
   name: z.string().max(500).optional(),

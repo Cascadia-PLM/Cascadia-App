@@ -12,6 +12,7 @@ import { UrlDropOverlay } from '@/components/items/UrlDropOverlay'
 import { useUrlDropEnrichment } from '@/components/items/useUrlDropEnrichment'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
+import { ITEM_NUMBER_PLACEHOLDER } from '@/lib/items/numbering/format'
 import {
   Badge,
   Button,
@@ -375,7 +376,7 @@ export function ToolDetail({
                         }
                         onChange={(v) => updateField('itemNumber', v)}
                         isEditing={isEditing && isCreateMode}
-                        placeholder="Auto-assigned"
+                        placeholder={ITEM_NUMBER_PLACEHOLDER}
                       />
                       <ViewEditText
                         label="Name"

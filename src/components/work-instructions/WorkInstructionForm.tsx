@@ -12,6 +12,7 @@ import {
   SelectValue,
   Textarea,
 } from '@/components/ui'
+import { ItemNumberField } from '@/components/items/ItemNumberField'
 
 interface WorkInstructionFormProps {
   workInstruction?: Partial<WorkInstruction>
@@ -70,20 +71,15 @@ export function WorkInstructionForm({
         {/* Item Number */}
         <form.Field name="itemNumber">
           {(field) => (
-            <FormField
+            <ItemNumberField
+              itemType="WorkInstruction"
               label="Work Instruction Number"
+              name={field.name}
+              value={field.state.value}
+              onChange={field.handleChange}
+              onBlur={field.handleBlur}
               error={field.state.meta.errors[0]}
-              helpText="Leave blank to auto-generate (e.g., WI-000001)"
-            >
-              <Input
-                name={field.name}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                placeholder="Auto-generated if blank"
-                error={!!field.state.meta.errors.length}
-              />
-            </FormField>
+            />
           )}
         </form.Field>
 

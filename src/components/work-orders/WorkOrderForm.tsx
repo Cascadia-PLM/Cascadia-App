@@ -97,17 +97,12 @@ export function WorkOrderForm({
     defaultValues: {
       partId: defaultValues?.partId ?? (null as string | null),
       quantity: defaultValues?.quantity ?? 1,
-      priority:
-        defaultValues?.priority ??
-        ('Normal'),
-      dueDate: defaultValues?.dueDate ?? (''),
+      priority: defaultValues?.priority ?? 'Normal',
+      dueDate: defaultValues?.dueDate ?? '',
       customerOrder: defaultValues?.customerOrder ?? '',
       notes: defaultValues?.notes ?? '',
       assignedTo: defaultValues?.assignedTo ?? ([] as Array<string>),
-      requiresSignOff:
-        ((defaultValues as Record<string, unknown>).requiresSignOff as
-          | boolean
-          | undefined) ?? false,
+      requiresSignOff: defaultValues?.requiresSignOff ?? false,
     },
     onSubmit: async ({ value }) => {
       await onSubmit({
@@ -199,10 +194,7 @@ export function WorkOrderForm({
         {/* Quantity */}
         <form.Field name="quantity">
           {(field) => (
-            <FormField
-              label="Quantity"
-              error={field.state.meta.errors[0]}
-            >
+            <FormField label="Quantity" error={field.state.meta.errors[0]}>
               <Input
                 type="number"
                 min={1}
@@ -220,10 +212,7 @@ export function WorkOrderForm({
         {/* Priority */}
         <form.Field name="priority">
           {(field) => (
-            <FormField
-              label="Priority"
-              error={field.state.meta.errors[0]}
-            >
+            <FormField label="Priority" error={field.state.meta.errors[0]}>
               <Select
                 value={field.state.value}
                 onValueChange={(v) =>
@@ -247,10 +236,7 @@ export function WorkOrderForm({
         {/* Due Date */}
         <form.Field name="dueDate">
           {(field) => (
-            <FormField
-              label="Due Date"
-              error={field.state.meta.errors[0]}
-            >
+            <FormField label="Due Date" error={field.state.meta.errors[0]}>
               <Input
                 type="date"
                 name={field.name}
@@ -311,10 +297,7 @@ export function WorkOrderForm({
       {/* Notes */}
       <form.Field name="notes">
         {(field) => (
-          <FormField
-            label="Notes"
-            error={field.state.meta.errors[0]}
-          >
+          <FormField label="Notes" error={field.state.meta.errors[0]}>
             <Textarea
               name={field.name}
               value={field.state.value || ''}

@@ -35,7 +35,20 @@ interface FileRecord {
   metadata?: any
   fileCategory?: string
   isPrimaryModel?: boolean
+  isItemThumbnail?: boolean
 }
+
+/**
+ * Image types accepted as an item thumbnail. Mirrors the server-side allowlist
+ * in `src/lib/vault/utils/file-utils.ts` (SVG excluded - it is scriptable).
+ */
+const THUMBNAILABLE_MIME_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/bmp',
+  'image/webp',
+]
 
 interface FileListProps {
   itemId: string
@@ -45,6 +58,8 @@ interface FileListProps {
   onFileCheckedOut?: (fileId: string) => void
   onFileCheckedIn?: (fileId: string) => void
   onViewCAD?: (fileId: string, fileName: string) => void
+  /** Called after the item's thumbnail is set or cleared */
+  onThumbnailChanged?: () => void
   className?: string
   isAdmin?: boolean
 }
@@ -57,6 +72,7 @@ export function FileList({
   onFileCheckedOut,
   onFileCheckedIn,
   onViewCAD,
+  onThumbnailChanged,
   className,
   isAdmin = false,
 }: FileListProps) {
@@ -240,6 +256,43 @@ export function FileList({
     })
   }
 
+  const handleSetThumbnail = async (file: FileRecord) => {
+    const isCurrent = file.isItemThumbnail === true
+
+    try {
+      const response = await fetch(`/api/v1/items/${itemId}/files/thumbnail`, {
+        method: isCurrent ? 'DELETE' : 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: isCurrent ? undefined : JSON.stringify({ fileId: file.id }),
+      })
+
+      if (!response.ok) {
+        const errData = await response.json()
+        throw new Error(
+          errData.details || errData.error || 'Failed to update thumbnail',
+        )
+      }
+
+      // Reflect the new designation without a refetch - only one file can hold it
+      setFiles((prev) =>
+        prev.map((f) => ({
+          ...f,
+          isItemThumbnail: !isCurrent && f.id === file.id,
+        })),
+      )
+      onThumbnailChanged?.()
+    } catch (err) {
+      alert({
+        title: 'Error',
+        description: `Failed to update thumbnail: ${(err as Error).message}`,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const canBeThumbnail = (file: FileRecord): boolean =>
+    THUMBNAILABLE_MIME_TYPES.includes(file.mimeType.toLowerCase())
+
   const getFileIcon = (mimeType: string, fileCategory?: string) => {
     // Check file category first (more specific)
     if (fileCategory === 'cad_model')
@@ -375,6 +428,11 @@ export function FileList({
                 {file.originalFileName}
               </p>
               {getCategoryBadge(file.fileCategory, file.isPrimaryModel)}
+              {file.isItemThumbnail && (
+                <Badge variant="secondary" className="text-xs">
+                  Thumbnail
+                </Badge>
+              )}
             </div>
             {file.metadata?.description && (
               <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -496,6 +554,24 @@ export function FileList({
             title="View in 3D"
           >
             <Eye className="w-4 h-4" />
+          </Button>
+        )}
+        {canBeThumbnail(file) && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleSetThumbnail(file)}
+            aria-pressed={file.isItemThumbnail === true}
+            title={
+              file.isItemThumbnail
+                ? 'Remove as thumbnail'
+                : 'Use as item thumbnail'
+            }
+            className={cn(
+              file.isItemThumbnail && 'text-blue-600 dark:text-blue-400',
+            )}
+          >
+            <ImageIcon className="w-4 h-4" />
           </Button>
         )}
         <Button

@@ -12,7 +12,9 @@ import {
   generateStoragePath,
   getAllowedExtensions,
   getFileExtension,
+  getThumbnailImageExtensions,
   isFileTypeAllowed,
+  isThumbnailableImage,
   sanitizeFilename,
   validateFileSize,
 } from '../utils'
@@ -54,6 +56,7 @@ export interface FileRecord {
   fileVersion: number
   fileCategory: string | null
   isPrimaryModel: boolean
+  isItemThumbnail: boolean
   isLatestVersion: boolean
   isCheckedOut: boolean
   checkedOutBy: string | null
@@ -90,6 +93,8 @@ export interface UploadFileOptions {
   uploadedBy: string
   maxSizeBytes?: number
   allowDuplicates?: boolean
+  /** Designate this upload as the item's thumbnail (image files only) */
+  isItemThumbnail?: boolean
 }
 
 export interface CheckoutInfo {
@@ -126,6 +131,7 @@ export class FileService {
       uploadedBy,
       maxSizeBytes = 100 * 1024 * 1024, // 100MB default
       allowDuplicates = true, // Opt-in: set false to reject files with duplicate SHA-256 hashes per item
+      isItemThumbnail = false,
     } = options
 
     // Validate file size
@@ -139,6 +145,16 @@ export class FileService {
       throw new FileTypeNotAllowedError(
         ext || metadata.mimeType,
         getAllowedExtensions(),
+      )
+    }
+
+    // Reject a non-image thumbnail request before storing any bytes
+    if (
+      isItemThumbnail &&
+      !isThumbnailableImage(metadata.originalFileName, metadata.mimeType)
+    ) {
+      throw new ValidationError(
+        `Only image files can be used as an item thumbnail (${getThumbnailImageExtensions().join(', ')})`,
       )
     }
 
@@ -244,6 +260,11 @@ export class FileService {
       isPrimaryModel = existingCadFiles.length === 0
     }
 
+    // A newly designated thumbnail replaces any previous one for this item
+    if (isItemThumbnail) {
+      await this.clearItemThumbnailFlag(itemId)
+    }
+
     // Insert file record
     const fileRecord = takeFirst(
       await db
@@ -266,6 +287,7 @@ export class FileService {
           metadata: combinedMetadata,
           fileCategory,
           isPrimaryModel,
+          isItemThumbnail,
         })
         .returning(),
     )
@@ -279,8 +301,18 @@ export class FileService {
         originalFileName: metadata.originalFileName,
         fileSize: file.length,
         mimeType: metadata.mimeType,
+        isItemThumbnail,
       },
     })
+
+    if (isItemThumbnail) {
+      await this.logAction({
+        fileId,
+        action: 'set_thumbnail',
+        performedBy: uploadedBy,
+        details: { itemId, fileName: metadata.originalFileName },
+      })
+    }
 
     // Track file attachment in commit history
     if (item.designId) {
@@ -780,10 +812,11 @@ export class FileService {
         throw new NotFoundError('Item', file.itemId)
       }
 
-      // Mark current version as not latest
+      // Mark current version as not latest. The thumbnail designation moves to
+      // the new version below, so it must not linger on the superseded row.
       await db
         .update(vaultFiles)
-        .set({ isLatestVersion: false })
+        .set({ isLatestVersion: false, isItemThumbnail: false })
         .where(eq(vaultFiles.id, fileId))
 
       // Create new version
@@ -829,6 +862,14 @@ export class FileService {
             isCheckedOut: false,
             uploadedBy: userId,
             metadata: { ...extractedMetadata, ...metadata },
+            // Carry the thumbnail designation onto the new version, but only if
+            // the replacement is still a usable image
+            isItemThumbnail:
+              file.isItemThumbnail &&
+              isThumbnailableImage(
+                metadata.originalFileName,
+                metadata.mimeType,
+              ),
           })
           .returning(),
       )
@@ -940,11 +981,40 @@ export class FileService {
   }
 
   /**
+   * Get the image file a user has designated as this item's thumbnail, if any.
+   */
+  static async getDesignatedThumbnail(
+    itemId: string,
+  ): Promise<FileRecord | null> {
+    const [file] = await db
+      .select()
+      .from(vaultFiles)
+      .where(
+        and(
+          eq(vaultFiles.itemId, itemId),
+          eq(vaultFiles.isItemThumbnail, true),
+          eq(vaultFiles.isLatestVersion, true),
+          isNull(vaultFiles.deletedAt),
+        ),
+      )
+      .limit(1)
+
+    return (file as FileRecord | undefined) ?? null
+  }
+
+  /**
    * Get the thumbnail file ID for an item.
-   * Checks primary model first, then falls back to any file with a thumbnail.
+   * Precedence: an image the user explicitly designated, then the generated
+   * thumbnail of the primary model, then any file's generated thumbnail.
    */
   static async getItemThumbnailFileId(itemId: string): Promise<string | null> {
-    // First try the primary model
+    // A user-designated image wins over anything auto-generated
+    const designated = await this.getDesignatedThumbnail(itemId)
+    if (designated) {
+      return designated.id
+    }
+
+    // Then the primary model's generated thumbnail
     const primary = await this.getPrimaryModel(itemId)
     if (primary?.thumbnailFileId) {
       return primary.thumbnailFileId
@@ -964,6 +1034,89 @@ export class FileService {
       .limit(1)
 
     return file?.thumbnailFileId ?? null
+  }
+
+  /**
+   * Clear the thumbnail designation from every file on an item.
+   * Returns the number of files that were cleared.
+   */
+  private static async clearItemThumbnailFlag(itemId: string): Promise<number> {
+    const cleared = await db
+      .update(vaultFiles)
+      .set({ isItemThumbnail: false })
+      .where(
+        and(
+          eq(vaultFiles.itemId, itemId),
+          eq(vaultFiles.isItemThumbnail, true),
+        ),
+      )
+      .returning({ id: vaultFiles.id })
+
+    return cleared.length
+  }
+
+  /**
+   * Designate an uploaded image as its item's thumbnail.
+   * Only one file per item can be the thumbnail - this unsets any existing one.
+   */
+  static async setItemThumbnail(fileId: string, userId: string): Promise<void> {
+    const file = await this.getFileMetadata(fileId)
+
+    if (!file) {
+      throw new NotFoundError('File', fileId)
+    }
+
+    if (file.deletedAt) {
+      throw new ValidationError('Cannot use a deleted file as a thumbnail')
+    }
+
+    if (!isThumbnailableImage(file.originalFileName, file.mimeType)) {
+      throw new ValidationError(
+        `Only image files can be used as an item thumbnail (${getThumbnailImageExtensions().join(', ')})`,
+      )
+    }
+
+    await this.clearItemThumbnailFlag(file.itemId)
+
+    await db
+      .update(vaultFiles)
+      .set({ isItemThumbnail: true })
+      .where(eq(vaultFiles.id, fileId))
+
+    await this.logAction({
+      fileId,
+      action: 'set_thumbnail',
+      performedBy: userId,
+      details: {
+        itemId: file.itemId,
+        fileName: file.originalFileName,
+      },
+    })
+  }
+
+  /**
+   * Remove the thumbnail designation from an item, falling back to the
+   * generated CAD thumbnail (if any).
+   */
+  static async clearItemThumbnail(
+    itemId: string,
+    userId: string,
+  ): Promise<void> {
+    const current = await this.getDesignatedThumbnail(itemId)
+
+    await this.clearItemThumbnailFlag(itemId)
+
+    if (current) {
+      await this.logAction({
+        fileId: current.id,
+        action: 'clear_thumbnail',
+        performedBy: userId,
+        details: {
+          itemId,
+          fileName: current.originalFileName,
+        },
+      })
+    }
   }
 
   /**
@@ -1333,6 +1486,7 @@ export class FileService {
         metadata: vaultFiles.metadata,
         fileCategory: vaultFiles.fileCategory,
         isPrimaryModel: vaultFiles.isPrimaryModel,
+        isItemThumbnail: vaultFiles.isItemThumbnail,
         cadMetadata: vaultFiles.cadMetadata,
         deletedAt: vaultFiles.deletedAt,
         deletedBy: vaultFiles.deletedBy,

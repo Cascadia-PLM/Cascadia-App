@@ -206,6 +206,44 @@ export function getAllowedExtensions(): Array<string> {
 }
 
 /**
+ * Image extensions accepted as a user-designated item thumbnail.
+ * A subset of the allowlist: formats every browser can render in an <img>.
+ * SVG is excluded — it is scriptable, and thumbnails are served inline.
+ */
+const THUMBNAIL_IMAGE_EXTENSIONS = new Set([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.bmp',
+  '.webp',
+])
+
+/**
+ * Check if a file can be used as an item thumbnail image
+ */
+export function isThumbnailableImage(
+  filename: string,
+  mimeType: string,
+): boolean {
+  const ext = getFileExtension(filename)
+  if (THUMBNAIL_IMAGE_EXTENSIONS.has(ext)) return true
+  // Fall back to MIME type for extensionless or oddly-named uploads
+  return (
+    mimeType.startsWith('image/') &&
+    !mimeType.includes('svg') &&
+    !mimeType.includes('tiff')
+  )
+}
+
+/**
+ * Get the full list of extensions accepted as an item thumbnail.
+ */
+export function getThumbnailImageExtensions(): Array<string> {
+  return Array.from(THUMBNAIL_IMAGE_EXTENSIONS)
+}
+
+/**
  * Check if a file is a CAD model based on extension
  */
 export function isCADFile(filename: string): boolean {

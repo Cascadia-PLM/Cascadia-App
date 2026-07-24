@@ -232,6 +232,7 @@ export const cloneDesignHandler: JobHandler<
               uploadedBy: userId,
               fileCategory: file.fileCategory,
               isPrimaryModel: file.isPrimaryModel,
+              isItemThumbnail: file.isItemThumbnail,
               cadMetadata: file.cadMetadata,
               metadata: file.metadata,
             })

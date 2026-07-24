@@ -1,8 +1,24 @@
 import { useRef, useState } from 'react'
-import { FileIcon, Upload, X } from 'lucide-react'
+import { FileIcon, ImageIcon, Upload, X } from 'lucide-react'
 import type { ChangeEvent, DragEvent } from 'react'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
+
+/**
+ * Image types accepted as an item thumbnail. Mirrors the server-side allowlist
+ * in `src/lib/vault/utils/file-utils.ts` (SVG excluded - it is scriptable).
+ */
+const THUMBNAILABLE_MIME_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/bmp',
+  'image/webp',
+]
+
+function canBeThumbnail(file: File): boolean {
+  return THUMBNAILABLE_MIME_TYPES.includes(file.type.toLowerCase())
+}
 
 interface FileUploadZoneProps {
   itemId: string
@@ -12,6 +28,8 @@ interface FileUploadZoneProps {
   maxSizeBytes?: number
   accept?: string
   className?: string
+  /** Offer a "use as thumbnail" toggle on image files (default: true) */
+  allowThumbnailSelection?: boolean
 }
 
 interface FileWithPreview {
@@ -28,10 +46,13 @@ export function FileUploadZone({
   maxSizeBytes = 500 * 1024 * 1024, // 500MB
   accept,
   className,
+  allowThumbnailSelection = true,
 }: FileUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<Array<FileWithPreview>>([])
   const [uploading, setUploading] = useState(false)
+  // Local id of the file to designate as the item thumbnail (at most one)
+  const [thumbnailId, setThumbnailId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
@@ -91,6 +112,11 @@ export function FileUploadZone({
       }
       return prev.filter((f) => f.id !== id)
     })
+    setThumbnailId((current) => (current === id ? null : current))
+  }
+
+  const toggleThumbnail = (id: string) => {
+    setThumbnailId((current) => (current === id ? null : id))
   }
 
   const handleUpload = async () => {
@@ -106,6 +132,9 @@ export function FileUploadZone({
 
     selectedFiles.forEach((fileWithPreview, index) => {
       formData.append(`file_${index}`, fileWithPreview.file)
+      if (fileWithPreview.id === thumbnailId) {
+        formData.append(`file_${index}_isThumbnail`, 'true')
+      }
     })
 
     try {
@@ -128,6 +157,7 @@ export function FileUploadZone({
         }
       })
       setSelectedFiles([])
+      setThumbnailId(null)
 
       onUploadComplete?.(result.files)
     } catch (error) {
@@ -212,14 +242,40 @@ export function FileUploadZone({
                   </p>
                   <p className="text-xs text-slate-600 dark:text-slate-400">
                     {formatFileSize(fileWithPreview.file.size)}
+                    {fileWithPreview.id === thumbnailId && (
+                      <span className="ml-2 text-blue-600 dark:text-blue-400">
+                        Will be used as thumbnail
+                      </span>
+                    )}
                   </p>
                 </div>
+                {allowThumbnailSelection &&
+                  canBeThumbnail(fileWithPreview.file) && (
+                    <Button
+                      type="button"
+                      variant={
+                        fileWithPreview.id === thumbnailId ? 'default' : 'ghost'
+                      }
+                      size="icon"
+                      onClick={() => toggleThumbnail(fileWithPreview.id)}
+                      disabled={uploading}
+                      aria-pressed={fileWithPreview.id === thumbnailId}
+                      title={
+                        fileWithPreview.id === thumbnailId
+                          ? 'Do not use as thumbnail'
+                          : 'Use as thumbnail'
+                      }
+                    >
+                      <ImageIcon className="w-4 h-4" />
+                    </Button>
+                  )}
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   onClick={() => removeFile(fileWithPreview.id)}
                   disabled={uploading}
+                  title="Remove"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -239,6 +295,7 @@ export function FileUploadZone({
                   }
                 })
                 setSelectedFiles([])
+                setThumbnailId(null)
               }}
               disabled={uploading}
             >

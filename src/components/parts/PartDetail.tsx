@@ -300,6 +300,9 @@ export function PartDetail({
   const cadViewerRef = useRef<CADViewerHandle>(null)
   const viewerContainerRef = useRef<HTMLDivElement>(null)
 
+  // Bumped whenever the item's thumbnail may have changed, to bust the img cache
+  const [thumbnailVersion, setThumbnailVersion] = useState(0)
+
   // Main branch ID for version-aware file handling
   const [mainBranchId, setMainBranchId] = useState<string | undefined>(
     undefined,
@@ -711,7 +714,11 @@ export function PartDetail({
               </Button>
             </Link>
             {!isCreateMode && part.id && (
-              <PartThumbnail itemId={part.id} size="lg" />
+              <PartThumbnail
+                itemId={part.id}
+                size="lg"
+                version={thumbnailVersion}
+              />
             )}
             <div>
               <div className="flex items-center gap-3">
@@ -1370,6 +1377,7 @@ export function PartDetail({
                             'File has been uploaded successfully',
                           )
                           loadCADFiles()
+                          setThumbnailVersion((v) => v + 1)
                           router.invalidate()
                         }}
                         onUploadError={(error) =>
@@ -1385,6 +1393,9 @@ export function PartDetail({
                         }
                         mainBranchId={mainBranchId}
                         onViewCAD={handleViewCAD}
+                        onThumbnailChanged={() =>
+                          setThumbnailVersion((v) => v + 1)
+                        }
                       />
                     </CardContent>
                   </Card>

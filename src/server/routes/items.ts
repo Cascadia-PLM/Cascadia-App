@@ -2460,10 +2460,10 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['parts', 'read'] },
-      async ({ params, user }) => {
+      async ({ request, params, user }) => {
         const { id } = params
 
-        // Find any thumbnail for this item (primary model first, then fallback)
+        // Resolve the thumbnail: user-designated image first, then generated
         const thumbnailFileId = await FileService.getItemThumbnailFileId(id)
         if (!thumbnailFileId) {
           return new Response(null, { status: 404 })
@@ -2474,14 +2474,38 @@ app.get(
           return new Response(null, { status: 404 })
         }
 
+        // Content-addressed validator: changing the designated image changes the
+        // hash, so clients pick up a new thumbnail on their next revalidation.
+        const etag = `"${thumbnailFile.fileHash}"`
+
+        // Never echo back an arbitrary stored MIME type - thumbnails render
+        // inline, so restrict to raster image types
+        const mimeType =
+          thumbnailFile.mimeType.startsWith('image/') &&
+          !thumbnailFile.mimeType.includes('svg')
+            ? thumbnailFile.mimeType
+            : 'image/png'
+
+        const headers = {
+          'Content-Type': mimeType,
+          ETag: etag,
+          // Authenticated content: never store in a shared cache, and always
+          // revalidate so a newly set thumbnail is not served stale
+          'Cache-Control': 'private, no-cache',
+          'X-Content-Type-Options': 'nosniff',
+          'Content-Security-Policy': "default-src 'none'; sandbox",
+        }
+
+        if (request.headers.get('if-none-match') === etag) {
+          return new Response(null, { status: 304, headers })
+        }
+
         const data = await FileService.downloadFile(thumbnailFileId, user.id)
 
         return new Response(new Uint8Array(data), {
           headers: {
-            'Content-Type': 'image/png',
+            ...headers,
             'Content-Length': data.length.toString(),
-            'Cache-Control': 'public, max-age=86400',
-            'X-Content-Type-Options': 'nosniff',
           },
         })
       },
@@ -2752,6 +2776,74 @@ app.put(
   ),
 )
 
+// GET /api/items/:itemId/files/thumbnail - which file is the designated thumbnail
+app.get(
+  '/:itemId/files/thumbnail',
+  adapt(
+    apiHandler<{ itemId: string }>(
+      { permission: ['documents', 'read'] },
+      async ({ params }) => {
+        const file = await FileService.getDesignatedThumbnail(params.itemId)
+
+        return { hasThumbnail: file !== null, file }
+      },
+    ),
+  ),
+)
+
+// PUT /api/items/:itemId/files/thumbnail - designate an uploaded image as the thumbnail
+app.put(
+  '/:itemId/files/thumbnail',
+  adapt(
+    apiHandler<{ itemId: string }>(
+      { permission: ['documents', 'update'] },
+      async ({ request, params, user }) => {
+        const { itemId } = params
+
+        const body = await request.json()
+        const { fileId } = body
+
+        if (!fileId) {
+          throw new ValidationError('fileId is required')
+        }
+
+        // Verify the file belongs to this item
+        const file = await FileService.getFileMetadata(fileId)
+        if (!file) {
+          throw new NotFoundError('File', fileId)
+        }
+
+        if (file.itemId !== itemId) {
+          throw new ValidationError('File does not belong to this item')
+        }
+
+        await FileService.setItemThumbnail(fileId, user.id)
+
+        return {
+          success: true,
+          message: 'Thumbnail set successfully',
+          fileId,
+        }
+      },
+    ),
+  ),
+)
+
+// DELETE /api/items/:itemId/files/thumbnail - revert to the generated thumbnail
+app.delete(
+  '/:itemId/files/thumbnail',
+  adapt(
+    apiHandler<{ itemId: string }>(
+      { permission: ['documents', 'update'] },
+      async ({ params, user }) => {
+        await FileService.clearItemThumbnail(params.itemId, user.id)
+
+        return { success: true, message: 'Thumbnail cleared' }
+      },
+    ),
+  ),
+)
+
 // POST /api/items/:itemId/files/upload
 app.post(
   '/:itemId/files/upload',
@@ -2792,6 +2884,8 @@ app.post(
               file: buffer,
               metadata,
               uploadedBy: userId,
+              isItemThumbnail:
+                formData.get(`${key}_isThumbnail`)?.toString() === 'true',
             })
 
             uploadedFiles.push(fileRecord)

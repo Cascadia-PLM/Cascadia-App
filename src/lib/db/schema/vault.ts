@@ -50,6 +50,10 @@ export const vaultFiles = pgTable(
     // File categorization for different file types
     fileCategory: varchar('file_category', { length: 50 }), // 'cad_model', 'drawing', 'specification', 'analysis', 'reference', 'other'
     isPrimaryModel: boolean('is_primary_model').default(false), // Mark primary CAD file for quick access
+    // User-designated item thumbnail. Set on an uploaded image file to make that
+    // image the item's thumbnail; takes precedence over the CAD-converter-generated
+    // thumbnail referenced by thumbnailFileId. At most one per item.
+    isItemThumbnail: boolean('is_item_thumbnail').notNull().default(false),
     cadMetadata: jsonb('cad_metadata').$type<{
       software?: string // e.g., 'SolidWorks 2024', 'Fusion360'
       units?: string // e.g., 'mm', 'in', 'ft'
@@ -72,6 +76,7 @@ export const vaultFiles = pgTable(
     index('idx_vault_files_category').on(table.fileCategory),
     index('idx_vault_files_primary').on(table.isPrimaryModel),
     index('idx_vault_files_thumbnail').on(table.thumbnailFileId),
+    index('idx_vault_files_item_thumbnail').on(table.isItemThumbnail),
   ],
 )
 
@@ -82,7 +87,7 @@ export const vaultFileHistory = pgTable(
     fileId: uuid('file_id')
       .notNull()
       .references(() => vaultFiles.id, { onDelete: 'cascade' }),
-    action: varchar('action', { length: 50 }).notNull(), // 'upload', 'download', 'checkout', 'checkin', 'delete', 'restore'
+    action: varchar('action', { length: 50 }).notNull(), // 'upload', 'download', 'checkout', 'checkin', 'delete', 'restore', 'set_primary', 'set_thumbnail', 'clear_thumbnail'
     performedBy: uuid('performed_by')
       .notNull()
       .references(() => users.id),

@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
 import { ArrowLeft, Edit, Save, Trash2, X } from 'lucide-react'
-import { CapabilitiesEditor } from './CapabilitiesEditor'
+import { CapabilitiesEditor, CapabilitiesView } from './CapabilitiesEditor'
 import type { KnownToolSubtype, Tool } from '@/lib/items/types/tool'
 import type { SearchableSelectOption } from '@/components/ui/SearchableSelect'
 import type { UrlEnrichmentResult } from '@/components/items/useUrlDropEnrichment'
@@ -468,9 +468,9 @@ export function ToolDetail({
                           onChange={setCapabilities}
                         />
                       ) : (
-                        <pre className="text-sm font-mono bg-slate-100 dark:bg-slate-800 p-4 rounded-md overflow-x-auto">
-                          {JSON.stringify(currentTool.capabilities, null, 2)}
-                        </pre>
+                        <CapabilitiesView
+                          capabilities={currentTool.capabilities ?? {}}
+                        />
                       )}
                     </CardContent>
                   </Card>

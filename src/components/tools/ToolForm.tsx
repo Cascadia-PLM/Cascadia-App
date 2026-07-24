@@ -257,8 +257,8 @@ export function ToolForm({
         </form.Field>
       </div>
 
-      {/* Capabilities (JSON) */}
-      {currentSubtype && currentSubtype !== 'other' && (
+      {/* Capabilities — typed fields for known subtypes, freeform otherwise */}
+      {currentSubtype && (
         <CapabilitiesEditor
           subtype={currentSubtype}
           capabilities={capabilities}

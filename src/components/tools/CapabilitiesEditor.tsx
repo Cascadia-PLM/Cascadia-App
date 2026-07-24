@@ -2,9 +2,16 @@
  * Subtype-aware capabilities editor for Tool items.
  *
  * Renders typed form fields for known subtypes and falls back
- * to a JSON textarea for unknown subtypes.
+ * to a forgiving freeform text editor for unknown subtypes.
  */
 
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  displayCapabilityValue,
+  formatCapabilityText,
+  humanizeCapabilityKey,
+  parseCapabilityText,
+} from '@/lib/items/capability-text'
 import {
   FormField,
   Input,
@@ -740,6 +747,86 @@ const EDITORS: Record<
   surface_grinder: SurfaceGrinderEditor,
 }
 
+const FREEFORM_PLACEHOLDER = [
+  'Build volume: 250 x 210 x 220',
+  'Materials: PLA, PETG, ABS',
+  'Heated bed: yes',
+  'Max power: 60',
+].join('\n')
+
+/**
+ * Fallback editor for subtypes without a dedicated form.
+ *
+ * Accepts plain text — one capability per line, `name: value`, commas for
+ * lists, no quotes or braces required — and shows what was understood.
+ */
+function FreeformCapabilitiesEditor({
+  capabilities,
+  onChange,
+}: Omit<CapabilitiesEditorProps, 'subtype'>) {
+  const [text, setText] = useState(() => formatCapabilityText(capabilities))
+
+  // What the current text parses to; also what we last handed to the parent.
+  const parsed = useMemo(() => parseCapabilityText(text), [text])
+  const lastEmitted = useRef(parsed)
+
+  // Re-sync when the record changes underneath us (item reload, edit cancel).
+  useEffect(() => {
+    if (JSON.stringify(capabilities) !== JSON.stringify(lastEmitted.current)) {
+      lastEmitted.current = capabilities
+      setText(formatCapabilityText(capabilities))
+    }
+  }, [capabilities])
+
+  const handleChange = (value: string) => {
+    setText(value)
+    const next = parseCapabilityText(value)
+    lastEmitted.current = next
+    onChange(next)
+  }
+
+  const entries = Object.entries(parsed)
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm font-medium text-zinc-400">Capabilities</p>
+      <Textarea
+        rows={5}
+        value={text}
+        onChange={(e) => handleChange(e.target.value)}
+        placeholder={FREEFORM_PLACEHOLDER}
+      />
+      <p className="text-xs text-slate-500">
+        One capability per line, as{' '}
+        <span className="font-medium">name: value</span>. Separate list values
+        with commas (<span className="font-medium">PLA, PETG</span>), use{' '}
+        <span className="font-medium">yes</span>/
+        <span className="font-medium">no</span> for on-off capabilities, and{' '}
+        <span className="font-medium">250 x 210 x 220</span> for dimensions. No
+        quotes or brackets needed.
+      </p>
+      {entries.length > 0 && (
+        <div className="rounded-md border border-slate-200 dark:border-slate-700 p-3">
+          <p className="text-xs font-medium text-slate-500 mb-2">
+            Saved as {entries.length}{' '}
+            {entries.length === 1 ? 'capability' : 'capabilities'}
+          </p>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+            {entries.map(([key, value]) => (
+              <div key={key} className="contents">
+                <dt className="text-slate-500">{humanizeCapabilityKey(key)}</dt>
+                <dd className="text-slate-800 dark:text-slate-200 break-words">
+                  {displayCapabilityValue(value)}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function CapabilitiesEditor({
   subtype,
   capabilities,
@@ -765,23 +852,38 @@ export function CapabilitiesEditor({
     )
   }
 
-  // Generic JSON fallback for subtypes without a dedicated editor
   return (
-    <div className="space-y-3">
-      <p className="text-sm font-medium text-zinc-400">Capabilities (JSON)</p>
-      <Textarea
-        rows={5}
-        value={JSON.stringify(capabilities, null, 2)}
-        onChange={(e) => {
-          try {
-            onChange(JSON.parse(e.target.value))
-          } catch {
-            /* ignore while typing */
-          }
-        }}
-        className="font-mono text-xs"
-        placeholder='{"key": "value"}'
-      />
-    </div>
+    <FreeformCapabilitiesEditor
+      capabilities={capabilities}
+      onChange={onChange}
+    />
+  )
+}
+
+/** Read-only rendering of a capabilities record. */
+export function CapabilitiesView({
+  capabilities,
+}: {
+  capabilities: Record<string, unknown>
+}) {
+  const entries = Object.entries(capabilities)
+
+  if (entries.length === 0) {
+    return <p className="text-sm text-slate-500">No capabilities recorded.</p>
+  }
+
+  return (
+    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+      {entries.map(([key, value]) => (
+        <div key={key}>
+          <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            {humanizeCapabilityKey(key)}
+          </dt>
+          <dd className="text-sm text-slate-900 dark:text-slate-100 break-words">
+            {displayCapabilityValue(value)}
+          </dd>
+        </div>
+      ))}
+    </dl>
   )
 }

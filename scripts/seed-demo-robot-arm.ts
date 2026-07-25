@@ -37,7 +37,12 @@ import { db } from '../src/lib/db/index.ts'
 import { users } from '../src/lib/db/schema/users.ts'
 import { programMembers, programs } from '../src/lib/db/schema/programs.ts'
 import { designs } from '../src/lib/db/schema/designs.ts'
-import { branches, commits } from '../src/lib/db/schema/versioning.ts'
+import {
+  branchItems,
+  branches,
+  commits,
+  itemVersions,
+} from '../src/lib/db/schema/versioning.ts'
 import {
   changeOrderAffectedItems,
   changeOrders,
@@ -353,6 +358,29 @@ for (const batch of chunk(prepared, 200)) {
 
 console.log(`✓ Inserted ${prepared.length} parts`)
 
+// ---- 6b. Track every part on the main branch ------------------------------
+//
+// A real ECO merge leaves every released item tracked in branch_items on main
+// (currentItemId = the item, changeType = null). The seed must do the same.
+// Otherwise main's branch_items starts empty and the app leans on its
+// isCurrent fallback — which the first real ECO release defeats: the merge
+// partially populates branch_items with only the ECO's items, flipping every
+// "released baseline" resolver out of the fallback and collapsing the Design
+// Structure to just those items.
+const branchItemRows: Array<typeof branchItems.$inferInsert> = sortedParts.map(
+  (p) => ({
+    branchId: mainBranch.id,
+    itemMasterId: masterIdByNumber.get(p.itemNumber)!,
+    currentItemId: itemIdByNumber.get(p.itemNumber)!,
+    baseItemId: itemIdByNumber.get(p.itemNumber)!,
+    changeType: null,
+  }),
+)
+for (const batch of chunk(branchItemRows, 500)) {
+  await db.insert(branchItems).values(batch).onConflictDoNothing()
+}
+console.log(`✓ Tracked ${branchItemRows.length} parts on main branch`)
+
 // ---- 7. BOM relationships -------------------------------------------------
 
 // Dedupe in-memory by (parent, child) — itemRelationships has no unique constraint on the triple.
@@ -575,9 +603,52 @@ if (SKIP_ECO) {
     await db.insert(changeOrderAffectedItems).values(batch)
   }
 
-  // Bulk-flip every part to Released state. Direct UPDATE bypasses the workflow engine —
-  // for seed data this matches the post-merge end state without firing transition actions.
   const partIds = sortedParts.map((p) => itemIdByNumber.get(p.itemNumber)!)
+
+  // Record the release in the version substrate exactly as a real ECO merge
+  // would: a release commit on main carrying one itemVersion per part, with
+  // main HEAD advanced to it. Commit-ancestry resolution (VersionResolver) walks
+  // itemVersions; without these rows the released baseline is invisible to every
+  // path that walks the commit graph, and — like the missing branch_items — a
+  // later ECO release collapses the design view to only the ECO's items.
+  const releaseCommit = takeFirst(
+    await db
+      .insert(commits)
+      .values({
+        designId: IDS.design,
+        branchId: mainBranch.id,
+        parentId: initialCommit.id,
+        message: `Released via ECO: ECO-2026-001`,
+        changeOrderItemId: IDS.ecoItem,
+        revisionsAssigned: Object.fromEntries(
+          sortedParts.map((p) => [p.itemNumber, 'A']),
+        ),
+        itemsAdded: sortedParts.length,
+        createdBy: admin.id,
+      })
+      .returning(),
+  )
+
+  await db
+    .update(branches)
+    .set({ headCommitId: releaseCommit.id })
+    .where(eq(branches.id, mainBranch.id))
+
+  const versionRows: Array<typeof itemVersions.$inferInsert> = partIds.map(
+    (id) => ({
+      commitId: releaseCommit.id,
+      itemId: id,
+      changeType: 'added',
+    }),
+  )
+  for (const batch of chunk(versionRows, 500)) {
+    await db.insert(itemVersions).values(batch).onConflictDoNothing()
+  }
+
+  // Flip every part to Released. Direct UPDATE bypasses the workflow engine —
+  // for seed data this matches the post-merge end state without firing
+  // transition actions. branch_items already points at these rows (§6b), so the
+  // release advances state only, not the current-version pointer.
   for (const batch of chunk(partIds, 500)) {
     // Drizzle doesn't have a clean inArray for Updates without an extra import; do per-id update for simplicity.
     for (const id of batch) {
@@ -586,7 +657,7 @@ if (SKIP_ECO) {
   }
 
   console.log(
-    `✓ ECO-2026-001 released (${affectedRows.length} parts → Released)`,
+    `✓ ECO-2026-001 released (${affectedRows.length} parts → Released, commit ${releaseCommit.id.slice(0, 8)})`,
   )
 }
 

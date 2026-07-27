@@ -150,6 +150,8 @@ Before making changes to core areas, familiarize yourself with:
 
 See [CLAUDE.md](./CLAUDE.md) for the full architecture reference.
 
-## License
+## License and CLA
 
-By contributing to Cascadia, you agree that your contributions will be licensed under the [GNU Affero General Public License v3.0](./LICENSE).
+Cascadia is an open-core, dual-licensed project: the core is [AGPL-3.0](./LICENSE), and the same code is also offered under a commercial license. See [LICENSING.md](./LICENSING.md) for the full policy, including exactly which capabilities stay open.
+
+Because of dual licensing, external contributions require signing our [Contributor License Agreement](./CLA.md). It's quick: a bot will prompt you on your first pull request, and you sign by replying with a single comment. You retain ownership of your work; the CLA grants the project the license needed to keep the open-core model viable.

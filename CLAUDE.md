@@ -34,7 +34,6 @@ This is the main Cascadia PLM application. Related repositories:
 - **Graph Visualization**: React Flow (@xyflow/react) + Dagre for layout
 - **AI Integration**: TanStack AI with Anthropic and OpenAI adapters
 - **CAD Conversion**: Python worker with pythonocc-core (STEP/IGES → STL/GLB)
-- **CAD Generation**: Zoo Text-to-CAD API + KCL for assemblies
 - **Testing**: Vitest (unit) + Playwright (E2E)
 - **Message Queue**: RabbitMQ
 - **Containerization**: Docker, Docker Compose
@@ -46,7 +45,6 @@ src/
 ├── components/       # React components (forms, tables, dialogs)
 │   ├── ui/           # Base UI primitives (Button, Card, DataGrid, etc.)
 │   ├── ai/           # AI chatbot panel
-│   ├── design-engine/# Collaborative design workspace components
 │   └── work-instructions/ # Work instruction authoring/execution
 ├── lib/
 │   ├── auth/         # Authentication & authorization services
@@ -58,9 +56,7 @@ src/
 │   ├── api/          # API utilities (apiHandler, response builders, schemas)
 │   ├── vault/        # File storage system
 │   ├── sysml/        # SysML v2 serialization
-│   ├── ai/           # AI chatbot tools, adapters, session service
-│   ├── design-engine/# Collaborative design engine (stages, tools, prompts, materialization)
-│   └── cad-generation/ # CAD generation pipeline (Zoo API, KCL, assembly)
+│   └── ai/           # AI chatbot tools, adapters, session service
 ├── routes/           # TanStack Router file-based routes (frontend SPA pages)
 ├── server/           # Hono API server
 │   ├── index.ts      # Entry: mounts every route module under /api/v1/*
@@ -69,8 +65,7 @@ src/
 └── __tests__/        # Test utilities and fixtures
 workers/
 ├── node/             # Node.js job worker Dockerfile
-├── cad-converter/    # Python worker: STEP/IGES → STL/GLB (pythonocc)
-└── cad-generator/    # Python worker: Parametric CAD (CadQuery)
+└── cad-converter/    # Python worker: STEP/IGES → STL/GLB (pythonocc)
 tests/
 ├── e2e/              # Playwright E2E tests
 │   ├── pages/        # Page object models
@@ -134,7 +129,6 @@ npm run workers:logs  # Tail Python worker logs
 # Individual workers (if you only need one)
 npm run jobs:worker:dev    # Node.js worker only (requires RabbitMQ)
 npm run cad:worker:dev     # CAD converter only (Docker)
-npm run cadgen:worker:dev  # CAD generator only (Docker)
 
 # Demo Stack (full pre-seeded environment via docker-compose.demo.yml)
 npm run demo:up       # Start the demo stack (Postgres, RabbitMQ, app, workers)
@@ -230,11 +224,6 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 | Detect merge conflicts           | `ConflictDetectionService`                             |
 | Assess ECO impact on items       | `ImpactAssessmentService`                              |
 | AI chatbot conversations         | `SessionService` from `@/lib/ai`                       |
-| Collaborative design sessions    | `DesignSessionService` from `@/lib/design-engine`      |
-| Run design engine stages         | `CollaborativeDesignEngine` from `@/lib/design-engine` |
-| Materialize design to PLM items  | `MaterializationService` from `@/lib/design-engine`    |
-| Generate CAD from text           | `PartGenerator` from `@/lib/cad-generation`            |
-| Plan assembly composition        | `AssemblyPlanner` from `@/lib/cad-generation`          |
 | Submit background jobs           | `JobService.submit()`                                  |
 | Register job types               | `JobTypeRegistry.register()`                           |
 | Wrap an API route handler        | `apiHandler()` from `@/lib/api/handler`                |
@@ -521,25 +510,7 @@ RABBITMQ_URL=amqp://localhost     # For background jobs
 SESSION_SECRET=your-secret-key    # Session encryption
 ```
 
-## Collaborative Design Engine Architecture
-
-The design engine is a multi-stage AI workflow at `src/lib/design-engine/`:
-
-**Stages** (sequential): Toolset Establishment → Toolset Review → Requirements Drafting → Requirements Review → BOM Drafting → BOM Review → Materialization → CAD Generation → CAD Review → Assembly Composition → Assembly Review
-
-The canonical stage enum is `DesignSessionStage` in `src/lib/design-engine/types.ts`.
-
-**Key concepts:**
-
-- Sessions are persisted in `design_sessions` table with JSONB artifacts
-- Each drafting/review stage pairs into one file in `stages/` (`toolset-establishment.ts`, `requirements.ts`, `bom.ts`, `cad-generation.ts`, `assembly-composition.ts`); materialization lives in `materialize.ts`, not `stages/`
-- Toolset Establishment captures the available manufacturing processes/tools and a scope (`in_house_only` | `in_house_preferred` | `unconstrained`); selections become per-BOM-node `ManufacturingConstraints` (FDM, laser-cut, CNC, …) that constrain downstream BOM and CAD generation
-- BOM drafting uses LLM tool-calling with tools defined in `tools/bom-tools.ts`
-- Materialization creates actual PLM items (parts, requirements, relationships, ECO) from the draft
-- CAD generation submits prompts to Zoo's Text-to-CAD API, uploads STEP files to vault
-- Assembly composition uses KCL (KittyCAD Language) code generation
-- SSE streaming for real-time updates via `POST /api/v1/design-engine/sessions/:id/stream`
-- UI workspace at `/designs/collaborative/$sessionId`
+## CAD Conversion Worker
 
 **CAD converter** (`workers/cad-converter/`): Python worker using pythonocc-core. Processes STEP/IGES files into STL + GLB (with per-face color preservation). Connects to RabbitMQ for job processing.
 
@@ -795,6 +766,5 @@ Cascadia supports flexible deployment from single-server to distributed Kubernet
 - `docker/vault.Dockerfile` - Vault service container
 - `workers/node/Dockerfile` - Node.js jobs worker container
 - `workers/cad-converter/Dockerfile` - CAD converter container
-- `workers/cad-generator/Dockerfile` - CAD generator container
 - `docs/orchestration/README.md` - Full orchestration guide
 - `docs/orchestration/configuration.md` - All environment variables

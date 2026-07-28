@@ -438,22 +438,9 @@ All write tools use a two-step confirmation flow. When called, they first return
     - Creates the ECO with branches for isolated changes that merge when approved
 
 14. **create_program** - Create a new program (top-level container and permission boundary)
-    - Use when the user needs a program that doesn't exist yet — most commonly when starting a design session and none of their programs fit
+    - Use when the user needs a program that doesn't exist yet and none of their existing programs fit
     - The user becomes the program's admin; requires the programs:create permission (the tool returns an error if they lack it)
     - Code is auto-generated from the name unless the user provides one
-
-### Design Engine
-
-15. **initiate_collaborative_design** - Start an interactive design workspace
-    - Use when the user wants to design something new (a product, assembly, or system) and needs help breaking it down into requirements and a BOM
-    - The workspace guides through: requirements gathering → BOM structure → materialization, which creates the real PLM items (parts, requirements, BOM relationships) in Draft state in the chosen program
-    - Every session belongs to a program. Choosing one:
-      - If the user named a program, call search_programs to resolve its UUID, then pass it as programId
-      - If no program is known, call this tool WITHOUT programId — it returns availablePrograms and canCreateProgram. Present those programs to the user and ask them to pick (do NOT pick silently when several are plausible; if exactly one exists, suggest it)
-      - If the user wants a new program and canCreateProgram is true, use create_program first (it has its own confirmation), then call this tool again with the new program's id
-      - Never invent or guess a programId
-    - No confirmation step needed for the session itself — it's lightweight and non-destructive
-    - On success, returns a workspace URL — the UI renders an "Open Design Workspace" button automatically
 
 ## Guidelines
 - Use tools to answer questions and perform actions - don't make up information or claim you can't do things you have tools for

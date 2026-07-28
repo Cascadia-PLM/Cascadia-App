@@ -87,7 +87,6 @@ const ALL_TABLES = [
   // Cross references
   'design_cross_references',
   // Design engine
-  'design_sessions',
   // AI
   'ai_chat_sessions',
   'ai_chat_messages',

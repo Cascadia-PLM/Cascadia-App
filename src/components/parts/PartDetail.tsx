@@ -2,14 +2,12 @@ import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft,
-  Box,
   Edit,
   Eye,
   EyeOff,
   GitBranch,
   Info,
   Loader2,
-  MoreVertical,
   Save,
   Search,
   Trash2,
@@ -31,7 +29,6 @@ import { PartRelationshipsPanel } from '@/components/items/PartRelationshipsPane
 import { RequirementLinkingPanel } from '@/components/requirements/RequirementLinkingPanel'
 import { PartValidationPanel } from '@/components/parts/PartValidationPanel'
 import { ImpactAnalysisDialog } from '@/components/impact'
-import { GenerateCadDialog } from '@/components/parts/GenerateCadDialog'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { PhaseBadge } from '@/components/items/PhaseBadge'
 import { FileList, FileUploadZone } from '@/components/vault'
@@ -58,10 +55,6 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   Select,
   SelectContent,
   SelectGroup,
@@ -216,7 +209,6 @@ export function PartDetail({
   const [isEditing, setIsEditing] = useState(isCreateMode)
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false)
   const [isImpactDialogOpen, setIsImpactDialogOpen] = useState(false)
-  const [isGenerateCadOpen, setIsGenerateCadOpen] = useState(false)
   const [attributes, setAttributes] = useState<Record<string, string>>(
     initialPart?.attributes ?? {},
   )
@@ -858,23 +850,6 @@ export function PartDetail({
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
                     </Button>
-                  )}
-                  {!isCreateMode && currentPart.partType === 'Manufacture' && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => setIsGenerateCadOpen(true)}
-                        >
-                          <Box className="h-4 w-4 mr-2" />
-                          Generate CAD
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   )}
                 </>
               )}
@@ -1543,14 +1518,6 @@ export function PartDetail({
           />
         )}
 
-        {/* Generate CAD Dialog */}
-        {!isCreateMode && currentPart.partType === 'Manufacture' && (
-          <GenerateCadDialog
-            open={isGenerateCadOpen}
-            onOpenChange={setIsGenerateCadOpen}
-            part={currentPart}
-          />
-        )}
       </PageContainer>
       <UrlDropOverlay isDragging={isDragging} isEnriching={isEnriching} />
     </div>

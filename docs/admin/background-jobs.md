@@ -187,36 +187,6 @@ Sends notifications when items transition between lifecycle states. High priorit
 
 Alerts work instruction owners when referenced parts are changed.
 
-### Zoo Text-to-CAD Generation
-
-| Property     | Value                      |
-| ------------ | -------------------------- |
-| Type         | `generation.cad.zoo`       |
-| Label        | Zoo Text-to-CAD Generation |
-| Routing Key  | `jobs.generation.cad.zoo`  |
-| Timeout      | 600,000 ms (10 minutes)    |
-| Max Attempts | 2                          |
-| Retry Delays | 60s, 120s                  |
-| Priority     | normal                     |
-| Handler      | Node.js worker             |
-
-Generates CAD models from text descriptions using the Zoo Text-to-CAD API. Long timeout due to external API latency.
-
-### Parametric CAD Generation
-
-| Property     | Value                                       |
-| ------------ | ------------------------------------------- |
-| Type         | `generation.cad.parametric`                 |
-| Label        | Parametric CAD Generation                   |
-| Routing Key  | `jobs.generation.cad.parametric`            |
-| Timeout      | 60,000 ms (1 minute)                        |
-| Max Attempts | 3                                           |
-| Retry Delays | 5s, 15s, 30s                                |
-| Priority     | high                                        |
-| Handler      | Python CadQuery worker (separate container) |
-
-Generates parametric CAD models using CadQuery. Fast retry delays because generation typically completes in 1-2 seconds.
-
 ### Thread Cache Cleanup
 
 | Property     | Value                       |

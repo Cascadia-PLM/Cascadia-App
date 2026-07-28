@@ -304,8 +304,6 @@ src/lib/jobs/
 │   │   └── config.ts
 │   ├── conversion/            # CAD conversion (Python worker)
 │   │   └── config.ts          # Config only — no handler
-│   ├── zoo-generation/        # Text-to-CAD generation
-│   │   └── config.ts
 │   └── yourjob/               # Your new job type
 │       ├── types.ts
 │       └── config.ts
@@ -313,7 +311,6 @@ src/lib/jobs/
 │   ├── register.ts            # Handler registration entry point
 │   ├── workflow-transition.ts # Email on state change
 │   ├── design-clone.ts        # Clone a design with all items
-│   ├── zoo-generation.ts      # Zoo Text-to-CAD
 │   └── yourjob.ts             # Your new job handler
 ├── rabbitmq/
 │   └── client.ts              # RabbitMQ connection and publishing
@@ -347,5 +344,3 @@ The worker uses plain `tsx` (not watch mode), so you must restart it to pick up 
 | `maintenance.cache.cleanup`        | `jobs.maintenance.cache`     | Node.js | Periodic cache cleanup        |
 | `workinstruction.part.changed`     | `jobs.workinstruction.part`  | Node.js | Alert on part change          |
 | `cad.conversion.process`           | `jobs.cad.conversion`        | Python  | STEP/IGES to STL/GLB          |
-| `cad.parametric.generate`          | `jobs.cad.parametric`        | Python  | Parametric CAD generation     |
-| `cad.zoo.generate`                 | `jobs.cad.zoo`               | Node.js | Zoo Text-to-CAD               |

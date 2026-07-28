@@ -133,13 +133,12 @@ To set up Azure AD OAuth:
 
 ### AI providers (optional)
 
-Cascadia includes an AI chatbot and design engine that require API keys from supported providers.
+Cascadia includes an AI chatbot that requires an API key from a supported provider.
 
 | Variable            | Description                            |
 | ------------------- | -------------------------------------- |
 | `OPENAI_API_KEY`    | OpenAI API key for GPT models          |
 | `ANTHROPIC_API_KEY` | Anthropic API key for Claude models    |
-| `ZOO_API_KEY`       | Zoo API key for text-to-CAD generation (can also be set in the UI at `/admin/ai`) |
 
 At least one of `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` is required for AI features. If neither is set, the AI chatbot panel is hidden but the rest of the application works normally.
 

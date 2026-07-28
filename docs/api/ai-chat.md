@@ -1,6 +1,6 @@
 # AI Chat API
 
-AI-powered chatbot that can search PLM data, answer questions, create items, and initiate collaborative design sessions. Uses TanStack AI with configurable providers (OpenAI, Anthropic, Gemini, Ollama) and streams responses via Server-Sent Events.
+AI-powered chatbot that can search PLM data, answer questions, and create items. Uses TanStack AI with configurable providers (OpenAI, Anthropic, Gemini, Ollama) and streams responses via Server-Sent Events.
 
 ## Overview
 
@@ -127,12 +127,6 @@ Write tools use a two-step confirmation flow:
 | `create_relationship`   | Create BOM or Document reference relationships |
 | `transition_item_state` | Move items through workflow states             |
 | `create_change_order`   | Create a new Engineering Change Order          |
-
-### Design engine tool
-
-| Tool                            | Description                                                                  |
-| ------------------------------- | ---------------------------------------------------------------------------- |
-| `initiate_collaborative_design` | Start a collaborative design session from the chat. Returns a workspace URL. |
 
 ---
 

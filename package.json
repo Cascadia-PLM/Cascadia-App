@@ -62,12 +62,9 @@
     "cad:worker:dev": "docker compose --profile cad up cad-converter-dev --build -d && docker logs -f cascadia-cad-converter-dev",
     "cad:worker:stop": "docker compose --profile cad stop cad-converter-dev",
     "cad:worker:logs": "docker logs -f cascadia-cad-converter-dev",
-    "cadgen:worker:dev": "docker compose --profile cad up cad-generator-dev --build -d && docker logs -f cascadia-cad-generator-dev",
-    "cadgen:worker:stop": "docker compose --profile cad stop cad-generator-dev",
-    "cadgen:worker:logs": "docker logs -f cascadia-cad-generator-dev",
-    "workers:dev": "docker compose up -d rabbitmq && docker compose --profile cad up -d cad-converter-dev cad-generator-dev --build && tsx src/jobs-worker.ts",
-    "workers:stop": "docker compose --profile cad stop cad-converter-dev cad-generator-dev",
-    "workers:logs": "docker compose --profile cad logs -f cad-converter-dev cad-generator-dev"
+    "workers:dev": "docker compose up -d rabbitmq && docker compose --profile cad up -d cad-converter-dev --build && tsx src/jobs-worker.ts",
+    "workers:stop": "docker compose --profile cad stop cad-converter-dev",
+    "workers:logs": "docker compose --profile cad logs -f cad-converter-dev"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.993.0",

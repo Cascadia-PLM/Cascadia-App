@@ -864,7 +864,6 @@ A Design is a version-controlled container for items within a program. Designs h
 | `/designs/$id/edit`                 | Design edit          | Edit design metadata                                |
 | `/designs/workspaces`               | Workspace index      | List personal workspaces                            |
 | `/designs/workspaces/$id`           | Workspace detail     | Personal workspace view                             |
-| `/designs/collaborative/$sessionId` | Collaborative design | AI-powered collaborative design session             |
 
 ### Key Files
 

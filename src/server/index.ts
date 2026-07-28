@@ -11,7 +11,6 @@ import branches from './routes/branches'
 import changeOrders from './routes/change-orders'
 import commits from './routes/commits'
 import dashboard from './routes/dashboard'
-import designEngine from './routes/design-engine'
 import designs from './routes/designs'
 import documents from './routes/documents'
 import enterpriseSearch from './routes/enterprise-search'
@@ -55,7 +54,6 @@ app.route('/api/v1/branches', branches)
 app.route('/api/v1/change-orders', changeOrders)
 app.route('/api/v1/commits', commits)
 app.route('/api/v1/dashboard', dashboard)
-app.route('/api/v1/design-engine', designEngine)
 app.route('/api/v1/designs', designs)
 app.route('/api/v1/documents', documents)
 app.route('/api/v1/enterprise-search', enterpriseSearch)

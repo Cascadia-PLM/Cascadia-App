@@ -13,7 +13,6 @@ The AI assistant is built on [TanStack AI](https://tanstack.com/ai), providing p
 - Analyze change impact with risk assessment
 - Create and update items, manage relationships, transition workflow states
 - Create Engineering Change Orders (ECOs) with automatic branch setup
-- Launch collaborative design sessions from the chat
 - Navigate users to item pages with clickable buttons
 
 All actions are permission-bounded and audit-logged.
@@ -57,7 +56,6 @@ The panel is resizable by dragging the left edge. Width is persisted to `localSt
 - **Assistant messages**: Rendered as Markdown using `react-markdown` with `remark-gfm`, left-aligned in a slate bubble. Supports headings, lists, tables, code blocks, links, and blockquotes.
 - **Tool calls**: Shown as small monospace labels below the message text (e.g., `search_items`, `get_bom`). A "Running..." indicator appears while the tool is executing.
 - **Navigation offers**: Rendered as clickable buttons below the message (e.g., "View P-1001"). Internal links navigate within the app; external links open in a new tab.
-- **Design workspace offers**: Rendered as a "Open Design Workspace" button that navigates to the collaborative design workspace.
 - **System messages**: Hidden from the UI.
 - **Streaming**: A pulsing cursor animation appears at the end of the assistant's message while content is still streaming.
 
@@ -248,10 +246,6 @@ Create a new Engineering Change Order. Supports ECO, ECN, Deviation, and MCO cha
 3. Adds specified designs (creating ECO branches)
 4. Adds specified affected items with appropriate change actions (`revise` for Released items, `release` for Draft items)
 
-### initiate_collaborative_design
-
-Launch an interactive collaborative design workspace. Unlike other write tools, this does not require confirmation -- creating a design session is lightweight and non-destructive. Requires a `programId` (UUID or code). Returns a workspace URL that the UI renders as an "Open Design Workspace" button.
-
 ---
 
 ## Confirmation Flow
@@ -375,7 +369,7 @@ Each tool definition includes:
 
 Tools are assembled in `src/lib/ai/tools/index.ts`:
 
-- **`createServerTools(context)`** -- Returns all 14 tools (8 read + 5 write + 1 design engine) bound to a user context
+- **`createServerTools(context)`** -- Returns all 14 tools (8 read + 6 write) bound to a user context
 - **`createSearchTools(context)`** -- Returns 5 lightweight tools (search_items, get_item_details, offer_navigation, search_programs, search_designs) for search mode
 
 The `context` object carries `userId`, `sessionId`, `programId`, and `designId` through to every handler.
@@ -397,7 +391,7 @@ The `context` object carries `userId`, `sessionId`, `programId`, and `designId` 
 | 11  | `create_relationship`           | Write    | `parts:update`         | Create BOM, Document, or Affects relationship |
 | 12  | `transition_item_state`         | Write    | `change_orders:update` | Transition workflow state                     |
 | 13  | `create_change_order`           | Write    | `change_orders:create` | Create ECO with branches and affected items   |
-| 14  | `initiate_collaborative_design` | Design   | `parts:create`         | Launch collaborative design workspace         |
+| 14  | `create_program`                | Write    | `programs:create`      | Create a program (creator becomes admin)      |
 
 ---
 
@@ -536,8 +530,6 @@ The API sets `X-Session-Id` and `X-Request-Id` headers on the SSE response for t
 | `src/lib/ai/tools/handlers.ts`                  | Read-only tool handler implementations                       |
 | `src/lib/ai/tools/write-handlers.ts`            | Write tool handler implementations                           |
 | `src/lib/ai/tools/permission-wrapper.ts`        | Permission checking and audit logging wrapper                |
-| `src/lib/ai/tools/design-engine-definitions.ts` | Collaborative design tool definition                         |
-| `src/lib/ai/tools/design-engine-handlers.ts`    | Collaborative design tool handler                            |
 | `src/lib/ai/tools/index.ts`                     | Tool assembly and exports                                    |
 | `src/lib/db/schema/ai.ts`                       | Database schema for sessions, messages, settings, usage logs |
 | `src/components/ai/ChatPanel.tsx`               | Main chat sidebar component                                  |

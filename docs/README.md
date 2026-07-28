@@ -41,8 +41,7 @@ This documentation covers the Cascadia PLM application architecture, features, A
 | [Import/Export](./features/import-export.md)             | Excel/CSV import, BOM import, column auto-mapping                                                        |
 | [Work Instructions](./features/work-instructions.md)     | Manufacturing instructions, execution tracking, PLM integration                                          |
 | [AI Assistant](./features/ai-assistant.md)               | LLM chatbot with PLM tools, multi-provider support                                                       |
-| [Design Engine](./features/design-engine.md)             | AI-assisted collaborative design: requirements, BOM, CAD, assembly                                       |
-| [CAD Services](./features/cad-services.md)               | CAD conversion (STEP/IGES to STL/GLB) and generation (Zoo API, KCL)                                      |
+| [CAD Services](./features/cad-services.md)               | CAD conversion (STEP/IGES to STL/GLB)                                                                    |
 
 ## Administration
 
@@ -66,7 +65,6 @@ This documentation covers the Cascadia PLM application architecture, features, A
 | [Search](./api/search.md)               | Enterprise search and type-specific search endpoints             |
 | [Import](./api/import.md)               | Bulk import API (parts, documents, issues, BOM)                  |
 | [SysML v2](./api/sysml.md)              | Standards-based SysML v2 interoperability API                    |
-| [Design Engine](./api/design-engine.md) | Design engine session management and SSE streaming               |
 | [AI Chat](./api/ai-chat.md)             | AI assistant chat sessions and tool execution                    |
 
 ## Deployment

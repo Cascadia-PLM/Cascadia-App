@@ -329,7 +329,13 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines. Security issues should 
 
 ## License
 
-Cascadia is licensed under the [GNU Affero General Public License v3.0 or later](./LICENSE). The AGPL's network-use clause means that if you run a modified version of Cascadia as a service, you must make the source available to users of that service.
+Cascadia is an **open-core, dual-licensed** project.
+
+The core PLM — parts, BOMs, ECO-as-Branch change management, documents, workflows, vault, search, and APIs — is licensed under the [GNU Affero General Public License v3.0 or later](./LICENSE), forever, with unlimited users. The AGPL's network-use clause means that if you run a modified version of Cascadia as a service, you must make the source available to users of that service.
+
+If the AGPL doesn't work for your organization, or you need enterprise capabilities (CAD connectors, SSO/AD, compliance pack, the AI Design Engine, support SLAs), a commercial license is available — see [LICENSING.md](./LICENSING.md) or contact [kai@cascadiaplm.com](mailto:kai@cascadiaplm.com).
+
+Contributions require signing the [CLA](./CLA.md); see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Support
 

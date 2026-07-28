@@ -2,7 +2,7 @@
  * ChatMessage - Individual message display component
  */
 
-import { Bot, ExternalLink, Lightbulb, User } from 'lucide-react'
+import { Bot, ExternalLink, User } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ConfirmationCard, isConfirmationResult } from './ConfirmationCard'
@@ -46,12 +46,6 @@ interface NavigationOffer {
   navigationUrl: string
 }
 
-// Design workspace offer from initiate_collaborative_design tool
-interface DesignWorkspaceOffer {
-  sessionId: string
-  workspaceUrl: string
-}
-
 interface ChatMessageProps {
   role: 'user' | 'assistant' | 'system'
   parts: Array<MessagePart>
@@ -91,9 +85,7 @@ export function ChatMessage({
   // Extract tool calls (excluding specially handled tools)
   const toolCalls = parts.filter(
     (part): part is ToolCallPart =>
-      part.type === 'tool-call' &&
-      part.name !== 'offer_navigation' &&
-      part.name !== 'initiate_collaborative_design',
+      part.type === 'tool-call' && part.name !== 'offer_navigation',
   )
 
   // Extract navigation offers by matching tool-result parts back to their tool-call
@@ -130,39 +122,6 @@ export function ChatMessage({
             itemName: args?.itemName ?? null,
             label: args?.label,
             navigationUrl: result.navigationUrl,
-          })
-        }
-      }
-    }
-  }
-
-  // Extract design workspace offers from initiate_collaborative_design tool results
-  const designWorkspaceOffers: Array<DesignWorkspaceOffer> = []
-  for (const part of parts) {
-    if (part.type === 'tool-result') {
-      const toolCall = toolCallMap.get(part.toolCallId)
-      if (toolCall?.name === 'initiate_collaborative_design') {
-        let result:
-          | {
-              sessionId?: string
-              workspaceUrl?: string
-              action?: string
-            }
-          | undefined
-        try {
-          result = JSON.parse(part.content)
-        } catch {
-          // content might not be valid JSON
-        }
-
-        if (
-          result?.action === 'open_design_workspace' &&
-          result.sessionId &&
-          result.workspaceUrl
-        ) {
-          designWorkspaceOffers.push({
-            sessionId: result.sessionId,
-            workspaceUrl: result.workspaceUrl,
           })
         }
       }
@@ -405,24 +364,6 @@ export function ChatMessage({
               >
                 <ExternalLink className="h-3 w-3" />
                 {offer.label || `View ${offer.itemNumber}`}
-              </Button>
-            ))}
-          </div>
-        )}
-
-        {/* Design workspace offers */}
-        {designWorkspaceOffers.length > 0 && (
-          <div className="mt-3">
-            {designWorkspaceOffers.map((offer) => (
-              <Button
-                key={offer.sessionId}
-                variant="default"
-                size="sm"
-                onClick={() => onNavigate?.(offer.workspaceUrl)}
-                className="gap-2 bg-cyan-600 hover:bg-cyan-700 text-white"
-              >
-                <Lightbulb className="h-4 w-4" />
-                Open Design Workspace
               </Button>
             ))}
           </div>

@@ -83,8 +83,8 @@ Background job workers and CAD conversion services run under Docker profiles:
 # Node.js jobs worker (requires RabbitMQ)
 docker compose --profile dev up jobs-worker-dev -d
 
-# CAD converter + generator workers
-docker compose --profile cad up cad-converter-dev cad-generator-dev -d
+# CAD converter worker
+docker compose --profile cad up cad-converter-dev -d
 
 # All workers at once
 docker compose --profile dev --profile cad up -d
@@ -129,27 +129,12 @@ ANTHROPIC_API_KEY=your-key-here
 OPENAI_API_KEY=your-key-here
 ```
 
-### AI CAD Generation
-
-Requires a Zoo API key for text-to-CAD model generation. Set it either via the
-environment:
-
-```
-ZOO_API_KEY=your-zoo-api-key
-```
-
-…or in the UI as an admin at **Admin → AI Assistant** (`/admin/ai`), in the
-**CAD Generation** section. A key saved and enabled there is stored in the
-database (encrypted at rest when `ENCRYPTION_KEY` is set) and overrides the
-environment variable.
-
 ### CAD Conversion Workers
 
 Convert STEP/IGES files to STL/GLB for in-browser 3D viewing. Requires Docker:
 
 ```bash
 npm run cad:worker:dev      # CAD converter only
-npm run cadgen:worker:dev   # CAD generator only
 npm run workers:dev         # All workers (RabbitMQ + CAD + jobs)
 ```
 
@@ -205,7 +190,6 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | `RABBITMQ_URL`          | No       | —                       | RabbitMQ connection URL             |
 | `ANTHROPIC_API_KEY`     | No       | —                       | Anthropic API key for AI assistant  |
 | `OPENAI_API_KEY`        | No       | —                       | OpenAI API key for AI assistant     |
-| `ZOO_API_KEY`           | No       | —                       | Zoo API key for CAD generation      |
 | `GITHUB_CLIENT_ID`      | No       | —                       | GitHub OAuth app client ID          |
 | `GITHUB_CLIENT_SECRET`  | No       | —                       | GitHub OAuth app client secret      |
 | `ENCRYPTION_KEY`        | No       | —                       | 32-byte hex key for data encryption |

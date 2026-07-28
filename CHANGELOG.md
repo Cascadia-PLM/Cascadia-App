@@ -4,6 +4,33 @@ All notable changes to Cascadia PLM will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Removed
+
+- **Collaborative Design Engine** — The multi-stage AI design workflow (toolset
+  establishment, requirements drafting, BOM drafting, materialization, and their
+  review gates), its `design_sessions` / `design_session_snapshots` tables, the
+  `/api/v1/design-engine/*` endpoints, and the `/designs/collaborative` workspace
+  have been removed from the AGPL distribution. Per
+  [LICENSING.md](./LICENSING.md), the Design Engine is now a commercial-edition
+  capability. Previously published AGPL versions remain available under the AGPL
+  in this repository's history.
+- **Generative CAD** — Zoo Text-to-CAD generation, KCL-based assembly
+  composition, the CadQuery parametric/mechanism generator worker
+  (`workers/cad-generator/`), the associated job types
+  (`generation.cad.zoo`, `generation.cad.parametric`, `generation.cad.mechanism`,
+  `generation.cad.assemble`), the part "Generate CAD" dialog, and the
+  `/api/v1/admin/cad-settings` provider configuration. The `ZOO_API_KEY`
+  environment variable is no longer read.
+- **`initiate_collaborative_design` AI tool** — Removed from the chatbot's tool
+  set and system prompt.
+
+CAD **conversion** is unaffected: `workers/cad-converter/` (STEP/IGES → STL/GLB),
+the `conversion.cad.step-to-stl` job, `POST /api/v1/files/:fileId/convert`, and
+the in-browser 3D viewer all remain. The bring-your-own-API-key AI chatbot and
+its read/write PLM tools also remain.
+
 ## [0.1.0] - 2026-04-13
 
 Initial open-source release under AGPL v3.

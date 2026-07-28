@@ -70,7 +70,7 @@ This document describes the high-level architecture of Cascadia PLM, the design 
 | **ORM**            | Drizzle ORM                              | Type-safe SQL queries with schema-driven migrations                |
 | **Auth**           | @oslojs/crypto, @oslojs/encoding, Arctic | Session tokens (SHA-256 hashed), Argon2id passwords, OAuth         |
 | **Graph Viz**      | React Flow (@xyflow/react) + Dagre       | BOM and workflow graph visualization                               |
-| **AI**             | TanStack AI + Anthropic/OpenAI adapters  | AI chatbot and collaborative design engine                         |
+| **AI**             | TanStack AI + Anthropic/OpenAI adapters  | AI chatbot                                                         |
 | **3D Viewer**      | React Three Fiber + Three.js             | In-browser CAD model viewing (STL, OBJ, GLB)                       |
 | **CAD Conversion** | Python + pythonocc-core                  | STEP/IGES to STL/GLB conversion with color preservation            |
 | **Message Queue**  | RabbitMQ (amqplib)                       | Async job processing for CAD conversion, notifications             |
@@ -147,7 +147,6 @@ components/
 ├── ui/                  # Base primitives: Button, Card, DataGrid, Dialog, Badge, etc.
 │                        # Uses Radix UI + Tailwind. Import via @/components/ui/
 ├── ai/                  # AI chatbot panel and message rendering
-├── design-engine/       # Collaborative design workspace (stages, artifacts, BOM tools)
 ├── work-instructions/   # Work instruction authoring and execution
 ├── designs/             # Design management (AddPartToDesignDialog, DesignBranchSelector)
 ├── versioning/          # Version comparison, commit history, diff views
@@ -184,8 +183,6 @@ lib/
 ├── jobs/                # Background job system (RabbitMQ producer/consumer)
 ├── errors/              # Typed error hierarchy (AppError, NotFoundError, ValidationError, ...)
 ├── ai/                  # AI chatbot tools, adapters, session service
-├── design-engine/       # Collaborative design engine (stages, tools, materialization)
-├── cad-generation/      # CAD generation pipeline (Zoo API, KCL)
 └── sysml/               # SysML v2 serialization
 ```
 
@@ -216,7 +213,7 @@ TanStack Router file-based routes for the Vite SPA frontend.
 ```
 routes/
 ├── parts/               # UI routes for parts (list, detail)
-├── designs/             # UI routes for designs (collaborative workspace)
+├── designs/             # UI routes for designs
 ├── admin/               # Admin UI (users, roles, system settings)
 └── ...
 ```
@@ -228,9 +225,8 @@ External worker processes that run in separate containers.
 ```
 workers/
 ├── node/                # Node.js job worker Dockerfile
-├── cad-converter/       # Python worker using pythonocc-core
-│   └── src/             # STEP/IGES -> STL/GLB conversion with color preservation
-└── cad-generator/       # Python worker: Parametric CAD (CadQuery)
+└── cad-converter/       # Python worker using pythonocc-core
+    └── src/             # STEP/IGES -> STL/GLB conversion with color preservation
 ```
 
 ### `scripts/`

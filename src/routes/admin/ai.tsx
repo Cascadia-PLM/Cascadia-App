@@ -12,7 +12,6 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { PageContainer } from '@/components/layout'
-import { CadGenerationSettingsCard } from '@/components/admin/CadGenerationSettingsCard'
 import {
   Badge,
   Button,
@@ -567,21 +566,6 @@ function AISettingsPage() {
         </>
       )}
 
-      {/* CAD Generation section */}
-      <div className="border-t border-slate-200 dark:border-slate-800 pt-8 mt-4">
-        <div className="mb-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            CAD Generation
-          </h2>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Configure the Text-to-CAD provider used by the collaborative design
-            engine
-          </p>
-        </div>
-        <div className="space-y-6">
-          <CadGenerationSettingsCard />
-        </div>
-      </div>
     </PageContainer>
   )
 }

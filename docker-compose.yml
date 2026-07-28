@@ -145,43 +145,6 @@ services:
     networks:
       - cascadia-network
 
-  # Parametric CAD Generator Worker (Python - CadQuery for STEP generation)
-  cad-generator-dev:
-    build:
-      context: ./workers/cad-generator
-    container_name: cascadia-cad-generator-dev
-    restart: unless-stopped
-    profiles:
-      - dev
-      - cad
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${POSTGRES_HOST:-host.docker.internal}:5432/${POSTGRES_DB:-cascadia}
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-cascadia}:${RABBITMQ_PASSWORD:-cascadia}@cascadia-rabbitmq:5672
-      VAULT_ROOT: /vault
-      WORKER_CONCURRENCY: 2
-      HEALTH_PORT: 3004
-    volumes:
-      - ./vault:/vault
-    ports:
-      - '3004:3004'
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'python',
-          '-c',
-          "import urllib.request; urllib.request.urlopen('http://localhost:3004/health')",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
-    networks:
-      - cascadia-network
-
   # Optional: pgAdmin for database management
   pgadmin:
     image: dpage/pgadmin4:latest

@@ -16,11 +16,9 @@ import { cloneDesignHandler } from './design-clone'
 import { cacheCleanupHandler } from './cache-cleanup'
 import { sessionCleanupHandler } from './session-cleanup'
 import { wiPartChangedHandler } from './workinstruction'
-import { zooGenerationHandler } from './zoo-generation'
 
 JobTypeRegistry.registerHandler(workflowTransitionHandler)
 JobTypeRegistry.registerHandler(cloneDesignHandler)
 JobTypeRegistry.registerHandler(cacheCleanupHandler)
 JobTypeRegistry.registerHandler(sessionCleanupHandler)
 JobTypeRegistry.registerHandler(wiPartChangedHandler)
-JobTypeRegistry.registerHandler(zooGenerationHandler)

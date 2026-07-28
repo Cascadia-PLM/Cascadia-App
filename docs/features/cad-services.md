@@ -1,6 +1,6 @@
 # CAD Services
 
-Cascadia provides two complementary CAD processing pipelines: a **conversion service** that transforms existing STEP/IGES files into web-viewable formats (STL, GLB), and a **generation service** that creates new CAD geometry from natural language descriptions or parametric templates. Both pipelines integrate with the PLM vault for file storage and the background job system for asynchronous processing.
+Cascadia's CAD conversion service transforms existing STEP/IGES files into web-viewable formats (STL, GLB). It integrates with the PLM vault for file storage and the background job system for asynchronous processing.
 
 ## CAD Conversion Service
 
@@ -179,175 +179,11 @@ The worker runs as a non-root user (`cadworker`) with the vault mounted at `/vau
 | `VAULT_ROOT`         | `/vault`                                                 | Root path for vault file storage |
 | `STL_FORMAT`         | `binary`                                                 | STL output format (binary/ascii) |
 
-## CAD Generation (Zoo Text-to-CAD API)
-
-The generation pipeline at `src/lib/cad-generation/` creates new STEP files from natural language descriptions. It is used by the collaborative design engine to generate geometry for new Manufacture parts during the CAD Generation stage.
-
-### Text-to-CAD Concept
-
-The idea is straightforward: describe a part in plain English and receive a STEP file. The Zoo API (`https://api.zoo.dev`) provides this capability as a cloud service. Cascadia wraps it with prompt engineering that incorporates PLM context (interface geometry, assembly relationships, material specs) to produce more accurate results.
-
-### Zoo API Integration
-
-The `ZooClient` class (`zoo-client.ts`) handles communication with the Zoo API:
-
-1. **Submit**: `POST /ai/text-to-cad/{format}` with a text prompt. Returns a request ID.
-2. **Poll**: `GET /async/operations/{requestId}` to check status. Uses exponential backoff starting at 5 seconds, capping at 60 seconds.
-3. **Extract**: When status is `completed`, the response includes an `outputs` map of filename to base64-encoded file content. The client decodes the first output file.
-
-Configuration:
-
-- `ZOO_API_KEY` (required): API key for authentication. Can be provided via the environment variable **or** configured in the UI by an admin at **Admin → AI Assistant** (`/admin/ai`) in the **CAD Generation** section. A key saved and enabled in the UI is stored in the `settings` table (encrypted at rest when `ENCRYPTION_KEY` is set) and takes precedence over the environment variable; if no UI key is set/enabled, the app falls back to `ZOO_API_KEY`.
-- `ZOO_TEXT_TO_CAD_TIMEOUT_MS` (optional): Maximum wait time, default 600 seconds (10 minutes).
-- `ZOO_TEXT_TO_CAD_CONCURRENCY` (optional): Max parallel Zoo API calls, default 3.
-
-### Prompt Construction
-
-The prompt builder (`prompt-builder.ts`) synthesizes part context into an effective Zoo prompt. The key principle is to lead with the feature tree rather than just the part name:
-
-1. **Geometry description**: Part name and description with key dimensions extracted from interface definitions.
-2. **Material**: Material specification if available.
-3. **Interface features**: The most important section. Each interface is described with its geometry (shape, dimensions, count, pattern, spacing) and location hint.
-4. **Assembly context**: Parent assembly name and purpose, plus sibling part names and bounding boxes for proportioning.
-5. **User feedback**: Additional requirements for regeneration attempts.
-
-### Parametric Generation Assessment
-
-Before calling the Zoo API, Cascadia can assess whether a part matches a parametric template (`assessment.ts`). An LLM evaluates the part against available templates:
-
-| Template                | Parameters                                                   |
-| ----------------------- | ------------------------------------------------------------ |
-| `bushing`               | od, id, length                                               |
-| `spacer`                | od, id, length                                               |
-| `tube`                  | od, wall_thickness, length                                   |
-| `plate`                 | width, height, thickness, corner_radius                      |
-| `plate_with_holes`      | width, height, thickness, hole_diameter, corner_radius, etc. |
-| `block`                 | width, depth, height, corner_radius                          |
-| `bracket_l`             | leg1_length, leg2_length, width, thickness, etc.             |
-| `bracket_u`             | base_length, leg_height, width, thickness, etc.              |
-| `extrusion_rectangular` | width, height, length, wall_thickness                        |
-| `extrusion_circular`    | diameter, length, wall_thickness                             |
-
-Parts matching a template are dispatched to a CadQuery worker via the `generation.cad.parametric` job type, which generates STEP files in approximately 1-2 seconds. Parts with complex geometry fall through to the Zoo API, which takes approximately 5-10 minutes.
-
-### Design Engine Integration
-
-The CAD generation stage (`src/lib/design-engine/stages/cad-generation.ts`) is the primary consumer of the generation pipeline. It runs after materialization (which creates actual PLM items) and before assembly composition.
-
-The stage:
-
-1. Builds a `tempId` to `itemId` mapping from the materialization result.
-2. Collects all leaf Manufacture parts from the BOM tree that need CAD generation.
-3. Generates STEP files in parallel with concurrency control (default 3 concurrent Zoo calls).
-4. Uploads each STEP file to the vault via `FileService.uploadFile()`.
-5. Tracks per-part status (complete/failed) on the BOM node's `cadGeneration` property.
-6. Supports single-part regeneration with optional user feedback text.
-
-When a part is regenerated, `cascade-recompose.ts` identifies all ancestor assemblies and marks them as stale for recomposition.
-
-## Assembly Composition
-
-After individual part STEP files are generated, assemblies are composed by positioning child parts relative to each other. Composition has three parts: an LLM **plans** placements, the plan is serialized to **KCL** as a portable artifact, and the CadQuery/OCCT worker **renders** the composed STEP file into the vault.
-
-### KCL (KittyCAD Language)
-
-KCL is a domain-specific language for describing CAD assemblies. Cascadia generates KCL code that imports child STEP files and applies spatial transforms (translation, rotation). The KCL is stored on the BOM node (`kclProjectRef`) as a portable side artifact — actual geometry rendering happens in-house via the OCCT worker (below), not via a KittyCAD engine.
-
-A generated KCL project looks like:
-
-```kcl
-// Assembly: motor-mount-assy
-// Auto-generated by Cascadia Design Engine
-
-let base_plate = import("vault-file-id-abc.step")
-  |> translate([0, 0, 0], %)
-
-let motor_bracket = import("vault-file-id-def.step")
-  |> rotateZ(90, %)
-  |> translate([50, 0, 25], %)
-
-let mounting_bolt = import("vault-file-id-ghi.step")
-  |> translate([25, 15, 0], %)
-
-// mounting_bolt x4
-let mounting_bolt_2 = clone(mounting_bolt)
-let mounting_bolt_3 = clone(mounting_bolt)
-let mounting_bolt_4 = clone(mounting_bolt)
-```
-
-### Assembly Planning
-
-The `AssemblyPlanner` class (`assembly-planner.ts`) uses an LLM to determine how child parts should be positioned. It receives:
-
-- Child part bounding boxes (from CAD generation results).
-- Interface definitions (shape, dimensions, location hints).
-- Interface mappings (which interfaces on which parts connect to each other).
-- Design context (product description, assembly purpose).
-
-The LLM produces a JSON response with:
-
-- `reasoning`: explanation of the assembly strategy.
-- `placements`: list of transforms (translation + rotation) for each child.
-- `kclCode`: KCL assembly code.
-
-The `placements` list is the engine-agnostic source of truth: each entry carries a `Transform3D` (translation in mm, rotation as Euler XYZ in degrees) plus the child's vault STEP file key. KCL is one serialization of it; the OCCT render consumes it directly.
-
-### STEP Rendering (OCCT Worker)
-
-After planning, the stage submits a `generation.cad.assemble` job (`src/lib/cad-generation/assembly-render.ts`) to the CadQuery worker at `workers/cad-generator/`, which:
-
-1. Resolves each child STEP from the vault by file ID (`get_vault_file()` in the worker's `db.py` — the workers' only vault *read* path; everything else is write-only).
-2. Imports each child with `cq.importers.importStep()` and applies the placement transform (`assembly.py`).
-3. Combines the transformed shapes into a structured `cq.Assembly` with deduplicated part names, exported via XDE so the CAD converter's decomposer can read the output back.
-4. Stores the composed STEP in the vault and returns `{ vaultFileId, fileName, boundingBox }`.
-
-On success the BOM node gets `assemblyComposition = { status: 'complete', assemblyStepFileKey, boundingBox, ... }`. The bounding box feeds the *parent* assembly's planning and overlap validation — this is what makes multi-level composition work, since sub-assemblies have no `cadGeneration.boundingBox` of their own.
-
-**Rotation convention** (pinned by `workers/cad-generator/tests/test_assembly.py`): rotateX → rotateY → rotateZ, each about the **global** axis through the origin, in degrees, followed by translation — identical to the KCL serialization in `kcl-generator.ts`. Transforms are baked into each shape before it joins the assembly, so the exported XDE holds identity locations plus part names.
-
-Two deliberate fallbacks:
-
-- The stage re-keys every placement's `stepFileKey` from its own child data before submission — LLM-echoed file keys are never trusted.
-- If the assembly has no materialized item or ECO branch to attach a file to, the node falls back to `status: 'code_only'` (plan + KCL retained, no geometry). `code_only` nodes are not skipped on re-run, so they gain geometry once the context exists.
-
-`quantity > 1` placements currently render a single instance (the plan carries one transform per placement); the worker logs a warning when this happens.
-
-### Bottom-Up Assembly Order
-
-Multi-level assemblies are processed bottom-up via post-order traversal (`assembly-order.ts`). Leaf sub-assemblies are composed first so their STEP files are available when the parent assembly is planned.
-
-The order computation:
-
-1. Post-order traversal of the BOM tree.
-2. Only assembly nodes (those with children) are included.
-3. For each assembly, checks readiness: all child Manufacture parts must have `cadGeneration.status === 'complete'`, and all child sub-assemblies must have `assemblyComposition.status === 'complete'`.
-
-### Validation
-
-Before and after assembly planning, validators check for issues:
-
-**Pre-planning** (`validateAssemblyReadiness`):
-
-- All Manufacture children have generated STEP files.
-- All sub-assemblies have been composed.
-- All children have interface mappings (warning if not).
-
-**Post-planning** (`validateAssemblyPlan`):
-
-- At least one placement exists.
-- At least one part is near the origin (within 100mm).
-- No parts are placed more than 10 meters from origin.
-- No bounding box overlaps between placed parts (AABB check).
-
-### Interface Propagation
-
-When a sub-assembly is composed, not all child interfaces are consumed by internal connections. `interface-propagation.ts` computes which interfaces are "exposed" (not referenced in any interface mapping) and available for the parent assembly to use for positioning.
-
 ## Integration with PLM
 
 ### Vault File Storage
 
-All generated and converted CAD files are stored in the Cascadia vault system. The converter writes directly to the vault filesystem and inserts `vault_files` records via SQL. The generation pipeline uses `FileService.uploadFile()` from the Node.js application.
+Converted CAD files are stored in the Cascadia vault system. The converter writes directly to the vault filesystem and inserts `vault_files` records via SQL.
 
 File categories used:
 
@@ -371,27 +207,6 @@ CAD operations use these job types registered in the background job system:
 - Max attempts: 2
 - Retry delays: 60s, 120s
 - Consumed by the Python CAD converter worker.
-
-**`generation.cad.parametric`**: Generates STEP files from parametric templates.
-
-- Routing key: `jobs.generation.cad.parametric`
-- Timeout: 1 minute
-- Max attempts: 3
-- Retry delays: 5s, 15s, 30s
-- Consumed by the CadQuery worker (`workers/cad-generator/`).
-
-**`generation.cad.mechanism`**: Generates coordinated multi-part mechanisms (e.g. rack-and-pinion via cq-gears), one STEP per role.
-
-- Routing key: `jobs.generation.cad.mechanism`
-- Consumed by the CadQuery worker.
-
-**`generation.cad.assemble`**: Composes child STEP files into one structured assembly STEP from planned placements.
-
-- Routing key: `jobs.generation.cad.assemble`
-- Timeout: 3 minutes
-- Max attempts: 3
-- Retry delays: 5s, 15s, 30s
-- Consumed by the CadQuery worker.
 
 Jobs are submitted via `JobService.submit()` and tracked in the `jobs` table with progress updates, log entries, and result storage.
 
@@ -420,58 +235,15 @@ Jobs are submitted via `JobService.submit()` and tracked in the `jobs` table wit
 | `workers/cad-converter/entrypoint.sh`                    | Xvfb + Python worker startup                  |
 | `workers/cad-converter/environment.yml`                  | Conda environment spec                        |
 
-### CAD Generation (TypeScript)
-
-| File                                              | Purpose                                        |
-| ------------------------------------------------- | ---------------------------------------------- |
-| `src/lib/cad-generation/zoo-client.ts`            | Zoo Text-to-CAD API client                     |
-| `src/lib/cad-generation/part-generator.ts`        | Parallel STEP generation for Manufacture parts |
-| `src/lib/cad-generation/prompt-builder.ts`        | Prompt construction from PLM context           |
-| `src/lib/cad-generation/assessment.ts`            | LLM-based parametric vs. Zoo routing           |
-| `src/lib/cad-generation/assembly-planner.ts`      | LLM-based assembly planning                    |
-| `src/lib/cad-generation/assembly-order.ts`        | Bottom-up traversal order computation          |
-| `src/lib/cad-generation/assembly-validator.ts`    | Pre/post assembly plan validation              |
-| `src/lib/cad-generation/kcl-generator.ts`         | KCL project generation from assembly plans     |
-| `src/lib/cad-generation/assembly-render.ts`       | Assembly STEP render job submission + polling  |
-| `src/lib/cad-generation/interface-propagation.ts` | Exposed interface computation                  |
-| `src/lib/cad-generation/cascade-recompose.ts`     | Stale assembly detection on part regeneration  |
-| `src/lib/cad-generation/types.ts`                 | Shared type definitions                        |
-
 ### Job Configuration (TypeScript)
 
 | File                                                       | Purpose                                      |
 | ---------------------------------------------------------- | -------------------------------------------- |
 | `src/lib/jobs/definitions/conversion/config.ts`            | `conversion.cad.step-to-stl` job type config |
 | `src/lib/jobs/definitions/conversion/types.ts`             | Payload and result Zod schemas               |
-| `src/lib/jobs/definitions/parametric-generation/config.ts` | `generation.cad.parametric` job type config  |
-| `src/lib/jobs/definitions/parametric-generation/types.ts`  | Payload and result Zod schemas               |
-| `src/lib/jobs/definitions/mechanism-generation/config.ts`  | `generation.cad.mechanism` job type config   |
-| `src/lib/jobs/definitions/mechanism-generation/types.ts`   | Payload and result Zod schemas               |
-| `src/lib/jobs/definitions/assembly-composition/config.ts`  | `generation.cad.assemble` job type config    |
-| `src/lib/jobs/definitions/assembly-composition/types.ts`   | Payload and result Zod schemas               |
-
-### CAD Generator (Python)
-
-| File                                                              | Purpose                                          |
-| ----------------------------------------------------------------- | ------------------------------------------------ |
-| `workers/cad-generator/src/cad_generator/worker.py`               | RabbitMQ consumer: parametric/mechanism/assemble |
-| `workers/cad-generator/src/cad_generator/templates/`              | CadQuery parametric part templates               |
-| `workers/cad-generator/src/cad_generator/mechanism_generators/`   | Multi-part mechanism generators (cq-gears)       |
-| `workers/cad-generator/src/cad_generator/assembly.py`             | Placement transforms + structured STEP assembly  |
-| `workers/cad-generator/src/cad_generator/export.py`               | STEP export and bounding box computation         |
-| `workers/cad-generator/src/cad_generator/models.py`               | Pydantic models for payloads and results         |
-| `workers/cad-generator/src/cad_generator/db.py`                   | PostgreSQL operations (jobs, vault_files)        |
-| `workers/cad-generator/tests/test_assembly.py`                    | Rotation-convention and STEP round-trip tests    |
-
-### Design Engine Stages
-
-| File                                                   | Purpose                              |
-| ------------------------------------------------------ | ------------------------------------ |
-| `src/lib/design-engine/stages/cad-generation.ts`       | CAD generation stage processor       |
-| `src/lib/design-engine/stages/assembly-composition.ts` | Assembly composition stage processor |
 
 ### API Routes
 
 | File                                      | Purpose                                 |
 | ----------------------------------------- | --------------------------------------- |
-| `src/routes/api/files/$fileId/convert.ts` | POST endpoint to submit conversion jobs |
+| `src/server/routes/files.ts`              | POST endpoint to submit conversion jobs |

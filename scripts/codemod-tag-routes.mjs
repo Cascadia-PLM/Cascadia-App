@@ -24,7 +24,6 @@ const TAG_OVERRIDES = {
   mbom: 'MBOM',
   sysml: 'SysML',
   'enterprise-search': 'Enterprise Search',
-  'design-engine': 'Design Engine',
 }
 
 function deriveTag(filename) {

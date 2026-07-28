@@ -11,7 +11,6 @@ export const SettingKeys = {
   SETUP_COMPLETED: 'system.setup_completed',
   SETUP_PROGRESS: 'system.setup_progress',
   ORG_INFO: 'org.info',
-  CAD_GENERATION: 'cad_generation',
 } as const
 
 export type SettingKey = (typeof SettingKeys)[keyof typeof SettingKeys]

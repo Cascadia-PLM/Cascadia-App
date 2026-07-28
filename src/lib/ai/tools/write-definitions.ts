@@ -306,7 +306,7 @@ Requires user confirmation before creating.`,
 export const createProgramDef = toolDefinition({
   name: 'create_program',
   description: `Create a new program. Programs are the top-level containers and permission boundaries for designs and items.
-Use this when the user wants to start work that doesn't fit any existing program — for example, kicking off a collaborative design session when none of their programs are a good match.
+Use this when the user wants to start work that doesn't fit any existing program.
 The requesting user automatically becomes the program's admin. Requires the 'programs: create' permission — the tool returns a permission error if the user lacks it.
 Requires user confirmation before creating.`,
   inputSchema: z.object({

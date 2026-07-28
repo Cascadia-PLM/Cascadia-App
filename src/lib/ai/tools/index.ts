@@ -80,18 +80,10 @@ import {
   updateItemHandler,
 } from './write-handlers'
 
-import { initiateCollaborativeDesignDef } from './design-engine-definitions'
-import { initiateCollaborativeDesignHandler } from './design-engine-handlers'
-
 import type { ToolContext } from './permission-wrapper'
 
 // Re-export types and definitions for external use
-export {
-  allToolDefinitions,
-  allWriteToolDefinitions,
-  initiateCollaborativeDesignDef,
-  type ToolContext,
-}
+export { allToolDefinitions, allWriteToolDefinitions, type ToolContext }
 
 /**
  * Create search-only tool implementations (no write tools, no BOM/impact analysis)
@@ -195,11 +187,6 @@ export function createServerTools(context: ToolContext) {
     createProgramHandler(input, context),
   )
 
-  // Design engine tools
-  const initiateCollaborativeDesign = initiateCollaborativeDesignDef.server(
-    (input) => initiateCollaborativeDesignHandler(input, context),
-  )
-
   return [
     // Read tools
     searchItems,
@@ -217,7 +204,5 @@ export function createServerTools(context: ToolContext) {
     transitionItemState,
     createChangeOrder,
     createProgram,
-    // Design engine
-    initiateCollaborativeDesign,
   ]
 }

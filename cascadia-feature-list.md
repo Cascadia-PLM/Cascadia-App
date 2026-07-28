@@ -408,7 +408,6 @@ RESTful API for external system integration.
 | Reports                | ✅     | Execute and export                     |
 | Search                 | ✅     | Enterprise search                      |
 | Work Instructions      | ✅     | CRUD, executions, change alerts        |
-| Design Engine Sessions | ✅     | Create, stream, update, complete       |
 | AI Chat                | ✅     | Conversations with tool use            |
 
 ### Batch Operations ✅
@@ -556,52 +555,6 @@ LLM-powered chatbot for navigating and querying PLM data.
 
 ---
 
-## Collaborative Design Engine
-
-AI-assisted product design workflow that generates requirements, BOMs, CAD, and assemblies from a natural language description.
-
-### Design Stages ✅
-
-| Stage                 | Status | Notes                                                                                                |
-| --------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
-| Requirements drafting | ✅     | LLM analyzes description, proposes structured requirements                                           |
-| Requirements review   | ✅     | User edits/approves proposed requirements                                                            |
-| BOM drafting          | ✅     | LLM decomposes into hierarchical BOM, searches for reuse                                             |
-| BOM review            | ✅     | User validates BOM structure and requirement coverage                                                |
-| Materialization       | ✅     | Creates items + BOM relationships in Draft (pre-release designs on main; released designs via an ECO) |
-| CAD generation        | 🟡     | Generates STEP files via Zoo Text-to-CAD API for Manufacture parts                                   |
-| CAD review            | 🟡     | 3D viewer for reviewing generated models                                                             |
-| Assembly composition  | 🟡     | Bottom-up assembly via KCL code generation                                                           |
-| Assembly review       | 🟡     | Final assembly validation                                                                            |
-
-### BOM Drafting Tools ✅
-
-| Tool                              | Notes                                         |
-| --------------------------------- | --------------------------------------------- |
-| `search_parts`                    | Search PLM for existing parts to reuse        |
-| `get_existing_bom`                | Analyze BOM structure of existing assemblies  |
-| `get_item_details`                | Fetch full item details                       |
-| `propose_new_part`                | Propose new part with partType classification |
-| `add_existing_to_bom`             | Add existing item to BOM at specified parent  |
-| `set_bom_parent`                  | Reparent a BOM node                           |
-| `link_requirement_to_part`        | Map requirements to parts                     |
-| `set_part_interfaces`             | Define mechanical interfaces for assembly     |
-| `set_assembly_interface_mappings` | Define how children connect in assemblies     |
-| `ask_clarification`               | Request user input when ambiguous             |
-
-### Infrastructure ✅
-
-| Feature                 | Status | Notes                                                      |
-| ----------------------- | ------ | ---------------------------------------------------------- |
-| Session persistence     | ✅     | `design_sessions` table with JSONB artifacts               |
-| SSE streaming           | ✅     | Real-time stage updates via server-sent events             |
-| Activity feed           | ✅     | Live log of engine actions                                 |
-| Requirements coverage   | ✅     | Matrix showing requirement-to-part mapping                 |
-| Materialization preview | ✅     | Shows what will be created before committing               |
-| Interface definitions   | ✅     | Mechanical interfaces (mounting holes, mating faces, etc.) |
-
----
-
 ## CAD Conversion Service
 
 Python microservice for converting CAD files between formats.
@@ -745,7 +698,6 @@ User and developer documentation.
 | **Validation**       | Zod                                              |
 | **AI Integration**   | TanStack AI with Anthropic and OpenAI adapters   |
 | **CAD Conversion**   | Python, pythonocc-core (STEP/IGES → STL/GLB)     |
-| **CAD Generation**   | Zoo Text-to-CAD API, KCL for assemblies          |
 | **Testing**          | Vitest, Playwright                               |
 | **Message Queue**    | RabbitMQ                                         |
 | **File Storage**     | Local filesystem / S3-compatible                 |

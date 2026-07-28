@@ -8,8 +8,6 @@
  *
  * The client merges the suggestions into empty / still-default form fields and
  * always stores the source URL as a `link` custom attribute.
- *
- * Modeled on `src/lib/cad-generation/assessment.ts` (prompt -> JSON -> parse).
  */
 
 import { chat } from '@tanstack/ai'

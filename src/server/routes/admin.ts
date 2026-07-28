@@ -5,10 +5,6 @@ import { streamToText } from '@tanstack/ai'
 import { tagged } from '../adapter'
 import type { AIProviderConfig as AIProviderDBConfig } from '@/lib/db/schema/ai'
 import type { AIProviderConfig, ProviderType } from '@/lib/ai/adapters'
-import type {
-  CadGenerationConfig,
-  CadProvider,
-} from '@/lib/cad-generation/settings-types'
 import { apiHandler, parseQuery } from '@/lib/api/handler'
 import { db } from '@/lib/db'
 import { aiSettings } from '@/lib/db/schema/ai'
@@ -30,9 +26,6 @@ import { ConfigService } from '@/lib/config'
 import { ItemTypeRegistry } from '@/lib/items/registry'
 import { JobService } from '@/lib/jobs/JobService'
 import { SettingsService } from '@/lib/config/SettingsService'
-import { SettingKeys } from '@/lib/config/SettingKeys'
-import { decryptCadApiKey } from '@/lib/cad-generation/settings'
-import { CAD_PROVIDER_KEYS } from '@/lib/cad-generation/settings-types'
 import { ThreadCacheService } from '@/lib/services/ThreadCacheService'
 import { StorageFactory } from '@/lib/vault/storage/storage-factory'
 import { takeFirst } from '@/lib/db/take-first'
@@ -345,167 +338,6 @@ app.post(
             error: {
               code: 'CONNECTION_ERROR',
               message: err.message || 'Failed to connect to AI provider',
-            },
-          }),
-          { status: 503, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
-    }),
-  ),
-)
-
-// ============================================
-// CAD Generation Settings
-// ============================================
-
-/** Mask a stored (possibly encrypted) key as `first8...last4` for display. */
-function maskCadApiKey(stored: string | undefined): string | undefined {
-  if (!stored) return undefined
-  const decrypted = decryptCadApiKey(stored)
-  return `${decrypted.slice(0, 8)}...${decrypted.slice(-4)}`
-}
-
-function cadValidationError(message: string): Response {
-  return new Response(
-    JSON.stringify({ error: { code: 'VALIDATION_ERROR', message } }),
-    { status: 400, headers: { 'Content-Type': 'application/json' } },
-  )
-}
-
-// GET /api/admin/cad-settings
-app.get(
-  '/cad-settings',
-  adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async () => {
-      const stored = await SettingsService.getJsonValue<CadGenerationConfig>(
-        SettingKeys.CAD_GENERATION,
-      )
-
-      return {
-        settings: {
-          provider: stored?.provider ?? 'zoo',
-          enabled: stored?.enabled ?? false,
-          hasApiKey: !!stored?.apiKey,
-          apiKeyPreview: maskCadApiKey(stored?.apiKey),
-        },
-        envVars: { zoo: !!process.env.ZOO_API_KEY },
-      }
-    }),
-  ),
-)
-
-// POST /api/admin/cad-settings
-app.post(
-  '/cad-settings',
-  adapt(
-    apiHandler(
-      { permission: ['system', 'manage'] },
-      async ({ request, user }) => {
-        const body = await request.json()
-        const { enabled, provider, config } = body as {
-          enabled: boolean
-          provider: string
-          config?: { apiKey?: string }
-        }
-
-        if (typeof enabled !== 'boolean') {
-          return cadValidationError('enabled must be a boolean')
-        }
-        if (!provider || typeof provider !== 'string') {
-          return cadValidationError('provider is required')
-        }
-        if (!(CAD_PROVIDER_KEYS as ReadonlyArray<string>).includes(provider)) {
-          return cadValidationError(
-            `Invalid provider. Must be one of: ${CAD_PROVIDER_KEYS.join(', ')}`,
-          )
-        }
-
-        // Preserve the existing key when the client submits a blank/omitted one
-        // (the UI never prefills the secret into the editable field).
-        const existing =
-          await SettingsService.getJsonValue<CadGenerationConfig>(
-            SettingKeys.CAD_GENERATION,
-          )
-        const submittedKey = config?.apiKey?.trim()
-        let storedKey = existing?.apiKey
-        if (submittedKey) {
-          storedKey = isEncryptionConfigured()
-            ? encrypt(submittedKey)
-            : submittedKey
-        }
-
-        const blob: CadGenerationConfig = {
-          provider: provider as CadProvider,
-          apiKey: storedKey,
-          enabled,
-        }
-        await SettingsService.setJsonValue(
-          SettingKeys.CAD_GENERATION,
-          blob,
-          user.id,
-          'CAD generation provider settings',
-        )
-
-        return {
-          settings: {
-            provider: blob.provider,
-            enabled: blob.enabled,
-            hasApiKey: !!storedKey,
-            apiKeyPreview: maskCadApiKey(storedKey),
-          },
-        }
-      },
-    ),
-  ),
-)
-
-// POST /api/admin/cad-settings/test
-app.post(
-  '/cad-settings/test',
-  adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ request }) => {
-      const body = await request.json()
-      const { apiKey } = body as { apiKey?: string }
-
-      // Prefer an explicitly-typed key; otherwise test the saved key, then env.
-      let effectiveKey = apiKey?.trim()
-      if (!effectiveKey) {
-        const stored = await SettingsService.getJsonValue<CadGenerationConfig>(
-          SettingKeys.CAD_GENERATION,
-        )
-        effectiveKey = stored?.apiKey
-          ? decryptCadApiKey(stored.apiKey)
-          : process.env.ZOO_API_KEY
-      }
-
-      if (!effectiveKey) {
-        return cadValidationError('API key is required to test the connection')
-      }
-
-      try {
-        const response = await fetch('https://api.zoo.dev/user', {
-          headers: { Authorization: `Bearer ${effectiveKey}` },
-          signal: AbortSignal.timeout(5000),
-        })
-        if (!response.ok) {
-          return new Response(
-            JSON.stringify({
-              error: {
-                code: 'CONNECTION_ERROR',
-                message: `Zoo API returned status ${response.status}. Check that the API key is valid.`,
-              },
-            }),
-            { status: 503, headers: { 'Content-Type': 'application/json' } },
-          )
-        }
-        return { success: true, message: 'Connected to Zoo successfully!' }
-      } catch (error) {
-        const err = error as Error
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'CONNECTION_ERROR',
-              message: `Failed to connect to Zoo: ${err.message}`,
             },
           }),
           { status: 503, headers: { 'Content-Type': 'application/json' } },

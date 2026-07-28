@@ -110,7 +110,6 @@ docker compose --profile tools up -d
 | `rabbitmq`          | default      | RabbitMQ with management UI                            |
 | `jobs-worker-dev`   | `dev`        | Jobs worker with source mount and `tsx watch`          |
 | `cad-converter-dev` | `dev`, `cad` | CAD converter built from `workers/cad-converter/`      |
-| `cad-generator-dev` | `dev`, `cad` | Parametric CAD generator from `workers/cad-generator/` |
 | `pgadmin`           | `tools`      | pgAdmin 4 for database management                      |
 
 ### Development Worker Notes

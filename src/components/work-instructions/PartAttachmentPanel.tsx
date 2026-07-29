@@ -259,7 +259,7 @@ export function PartAttachmentPanel({
               </Button>
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
               <Input
                 placeholder="Search by part number or name..."
                 value={searchQuery}
@@ -271,12 +271,14 @@ export function PartAttachmentPanel({
 
             {/* Search Results */}
             {searching && (
-              <p className="text-sm text-slate-500 py-2">Searching...</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 py-2">
+                Searching...
+              </p>
             )}
             {!searching &&
               searchQuery.length >= 2 &&
               searchResults.length === 0 && (
-                <p className="text-sm text-slate-500 py-2">
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">
                   No parts found matching "{searchQuery}"
                 </p>
               )}
@@ -332,11 +334,11 @@ export function PartAttachmentPanel({
 
         {/* Attachments List */}
         {loading ? (
-          <p className="text-slate-500 text-center py-4">
+          <p className="text-slate-500 dark:text-slate-400 text-center py-4">
             Loading attachments...
           </p>
         ) : attachments.length === 0 ? (
-          <p className="text-slate-500 text-center py-8">
+          <p className="text-slate-500 dark:text-slate-400 text-center py-8">
             No parts attached yet.
             {!showSearch && (
               <> Click "Attach Part" to link parts to this work instruction.</>
@@ -398,7 +400,7 @@ export function PartAttachmentPanel({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-slate-400 hover:text-red-600 dark:hover:text-red-400"
+                    className="text-slate-400 hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400"
                     onClick={() => handleDetach(attachment)}
                   >
                     <Trash2 className="h-4 w-4" />

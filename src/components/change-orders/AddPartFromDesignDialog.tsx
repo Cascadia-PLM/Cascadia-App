@@ -570,7 +570,7 @@ export function AddPartFromDesignDialog({
       {/* Search + count + select-all */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
           <Input
             placeholder="Search by item number or name..."
             value={searchQuery}
@@ -579,7 +579,7 @@ export function AddPartFromDesignDialog({
           />
         </div>
         {selectableOnPage.length > 0 && (
-          <label className="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer whitespace-nowrap">
+          <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 cursor-pointer whitespace-nowrap">
             <Checkbox
               checked={allPageSelected}
               // Use string 'indeterminate' or boolean for indeterminate state
@@ -716,7 +716,7 @@ export function AddPartFromDesignDialog({
                   {/* Search + count */}
                   <div className="flex items-center gap-2">
                     <div className="relative flex-1">
-                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
                       <Input
                         placeholder="Search by part number or name (min 2 characters)..."
                         value={searchQuery}
@@ -738,14 +738,14 @@ export function AddPartFromDesignDialog({
                   <div className="border rounded-lg dark:border-slate-700 overflow-y-auto min-h-0 flex-1">
                     {importSearching ? (
                       <div className="flex items-center justify-center py-12">
-                        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                        <Loader2 className="h-5 w-5 animate-spin text-slate-400 dark:text-slate-500" />
                       </div>
                     ) : searchQuery.length < 2 ? (
-                      <div className="text-center py-8 text-sm text-slate-500">
+                      <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
                         Type at least 2 characters to search across designs.
                       </div>
                     ) : importResults.length === 0 ? (
-                      <div className="text-center py-8 text-sm text-slate-500">
+                      <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
                         No parts found matching your search.
                       </div>
                     ) : (
@@ -775,7 +775,7 @@ export function AddPartFromDesignDialog({
                               <span className="flex-1 text-slate-600 dark:text-slate-400 truncate">
                                 {item.name || '-'}
                               </span>
-                              <span className="text-xs text-slate-500 w-10 text-center">
+                              <span className="text-xs text-slate-500 dark:text-slate-400 w-10 text-center">
                                 {item.revision}
                               </span>
                               <Badge

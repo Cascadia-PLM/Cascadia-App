@@ -231,7 +231,10 @@ export function PartTable({
       cell: ({ row }) => {
         const count = row.original.usageCount
         if (count === undefined) return null // Not showing usage counts (design-specific view)
-        if (count === 0) return <span className="text-slate-400">-</span>
+        if (count === 0)
+          return (
+            <span className="text-slate-400 dark:text-slate-500">-</span>
+          )
         return (
           <Badge variant="outline" className="text-xs">
             {count} {count === 1 ? 'design' : 'designs'}

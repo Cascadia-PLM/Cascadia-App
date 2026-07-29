@@ -323,7 +323,7 @@ export function AddPartToDesignDialog({
               </SelectContent>
             </Select>
 
-            <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
+            <ChevronRight className="h-4 w-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
 
             <Select
               value={selectedDesignId || '__all__'}
@@ -345,7 +345,7 @@ export function AddPartToDesignDialog({
               </SelectContent>
             </Select>
 
-            <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
+            <ChevronRight className="h-4 w-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
 
             <Select
               value={selectedBranchId || '__all__'}
@@ -403,11 +403,11 @@ export function AddPartToDesignDialog({
           {/* Search Results */}
           <div className="border border-slate-300 dark:border-slate-700 rounded-lg max-h-60 overflow-y-auto auto-hide-scroll">
             {searching ? (
-              <div className="p-4 text-center text-sm text-slate-500">
+              <div className="p-4 text-center text-sm text-slate-500 dark:text-slate-400">
                 Searching...
               </div>
             ) : searchResults.length === 0 ? (
-              <div className="p-4 text-center text-sm text-slate-500">
+              <div className="p-4 text-center text-sm text-slate-500 dark:text-slate-400">
                 No parts found. Try a different search term.
               </div>
             ) : (
@@ -457,7 +457,7 @@ export function AddPartToDesignDialog({
                             !item.designCode && (
                               <Badge
                                 variant="outline"
-                                className="text-xs text-amber-600"
+                                className="text-xs text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-600"
                               >
                                 Assigned elsewhere
                               </Badge>

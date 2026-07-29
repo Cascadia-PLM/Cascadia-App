@@ -50,6 +50,7 @@ import { BomTreeView } from '@/components/bom/BomTreeView'
 import { exportBomTreeToCsv } from '@/components/bom/exportBomTree'
 import { getItemRoute, getStateBadgeVariant } from '@/components/bom/helpers'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
+import { useTheme } from '@/lib/theme'
 
 interface Relationship {
   id: string
@@ -289,6 +290,8 @@ export function PartRelationshipsPanel({
   branchId,
 }: PartRelationshipsPanelProps) {
   const { alert, confirm } = useAlertDialog()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const [activeView, setActiveView] = useState<ViewMode>('bom')
   const [loading, setLoading] = useState(true)
 
@@ -1109,7 +1112,7 @@ export function PartRelationshipsPanel({
           return (
             <Link
               to={`/${itemTypePlural}/${rel.targetItem.id}`}
-              className="font-medium text-cyan-600 hover:text-cyan-700 hover:underline flex items-center gap-1"
+              className="font-medium text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 hover:underline flex items-center gap-1"
             >
               {rel.targetItem.itemNumber}
               <ExternalLink className="h-3 w-3" />
@@ -1276,7 +1279,9 @@ export function PartRelationshipsPanel({
       width: 'w-14 flex-shrink-0',
       align: 'center',
       renderCell: (node) => (
-        <span className="text-xs text-slate-500">{node.quantity ?? '—'}</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400">
+          {node.quantity ?? '—'}
+        </span>
       ),
     },
     {
@@ -1285,7 +1290,9 @@ export function PartRelationshipsPanel({
       width: 'w-14 flex-shrink-0',
       align: 'center',
       renderCell: (node) => (
-        <span className="text-xs text-slate-500">{node.findNumber ?? '—'}</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400">
+          {node.findNumber ?? '—'}
+        </span>
       ),
     },
     {
@@ -1294,7 +1301,9 @@ export function PartRelationshipsPanel({
       width: 'w-14 flex-shrink-0',
       align: 'center',
       renderCell: (node) => (
-        <span className="text-xs text-slate-500">{node.revision}</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400">
+          {node.revision}
+        </span>
       ),
     },
     {
@@ -1326,7 +1335,7 @@ export function PartRelationshipsPanel({
       <Card>
         <CardContent className="py-12">
           <div className="flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+            <Loader2 className="h-8 w-8 animate-spin text-slate-400 dark:text-slate-500" />
           </div>
         </CardContent>
       </Card>
@@ -1387,11 +1396,11 @@ export function PartRelationshipsPanel({
               <CardContent className="pt-6">
                 {bomLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                    <Loader2 className="h-8 w-8 animate-spin text-slate-400 dark:text-slate-500" />
                   </div>
                 ) : bomNodes.length === 0 ? (
                   <div className="text-center py-8">
-                    <FolderTree className="h-12 w-12 mx-auto mb-4 opacity-50 text-slate-400" />
+                    <FolderTree className="h-12 w-12 mx-auto mb-4 opacity-50 text-slate-400 dark:text-slate-500" />
                     <p className="text-slate-500 dark:text-slate-400">
                       No BOM structure found
                     </p>
@@ -1518,7 +1527,9 @@ export function PartRelationshipsPanel({
                         >
                           All
                         </button>
-                        <span className="text-xs text-slate-400">|</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">
+                          |
+                        </span>
                         <button
                           type="button"
                           onClick={() => setSelectedGraphTypes(availableTypes)}
@@ -1547,7 +1558,7 @@ export function PartRelationshipsPanel({
                                 ? 'bg-cyan-100 dark:bg-cyan-900 border-cyan-500 text-cyan-700 dark:text-cyan-300'
                                 : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400'
                             }
-                            ${graphLoading ? 'opacity-50 cursor-not-allowed' : 'hover:border-cyan-600 cursor-pointer'}
+                            ${graphLoading ? 'opacity-50 cursor-not-allowed' : 'hover:border-cyan-600 dark:hover:border-cyan-400 cursor-pointer'}
                           `}
                         >
                           {type}
@@ -1574,13 +1585,13 @@ export function PartRelationshipsPanel({
                     </Button>
                   </div>
                 ) : graphLoading && graphNodes.length === 0 ? (
-                  <div className="flex items-center justify-center py-12 text-slate-500">
+                  <div className="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
                     <RefreshCw className="h-6 w-6 animate-spin mr-2" />
                     Loading graph...
                   </div>
                 ) : graphNodes.length === 0 ? (
                   <div className="text-center py-8">
-                    <GitBranch className="h-12 w-12 mx-auto mb-4 opacity-50 text-slate-400" />
+                    <GitBranch className="h-12 w-12 mx-auto mb-4 opacity-50 text-slate-400 dark:text-slate-500" />
                     <p className="text-slate-500 dark:text-slate-400">
                       No relationships found
                     </p>
@@ -1635,7 +1646,10 @@ export function PartRelationshipsPanel({
                         minZoom={0.1}
                         maxZoom={2}
                       >
-                        <Background color="#aaa" gap={16} />
+                        <Background
+                          color={isDark ? '#475569' : '#aaa'}
+                          gap={16}
+                        />
                         <Controls />
                       </ReactFlow>
                     </div>
@@ -1651,7 +1665,7 @@ export function PartRelationshipsPanel({
               <CardContent className="pt-6">
                 {Object.keys(groupedRelationships).length === 0 ? (
                   <div className="text-center py-8">
-                    <TableIcon className="h-12 w-12 mx-auto mb-4 opacity-50 text-slate-400" />
+                    <TableIcon className="h-12 w-12 mx-auto mb-4 opacity-50 text-slate-400 dark:text-slate-500" />
                     <p className="text-slate-500 dark:text-slate-400 mb-4">
                       No relationships yet
                     </p>
@@ -1735,34 +1749,44 @@ export function PartRelationshipsPanel({
               <CardContent className="pt-6">
                 {whereUsedLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    <span className="ml-2 text-muted-foreground">
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-400 dark:text-slate-500" />
+                    <span className="ml-2 text-slate-500 dark:text-slate-400">
                       Loading where-used data...
                     </span>
                   </div>
                 ) : whereUsedData.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
+                  <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                     This item is not used in any assemblies.
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground mb-4">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                       Found in {whereUsedData.length} parent assembl
                       {whereUsedData.length === 1 ? 'y' : 'ies'}
                     </p>
-                    <div className="border rounded-md">
+                    <div className="border border-slate-300 dark:border-slate-700 rounded-md">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b bg-muted/50">
-                            <th className="text-left p-3 font-medium">
+                          <tr className="border-b border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+                            <th className="text-left p-3 font-medium text-slate-900 dark:text-slate-100">
                               Item Number
                             </th>
-                            <th className="text-left p-3 font-medium">Name</th>
-                            <th className="text-left p-3 font-medium">Type</th>
-                            <th className="text-left p-3 font-medium">Rev</th>
-                            <th className="text-left p-3 font-medium">State</th>
-                            <th className="text-left p-3 font-medium">Depth</th>
-                            <th className="text-left p-3 font-medium">
+                            <th className="text-left p-3 font-medium text-slate-900 dark:text-slate-100">
+                              Name
+                            </th>
+                            <th className="text-left p-3 font-medium text-slate-900 dark:text-slate-100">
+                              Type
+                            </th>
+                            <th className="text-left p-3 font-medium text-slate-900 dark:text-slate-100">
+                              Rev
+                            </th>
+                            <th className="text-left p-3 font-medium text-slate-900 dark:text-slate-100">
+                              State
+                            </th>
+                            <th className="text-left p-3 font-medium text-slate-900 dark:text-slate-100">
+                              Depth
+                            </th>
+                            <th className="text-left p-3 font-medium text-slate-900 dark:text-slate-100">
                               Design
                             </th>
                           </tr>
@@ -1771,21 +1795,23 @@ export function PartRelationshipsPanel({
                           {whereUsedData.map((node) => (
                             <tr
                               key={`${node.itemId}-${node.depth}`}
-                              className="border-b last:border-b-0 hover:bg-muted/30"
+                              className="border-b border-slate-200 dark:border-slate-800 last:border-b-0 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                             >
                               <td className="p-3">
                                 <Link
                                   to={getItemRoute(node.itemType, node.itemId)}
-                                  className="text-blue-600 hover:underline font-mono text-xs"
+                                  className="text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 hover:underline font-mono text-xs"
                                 >
                                   {node.itemNumber}
                                 </Link>
                               </td>
-                              <td className="p-3">{node.name}</td>
+                              <td className="p-3 text-slate-900 dark:text-slate-100">
+                                {node.name}
+                              </td>
                               <td className="p-3">
                                 <Badge variant="outline">{node.itemType}</Badge>
                               </td>
-                              <td className="p-3 font-mono text-xs">
+                              <td className="p-3 font-mono text-xs text-slate-900 dark:text-slate-100">
                                 {node.revision}
                               </td>
                               <td className="p-3">
@@ -1795,10 +1821,10 @@ export function PartRelationshipsPanel({
                                   {node.state}
                                 </Badge>
                               </td>
-                              <td className="p-3 text-muted-foreground">
+                              <td className="p-3 text-slate-500 dark:text-slate-400">
                                 {node.depth}
                               </td>
-                              <td className="p-3 text-muted-foreground text-xs">
+                              <td className="p-3 text-slate-500 dark:text-slate-400 text-xs">
                                 {node.designName ?? '—'}
                               </td>
                             </tr>

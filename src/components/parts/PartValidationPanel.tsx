@@ -144,7 +144,9 @@ export function PartValidationPanel({
       case 'Blocked':
         return <div className="h-4 w-4 rounded-full bg-yellow-500" />
       default:
-        return <div className="h-4 w-4 rounded-full bg-slate-300" />
+        return (
+          <div className="h-4 w-4 rounded-full bg-slate-300 dark:bg-slate-600" />
+        )
     }
   }
 
@@ -203,31 +205,41 @@ export function PartValidationPanel({
           <div className="flex gap-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
             <div className="text-center">
               <div className="text-xl font-bold">{summary.total}</div>
-              <div className="text-xs text-slate-500">Total</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                Total
+              </div>
             </div>
             <div className="text-center">
-              <div className="text-xl font-bold text-green-600">
+              <div className="text-xl font-bold text-green-600 dark:text-green-400">
                 {summary.passed}
               </div>
-              <div className="text-xs text-slate-500">Passed</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                Passed
+              </div>
             </div>
             <div className="text-center">
-              <div className="text-xl font-bold text-red-600">
+              <div className="text-xl font-bold text-red-600 dark:text-red-400">
                 {summary.failed}
               </div>
-              <div className="text-xs text-slate-500">Failed</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                Failed
+              </div>
             </div>
             <div className="text-center">
-              <div className="text-xl font-bold text-yellow-600">
+              <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">
                 {summary.blocked}
               </div>
-              <div className="text-xs text-slate-500">Blocked</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                Blocked
+              </div>
             </div>
             <div className="text-center">
-              <div className="text-xl font-bold text-slate-400">
+              <div className="text-xl font-bold text-slate-400 dark:text-slate-500">
                 {summary.notRun}
               </div>
-              <div className="text-xs text-slate-500">Not Run</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                Not Run
+              </div>
             </div>
           </div>
         )}
@@ -236,7 +248,7 @@ export function PartValidationPanel({
         {showSearch && isEditable && (
           <div className="space-y-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -244,7 +256,7 @@ export function PartValidationPanel({
                 className="pl-10"
               />
               {searching && (
-                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />
+                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-slate-400 dark:text-slate-500" />
               )}
             </div>
             {searchResults.length > 0 && (
@@ -295,10 +307,10 @@ export function PartValidationPanel({
         {/* Test list */}
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            <Loader2 className="h-6 w-6 animate-spin text-slate-400 dark:text-slate-500" />
           </div>
         ) : validatingTests.length === 0 ? (
-          <div className="text-center py-8 text-slate-500">
+          <div className="text-center py-8 text-slate-500 dark:text-slate-400">
             No test cases linked to this part
           </div>
         ) : (
@@ -330,7 +342,7 @@ export function PartValidationPanel({
                     size="icon"
                     onClick={() => handleUnlinkTest(test.id!)}
                     disabled={unlinking === test.id}
-                    className="text-slate-400 hover:text-red-500"
+                    className="text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400"
                   >
                     {unlinking === test.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

@@ -389,9 +389,9 @@ function BomTreeNodeGrid<T extends BOMTreeNode>({
                 disabled={!hasChildren}
               >
                 {isExpanded ? (
-                  <ChevronDown className="h-3 w-3 text-slate-500" />
+                  <ChevronDown className="h-3 w-3 text-slate-500 dark:text-slate-400" />
                 ) : (
-                  <ChevronRight className="h-3 w-3 text-slate-500" />
+                  <ChevronRight className="h-3 w-3 text-slate-500 dark:text-slate-400" />
                 )}
               </button>
 
@@ -413,7 +413,7 @@ function BomTreeNodeGrid<T extends BOMTreeNode>({
                     </Badge>
                   )}
                   {showQuantity && node.quantity && node.quantity > 1 && (
-                    <span className="text-xs text-slate-400 flex-shrink-0">
+                    <span className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0">
                       x{node.quantity}
                     </span>
                   )}
@@ -529,9 +529,9 @@ function BomTreeNodeFlow<T extends BOMTreeNode>({
           disabled={!hasChildren}
         >
           {isExpanded ? (
-            <ChevronDown className="h-3 w-3 text-slate-500" />
+            <ChevronDown className="h-3 w-3 text-slate-500 dark:text-slate-400" />
           ) : (
-            <ChevronRight className="h-3 w-3 text-slate-500" />
+            <ChevronRight className="h-3 w-3 text-slate-500 dark:text-slate-400" />
           )}
         </button>
 
@@ -557,7 +557,9 @@ function BomTreeNodeFlow<T extends BOMTreeNode>({
             {node.name}
           </span>
 
-          <span className="text-xs text-slate-500">Rev {node.revision}</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            Rev {node.revision}
+          </span>
 
           <Badge variant={getStateBadgeVariant(node.state)} className="text-xs">
             {node.state}
@@ -568,7 +570,9 @@ function BomTreeNodeFlow<T extends BOMTreeNode>({
 
           {/* Quantity indicator */}
           {showQuantity && node.quantity && node.quantity > 1 && (
-            <span className="text-xs text-slate-400">x{node.quantity}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">
+              x{node.quantity}
+            </span>
           )}
         </div>
 
@@ -576,7 +580,7 @@ function BomTreeNodeFlow<T extends BOMTreeNode>({
         <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
           {renderActions?.(node)}
           {hasChildren && (
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-slate-400 dark:text-slate-500">
               {node.children!.length}
             </span>
           )}

@@ -92,3 +92,39 @@ export function currentUserPermissionsQuery() {
     staleTime: 10_000,
   })
 }
+
+/** Which OAuth providers the server has credentials for. */
+export interface AuthProviders {
+  github: boolean
+  google: boolean
+}
+
+const NO_PROVIDERS: AuthProviders = { github: false, google: false }
+
+/**
+ * Which OAuth buttons the login page should offer.
+ *
+ * A button for an unconfigured provider leads to a 500 from the provider
+ * factory, which is a confusing thing to hand someone at a login screen, so
+ * the page asks first. A failed probe resolves to no providers rather than
+ * rejecting: password sign-in still works, and the page has nothing useful to
+ * do with the error. The endpoint is public and its answer is fixed at process
+ * start, so the long staleTime never shows a stale button.
+ */
+export function authProvidersQuery() {
+  return queryOptions({
+    queryKey: qk.collection('auth', 'providers'),
+    queryFn: async (): Promise<AuthProviders> => {
+      try {
+        const result = await apiFetch<{ data?: AuthProviders }>(
+          '/api/v1/auth/providers',
+          { retry: false },
+        )
+        return result.data ?? NO_PROVIDERS
+      } catch {
+        return NO_PROVIDERS
+      }
+    },
+    staleTime: Infinity,
+  })
+}

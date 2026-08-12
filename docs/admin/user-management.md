@@ -26,7 +26,7 @@ Users are stored in the `users` table with the following fields:
 
 Users are created through the `UserService.createUser()` method, which validates input, hashes the password, and assigns the default "User" role.
 
-**API endpoint**: There is no dedicated `POST /api/users` endpoint for user creation in the current codebase. Users are created through the seed scripts or will need an admin route added.
+**API endpoint**: There is no dedicated `POST /api/v1/users` endpoint for user creation in the current codebase. Users are created through the seed scripts or will need an admin route added.
 
 **Validation rules** (from `userCreateSchema`):
 
@@ -40,7 +40,7 @@ New users automatically receive the "User" role.
 
 ### Updating Users
 
-**API endpoint**: `PUT /api/users/:id`
+**API endpoint**: `PUT /api/v1/users/:id`
 
 **Permission required**: `users:update`
 
@@ -54,7 +54,7 @@ Updatable fields:
 
 ### Deleting Users
 
-**API endpoint**: `DELETE /api/users/:id`
+**API endpoint**: `DELETE /api/v1/users/:id`
 
 **Permission required**: `users:delete`
 
@@ -64,7 +64,7 @@ This performs a hard delete: the user's role assignments are removed first (fore
 
 Deactivation is the preferred way to remove user access without losing audit history. Unlike deletion, deactivation preserves all records.
 
-**API endpoint**: `POST /api/users/:id/activate`
+**API endpoint**: `POST /api/v1/users/:id/activate`
 
 **Permission required**: `users:manage`
 
@@ -92,7 +92,7 @@ The `last_login` timestamp is updated on every successful authentication. This i
 
 ### Viewing User Roles
 
-**API endpoint**: `GET /api/users/:id/roles`
+**API endpoint**: `GET /api/v1/users/:id/roles`
 
 **Permission required**: `users:read`
 
@@ -100,7 +100,7 @@ Returns the array of roles assigned to the user.
 
 ### Assigning Roles
 
-**API endpoint**: `PUT /api/users/:id/roles`
+**API endpoint**: `PUT /api/v1/users/:id/roles`
 
 **Permission required**: `users:manage`
 
@@ -132,7 +132,7 @@ Legacy PBKDF2 hashes are supported for backward compatibility and are transparen
 
 ### Changing Passwords
 
-**API endpoint**: `PUT /api/users/:id/password`
+**API endpoint**: `PUT /api/v1/users/:id/password`
 
 **Permission required**: `users:manage`
 
@@ -284,8 +284,8 @@ Event types recorded:
 
 ## API Reference
 
-| Method | Endpoint                  | Permission     | Description                 |
-| ------ | ------------------------- | -------------- | --------------------------- |
+| Method | Endpoint                     | Permission     | Description                 |
+| ------ | ---------------------------- | -------------- | --------------------------- |
 | GET    | `/api/v1/users/:id`          | `users:read`   | Get user with roles         |
 | PUT    | `/api/v1/users/:id`          | `users:update` | Update user fields          |
 | DELETE | `/api/v1/users/:id`          | `users:delete` | Hard delete user            |

@@ -48,7 +48,7 @@ For files that pass a gate, check if a co-located test exists: `ServiceName.test
 
 ### Files that rarely pass a gate (skip tests)
 
-- `src/routes/api/` — API routes (service tests cover the logic)
+- `src/server/routes/` — API routes (service tests cover the logic)
 - `src/components/` — UI components (E2E covers them)
 - `src/lib/utils/`, `src/lib/config/`, `src/lib/errors/` — utilities, types
 - Query-only services / CRUD wrappers / glue code
@@ -60,7 +60,7 @@ For files that pass a gate, check if a co-located test exists: `ServiceName.test
 | ----------------------------------- | -------------- | --------------------------------------- |
 | `src/lib/services/BranchService.ts` | Data integrity | Yes — check existing test covers change |
 | `src/components/parts/PartForm.tsx` | None           | No — E2E covers UI                      |
-| `src/routes/api/parts.ts`           | None           | No — service tests cover logic          |
+| `src/server/routes/parts.ts`        | None           | No — service tests cover logic          |
 
 ## Recommendation
 

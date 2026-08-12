@@ -38,6 +38,30 @@ This project adheres to the [Contributor Covenant Code of Conduct](./CODE_OF_CON
    ```
 6. **Open a pull request** against `main` with a clear description of what and why.
 
+### How your pull request gets merged
+
+Worth reading before you open one. The mechanics here are unusual, and knowing
+them up front keeps the outcome from reading as a rejection.
+
+This repository is **generated**. Cascadia is dual licensed, and both editions
+are built from a single upstream tree in which this AGPL edition is one package.
+Publishing copies that package here; it does not merge in the other direction. A
+commit pushed straight to `main` here would be overwritten by the next publish,
+so the pipeline refuses to run when it finds one.
+
+What that means for your pull request:
+
+1. You open it here, as normal. Review and discussion happen here, in public.
+2. Once it is accepted, a maintainer applies your patch upstream with
+   `git commit --author` set to you. **Your authorship is preserved** — the
+   commit is yours, not the maintainer's.
+3. The next publish carries it back here, and your pull request is closed with a
+   link to the resulting commit.
+
+So a closed pull request with a commit link means merged, not declined. Your
+change is in `main`; it simply arrived by the only route that does not get
+overwritten.
+
 ## Development Setup
 
 ### Prerequisites
@@ -72,7 +96,7 @@ npm run dev
 
 ```bash
 npm run test                            # Full unit/integration suite (Vitest)
-npx vitest run src/path/to/file.test.ts # Scoped: one test file (fast iteration)
+npx vitest run packages/core/src/path/to/file.test.ts # Scoped: one test file (fast iteration)
 npm run test:e2e                        # E2E tests (Playwright, requires running server)
 npm run test:coverage                   # Coverage report
 ```
@@ -91,7 +115,7 @@ npm run workers:dev   # Start RabbitMQ + all workers via Docker
 
 - **TypeScript** throughout — strict mode, no `any` types.
 - **Zod** for runtime validation and type inference.
-- **Path alias**: `@/*` maps to `src/*`.
+- **Path alias**: `@/*` maps to `packages/core/src/*`.
 
 ### File Naming
 
@@ -125,7 +149,7 @@ If your change doesn't pass any gate — UI tweaks, CRUD wrappers, API routes th
 When you do write tests:
 
 - Co-locate unit tests next to source: `MyService.test.ts` alongside `MyService.ts`.
-- Use `TestDatabase` and fixtures from `src/__tests__/` for service tests — integration style, real DB, no mocks.
+- Use `TestDatabase` and fixtures from `packages/core/src/__tests__/` for service tests — integration style, real DB, no mocks.
 - Prefer **invariants** over call-shape assertions: test _what must always be true_ ("after ECO release, every affected item has a new revision letter"), not _what the code happens to do internally_.
 - Match error **class** (`NotFoundError`, `ValidationError`) or `error.code` — not error message strings, which are refactor-brittle.
 - E2E tests use the page object model in `tests/e2e/pages/`.
@@ -143,7 +167,7 @@ When you do write tests:
 
 Before making changes to core areas, familiarize yourself with:
 
-- **Service layer** — Business logic lives in `src/lib/services/` and `src/lib/items/services/`.
+- **Service layer** — Business logic lives in `packages/core/src/lib/services/` and `packages/core/src/lib/items/services/`.
 - **Two-table pattern** — Items have a shared `items` table and type-specific tables (`parts`, `documents`, etc.).
 - **ECO-as-Branch** — All changes flow through Engineering Change Orders. Cannot modify `main` directly.
 - **Branch protection** — Revision letters are assigned only on merge to main, never during work.

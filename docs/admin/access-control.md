@@ -95,9 +95,31 @@ The complete permission matrix for each role:
 
 Legend: C=create, R=read, U=update, D=delete, A=approve, M=manage
 
+### Optional Package Permissions
+
+[Optional packages](../development/adding-packages.md) reuse the existing
+resource types rather than introducing their own — a package changes what an
+instance _has_, not how permissions are modeled. Entitlement is checked
+independently of RBAC: a user with the right permission on an unlicensed
+instance still gets a 403 with code `PACKAGE_NOT_LICENSED`.
+
+Endpoints added by the [Advanced Auditing](../features/advanced-auditing.md)
+package:
+
+| Endpoint                                      | Permission           | Notes                                          |
+| --------------------------------------------- | -------------------- | ---------------------------------------------- |
+| `GET /api/v1/packages`                        | Authenticated        | Entitlement listing; no specific permission    |
+| `GET /api/v1/signatures/capability`           | Authenticated        | Reports the caller's own signing options       |
+| `GET /api/v1/signatures/chain/:scope`         | `change_orders.read` | Signature manifest for a workflow instance     |
+| `POST /api/v1/signatures/chain/:scope/verify` | `system.read`        | Chain integrity verification — an audit action |
+
+Signing itself is gated by the approval permission (`change_orders.update`) plus
+the signer's own credential. RBAC decides _who may approve_; the signature
+decides _who actually did_, and the two are recorded separately.
+
 ### How Permission Checks Work
 
-The `PermissionService` (singleton at `src/lib/auth/permission-service.ts`) handles all permission checks:
+The `PermissionService` (singleton at `packages/core/src/lib/auth/permission-service.ts`) handles all permission checks:
 
 1. **Query user roles**: Look up all roles assigned to the user via the `user_roles` join table
 2. **Check each role**: For each role, examine its `permissions` JSONB to see if the requested resource-action pair is present
@@ -172,7 +194,7 @@ These defaults are assigned automatically when a user is added to a program. The
 
 ### Program Isolation
 
-The `AccessControlService` (`src/lib/auth/AccessControlService.ts`) enforces program isolation:
+The `AccessControlService` (`packages/core/src/lib/auth/AccessControlService.ts`) enforces program isolation:
 
 - `canAccessProgram(userId, programId)` -- Checks if the user is a member of the program
 - `getAccessiblePrograms(userId)` -- Returns only programs the user belongs to
@@ -201,7 +223,7 @@ Designs inherit access from their parent program, with special handling for glob
 
 ### Access Check Functions
 
-Two convenience functions in `src/lib/auth/access.ts` enforce design and branch access:
+Two convenience functions in `packages/core/src/lib/auth/access.ts` enforce design and branch access:
 
 - `requireDesignAccess(userId, designId)` -- Throws `PermissionDeniedError` if the user cannot access the design
 - `requireBranchAccess(userId, branchId)` -- Looks up the branch's design, then checks design access. Returns the branch object for convenience.
@@ -232,18 +254,18 @@ The `RuntimeItemTypeConfig` includes an optional `permissions` field:
 
 These runtime permissions are stored in the `item_type_configs` table and merged with code-defined defaults at startup. Runtime values take precedence.
 
-**API endpoint**: `POST /api/admin/item-type-configs`
+**API endpoint**: `POST /api/v1/admin/item-type-configs`
 
 **Role required**: Administrator
 
-See `docs/runtime-configuration.md` for complete documentation of the runtime configuration system.
+See [System Settings](./system-settings.md) for complete documentation of the runtime configuration system.
 
 ### Reloading Configuration
 
 After changing runtime permissions:
 
 1. The API automatically calls `ItemTypeRegistry.reload()` on the instance that made the change
-2. In multi-instance deployments, call `POST /api/admin/reload-config` on each instance to pick up changes
+2. In multi-instance deployments, call `POST /api/v1/admin/reload-config` on each instance to pick up changes
 
 ## Troubleshooting
 

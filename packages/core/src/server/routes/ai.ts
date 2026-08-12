@@ -1,0 +1,603 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
+import { Hono } from 'hono'
+import { chat, toServerSentEventsResponse } from '@tanstack/ai'
+import { eq, isNull } from 'drizzle-orm'
+import { tagged } from '../adapter'
+import type { AIProviderConfig } from '@/lib/db/schema/ai'
+import { apiHandler, created } from '@/lib/api/handler'
+import {
+  getAdapter,
+  getAvailableProviders,
+  isAIEnabled,
+  loadProviderConfig,
+} from '@/lib/ai/adapters'
+import { knowledgeService } from '@/lib/ai/KnowledgeService'
+import { sessionService } from '@/lib/ai/SessionService'
+import { createSearchTools, createServerTools } from '@/lib/ai/tools'
+import {
+  AlreadyExistsError,
+  NotFoundError,
+  PermissionDeniedError,
+  ValidationError,
+} from '@/lib/errors'
+import { aiSettings } from '@/lib/db/schema/ai'
+import { userRoles } from '@/lib/db/schema/users'
+import { db } from '@/lib/db'
+import { takeFirst } from '@/lib/db/take-first'
+// Register item types for KnowledgeService
+import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('AI')
+
+// TanStack AI request body format (from @tanstack/ai-client)
+interface ChatRequestBody {
+  messages: Array<ModelMessage>
+  data?: {
+    sessionId?: string
+    programId?: string
+    designId?: string
+    mode?: 'chat' | 'search'
+  }
+}
+
+// TanStack AI message format
+interface ModelMessage {
+  role: 'system' | 'user' | 'assistant'
+  content: string | null
+}
+
+// Request body for creating a session
+interface CreateSessionRequest {
+  programId?: string
+  designId?: string
+}
+
+// Request body for creating/updating settings
+interface SettingsRequest {
+  programId?: string
+  provider: string
+  config: AIProviderConfig
+  enabled?: boolean
+}
+
+/**
+ * Get user roles from database
+ */
+async function getUserRoles(userId: string): Promise<Array<string>> {
+  try {
+    const userRoleRecords = await db.query.userRoles.findMany({
+      where: eq(userRoles.userId, userId),
+      with: {
+        role: true,
+      },
+    })
+
+    return userRoleRecords.map((ur) => ur.role.name)
+  } catch (error) {
+    console.error('[AI Chat] Error fetching user roles:', error)
+    return []
+  }
+}
+
+const app = new Hono()
+
+// POST /api/ai/chat
+app.post(
+  '/chat',
+  adapt(
+    apiHandler({}, async ({ request, user, requestId }) => {
+      // Parse request body (TanStack AI format)
+      const body: ChatRequestBody = await request.json()
+      const { messages: clientMessages, data } = body
+      const sessionId = data?.sessionId
+      const programId = data?.programId
+      const designId = data?.designId
+      const mode = data?.mode || 'chat'
+
+      const userMessages = clientMessages.filter((m) => m.role === 'user')
+      const latestUserMessage = userMessages[userMessages.length - 1]
+
+      if (!latestUserMessage?.content) {
+        throw new ValidationError('Message is required')
+      }
+
+      const message = latestUserMessage.content
+
+      // Check if AI is enabled
+      const aiEnabled = await isAIEnabled(programId)
+      if (!aiEnabled) {
+        return new Response(
+          JSON.stringify({
+            error: {
+              code: 'FEATURE_DISABLED',
+              message:
+                'AI assistant is not enabled. Please configure AI settings or set API keys.',
+            },
+          }),
+          { status: 503, headers: { 'Content-Type': 'application/json' } },
+        )
+      }
+
+      // Load or create session
+      let session
+      if (sessionId) {
+        // Verify session ownership
+        const isOwner = await sessionService.verifySessionOwnership(
+          sessionId,
+          user.id,
+        )
+        if (!isOwner) {
+          throw new PermissionDeniedError('session', 'access')
+        }
+        session = await sessionService.getSession(sessionId)
+      }
+
+      if (!session) {
+        session = await sessionService.createSession(
+          user.id,
+          programId,
+          designId,
+        )
+      }
+
+      // Load provider configuration
+      const providerConfig = await loadProviderConfig(programId)
+      const adapter = getAdapter(providerConfig)
+
+      // Build schema context and system prompt
+      const schemaContext = await knowledgeService.generateSchemaContext(
+        session.programId || undefined,
+        session.designId || undefined,
+      )
+
+      const roles = await getUserRoles(user.id)
+
+      const promptContext = {
+        schemaContext,
+        user: {
+          id: user.id,
+          username: user.name || user.email,
+          email: user.email,
+          roles,
+        },
+        programName: session.program?.name,
+        designName: session.design?.name,
+      }
+
+      const systemPrompt =
+        mode === 'search'
+          ? knowledgeService.buildSearchPrompt(promptContext)
+          : knowledgeService.buildSystemPrompt(promptContext)
+
+      // Get message history
+      const history = await sessionService.getMessageHistory(session.id)
+
+      // Save user message
+      await sessionService.addMessage(session.id, {
+        role: 'user',
+        content: message,
+      })
+
+      // Build messages array in model format
+      const messages: Array<ModelMessage> = [
+        { role: 'system', content: systemPrompt },
+        ...history.map((msg) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        })),
+        { role: 'user', content: message },
+      ]
+
+      // Create abort controller for request cancellation
+      const abortController = new AbortController()
+
+      // Handle client disconnect
+      request.signal.addEventListener('abort', () => {
+        abortController.abort()
+      })
+
+      // Create AI tools with user context for permission checking
+      const toolContext = {
+        userId: user.id,
+        sessionId: session.id,
+        programId: session.programId || undefined,
+        designId: session.designId || undefined,
+      }
+      const tools =
+        mode === 'search'
+          ? createSearchTools(toolContext)
+          : createServerTools(toolContext)
+
+      // Stream chat response with tools.
+      // The local ModelMessage shape matches at runtime; TanStack AI's
+      // ConstrainedModelMessage narrows role/content in a way this plain
+      // {role, content} list doesn't satisfy structurally.
+      const stream = chat({
+        adapter,
+        messages: messages as Parameters<typeof chat>[0]['messages'],
+        tools,
+        abortController,
+      })
+
+      // Track assistant response for persistence
+      let fullResponse = ''
+      // Tool-call arguments stream in incrementally as JSON fragments keyed by
+      // `chunk.index`; accumulate them and finalize once the stream completes.
+      const toolCallAccum = new Map<
+        number,
+        { id: string; name: string; args: string }
+      >()
+      // tool_result chunks carry no tool name — resolve it from the tool_call.
+      const toolCallIdToName = new Map<string, string>()
+      const collectedToolResults: Array<{
+        toolCallId: string
+        toolName: string
+        content: string
+      }> = []
+
+      // Transform stream to save response after completion
+      const transformedStream = async function* () {
+        try {
+          for await (const chunk of stream) {
+            // Track text content (TanStack AI 'content' chunks contain full accumulated text)
+            if (chunk.type === 'content') {
+              fullResponse = chunk.content // Replace, not append - content is cumulative
+            }
+
+            // Accumulate streamed tool-call fragments (id/name arrive on the
+            // first fragment; arguments concatenate across fragments per index).
+            if (chunk.type === 'tool_call') {
+              const entry = toolCallAccum.get(chunk.index) ?? {
+                id: '',
+                name: '',
+                args: '',
+              }
+              if (chunk.toolCall.id) entry.id = chunk.toolCall.id
+              if (chunk.toolCall.function.name) {
+                entry.name = chunk.toolCall.function.name
+              }
+              entry.args += chunk.toolCall.function.arguments
+              toolCallAccum.set(chunk.index, entry)
+              if (entry.id && entry.name) {
+                toolCallIdToName.set(entry.id, entry.name)
+              }
+            }
+
+            // Track tool results (name looked up via the toolCallId map).
+            if (chunk.type === 'tool_result') {
+              collectedToolResults.push({
+                toolCallId: chunk.toolCallId,
+                toolName: toolCallIdToName.get(chunk.toolCallId) ?? '',
+                content: chunk.content,
+              })
+            }
+
+            yield chunk
+          }
+        } finally {
+          // Finalize accumulated tool calls (parse the completed argument JSON).
+          const collectedToolCalls = Array.from(toolCallAccum.values())
+            .filter((e) => e.id && e.name)
+            .map((e) => {
+              let args: Record<string, unknown> = {}
+              try {
+                const parsed: unknown = JSON.parse(e.args || '{}')
+                if (typeof parsed === 'object' && parsed !== null) {
+                  args = parsed as Record<string, unknown>
+                }
+              } catch {
+                args = {}
+              }
+              return { id: e.id, name: e.name, arguments: args }
+            })
+
+          // Save assistant message with tool calls after stream completes
+          if (fullResponse || collectedToolCalls.length > 0) {
+            await sessionService.addMessage(session.id, {
+              role: 'assistant',
+              content: fullResponse || '',
+              toolCalls:
+                collectedToolCalls.length > 0 ? collectedToolCalls : undefined,
+            })
+          }
+
+          // Save tool result messages
+          for (const result of collectedToolResults) {
+            await sessionService.addMessage(session.id, {
+              role: 'tool',
+              content: result.content,
+              toolCallId: result.toolCallId,
+              toolName: result.toolName,
+            })
+          }
+        }
+      }
+
+      // Return SSE stream response
+      return toServerSentEventsResponse(transformedStream(), {
+        headers: {
+          'X-Request-Id': requestId,
+          'X-Session-Id': session.id,
+        },
+      })
+    }),
+  ),
+)
+
+// GET /api/ai/sessions
+app.get(
+  '/sessions',
+  adapt(
+    apiHandler({}, async ({ user }) => {
+      const sessions = await sessionService.getUserSessions(user.id)
+
+      return { sessions, total: sessions.length }
+    }),
+  ),
+)
+
+// POST /api/ai/sessions
+app.post(
+  '/sessions',
+  adapt(
+    apiHandler({}, async ({ request, user }) => {
+      const body: CreateSessionRequest = await request.json()
+      const { programId, designId } = body
+
+      const session = await sessionService.createSession(
+        user.id,
+        programId,
+        designId,
+      )
+
+      return created({ session })
+    }),
+  ),
+)
+
+// GET /api/ai/sessions/:id
+app.get(
+  '/sessions/:id',
+  adapt(
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
+
+      // Verify ownership
+      const isOwner = await sessionService.verifySessionOwnership(id, user.id)
+      if (!isOwner) {
+        throw new NotFoundError('Session', id)
+      }
+
+      const session = await sessionService.getSession(id)
+      if (!session) {
+        throw new NotFoundError('Session', id)
+      }
+
+      return { session }
+    }),
+  ),
+)
+
+// DELETE /api/ai/sessions/:id
+app.delete(
+  '/sessions/:id',
+  adapt(
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
+
+      // Verify ownership
+      const isOwner = await sessionService.verifySessionOwnership(id, user.id)
+      if (!isOwner) {
+        throw new NotFoundError('Session', id)
+      }
+
+      await sessionService.deleteSession(id)
+
+      return new Response(null, { status: 204 })
+    }),
+  ),
+)
+
+// GET /api/ai/sessions/:id/messages
+app.get(
+  '/sessions/:id/messages',
+  adapt(
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
+      const { id } = params
+
+      // Verify ownership
+      const isOwner = await sessionService.verifySessionOwnership(id, user.id)
+      if (!isOwner) {
+        throw new NotFoundError('Session', id)
+      }
+
+      const messages = await sessionService.getMessageHistory(id)
+
+      return { messages, total: messages.length }
+    }),
+  ),
+)
+
+// GET /api/ai/settings
+app.get(
+  '/settings',
+  adapt(
+    apiHandler({}, async ({ request }) => {
+      const url = new URL(request.url)
+      const programId = url.searchParams.get('programId')
+
+      // Get settings
+      let settings
+      if (programId) {
+        settings = await db.query.aiSettings.findFirst({
+          where: eq(aiSettings.programId, programId),
+        })
+      } else {
+        // Get global settings
+        settings = await db.query.aiSettings.findFirst({
+          where: isNull(aiSettings.programId),
+        })
+      }
+
+      // Build response with available providers info
+      return {
+        settings: settings
+          ? {
+              id: settings.id,
+              programId: settings.programId,
+              provider: settings.provider,
+              // Don't expose API keys in response
+              config: {
+                ...settings.config,
+                apiKey: settings.config.apiKey ? '***' : undefined,
+              },
+              enabled: settings.enabled,
+              createdAt: settings.createdAt,
+              updatedAt: settings.updatedAt,
+            }
+          : null,
+        availableProviders: getAvailableProviders(),
+        hasEnvConfig: !!(
+          process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
+        ),
+      }
+    }),
+  ),
+)
+
+// POST /api/ai/settings
+app.post(
+  '/settings',
+  adapt(
+    apiHandler(
+      // 'ai_settings' was never a ResourceType, and hasPermission() denies any
+      // resource no role declares - so this endpoint 403'd for everyone,
+      // Global Admin included. Admin config is 'system' everywhere else,
+      // including admin.ts's own AI provider routes.
+      { permission: ['system', 'manage'] },
+      async ({ request }) => {
+        const body: SettingsRequest = await request.json()
+        const { programId, provider, config, enabled = true } = body
+
+        // Validate provider
+        if (!['openai', 'anthropic'].includes(provider)) {
+          throw new ValidationError(
+            'Invalid provider. Must be one of: openai, anthropic',
+          )
+        }
+
+        // Check if settings already exist
+        const existing = programId
+          ? await db.query.aiSettings.findFirst({
+              where: eq(aiSettings.programId, programId),
+            })
+          : await db.query.aiSettings.findFirst({
+              where: isNull(aiSettings.programId),
+            })
+
+        if (existing) {
+          throw new AlreadyExistsError(
+            'AI settings',
+            'this scope. Use PUT to update.',
+          )
+        }
+
+        // Create settings
+        const newSettings = takeFirst(
+          await db
+            .insert(aiSettings)
+            .values({
+              programId: programId || null,
+              provider,
+              config,
+              enabled,
+            })
+            .returning(),
+        )
+
+        return created({
+          id: newSettings.id,
+          programId: newSettings.programId,
+          provider: newSettings.provider,
+          config: {
+            ...newSettings.config,
+            apiKey: newSettings.config.apiKey ? '***' : undefined,
+          },
+          enabled: newSettings.enabled,
+          createdAt: newSettings.createdAt,
+          updatedAt: newSettings.updatedAt,
+        })
+      },
+    ),
+  ),
+)
+
+// PUT /api/ai/settings
+app.put(
+  '/settings',
+  adapt(
+    apiHandler(
+      // See POST /settings above: 'ai_settings' is not a ResourceType, so this
+      // denied everyone. Admin config is 'system' everywhere else.
+      { permission: ['system', 'manage'] },
+      async ({ request }) => {
+        const body: SettingsRequest = await request.json()
+        const { programId, provider, config, enabled } = body
+
+        // Find existing settings
+        const existing = programId
+          ? await db.query.aiSettings.findFirst({
+              where: eq(aiSettings.programId, programId),
+            })
+          : await db.query.aiSettings.findFirst({
+              where: isNull(aiSettings.programId),
+            })
+
+        if (!existing) {
+          throw new NotFoundError(
+            'AI settings for this scope. Use POST to create.',
+          )
+        }
+
+        // Validate provider if provided
+        if (provider && !['openai', 'anthropic'].includes(provider)) {
+          throw new ValidationError(
+            'Invalid provider. Must be one of: openai, anthropic',
+          )
+        }
+
+        // Update settings
+        const [updated] = await db
+          .update(aiSettings)
+          .set({
+            provider: provider || existing.provider,
+            config,
+            enabled: enabled !== undefined ? enabled : existing.enabled,
+            updatedAt: new Date(),
+          })
+          .where(eq(aiSettings.id, existing.id))
+          .returning()
+        // Zero rows means the row was deleted between the read above and this
+        // update — surface it rather than dereferencing undefined below.
+        if (!updated) throw new NotFoundError('AI settings', existing.id)
+
+        return {
+          id: updated.id,
+          programId: updated.programId,
+          provider: updated.provider,
+          config: {
+            ...updated.config,
+            apiKey: updated.config.apiKey ? '***' : undefined,
+          },
+          enabled: updated.enabled,
+          createdAt: updated.createdAt,
+          updatedAt: updated.updatedAt,
+        }
+      },
+    ),
+  ),
+)
+
+export default app

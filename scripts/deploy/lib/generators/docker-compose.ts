@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
 /**
  * Docker Compose file generators for each deployment type
  */

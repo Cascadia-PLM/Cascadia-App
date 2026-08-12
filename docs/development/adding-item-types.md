@@ -15,10 +15,10 @@ Adding an item type requires changes in 6 areas:
 
 ## Step 1: Add Database Schema
 
-Create a type-specific table in `src/lib/db/schema/items.ts`. This table holds fields unique to your item type, with a foreign key back to the shared `items` table.
+Create a type-specific table in `packages/core/src/lib/db/schema/items.ts`. This table holds fields unique to your item type, with a foreign key back to the shared `items` table.
 
 ```typescript
-// src/lib/db/schema/items.ts
+// packages/core/src/lib/db/schema/items.ts
 
 export const widgets = pgTable('widgets', {
   // Primary key that references the base items table
@@ -38,25 +38,24 @@ export const widgets = pgTable('widgets', {
 Export the new table from the schema index:
 
 ```typescript
-// src/lib/db/schema/index.ts
+// packages/core/src/lib/db/schema/index.ts
 export { widgets } from './items'
 ```
 
-## Step 2: Generate Migration
+## Step 2: Apply the Schema
 
 ```bash
-npm run db:generate   # Creates SQL migration file
 npm run db:push       # Applies to dev database
 ```
 
-Note: `db:generate` and `db:push` are interactive (drizzle-kit prompts). For CI or non-interactive environments, write a migration script instead.
+Pre-1.0 there are no committed migration files — every environment (dev, CI, compose) is `db:push` + seeds. See the migration note in [database-patterns.md](./database-patterns.md#migration-workflow). `db:push` is interactive (drizzle-kit prompts); CI uses it non-interactively against fresh databases.
 
 ## Step 3: Create Type Definition
 
-Create `src/lib/items/types/widget.ts` with the TypeScript interface and Zod schema.
+Create `packages/core/src/lib/items/types/widget.ts` with the TypeScript interface and Zod schema.
 
 ```typescript
-// src/lib/items/types/widget.ts
+// packages/core/src/lib/items/types/widget.ts
 import { z } from 'zod'
 import { baseItemSchema, commonStates } from './base'
 import type { BaseItem } from './base'
@@ -109,7 +108,7 @@ export type WidgetInput = z.infer<typeof widgetSchema>
 
 ### Server-Side Registration
 
-Add the registration to `src/lib/items/registerItemTypes.server.ts`:
+Add the registration to `packages/core/src/lib/items/registerItemTypes.server.ts`:
 
 ```typescript
 import { widgetRelationships, widgetSchema, widgetStates } from './types/widget'
@@ -146,7 +145,7 @@ ItemTypeRegistry.register({
 
 ### Client-Side Registration
 
-Add to `src/lib/items/registerItemTypes.tsx` with actual form components:
+Add to `packages/core/src/lib/items/registerItemTypes.tsx` with actual form components:
 
 ```typescript
 import { WidgetForm } from '@/components/widgets/WidgetForm'
@@ -171,7 +170,7 @@ Each item type links to a lifecycle definition via `lifecycleDefinitionId`. Life
 You can either:
 
 - Reuse an existing lifecycle (e.g., `LIFECYCLE_IDS.part` for driven items, `LIFECYCLE_IDS.task` for free items)
-- Create a new lifecycle definition and add its ID to `src/lib/items/lifecycle-ids.ts`
+- Create a new lifecycle definition and add its ID to `packages/core/src/lib/items/lifecycle-ids.ts`
 
 Driven lifecycles require ECOs for state changes. Free lifecycles allow direct transitions.
 
@@ -179,7 +178,7 @@ Driven lifecycles require ECOs for state changes. Free lifecycles allow direct t
 
 `ItemService` handles the two-table insert/update pattern. You need to add your type to the type-specific data handlers.
 
-In `src/lib/items/services/ItemService.ts`, add cases for your type in:
+In `packages/core/src/lib/items/services/ItemService.ts`, add cases for your type in:
 
 ### insertTypeSpecificData
 
@@ -222,10 +221,10 @@ The `findById` method joins the base `items` table with the type-specific table.
 
 ## Step 6: Add API Schemas
 
-Add create and update schemas to `src/lib/api/schemas.ts`:
+Add create and update schemas to `packages/core/src/lib/api/schemas.ts`:
 
 ```typescript
-// src/lib/api/schemas.ts
+// packages/core/src/lib/api/schemas.ts
 
 export const widgetCreateSchema = z.object({
   itemNumber: z.string().min(1, 'Item number is required').max(100),
@@ -253,10 +252,10 @@ export type WidgetUpdate = z.infer<typeof widgetUpdateSchema>
 
 ## Step 7: Create API Routes
 
-Create a route file at `src/server/routes/widgets.ts`:
+Create a route file at `packages/core/src/server/routes/widgets.ts`:
 
 ```typescript
-// src/server/routes/widgets.ts
+// packages/core/src/server/routes/widgets.ts
 import { Hono } from 'hono'
 import { adapt } from '../adapter'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -266,22 +265,19 @@ import '@/lib/items/registerItemTypes.server'
 
 const app = new Hono()
 
-// GET /api/widgets/:id
+// GET /api/v1/widgets/:id
 app.get(
   '/:id',
   adapt(
-    apiHandler(
-      { permission: ['widgets', 'read'] },
-      async ({ params }) => {
-        const widget = await ItemService.findById(params.id)
-        if (!widget) throw new NotFoundError('Widget', params.id)
-        return { widget }
-      },
-    ),
+    apiHandler({ permission: ['widgets', 'read'] }, async ({ params }) => {
+      const widget = await ItemService.findById(params.id)
+      if (!widget) throw new NotFoundError('Widget', params.id)
+      return { widget }
+    }),
   ),
 )
 
-// PUT /api/widgets/:id
+// PUT /api/v1/widgets/:id
 app.put(
   '/:id',
   adapt(
@@ -296,24 +292,21 @@ app.put(
   ),
 )
 
-// DELETE /api/widgets/:id
+// DELETE /api/v1/widgets/:id
 app.delete(
   '/:id',
   adapt(
-    apiHandler(
-      { permission: ['widgets', 'delete'] },
-      async ({ params }) => {
-        await ItemService.delete(params.id)
-        return { success: true }
-      },
-    ),
+    apiHandler({ permission: ['widgets', 'delete'] }, async ({ params }) => {
+      await ItemService.delete(params.id)
+      return { success: true }
+    }),
   ),
 )
 
 export default app
 ```
 
-Then mount the route in `src/server/index.ts`:
+Then mount the route in `packages/core/src/server/index.ts`:
 
 ```typescript
 import widgets from './routes/widgets'
@@ -323,7 +316,7 @@ app.route('/api/v1/widgets', widgets)
 
 ## Step 8: Create Form Component
 
-Create `src/components/widgets/WidgetForm.tsx`:
+Create `packages/core/src/components/widgets/WidgetForm.tsx`:
 
 ```typescript
 import { useForm } from '@tanstack/react-form'
@@ -376,30 +369,38 @@ export function WidgetForm({ onSubmit, item, disabled }: WidgetFormProps) {
 
 ## Checklist
 
-- [ ] Type-specific table in `src/lib/db/schema/items.ts`
-- [ ] Export from `src/lib/db/schema/index.ts`
+- [ ] Type-specific table in `packages/core/src/lib/db/schema/items.ts`
+- [ ] Export from `packages/core/src/lib/db/schema/index.ts`
 - [ ] Migration generated and applied
-- [ ] Type definition in `src/lib/items/types/widget.ts`
+- [ ] Type definition in `packages/core/src/lib/items/types/widget.ts`
 - [ ] Registered in `registerItemTypes.server.ts`
 - [ ] Registered in `registerItemTypes.tsx`
+- [ ] RBAC resource mapping in `packages/core/src/lib/items/item-type-resources.ts`
+      (a test fails if the mapping is missing) and the new resource granted
+      in `ROLE_DEFINITIONS` (`packages/core/src/lib/auth/permissions.ts`)
 - [ ] Cases added to `ItemService` type-specific methods
-- [ ] API schemas in `src/lib/api/schemas.ts`
-- [ ] API routes in `src/routes/api/widgets/`
+- [ ] API schemas in `packages/core/src/lib/api/schemas.ts`
+- [ ] API routes in `packages/core/src/server/routes/widgets.ts`
 - [ ] Form component
 - [ ] Seed data (if needed for testing)
 
+The AI chatbot and MCP tool schemas need **no changes**: `search_items` and
+`create_item` derive their item-type coverage from `ITEM_TYPE_DEFINITIONS`
+automatically, and per-type permission checks flow through the resource
+mapping above.
+
 ## Existing Item Types for Reference
 
-| Type            | Table               | Schema File                 | Lifecycle                 |
-| --------------- | ------------------- | --------------------------- | ------------------------- |
-| Part            | `parts`             | `types/part.ts`             | Driven (ECO-controlled)   |
-| Document        | `documents`         | `types/document.ts`         | Driven                    |
-| Requirement     | `requirements`      | `types/requirement.ts`      | Driven                    |
-| ChangeOrder     | `change_orders`     | `types/change-order.ts`     | Driving (controls others) |
-| Task            | `tasks`             | `types/task.ts`             | Free (self-controlled)    |
-| TestPlan        | `test_plans`        | `types/testplan.ts`         | Free                      |
-| TestCase        | `test_cases`        | `types/testcase.ts`         | Free                      |
-| Issue           | `issues`            | `types/issue.ts`            | Free                      |
-| WorkInstruction | `work_instructions` | `types/work-instruction.ts` | Free                      |
-| Tool            | `tools`             | `types/tool.ts`             | Free                      |
+| Type            | Table               | Schema File                 | Lifecycle                      |
+| --------------- | ------------------- | --------------------------- | ------------------------------ |
+| Part            | `parts`             | `types/part.ts`             | Driven (ECO-controlled)        |
+| Document        | `documents`         | `types/document.ts`         | Driven                         |
+| Requirement     | `requirements`      | `types/requirement.ts`      | Driven                         |
+| ChangeOrder     | `change_orders`     | `types/change-order.ts`     | Driving (controls others)      |
+| Task            | `tasks`             | `types/task.ts`             | Free (self-controlled)         |
+| TestPlan        | `test_plans`        | `types/testplan.ts`         | Free                           |
+| TestCase        | `test_cases`        | `types/testcase.ts`         | Free                           |
+| Issue           | `issues`            | `types/issue.ts`            | Free                           |
+| WorkInstruction | `work_instructions` | `types/work-instruction.ts` | Free                           |
+| Tool            | `tools`             | `types/tool.ts`             | Free                           |
 | Software        | `software`          | `types/software.ts`         | Driven (shares Part lifecycle) |

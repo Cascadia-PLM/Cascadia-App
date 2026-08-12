@@ -8,38 +8,40 @@ When an ECO is created, Cascadia automatically creates a Git-style branch. Items
 
 ## Endpoints Overview
 
-| Method | Endpoint                                              | Description                 |
-| ------ | ----------------------------------------------------- | --------------------------- |
-| GET    | `/api/change-orders/:id`                              | Get a change order          |
-| PUT    | `/api/change-orders/:id`                              | Update a change order       |
-| DELETE | `/api/change-orders/:id`                              | Delete a change order       |
-| GET    | `/api/change-orders/editable`                         | List editable change orders |
-| GET    | `/api/change-orders/:id/summary`                      | Get ECO summary             |
-| GET    | `/api/change-orders/:id/affected-items`               | List affected items         |
-| POST   | `/api/change-orders/:id/affected-items`               | Add affected items          |
-| DELETE | `/api/change-orders/:id/affected-items`               | Remove affected item        |
-| POST   | `/api/change-orders/:id/checkout`                     | Checkout item to ECO        |
-| GET    | `/api/change-orders/:id/workflow`                     | Get workflow instance       |
-| POST   | `/api/change-orders/:id/workflow`                     | Start workflow              |
-| GET    | `/api/change-orders/:id/workflow/transition`          | Get available transitions   |
-| POST   | `/api/change-orders/:id/workflow/transition`          | Execute a transition        |
-| POST   | `/api/change-orders/:id/workflow/validate-transition` | Validate a transition       |
-| GET    | `/api/change-orders/:id/workflow/structure`           | Get workflow structure      |
-| PUT    | `/api/change-orders/:id/workflow/structure`           | Update workflow structure   |
-| GET    | `/api/change-orders/:id/workflow/history`             | Get transition history      |
-| GET    | `/api/change-orders/:id/approvals`                    | Get approval status         |
-| POST   | `/api/change-orders/:id/approvals`                    | Submit approval vote        |
-| GET    | `/api/change-orders/:id/impact-assessment`            | Get impact report           |
-| POST   | `/api/change-orders/:id/impact-assessment`            | Run impact assessment       |
-| GET    | `/api/change-orders/:id/conflicts`                    | Detect merge conflicts      |
-| GET    | `/api/change-orders/:id/release`                      | Preview release/merge       |
+| Method | Endpoint                                                       | Description                                  |
+| ------ | -------------------------------------------------------------- | -------------------------------------------- |
+| GET    | `/api/v1/change-orders/:id`                                    | Get a change order                           |
+| PUT    | `/api/v1/change-orders/:id`                                    | Update a change order                        |
+| DELETE | `/api/v1/change-orders/:id`                                    | Delete a change order                        |
+| GET    | `/api/v1/change-orders/editable`                               | List editable change orders                  |
+| GET    | `/api/v1/change-orders/:id/summary`                            | Get ECO summary                              |
+| GET    | `/api/v1/change-orders/:id/affected-items`                     | List affected items                          |
+| POST   | `/api/v1/change-orders/:id/affected-items`                     | Add affected items                           |
+| DELETE | `/api/v1/change-orders/:id/affected-items`                     | Remove affected item                         |
+| POST   | `/api/v1/change-orders/:id/checkout`                           | Checkout item to ECO                         |
+| GET    | `/api/v1/change-orders/:id/workflow`                           | Get workflow instance                        |
+| POST   | `/api/v1/change-orders/:id/workflow`                           | Start workflow                               |
+| GET    | `/api/v1/change-orders/:id/workflow/transition`                | Get available transitions                    |
+| POST   | `/api/v1/change-orders/:id/workflow/transition`                | Execute a transition                         |
+| POST   | `/api/v1/change-orders/:id/workflow/validate-transition`       | Validate a transition                        |
+| GET    | `/api/v1/change-orders/:id/workflow/structure`                 | Get workflow structure                       |
+| PUT    | `/api/v1/change-orders/:id/workflow/structure`                 | Update workflow structure                    |
+| GET    | `/api/v1/change-orders/:id/workflow/states/:stateId/approvers` | Get instance-level approvers for a state     |
+| PUT    | `/api/v1/change-orders/:id/workflow/states/:stateId/approvers` | Replace instance-level approvers for a state |
+| GET    | `/api/v1/change-orders/:id/workflow/history`                   | Get transition history                       |
+| GET    | `/api/v1/change-orders/:id/approvals`                          | Get approval status                          |
+| POST   | `/api/v1/change-orders/:id/approvals`                          | Submit approval vote                         |
+| GET    | `/api/v1/change-orders/:id/impact-assessment`                  | Get impact report                            |
+| POST   | `/api/v1/change-orders/:id/impact-assessment`                  | Run impact assessment                        |
+| GET    | `/api/v1/change-orders/:id/conflicts`                          | Detect merge conflicts                       |
+| GET    | `/api/v1/change-orders/:id/release`                            | Preview release/merge                        |
 
 ## Create Change Order
 
 Change orders are created via the generic items endpoint:
 
 ```
-POST /api/items
+POST /api/v1/items
 ```
 
 ### Request Body
@@ -77,7 +79,7 @@ A workflow is auto-started for the ECO based on its `changeType`.
 ## Get Change Order
 
 ```
-GET /api/change-orders/:id
+GET /api/v1/change-orders/:id
 ```
 
 Requires `change_orders.read` permission.
@@ -109,7 +111,7 @@ Requires `change_orders.read` permission.
 ## Update Change Order
 
 ```
-PUT /api/change-orders/:id
+PUT /api/v1/change-orders/:id
 ```
 
 Requires `change_orders.update` permission. All fields are optional (PATCH-style).
@@ -127,7 +129,7 @@ Requires `change_orders.update` permission. All fields are optional (PATCH-style
 ## List Editable Change Orders
 
 ```
-GET /api/change-orders/editable
+GET /api/v1/change-orders/editable
 ```
 
 Returns change orders that can still accept new affected items (scope is not yet locked). Requires `change_orders.read` permission.
@@ -158,7 +160,7 @@ Returns change orders that can still accept new affected items (scope is not yet
 ## ECO Summary
 
 ```
-GET /api/change-orders/:id/summary
+GET /api/v1/change-orders/:id/summary
 ```
 
 Returns a comprehensive summary of the ECO across all affected designs. Requires `change_orders.read` permission.
@@ -188,7 +190,7 @@ Returns a comprehensive summary of the ECO across all affected designs. Requires
 ### List Affected Items
 
 ```
-GET /api/change-orders/:id/affected-items
+GET /api/v1/change-orders/:id/affected-items
 ```
 
 Returns all items affected by this ECO. Requires `change_orders.read` permission.
@@ -219,7 +221,7 @@ Returns all items affected by this ECO. Requires `change_orders.read` permission
 ### Add Affected Items
 
 ```
-POST /api/change-orders/:id/affected-items
+POST /api/v1/change-orders/:id/affected-items
 ```
 
 Add one or more items to the ECO's affected items list. Requires `change_orders.update` permission.
@@ -249,7 +251,7 @@ Add one or more items to the ECO's affected items list. Requires `change_orders.
 ### Remove Affected Item
 
 ```
-DELETE /api/change-orders/:id/affected-items?itemId=AFFECTED_ITEM_UUID
+DELETE /api/v1/change-orders/:id/affected-items?itemId=AFFECTED_ITEM_UUID
 ```
 
 Removes an affected item record. Requires `change_orders.update` permission.
@@ -257,7 +259,7 @@ Removes an affected item record. Requires `change_orders.update` permission.
 ## Checkout Item to ECO
 
 ```
-POST /api/change-orders/:id/checkout
+POST /api/v1/change-orders/:id/checkout
 ```
 
 Checks out an existing item onto the ECO's branch, creating a branch copy for modification. Requires `change_orders.update` permission.
@@ -298,7 +300,7 @@ Checks out an existing item onto the ECO's branch, creating a branch copy for mo
 ### Get Available Transitions
 
 ```
-GET /api/change-orders/:id/workflow/transition
+GET /api/v1/change-orders/:id/workflow/transition
 ```
 
 Returns transitions available from the current state, evaluating guards and role requirements. Requires `change_orders.read` permission.
@@ -333,7 +335,7 @@ Returns transitions available from the current state, evaluating guards and role
 ### Execute a Transition
 
 ```
-POST /api/change-orders/:id/workflow/transition
+POST /api/v1/change-orders/:id/workflow/transition
 ```
 
 Executes a workflow transition. Requires `change_orders.update` permission.
@@ -393,7 +395,7 @@ Executes a workflow transition. Requires `change_orders.update` permission.
 ### Validate a Transition
 
 ```
-POST /api/change-orders/:id/workflow/validate-transition
+POST /api/v1/change-orders/:id/workflow/validate-transition
 ```
 
 Validates a transition without executing it. Returns preview of what would happen, including lifecycle effects on affected items. Requires `change_orders.read` permission.
@@ -441,7 +443,7 @@ Validates a transition without executing it. Returns preview of what would happe
 ### Get Workflow
 
 ```
-GET /api/change-orders/:id/workflow
+GET /api/v1/change-orders/:id/workflow
 ```
 
 Returns the workflow instance and its effective definition. Requires `change_orders.read` permission.
@@ -472,7 +474,7 @@ Returns the workflow instance and its effective definition. Requires `change_ord
 ### Start Workflow
 
 ```
-POST /api/change-orders/:id/workflow
+POST /api/v1/change-orders/:id/workflow
 ```
 
 Manually starts a workflow for a change order (normally auto-started on creation). Requires `change_orders.update` permission.
@@ -490,13 +492,13 @@ Manually starts a workflow for a change order (normally auto-started on creation
 ## Workflow Structure
 
 ```
-GET /api/change-orders/:id/workflow/structure
+GET /api/v1/change-orders/:id/workflow/structure
 ```
 
 Returns the effective workflow structure, including any instance-level customizations for flexible workflows.
 
 ```
-PUT /api/change-orders/:id/workflow/structure
+PUT /api/v1/change-orders/:id/workflow/structure
 ```
 
 Updates the workflow structure for flexible workflows. Only allowed when the workflow is editable (not completed). Requires `change_orders.update` permission.
@@ -517,10 +519,39 @@ Updates the workflow structure for flexible workflows. Only allowed when the wor
 }
 ```
 
+Instance-level transitions may carry `"approvalRequirement": { "requiredCount": n }` — the transition is then blocked until `n` distinct users hold an active approved vote at the source state (enforced; composes with named approvers).
+
+## Instance-Level State Approvers
+
+```
+GET /api/v1/change-orders/:id/workflow/states/:stateId/approvers
+```
+
+Returns the instance-level approvers for one state (the editable set for flexible workflows; definition-level approvers are reported through the `/approvals` endpoints as part of the merged status). Requires `change_orders.read` permission.
+
+```
+PUT /api/v1/change-orders/:id/workflow/states/:stateId/approvers
+```
+
+Replaces the instance-level approver set for a state. Same editability gate as the structure endpoint (flexible and not completed); the state must exist on the instance's effective structure. Requires `change_orders.update` permission.
+
+### Request Body
+
+```json
+{
+  "approvers": [
+    { "type": "user", "id": "user-uuid", "isRequired": true },
+    { "type": "role", "id": "role-uuid", "isRequired": false }
+  ]
+}
+```
+
+Approval gating uses the union of definition-level and instance-level approvers; every required approver must hold an active approved vote before the workflow can leave the state.
+
 ## Workflow History
 
 ```
-GET /api/change-orders/:id/workflow/history
+GET /api/v1/change-orders/:id/workflow/history
 ```
 
 Returns the transition history for the ECO's workflow. Requires `change_orders.read` permission.
@@ -549,7 +580,7 @@ Returns the transition history for the ECO's workflow. Requires `change_orders.r
 ### Get Approval Status
 
 ```
-GET /api/change-orders/:id/approvals
+GET /api/v1/change-orders/:id/approvals
 ```
 
 Returns approval votes grouped by workflow state. Requires `change_orders.read` permission.
@@ -584,7 +615,7 @@ Returns approval votes grouped by workflow state. Requires `change_orders.read` 
 ### Submit Approval Vote
 
 ```
-POST /api/change-orders/:id/approvals
+POST /api/v1/change-orders/:id/approvals
 ```
 
 Submit an approval or rejection vote for the current state. Requires `change_orders.update` permission.
@@ -606,12 +637,39 @@ Submit an approval or rejection vote for the current state. Requires `change_ord
 
 **Status:** `201 Created`
 
+#### Digital signatures (Advanced Auditing package)
+
+On instances licensed for [Advanced Auditing](../features/advanced-auditing.md),
+every vote must be digitally signed and two additional fields apply:
+
+| Field              | Type   | Required              | Description                                                           |
+| ------------------ | ------ | --------------------- | --------------------------------------------------------------------- |
+| `password`         | string | Only on password path | Account password. Not needed when a CAC/PIV certificate is presented. |
+| `signatureMeaning` | string | No                    | Overrides the default meaning (`Approved by` / `Rejected by`)         |
+
+When the approver's smart card is presented on the connection, the certificate
+supplies the credential and no password is sent. Call
+`GET /api/v1/signatures/capability` first to learn which path applies.
+
+The response gains a `signature` object alongside `vote`, and the vote plus its
+signature are written in one transaction — a failed signature leaves no vote
+behind.
+
+| Error code                         | HTTP | Meaning                                                        |
+| ---------------------------------- | ---- | -------------------------------------------------------------- |
+| `SIGNATURE_REQUIRED`               | 422  | Signing context missing                                        |
+| `SIGNATURE_INVALID`                | 401  | Bad password, or an expired/untrusted/revoked certificate      |
+| `SIGNATURE_CREDENTIAL_UNAVAILABLE` | 422  | Policy demands a credential the request cannot offer           |
+| `SIGNATURE_IDENTITY_MISMATCH`      | 403  | Certificate belongs to a different account, or is not enrolled |
+
+Unlicensed instances ignore both fields and behave exactly as documented above.
+
 ## Impact Assessment
 
 ### Get Impact Report
 
 ```
-GET /api/change-orders/:id/impact-assessment
+GET /api/v1/change-orders/:id/impact-assessment
 ```
 
 Returns the previously-generated impact report. Requires `change_orders.read` permission.
@@ -619,7 +677,7 @@ Returns the previously-generated impact report. Requires `change_orders.read` pe
 ### Run Impact Assessment
 
 ```
-POST /api/change-orders/:id/impact-assessment
+POST /api/v1/change-orders/:id/impact-assessment
 ```
 
 Runs an impact assessment to analyze what items are affected by the ECO, traversing the BOM tree. Requires `change_orders.update` permission.
@@ -660,7 +718,7 @@ Runs an impact assessment to analyze what items are affected by the ECO, travers
 ## Conflict Detection
 
 ```
-GET /api/change-orders/:id/conflicts
+GET /api/v1/change-orders/:id/conflicts
 ```
 
 Detects merge conflicts for the ECO, including field-level conflicts and cross-ECO conflicts. Results are enriched with review status. Requires `change_orders.read` permission.
@@ -697,7 +755,7 @@ Detects merge conflicts for the ECO, including field-level conflicts and cross-E
 ## Release Preview
 
 ```
-GET /api/change-orders/:id/release
+GET /api/v1/change-orders/:id/release
 ```
 
 Preview what would happen when the ECO is released (merged to main). Actual release is triggered by transitioning to a final workflow state. Requires `change_orders.read` permission.

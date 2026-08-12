@@ -11,7 +11,7 @@ This guide covers the database conventions used in Cascadia, built on PostgreSQL
 
 ## Schema Conventions
 
-Schema files live in `src/lib/db/schema/`. Each file defines related tables.
+Schema files live in `packages/core/src/lib/db/schema/`. Each file defines related tables.
 
 ### The Two-Table Pattern
 
@@ -41,7 +41,7 @@ items (base fields)          parts (type-specific)
 The `items` table:
 
 ```typescript
-// src/lib/db/schema/items.ts
+// packages/core/src/lib/db/schema/items.ts
 export const items = pgTable(
   'items',
   {
@@ -111,23 +111,12 @@ export const parts = pgTable('parts', {
 Define indexes in the third argument to `pgTable`:
 
 ```typescript
-export const items = pgTable(
-  'items',
-  {
-    /* columns */
-  },
-  (table) => [
-    unique().on(
-      table.itemNumber,
-      table.revision,
-      table.designId,
-      table.itemType,
-    ),
-    index('idx_master_id').on(table.masterId),
-    index('idx_item_type_state').on(table.itemType, table.state),
-    index('idx_item_attributes').using('gin', table.attributes), // GIN for JSONB
-  ],
-)
+export const items = pgTable('items', {/* columns */}, (table) => [
+  unique().on(table.itemNumber, table.revision, table.designId, table.itemType),
+  index('idx_master_id').on(table.masterId),
+  index('idx_item_type_state').on(table.itemType, table.state),
+  index('idx_item_attributes').using('gin', table.attributes), // GIN for JSONB
+])
 ```
 
 ### Soft Delete Pattern
@@ -311,29 +300,36 @@ return db.transaction(async (tx) => {
 
 ## Migration Workflow
 
+> **Pre-1.0: no committed migrations.** Every environment applies schema with
+> `db:push` (local dev, CI, and all docker-compose stacks) and gets its data
+> from the seed scripts, so the repo intentionally carries no `drizzle/`
+> migration files. At the first production release, mint a baseline migration
+> with `npm run db:generate` (it will emit the full schema as `0000`) and
+> switch persistent environments to `npm run db:migrate` from there.
+
 ### Schema Change Workflow
 
-1. **Edit schema** in `src/lib/db/schema/*.ts`
-2. **Generate migration**: `npm run db:generate` (creates SQL migration file)
-3. **Apply to dev database**: `npm run db:push` (pushes schema directly)
-4. **For production**: `npm run db:migrate` (runs pending migration files)
+1. **Edit schema** in `packages/core/src/lib/db/schema/*.ts`
+2. **Apply to dev database**: `npm run db:push` (pushes schema directly)
+3. **Keep seeds truthful**: if the change affects seeded data shapes, update
+   `scripts/seed-minimal.ts` in the same commit — fresh databases are built
+   from push + seeds, so seeds are the source of correct data
 
 ### Adding a Column
 
 Edit the schema file:
 
 ```typescript
-// In src/lib/db/schema/items.ts
+// In packages/core/src/lib/db/schema/items.ts
 export const parts = pgTable('parts', {
   // ... existing columns
   newField: varchar('new_field', { length: 100 }), // Add new column
 })
 ```
 
-Then generate and apply:
+Then apply:
 
 ```bash
-npm run db:generate   # Creates migration SQL
 npm run db:push       # Applies to dev database
 ```
 

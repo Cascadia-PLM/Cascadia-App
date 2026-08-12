@@ -1,24 +1,24 @@
 # AI Chat API
 
-AI-powered chatbot that can search PLM data, answer questions, and create items. Uses TanStack AI with configurable providers (OpenAI, Anthropic, Gemini, Ollama) and streams responses via Server-Sent Events.
+AI-powered chatbot that can search PLM data, answer questions, create items, and initiate collaborative design sessions. Uses TanStack AI with configurable providers (OpenAI, Anthropic, Gemini, Ollama) and streams responses via Server-Sent Events.
 
 ## Overview
 
-| Endpoint                        | Method | Auth                | Description                           |
-| ------------------------------- | ------ | ------------------- | ------------------------------------- |
-| `/api/ai/chat`                  | POST   | Auth required       | Send a message and stream AI response |
-| `/api/ai/sessions`              | GET    | Auth required       | List user's chat sessions             |
-| `/api/ai/sessions`              | POST   | Auth required       | Create a new chat session             |
-| `/api/ai/sessions/:id`          | GET    | Auth required       | Get session details                   |
-| `/api/ai/sessions/:id`          | DELETE | Auth required       | Delete a session                      |
-| `/api/ai/sessions/:id/messages` | GET    | Auth required       | Get message history                   |
-| `/api/ai/settings`              | GET    | Auth required       | Get AI provider settings              |
-| `/api/ai/settings`              | POST   | Permission required | Create AI settings                    |
-| `/api/ai/settings`              | PUT    | Permission required | Update AI settings                    |
+| Endpoint                           | Method | Auth                | Description                           |
+| ---------------------------------- | ------ | ------------------- | ------------------------------------- |
+| `/api/v1/ai/chat`                  | POST   | Auth required       | Send a message and stream AI response |
+| `/api/v1/ai/sessions`              | GET    | Auth required       | List user's chat sessions             |
+| `/api/v1/ai/sessions`              | POST   | Auth required       | Create a new chat session             |
+| `/api/v1/ai/sessions/:id`          | GET    | Auth required       | Get session details                   |
+| `/api/v1/ai/sessions/:id`          | DELETE | Auth required       | Delete a session                      |
+| `/api/v1/ai/sessions/:id/messages` | GET    | Auth required       | Get message history                   |
+| `/api/v1/ai/settings`              | GET    | Auth required       | Get AI provider settings              |
+| `/api/v1/ai/settings`              | POST   | Permission required | Create AI settings                    |
+| `/api/v1/ai/settings`              | PUT    | Permission required | Update AI settings                    |
 
 ---
 
-## POST /api/ai/chat
+## POST /api/v1/ai/chat
 
 Send a user message and receive a streaming AI response. This is the primary chat endpoint. It handles session management, message persistence, context building, and tool execution automatically.
 
@@ -128,9 +128,15 @@ Write tools use a two-step confirmation flow:
 | `transition_item_state` | Move items through workflow states             |
 | `create_change_order`   | Create a new Engineering Change Order          |
 
+### Design engine tool
+
+| Tool                            | Description                                                                  |
+| ------------------------------- | ---------------------------------------------------------------------------- |
+| `initiate_collaborative_design` | Start a collaborative design session from the chat. Returns a workspace URL. |
+
 ---
 
-## GET /api/ai/sessions
+## GET /api/v1/ai/sessions
 
 List all chat sessions for the authenticated user.
 
@@ -156,9 +162,9 @@ Session titles are auto-generated from the first user message.
 
 ---
 
-## POST /api/ai/sessions
+## POST /api/v1/ai/sessions
 
-Create a new chat session explicitly (instead of relying on auto-creation via `/api/ai/chat`).
+Create a new chat session explicitly (instead of relying on auto-creation via `/api/v1/ai/chat`).
 
 ### Request Body
 
@@ -194,7 +200,7 @@ Create a new chat session explicitly (instead of relying on auto-creation via `/
 
 ---
 
-## GET /api/ai/sessions/:id
+## GET /api/v1/ai/sessions/:id
 
 Get session details with related program and design data.
 
@@ -234,7 +240,7 @@ Get session details with related program and design data.
 
 ---
 
-## DELETE /api/ai/sessions/:id
+## DELETE /api/v1/ai/sessions/:id
 
 Delete a chat session and its message history.
 
@@ -244,7 +250,7 @@ Delete a chat session and its message history.
 
 ---
 
-## GET /api/ai/sessions/:id/messages
+## GET /api/v1/ai/sessions/:id/messages
 
 Get the full message history for a session.
 
@@ -284,7 +290,7 @@ Get the full message history for a session.
 
 ## AI Settings
 
-### GET /api/ai/settings
+### GET /api/v1/ai/settings
 
 Get the current AI provider configuration. API keys are masked in the response.
 
@@ -305,7 +311,7 @@ Get the current AI provider configuration. API keys are masked in the response.
       "provider": "anthropic",
       "config": {
         "apiKey": "***",
-        "model": "claude-sonnet-4-20250514"
+        "model": "claude-sonnet-5"
       },
       "enabled": true,
       "createdAt": "2025-01-01T00:00:00.000Z",
@@ -319,7 +325,7 @@ Get the current AI provider configuration. API keys are masked in the response.
 
 The `hasEnvConfig` field indicates whether `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` environment variables are set, which serve as fallback configuration.
 
-### POST /api/ai/settings
+### POST /api/v1/ai/settings
 
 Create AI settings. Requires `ai_settings:create` permission.
 
@@ -331,7 +337,7 @@ Create AI settings. Requires `ai_settings:create` permission.
   "provider": "anthropic",
   "config": {
     "apiKey": "sk-ant-...",
-    "model": "claude-sonnet-4-20250514"
+    "model": "claude-sonnet-5"
   },
   "enabled": true
 }
@@ -344,7 +350,7 @@ Create AI settings. Requires `ai_settings:create` permission.
 | `config`    | object  | Yes      | Provider-specific configuration including API key and model |
 | `enabled`   | boolean | No       | Enable/disable AI (default: true)                           |
 
-### PUT /api/ai/settings
+### PUT /api/v1/ai/settings
 
 Update existing AI settings. Requires `ai_settings:update` permission.
 
@@ -352,9 +358,9 @@ Same request body as POST. All fields except `programId` (used for lookup) are o
 
 ### Errors
 
-| Status | Condition                                                                                  |
-| ------ | ------------------------------------------------------------------------------------------ |
-| 409    | Settings already exist for this scope (POST)                                               |
-| 404    | Settings not found for this scope (PUT)                                                    |
-| 422    | Invalid provider name                                                                      |
-| 503    | AI is not enabled (returned by `/api/ai/chat` when no settings or API keys are configured) |
+| Status | Condition                                                                                     |
+| ------ | --------------------------------------------------------------------------------------------- |
+| 409    | Settings already exist for this scope (POST)                                                  |
+| 404    | Settings not found for this scope (PUT)                                                       |
+| 422    | Invalid provider name                                                                         |
+| 503    | AI is not enabled (returned by `/api/v1/ai/chat` when no settings or API keys are configured) |

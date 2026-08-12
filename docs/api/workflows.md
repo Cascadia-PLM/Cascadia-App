@@ -9,25 +9,25 @@ Cascadia supports two workflow categories:
 
 ## Endpoints Overview
 
-| Method | Endpoint                                                   | Description                  |
-| ------ | ---------------------------------------------------------- | ---------------------------- |
-| GET    | `/api/workflows`                                           | List workflow definitions    |
-| POST   | `/api/workflows`                                           | Create a workflow definition |
-| GET    | `/api/workflows/:id`                                       | Get a workflow definition    |
-| PUT    | `/api/workflows/:id`                                       | Update a workflow definition |
-| DELETE | `/api/workflows/:id`                                       | Delete a workflow definition |
-| GET    | `/api/workflows/:id/approvers`                             | Get approvers for all states |
-| GET    | `/api/workflows/:id/states/:stateId/approvers`             | Get approvers for a state    |
-| POST   | `/api/workflows/:id/states/:stateId/approvers`             | Add approver to a state      |
-| DELETE | `/api/workflows/:id/states/:stateId/approvers/:approverId` | Remove approver              |
-| GET    | `/api/workflows/:id/validate`                              | Validate workflow definition |
+| Method | Endpoint                                                      | Description                  |
+| ------ | ------------------------------------------------------------- | ---------------------------- |
+| GET    | `/api/v1/workflows`                                           | List workflow definitions    |
+| POST   | `/api/v1/workflows`                                           | Create a workflow definition |
+| GET    | `/api/v1/workflows/:id`                                       | Get a workflow definition    |
+| PUT    | `/api/v1/workflows/:id`                                       | Update a workflow definition |
+| DELETE | `/api/v1/workflows/:id`                                       | Delete a workflow definition |
+| GET    | `/api/v1/workflows/:id/approvers`                             | Get approvers for all states |
+| GET    | `/api/v1/workflows/:id/states/:stateId/approvers`             | Get approvers for a state    |
+| POST   | `/api/v1/workflows/:id/states/:stateId/approvers`             | Add approver to a state      |
+| DELETE | `/api/v1/workflows/:id/states/:stateId/approvers/:approverId` | Remove approver              |
+| POST   | `/api/v1/workflows/:id/validate`                              | Validate workflow definition |
 
 For workflow instances on change orders, see the [Change Orders API](./change-orders.md).
 
 ## List Workflow Definitions
 
 ```
-GET /api/workflows
+GET /api/v1/workflows
 ```
 
 Lists all workflow definitions with optional filtering. Auth required.
@@ -50,7 +50,7 @@ Lists all workflow definitions with optional filtering. Auth required.
       {
         "id": "def-uuid",
         "name": "Standard Part Lifecycle",
-        "definitionType": "lifecycle",
+        "lifecycleType": "Driven",
         "workflowType": "strict",
         "description": "Standard lifecycle for manufactured parts",
         "applicableItemTypes": ["Part", "Document"],
@@ -86,16 +86,16 @@ Lists all workflow definitions with optional filtering. Auth required.
 
 ```bash
 # List all active lifecycle workflows
-curl /api/workflows?isActive=true&type=lifecycle
+curl /api/v1/workflows?isActive=true&type=lifecycle
 
 # List all approval workflows
-curl /api/workflows?type=workflow
+curl /api/v1/workflows?type=workflow
 ```
 
 ## Create Workflow Definition
 
 ```
-POST /api/workflows
+POST /api/v1/workflows
 ```
 
 Creates a new workflow definition. Requires `workflows.create` permission.
@@ -105,7 +105,7 @@ Creates a new workflow definition. Requires `workflows.create` permission.
 | Field                 | Type    | Required | Description                                   |
 | --------------------- | ------- | -------- | --------------------------------------------- |
 | `name`                | string  | Yes      | Workflow name                                 |
-| `definitionType`      | string  | No       | `lifecycle` (default) or `workflow`           |
+| `lifecycleType`       | string  | No       | `Free` (default), `Driven`, or `Driving`      |
 | `workflowType`        | string  | No       | `strict` (default) or `flexible`              |
 | `description`         | string  | No       | Description                                   |
 | `applicableItemTypes` | array   | No       | Item types this workflow applies to           |
@@ -125,23 +125,22 @@ Creates a new workflow definition. Requires `workflows.create` permission.
 
 ### Transition Definition
 
-| Field              | Type   | Required | Description                    |
-| ------------------ | ------ | -------- | ------------------------------ |
-| `id`               | string | No       | Unique transition identifier   |
-| `name`             | string | Yes      | Display name                   |
-| `fromStateId`      | string | Yes      | Source state ID                |
-| `toStateId`        | string | Yes      | Target state ID                |
-| `guards`           | array  | No       | Guard conditions               |
-| `lifecycleEffects` | array  | No       | Side effects on affected items |
+| Field         | Type   | Required | Description                  |
+| ------------- | ------ | -------- | ---------------------------- |
+| `id`          | string | No       | Unique transition identifier |
+| `name`        | string | Yes      | Display name                 |
+| `fromStateId` | string | Yes      | Source state ID              |
+| `toStateId`   | string | Yes      | Target state ID              |
+| `guards`      | array  | No       | Guard conditions             |
 
 ### Example
 
 ```bash
-curl -X POST /api/workflows \
+curl -X POST /api/v1/workflows \
   -H "Content-Type: application/json" \
   -d '{
     "name": "ECO Approval Workflow",
-    "definitionType": "workflow",
+    "lifecycleType": "Driving",
     "workflowType": "strict",
     "description": "Standard ECO approval process",
     "applicableItemTypes": ["ChangeOrder"],
@@ -181,7 +180,7 @@ curl -X POST /api/workflows \
 ## Get Workflow Definition
 
 ```
-GET /api/workflows/:id
+GET /api/v1/workflows/:id
 ```
 
 Returns a single workflow definition by ID. Auth required.
@@ -194,7 +193,7 @@ Returns a single workflow definition by ID. Auth required.
     "workflow": {
       "id": "def-uuid",
       "name": "Standard Part Lifecycle",
-      "definitionType": "lifecycle",
+      "lifecycleType": "Driven",
       "workflowType": "strict",
       "description": "...",
       "applicableItemTypes": ["Part", "Document"],
@@ -211,7 +210,7 @@ Returns a single workflow definition by ID. Auth required.
 ## Update Workflow Definition
 
 ```
-PUT /api/workflows/:id
+PUT /api/v1/workflows/:id
 ```
 
 Updates a workflow definition. Auth required.
@@ -234,7 +233,7 @@ All fields are optional:
 ## Delete Workflow Definition
 
 ```
-DELETE /api/workflows/:id
+DELETE /api/v1/workflows/:id
 ```
 
 Deletes a workflow definition. Auth required.
@@ -254,7 +253,7 @@ Deletes a workflow definition. Auth required.
 ### Get All Approvers
 
 ```
-GET /api/workflows/:id/approvers
+GET /api/v1/workflows/:id/approvers
 ```
 
 Returns approvers configured for all states in a workflow definition. Auth required.
@@ -286,7 +285,7 @@ Returns approvers configured for all states in a workflow definition. Auth requi
 ### Get State Approvers
 
 ```
-GET /api/workflows/:id/states/:stateId/approvers
+GET /api/v1/workflows/:id/states/:stateId/approvers
 ```
 
 Returns approvers for a specific workflow state.
@@ -294,7 +293,7 @@ Returns approvers for a specific workflow state.
 ### Add Approver
 
 ```
-POST /api/workflows/:id/states/:stateId/approvers
+POST /api/v1/workflows/:id/states/:stateId/approvers
 ```
 
 Adds an approver (user or role) to a workflow state.
@@ -313,7 +312,7 @@ Provide either `userId` (user-based approval) or `roleId` (role-based approval) 
 ### Remove Approver
 
 ```
-DELETE /api/workflows/:id/states/:stateId/approvers/:approverId
+DELETE /api/v1/workflows/:id/states/:stateId/approvers/:approverId
 ```
 
 Removes an approver from a workflow state.
@@ -328,7 +327,7 @@ Strict workflows enforce that transitions can only follow the defined state mach
 
 Flexible workflows allow per-instance customization of states and transitions. When a workflow instance is started from a flexible definition, the instance gets its own copy of states and transitions that can be modified.
 
-Use `PUT /api/change-orders/:id/workflow/structure` to modify the structure of a flexible workflow instance.
+Use `PUT /api/v1/change-orders/:id/workflow/structure` to modify the structure of a flexible workflow instance.
 
 ## Workflow Guards
 
@@ -340,38 +339,20 @@ Transitions can have guard conditions that must be met before the transition is 
 | `role_required`      | Only users with specific roles can execute |
 | `all_items_reviewed` | All affected items must be reviewed        |
 
-Guards are evaluated by `GET /api/change-orders/:id/workflow/transition` and returned in the `allowed` field.
+Guards are evaluated by `GET /api/v1/change-orders/:id/workflow/transition` and returned in the `allowed` field.
 
-## Lifecycle Effects
+## ECO-Driven Item State
 
-Transitions can have lifecycle effects that automatically transition affected items when the ECO transitions:
-
-```json
-{
-  "name": "Release",
-  "fromStateId": "approved",
-  "toStateId": "released",
-  "lifecycleEffects": [
-    {
-      "changeAction": "modify",
-      "lifecycleDefinitionId": "part-lifecycle-uuid",
-      "fromStateId": "In Review",
-      "toStateId": "Released"
-    }
-  ]
-}
-```
-
-When the ECO transitions to "Released", all affected items with `changeAction: "modify"` that are in "In Review" state will automatically transition to "Released".
+Affected items change state through their Driven lifecycle's `changeActionMappings`, applied by the merge when a change order completes in a `finalKind: 'release'` state — never through per-transition configuration. (The former `lifecycleEffects` transition field was removed in remediation Phase 3; see `docs/features/workflow-engine.md` for the mappings model.)
 
 ## Workflow Instance Endpoints
 
 Workflow instances are managed through the change order API. See the [Change Orders API](./change-orders.md) for:
 
-- `GET /api/change-orders/:id/workflow` -- get instance
-- `POST /api/change-orders/:id/workflow` -- start instance
-- `GET /api/change-orders/:id/workflow/transition` -- available transitions
-- `POST /api/change-orders/:id/workflow/transition` -- execute transition
-- `GET /api/change-orders/:id/workflow/history` -- transition history
-- `GET /api/change-orders/:id/approvals` -- approval status
-- `POST /api/change-orders/:id/approvals` -- submit vote
+- `GET /api/v1/change-orders/:id/workflow` -- get instance
+- `POST /api/v1/change-orders/:id/workflow` -- start instance
+- `GET /api/v1/change-orders/:id/workflow/transition` -- available transitions
+- `POST /api/v1/change-orders/:id/workflow/transition` -- execute transition
+- `GET /api/v1/change-orders/:id/workflow/history` -- transition history
+- `GET /api/v1/change-orders/:id/approvals` -- approval status
+- `POST /api/v1/change-orders/:id/approvals` -- submit vote

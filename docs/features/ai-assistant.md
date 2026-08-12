@@ -13,6 +13,7 @@ The AI assistant is built on [TanStack AI](https://tanstack.com/ai), providing p
 - Analyze change impact with risk assessment
 - Create and update items, manage relationships, transition workflow states
 - Create Engineering Change Orders (ECOs) with automatic branch setup
+- Launch collaborative design sessions from the chat
 - Navigate users to item pages with clickable buttons
 
 All actions are permission-bounded and audit-logged.
@@ -27,8 +28,8 @@ The AI assistant appears as a slide-out panel on the right side of the screen.
 
 A tab-shaped button sits on the right edge of the viewport, vertically centered. Clicking it slides the chat panel into view. The button disappears while the panel is open.
 
-- **Component**: `ChatPanelButton` (`src/components/ai/ChatPanelButton.tsx`)
-- **State management**: `ChatPanelProvider` context (`src/lib/ai/chat-context.tsx`)
+- **Component**: `ChatPanelButton` (`packages/core/src/components/ai/ChatPanelButton.tsx`)
+- **State management**: `ChatPanelProvider` context (`packages/core/src/lib/ai/chat-context.tsx`)
 - **Keyboard shortcut**: None by default (toggle via the button)
 
 ### Panel Layout
@@ -56,6 +57,7 @@ The panel is resizable by dragging the left edge. Width is persisted to `localSt
 - **Assistant messages**: Rendered as Markdown using `react-markdown` with `remark-gfm`, left-aligned in a slate bubble. Supports headings, lists, tables, code blocks, links, and blockquotes.
 - **Tool calls**: Shown as small monospace labels below the message text (e.g., `search_items`, `get_bom`). A "Running..." indicator appears while the tool is executing.
 - **Navigation offers**: Rendered as clickable buttons below the message (e.g., "View P-1001"). Internal links navigate within the app; external links open in a new tab.
+- **Design workspace offers**: Rendered as a "Open Design Workspace" button that navigates to the collaborative design workspace.
 - **System messages**: Hidden from the UI.
 - **Streaming**: A pulsing cursor animation appears at the end of the assistant's message while content is still streaming.
 
@@ -76,7 +78,7 @@ Chat conversations are saved to the database so users can resume them later.
 
 ### Database Schema
 
-Three tables support AI chat persistence (defined in `src/lib/db/schema/ai.ts`):
+Three tables support AI chat persistence (defined in `packages/core/src/lib/db/schema/ai.ts`):
 
 **`ai_chat_sessions`** -- One row per conversation.
 
@@ -105,10 +107,10 @@ Three tables support AI chat persistence (defined in `src/lib/db/schema/ai.ts`):
 
 ### Session Lifecycle
 
-1. **Auto-creation**: A session is created on the first message if none exists. The UI calls `POST /api/ai/sessions` before sending the first message.
+1. **Auto-creation**: A session is created on the first message if none exists. The UI calls `POST /api/v1/ai/sessions` before sending the first message.
 2. **Title generation**: The `SessionService` auto-generates a title from the first user message. It extracts the first sentence (up to 50 characters) or truncates at a word boundary.
 3. **Message persistence**: Each user message is saved before sending to the LLM. The assistant's response is saved after the stream completes.
-4. **History loading**: When switching sessions, the UI fetches message history via `GET /api/ai/sessions/:id/messages` and reconstructs the message list.
+4. **History loading**: When switching sessions, the UI fetches message history via `GET /api/v1/ai/sessions/:id/messages` and reconstructs the message list.
 5. **Ownership**: Sessions are scoped to the creating user. The `verifySessionOwnership` check prevents accessing other users' sessions.
 6. **Cleanup**: `SessionService.cleanupOldSessions()` retains the 50 most recent sessions per user. Messages cascade-delete with their session.
 
@@ -246,6 +248,10 @@ Create a new Engineering Change Order. Supports ECO, ECN, Deviation, and MCO cha
 3. Adds specified designs (creating ECO branches)
 4. Adds specified affected items with appropriate change actions (`revise` for Released items, `release` for Draft items)
 
+### initiate_collaborative_design
+
+Launch an interactive collaborative design workspace. Unlike other write tools, this does not require confirmation -- creating a design session is lightweight and non-destructive. Requires a `programId` (UUID or code). Returns a workspace URL that the UI renders as an "Open Design Workspace" button.
+
 ---
 
 ## Confirmation Flow
@@ -270,7 +276,7 @@ User clicks "Confirm"
 
 ### ConfirmationCard Component
 
-The `ConfirmationCard` (`src/components/ai/ConfirmationCard.tsx`) displays:
+The `ConfirmationCard` (`packages/core/src/components/ai/ConfirmationCard.tsx`) displays:
 
 - An alert icon color-coded by action type (cyan for create/update, amber for transition, red for delete)
 - The confirmation message explaining what will happen
@@ -295,16 +301,33 @@ The AI assistant supports multiple LLM providers through TanStack AI adapters.
 
 ### Supported Providers
 
-| Provider               | Status    | Default Model       | Adapter                  |
-| ---------------------- | --------- | ------------------- | ------------------------ |
-| **Anthropic** (Claude) | Supported | `claude-sonnet-5`   | `@tanstack/ai-anthropic` |
-| **OpenAI** (GPT)       | Supported | `gpt-4.1`           | `@tanstack/ai-openai`    |
-| **Google** (Gemini)    | Supported | `gemini-2.5-flash`  | `@tanstack/ai-openai` (OpenAI-compatible endpoint) |
-| **Ollama** (local)     | Supported | `llama3.3`          | `@tanstack/ai-openai` (OpenAI-compatible endpoint) |
+| Provider               | Status    | Default Model      | Adapter                                            |
+| ---------------------- | --------- | ------------------ | -------------------------------------------------- |
+| **Anthropic** (Claude) | Supported | `claude-sonnet-5`  | `@tanstack/ai-anthropic`                           |
+| **OpenAI** (GPT)       | Supported | `gpt-5.6-terra`    | `@tanstack/ai-openai`                              |
+| **Google** (Gemini)    | Supported | `gemini-3.6-flash` | `@tanstack/ai-openai` (OpenAI-compatible endpoint) |
+| **Ollama** (local)     | Supported | `llama3.3`         | `@tanstack/ai-openai` (OpenAI-compatible endpoint) |
+
+Defaults live in `DEFAULT_MODEL` in `packages/core/src/lib/ai/model-catalog.ts` and are re-exported as `DEFAULT_MODELS` from `adapters.ts`, so there is one place to change them.
+
+### Model Discovery
+
+The admin model picker is populated at runtime rather than from a hardcoded list. `listProviderModels()` in `packages/core/src/lib/ai/model-discovery.ts` queries each provider's own list-models endpoint, and `POST /api/v1/admin/ai-settings/models` exposes it to the UI:
+
+| Provider  | Endpoint             | Notes                                                                                   |
+| --------- | -------------------- | --------------------------------------------------------------------------------------- |
+| Anthropic | `GET /v1/models`     | Chat models only, newest first, with display names. Cursor-paginated on `after_id`.     |
+| OpenAI    | `GET /v1/models`     | Returns every model the key can reach; non-chat families are excluded by name.          |
+| Gemini    | `GET /v1beta/models` | Native endpoint (not the OpenAI-compatible one) — carries `supportedGenerationMethods`. |
+| Ollama    | `GET /api/tags`      | Whatever the operator has pulled locally.                                               |
+
+When discovery cannot run — no API key entered yet, provider unreachable, air-gapped install — the picker falls back to `FALLBACK_MODELS` in `model-catalog.ts` and says so. That list is a safety net, not the source of truth; expect it to drift.
+
+Gemini keys are sent in the `x-goog-api-key` header rather than the documented `?key=` query parameter, to keep them out of request and proxy logs.
 
 ### Provider Selection
 
-The `getAdapter()` function in `src/lib/ai/adapters.ts` creates the appropriate TanStack AI adapter based on the provider configuration. It accepts a provider type, model name, API key, and optional base URL.
+The `getAdapter()` function in `packages/core/src/lib/ai/adapters.ts` creates the appropriate TanStack AI adapter based on the provider configuration. It accepts a provider type, model name, API key, and optional base URL.
 
 OpenAI's adapter supports a custom `baseURL` parameter, which enables use with OpenAI-compatible APIs (Azure OpenAI, local proxies, etc.).
 
@@ -338,8 +361,8 @@ This allows different programs to use different providers or models.
 
 The settings API (`/api/v1/ai/settings`) manages provider configuration stored in the `ai_settings` table.
 
-| Endpoint                         | Method | Permission           | Description              |
-| -------------------------------- | ------ | -------------------- | ------------------------ |
+| Endpoint                            | Method | Permission           | Description              |
+| ----------------------------------- | ------ | -------------------- | ------------------------ |
 | `/api/v1/ai/settings?programId=...` | GET    | Authenticated        | Get settings for a scope |
 | `/api/v1/ai/settings`               | POST   | `ai_settings:create` | Create settings          |
 | `/api/v1/ai/settings`               | PUT    | `ai_settings:update` | Update settings          |
@@ -367,9 +390,9 @@ Each tool definition includes:
 
 ### Tool Registration
 
-Tools are assembled in `src/lib/ai/tools/index.ts`:
+Tools are assembled in `packages/core/src/lib/ai/tools/index.ts`:
 
-- **`createServerTools(context)`** -- Returns all 14 tools (8 read + 6 write) bound to a user context
+- **`createServerTools(context)`** -- Returns all 14 tools (8 read + 5 write + 1 design engine) bound to a user context
 - **`createSearchTools(context)`** -- Returns 5 lightweight tools (search_items, get_item_details, offer_navigation, search_programs, search_designs) for search mode
 
 The `context` object carries `userId`, `sessionId`, `programId`, and `designId` through to every handler.
@@ -391,7 +414,7 @@ The `context` object carries `userId`, `sessionId`, `programId`, and `designId` 
 | 11  | `create_relationship`           | Write    | `parts:update`         | Create BOM, Document, or Affects relationship |
 | 12  | `transition_item_state`         | Write    | `change_orders:update` | Transition workflow state                     |
 | 13  | `create_change_order`           | Write    | `change_orders:create` | Create ECO with branches and affected items   |
-| 14  | `create_program`                | Write    | `programs:create`      | Create a program (creator becomes admin)      |
+| 14  | `initiate_collaborative_design` | Design   | `parts:create`         | Launch collaborative design workspace         |
 
 ---
 
@@ -407,7 +430,7 @@ Frontend (Browser)
        | SSE Stream
        v
 API Layer (Server)
-  POST /api/ai/chat
+  POST /api/v1/ai/chat
     - Authenticates user
     - Loads/creates session
     - Loads provider config
@@ -433,8 +456,8 @@ Database
 ### Request Flow
 
 1. The user types a message in the `ChatInput` component
-2. `ChatPanel` creates a session if needed (`POST /api/ai/sessions`)
-3. `useChat` from `@tanstack/ai-react` sends the message via `fetchServerSentEvents` to `POST /api/ai/chat`
+2. `ChatPanel` creates a session if needed (`POST /api/v1/ai/sessions`)
+3. `useChat` from `@tanstack/ai-react` sends the message via `fetchServerSentEvents` to `POST /api/v1/ai/chat`
 4. The API handler:
    a. Verifies authentication and session ownership
    b. Checks if AI is enabled for the program scope
@@ -452,7 +475,7 @@ Database
 
 ### KnowledgeService
 
-The `KnowledgeService` (`src/lib/ai/KnowledgeService.ts`) makes the AI schema-aware by:
+The `KnowledgeService` (`packages/core/src/lib/ai/KnowledgeService.ts`) makes the AI schema-aware by:
 
 1. **Reflecting on ItemTypeRegistry** -- Enumerates all registered item types (Part, Document, ChangeOrder, etc.) with their fields, states, relationships, and permissions
 2. **Extracting field definitions** -- Converts Zod schemas to JSON Schema format, then extracts field names, types, descriptions, and required flags
@@ -463,7 +486,7 @@ The system prompt includes the current program and design context, so the AI und
 
 ### Permission Enforcement
 
-Every tool handler is wrapped with `withPermissionAndAudit()` (for read tools) or `withWritePermissionAndAudit()` (for write tools) from `src/lib/ai/tools/permission-wrapper.ts`. These wrappers:
+Every tool handler is wrapped with `withPermissionAndAudit()` (for read tools) or `withWritePermissionAndAudit()` (for write tools) from `packages/core/src/lib/ai/tools/permission-wrapper.ts`. These wrappers:
 
 1. **Check permissions** via `permissionService.canUser()` before executing the handler
 2. **Throw on denial** with a descriptive error message the AI can relay to the user
@@ -503,8 +526,8 @@ The API sets `X-Session-Id` and `X-Request-Id` headers on the SSE response for t
 
 ## API Reference
 
-| Endpoint                        | Method | Auth                  | Description                             |
-| ------------------------------- | ------ | --------------------- | --------------------------------------- |
+| Endpoint                           | Method | Auth                  | Description                             |
+| ---------------------------------- | ------ | --------------------- | --------------------------------------- |
 | `/api/v1/ai/chat`                  | POST   | Authenticated         | Send a chat message, receive SSE stream |
 | `/api/v1/ai/sessions`              | GET    | Authenticated         | List user's sessions                    |
 | `/api/v1/ai/sessions`              | POST   | Authenticated         | Create a new session                    |
@@ -519,26 +542,22 @@ The API sets `X-Session-Id` and `X-Request-Id` headers on the SSE response for t
 
 ## Key Source Files
 
-| File                                            | Purpose                                                      |
-| ----------------------------------------------- | ------------------------------------------------------------ |
-| `src/lib/ai/adapters.ts`                        | Provider adapter factory and config loading                  |
-| `src/lib/ai/SessionService.ts`                  | Session and message persistence                              |
-| `src/lib/ai/KnowledgeService.ts`                | Schema introspection and system prompt generation            |
-| `src/lib/ai/chat-context.tsx`                   | React context for panel state management                     |
-| `src/lib/ai/tools/definitions.ts`               | Read-only tool definitions (Zod schemas)                     |
-| `src/lib/ai/tools/write-definitions.ts`         | Write tool definitions with confirmation schemas             |
-| `src/lib/ai/tools/handlers.ts`                  | Read-only tool handler implementations                       |
-| `src/lib/ai/tools/write-handlers.ts`            | Write tool handler implementations                           |
-| `src/lib/ai/tools/permission-wrapper.ts`        | Permission checking and audit logging wrapper                |
-| `src/lib/ai/tools/index.ts`                     | Tool assembly and exports                                    |
-| `src/lib/db/schema/ai.ts`                       | Database schema for sessions, messages, settings, usage logs |
-| `src/components/ai/ChatPanel.tsx`               | Main chat sidebar component                                  |
-| `src/components/ai/ChatMessage.tsx`             | Message rendering with Markdown and tool results             |
-| `src/components/ai/ChatInput.tsx`               | Input component with Send/Search modes                       |
-| `src/components/ai/ChatPanelButton.tsx`         | Edge button to open the panel                                |
-| `src/components/ai/ConfirmationCard.tsx`        | Confirmation UI for write operations                         |
-| `src/routes/api/ai/chat.ts`                     | Chat API endpoint                                            |
-| `src/routes/api/ai/sessions.ts`                 | Session list and creation endpoints                          |
-| `src/routes/api/ai/sessions/$id.ts`             | Session detail and deletion endpoints                        |
-| `src/routes/api/ai/sessions/$id/messages.ts`    | Message history endpoint                                     |
-| `src/routes/api/ai/settings.ts`                 | AI settings CRUD endpoints                                   |
+| File                                                   | Purpose                                                      |
+| ------------------------------------------------------ | ------------------------------------------------------------ |
+| `packages/core/src/lib/ai/adapters.ts`                 | Provider adapter factory and config loading                  |
+| `packages/core/src/lib/ai/SessionService.ts`           | Session and message persistence                              |
+| `packages/core/src/lib/ai/KnowledgeService.ts`         | Schema introspection and system prompt generation            |
+| `packages/core/src/lib/ai/chat-context.tsx`            | React context for panel state management                     |
+| `packages/core/src/lib/ai/tools/definitions.ts`        | Read-only tool definitions (Zod schemas)                     |
+| `packages/core/src/lib/ai/tools/write-definitions.ts`  | Write tool definitions with confirmation schemas             |
+| `packages/core/src/lib/ai/tools/handlers.ts`           | Read-only tool handler implementations                       |
+| `packages/core/src/lib/ai/tools/write-handlers.ts`     | Write tool handler implementations                           |
+| `packages/core/src/lib/ai/tools/permission-wrapper.ts` | Permission checking and audit logging wrapper                |
+| `packages/core/src/lib/ai/tools/index.ts`              | Tool assembly and exports                                    |
+| `packages/core/src/lib/db/schema/ai.ts`                | Database schema for sessions, messages, settings, usage logs |
+| `packages/core/src/components/ai/ChatPanel.tsx`        | Main chat sidebar component                                  |
+| `packages/core/src/components/ai/ChatMessage.tsx`      | Message rendering with Markdown and tool results             |
+| `packages/core/src/components/ai/ChatInput.tsx`        | Input component with Send/Search modes                       |
+| `packages/core/src/components/ai/ChatPanelButton.tsx`  | Edge button to open the panel                                |
+| `packages/core/src/components/ai/ConfirmationCard.tsx` | Confirmation UI for write operations                         |
+| `packages/core/src/server/routes/ai.ts`                | Chat, session, message history, and settings endpoints       |

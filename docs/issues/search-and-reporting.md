@@ -15,10 +15,10 @@ support, full-text search, enterprise search limit distribution) have been resol
 
 ### R-2: Export endpoint does not record to `report_exports` table
 
-**Location:** `src/routes/api/reports/$id/export.ts`
+**Location:** `packages/core/src/server/routes/reports.ts`
 
 **Description:** The `report_exports` table exists in the schema
-(`src/lib/db/schema/reports.ts`) with columns for export metadata (format,
+(`packages/core/src/lib/db/schema/reports.ts`) with columns for export metadata (format,
 fileName, fileSize, storagePath), but the export endpoint never inserts a record
 into this table. It executes the report and returns CSV directly.
 
@@ -33,7 +33,7 @@ size.
 
 ### R-3: ReportBuilder defines fields for "Project" type but service does not support it
 
-**Location:** `src/components/reports/ReportBuilder.tsx`, lines 164-201
+**Location:** `packages/core/src/components/reports/ReportBuilder.tsx`, lines 164-201
 
 **Description:** The `getAvailableFields()` function defines field paths for a
 "Project" item type (e.g., `projects.description`, `projects.budget`,
@@ -72,9 +72,9 @@ corresponding field definitions in `getAvailableFields()`.
 
 ### R-5: Report list pagination is client-side
 
-**Location:** `src/routes/api/reports.ts`, line 33
+**Location:** `packages/core/src/server/routes/reports.ts`
 
-**Description:** The `GET /api/reports` endpoint fetches all accessible reports
+**Description:** The `GET /api/v1/reports` endpoint fetches all accessible reports
 from `ReportService.list()`, then slices the result in memory for pagination:
 
 ```typescript

@@ -23,10 +23,10 @@ Service Code                    RabbitMQ                  Worker Process
 
 ## Step 1: Define Payload and Result Schemas
 
-Create a `types.ts` file in `src/lib/jobs/definitions/yourjob/`:
+Create a `types.ts` file in `packages/core/src/lib/jobs/definitions/yourjob/`:
 
 ```typescript
-// src/lib/jobs/definitions/yourjob/types.ts
+// packages/core/src/lib/jobs/definitions/yourjob/types.ts
 import { z } from 'zod'
 
 /**
@@ -66,7 +66,7 @@ export type WidgetProcessingResult = z.infer<
 Create a `config.ts` file with the job type configuration:
 
 ```typescript
-// src/lib/jobs/definitions/yourjob/config.ts
+// packages/core/src/lib/jobs/definitions/yourjob/config.ts
 import type { JobTypeConfig } from '../../types'
 import {
   widgetProcessingPayloadSchema,
@@ -129,10 +129,10 @@ export const widgetProcessingConfig: JobTypeConfig<
 
 ## Step 3: Create Job Handler
 
-Create a handler file at `src/lib/jobs/node-handlers/yourjob.ts`:
+Create a handler file at `packages/core/src/lib/jobs/node-handlers/yourjob.ts`:
 
 ```typescript
-// src/lib/jobs/node-handlers/yourjob.ts
+// packages/core/src/lib/jobs/node-handlers/yourjob.ts
 import type { JobHandler, JobContext } from '../../types'
 import type { WidgetProcessingPayload, WidgetProcessingResult } from './types'
 
@@ -215,10 +215,10 @@ for (const item of items) {
 
 Registration is split into two files:
 
-**Config registration** in `src/lib/jobs/definitions/register.ts`:
+**Config registration** in `packages/core/src/lib/jobs/definitions/register.ts`:
 
 ```typescript
-// src/lib/jobs/definitions/register.ts
+// packages/core/src/lib/jobs/definitions/register.ts
 import { JobTypeRegistry } from '../registry'
 
 // ... existing registrations ...
@@ -229,10 +229,10 @@ import { widgetProcessingConfig } from './yourjob/config'
 JobTypeRegistry.register(widgetProcessingConfig)
 ```
 
-**Handler registration** in `src/lib/jobs/node-handlers/register.ts`:
+**Handler registration** in `packages/core/src/lib/jobs/node-handlers/register.ts`:
 
 ```typescript
-// src/lib/jobs/node-handlers/register.ts
+// packages/core/src/lib/jobs/node-handlers/register.ts
 import { JobTypeRegistry } from '../registry'
 
 // ... existing registrations ...
@@ -290,7 +290,7 @@ const job = await JobService.getById(jobId)
 ## Directory Structure
 
 ```
-src/lib/jobs/
+packages/core/src/lib/jobs/
 ├── JobService.ts              # Submit, query, cancel jobs
 ├── registry.ts                # JobTypeRegistry (mirrors ItemTypeRegistry)
 ├── types.ts                   # Core interfaces (JobTypeConfig, JobHandler, JobContext)
@@ -304,6 +304,8 @@ src/lib/jobs/
 │   │   └── config.ts
 │   ├── conversion/            # CAD conversion (Python worker)
 │   │   └── config.ts          # Config only — no handler
+│   ├── zoo-generation/        # Text-to-CAD generation
+│   │   └── config.ts
 │   └── yourjob/               # Your new job type
 │       ├── types.ts
 │       └── config.ts
@@ -311,6 +313,7 @@ src/lib/jobs/
 │   ├── register.ts            # Handler registration entry point
 │   ├── workflow-transition.ts # Email on state change
 │   ├── design-clone.ts        # Clone a design with all items
+│   ├── zoo-generation.ts      # Zoo Text-to-CAD
 │   └── yourjob.ts             # Your new job handler
 ├── rabbitmq/
 │   └── client.ts              # RabbitMQ connection and publishing
@@ -344,3 +347,5 @@ The worker uses plain `tsx` (not watch mode), so you must restart it to pick up 
 | `maintenance.cache.cleanup`        | `jobs.maintenance.cache`     | Node.js | Periodic cache cleanup        |
 | `workinstruction.part.changed`     | `jobs.workinstruction.part`  | Node.js | Alert on part change          |
 | `cad.conversion.process`           | `jobs.cad.conversion`        | Python  | STEP/IGES to STL/GLB          |
+| `cad.parametric.generate`          | `jobs.cad.parametric`        | Python  | Parametric CAD generation     |
+| `cad.zoo.generate`                 | `jobs.cad.zoo`               | Node.js | Zoo Text-to-CAD               |

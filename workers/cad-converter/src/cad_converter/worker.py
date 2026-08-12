@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (C) 2026 Cascadia PLM contributors
+# Copyright (c) 2026 Cascadia PLM LLC
 
 """RabbitMQ consumer — processes CAD conversion jobs."""
 
@@ -62,10 +62,25 @@ _channel: Optional[pika.channel.Channel] = None
 
 
 def _generate_queue_name() -> str:
-    """Generate a unique queue name for this worker instance."""
-    hostname = socket.gethostname()
-    timestamp = int(time.time())
-    return f"cad-worker-{hostname}-{timestamp}"
+    """Return the shared queue name for all CAD converter instances.
+
+    This is deliberately STABLE (not per-host/per-start). Every converter
+    consumes from the same durable queue, so N converters compete for jobs and
+    each job is delivered exactly once. A per-instance name would make the
+    topic exchange fan the SAME job out to every instance — duplicate
+    conversions, duplicate vault writes, and racing status updates — and would
+    orphan a still-bound durable queue on every restart that then silently
+    accumulates a copy of every job forever.
+
+    Head-of-line blocking across job types is not a concern: the queue is bound
+    only to BINDING_PATTERN, so nothing but CAD conversion jobs ever lands in
+    it. Ordering within the queue is by x-max-priority, and throughput scales
+    by adding converter instances.
+
+    Note: bindings are additive and never auto-removed. If BINDING_PATTERN
+    changes, delete this queue once so the stale binding goes with it.
+    """
+    return "cad-worker"
 
 
 def _signal_handler(signum: int, frame) -> None:
@@ -112,13 +127,15 @@ def _process_message(
         # Fetch full job record from database
         job = get_job(msg.jobId)
         if not job:
+            # Do NOT ack here — the `finally` block below always acks. Acking
+            # twice makes the broker close the channel with 406
+            # PRECONDITION_FAILED (unknown delivery tag), which tears down the
+            # consumer and reconnects on every skipped message.
             logger.error("Job %s not found in database, skipping", msg.jobId)
-            ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
         if job.status == "cancelled":
             logger.info("Job %s is cancelled, skipping", msg.jobId)
-            ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
         # Mark as running

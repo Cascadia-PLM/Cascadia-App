@@ -4,13 +4,13 @@ Standards-based interoperability layer that exposes Cascadia PLM data using the 
 
 ## Overview
 
-| Endpoint                                         | Method | Auth          | Description                       |
-| ------------------------------------------------ | ------ | ------------- | --------------------------------- |
-| `/api/sysml/projects`                            | GET    | Auth required | List designs as SysML projects    |
-| `/api/sysml/projects/:id`                        | GET    | Auth required | Get a single project              |
-| `/api/sysml/projects/:id/commits`                | GET    | Auth required | List commits for a project        |
-| `/api/sysml/projects/:id/branches/:bid/elements` | POST   | Auth required | Create an element on a branch     |
-| `/api/sysml/projects/:id/commits/:cid/elements`  | GET    | Auth required | Get elements at a specific commit |
+| Endpoint                                            | Method | Auth          | Description                       |
+| --------------------------------------------------- | ------ | ------------- | --------------------------------- |
+| `/api/v1/sysml/projects`                            | GET    | Auth required | List designs as SysML projects    |
+| `/api/v1/sysml/projects/:id`                        | GET    | Auth required | Get a single project              |
+| `/api/v1/sysml/projects/:id/commits`                | GET    | Auth required | List commits for a project        |
+| `/api/v1/sysml/projects/:id/branches/:bid/elements` | POST   | Auth required | Create an element on a branch     |
+| `/api/v1/sysml/projects/:id/commits/:cid/elements`  | GET    | Auth required | Get elements at a specific commit |
 
 ## Concept mapping
 
@@ -85,7 +85,7 @@ The SysML module defines both standard SysML relationships and Cascadia-specific
 
 ---
 
-## GET /api/sysml/projects
+## GET /api/v1/sysml/projects
 
 List all designs accessible to the authenticated user, serialized as SysML Projects.
 
@@ -126,7 +126,7 @@ Both SysML-standard (`pageSize`/`pageStart`) and conventional (`limit`/`offset`)
 
 ---
 
-## GET /api/sysml/projects/:id
+## GET /api/v1/sysml/projects/:id
 
 Get a single design as a SysML Project.
 
@@ -163,7 +163,7 @@ Get a single design as a SysML Project.
 
 ---
 
-## GET /api/sysml/projects/:id/commits
+## GET /api/v1/sysml/projects/:id/commits
 
 List commits for a project, optionally filtered by branch.
 
@@ -209,7 +209,7 @@ Each commit includes a `change` array listing item versions that were modified i
 
 ---
 
-## GET /api/sysml/projects/:id/commits/:cid/elements
+## GET /api/v1/sysml/projects/:id/commits/:cid/elements
 
 Get all elements (items) at a specific commit, serialized as SysML Elements with their relationships.
 
@@ -283,7 +283,7 @@ Each relationship is converted using `SysMLSerializer.relationshipToSysML()`:
 
 ---
 
-## POST /api/sysml/projects/:id/branches/:bid/elements
+## POST /api/v1/sysml/projects/:id/branches/:bid/elements
 
 Create a new element on a branch by posting a SysML Element JSON object. The element is converted to a Cascadia item and created on the specified branch.
 

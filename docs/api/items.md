@@ -4,27 +4,27 @@ The Items API provides CRUD operations for all PLM item types (Part, Document, R
 
 ## Endpoints Overview
 
-| Method | Endpoint                    | Description                     |
-| ------ | --------------------------- | ------------------------------- |
-| GET    | `/api/items`                | List items with version context |
-| POST   | `/api/items`                | Create an item                  |
-| GET    | `/api/items/:id`            | Get item by ID                  |
-| PUT    | `/api/items/:id`            | Update an item                  |
-| DELETE | `/api/items/:id`            | Delete an item                  |
-| GET    | `/api/items/:id/at-context` | Get item at a specific version  |
-| GET    | `/api/items/:id/history`    | Get version history             |
-| GET    | `/api/items/search`         | Search items                    |
-| POST   | `/api/items/batch-create`   | Batch create items              |
-| POST   | `/api/items/batch-update`   | Batch update items              |
-| POST   | `/api/items/batch-delete`   | Batch delete items              |
-| GET    | `/api/parts/:id`            | Get part by ID                  |
-| PUT    | `/api/parts/:id`            | Update a part                   |
-| DELETE | `/api/parts/:id`            | Delete a part                   |
+| Method | Endpoint                       | Description                     |
+| ------ | ------------------------------ | ------------------------------- |
+| GET    | `/api/v1/items`                | List items with version context |
+| POST   | `/api/v1/items`                | Create an item                  |
+| GET    | `/api/v1/items/:id`            | Get item by ID                  |
+| PUT    | `/api/v1/items/:id`            | Update an item                  |
+| DELETE | `/api/v1/items/:id`            | Delete an item                  |
+| GET    | `/api/v1/items/:id/at-context` | Get item at a specific version  |
+| GET    | `/api/v1/items/:id/history`    | Get version history             |
+| GET    | `/api/v1/items/search`         | Search items                    |
+| POST   | `/api/v1/items/batch-create`   | Batch create items              |
+| POST   | `/api/v1/items/batch-update`   | Batch update items              |
+| POST   | `/api/v1/items/batch-delete`   | Batch delete items              |
+| GET    | `/api/v1/parts/:id`            | Get part by ID                  |
+| PUT    | `/api/v1/parts/:id`            | Update a part                   |
+| DELETE | `/api/v1/parts/:id`            | Delete a part                   |
 
 ## List Items
 
 ```
-GET /api/items
+GET /api/v1/items
 ```
 
 Lists items with optional version context (branch, commit, or tag). Requires authentication.
@@ -78,22 +78,22 @@ Lists items with optional version context (branch, commit, or tag). Requires aut
 
 ```bash
 # List all parts in a design on the main branch
-curl /api/items?designId=UUID&branch=main&itemType=Part
+curl /api/v1/items?designId=UUID&branch=main&itemType=Part
 
 # List items on an ECO branch
-curl /api/items?designId=UUID&branch=eco/ECO-2024-001
+curl /api/v1/items?designId=UUID&branch=eco/ECO-2024-001
 
 # Search across all items in a design
-curl /api/items?designId=UUID&search=motor&limit=20
+curl /api/v1/items?designId=UUID&search=motor&limit=20
 
 # Without designId, falls back to legacy search
-curl /api/items?itemType=Part&search=motor
+curl /api/v1/items?itemType=Part&search=motor
 ```
 
 ## Create Item
 
 ```
-POST /api/items
+POST /api/v1/items
 ```
 
 Creates a new item. Auth required; permission check based on item type.
@@ -152,7 +152,7 @@ With `branchId` (creation on an ECO branch):
 ### Example
 
 ```bash
-curl -X POST /api/items \
+curl -X POST /api/v1/items \
   -H "Content-Type: application/json" \
   -d '{
     "itemType": "Part",
@@ -170,7 +170,7 @@ curl -X POST /api/items \
 ## Get Item
 
 ```
-GET /api/items/:id
+GET /api/v1/items/:id
 ```
 
 Retrieves a single item by ID with optional version context.
@@ -224,7 +224,7 @@ When version context is provided:
 ## Update Item
 
 ```
-PUT /api/items/:id
+PUT /api/v1/items/:id
 ```
 
 Updates an item. When `branchId` is provided, changes are saved on that branch via the checkout/commit workflow.
@@ -276,7 +276,7 @@ With `branchId`:
 ## Delete Item
 
 ```
-DELETE /api/items/:id
+DELETE /api/v1/items/:id
 ```
 
 Deletes an item. With `branchId`, performs a soft-delete on the branch (item marked as deleted, recoverable until merge).
@@ -302,7 +302,7 @@ Deletes an item. With `branchId`, performs a soft-delete on the branch (item mar
 ## Get Item at Version Context
 
 ```
-GET /api/items/:id/at-context
+GET /api/v1/items/:id/at-context
 ```
 
 Returns the item as it existed at a specific version (commit, tag, or branch HEAD). Useful for comparing versions.
@@ -343,7 +343,7 @@ If the item did not exist at the requested version:
 ## Item Version History
 
 ```
-GET /api/items/:id/history
+GET /api/v1/items/:id/history
 ```
 
 Returns the version history for an item across commits.
@@ -384,7 +384,7 @@ Returns the version history for an item across commits.
 ## Search Items
 
 ```
-GET /api/items/search
+GET /api/v1/items/search
 ```
 
 Search for items with autocomplete and type filtering.
@@ -428,7 +428,7 @@ Search for items with autocomplete and type filtering.
 ## Batch Create
 
 ```
-POST /api/items/batch-create
+POST /api/v1/items/batch-create
 ```
 
 Create multiple items in a single request. Limited to 100 items per batch.
@@ -539,20 +539,20 @@ Returns `201` (all succeeded), `207` (partial success), or `400` (all failed):
 Individual item types have shortcut endpoints:
 
 ```
-GET    /api/parts/:id         # permission: parts.read
-PUT    /api/parts/:id         # permission: parts.update
-DELETE /api/parts/:id         # permission: parts.delete
+GET    /api/v1/parts/:id         # permission: parts.read
+PUT    /api/v1/parts/:id         # permission: parts.update
+DELETE /api/v1/parts/:id         # permission: parts.delete
 
-GET    /api/documents/:id     # permission: documents.read
-PUT    /api/documents/:id     # permission: documents.update
-DELETE /api/documents/:id     # permission: documents.delete
+GET    /api/v1/documents/:id     # permission: documents.read
+PUT    /api/v1/documents/:id     # permission: documents.update
+DELETE /api/v1/documents/:id     # permission: documents.delete
 
-GET    /api/change-orders/:id # permission: change_orders.read
-PUT    /api/change-orders/:id # permission: change_orders.update
-DELETE /api/change-orders/:id # permission: change_orders.delete
+GET    /api/v1/change-orders/:id # permission: change_orders.read
+PUT    /api/v1/change-orders/:id # permission: change_orders.update
+DELETE /api/v1/change-orders/:id # permission: change_orders.delete
 ```
 
-These follow the same patterns as the generic `/api/items/:id` endpoints but enforce type-specific permissions.
+These follow the same patterns as the generic `/api/v1/items/:id` endpoints but enforce type-specific permissions.
 
 ## Branch-Aware Operations
 

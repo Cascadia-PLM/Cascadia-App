@@ -183,19 +183,19 @@ kubectl apply -f ingress.yaml
 
 ### Kubernetes Options
 
-| Option           | Description                 | Default        |
-| ---------------- | --------------------------- | -------------- |
-| Namespace        | Kubernetes namespace        | `cascadia`     |
-| Ingress Host     | Public hostname             | Required       |
-| Enable TLS       | Configure HTTPS             | `true`         |
-| TLS Secret       | Name of TLS secret          | `cascadia-tls` |
+| Option           | Description                 | Default                             |
+| ---------------- | --------------------------- | ----------------------------------- |
+| Namespace        | Kubernetes namespace        | `cascadia`                          |
+| Ingress Host     | Public hostname             | Required                            |
+| Enable TLS       | Configure HTTPS             | `true`                              |
+| TLS Secret       | Name of TLS secret          | `cascadia-tls`                      |
 | Image Repository | Container image             | `ghcr.io/cascadia-plm/cascadia-app` |
-| Image Tag        | Container version           | `latest`       |
-| Replicas         | Initial pod count           | `2`            |
-| Database URL     | PostgreSQL connection       | Required       |
-| Vault Mode       | Embedded or service         | `embedded`     |
-| Vault Type       | Local PVC or S3             | `local`        |
-| Jobs Mode        | Embedded, service, disabled | `embedded`     |
+| Image Tag        | Container version           | `latest`                            |
+| Replicas         | Initial pod count           | `2`                                 |
+| Database URL     | PostgreSQL connection       | Required                            |
+| Vault Mode       | Embedded or service         | `embedded`                          |
+| Vault Type       | Local PVC or S3             | `local`                             |
+| Jobs Mode        | Embedded, service, disabled | `embedded`                          |
 
 ## Security
 

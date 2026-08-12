@@ -1,2 +1,0 @@
-ALTER TABLE "software" ADD COLUMN "draft_manifest_id" uuid;--> statement-breakpoint
-ALTER TABLE "software" ADD CONSTRAINT "software_draft_manifest_id_software_manifests_id_fk" FOREIGN KEY ("draft_manifest_id") REFERENCES "public"."software_manifests"("id") ON DELETE no action ON UPDATE no action;

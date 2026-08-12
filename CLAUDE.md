@@ -14,14 +14,24 @@ The signature feature is "ECO-as-Branch" - each Engineering Change Order gets it
 
 ## Repository Context
 
-This is the main Cascadia PLM application. Related repositories:
+This is `Cascadia-PLM/Cascadia-App`, the **public AGPL edition** of Cascadia PLM.
+It is dual licensed by Cascadia PLM LLC: this repository is the AGPL v3 half, and
+a proprietary edition adds separately licensed modules on top of the same core.
 
-| Repository                     | Purpose                                                                       |
-| ------------------------------ | ----------------------------------------------------------------------------- |
-| `../DocsSite/`                 | Documentation site                                                            |
-| `../MarketingSite/`            | Marketing website                                                             |
-| `Cascadia-PLM/Demo-Data`       | TDJ-25 robot-arm demo dataset; publishes `cascadia-demo-data`. Fetched by `npm run demo:fetch`. |
-| `Cascadia-PLM/Cascadia-App-archive` | Private. SolidWorks source + STEPs behind the demo dataset.              |
+**This tree is generated.** `packages/core` and `apps/cascadia` are composed and
+published from the upstream repository, so a change lands there first and arrives
+here through the publish pipeline. Contributions are still made by pull request
+against this repository — see [CONTRIBUTING.md](./CONTRIBUTING.md) for how an
+accepted one reaches `main`, and why it is closed rather than merged.
+
+Related repositories:
+
+| Repository                          | Purpose                                                                                         |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `../DocsSite/`                      | Documentation site                                                                              |
+| `../MarketingSite/`                 | Marketing website                                                                               |
+| `Cascadia-PLM/Demo-Data`            | TDJ-25 robot-arm demo dataset; publishes `cascadia-demo-data`. Fetched by `npm run demo:fetch`. |
+| `Cascadia-PLM/Cascadia-App-archive` | Private. SolidWorks source + STEPs behind the demo dataset.                                     |
 
 ## Technology Stack
 
@@ -40,29 +50,49 @@ This is the main Cascadia PLM application. Related repositories:
 
 ## Project Structure
 
+An npm workspace. `packages/core` holds the application; an app under `apps/` is
+a composition root plus a build config, choosing which modules exist. This
+edition composes core alone — separately licensed modules register into the same
+extension points, described under "The extension boundary" below.
+
 ```
-src/
-├── components/       # React components (forms, tables, dialogs)
-│   ├── ui/           # Base UI primitives (Button, Card, DataGrid, etc.)
-│   ├── ai/           # AI chatbot panel
-│   └── work-instructions/ # Work instruction authoring/execution
-├── lib/
-│   ├── auth/         # Authentication & authorization services
-│   ├── db/           # Drizzle schema & database utilities
-│   ├── items/        # Item services (Parts, Documents, etc.)
-│   ├── services/     # Core services (Branch, Checkout, Commit, etc.)
-│   ├── workflows/    # Workflow engine
-│   ├── jobs/         # Background job dispatch, definitions & worker
-│   ├── api/          # API utilities (apiHandler, response builders, schemas)
-│   ├── vault/        # File storage system
-│   ├── sysml/        # SysML v2 serialization
-│   └── ai/           # AI chatbot tools, adapters, session service
-├── routes/           # TanStack Router file-based routes (frontend SPA pages)
-├── server/           # Hono API server
-│   ├── index.ts      # Entry: mounts every route module under /api/v1/*
-│   ├── adapter.ts    # tagged() factory for consistent OpenAPI tags
-│   └── routes/       # API route modules — one file per resource (parts, items, …)
-└── __tests__/        # Test utilities and fixtures
+packages/
+└── core/                  The application
+    ├── src/
+    │   ├── components/    React components (forms, tables, dialogs)
+    │   │   ├── ui/        Base UI primitives (Button, Card, DataGrid, …)
+    │   │   ├── ai/        AI chatbot panel
+    │   │   └── work-instructions/  Authoring and execution
+    │   ├── lib/
+    │   │   ├── auth/      Authentication & authorization services
+    │   │   ├── db/        Drizzle schema & database utilities
+    │   │   ├── items/     Item services (Parts, Documents, …)
+    │   │   ├── services/  Core services (Branch, Checkout, Commit, …)
+    │   │   ├── workflows/ Workflow engine + approval registry
+    │   │   ├── jobs/      Background job dispatch, definitions & worker
+    │   │   ├── api/       apiHandler, response builders, route registry
+    │   │   ├── ui/        Slot registry — named UI extension points
+    │   │   ├── query/     TanStack Query keys, options, invalidation graph
+    │   │   ├── vault/     File storage system
+    │   │   ├── sysml/     SysML v2 serialization
+    │   │   ├── ai/        AI chatbot tools, adapters, session service
+    │   │   ├── mcp/       MCP servers, built on the AI tool registry
+    │   │   └── packages/  Package entitlement registry
+    │   ├── routes/        TanStack Router file-based routes
+    │   ├── server/        Hono API server
+    │   │   ├── index.ts   Entry: mounts every route module under /api/v1/*
+    │   │   ├── adapter.ts tagged() factory for consistent OpenAPI tags
+    │   │   └── routes/    API route modules — one file per resource
+    │   └── __tests__/     Test utilities and fixtures
+    ├── test-data/         Component-catalog seed JSON
+    └── vite.config.base.ts  Shared Vite config, parameterized by edition
+
+apps/
+└── cascadia/              Composition root
+    ├── src/modules.{server,client,schema}.ts   Where modules would register
+    ├── vite.config.ts     Route composition for this edition
+    └── src/{main.tsx,router.tsx,server/,jobs-worker.ts}   Thin entry points
+
 workers/
 ├── node/             # Node.js job worker Dockerfile
 └── cad-converter/    # Python worker: STEP/IGES → STL/GLB (pythonocc)
@@ -84,9 +114,9 @@ npm run build         # Build for production
 npm run serve         # Preview production build
 
 # Database
-npm run db:generate   # Generate migrations from schema changes
-npm run db:migrate    # Run pending migrations
-npm run db:push       # Push schema directly to database (dev only)
+npm run db:push       # Push schema directly (the pre-1.0 path everywhere: dev, CI, compose)
+npm run db:generate   # Mint migration SQL (unused pre-1.0 — no committed migrations)
+npm run db:migrate    # Run pending migrations (none exist pre-1.0)
 npm run db:studio     # Open Drizzle Studio GUI
 npm run db:seed       # Minimal seed (admin, roles, program, standard library)
 npm run db:seed:catalog  # Generic component catalog (fasteners, raw stock)
@@ -109,7 +139,7 @@ npm run test:e2e:ui   # Run E2E tests with UI
 npm run test:e2e:full # Reset database + run E2E tests (clean slate)
 
 # Run a single test file
-npx vitest run src/lib/services/BranchService.test.ts
+npx vitest run packages/core/src/lib/services/BranchService.test.ts
 
 # Run tests matching a pattern
 npx vitest run -t "should create branch"
@@ -120,6 +150,8 @@ npm run format        # Prettier
 npm run check         # Format + lint fix
 npm run openapi:snapshot  # Regenerate docs/api/openapi.v1.json after route changes
 npm run openapi:check     # Verify the committed OpenAPI snapshot matches (CI gate)
+npm run license:check     # Every file carries its SPDX header (CI gate)
+npm run boundary:check    # Resolves every import and classifies the target (CI gate)
 
 # Background Workers
 npm run workers:dev   # Start RabbitMQ + all workers (Node.js + Python)
@@ -147,7 +179,14 @@ Keep it at zero. **Do not raise `--max-warnings` in `package.json` to accommodat
 
 `npm run typecheck` is a **plain zero gate** against `tsconfig.json` — the same config your editor and ESLint see, with `noUncheckedIndexedAccess` on. Any error fails CI, exactly like `eslint --max-warnings 0`. Fix the error; there is no ceiling to raise.
 
-CI runs it as `npm run typecheck:strict` in the **Build** job (not standalone: `src/routeTree.gen.ts` is gitignored and generated during `vite build`, and it carries the module augmentation typing every `createFileRoute()` site — so a fresh-checkout tsc job would report a number unrelated to the code).
+CI runs it as `npm run typecheck:strict` in the **Build** job (not standalone: `packages/core/src/routeTree.gen.ts` is gitignored and generated during `vite build`, and it carries the module augmentation typing every `createFileRoute()` site — so a fresh-checkout tsc job would report a number unrelated to the code).
+
+**The Build job declares no `needs:`, and must not acquire one.** Gating this
+gate behind a cheaper one makes it hostage to the weakest check in the workflow:
+a prettier failure skips Build, and typecheck with it. That happened on 15 of 18
+runs over one week, and two pull requests merged with no type signal at all —
+the red X had already been written off as formatting. Do not trade a whole
+signal for a couple of runner-minutes.
 
 `noUncheckedIndexedAccess` **must** stay on in `tsconfig.json`. `@tanstack/eslint-config` sets `project: true`, which resolves to the nearest file named `tsconfig.json`; turning it off there makes every legitimate `if (arr[0])` guard a `no-unnecessary-condition` warning — measured at **266 lint problems**, which `--max-warnings 0` rejects.
 
@@ -160,6 +199,65 @@ CI runs it as `npm run typecheck:strict` in the **Build** job (not standalone: `
 
 A TypeScript version bump can legitimately surface new errors — review such a change, never rubber-stamp it.
 
+## The extension boundary
+
+**Core never reaches into a module.** Extension runs one way: core declares the
+extension points, a module registers into them, and core stays unaware of what
+registered. That is what lets this edition be built and shipped on its own, and
+it is equally the mechanism any module — licensed or your own — plugs into.
+
+A module is a package that registers; it is never imported by core. The
+registries core provides:
+
+| Extend                   | Registry                                                                                 |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| Approval voting (server) | `ApprovalRegistry` — `beforeVote` / `afterVote` / `buildExtras`                          |
+| Approval dialog (client) | `useApprovalFormSlots` — renders, gates submit, adds request fields                      |
+| Any other UI             | `registerSlot()` — core declares the named slots and their props                         |
+| API routes               | `registerRoutes(mount, path, app)` — mount points: `api-root`, `admin`, `parts`, `files` |
+| AI tools                 | `registerTool()`                                                                         |
+| Jobs                     | `JobTypeRegistry.register()` / `.registerHandler()`                                      |
+| Cache resources          | `registerResourceDependents()` + declaration merging on `ModuleResources`                |
+| Package catalog          | `registerPackage()`                                                                      |
+| Schema                   | `apps/*/src/modules.schema.ts` — a re-export, because drizzle-kit reads it statically    |
+
+**Registration happens in a composition root**, never in core:
+`apps/*/src/modules.{server,client,schema}.ts`. Order is load-bearing — route
+contributions mount while routers are being built, so `registerModules()` must
+run _before_ the app is imported. Every server entry uses a dynamic import for
+exactly that reason; a static `import app from …` is evaluated first and would
+silently yield an app missing the module's endpoints.
+
+**Verification:**
+
+```bash
+npm run boundary:check    # resolves every import; catches dynamic import() and id strings
+```
+
+It resolves each import specifier to a real path rather than matching text. That
+distinction is not academic: two grep-based checks once reported a package fully
+seamed while a dynamic `import()` and a bare package-id string were still live.
+
+## Optional Packages
+
+Some functionality is **separately licensed** — an instance only has it when the
+package id appears in the `CASCADIA_PACKAGES` environment variable
+(comma-separated, or `*`). Read once at process start; there is deliberately no
+in-app toggle.
+
+- Registry: `packages/core/src/lib/packages/` — `PackageRegistry.isEnabled(id)`,
+  `PackageRegistry.list()`, and `requirePackage(id)` which throws
+  `PackageNotLicensedError` (403).
+- Client: `usePackageEnabled(id)` from `@/lib/hooks/usePackages` drives
+  presentation only. **Always re-check server-side** with `requirePackage()` in
+  the route or service — the client answer is a hint, not a gate.
+- Admin: `/admin` lists packages read-only via `GET /api/v1/packages`.
+
+**Current packages: none in this edition.** The registry ships here because the
+mechanism is core — a build that composes a licensed module needs it — but the
+modules themselves are separately licensed and are not part of the AGPL tree.
+Full guide: [`docs/development/adding-packages.md`](./docs/development/adding-packages.md).
+
 ## Documentation Reference
 
 Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
@@ -170,7 +268,7 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 **Always check docs before:**
 
-- Modifying service layer code (`src/lib/services/`, `src/lib/items/services/`)
+- Modifying service layer code (`packages/core/src/lib/services/`, `packages/core/src/lib/items/services/`)
 - Working with versioning/branching logic
 - Changing ECO/workflow behavior
 - Adding or modifying item types
@@ -185,22 +283,22 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 ### Documentation Map
 
-| Working In                            | Read First                                     |
-| ------------------------------------- | ---------------------------------------------- |
-| `src/lib/services/`                   | `./docs/development/service-patterns.md`       |
-| `src/lib/items/services/`             | `./docs/development/service-patterns.md`       |
-| `src/server/routes/`                  | `./docs/development/adding-api-routes.md`      |
-| Versioning, branches, commits         | `./docs/features/versioning.md`                |
-| `src/lib/db/schema/`                  | `./docs/development/database-patterns.md`      |
-| Database queries, Drizzle ORM         | `./docs/development/database-patterns.md`      |
-| Lifecycles, workflows, change actions | `./docs/features/workflow-engine.md`           |
-| Item type changes                     | `./docs/development/adding-item-types.md`      |
-| ECO/Change Order logic                | `./docs/features/change-management.md`         |
-| File vault                            | `./docs/features/file-vault.md`                |
-| Auth/permissions                      | `./docs/admin/access-control.md`               |
-| UI components / forms                 | `./docs/development/ui-components.md`          |
-| Testing patterns                      | `./docs/development/testing.md`                |
-| Background jobs                       | `./docs/development/adding-background-jobs.md` |
+| Working In                              | Read First                                     |
+| --------------------------------------- | ---------------------------------------------- |
+| `packages/core/src/lib/services/`       | `./docs/development/service-patterns.md`       |
+| `packages/core/src/lib/items/services/` | `./docs/development/service-patterns.md`       |
+| `packages/core/src/server/routes/`      | `./docs/development/adding-api-routes.md`      |
+| Versioning, branches, commits           | `./docs/features/versioning.md`                |
+| `packages/core/src/lib/db/schema/`      | `./docs/development/database-patterns.md`      |
+| Database queries, Drizzle ORM           | `./docs/development/database-patterns.md`      |
+| Lifecycles, workflows, change actions   | `./docs/features/workflow-engine.md`           |
+| Item type changes                       | `./docs/development/adding-item-types.md`      |
+| ECO/Change Order logic                  | `./docs/features/change-management.md`         |
+| File vault                              | `./docs/features/file-vault.md`                |
+| Auth/permissions                        | `./docs/admin/access-control.md`               |
+| UI components / forms                   | `./docs/development/ui-components.md`          |
+| Testing patterns                        | `./docs/development/testing.md`                |
+| Background jobs                         | `./docs/development/adding-background-jobs.md` |
 
 ## Architecture Quick Reference
 
@@ -208,28 +306,28 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 ### Service Quick Reference
 
-| I need to...                     | Use                                                    |
-| -------------------------------- | ------------------------------------------------------ |
-| CRUD any item                    | `ItemService`                                          |
-| Manage ECO affected items        | `ChangeOrderService`                                   |
-| Release an approved ECO          | `ChangeOrderMergeService.merge()`                      |
-| Checkout item for editing        | `CheckoutService.checkout()`                           |
-| Get item at a version/commit/tag | `VersionResolver.getItemAtContext()`                   |
-| Create/manage branches           | `BranchService`                                        |
-| Create commits                   | `CommitService`                                        |
-| Upload/download files            | `FileService`                                          |
-| Manage programs                  | `ProgramService`                                       |
-| Manage designs                   | `DesignService`                                        |
-| Manage lifecycle transitions     | `LifecycleService`                                     |
-| Detect merge conflicts           | `ConflictDetectionService`                             |
-| Assess ECO impact on items       | `ImpactAssessmentService`                              |
-| AI chatbot conversations         | `SessionService` from `@/lib/ai`                       |
-| Submit background jobs           | `JobService.submit()`                                  |
-| Register job types               | `JobTypeRegistry.register()`                           |
-| Wrap an API route handler        | `apiHandler()` from `@/lib/api/handler`                |
-| Parse & validate query params    | `parseQuery(request, zodSchema)`                       |
-| Check design access              | `requireDesignAccess()` from `@/lib/auth/access`       |
-| Check branch access              | `requireBranchAccess()` from `@/lib/auth/access`       |
+| I need to...                     | Use                                              |
+| -------------------------------- | ------------------------------------------------ |
+| CRUD any item                    | `ItemService`                                    |
+| Manage ECO affected items        | `ChangeOrderService`                             |
+| Release an approved ECO          | `ChangeOrderMergeService.merge()`                |
+| Checkout item for editing        | `CheckoutService.checkout()`                     |
+| Get item at a version/commit/tag | `VersionResolver.getItemAtContext()`             |
+| Create/manage branches           | `BranchService`                                  |
+| Create commits                   | `CommitService`                                  |
+| Upload/download files            | `FileService`                                    |
+| Manage programs                  | `ProgramService`                                 |
+| Manage designs                   | `DesignService`                                  |
+| Manage lifecycle transitions     | `LifecycleService`                               |
+| Detect merge conflicts           | `ConflictDetectionService`                       |
+| Assess ECO impact on items       | `ImpactAssessmentService`                        |
+| AI chatbot conversations         | `SessionService` from `@/lib/ai`                 |
+| Submit background jobs           | `JobService.submit()`                            |
+| Register job types               | `JobTypeRegistry.register()`                     |
+| Wrap an API route handler        | `apiHandler()` from `@/lib/api/handler`          |
+| Parse & validate query params    | `parseQuery(request, zodSchema)`                 |
+| Check design access              | `requireDesignAccess()` from `@/lib/auth/access` |
+| Check branch access              | `requireBranchAccess()` from `@/lib/auth/access` |
 
 ### Core Patterns
 
@@ -239,7 +337,11 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 **Revision assignment**: Revision letters (A, B, C...) are assigned only when merging ECO branch to main, not during work.
 
-**Item types**: Part, Document, ChangeOrder, Requirement, Task, WorkInstruction, Issue, Tool, Software. All extend `BaseItem` and register via `ItemTypeRegistry`.
+**Item types** (13): Part, Document, ChangeOrder, Requirement, Task, TestPlan, TestCase, WorkInstruction, Issue, Tool, Software, WorkOrder, PhysicalPart. All extend `BaseItem` and register via `ItemTypeRegistry` (definitions in `packages/core/src/lib/items/item-type-definitions.ts`, DB handlers in `packages/core/src/lib/items/type-handlers/`).
+
+**Physical traceability**: PhysicalPart (serialized units and lots, non-versioned, Tool pattern) + WorkOrder consumption/production recorded as `Consumes`/`Produces`/`Evidences` edges in `item_relationships` (WO/PhysicalPart always the edge source). Genealogy is derived, never stored; the qualification rollup (`GET /api/v1/work-orders/:id/qualification`) reports requirement satisfaction and uncertified-material gaps. Parts carry `trackingMode` (`none | lot | serial`); the AML lives in `manufacturer_parts`/`part_manufacturer_parts` bound to the part masterId. See `docs/proposals/physical-parts-and-traceability.md`.
+
+**Work instruction traveler**: WorkInstruction items are pure templates — never executed directly. Work orders instantiate them as traveler lines (`work_order_instructions`, a frozen content snapshot per line with a `requiredCount` of runs); executions (`instruction_executions`) record runs of lines and sign-offs ride executions. Line status is derived from countable runs, WO completion is gated on the traveler (skip-with-reason is the audited escape hatch), and snapshots freeze permanently once a line has executions. See `docs/proposals/work-order-traveler.md`.
 
 **Software items**: firmware/software configuration items with a content-addressed source store (`software_blobs` + immutable `software_manifests`). The `software.manifestId` pointer rides the item version, so branch isolation and time travel work with no special cases. `SoftwareSourceService` handles imports (files/zip), tree/file/diff reads, and checkout-gated draft editing (`draftManifestId` accumulates edits; an explicit commit promotes the draft and records per-file `source`-category field changes). Software manifest conflicts are sharpened to per-file granularity in `ConflictDetectionService`. See `docs/proposals/software-management.md`.
 
@@ -254,13 +356,45 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 3. Make changes -> Isolated to branch
 4. Approve & Release -> Merge to main, assign revision letters
 
-**ECO state changes**: All ECO state transitions go through `POST /api/change-orders/:id/workflow/transition`. When transitioning to a final state (e.g., "Approved"), the endpoint auto-triggers `close()` which merges branches and assigns revisions. There are no separate `/submit`, `/approve`, `/reject`, or `/actions` routes.
+**ECO state changes**: All ECO state transitions go through `POST /api/v1/change-orders/:id/workflow/transition`. When transitioning to a final state (e.g., "Approved"), the endpoint auto-triggers `close()` which merges branches and assigns revisions. There are no separate `/submit`, `/approve`, `/reject`, or `/actions` routes.
 
 **Version Resolution**: Items are resolved per-branch using the `VersionResolver` service, which dynamically computes the current item per masterId per context using `branchItems` lookups and commit ancestry walks. Branch isolation ensures ECO changes don't affect main until merged.
 
+### Data Fetching Pattern
+
+The frontend has **one** cache: the TanStack Query client in `packages/core/src/lib/query/`,
+shared with the router through context. Route loaders prime it with
+`ensureQueryData`, components read the same query factory with `useQuery`, and
+mutations refresh it with `useInvalidateResources()`.
+
+```typescript
+// Loader primes the cache — it does not return data.
+loaderDeps: ({ search }) => search,
+loader: ({ context: { queryClient }, deps }) =>
+  queryClient.ensureQueryData(designGridQuery(gridParamsFromSearch(deps))),
+
+// Component reads the same factory — resolves from cache, no second fetch.
+const { data } = useQuery(programListQuery())
+
+// Mutation invalidates by resource; dependents follow automatically.
+const invalidate = useInvalidateResources()
+await apiFetch('/api/v1/designs', { method: 'POST', body })
+await invalidate('designs')
+```
+
+Keys are built with `qk` (never inline) so prefix invalidation reaches them.
+`RESOURCE_DEPENDENTS` in `packages/core/src/lib/query/invalidation.ts` encodes which
+resources go stale together — name the resource you wrote, not its dependents.
+
+**Do not** return data from a loader and read it with `useLoaderData()`, call
+bare `router.invalidate()`, fetch in `useEffect` + `useState`, patch rows in
+local state after a delete, or bump a `refreshTrigger` counter. Those are the
+five idioms this layer replaced. Full guide:
+[`docs/development/data-fetching.md`](./docs/development/data-fetching.md).
+
 ### API Route Pattern
 
-API routes live in `src/server/routes/` as Hono modules. Every module mounts under `/api/v1/` and uses the `tagged()` factory so all its handlers carry a consistent OpenAPI tag:
+API routes live in `packages/core/src/server/routes/` as Hono modules. Every module mounts under `/api/v1/` and uses the `tagged()` factory so all its handlers carry a consistent OpenAPI tag:
 
 ```typescript
 import { Hono } from 'hono'
@@ -281,7 +415,9 @@ app.get(
         openapi: {
           summary: 'Get a part by ID',
           request: { params: z.object({ id: z.string().uuid() }) },
-          responses: { 200: { schema: z.object({ part: partResponseSchema }) } },
+          responses: {
+            200: { schema: z.object({ part: partResponseSchema }) },
+          },
         },
       },
       async ({ params, request, user }) => {
@@ -295,7 +431,7 @@ app.get(
 export default app
 ```
 
-Mount new route modules in `src/server/index.ts` via `app.route('/api/v1/example', example)`.
+Mount new route modules in `packages/core/src/server/index.ts` via `app.route('/api/v1/example', example)`.
 
 For responses needing custom status codes or headers (201 Created, Set-Cookie), return a raw `Response` from within the handler. Use `parseQuery(request, zodSchema)` for validated query parameters. Use `requireDesignAccess`/`requireBranchAccess` from `@/lib/auth/access` for design/branch access checks.
 
@@ -305,22 +441,22 @@ The OpenAPI document is regenerated from these annotations at request time (`/op
 
 ### Adding a Field to an Existing Item Type
 
-1. Add column to schema in `src/lib/db/schema/items.ts`
+1. Add column to schema in `packages/core/src/lib/db/schema/items.ts`
 2. Run `npm run db:generate` to create migration
 3. Run `npm run db:push` to apply changes
-4. Update Zod schema in `src/lib/items/types/`
+4. Update Zod schema in `packages/core/src/lib/items/types/`
 5. Update form component to include new field
 6. Update ItemService type-specific methods if needed
 
 ### Adding an API Route
 
-1. Add handlers to an existing domain file in `src/server/routes/` or create a new one
+1. Add handlers to an existing domain file in `packages/core/src/server/routes/` or create a new one
 2. If new file, declare the tag at the top: `const adapt = tagged('YourResource')` (replaces plain `adapt` import)
 3. Use `adapt(apiHandler(options, fn))` to define each route handler
 4. Declare auth in options: `{ permission: ['resource', 'action'] }`, `{}` (auth-only), or `{ public: true }`
 5. Call service layer methods; throw typed errors (`NotFoundError`, `ValidationError`) on failure
 6. Return a plain object — it auto-wraps as `{ data: { ... } }` with JSON Content-Type
-7. If new file, mount it in `src/server/index.ts` via `app.route('/api/v1/newroute', newroute)`
+7. If new file, mount it in `packages/core/src/server/index.ts` via `app.route('/api/v1/newroute', newroute)`
 8. Optional but encouraged: add `openapi: { summary, request, responses }` to the handler options to enrich the spec
 9. Run `npm run openapi:snapshot` and commit the updated `docs/api/openapi.v1.json`
 
@@ -328,7 +464,7 @@ The OpenAPI document is regenerated from these annotations at request time (`/op
 
 Background jobs use RabbitMQ for async processing. Pattern mirrors ItemTypeRegistry.
 
-**1. Define payload/result schemas** in `src/lib/jobs/definitions/yourjob/types.ts`:
+**1. Define payload/result schemas** in `packages/core/src/lib/jobs/definitions/yourjob/types.ts`:
 
 ```typescript
 import { z } from 'zod'
@@ -346,7 +482,7 @@ export const myJobResultSchema = z.object({
 export type MyJobResult = z.infer<typeof myJobResultSchema>
 ```
 
-**2. Create job config** in `src/lib/jobs/definitions/yourjob/config.ts`:
+**2. Create job config** in `packages/core/src/lib/jobs/definitions/yourjob/config.ts`:
 
 ```typescript
 import type { JobTypeConfig } from '../../types'
@@ -365,7 +501,7 @@ export const myJobConfig: JobTypeConfig<MyJobPayload, MyJobResult> = {
 }
 ```
 
-**3. Create job handler** in `src/lib/jobs/node-handlers/yourjob.ts` (for Node.js workers):
+**3. Create job handler** in `packages/core/src/lib/jobs/node-handlers/yourjob.ts` (for Node.js workers):
 
 ```typescript
 import type { JobHandler, JobContext } from '../types'
@@ -394,7 +530,7 @@ export const myJobHandler: JobHandler<MyJobPayload, MyJobResult> = {
 }
 ```
 
-**4. Register the definition** in `src/lib/jobs/definitions/register.ts` and **the handler** in `src/lib/jobs/node-handlers/register.ts`:
+**4. Register the definition** in `packages/core/src/lib/jobs/definitions/register.ts` and **the handler** in `packages/core/src/lib/jobs/node-handlers/register.ts`:
 
 ```typescript
 // definitions/register.ts — add config (used by main app for dispatch)
@@ -434,7 +570,7 @@ const job = await JobService.submit(
 - Strict mode enabled, avoid `any` types
 - Use Zod schemas for validation and type inference
 - Prefer interfaces for object types, type for unions
-- Path alias: `@/*` maps to `src/*`
+- Path alias: `@/*` maps to `packages/core/src/*`, then this edition's module package
 
 ### Database Queries
 
@@ -445,7 +581,7 @@ const job = await JobService.submit(
 
 ### UI Components
 
-- Base components in `src/components/ui/` (Button, Input, Card, Badge, Dialog, Table, DataGrid, etc.)
+- Base components in `packages/core/src/components/ui/` (Button, Input, Card, Badge, Dialog, Table, DataGrid, etc.)
 - Use `cn()` utility from `@/lib/utils` for class merging
 - Use Radix UI primitives for accessible components
 - Forms use TanStack Form (`@tanstack/react-form`) + Zod validation
@@ -453,14 +589,14 @@ const job = await JobService.submit(
 
 ### Error Handling
 
-- Service layer throws typed errors from `src/lib/errors/` (`NotFoundError`, `ValidationError`, `PermissionDeniedError`, etc.)
+- Service layer throws typed errors from `packages/core/src/lib/errors/` (`NotFoundError`, `ValidationError`, `PermissionDeniedError`, etc.)
 - `apiHandler()` catches all errors automatically via `handleApiError` — routes just throw
 - Validation errors from Zod are surfaced to forms
 
 ### Testing Strategy
 
-- `src/__tests__/` - Test utilities and fixtures (import via `@test/` alias)
-- `src/**/*.test.ts` - Unit/integration tests (co-located)
+- `packages/core/src/__tests__/` - Test utilities and fixtures (import via `@test/` alias)
+- `packages/*/src/**/*.test.ts` - Unit/integration tests (co-located)
 - `tests/e2e/` - Playwright E2E tests
 - **Unit tests**: Vitest with `@testing-library/react` for components
 - **Service tests**: Mock database transactions with rollback
@@ -519,6 +655,28 @@ SESSION_SECRET=your-secret-key    # Session encryption
 - PostgreSQL installed at: `C:\Program Files\PostgreSQL\18\`
 - Create database manually: `createdb -U postgres cascadia`
 - Path separators: Use forward slashes in imports, Node.js handles conversion
+
+### Line endings
+
+`.gitattributes` sets `* text=auto eol=lf`, so the working tree is LF on every
+platform regardless of `core.autocrlf`. CI runs on Linux; this is what keeps a
+Windows checkout byte-identical to it.
+
+**Do not** rely on `core.autocrlf` alone. Before this rule existed, a Windows
+checkout wrote CRLF and `npm run format:check` flagged **1167 files** — the
+whole repo — because Prettier's `endOfLine` default is `lf`. Genuine drift was
+invisible in that noise.
+
+If a clone predates the rule, its files are still CRLF on disk and the check is
+useless again. Refresh once:
+
+```bash
+git rm --cached -r . && git reset --hard
+```
+
+Verify with `git ls-files --eol` — every tracked file should report `w/lf`. A
+file reporting `w/-text` is being treated as binary (usually a stray NUL byte
+in the source) and is silently exempt from all of this.
 
 ## Common Pitfalls to Avoid
 

@@ -26,22 +26,32 @@ This documentation covers the Cascadia PLM application architecture, features, A
 
 ## Features
 
-| Document                                                 | Description                                                                                              |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| [Item Types](./features/item-types.md)                   | All 8 core item types: Part, Document, Change Order, Requirement, Task, Work Instruction, Issue, Project |
-| [Change Management](./features/change-management.md)     | ECO workflow, change actions, impact analysis, conflict detection                                        |
-| [BOM Management](./features/bom-management.md)           | Bill of Materials hierarchies, where-used, cross-design references                                       |
-| [File Vault](./features/file-vault.md)                   | Document control, check-in/out, vault storage, lock hierarchy                                            |
-| [Workflow Engine](./features/workflow-engine.md)         | Lifecycle management, workflow definitions, approval voting                                              |
-| [Versioning](./features/versioning.md)                   | Git-style versioning, branches, commits, tags, revision schemes                                          |
-| [Programs & Designs](./features/programs-and-designs.md) | Organizational hierarchy, program membership, design cloning                                             |
-| [Search](./features/search.md)                           | Enterprise search, type-specific search, filtering                                                       |
-| [Reporting](./features/reporting.md)                     | Report engine, CSV export, saved configurations                                                          |
-| [Visualization](./features/visualization.md)             | BOM trees, relationship graphs, 3D CAD viewer, history graphs                                            |
-| [Import/Export](./features/import-export.md)             | Excel/CSV import, BOM import, column auto-mapping                                                        |
-| [Work Instructions](./features/work-instructions.md)     | Manufacturing instructions, execution tracking, PLM integration                                          |
-| [AI Assistant](./features/ai-assistant.md)               | LLM chatbot with PLM tools, multi-provider support                                                       |
-| [CAD Services](./features/cad-services.md)               | CAD conversion (STEP/IGES to STL/GLB)                                                                    |
+| Document                                                 | Description                                                                                                                                                  |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [Item Types](./features/item-types.md)                   | All 13 item types: Part, Document, Change Order, Requirement, Task, Work Instruction, Issue, Test Plan, Test Case, Software, Tool, Physical Part, Work Order |
+| [Change Management](./features/change-management.md)     | ECO workflow, change actions, impact analysis, conflict detection                                                                                            |
+| [BOM Management](./features/bom-management.md)           | Bill of Materials hierarchies, where-used, cross-design references                                                                                           |
+| [File Vault](./features/file-vault.md)                   | Document control, check-in/out, vault storage, lock hierarchy                                                                                                |
+| [Workflow Engine](./features/workflow-engine.md)         | Lifecycle management, workflow definitions, approval voting                                                                                                  |
+| [Versioning](./features/versioning.md)                   | Git-style versioning, branches, commits, tags, revision schemes                                                                                              |
+| [Programs & Designs](./features/programs-and-designs.md) | Organizational hierarchy, program membership, design cloning                                                                                                 |
+| [Search](./features/search.md)                           | Enterprise search, type-specific search, filtering                                                                                                           |
+| [Reporting](./features/reporting.md)                     | Report engine, CSV export, saved configurations                                                                                                              |
+| [Visualization](./features/visualization.md)             | BOM trees, relationship graphs, 3D CAD viewer, history graphs                                                                                                |
+| [Import/Export](./features/import-export.md)             | Excel/CSV import, BOM import, column auto-mapping                                                                                                            |
+| [Work Instructions](./features/work-instructions.md)     | Manufacturing instructions, execution tracking, PLM integration                                                                                              |
+| [AI Assistant](./features/ai-assistant.md)               | LLM chatbot with PLM tools, multi-provider support                                                                                                           |
+| [MCP Servers](./features/mcp.md)                         | Model Context Protocol servers: PLM tools for external agents, dev/admin tools for self-hosters                                                              |
+| [Design Engine](./features/design-engine.md)             | AI-assisted collaborative design: requirements, BOM, CAD, assembly                                                                                           |
+| [CAD Services](./features/cad-services.md)               | CAD conversion (STEP/IGES to STL/GLB) and generation (Zoo API, KCL)                                                                                          |
+
+## Optional Packages
+
+Separately-licensed functionality, enabled per instance via `CASCADIA_PACKAGES`.
+
+| Document                                             | Description                                                                |
+| ---------------------------------------------------- | -------------------------------------------------------------------------- |
+| [Advanced Auditing](./features/advanced-auditing.md) | CAC/PIV digital signatures on workflow approvals, hash-chained audit trail |
 
 ## Administration
 
@@ -54,49 +64,95 @@ This documentation covers the Cascadia PLM application architecture, features, A
 
 ## API Reference
 
-| Document                                | Description                                                      |
-| --------------------------------------- | ---------------------------------------------------------------- |
-| [Overview](./api/overview.md)           | API conventions, authentication, error handling, response format |
-| [Items](./api/items.md)                 | Items CRUD, batch operations, version-context retrieval          |
-| [Relationships](./api/relationships.md) | BOM/relationship CRUD, batch create, where-used                  |
-| [Files](./api/files.md)                 | File upload/download, check-in/out, lock hierarchy               |
-| [Change Orders](./api/change-orders.md) | ECO lifecycle, workflow transitions, impact assessment           |
-| [Workflows](./api/workflows.md)         | Workflow definitions, transitions, approval voting               |
-| [Search](./api/search.md)               | Enterprise search and type-specific search endpoints             |
-| [Import](./api/import.md)               | Bulk import API (parts, documents, issues, BOM)                  |
-| [SysML v2](./api/sysml.md)              | Standards-based SysML v2 interoperability API                    |
-| [AI Chat](./api/ai-chat.md)             | AI assistant chat sessions and tool execution                    |
+All routes are mounted under `/api/v1/`.
+
+| Document                                 | Description                                                      |
+| ---------------------------------------- | ---------------------------------------------------------------- |
+| [Contract & Versioning](./api/README.md) | Where the OpenAPI spec lives, the v1 freeze, the CI gate         |
+| [Overview](./api/overview.md)            | API conventions, authentication, error handling, response format |
+| [Items](./api/items.md)                  | Items CRUD, batch operations, version-context retrieval          |
+| [Relationships](./api/relationships.md)  | BOM/relationship CRUD, batch create, where-used                  |
+| [Files](./api/files.md)                  | File upload/download, check-in/out, lock hierarchy               |
+| [Change Orders](./api/change-orders.md)  | ECO lifecycle, workflow transitions, impact assessment           |
+| [Workflows](./api/workflows.md)          | Workflow definitions, transitions, approval voting               |
+| [Search](./api/search.md)                | Enterprise search and type-specific search endpoints             |
+| [Import](./api/import.md)                | Bulk import API (parts, documents, issues, BOM)                  |
+| [SysML v2](./api/sysml.md)               | Standards-based SysML v2 interoperability API                    |
+| [Design Engine](./api/design-engine.md)  | Design engine session management and SSE streaming               |
+| [AI Chat](./api/ai-chat.md)              | AI assistant chat sessions and tool execution                    |
 
 ## Deployment
 
-| Document                                         | Description                                           |
-| ------------------------------------------------ | ----------------------------------------------------- |
-| [Docker](./deployment/docker.md)                 | Docker images, multi-stage builds, Compose files      |
-| [Single Server](./deployment/single-server.md)   | All-in-one deployment for development and small teams |
-| [Distributed](./deployment/distributed.md)       | Multi-server deployment for HA and 50+ users          |
-| [Kubernetes](./deployment/kubernetes.md)         | K8s manifests, HPA, ingress, secrets                  |
-| [Cloud Database](./deployment/cloud-database.md) | Managed database (RDS, Cloud SQL, Azure)              |
-| [CAD Converter](./deployment/cad-converter.md)   | Python microservice deployment                        |
+Prose guides for each topology. The matching **runnable** configs (compose files,
+Kubernetes manifests) live under [Orchestration](#orchestration) below.
+
+| Document                                                       | Description                                           |
+| -------------------------------------------------------------- | ----------------------------------------------------- |
+| [Docker](./deployment/docker.md)                               | Docker images, multi-stage builds, Compose files      |
+| [Single Server](./deployment/single-server.md)                 | All-in-one deployment for development and small teams |
+| [Distributed](./deployment/distributed.md)                     | Multi-server deployment for HA and 50+ users          |
+| [Kubernetes](./deployment/kubernetes.md)                       | K8s manifests, HPA, ingress, secrets                  |
+| [Cloud Database](./deployment/cloud-database.md)               | Managed database (RDS, Cloud SQL, Azure)              |
+| [CAD Converter](./deployment/cad-converter.md)                 | Python microservice deployment                        |
+| [Quickstart Smoke Test](./deployment/quickstart-smoke-test.md) | Manual checklist for validating the demo stack        |
+
+## Orchestration
+
+Service topology and the ready-to-run deployment configurations.
+
+| Document                                             | Description                                            |
+| ---------------------------------------------------- | ------------------------------------------------------ |
+| [Orchestration Guide](./orchestration/README.md)     | Index and core principles of the modular architecture  |
+| [Deployment Installer](./orchestration/installer.md) | Interactive CLI that generates deployment configs      |
+| [Architecture](./orchestration/architecture.md)      | System design, service boundaries, deployment patterns |
+| [Services](./orchestration/services.md)              | Individual service descriptions and responsibilities   |
+| [Database](./orchestration/database.md)              | Database configuration for different hosting scenarios |
+| [Communication](./orchestration/communication.md)    | How services communicate and discover each other       |
+| [Configuration](./orchestration/configuration.md)    | Every environment variable, by service                 |
+
+Ready-to-use configurations, each with the compose file or manifests alongside its README:
+
+| Configuration                                                          | Ships                  |
+| ---------------------------------------------------------------------- | ---------------------- |
+| [Single Server](./orchestration/deployments/single-server/README.md)   | `docker-compose.yml`   |
+| [Distributed](./orchestration/deployments/distributed/README.md)       | Per-tier compose files |
+| [Cloud Database](./orchestration/deployments/cloud-database/README.md) | `docker-compose.yml`   |
+| [Kubernetes](./orchestration/deployments/kubernetes/README.md)         | Kustomize manifests    |
 
 ## Development Guides
 
-| Document                                                          | Description                                             |
-| ----------------------------------------------------------------- | ------------------------------------------------------- |
-| [Service Patterns](./development/service-patterns.md)             | Service layer conventions, error handling, transactions |
-| [Database Patterns](./development/database-patterns.md)           | Drizzle ORM patterns, schema conventions, migrations    |
-| [Adding Item Types](./development/adding-item-types.md)           | Step-by-step guide to extending the type system         |
-| [Adding API Routes](./development/adding-api-routes.md)           | Hono route conventions, apiHandler usage                |
-| [Adding Background Jobs](./development/adding-background-jobs.md) | Job type registration, handler patterns, submission     |
-| [Testing](./development/testing.md)                               | Test strategy, utilities, CI/CD integration             |
-| [UI Components](./development/ui-components.md)                   | Component library, forms, DataGrid, common pitfalls     |
+| Document                                                          | Description                                              |
+| ----------------------------------------------------------------- | -------------------------------------------------------- |
+| [Service Patterns](./development/service-patterns.md)             | Service layer conventions, error handling, transactions  |
+| [Database Patterns](./development/database-patterns.md)           | Drizzle ORM patterns, schema conventions, migrations     |
+| [Adding Item Types](./development/adding-item-types.md)           | Step-by-step guide to extending the type system          |
+| [Adding API Routes](./development/adding-api-routes.md)           | Hono route conventions, apiHandler usage                 |
+| [Adding Background Jobs](./development/adding-background-jobs.md) | Job type registration, handler patterns, submission      |
+| [Adding Packages](./development/adding-packages.md)               | Optional package framework: catalog, entitlement, gating |
+| [Testing](./development/testing.md)                               | Test strategy, utilities, CI/CD integration              |
+| [UI Components](./development/ui-components.md)                   | Component library, forms, DataGrid, common pitfalls      |
+
+## Design Proposals
+
+Design records for larger efforts. A proposal describes intent and, once shipped,
+carries an implementation record noting where the build deviated from the plan.
+
+Each doc's own header carries the authoritative status; the summary below is a pointer.
+
+| Document                                                                                                                | Status                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| [Physical Parts & Traceability](./proposals/physical-parts-and-traceability.md)                                         | Phases 0–5 implemented; thread swim-lane split into a follow-up                                |
+| [Software Management](./proposals/software-management.md)                                                               | Phases 1–2 implemented; 3–4 (external repos, drift alerts) not started                         |
+| [Aras Migration Tool](./proposals/aras-migration-tool-scope.md)                                                         | Not started (scope + [implementation plan](./proposals/aras-migration-implementation-plan.md)) |
+| [Change Order / Versioning / Lifecycle Assessment](./proposals/change-order-versioning-lifecycle-assessment.md)         | All ten findings fixed; §8 is the as-built record, with a short still-open list                |
+| [Change Order / Versioning / Lifecycle Simplification](./proposals/change-order-versioning-lifecycle-simplification.md) | §2 (deletions) done; §§3–7 open. Companion quality read to the assessment above                |
 
 ## Other Resources
 
-| Document                            | Description                                                      |
-| ----------------------------------- | ---------------------------------------------------------------- |
-| [Migration Tool](./migration-tool/) | Aras Innovator migration tool (scope, implementation, reference) |
-| [Issues Tracker](./issues/)         | Issues discovered during documentation research                  |
+| Document                    | Description                                     |
+| --------------------------- | ----------------------------------------------- |
+| [Issues Tracker](./issues/) | Issues discovered during documentation research |
 
 ---
 
-_Documentation generated March 2026. See [cascadia-feature-list.md](../cascadia-feature-list.md) for the complete feature inventory._
+_See [cascadia-feature-list.md](../cascadia-feature-list.md) for the complete feature inventory._

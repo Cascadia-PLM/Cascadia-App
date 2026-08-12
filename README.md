@@ -87,8 +87,7 @@ npm install
 cp .env.example .env
 # Edit .env with your database credentials
 
-# Set up database
-npm run db:generate
+# Set up database (pre-1.0: push the schema directly, no migration files)
 npm run db:push
 npm run db:seed
 
@@ -103,7 +102,7 @@ For detailed setup instructions, see [SETUP.md](./SETUP.md).
 ## Project Structure
 
 ```
-src/
+packages/core/src/    # The application
 ├── components/       # React components (forms, tables, dialogs)
 ├── lib/
 │   ├── auth/         # Authentication & authorization services
@@ -111,12 +110,20 @@ src/
 │   ├── items/        # Item services (Parts, Documents, etc.)
 │   ├── services/     # Core services (Branch, Checkout, Commit, etc.)
 │   ├── workflows/    # Workflow engine
-│   ├── jobs/         # Background job handlers
-│   ├── api/          # API utilities
+│   ├── jobs/         # Background job dispatch, definitions & worker
+│   ├── api/          # API utilities (apiHandler, response builders)
 │   ├── vault/        # File storage system
-│   └── sysml/        # SysML v2 serialization
-├── routes/           # TanStack Router routes & API endpoints
+│   ├── sysml/        # SysML v2 serialization
+│   ├── ai/           # AI chatbot tools, adapters, session service
+│   ├── mcp/          # MCP servers, built on the AI tool registry
+│   ├── query/        # TanStack Query keys, options, invalidation graph
+│   └── packages/     # Package entitlement registry
+├── routes/           # TanStack Router file-based routes (frontend SPA)
+├── server/           # Hono API server
+│   ├── index.ts      # Entry: mounts every route module under /api/v1/*
+│   └── routes/       # API route modules — one file per resource
 └── __tests__/        # Test utilities and fixtures
+apps/cascadia/        # Composition root: entry points and build config
 tests/
 ├── e2e/              # Playwright E2E tests
 │   ├── pages/        # Page object models
@@ -152,6 +159,15 @@ All item types extend `BaseItem` and register via `ItemTypeRegistry`:
 - **ChangeOrder** - ECOs that coordinate changes across items
 - **Requirement** - Traceable requirements
 - **Task** - Work items for workflows
+- **TestPlan** / **TestCase** - Test campaigns and their procedures
+- **WorkInstruction** - Step-by-step manufacturing instructions
+- **Issue** - Defects and action items
+- **Software** - Firmware/software configuration items with a source store
+- **Tool** - Manufacturing and quality equipment
+- **PhysicalPart** - Serialized units and lots (the digital twin record)
+- **WorkOrder** - Manufacturing execution and traceability anchor
+
+See [docs/features/item-types.md](./docs/features/item-types.md) for the full reference.
 
 ### Admin Capabilities
 
@@ -197,11 +213,12 @@ npm run build         # Build for production
 npm run serve         # Preview production build
 
 # Database
-npm run db:generate   # Generate migrations from schema changes
-npm run db:migrate    # Run pending migrations
-npm run db:push       # Push schema directly to database (dev only)
+npm run db:push       # Push schema directly (the pre-1.0 path: dev, CI, compose)
+npm run db:generate   # Mint migration SQL (unused pre-1.0 — no committed migrations)
+npm run db:migrate    # Run pending migrations (none exist pre-1.0)
 npm run db:studio     # Open Drizzle Studio GUI
-npm run db:seed       # Minimal seed (admin, roles, program)
+npm run db:seed       # Minimal seed (admin, roles, program, standard library)
+npm run db:reset      # Truncate all tables only
 npm run db:reset:seed # Truncate all tables + reseed
 
 # Testing
@@ -223,11 +240,12 @@ npm run check         # Format + lint fix
 
 ### Adding a New Item Type
 
-1. Define the type and Zod schema in `src/lib/items/types/`
-2. Add database columns in `src/lib/db/schema/items.ts`
+1. Define the type and Zod schema in `packages/core/src/lib/items/types/`
+2. Add database columns in `packages/core/src/lib/db/schema/items.ts`
 3. Create form, table, and detail components
 4. Register the type in `ItemTypeRegistry`
-5. Run `npm run db:generate` and `npm run db:push`
+5. Run `npm run db:push`
+6. If the type gets its own table, add it to `ALL_TABLES` in `scripts/truncate-all.ts`
 
 ## Deployment
 
@@ -266,6 +284,8 @@ FILE_STORAGE_PATH=/path/to/vault  # Default: ./vault-storage
 RABBITMQ_URL=amqp://localhost     # For background jobs
 SESSION_SECRET=your-secret-key    # Session encryption
 ```
+
+See [`.env.example`](./.env.example) for the full list.
 
 ## Architecture Decisions
 

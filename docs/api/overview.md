@@ -1,14 +1,18 @@
 # API Overview
 
-Cascadia PLM exposes a REST API built on Hono with modular route files. All API routes live under `/api/` and follow consistent patterns for authentication, authorization, request validation, response formatting, and error handling.
+Cascadia PLM exposes a REST API built on Hono with modular route files. All API routes live under `/api/v1/` and follow consistent patterns for authentication, authorization, request validation, response formatting, and error handling.
 
 ## Base URL
 
 ```
-http://localhost:3000/api
+http://localhost:3000/api/v1
 ```
 
 In production, replace with your deployment URL.
+
+The `v1` prefix is part of the frozen contract — see the [versioning policy](./README.md).
+Two endpoints sit deliberately outside it: `GET /openapi.json` (the live spec) and
+`GET /api/docs` (the Scalar UI).
 
 ## The `apiHandler()` Wrapper
 
@@ -44,24 +48,35 @@ interface HandlerContext<TParams> {
 ### Usage Example
 
 ```typescript
-// src/server/routes/parts.ts
+// packages/core/src/server/routes/parts.ts
 import { Hono } from 'hono'
-import { adapt } from '../adapter'
+import { tagged } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'
 import { NotFoundError } from '@/lib/errors'
 
+// Shadow `adapt` with a tagged variant so every handler in this file is
+// grouped under "Parts" in the generated OpenAPI spec.
+const adapt = tagged('Parts')
+
 const app = new Hono()
 
-app.get('/:id', adapt(
-  apiHandler({ permission: ['parts', 'read'] }, async ({ params }) => {
-    const part = await ItemService.findById(params.id)
-    if (!part) throw new NotFoundError('Part', params.id)
-    return { part }
-  })
-))
+app.get(
+  '/:id',
+  adapt(
+    apiHandler({ permission: ['parts', 'read'] }, async ({ params }) => {
+      const part = await ItemService.findById(params.id)
+      if (!part) throw new NotFoundError('Part', params.id)
+      return { part }
+    }),
+  ),
+)
 
 export default app
 ```
+
+The bare `adapt` from `../adapter` still works and is what `tagged()` wraps, but
+route modules should declare a tag — an untagged handler lands in the spec's
+default group.
 
 ## Authentication Options
 
@@ -286,6 +301,19 @@ In development mode, the `details` field is included with the underlying error m
 | `FileTypeNotAllowedError`       | `FILE_TYPE_NOT_ALLOWED`       | 415         | File type not permitted             |
 | `FileCheckoutRequiredError`     | `FILE_CHECKOUT_REQUIRED`      | 422         | File must be checked out first      |
 
+#### Licensing and Signature Errors
+
+Raised by [optional packages](../development/adding-packages.md). Instances that
+do not hold the package never see them.
+
+| Error Class                           | Error Code                         | HTTP Status | Description                                            |
+| ------------------------------------- | ---------------------------------- | ----------- | ------------------------------------------------------ |
+| `PackageNotLicensedError`             | `PACKAGE_NOT_LICENSED`             | 403         | Instance is not licensed for the package               |
+| `SignatureRequiredError`              | `SIGNATURE_REQUIRED`               | 422         | Action requires a digital signature that was not sent  |
+| `SignatureInvalidError`               | `SIGNATURE_INVALID`                | 401         | Bad password, or expired/untrusted/revoked certificate |
+| `SignatureCredentialUnavailableError` | `SIGNATURE_CREDENTIAL_UNAVAILABLE` | 422         | Policy demands a credential the request cannot offer   |
+| `SignatureIdentityMismatchError`      | `SIGNATURE_IDENTITY_MISMATCH`      | 403         | Certificate belongs to another account, or unenrolled  |
+
 #### System Errors
 
 | Error Class                       | Error Code                     | HTTP Status | Description                |
@@ -322,7 +350,7 @@ The request ID appears in:
 - Database error log entries
 
 ```bash
-curl -H "X-Request-Id: my-trace-123" /api/parts
+curl -H "X-Request-Id: my-trace-123" /api/v1/parts
 ```
 
 ## CORS Configuration
@@ -345,10 +373,10 @@ The `@/lib/api/client` module provides typed fetch wrappers with automatic retry
 import { apiGet, apiPost, apiPut, apiDelete, ApiError } from '@/lib/api/client'
 
 // GET with automatic retry on transient failures
-const { data } = await apiGet<{ data: { part: Part } }>('/api/parts/123')
+const { data } = await apiGet<{ data: { part: Part } }>('/api/v1/parts/123')
 
 // POST with body
-const { data } = await apiPost<{ data: { item: Part } }>('/api/items', {
+const { data } = await apiPost<{ data: { item: Part } }>('/api/v1/items', {
   itemType: 'Part',
   itemNumber: 'PRT-001',
   revision: 'A',
@@ -356,16 +384,16 @@ const { data } = await apiPost<{ data: { item: Part } }>('/api/items', {
 })
 
 // Disable retry
-const { data } = await apiGet('/api/parts', { retry: false })
+const { data } = await apiGet('/api/v1/parts', { retry: false })
 
 // Custom retry config
-const { data } = await apiGet('/api/parts', {
+const { data } = await apiGet('/api/v1/parts', {
   retry: { maxAttempts: 5, initialDelayMs: 2000 },
 })
 
 // Error handling
 try {
-  await apiGet('/api/parts/nonexistent')
+  await apiGet('/api/v1/parts/nonexistent')
 } catch (error) {
   if (error instanceof ApiError) {
     console.log(error.code) // 'RESOURCE_NOT_FOUND'

@@ -22,16 +22,16 @@ The import system is designed for migrating data from other PLM systems, ERP exp
 
 The import system is organized into these layers:
 
-| Layer         | Location                        | Responsibility                                                   |
-| ------------- | ------------------------------- | ---------------------------------------------------------------- |
-| Parser        | `src/lib/import/parser.ts`      | File reading, Excel/CSV parsing, cell value extraction           |
-| Mapper        | `src/lib/import/mapper.ts`      | Column auto-detection, mapping application, attribute collection |
-| Validator     | `src/lib/import/validator.ts`   | Row validation, duplicate detection, BOM structure validation    |
-| BOM Parser    | `src/lib/import/bom-parser.ts`  | BOM format detection, relationship extraction                    |
-| Field Configs | `src/lib/import/field-configs/` | Per-type field definitions with aliases                          |
-| Types         | `src/lib/import/types.ts`       | Zod schemas, TypeScript interfaces                               |
-| API Routes    | `src/routes/api/import/`        | Server-side endpoints for bulk creation                          |
-| UI Components | `src/components/import/`        | Multi-step wizard dialog                                         |
+| Layer         | Location                                      | Responsibility                                                   |
+| ------------- | --------------------------------------------- | ---------------------------------------------------------------- |
+| Parser        | `packages/core/src/lib/import/parser.ts`      | File reading, Excel/CSV parsing, cell value extraction           |
+| Mapper        | `packages/core/src/lib/import/mapper.ts`      | Column auto-detection, mapping application, attribute collection |
+| Validator     | `packages/core/src/lib/import/validator.ts`   | Row validation, duplicate detection, BOM structure validation    |
+| BOM Parser    | `packages/core/src/lib/import/bom-parser.ts`  | BOM format detection, relationship extraction                    |
+| Field Configs | `packages/core/src/lib/import/field-configs/` | Per-type field definitions with aliases                          |
+| Types         | `packages/core/src/lib/import/types.ts`       | Zod schemas, TypeScript interfaces                               |
+| API Routes    | `packages/core/src/server/routes/import.ts`   | Server-side endpoints for bulk creation                          |
+| UI Components | `packages/core/src/components/import/`        | Multi-step wizard dialog                                         |
 
 ---
 
@@ -347,7 +347,7 @@ Parents that are not in the import file are reported as warnings (not errors). T
 
 All import endpoints require authentication. Request bodies are validated with Zod schemas.
 
-### POST /api/import/parts
+### POST /api/v1/import/parts
 
 Creates parts in bulk, optionally with BOM relationships.
 
@@ -437,7 +437,7 @@ Creates parts in bulk, optionally with BOM relationships.
 }
 ```
 
-### POST /api/import/documents
+### POST /api/v1/import/documents
 
 Creates documents in bulk. Same structure as parts import but without BOM support.
 
@@ -477,7 +477,7 @@ Creates documents in bulk. Same structure as parts import but without BOM suppor
 
 This endpoint requires design access (`requireDesignAccess`) and branch access (`requireBranchAccess`) if a branch is specified. Bypassing branch protection requires the Administrator role.
 
-### POST /api/import/issues
+### POST /api/v1/import/issues
 
 Creates issues in bulk. Issues use a free lifecycle and do not require a design or branch context.
 
@@ -522,11 +522,11 @@ Issues are always created with state `Open` and revision `"-"`. They bypass bran
 
 CSV templates with headers and example rows can be downloaded:
 
-| Endpoint                              | File                            |
-| ------------------------------------- | ------------------------------- |
-| `GET /api/import/templates/parts`     | `parts-import-template.csv`     |
-| `GET /api/import/templates/documents` | `documents-import-template.csv` |
-| `GET /api/import/templates/issues`    | `issues-import-template.csv`    |
+| Endpoint                                 | File                            |
+| ---------------------------------------- | ------------------------------- |
+| `GET /api/v1/import/templates/parts`     | `parts-import-template.csv`     |
+| `GET /api/v1/import/templates/documents` | `documents-import-template.csv` |
+| `GET /api/v1/import/templates/issues`    | `issues-import-template.csv`    |
 
 Templates include all field labels as headers and one example row.
 
@@ -534,7 +534,7 @@ Templates include all field labels as headers and one example row.
 
 ## BOM Export
 
-Cascadia also supports exporting BOM structures and affected item lists to CSV via client-side functions in `src/components/bom/exportBomTree.ts`.
+Cascadia also supports exporting BOM structures and affected item lists to CSV via client-side functions in `packages/core/src/components/bom/exportBomTree.ts`.
 
 ### BOM Tree Export
 

@@ -187,6 +187,36 @@ Sends notifications when items transition between lifecycle states. High priorit
 
 Alerts work instruction owners when referenced parts are changed.
 
+### Zoo Text-to-CAD Generation
+
+| Property     | Value                      |
+| ------------ | -------------------------- |
+| Type         | `generation.cad.zoo`       |
+| Label        | Zoo Text-to-CAD Generation |
+| Routing Key  | `jobs.generation.cad.zoo`  |
+| Timeout      | 600,000 ms (10 minutes)    |
+| Max Attempts | 2                          |
+| Retry Delays | 60s, 120s                  |
+| Priority     | normal                     |
+| Handler      | Node.js worker             |
+
+Generates CAD models from text descriptions using the Zoo Text-to-CAD API. Long timeout due to external API latency.
+
+### Parametric CAD Generation
+
+| Property     | Value                                       |
+| ------------ | ------------------------------------------- |
+| Type         | `generation.cad.parametric`                 |
+| Label        | Parametric CAD Generation                   |
+| Routing Key  | `jobs.generation.cad.parametric`            |
+| Timeout      | 60,000 ms (1 minute)                        |
+| Max Attempts | 3                                           |
+| Retry Delays | 5s, 15s, 30s                                |
+| Priority     | high                                        |
+| Handler      | Python CadQuery worker (separate container) |
+
+Generates parametric CAD models using CadQuery. Fast retry delays because generation typically completes in 1-2 seconds.
+
 ### Thread Cache Cleanup
 
 | Property     | Value                       |
@@ -201,6 +231,51 @@ Alerts work instruction owners when referenced parts are changed.
 | Handler      | Node.js worker              |
 
 Removes expired and invalidated cache entries. Run periodically (daily or hourly) via a scheduler.
+
+### Expired Session Cleanup
+
+| Property     | Value                         |
+| ------------ | ----------------------------- |
+| Type         | `maintenance.session.cleanup` |
+| Label        | Expired Session Cleanup       |
+| Routing Key  | `jobs.maintenance.session`    |
+| Timeout      | 60,000 ms (1 minute)          |
+| Max Attempts | 3                             |
+| Retry Delays | 30s, 60s, 120s                |
+| Priority     | low                           |
+| Handler      | Node.js worker                |
+
+Deletes expired rows from the `sessions` table. Run periodically via a scheduler.
+
+### Mechanism CAD Generation
+
+| Property     | Value                           |
+| ------------ | ------------------------------- |
+| Type         | `generation.cad.mechanism`      |
+| Label        | Mechanism CAD Generation        |
+| Routing Key  | `jobs.generation.cad.mechanism` |
+| Timeout      | 120,000 ms (2 minutes)          |
+| Max Attempts | 3                               |
+| Retry Delays | 5s, 15s, 30s                    |
+| Priority     | high                            |
+| Handler      | Python worker (`cad-generator`) |
+
+Generates multi-part mechanisms with CadQuery. Longer timeout than single-part parametric generation because the parts are solved together.
+
+### Assembly STEP Composition
+
+| Property     | Value                           |
+| ------------ | ------------------------------- |
+| Type         | `generation.cad.assemble`       |
+| Label        | Assembly STEP Composition       |
+| Routing Key  | `jobs.generation.cad.assemble`  |
+| Timeout      | 180,000 ms (3 minutes)          |
+| Max Attempts | 3                               |
+| Retry Delays | 5s, 15s, 30s                    |
+| Priority     | high                            |
+| Handler      | Python worker (`cad-generator`) |
+
+Composes child STEP files into a single assembly STEP. The longest timeout of any job type -- importing many children is slow.
 
 ## Job Database Schema
 
@@ -312,7 +387,7 @@ The DLQ uses a fanout exchange (`jobs.dlx`), meaning all unprocessable messages 
 
 ### Cancelling Pending or Queued Jobs
 
-**API endpoint**: `POST /api/admin/jobs/:id/cancel`
+**API endpoint**: `POST /api/v1/admin/jobs/:id/cancel`
 
 **Role required**: Administrator
 
@@ -337,7 +412,7 @@ All job admin endpoints require the `Administrator` role.
 ### List Jobs
 
 ```
-GET /api/admin/jobs?status=running&type=conversion.cad.step-to-stl&limit=100&offset=0
+GET /api/v1/admin/jobs?status=running&type=conversion.cad.step-to-stl&limit=100&offset=0
 ```
 
 **Query parameters**:
@@ -374,7 +449,7 @@ GET /api/admin/jobs?status=running&type=conversion.cad.step-to-stl&limit=100&off
 ### Get Job Detail
 
 ```
-GET /api/admin/jobs/:id
+GET /api/v1/admin/jobs/:id
 ```
 
 Returns the full job record including payload, result, and all log entries.
@@ -410,7 +485,7 @@ Returns the full job record including payload, result, and all log entries.
 ### Cancel Job
 
 ```
-POST /api/admin/jobs/:id/cancel
+POST /api/v1/admin/jobs/:id/cancel
 ```
 
 Only works for `pending` or `queued` jobs. Returns `{ "data": { "success": true } }`.
@@ -418,7 +493,7 @@ Only works for `pending` or `queued` jobs. Returns `{ "data": { "success": true 
 ### Retry Failed Job
 
 ```
-POST /api/admin/jobs/:id/retry
+POST /api/v1/admin/jobs/:id/retry
 ```
 
 Only works for `failed` jobs. Resets the job state (clears error, attempts, result, timestamps), then re-publishes to RabbitMQ. Returns the updated job record.
@@ -460,7 +535,7 @@ This ensures that in-progress jobs are not abruptly killed during deployments or
 
 - **Worker logs**: `docker logs -f cascadia-jobs-worker-dev`
 - **RabbitMQ UI**: Queue depths, message rates, consumer status
-- **Job list API**: `GET /api/admin/jobs?status=failed` to check for failures
+- **Job list API**: `GET /api/v1/admin/jobs?status=failed` to check for failures
 - **Dead letter queue**: Check `jobs.dead-letter` in RabbitMQ UI for unprocessable messages
 
 ### Common Issues

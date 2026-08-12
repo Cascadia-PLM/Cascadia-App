@@ -3,16 +3,21 @@
 Manual procedure for verifying the public demo flow (`docker-compose.demo.yml`)
 end-to-end, on a clean Docker host with no clone of the repo.
 
+> **This repo publishes no images.** The demo images this procedure pulls are built
+> and pushed by the public `Cascadia-PLM/Cascadia-App` repo. The inherited
+> `publish-demo-images.yml` workflow was deleted here because it targeted the
+> shared org-level GHCR packages backing the public demo. Do not reintroduce a
+> publishing workflow in this repo. Running the smoke test from here validates the
+> compose file and seed against images someone else published.
+
 Run this after any change to:
 
 - `docker-compose.demo.yml`
 - `docker/app.Dockerfile` / `workers/cad-converter/Dockerfile` / `workers/node/Dockerfile`
 - `scripts/seed-demo-robot-arm.ts` (or anything seed-adjacent)
-- `.github/workflows/publish-demo-images.yml`
 - the dataset or Dockerfile in [Cascadia-PLM/Demo-Data](https://github.com/Cascadia-PLM/Demo-Data),
   which builds and publishes `cascadia-demo-data`
-
-Also run after the first publish to confirm GHCR package visibility is public.
+- the publishing workflow in the public `Cascadia-App` repo
 
 ## Setup
 
@@ -84,14 +89,14 @@ Same acceptance checks should pass.
 
 ## Failure triage
 
-| Symptom | Likely cause |
-|---|---|
-| `unauthorized` on image pull | GHCR package visibility is still Private — flip to Public in org Packages settings |
-| Viewer shows gray model | `cadMetadata.hasColors` not set — check the seed script in the published `cascadia-app` image is up to date |
-| `demo-data-loader` keeps restarting | Wrong image tag, or `cascadia-demo-data` image has the wrong directory layout — should be `/demo-data/robot-arm/...` |
-| App healthcheck fails before serving | Bump `start_period` further (currently 180s) if the host is slow on first-boot ingest |
-| `STEP file pill` missing on a part | Expected. The published image ships GLB + thumbnails only; STEPs are build-time inputs that live in the private archive. The 3D viewer is driven by the GLB. |
-| Demo seed exits 1 with "Dataset is incomplete" | The `cascadia-demo-data` image is stale or partially copied. `docker compose down -v` to drop the volume, then `up` to re-run `demo-data-loader`. |
+| Symptom                                        | Likely cause                                                                                                                                                 |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `unauthorized` on image pull                   | GHCR package visibility is still Private — flip to Public in org Packages settings                                                                           |
+| Viewer shows gray model                        | `cadMetadata.hasColors` not set — check the seed script in the published `cascadia-app` image is up to date                                                  |
+| `demo-data-loader` keeps restarting            | Wrong image tag, or `cascadia-demo-data` image has the wrong directory layout — should be `/demo-data/robot-arm/...`                                         |
+| App healthcheck fails before serving           | Bump `start_period` further (currently 180s) if the host is slow on first-boot ingest                                                                        |
+| `STEP file pill` missing on a part             | Expected. The published image ships GLB + thumbnails only; STEPs are build-time inputs that live in the private archive. The 3D viewer is driven by the GLB. |
+| Demo seed exits 1 with "Dataset is incomplete" | The `cascadia-demo-data` image is stale or partially copied. `docker compose down -v` to drop the volume, then `up` to re-run `demo-data-loader`.            |
 
 ## Cleanup
 

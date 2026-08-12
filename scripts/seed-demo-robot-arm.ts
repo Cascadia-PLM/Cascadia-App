@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
 /**
  * Demo seed: TDJ-25 Robot Arm.
  *
@@ -33,29 +36,32 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHash, randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import { db } from '../src/lib/db/index.ts'
-import { users } from '../src/lib/db/schema/users.ts'
-import { programMembers, programs } from '../src/lib/db/schema/programs.ts'
-import { designs } from '../src/lib/db/schema/designs.ts'
+import { db } from '../packages/core/src/lib/db/index.ts'
+import { users } from '../packages/core/src/lib/db/schema/users.ts'
+import {
+  programMembers,
+  programs,
+} from '../packages/core/src/lib/db/schema/programs.ts'
+import { designs } from '../packages/core/src/lib/db/schema/designs.ts'
 import {
   branchItems,
   branches,
   commits,
   itemVersions,
-} from '../src/lib/db/schema/versioning.ts'
+} from '../packages/core/src/lib/db/schema/versioning.ts'
 import {
   changeOrderAffectedItems,
   changeOrders,
   itemRelationships,
   items,
   parts,
-} from '../src/lib/db/schema/items.ts'
-import { vaultFiles } from '../src/lib/db/schema/vault.ts'
+} from '../packages/core/src/lib/db/schema/items.ts'
+import { vaultFiles } from '../packages/core/src/lib/db/schema/vault.ts'
 import {
   generateStoragePath,
   sanitizeFilename,
-} from '../src/lib/vault/utils/file-utils.ts'
-import { takeFirst } from '../src/lib/db/take-first'
+} from '../packages/core/src/lib/vault/utils/file-utils.ts'
+import { takeFirst } from '../packages/core/src/lib/db/take-first'
 
 // ============================================================================
 // Config

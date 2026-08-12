@@ -4,15 +4,15 @@ Cascadia provides two search mechanisms: enterprise-wide search across all item 
 
 ## Endpoints Overview
 
-| Method | Endpoint                 | Description                  |
-| ------ | ------------------------ | ---------------------------- |
-| GET    | `/api/enterprise-search` | Search across all item types |
-| GET    | `/api/items/search`      | Type-specific item search    |
+| Method | Endpoint                    | Description                  |
+| ------ | --------------------------- | ---------------------------- |
+| GET    | `/api/v1/enterprise-search` | Search across all item types |
+| GET    | `/api/v1/items/search`      | Type-specific item search    |
 
 ## Enterprise Search
 
 ```
-GET /api/enterprise-search
+GET /api/v1/enterprise-search
 ```
 
 Searches across all registered item types simultaneously and returns results grouped by type. Respects the user's program membership, so only items in accessible designs and library designs are returned. Auth required.
@@ -65,10 +65,10 @@ Searches across all registered item types simultaneously and returns results gro
 
 ```bash
 # Search for "motor" across all item types
-curl /api/enterprise-search?q=motor
+curl /api/v1/enterprise-search?q=motor
 
 # Search with limited results
-curl /api/enterprise-search?q=PRT-001&limit=10
+curl /api/v1/enterprise-search?q=PRT-001&limit=10
 ```
 
 ### Behavior
@@ -83,7 +83,7 @@ curl /api/enterprise-search?q=PRT-001&limit=10
 ## Item Search
 
 ```
-GET /api/items/search
+GET /api/v1/items/search
 ```
 
 Provides two search modes: autocomplete search by item number/name (`q` parameter), or structured search with type filtering (`itemType` parameter). Auth required.
@@ -159,25 +159,25 @@ For filtered, paginated lists. Uses the `itemType` parameter.
 
 ```bash
 # Autocomplete search for "PRT" across all types
-curl /api/items/search?q=PRT
+curl /api/v1/items/search?q=PRT
 
 # Search for parts only, with autocomplete
-curl /api/items/search?q=motor&types=Part
+curl /api/v1/items/search?q=motor&types=Part
 
 # Search within current design
-curl /api/items/search?q=housing&designScope=current&contextDesignId=DESIGN_UUID
+curl /api/v1/items/search?q=housing&designScope=current&contextDesignId=DESIGN_UUID
 
 # Search library parts only
-curl /api/items/search?q=resistor&types=Part&designScope=library
+curl /api/v1/items/search?q=resistor&types=Part&designScope=library
 
 # Search across all accessible designs
-curl /api/items/search?q=PRT&designScope=all
+curl /api/v1/items/search?q=PRT&designScope=all
 
 # Structured search for released parts
-curl /api/items/search?itemType=Part&state=Released&limit=20
+curl /api/v1/items/search?itemType=Part&state=Released&limit=20
 
 # Search within specific designs
-curl /api/items/search?q=motor&designIds=UUID1,UUID2
+curl /api/v1/items/search?q=motor&designIds=UUID1,UUID2
 ```
 
 ### Design Scope Options
@@ -190,6 +190,11 @@ curl /api/items/search?q=motor&designIds=UUID1,UUID2
 | _(not specified)_ | No design filtering applied                                        |
 
 When `designIds` is provided, it takes precedence over `designScope`.
+
+A scope the caller asked for is honoured even when it resolves to no designs:
+`library` on an instance with no Standard Library, or `all` for a user who
+belongs to no program, returns **no results** rather than falling back to an
+unfiltered search.
 
 ## Response Format Notes
 
@@ -219,7 +224,7 @@ Enriched fields added by search endpoints:
 
 ### Pagination
 
-Enterprise search does not support offset-based pagination; it returns up to `limit` results per type. For paginated results, use the structured item search mode or the `/api/items` list endpoint which supports `limit` and `offset`.
+Enterprise search does not support offset-based pagination; it returns up to `limit` results per type. For paginated results, use the structured item search mode or the `/api/v1/items` list endpoint which supports `limit` and `offset`.
 
 ## Client-Side Usage
 
@@ -229,7 +234,7 @@ import { apiGet } from '@/lib/api/client'
 // Enterprise search
 const { data } = await apiGet<{
   data: { results: Array<{ itemType: string; items: any[]; total: number }> }
-}>('/api/enterprise-search?q=motor')
+}>('/api/v1/enterprise-search?q=motor')
 
 // Access results
 const partResults = data.data.results.find((r) => r.itemType === 'Part')
@@ -237,7 +242,7 @@ const parts = partResults?.items ?? []
 
 // Item autocomplete search
 const { data: searchData } = await apiGet<{ data: { items: any[] } }>(
-  '/api/items/search?q=PRT&types=Part,Document&limit=10',
+  '/api/v1/items/search?q=PRT&types=Part,Document&limit=10',
 )
 const items = searchData.data.items
 ```

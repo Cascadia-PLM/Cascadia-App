@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2026 Cascadia PLM LLC
+
 """Offscreen thumbnail rendering using pythonocc V3d viewer."""
 
 from __future__ import annotations

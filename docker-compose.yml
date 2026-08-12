@@ -57,7 +57,16 @@ services:
       - app_vault:/app/vault
     networks:
       - cascadia-network
-    command: sh -c "npx drizzle-kit push --force && npm run serve"
+    # Through the wrapper, not `npx drizzle-kit` directly: the config lives at
+    # `apps/<app>/drizzle.config.ts` since the Phase 2 split, so a bare call
+    # looked for `/app/drizzle.config.json`, failed, and crash-looped the
+    # container. The wrapper resolves the edition, runs from the app directory
+    # so the config's relative `schema:` resolves, and passes `--config`.
+    #
+    # `npx` still fetches drizzle-kit at start: it is a devDependency and the
+    # production stage installs `--omit=dev`. That is a pre-existing wart —
+    # this container reaches the network on every boot to push schema.
+    command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
 
   # RabbitMQ for background jobs
   rabbitmq:
@@ -106,7 +115,11 @@ services:
     working_dir: /app
     networks:
       - cascadia-network
-    command: sh -c "npm install && npx tsx watch src/jobs-worker.ts"
+    # `src/jobs-worker.ts` has not existed since the Phase 2 split — the worker
+    # lives in the app (`apps/<app>/src/`) because it registers the same modules
+    # the server does. scripts/workers.mjs already resolves that path for the
+    # npm scripts; this service was the one call site still naming the old one.
+    command: sh -c "npm install && npm run jobs:worker:dev"
 
   # CAD Converter Worker (Python - pythonocc-core for STEP/IGES → STL)
   cad-converter-dev:

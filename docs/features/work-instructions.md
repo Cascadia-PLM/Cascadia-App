@@ -9,12 +9,12 @@ Traditional PLM systems either lack work instructions entirely or bolt them on a
 ### How Work Instructions Fit the Digital Thread
 
 ```
-Requirement --> Part (EBOM) --> Part (MBOM) --> Work Instruction --> Execution Record
-                                    |                  |                    |
-                              "what to build"   "how to build it"   "proof it was built"
+Requirement --> Part (EBOM) --> Part (MBOM) --> Work Instruction --> Work Order --> Execution Record
+                                    |                  |            (traveler line)        |
+                              "what to build"   "how to build it"   "this build's copy"   "proof it was built"
 ```
 
-A WorkInstruction is a **template** -- authored content describing a procedure. A WorkInstructionExecution is an **instance** -- a record that someone performed that procedure on a specific date, for a specific work order, capturing actual measured values along the way. This definition/usage separation follows the same SysML v2 pattern used for Parts throughout Cascadia.
+A WorkInstruction is a **template** -- authored content describing a procedure. It is never executed directly. Work orders **instantiate** templates into their traveler (`work_order_instructions` -- one frozen copy per template × part), and executions (`instruction_executions`) record runs of those traveler lines. This definition/usage separation follows the same SysML v2 pattern used for Parts throughout Cascadia; the full design is in `docs/proposals/work-order-traveler.md`.
 
 ### Item Type Registration
 
@@ -195,8 +195,8 @@ A unique constraint on `(workInstructionId, partId)` prevents duplicate attachme
 
 Attachments can be created from either direction:
 
-- From a work instruction: attach parts via `POST /api/work-instructions/:id/parts`
-- From a part: view attached work instructions via `GET /api/parts/:id/work-instructions`
+- From a work instruction: attach parts via `POST /api/v1/work-instructions/:id/parts`
+- From a part: view attached work instructions via `GET /api/v1/parts/:id/work-instructions`
 
 ### MBOM Inheritance
 
@@ -253,51 +253,86 @@ Both actions record who acted, when, and optional notes explaining the decision.
 
 ---
 
+## The Traveler: Instances Inside Work Orders
+
+Templates become executable by being **instantiated into a work order's traveler** -- the ordered list of instructions that particular build must perform. A work order building an assembly may carry many lines: fabrication instructions for each subassembly part plus the final assembly procedure.
+
+### Instantiation and Snapshot Freezing
+
+Adding a template to a traveler (by hand, or via **populate**, which walks the order part's BOM and instantiates every attached template, deepest parts first) copies the template's metadata, operations, and steps into the line's `snapshot` JSONB. From that moment the line is independent:
+
+- Editing the template never changes travelers already on the floor.
+- Deleting the template nulls the provenance FK; the line keeps executing from its snapshot.
+- A line can be explicitly **re-frozen** from its template (`refresh`) -- but only until its first execution. After that the line is a manufacturing record, not a plan.
+- Parametric blocks in the snapshot still resolve **live** against current part data -- the snapshot freezes the procedure, not the engineering values it points at.
+
+### Schema: `work_order_instructions`
+
+| Field                 | Type         | Description                                                 |
+| --------------------- | ------------ | ----------------------------------------------------------- |
+| `id`                  | uuid         | Primary key                                                 |
+| `workOrderId`         | uuid         | FK to work order (cascade delete)                           |
+| `workInstructionId`   | uuid         | Provenance FK to the template (SET NULL on template delete) |
+| `partId`              | uuid         | The part this line applies to (order part or BOM child)     |
+| `orderIndex`          | integer      | Traveler sequence                                           |
+| `title`               | varchar(500) | Template name at snapshot                                   |
+| `instructionNumber`   | varchar(64)  | Template item number at snapshot                            |
+| `instructionRevision` | varchar(10)  | Template revision at snapshot                               |
+| `snapshot`            | jsonb        | Frozen metadata + operations + steps                        |
+| `snapshotAt`          | timestamptz  | When frozen                                                 |
+| `requiredCount`       | integer      | Completed runs needed (1 = batch; order qty = per-unit)     |
+| `skippedAt/By/Reason` | --           | Audited not-applicable marker                               |
+
+**Line status is derived, never stored**: `Skipped` if skipped; `Complete` when countable runs (`Complete` or `Approved`) ≥ `requiredCount`; `In Progress` if any execution exists; else `Not Started`.
+
+### Work Order Completion Gate
+
+A work order cannot transition to `Complete` while any non-skipped line is open. Skipping (reason mandatory, recorded with who/when) is the audited escape hatch; a line that has reached its required count can no longer be skipped. Cancellation is not gated. Conversely, starting an execution on a `Not Started` order auto-transitions it to `In Progress` -- execution is what starts an order.
+
 ## Execution Tracking
 
 ### Starting an Execution
 
-An execution begins when a technician starts performing a work instruction, typically from a work order context. The system snapshots the current revision of the WI at execution start time so there is a permanent record of which version was followed, even if the WI is later revised.
+An execution is a run of one traveler line, started from the work order context (`POST /api/v1/work-orders/:id/instructions/:instructionId/executions`). Standalone executions no longer exist -- performing a procedure outside an order means creating an order for it.
 
-If the same user already has an in-progress execution for the same WI (and optionally the same work order), the API returns the existing execution with `resumed: true` rather than creating a duplicate.
+If the same user already has an in-progress run of the same line (and the same `unitLabel`, when given), the API returns the existing execution with `resumed: true` rather than creating a duplicate. Extra runs beyond `requiredCount` are allowed -- rework happens.
 
-### Schema: `work_instruction_executions`
+### Schema: `instruction_executions`
 
-| Field                     | Type        | Description                            |
-| ------------------------- | ----------- | -------------------------------------- |
-| `id`                      | uuid        | Primary key                            |
-| `workInstructionId`       | uuid        | FK to work instruction                 |
-| `workInstructionRevision` | varchar(10) | Snapshot of revision at start          |
-| `workOrderId`             | uuid        | FK to work order (nullable)            |
-| `executedBy`              | uuid        | FK to user performing the WI           |
-| `status`                  | varchar(30) | Current status (see below)             |
-| `startedAt`               | timestamp   | When execution began                   |
-| `completedAt`             | timestamp   | When finished (null while in progress) |
-| `duration`                | integer     | Total seconds (computed on completion) |
-| `stepData`                | jsonb       | Captured values keyed by block ID      |
-| `notes`                   | text        | Optional notes                         |
-| `currentStepIndex`        | integer     | Tracks progress through steps          |
+| Field                    | Type         | Description                                |
+| ------------------------ | ------------ | ------------------------------------------ |
+| `id`                     | uuid         | Primary key                                |
+| `workOrderInstructionId` | uuid         | FK to the traveler line (cascade delete)   |
+| `executedBy`             | uuid         | FK to user performing the run              |
+| `unitLabel`              | varchar(200) | Optional serial/unit tag this run covers   |
+| `status`                 | varchar(30)  | Current status (see below)                 |
+| `startedAt`              | timestamp    | When the run began                         |
+| `completedAt`            | timestamp    | When finished (null while in progress)     |
+| `duration`               | integer      | Total seconds (computed on completion)     |
+| `stepData`               | jsonb        | Captured values keyed by snapshot block ID |
+| `notes`                  | text         | Optional notes                             |
+| `currentStepIndex`       | integer      | Tracks progress through steps              |
 
 ### Execution Status Flow
 
 ```
 In Progress --> Complete --> (if work order requires sign-off) --> Pending Approval --> Approved
-                                                                                   --> Rejected
-In Progress --> Incomplete
+                                                                                   --> Rejected --> (resubmit) --> Pending Approval
+In Progress --> Incomplete   (abandoned)
 ```
 
-| Status             | Meaning                                                                                        |
-| ------------------ | ---------------------------------------------------------------------------------------------- |
-| `In Progress`      | Technician is actively performing the procedure                                                |
-| `Complete`         | All steps finished; auto-transitions to `Pending Approval` if work order has `requiresSignOff` |
-| `Incomplete`       | Execution was abandoned before finishing                                                       |
-| `Pending Approval` | Completed but awaiting supervisor sign-off                                                     |
-| `Approved`         | Supervisor approved the execution                                                              |
-| `Rejected`         | Supervisor rejected the execution                                                              |
+| Status             | Meaning                                                                                   |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| `In Progress`      | Technician is actively performing the procedure                                           |
+| `Complete`         | All steps finished; becomes `Pending Approval` instead if the order has `requiresSignOff` |
+| `Incomplete`       | Run was abandoned (`POST .../abandon`) -- kept as a record, never counts toward the line  |
+| `Pending Approval` | Completed but awaiting supervisor sign-off (does not count toward the line yet)           |
+| `Approved`         | Supervisor approved the run (counts)                                                      |
+| `Rejected`         | Supervisor rejected the run; only the original executor can resubmit                      |
 
 ### Step Data Capture
 
-During execution, data field block values are captured incrementally. Each captured value is stored in the `stepData` JSONB column, keyed by block ID:
+During execution, data field block values are captured incrementally. Each captured value is stored in the `stepData` JSONB column, keyed by the **snapshot's** block ID (which is why snapshots freeze once execution begins):
 
 ```json
 {
@@ -318,35 +353,17 @@ The `updateStepData()` method merges new captures into the existing JSONB -- it 
 
 Progress tracking uses `currentStepIndex` so the technician can resume where they left off.
 
-### Work Order Linking
-
-Work orders are standalone operational records (not a Cascadia item type). They track what to build, how many, and by when.
-
-| Field               | Type         | Description                                            |
-| ------------------- | ------------ | ------------------------------------------------------ |
-| `workOrderNumber`   | varchar(20)  | Human-readable ID (unique)                             |
-| `partId`            | uuid         | What to build                                          |
-| `quantity`          | integer      | How many                                               |
-| `quantityCompleted` | integer      | Auto-incremented on approved executions                |
-| `status`            | varchar(20)  | `Not Started`, `In Progress`, `Complete`, `Cancelled`  |
-| `priority`          | varchar(10)  | `Low`, `Normal`, `High`, `Urgent`                      |
-| `dueDate`           | timestamp    | Target completion                                      |
-| `requiresSignOff`   | boolean      | If true, completed executions go to `Pending Approval` |
-| `customerOrder`     | varchar(200) | External reference for ERP sync                        |
-| `assignedTo`        | jsonb        | Array of user IDs                                      |
-| `programId`         | uuid         | Organizational scope                                   |
-
-When an execution linked to a work order is approved through sign-off, the work order's `quantityCompleted` is automatically incremented by 1.
-
 ### Sign-Off Workflows
 
-Work orders with `requiresSignOff = true` trigger a supervisor review after execution completion. The flow:
+Work orders with `requiresSignOff = true` trigger a supervisor review after each run completes. The flow:
 
-1. Technician completes execution. Status becomes `Pending Approval` (instead of `Complete`).
+1. Technician completes the run. Status becomes `Pending Approval` (instead of `Complete`).
 2. Supervisor reviews the execution data and submits a decision.
 3. Decision is `approved` or `rejected`. Rejection requires mandatory comments explaining why.
 4. The sign-off record is stored in the `execution_sign_offs` table.
-5. On approval, the execution status updates to `Approved` and the work order's `quantityCompleted` increments.
+5. On approval, the run counts toward its line's `requiredCount`.
+
+Sign-off no longer touches `quantityCompleted` -- an approved run of one instruction was never evidence that a finished unit left the line. `quantityCompleted` is derived from produced units for serial-tracked parts (`WorkOrderMaterialService.produce`) and manually settable otherwise.
 
 ### Schema: `execution_sign_offs`
 
@@ -367,8 +384,8 @@ All endpoints require authentication. Permission requirements are noted per endp
 
 ### Work Instruction CRUD
 
-| Method | Path                         | Permission                 | Description                |
-| ------ | ---------------------------- | -------------------------- | -------------------------- |
+| Method | Path                            | Permission                 | Description                |
+| ------ | ------------------------------- | -------------------------- | -------------------------- |
 | GET    | `/api/v1/work-instructions/:id` | `work_instructions:read`   | Get WI with steps          |
 | PUT    | `/api/v1/work-instructions/:id` | `work_instructions:update` | Update WI metadata         |
 | DELETE | `/api/v1/work-instructions/:id` | `work_instructions:delete` | Delete WI and all children |
@@ -377,8 +394,8 @@ Work instructions are created through the standard `ItemService.create()` flow, 
 
 ### Operations
 
-| Method | Path                                                 | Permission                 | Description                             |
-| ------ | ---------------------------------------------------- | -------------------------- | --------------------------------------- |
+| Method | Path                                                    | Permission                 | Description                             |
+| ------ | ------------------------------------------------------- | -------------------------- | --------------------------------------- |
 | GET    | `/api/v1/work-instructions/:id/operations`              | `work_instructions:read`   | List operations ordered by index        |
 | POST   | `/api/v1/work-instructions/:id/operations`              | `work_instructions:update` | Create operation (appended to end)      |
 | PUT    | `/api/v1/work-instructions/:id/operations`              | `work_instructions:update` | Bulk reorder operations                 |
@@ -387,8 +404,8 @@ Work instructions are created through the standard `ItemService.create()` flow, 
 
 ### Steps
 
-| Method | Path                                       | Permission                 | Description                                 |
-| ------ | ------------------------------------------ | -------------------------- | ------------------------------------------- |
+| Method | Path                                          | Permission                 | Description                                 |
+| ------ | --------------------------------------------- | -------------------------- | ------------------------------------------- |
 | GET    | `/api/v1/work-instructions/:id/steps`         | `work_instructions:read`   | List steps ordered by index                 |
 | POST   | `/api/v1/work-instructions/:id/steps`         | `work_instructions:update` | Create step (with optional position insert) |
 | PUT    | `/api/v1/work-instructions/:id/steps`         | `work_instructions:update` | Bulk reorder steps                          |
@@ -400,8 +417,8 @@ When creating a step with a specific `orderIndex`, existing steps at or after th
 
 ### Part Attachments
 
-| Method | Path                               | Permission                 | Description                                        |
-| ------ | ---------------------------------- | -------------------------- | -------------------------------------------------- |
+| Method | Path                                  | Permission                 | Description                                        |
+| ------ | ------------------------------------- | -------------------------- | -------------------------------------------------- |
 | GET    | `/api/v1/work-instructions/:id/parts` | `work_instructions:read`   | List attached parts with details                   |
 | POST   | `/api/v1/work-instructions/:id/parts` | `work_instructions:update` | Attach a part (body: `{ partId, inheritToMBOM? }`) |
 | PATCH  | `/api/v1/work-instructions/:id/parts` | `work_instructions:update` | Update attachment flags (e.g., `inheritToMBOM`)    |
@@ -410,40 +427,49 @@ When creating a step with a specific `orderIndex`, existing steps at or after th
 
 ### Parametric Resolution
 
-| Method | Path                                            | Permission               | Description                                |
-| ------ | ----------------------------------------------- | ------------------------ | ------------------------------------------ |
+| Method | Path                                               | Permission               | Description                                |
+| ------ | -------------------------------------------------- | ------------------------ | ------------------------------------------ |
 | GET    | `/api/v1/work-instructions/:id/resolve-parametric` | `work_instructions:read` | Resolve all parametric blocks in all steps |
 
 Returns a map keyed by `{partId}.{attributePath}` with `{ value, available }` for each parametric reference.
 
 ### Change Alerts
 
-| Method | Path                                | Permission                 | Description                                                                 |
-| ------ | ----------------------------------- | -------------------------- | --------------------------------------------------------------------------- |
+| Method | Path                                   | Permission                 | Description                                                                 |
+| ------ | -------------------------------------- | -------------------------- | --------------------------------------------------------------------------- |
 | GET    | `/api/v1/work-instructions/:id/alerts` | `work_instructions:read`   | List alerts with counts (filterable by `?status=pending`)                   |
 | PUT    | `/api/v1/work-instructions/:id/alerts` | `work_instructions:update` | Acknowledge or dismiss a single alert (body: `{ alertId, action, notes? }`) |
 | POST   | `/api/v1/work-instructions/:id/alerts` | `work_instructions:update` | Bulk acknowledge all pending alerts                                         |
 
-### Executions
+### Usage
 
-| Method | Path                                                          | Permission               | Description                                          |
-| ------ | ------------------------------------------------------------- | ------------------------ | ---------------------------------------------------- |
-| GET    | `/api/v1/work-instructions/:id/executions`                       | `work_instructions:read` | List executions (paginated: `?limit=&offset=`)       |
-| POST   | `/api/v1/work-instructions/:id/executions`                       | `work_instructions:read` | Start or resume execution (body: `{ workOrderId? }`) |
-| GET    | `/api/v1/work-instructions/:id/executions/:executionId`          | `work_instructions:read` | Get execution details                                |
-| PUT    | `/api/v1/work-instructions/:id/executions/:executionId`          | `work_instructions:read` | Update step data or progress                         |
-| POST   | `/api/v1/work-instructions/:id/executions/:executionId/complete` | `work_instructions:read` | Mark execution complete                              |
+| Method | Path                                  | Permission               | Description                                                   |
+| ------ | ------------------------------------- | ------------------------ | ------------------------------------------------------------- |
+| GET    | `/api/v1/work-instructions/:id/usage` | `work_instructions:read` | Traveler lines instantiated from this template, with progress |
 
-Note: Starting and updating executions require only `read` permission, since manufacturing technicians on read-only seats need to execute and record data.
+### Traveler & Executions (work order side)
 
-### Sign-Off
+Instantiation and execution live under `/api/v1/work-orders/:id/…` — the template routes carry no execution endpoints.
 
-| Method | Path                                                          | Permission           | Description                                                 |
-| ------ | ------------------------------------------------------------- | -------------------- | ----------------------------------------------------------- |
-| GET    | `/api/v1/work-instructions/:id/executions/:executionId/sign-off` | `work_orders:read`   | Get sign-off records                                        |
-| POST   | `/api/v1/work-instructions/:id/executions/:executionId/sign-off` | `work_orders:update` | Submit approval/rejection (body: `{ decision, comments? }`) |
+| Method   | Path                                                          | Permission               | Description                                                                         |
+| -------- | ------------------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------- |
+| GET      | `…/instructions`                                              | `work_orders:read`       | The traveler with derived status/progress                                           |
+| POST     | `…/instructions`                                              | `work_orders:update`     | Instantiate a template (`{ workInstructionId, partId?, requiredCount?, perUnit? }`) |
+| POST     | `…/instructions/populate`                                     | `work_orders:update`     | Instantiate from part attachments across the order's BOM                            |
+| PUT      | `…/instructions`                                              | `work_orders:update`     | Reorder lines                                                                       |
+| GET      | `…/instructions/:instructionId`                               | `work_orders:read`       | Line detail (snapshot)                                                              |
+| PATCH    | `…/instructions/:instructionId`                               | `work_orders:update`     | Update `requiredCount`                                                              |
+| POST     | `…/instructions/:instructionId/skip` / `unskip` / `refresh`   | `work_orders:update`     | Skip (reason required) / unskip / re-freeze                                         |
+| DELETE   | `…/instructions/:instructionId`                               | `work_orders:update`     | Remove (only while unexecuted)                                                      |
+| GET      | `…/instructions/:instructionId/resolve-parametric`            | `work_orders:read`       | Resolve snapshot parametric blocks against current part data                        |
+| GET/POST | `…/instructions/:instructionId/executions`                    | `work_instructions:read` | List runs / start-or-resume a run (`{ unitLabel? }`)                                |
+| GET      | `…/executions`                                                | `work_orders:read`       | Every run for the order                                                             |
+| GET/PUT  | `…/executions/:executionId`                                   | `work_instructions:read` | Run detail / step data & progress                                                   |
+| POST     | `…/executions/:executionId/complete` / `abandon` / `resubmit` | `work_instructions:read` | Finish / abandon / resubmit a rejected run                                          |
+| GET      | `…/executions/:executionId/sign-off`                          | `work_orders:read`       | Sign-off records                                                                    |
+| POST     | `…/executions/:executionId/sign-off`                          | `work_orders:update`     | Submit approval/rejection (`{ decision, comments? }`)                               |
 
-Sign-off endpoints use `work_orders` permissions since they are a supervisory function tied to work order management.
+Note: running executions requires only `work_instructions:read`, since manufacturing technicians on read-only seats need to execute and record data (resubmit is executor-gated in the service). Sign-off uses `work_orders` permissions since it is a supervisory function tied to work order management.
 
 ---
 
@@ -462,17 +488,19 @@ Sign-off endpoints use `work_orders` permissions since they are a supervisory fu
 
 ## Key Source Files
 
-| Area                       | Path                                                         |
-| -------------------------- | ------------------------------------------------------------ |
-| Database schema            | `src/lib/db/schema/items.ts` (search for `workInstructions`) |
-| Type definitions           | `src/lib/items/types/work-instruction.ts`                    |
-| Item type registration     | `src/lib/items/registerItemTypes.server.ts`                  |
-| Numbering scheme           | `src/lib/items/numbering/schemes.ts`                         |
-| Inheritance service        | `src/lib/services/WorkInstructionInheritanceService.ts`      |
-| Change alert service       | `src/lib/services/WorkInstructionChangeAlertService.ts`      |
-| Execution service          | `src/lib/services/WorkInstructionExecutionService.ts`        |
-| Parametric resolution      | `src/lib/services/ParametricResolutionService.ts`            |
-| Background job definitions | `src/lib/jobs/definitions/workinstruction/`                  |
-| API routes                 | `src/routes/api/work-instructions/`                          |
-| Parts reverse-lookup       | `src/routes/api/parts/$id/work-instructions.ts`              |
-| UI components              | `src/components/work-instructions/`                          |
+| Area                       | Path                                                                       |
+| -------------------------- | -------------------------------------------------------------------------- |
+| Database schema            | `packages/core/src/lib/db/schema/items.ts` (search for `workInstructions`) |
+| Type definitions           | `packages/core/src/lib/items/types/work-instruction.ts`                    |
+| Item type registration     | `packages/core/src/lib/items/registerItemTypes.server.ts`                  |
+| Numbering scheme           | `packages/core/src/lib/items/numbering/schemes.ts`                         |
+| Inheritance service        | `packages/core/src/lib/services/WorkInstructionInheritanceService.ts`      |
+| Change alert service       | `packages/core/src/lib/services/WorkInstructionChangeAlertService.ts`      |
+| Traveler service           | `packages/core/src/lib/services/WorkOrderInstructionService.ts`            |
+| Execution service          | `packages/core/src/lib/services/InstructionExecutionService.ts`            |
+| Traveler/execution schema  | `packages/core/src/lib/db/schema/work-orders.ts`                           |
+| Parametric resolution      | `packages/core/src/lib/services/ParametricResolutionService.ts`            |
+| Background job definitions | `packages/core/src/lib/jobs/definitions/workinstruction/`                  |
+| API routes                 | `packages/core/src/server/routes/work-instructions.ts`                     |
+| Parts reverse-lookup       | `packages/core/src/server/routes/parts.ts`                                 |
+| UI components              | `packages/core/src/components/work-instructions/`                          |

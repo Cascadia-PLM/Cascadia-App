@@ -1,0 +1,276 @@
+[
+  {
+    "itemNumber": "LATHE-001",
+    "revision": "A",
+    "name": "Grizzly G0765 - 7\" x 14\" Variable-Speed Benchtop Metal Lathe",
+    "state": "Active",
+    "toolType": "manufacturing",
+    "toolSubtype": "manual_lathe",
+    "manufacturer": "Grizzly",
+    "model": "G0765",
+    "toolStatus": "available",
+    "attributes": {
+      "HP": "3/4"
+    },
+    "capabilities": {
+      "threading": true,
+      "spindleBore": 20,
+      "maxSwingDiameter": 177.8,
+      "spindleSpeedRange": [100, 2000],
+      "compatibleMaterials": ["steel"],
+      "distanceBetweenCenters": 330.2
+    }
+  },
+  {
+    "itemNumber": "MILL-001",
+    "revision": "A",
+    "name": "Grizzly G0704 7\" x 27\" 1 HP Mill",
+    "state": "Active",
+    "toolType": "manufacturing",
+    "toolSubtype": "manual_mill",
+    "manufacturer": "Grizzly",
+    "model": "G0704",
+    "toolStatus": "available",
+    "attributes": {
+      "HP": "1",
+      "Amps": "12",
+      "Phase": "Single"
+    },
+    "capabilities": {
+      "tableSize": [676.275, 176.2125],
+      "spindleTaper": "R8",
+      "maxSpindleToTable": 330.2,
+      "spindleSpeedRange": [0, 4300],
+      "compatibleMaterials": ["steel"]
+    }
+  },
+  {
+    "itemNumber": "TOOL-000001",
+    "revision": "A",
+    "name": "Original Prusa i3 MK3S+",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "fdm_printer",
+    "manufacturer": "Prusa Research",
+    "model": "i3 MK3S+ MMU",
+    "toolStatus": "available",
+    "capabilities": {
+      "heatedBed": true,
+      "buildVolume": [250, 210, 210],
+      "enclosedChamber": true,
+      "compatibleMaterials": ["PLA"]
+    }
+  },
+  {
+    "itemNumber": "TOOL-000002",
+    "revision": "A",
+    "name": "WEN 3962T 3.5-Amp 10-Inch Two-Speed Band Saw",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "band_saw",
+    "manufacturer": "WEN",
+    "model": "3962T",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000003",
+    "revision": "A",
+    "name": "Craftsman Bench Grinder",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "bench_grinder",
+    "manufacturer": "Craftsman",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000004",
+    "revision": "A",
+    "name": "Lincoln 140 MP Multi-Process Welder",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "mig_welder",
+    "manufacturer": "Lincoln",
+    "model": "Power MIG 140 MP",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000005",
+    "revision": "A",
+    "name": "Dewalt 20V Max Drill/Driver",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "other",
+    "manufacturer": "Dewalt",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000006",
+    "revision": "A",
+    "name": "Granite Surface Plate",
+    "state": "Draft",
+    "toolType": "quality",
+    "toolSubtype": "surface_plate",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000007",
+    "revision": "A",
+    "name": "Height Gauge",
+    "state": "Draft",
+    "toolType": "quality",
+    "toolSubtype": "height_gauge",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000008",
+    "revision": "A",
+    "name": "Mitutoyo Micrometer Set",
+    "state": "Draft",
+    "toolType": "quality",
+    "toolSubtype": "micrometer",
+    "manufacturer": "Mitutoyo",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000009",
+    "revision": "A",
+    "name": "Mitutoyo 12\" calipers",
+    "state": "Draft",
+    "toolType": "quality",
+    "toolSubtype": "calipers",
+    "manufacturer": "Mitutoyo",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000010",
+    "revision": "A",
+    "name": "WEN 4208T 2.3-Amp 8-Inch 5-Speed Cast Iron Benchtop Drill Press",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "drill_press",
+    "manufacturer": "WEN",
+    "model": "4208T",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000011",
+    "revision": "A",
+    "name": "VEVOR Sheet Metal Brake 36\"",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "box_brake",
+    "manufacturer": "VEVOR",
+    "toolStatus": "available",
+    "notes": "Capacity for 20 gauge low carbon steel and 14 gauge aluminum. 0-130 degree adjustable angle."
+  },
+  {
+    "itemNumber": "TOOL-000012",
+    "revision": "A",
+    "name": "Dewalt Heavy Duty Heat Gun",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "heat_gun",
+    "manufacturer": "Dewalt",
+    "model": "D26960K",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000013",
+    "revision": "A",
+    "name": "Weller 70 Watt Digital Soldering Station",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "soldering_station",
+    "manufacturer": "Weller",
+    "model": "WE1010NA",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000014",
+    "revision": "A",
+    "name": "Propane Torch Head",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "other",
+    "manufacturer": "RTTOOA",
+    "model": "GJ-8000pro",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000015",
+    "revision": "A",
+    "name": "DC Power Supply Variable, 0-32V 0-10A Switching Bench Power Supply",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "other",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000016",
+    "revision": "A",
+    "name": "IRWIN Vise-Grip Wire Stripper",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "other",
+    "manufacturer": "IRWIN",
+    "model": "2078300",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000017",
+    "revision": "A",
+    "name": "AstroAI Digital Multimeter, True RMS 6000 Counts Auto-Ranging Volt Meter",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "other",
+    "manufacturer": "AstroAI",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000018",
+    "revision": "A",
+    "name": "DEWALT 10-Inch Table Saw, 32-1/2-Inch Rip Capacity",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "table_saw",
+    "manufacturer": "DEWALT",
+    "model": "DWE7491RS",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000019",
+    "revision": "A",
+    "name": "DEWALT 2-1/4 HP EVS Fixed Base/Plunge Router Combo Kit",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "other",
+    "manufacturer": "DEWALT",
+    "model": "DW618PKB",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000020",
+    "revision": "A",
+    "name": "DEWALT 20V MAX Brushless Cut Off Tool/Grinder",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "angle_grinder",
+    "manufacturer": "DEWALT",
+    "model": "DCG413B",
+    "toolStatus": "available"
+  },
+  {
+    "itemNumber": "TOOL-000021",
+    "revision": "A",
+    "name": "DEWALT Sliding Compound Miter Saw, 12-Inch",
+    "state": "Draft",
+    "toolType": "manufacturing",
+    "toolSubtype": "miter_saw",
+    "manufacturer": "DEWALT",
+    "model": "DWS779",
+    "toolStatus": "available",
+    "capabilities": {
+      "slidingCompound": true
+    }
+  }
+]

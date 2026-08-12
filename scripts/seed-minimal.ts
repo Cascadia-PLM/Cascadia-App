@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
 /**
  * Minimal Database Seed Script
  * Creates only the bare essentials needed to start using Cascadia:
@@ -5,24 +8,34 @@
  * - Default Program
  * - Standard Parts Library
  * - Core Roles
- * - Default Lifecycles for Part, Document, ChangeOrder
+ * - Default Lifecycles for Part, Document, Requirement, ChangeOrder
  */
 import { eq } from 'drizzle-orm'
 import dagre from 'dagre'
-import { db } from '../src/lib/db/index.ts'
-import { roles, userRoles, users } from '../src/lib/db/schema/users.ts'
-import { programMembers, programs } from '../src/lib/db/schema/programs.ts'
-import { designs } from '../src/lib/db/schema/designs.ts'
-import { branches, commits } from '../src/lib/db/schema/versioning.ts'
-import { itemTypeConfigs } from '../src/lib/db/schema/config.ts'
-import { workflowDefinitions } from '../src/lib/db/schema/workflows.ts'
-import { hashPassword } from '../src/lib/auth/password.ts'
+import { db, describeConnection } from '../packages/core/src/lib/db/index.ts'
+import {
+  roles,
+  userRoles,
+  users,
+} from '../packages/core/src/lib/db/schema/users.ts'
+import {
+  programMembers,
+  programs,
+} from '../packages/core/src/lib/db/schema/programs.ts'
+import { designs } from '../packages/core/src/lib/db/schema/designs.ts'
+import {
+  branches,
+  commits,
+} from '../packages/core/src/lib/db/schema/versioning.ts'
+import { itemTypeConfigs } from '../packages/core/src/lib/db/schema/config.ts'
+import { workflowDefinitions } from '../packages/core/src/lib/db/schema/workflows.ts'
+import { hashPassword } from '../packages/core/src/lib/auth/password.ts'
 import {
   ROLE_DEFINITIONS,
   roleToDbFormat,
-} from '../src/lib/auth/permissions.ts'
-import { LIFECYCLE_IDS } from '../src/lib/items/lifecycle-ids.ts'
-import { takeFirst } from '../src/lib/db/take-first'
+} from '../packages/core/src/lib/auth/permissions.ts'
+import { LIFECYCLE_IDS } from '../packages/core/src/lib/items/lifecycle-ids.ts'
+import { takeFirst } from '../packages/core/src/lib/db/take-first'
 
 // ============================================================================
 // Auto-layout utility using dagre
@@ -87,14 +100,17 @@ const IDS = {
   // Lifecycle definition IDs - imported from shared constants
   partLifecycle: LIFECYCLE_IDS.part,
   documentLifecycle: LIFECYCLE_IDS.document,
+  requirementLifecycle: LIFECYCLE_IDS.requirement,
   changeOrderWorkflow: LIFECYCLE_IDS.changeOrder,
   flexibleChangeOrderWorkflow: LIFECYCLE_IDS.flexibleChangeOrder,
   issueLifecycle: LIFECYCLE_IDS.issue,
   toolLifecycle: LIFECYCLE_IDS.tool,
+  physicalPartLifecycle: LIFECYCLE_IDS.physicalPart,
+  workOrderLifecycle: LIFECYCLE_IDS.workOrder,
 }
 
 try {
-  console.log('🌱 Seeding minimal database...\n')
+  console.log(`🌱 Seeding minimal database: ${describeConnection()}\n`)
 
   // ============================================================================
   // 1. Create Roles (including Global Admin)
@@ -373,7 +389,9 @@ try {
     states: itemLifecycleStates,
     // No manual transitions - Driven lifecycles only define states
     transitions: [],
-    // Legacy: change action mappings (deprecated, use TransitionDrivenItem actions on Driving lifecycle)
+    // Change action mappings: how ECO release/revise/obsolete move items of
+    // this lifecycle between states — applied by the merge at release, the
+    // single mechanism for ECO-driven state change
     changeActionMappings: {
       release: {
         fromState: 'Draft',
@@ -395,8 +413,8 @@ try {
     definitionType: 'lifecycle',
     lifecycleType: 'Driven', // ECO-controlled lifecycle
     description:
-      'Standard lifecycle for Parts and Documents. All state changes go through ECOs.',
-    applicableItemTypes: ['Part', 'Document'],
+      'Standard lifecycle for Parts, Documents, and Requirements. All state changes go through ECOs.',
+    applicableItemTypes: ['Part', 'Document', 'Requirement'],
   }
 
   // Create Part Lifecycle (Driven - controlled by ECOs)
@@ -458,11 +476,48 @@ try {
       },
     })
 
+  // Create Requirement Lifecycle (Driven - controlled by ECOs)
+  // Requirements are versioned items like Parts and Documents: they live on
+  // Designs, are checked out to ECO branches, and get revision letters at merge
+  await db
+    .insert(workflowDefinitions)
+    .values({
+      id: IDS.requirementLifecycle,
+      name: 'Requirement - Default Lifecycle',
+      version: 1,
+      workflowType: 'strict',
+      definition: {
+        ...itemLifecycleDefinition,
+        applicableItemTypes: ['Requirement'],
+      },
+      isActive: true,
+      lifecycleType: 'Driven',
+      drivers: [IDS.changeOrderWorkflow, IDS.flexibleChangeOrderWorkflow],
+    })
+    .onConflictDoUpdate({
+      target: workflowDefinitions.id,
+      set: {
+        name: 'Requirement - Default Lifecycle',
+        version: 1,
+        definition: {
+          ...itemLifecycleDefinition,
+          applicableItemTypes: ['Requirement'],
+        },
+        isActive: true,
+        lifecycleType: 'Driven',
+        drivers: [IDS.changeOrderWorkflow, IDS.flexibleChangeOrderWorkflow],
+      },
+    })
+
   // Change Order Workflow - Simple approval workflow (Driving lifecycle)
-  // Note: This is a "Driving" lifecycle that controls Driven lifecycles via TransitionDrivenItem actions
+  // Note: This is a "Driving" lifecycle — completing it with a release
+  // applies the Driven lifecycles' changeActionMappings via the merge
   const changeOrderTransitions = [
     { fromStateId: 'Draft', toStateId: 'InReview' },
     { fromStateId: 'InReview', toStateId: 'Approved' },
+    { fromStateId: 'InReview', toStateId: 'Draft' },
+    { fromStateId: 'InReview', toStateId: 'Cancelled' },
+    { fromStateId: 'Draft', toStateId: 'Cancelled' },
   ]
 
   const changeOrderStates = layoutLifecycleStates(
@@ -490,6 +545,18 @@ try {
         description: 'ECO has been approved and items are released',
         isInitial: false,
         isFinal: true,
+        // Completing here merges branches and assigns revisions
+        finalKind: 'release',
+      },
+      {
+        id: 'Cancelled',
+        name: 'Cancelled',
+        color: 'red',
+        description: 'ECO was abandoned; branches are archived unmerged',
+        isInitial: false,
+        isFinal: true,
+        // Completing here archives branches without merging
+        finalKind: 'cancel',
       },
     ],
     changeOrderTransitions,
@@ -511,33 +578,36 @@ try {
         name: 'Approve',
         fromStateId: 'InReview',
         toStateId: 'Approved',
+        // Approved is final with finalKind 'release': completing the
+        // workflow runs the merge, which applies each affected item's
+        // changeActionMappings — no per-transition actions needed
         description: 'Approve the ECO and release affected items',
-        actions: [
-          {
-            id: 'release-parts',
-            name: 'Release Affected Parts',
-            type: 'transition_driven_item',
-            executeOn: 'after',
-            config: {
-              drivenLifecycleId: LIFECYCLE_IDS.part,
-              fromStateId: 'Draft',
-              targetStateId: 'Released',
-              validateGates: true,
-            },
-          },
-          {
-            id: 'release-documents',
-            name: 'Release Affected Documents',
-            type: 'transition_driven_item',
-            executeOn: 'after',
-            config: {
-              drivenLifecycleId: LIFECYCLE_IDS.document,
-              fromStateId: 'Draft',
-              targetStateId: 'Released',
-              validateGates: true,
-            },
-          },
-        ],
+      },
+      {
+        // Rework. Returning to the initial state reopens the ECO's scope, so
+        // the items the reviewer asked for can actually be added.
+        id: 't3',
+        name: 'Return to Draft',
+        fromStateId: 'InReview',
+        toStateId: 'Draft',
+        description: 'Send the ECO back for rework',
+      },
+      {
+        // Without a cancel path a submitted ECO could only ever be approved
+        // or sit in review forever — there was no way to abandon one, and
+        // the engine's cancel semantics were unreachable.
+        id: 't4',
+        name: 'Cancel',
+        fromStateId: 'InReview',
+        toStateId: 'Cancelled',
+        description: 'Abandon the ECO; branches are archived unmerged',
+      },
+      {
+        id: 't5',
+        name: 'Cancel',
+        fromStateId: 'Draft',
+        toStateId: 'Cancelled',
+        description: 'Abandon the ECO before review',
       },
     ],
     definitionType: 'workflow',
@@ -592,6 +662,8 @@ try {
         description: 'Workflow completed',
         isInitial: false,
         isFinal: true,
+        // Completing here merges branches and assigns revisions
+        finalKind: 'release',
       },
     ],
     flexibleChangeOrderTransitions,
@@ -606,34 +678,9 @@ try {
         name: 'Complete',
         fromStateId: 'start',
         toStateId: 'complete',
+        // 'complete' is final with finalKind 'release': the merge applies
+        // each affected item's changeActionMappings — no actions needed
         description: 'Mark as complete',
-        // TransitionDrivenItem actions: move affected items to Released state
-        actions: [
-          {
-            id: 'release-parts',
-            name: 'Release Affected Parts',
-            type: 'transition_driven_item',
-            executeOn: 'after',
-            config: {
-              drivenLifecycleId: LIFECYCLE_IDS.part,
-              fromStateId: 'Draft',
-              targetStateId: 'Released',
-              validateGates: true,
-            },
-          },
-          {
-            id: 'release-documents',
-            name: 'Release Affected Documents',
-            type: 'transition_driven_item',
-            executeOn: 'after',
-            config: {
-              drivenLifecycleId: LIFECYCLE_IDS.document,
-              fromStateId: 'Draft',
-              targetStateId: 'Released',
-              validateGates: true,
-            },
-          },
-        ],
       },
     ],
     definitionType: 'workflow',
@@ -667,7 +714,7 @@ try {
       },
     })
 
-  console.log('✓ Default Lifecycles (Part, Document, ChangeOrder)')
+  console.log('✓ Default Lifecycles (Part, Document, Requirement, ChangeOrder)')
   console.log('✓ Flexible Workflow (Dynamic Change Order)')
 
   // Issue Lifecycle - Free lifecycle (self-controlled, no ECO required)
@@ -980,6 +1027,244 @@ try {
 
   console.log('✓ Tool Lifecycle (Free)')
 
+  // Physical Part Lifecycle - Free lifecycle for serialized units and lots
+  const physicalPartTransitions = [
+    { fromStateId: 'Available', toStateId: 'Consumed' },
+    { fromStateId: 'Consumed', toStateId: 'Available' },
+    { fromStateId: 'Available', toStateId: 'In Service' },
+    { fromStateId: 'In Service', toStateId: 'Available' },
+    { fromStateId: 'Available', toStateId: 'Scrapped' },
+    { fromStateId: 'In Service', toStateId: 'Scrapped' },
+  ]
+
+  const physicalPartStates = layoutLifecycleStates(
+    [
+      {
+        id: 'Available',
+        name: 'Available',
+        color: 'green',
+        description: 'Instance exists and can be consumed or put in service',
+        isInitial: true,
+        isFinal: false,
+      },
+      {
+        id: 'Consumed',
+        name: 'Consumed',
+        color: 'blue',
+        description: 'Consumed by a work order (reversible while WO is open)',
+        isInitial: false,
+        isFinal: false,
+      },
+      {
+        id: 'In Service',
+        name: 'In Service',
+        color: 'purple',
+        description: 'Fielded/in use as an end item',
+        isInitial: false,
+        isFinal: false,
+      },
+      {
+        id: 'Scrapped',
+        name: 'Scrapped',
+        color: 'red',
+        description: 'Destroyed or disposed — identity retained for history',
+        isInitial: false,
+        isFinal: true,
+      },
+    ],
+    physicalPartTransitions,
+    'LR',
+  )
+
+  const physicalPartLifecycleDefinition = {
+    states: physicalPartStates,
+    transitions: [
+      {
+        id: 'pp-t1',
+        name: 'Consume',
+        fromStateId: 'Available',
+        toStateId: 'Consumed',
+        description: 'Consumed as material by a work order',
+      },
+      {
+        id: 'pp-t2',
+        name: 'Return to Stock',
+        fromStateId: 'Consumed',
+        toStateId: 'Available',
+        description: 'Undo consumption (work order line removed)',
+      },
+      {
+        id: 'pp-t3',
+        name: 'Put in Service',
+        fromStateId: 'Available',
+        toStateId: 'In Service',
+        description: 'Delivered/fielded as an end item',
+      },
+      {
+        id: 'pp-t4',
+        name: 'Return from Service',
+        fromStateId: 'In Service',
+        toStateId: 'Available',
+        description: 'Returned from the field',
+      },
+      {
+        id: 'pp-t5',
+        name: 'Scrap',
+        fromStateId: 'Available',
+        toStateId: 'Scrapped',
+        description: 'Destroyed or disposed',
+      },
+      {
+        id: 'pp-t6',
+        name: 'Scrap from Service',
+        fromStateId: 'In Service',
+        toStateId: 'Scrapped',
+        description: 'Retired from the field and disposed',
+      },
+    ],
+    definitionType: 'lifecycle',
+    lifecycleType: 'Free',
+    description:
+      'Physical part lifecycle for serialized units and lots. Available ↔ Consumed / In Service → Scrapped.',
+    applicableItemTypes: ['PhysicalPart'],
+  }
+
+  await db
+    .insert(workflowDefinitions)
+    .values({
+      id: IDS.physicalPartLifecycle,
+      name: 'Physical Part - Default Lifecycle',
+      version: 1,
+      workflowType: 'strict',
+      definition: physicalPartLifecycleDefinition,
+      isActive: true,
+      lifecycleType: 'Free',
+      drivers: [],
+    })
+    .onConflictDoUpdate({
+      target: workflowDefinitions.id,
+      set: {
+        name: 'Physical Part - Default Lifecycle',
+        definition: physicalPartLifecycleDefinition,
+        isActive: true,
+        lifecycleType: 'Free',
+        drivers: [],
+      },
+    })
+
+  console.log('✓ Physical Part Lifecycle (Free)')
+
+  // Work Order Lifecycle - Free lifecycle for manufacturing execution
+  const workOrderTransitions = [
+    { fromStateId: 'Not Started', toStateId: 'In Progress' },
+    { fromStateId: 'Not Started', toStateId: 'Cancelled' },
+    { fromStateId: 'In Progress', toStateId: 'Complete' },
+    { fromStateId: 'In Progress', toStateId: 'Cancelled' },
+  ]
+
+  const workOrderStates = layoutLifecycleStates(
+    [
+      {
+        id: 'Not Started',
+        name: 'Not Started',
+        color: 'gray',
+        description: 'Work order is planned but execution has not begun',
+        isInitial: true,
+        isFinal: false,
+      },
+      {
+        id: 'In Progress',
+        name: 'In Progress',
+        color: 'blue',
+        description: 'Execution underway on the shop floor',
+        isInitial: false,
+        isFinal: false,
+      },
+      {
+        id: 'Complete',
+        name: 'Complete',
+        color: 'green',
+        description: 'All quantities completed',
+        isInitial: false,
+        isFinal: true,
+      },
+      {
+        id: 'Cancelled',
+        name: 'Cancelled',
+        color: 'red',
+        description: 'Work order cancelled before completion',
+        isInitial: false,
+        isFinal: true,
+      },
+    ],
+    workOrderTransitions,
+    'LR',
+  )
+
+  const workOrderLifecycleDefinition = {
+    states: workOrderStates,
+    transitions: [
+      {
+        id: 'wo-t1',
+        name: 'Start',
+        fromStateId: 'Not Started',
+        toStateId: 'In Progress',
+        description: 'Begin execution',
+      },
+      {
+        id: 'wo-t2',
+        name: 'Cancel',
+        fromStateId: 'Not Started',
+        toStateId: 'Cancelled',
+        description: 'Cancel before starting',
+      },
+      {
+        id: 'wo-t3',
+        name: 'Complete',
+        fromStateId: 'In Progress',
+        toStateId: 'Complete',
+        description: 'All quantities completed',
+      },
+      {
+        id: 'wo-t4',
+        name: 'Cancel In Progress',
+        fromStateId: 'In Progress',
+        toStateId: 'Cancelled',
+        description: 'Cancel a running work order',
+      },
+    ],
+    definitionType: 'lifecycle',
+    lifecycleType: 'Free',
+    description:
+      'Work order execution lifecycle. Not Started → In Progress → Complete, cancellable until complete.',
+    applicableItemTypes: ['WorkOrder'],
+  }
+
+  await db
+    .insert(workflowDefinitions)
+    .values({
+      id: IDS.workOrderLifecycle,
+      name: 'Work Order - Default Lifecycle',
+      version: 1,
+      workflowType: 'strict',
+      definition: workOrderLifecycleDefinition,
+      isActive: true,
+      lifecycleType: 'Free',
+      drivers: [],
+    })
+    .onConflictDoUpdate({
+      target: workflowDefinitions.id,
+      set: {
+        name: 'Work Order - Default Lifecycle',
+        definition: workOrderLifecycleDefinition,
+        isActive: true,
+        lifecycleType: 'Free',
+        drivers: [],
+      },
+    })
+
+  console.log('✓ Work Order Lifecycle (Free)')
+
   // ============================================================================
   // 6. Create Item Type Configs with Lifecycle Assignments
   // ============================================================================
@@ -1002,6 +1287,18 @@ try {
         lifecycleDefinitionId: IDS.documentLifecycle,
         permissions: {
           create: ['Power User', 'Administrator', 'Global Admin', 'View Only'],
+          read: ['*'],
+          update: ['Power User', 'Administrator', 'Global Admin'],
+          delete: ['Administrator', 'Global Admin'],
+        },
+      },
+    },
+    {
+      itemType: 'Requirement',
+      config: {
+        lifecycleDefinitionId: IDS.requirementLifecycle,
+        permissions: {
+          create: ['Power User', 'Administrator', 'Global Admin'],
           read: ['*'],
           update: ['Power User', 'Administrator', 'Global Admin'],
           delete: ['Administrator', 'Global Admin'],
@@ -1053,6 +1350,30 @@ try {
         },
       },
     },
+    {
+      itemType: 'PhysicalPart',
+      config: {
+        lifecycleDefinitionId: IDS.physicalPartLifecycle,
+        permissions: {
+          create: ['*'],
+          read: ['*'],
+          update: ['*'],
+          delete: ['Administrator', 'Global Admin'],
+        },
+      },
+    },
+    {
+      itemType: 'WorkOrder',
+      config: {
+        lifecycleDefinitionId: IDS.workOrderLifecycle,
+        permissions: {
+          create: ['*'],
+          read: ['*'],
+          update: ['*'],
+          delete: ['Administrator', 'Global Admin'],
+        },
+      },
+    },
   ]
 
   for (const typeConfig of typeConfigs) {
@@ -1094,6 +1415,9 @@ try {
   )
   console.log(
     '  Document - Default Lifecycle (Driven: Draft → Released → Superseded/Obsolete)',
+  )
+  console.log(
+    '  Requirement - Default Lifecycle (Driven: Draft → Released → Superseded/Obsolete)',
   )
   console.log(
     '  ECO - Default Workflow (Driving: Draft → In Review → Approved)',

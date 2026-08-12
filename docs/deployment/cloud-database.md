@@ -146,7 +146,7 @@ From your local development machine or a CI/CD pipeline:
 export DATABASE_URL=postgresql://cascadia:PASSWORD@<cloud-db-host>:5432/cascadia?sslmode=require
 
 # Push the schema
-npx drizzle-kit push
+npm run db:push
 ```
 
 ### Step 3: Deploy the Application
@@ -190,7 +190,7 @@ docker compose up -d
 The compose file runs migrations on startup:
 
 ```yaml
-command: sh -c "npx drizzle-kit push --force && npm run serve"
+command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
 ```
 
 ### Step 4: Seed the Database (Optional)
@@ -227,7 +227,7 @@ services:
     volumes:
       - app_storage:/app/storage
       - app_vault:/app/vault
-    command: sh -c "npx drizzle-kit push --force && npm run serve"
+    command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
 ```
 
 When using S3 storage, the local volumes (`app_storage`, `app_vault`) are not needed for file vault data, but the app may still use them for temporary files.
@@ -363,7 +363,7 @@ If the startup command fails:
 
 ```bash
 # Run manually
-docker compose exec app npx drizzle-kit push
+docker compose exec app npm run db:push
 ```
 
 Check that the database user has sufficient privileges (CREATE, ALTER, DROP on the target schema).
@@ -373,6 +373,6 @@ Check that the database user has sufficient privileges (CREATE, ALTER, DROP on t
 If pages return 500 errors with `relation "program_members" does not exist`, the schema was never pushed. Run:
 
 ```bash
-docker compose exec app npx drizzle-kit push
+docker compose exec app npm run db:push
 docker compose exec app npm run db:seed
 ```

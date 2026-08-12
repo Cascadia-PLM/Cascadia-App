@@ -1,4 +1,7 @@
 #!/usr/bin/env tsx
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
 /**
  * E2E Test Setup Script
  *

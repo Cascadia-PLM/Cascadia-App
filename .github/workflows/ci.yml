@@ -6,6 +6,14 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel superseded PR runs; never cancel a main run. Each merge commit is a
+# distinct state that needs its own verdict — on 2026-08-05 two merges landed 14
+# seconds apart, and a blanket cancel-in-progress would have left the first one
+# permanently unjudged.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   NODE_ENV: test
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_test
@@ -27,6 +35,28 @@ jobs:
 
       - name: Run lint
         run: npm run lint
+
+      # Prettier was never gated here, so formatting drifted across 179 files
+      # before anyone noticed. `prettier` is pinned to an exact version in
+      # package.json — a floating range reformats different files per minor
+      # release, which is drift by another name.
+      - name: Check formatting
+        run: npm run format:check
+
+      # Every file carries the SPDX header its edition requires. This matters
+      # because the OSS publish pipeline copies core files downstream verbatim —
+      # there is no header-rewriting step, by design — so a wrong header here
+      # becomes a wrong licence there.
+      - name: Check license headers
+        run: npm run license:check
+
+      # Core must not reach proprietary code. Resolves every import specifier
+      # and classifies the target, rather than matching patterns: two rounds of
+      # grepping previously declared a package "fully seamed" while a dynamic
+      # import and a bare package-id string were still live. Ratcheted — the
+      # known-pending list may only shrink.
+      - name: Check core/proprietary boundary
+        run: npm run boundary:check
 
   openapi:
     name: OpenAPI Snapshot
@@ -80,18 +110,30 @@ jobs:
       - name: Setup database schema
         run: npm run db:push
 
+      # `npm run test`, not `test:coverage`: vitest.config.ts enforces no
+      # coverage thresholds, and the codecov upload that consumed the report was
+      # dropped when this repo went proprietary — it had no token here and would
+      # have shipped source paths and per-line coverage of closed code to a third
+      # party. Nothing consumed the report, so nothing generates it.
       - name: Run unit tests
-        run: npm run test:coverage
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage/lcov.info
-          fail_ci_if_error: false
+        run: npm run test
 
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
+    # PR-only. The pull_request event checks out refs/pull/N/merge — main with
+    # this branch already merged — so by the time the merge commit lands on main,
+    # E2E has already run against that exact tree. Across the last 10 merges the
+    # post-merge run matched its PR run 10 times out of 10, at ~11 of the 22
+    # billed runner-minutes per run. That was half the CI bill for a replay.
+    #
+    # The main run is kept for what a PR run genuinely cannot cover: main
+    # advancing after a PR's last green run. GitHub recomputes the merge ref but
+    # does not re-run CI, so two independently-passing PRs can break once merged.
+    # Lint, Unit Tests, OpenAPI and Build still run on main and catch that class
+    # of semantic conflict — E2E is both the least likely to add a verdict there
+    # and by far the slowest to deliver one.
+    if: github.event_name == 'pull_request'
     services:
       postgres:
         image: postgres:18
@@ -151,7 +193,17 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint, unit-tests]
+    # No `needs:` — deliberately. This was `needs: [lint, unit-tests]`, which made
+    # the strictest gate in the repo hostage to the weakest: a prettier failure in
+    # Lint skipped Build, and `typecheck:strict` with it. Between 2026-07-30 and
+    # 2026-08-05 that skipped Build on 15 of 18 runs, and PRs #57 and #58 reached
+    # main with no typecheck signal at all — the PR page showed a red X everyone
+    # had already filed under "formatting".
+    #
+    # Building unconditionally costs ~2.5 runner-minutes on runs that would have
+    # skipped it. That is the point: when lint is red is precisely when you still
+    # want to know whether the types are sound. It also shortens the post-merge
+    # run, where Build is otherwise the tail of a lint -> unit -> build chain.
     steps:
       - uses: actions/checkout@v4
 
@@ -163,17 +215,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      # Both editions, because a change can break one and not the other — the
+      # community app is not a subset of the enterprise app's build, it is a
+      # separate composition with its own route tree.
+      - name: Build (enterprise)
         run: npm run build
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
 
+      - name: Build (community)
+        run: npm run build:community
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
+
       # Deliberately lives in this job, after Build, rather than standing alone:
-      # src/routeTree.gen.ts is gitignored and generated by TanStackRouterVite
-      # during `vite build`. It carries the module augmentation typing all 65
-      # createFileRoute() sites, so on a fresh checkout a standalone tsc job
-      # would report a number unrelated to the ceilings and gate nothing.
-      # Running here reuses the route tree the real build just produced.
+      # apps/*/src/routeTree.gen.ts is gitignored and generated by
+      # TanStackRouterVite during `vite build`. It carries the module
+      # augmentation typing every createFileRoute() site, so on a fresh checkout
+      # a standalone tsc job would report a number unrelated to the code and
+      # gate nothing. Running here reuses the trees the builds just produced —
+      # and both must exist, since `typecheck-all` checks each app separately.
       - name: Typecheck
         run: npm run typecheck:strict
         env:

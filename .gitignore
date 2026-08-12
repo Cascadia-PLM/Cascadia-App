@@ -8,7 +8,7 @@ count.txt
 .nitro
 .tanstack
 .output
-src/routeTree.gen.ts
+apps/*/src/routeTree.gen.ts
 .vinxi
 todos.json
 .vscode/

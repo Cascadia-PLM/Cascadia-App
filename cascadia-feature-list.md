@@ -62,13 +62,13 @@ The signature differentiator: Git-style branching for engineering changes.
 
 ### Impact Analysis ✅
 
-| Feature                | Status | Notes                                            |
-| ---------------------- | ------ | ------------------------------------------------ |
-| Where-used impact tree | ✅     | Recursive BOM traversal up to configurable depth |
-| Cross-design impact    | ✅     | Detects items referenced from other designs      |
-| Definition-usage chain | ✅     | Follows reusable part definition/instance links  |
-| Deduplication          | ✅     | Affected item list without duplicates            |
-| Impact assessment API  | ✅     | `POST /api/change-orders/:id/impact-assessment`  |
+| Feature                | Status | Notes                                              |
+| ---------------------- | ------ | -------------------------------------------------- |
+| Where-used impact tree | ✅     | Recursive BOM traversal up to configurable depth   |
+| Cross-design impact    | ✅     | Detects items referenced from other designs        |
+| Definition-usage chain | ✅     | Follows reusable part definition/instance links    |
+| Deduplication          | ✅     | Affected item list without duplicates              |
+| Impact assessment API  | ✅     | `POST /api/v1/change-orders/:id/impact-assessment` |
 
 ### Branch Operations ✅
 
@@ -358,10 +358,10 @@ Bulk data import from spreadsheets with intelligent BOM parsing.
 
 ### Import API ✅
 
-| Endpoint                 | Status | Notes                                  |
-| ------------------------ | ------ | -------------------------------------- |
-| `POST /api/import/parts` | ✅     | Bulk part creation + BOM relationships |
-| Branch-aware import      | ✅     | Import to ECO branch or main           |
+| Endpoint                    | Status | Notes                                  |
+| --------------------------- | ------ | -------------------------------------- |
+| `POST /api/v1/import/parts` | ✅     | Bulk part creation + BOM relationships |
+| Branch-aware import         | ✅     | Import to ECO branch or main           |
 
 ---
 
@@ -397,18 +397,19 @@ RESTful API for external system integration.
 
 ### REST API ✅
 
-| Endpoint Category      | Status | Notes                                  |
-| ---------------------- | ------ | -------------------------------------- |
-| Items CRUD             | ✅     | All item types                         |
-| Relationships          | ✅     | Create, update, delete                 |
-| Files                  | ✅     | Upload, download, check-in/out         |
-| Workflows              | ✅     | Transitions, history                   |
-| Change Orders          | ✅     | Full ECO lifecycle + impact assessment |
-| Users & Roles          | ✅     | Administration                         |
-| Reports                | ✅     | Execute and export                     |
-| Search                 | ✅     | Enterprise search                      |
-| Work Instructions      | ✅     | CRUD, executions, change alerts        |
-| AI Chat                | ✅     | Conversations with tool use            |
+| Endpoint Category | Status | Notes                                  |
+| ----------------- | ------ | -------------------------------------- |
+| Items CRUD        | ✅     | All item types                         |
+| Relationships     | ✅     | Create, update, delete                 |
+| Files             | ✅     | Upload, download, check-in/out         |
+| Workflows         | ✅     | Transitions, history                   |
+| Change Orders     | ✅     | Full ECO lifecycle + impact assessment |
+| Users & Roles     | ✅     | Administration                         |
+| Reports           | ✅     | Execute and export                     |
+| Search            | ✅     | Enterprise search                      |
+| Work Instructions | ✅     | Template CRUD, usage, change alerts    |
+| Work Instructions | ✅     | CRUD, executions, change alerts        |
+| AI Chat           | ✅     | Conversations with tool use            |
 
 ### Batch Operations ✅
 
@@ -553,6 +554,15 @@ LLM-powered chatbot for navigating and querying PLM data.
 | OpenAI adapter      | ✅     | GPT integration via TanStack AI                 |
 | Admin settings      | ✅     | Configure AI provider and model                 |
 
+### MCP Servers ✅
+
+| Feature                     | Status | Notes                                                                                        |
+| --------------------------- | ------ | -------------------------------------------------------------------------------------------- |
+| PLM server (`cascadia-plm`) | ✅     | Chatbot tool registry over Streamable HTTP at `/api/mcp`                                     |
+| API-key auth + scoping      | ✅     | Bearer `csc_` keys; key scope intersects role permissions                                    |
+| Dev server (`cascadia-dev`) | ✅     | Stdio server for self-hosters: status, docs, db push/seed/reset                              |
+| Shared tool registry        | ✅     | One tool stack for the in-app chatbot and MCP (`packages/core/src/lib/ai/tools/registry.ts`) |
+
 ---
 
 ## CAD Conversion Service
@@ -568,6 +578,91 @@ Python microservice for converting CAD files between formats.
 | Color extraction from STEP | ✅     | XDE metadata via XCAFDoc_ColorTool           |
 | RabbitMQ integration       | ✅     | Processes conversion jobs from queue         |
 | Docker deployment          | ✅     | Conda-packed miniforge3 image                |
+
+---
+
+## Physical Traceability
+
+Identity and genealogy for real material — which unit was built from which lot,
+and what evidence says it met its requirements. Deliberately stops short of
+quantity and value: no inventory balances, no costing.
+
+### Physical Parts ✅
+
+| Feature              | Status | Notes                                                                         |
+| -------------------- | ------ | ----------------------------------------------------------------------------- |
+| PhysicalPart item    | ✅     | A physical instance of a Part: a serialized **unit** or an identified **lot** |
+| Non-versioned        | ✅     | Tool pattern — instances are records of reality, not revisions                |
+| Dual identity        | ✅     | `PP-000001` as a stable handle; serial or lot number as the display identity  |
+| Registration         | ✅     | `POST /api/v1/physical-parts/register`                                        |
+| Part `trackingMode`  | ✅     | `none`, `lot`, or `serial` — the policy deciding whether instances exist      |
+| Document attachments | ✅     | Material certs, test reports, CoCs held in the vault against the instance     |
+
+### Genealogy ✅
+
+| Feature               | Status | Notes                                                                |
+| --------------------- | ------ | -------------------------------------------------------------------- |
+| Consumption edges     | ✅     | `Consumes` relationships, quantity pinned to the consumed revision   |
+| Production edges      | ✅     | `Produces` relationships from work order to built instance           |
+| Derived, never stored | ✅     | Walked on demand, so it cannot drift from the records it summarizes  |
+| Forward traversal     | ✅     | `GET /api/v1/physical-parts/:id/genealogy`                           |
+| Reverse traversal     | ✅     | `GET /api/v1/physical-parts/recall` — what shipped with this lot?    |
+| As-built comparison   | ✅     | `GET /api/v1/physical-parts/:id/as-built-comparison` against the BOM |
+
+### Work Orders & Qualification ✅
+
+| Feature                   | Status | Notes                                                                      |
+| ------------------------- | ------ | -------------------------------------------------------------------------- |
+| Work Order item type      | ✅     | Holds vault attachments and participates in `item_relationships`           |
+| Evidence edges            | ✅     | `Evidences` relationships tie a document to a requirement for an instance  |
+| Qualification rollup      | ✅     | `GET /api/v1/work-orders/:id/qualification` — were these requirements met? |
+| Uncertified-material gaps | ✅     | Consumed instances carrying neither evidence nor documents are listed      |
+
+### Approved Manufacturer List ✅
+
+| Feature                  | Status | Notes                                                        |
+| ------------------------ | ------ | ------------------------------------------------------------ |
+| Manufacturer parts       | ✅     | `manufacturer_parts` with manufacturer name and part number  |
+| Bound to the part master | ✅     | Survives revisions — the AML is not re-approved per revision |
+
+---
+
+## Software Management
+
+Firmware and software configuration items versioned alongside the hardware they
+ship with, ECO-controlled like any other engineering item.
+
+### Software Items ✅
+
+| Feature            | Status | Notes                                                                 |
+| ------------------ | ------ | --------------------------------------------------------------------- |
+| Software item type | ✅     | `softwareType`: firmware, application, library, configuration, fpga   |
+| Target & toolchain | ✅     | Target hardware and build toolchain recorded on the item              |
+| Part lifecycle     | ✅     | Shares the Part lifecycle, so it is ECO-controlled and gets revisions |
+| Build artifacts    | ✅     | Compiled output attached in the vault                                 |
+
+### Source Store ✅
+
+| Feature                     | Status | Notes                                                          |
+| --------------------------- | ------ | -------------------------------------------------------------- |
+| Content-addressed blobs     | ✅     | `software_blobs` keyed by content hash, shared across versions |
+| Immutable manifests         | ✅     | `software_manifests` — a manifest is never edited in place     |
+| Manifest pointer on version | ✅     | Branch isolation and time travel work with no special cases    |
+| Source browsing             | ✅     | `GET /api/v1/software/:id/tree` and `/:id/file`                |
+| Blob retrieval              | ✅     | `GET /api/v1/software/:id/blob/:hash`                          |
+| Version history             | ✅     | `GET /api/v1/software/:id/versions`                            |
+| Diff between versions       | ✅     | `GET /api/v1/software/:id/diff`                                |
+
+### Checkout-Gated Editing ✅
+
+| Feature                     | Status | Notes                                                               |
+| --------------------------- | ------ | ------------------------------------------------------------------- |
+| Draft manifest              | ✅     | Edits accumulate in `draftManifestId`, invisible to other branches  |
+| Explicit commit             | ✅     | `POST /api/v1/software/:id/commit` promotes the draft               |
+| Discard draft               | ✅     | `POST /api/v1/software/:id/draft/discard`                           |
+| Per-file field history      | ✅     | Commit records `source`-category field changes per file             |
+| Drafts never propagate      | ✅     | Not copied to new versions; never appear in field history           |
+| Per-file conflict detection | ✅     | Conflicts sharpen from "the manifest changed" to the diverged files |
 
 ---
 
@@ -594,14 +689,17 @@ Rich step-by-step manufacturing instructions linked to parts and work orders.
 | Change alerts        | ✅     | Notify when attached parts are modified/obsoleted |
 | Alert acknowledgment | ✅     | Track pending, acknowledged, dismissed alerts     |
 
-### Execution Tracking ✅
+### Traveler & Execution Tracking ✅
 
-| Feature             | Status | Notes                                       |
-| ------------------- | ------ | ------------------------------------------- |
-| Execution recording | ✅     | Track executor, duration, current step      |
-| Step data capture   | ✅     | Values and timestamps per step              |
-| Work order linking  | ✅     | Associate executions with work orders       |
-| Sign-off workflows  | ✅     | Pending Approval → Approved/Rejected states |
+| Feature              | Status | Notes                                                          |
+| -------------------- | ------ | -------------------------------------------------------------- |
+| Traveler (instances) | ✅     | Work orders instantiate templates as frozen snapshots          |
+| Populate from BOM    | ✅     | Auto-build traveler from part attachments, deepest-first       |
+| Execution recording  | ✅     | Runs per traveler line: executor, duration, unit label         |
+| Step data capture    | ✅     | Values and timestamps per snapshot block                       |
+| Required-run counts  | ✅     | Per-batch or per-unit lines; derived line status               |
+| Completion gate      | ✅     | Orders complete only when lines are done or skipped (audited)  |
+| Sign-off workflows   | ✅     | Pending Approval → Approved/Rejected states, executor resubmit |
 
 ---
 

@@ -2,7 +2,9 @@
 
 Cascadia PLM manages engineering data through **item types** -- typed records that represent the artifacts of product development. Every item in the system is an instance of a registered item type, and all items share common base fields while carrying type-specific data in a companion table.
 
-This document covers every core item type: its purpose, database schema, lifecycle, relationships, API surface, and UI pages.
+This document covers all 13 registered item types -- purpose, database schema, lifecycle, relationships, API surface, and UI pages. The seven with the deepest UI surface get a numbered section each; the rest are grouped under [Additional Item Types](#additional-item-types).
+
+**The 13 types:** Part, Document, ChangeOrder, Requirement, Task, WorkInstruction, Issue, TestPlan, TestCase, Software, Tool, PhysicalPart, WorkOrder. The canonical list lives in `packages/core/src/lib/items/item-type-definitions.ts`.
 
 ---
 
@@ -41,29 +43,35 @@ All item types in Cascadia follow a **two-table pattern**:
 
 ### Item Numbering
 
-Each item type has a default numbering scheme defined in `src/lib/items/numbering/schemes.ts`:
+Each item type has a default numbering scheme defined in `packages/core/src/lib/items/numbering/schemes.ts`:
 
-| Item Type       | Prefix | Example      |
-| --------------- | ------ | ------------ |
-| Part            | `PN`   | `PN-000001`  |
-| Document        | `DOC`  | `DOC-000001` |
-| ChangeOrder     | `ECO`  | `ECO-000001` |
-| Requirement     | `REQ`  | `REQ-000001` |
-| Task            | `TSK`  | `TSK-000001` |
-| TestPlan        | `TP`   | `TP-000001`  |
-| TestCase        | `TC`   | `TC-000001`  |
-| Issue           | `ISS`  | `ISS-000001` |
-| WorkInstruction | `WI`   | `WI-000001`  |
+| Item Type       | Prefix | Example       |
+| --------------- | ------ | ------------- |
+| Part            | `PN`   | `PN-000001`   |
+| Document        | `DOC`  | `DOC-000001`  |
+| ChangeOrder     | `ECO`  | `ECO-000001`  |
+| Requirement     | `REQ`  | `REQ-000001`  |
+| Task            | `TSK`  | `TSK-000001`  |
+| TestPlan        | `TP`   | `TP-000001`   |
+| TestCase        | `TC`   | `TC-000001`   |
+| Issue           | `ISS`  | `ISS-000001`  |
+| WorkInstruction | `WI`   | `WI-000001`   |
+| Software        | `SW`   | `SW-000001`   |
+| Tool            | `TOOL` | `TOOL-000001` |
+| PhysicalPart    | `PP`   | `PP-000001`   |
+| WorkOrder       | `WO`   | `WO-000001`   |
 
-Most types allow manual entry of item numbers. Change Orders are always auto-numbered. Parts support family variant numbering (e.g., `PN-000001-001`).
+Most types allow manual entry of item numbers. Change Orders, PhysicalParts, and Work Orders are always auto-numbered. Parts support family variant numbering (e.g., `PN-000001-001`).
 
 ### Lifecycle Categories
 
 Item types use one of three lifecycle categories:
 
-- **Driven** -- state transitions are controlled by ECOs. Cannot be modified on `main` directly. (Part, Document, Requirement)
+- **Driven** -- state transitions are controlled by ECOs. Cannot be modified on `main` directly. (Part, Document, Requirement, Software)
 - **Driving** -- the ECO itself, which controls Driven lifecycles. (ChangeOrder)
-- **Free** -- self-controlled, no ECO required. Can transition states independently. (Task, TestPlan, TestCase, WorkInstruction, Issue)
+- **Free** -- self-controlled, no ECO required. Can transition states independently. (Task, TestPlan, TestCase, WorkInstruction, Issue, Tool, PhysicalPart, WorkOrder)
+
+Tool, PhysicalPart, and WorkOrder are additionally **non-versioned** -- they carry no `designId` and never take a revision letter. The shorthand for this in the codebase is the "Tool pattern".
 
 ---
 
@@ -118,24 +126,24 @@ Draft -> In Review -> Approved -> Released -> Obsolete
 
 ### API Endpoints
 
-| Method | Path                               | Description                                                            |
-| ------ | ---------------------------------- | ---------------------------------------------------------------------- |
-| GET    | `/api/v1/items/search?itemType=Part`  | Search/list parts                                                      |
-| GET    | `/api/v1/items/$id`                   | Get part by ID (with optional `?branch=`, `?commit=`, `?tag=` context) |
-| POST   | `/api/v1/items/$id`                   | Create part                                                            |
-| PUT    | `/api/v1/items/$id`                   | Update part                                                            |
-| DELETE | `/api/v1/items/$id`                   | Delete part                                                            |
-| GET    | `/api/v1/parts/$id`                   | Part-specific detail endpoint                                          |
-| GET    | `/api/v1/parts/$id/validating-tests`  | Get test cases that validate this part                                 |
-| GET    | `/api/v1/items/$id/history`           | Version history                                                        |
-| POST   | `/api/v1/items/$id/checkin`           | Check in after editing                                                 |
-| POST   | `/api/v1/items/$id/cancel-checkout`   | Cancel checkout                                                        |
-| GET    | `/api/v1/items/$id/lock-status`       | Check lock status                                                      |
-| POST   | `/api/v1/items/$id/unlock`            | Force unlock                                                           |
-| POST   | `/api/v1/items/$itemId/files/upload`  | Upload file attachment (CAD model, drawing)                            |
-| GET    | `/api/v1/items/$itemId/files`         | List attached files                                                    |
-| GET    | `/api/v1/items/$itemId/files/primary` | Get primary CAD model                                                  |
-| GET    | `/api/v1/items/$id/thumbnail`         | Get thumbnail image                                                    |
+| Method | Path                                   | Description                                                            |
+| ------ | -------------------------------------- | ---------------------------------------------------------------------- |
+| GET    | `/api/v1/items/search?itemType=Part`   | Search/list parts                                                      |
+| GET    | `/api/v1/items/{id}`                   | Get part by ID (with optional `?branch=`, `?commit=`, `?tag=` context) |
+| POST   | `/api/v1/items`                        | Create part                                                            |
+| PUT    | `/api/v1/items/{id}`                   | Update part                                                            |
+| DELETE | `/api/v1/items/{id}`                   | Delete part                                                            |
+| GET    | `/api/v1/parts/{id}`                   | Part-specific detail endpoint                                          |
+| GET    | `/api/v1/parts/{id}/validating-tests`  | Get test cases that validate this part                                 |
+| GET    | `/api/v1/items/{id}/history`           | Version history                                                        |
+| POST   | `/api/v1/items/{id}/checkin`           | Check in after editing                                                 |
+| POST   | `/api/v1/items/{id}/cancel-checkout`   | Cancel checkout                                                        |
+| GET    | `/api/v1/items/{id}/lock-status`       | Check lock status                                                      |
+| POST   | `/api/v1/items/{id}/unlock`            | Force unlock                                                           |
+| POST   | `/api/v1/items/{itemId}/files/upload`  | Upload file attachment (CAD model, drawing)                            |
+| GET    | `/api/v1/items/{itemId}/files`         | List attached files                                                    |
+| GET    | `/api/v1/items/{itemId}/files/primary` | Get primary CAD model                                                  |
+| GET    | `/api/v1/items/{id}/thumbnail`         | Get thumbnail image                                                    |
 
 ### UI Pages
 
@@ -147,9 +155,9 @@ Draft -> In Review -> Approved -> Released -> Obsolete
 
 ### Key Files
 
-- Schema: `src/lib/db/schema/items.ts` (parts table)
-- Types: `src/lib/items/types/part.ts`
-- Form: `src/components/parts/PartForm.tsx`
+- Schema: `packages/core/src/lib/db/schema/items.ts` (parts table)
+- Types: `packages/core/src/lib/items/types/part.ts`
+- Form: `packages/core/src/components/parts/PartForm.tsx`
 
 ---
 
@@ -190,29 +198,29 @@ Draft -> In Review -> Approved -> Released -> Obsolete
 
 Documents integrate with the vault file system for version-controlled file storage. Files support:
 
-- **Check-out/check-in** workflow via `/api/v1/files/$fileId/checkout` and `/api/v1/files/$fileId/checkin`
-- **Version history** via `/api/v1/files/$fileId/versions`
-- **Download** via `/api/v1/files/$fileId/versions/$version/download`
-- **CAD conversion** via `/api/v1/files/$fileId/convert` (STEP/IGES to STL/GLB)
-- **Metadata** via `/api/v1/files/$fileId/metadata`
+- **Check-out/check-in** workflow via `/api/v1/files/{fileId}/checkout` and `/api/v1/files/{fileId}/checkin`
+- **Version history** via `/api/v1/files/{fileId}/versions`
+- **Download** via `/api/v1/files/{fileId}/versions/{version}/download`
+- **CAD conversion** via `/api/v1/files/{fileId}/convert` (STEP/IGES to STL/GLB)
+- **Metadata** via `/api/v1/files/{fileId}/metadata`
 
 ### API Endpoints
 
-| Method | Path                                            | Description                        |
-| ------ | ----------------------------------------------- | ---------------------------------- |
-| GET    | `/api/v1/items/search?itemType=Document`           | Search/list documents              |
-| GET    | `/api/v1/items/$id`                                | Get document by ID                 |
-| POST   | `/api/v1/items/$id`                                | Create document                    |
-| PUT    | `/api/v1/items/$id`                                | Update document                    |
-| DELETE | `/api/v1/items/$id`                                | Delete document                    |
-| GET    | `/api/v1/documents/$id`                            | Document-specific detail endpoint  |
-| POST   | `/api/v1/files`                                    | Upload a new file                  |
-| GET    | `/api/v1/files/$fileId`                            | Get file metadata                  |
-| POST   | `/api/v1/files/$fileId/checkout`                   | Check out file for editing         |
-| POST   | `/api/v1/files/$fileId/checkin`                    | Check in edited file               |
-| GET    | `/api/v1/files/$fileId/versions`                   | List file versions                 |
-| GET    | `/api/v1/files/$fileId/versions/$version/download` | Download specific version          |
-| POST   | `/api/v1/files/$fileId/convert`                    | Convert CAD file (STEP to STL/GLB) |
+| Method | Path                                                 | Description                        |
+| ------ | ---------------------------------------------------- | ---------------------------------- |
+| GET    | `/api/v1/items/search?itemType=Document`             | Search/list documents              |
+| GET    | `/api/v1/items/{id}`                                 | Get document by ID                 |
+| POST   | `/api/v1/items`                                      | Create document                    |
+| PUT    | `/api/v1/items/{id}`                                 | Update document                    |
+| DELETE | `/api/v1/items/{id}`                                 | Delete document                    |
+| GET    | `/api/v1/documents/{id}`                             | Document-specific detail endpoint  |
+| POST   | `/api/v1/items/{itemId}/files/upload`                | Upload a new file                  |
+| GET    | `/api/v1/files/{fileId}/metadata`                    | Get file metadata                  |
+| POST   | `/api/v1/files/{fileId}/checkout`                    | Check out file for editing         |
+| POST   | `/api/v1/files/{fileId}/checkin`                     | Check in edited file               |
+| GET    | `/api/v1/files/{fileId}/versions`                    | List file versions                 |
+| GET    | `/api/v1/files/{fileId}/versions/{version}/download` | Download specific version          |
+| POST   | `/api/v1/files/{fileId}/convert`                     | Convert CAD file (STEP to STL/GLB) |
 
 ### UI Pages
 
@@ -224,10 +232,10 @@ Documents integrate with the vault file system for version-controlled file stora
 
 ### Key Files
 
-- Schema: `src/lib/db/schema/items.ts` (documents table)
-- Types: `src/lib/items/types/document.ts`
-- Form: `src/components/documents/DocumentForm.tsx`
-- Vault schema: `src/lib/db/schema/vault.ts`
+- Schema: `packages/core/src/lib/db/schema/items.ts` (documents table)
+- Types: `packages/core/src/lib/items/types/document.ts`
+- Form: `packages/core/src/components/documents/DocumentForm.tsx`
+- Vault schema: `packages/core/src/lib/db/schema/vault.ts`
 
 ---
 
@@ -310,7 +318,7 @@ The Change Order has several supporting tables beyond the main `change_orders` t
 4. **Edit** -- Engineers modify working copies on the branch. Changes are isolated from `main`.
 5. **Impact assessment** -- `ImpactAssessmentService` discovers downstream impacts (where-used, BOM children, document references).
 6. **Submit and review** -- ECO transitions through workflow states. Approvers review changes.
-7. **Approve and release** -- On final approval, `EcoReleaseService` merges the branch to `main`, assigns revision letters (A, B, C...), and updates lifecycle states.
+7. **Approve and release** -- On final approval, `ChangeOrderMergeService` merges the branch to `main`, assigns revision letters (A, B, C...), and updates lifecycle states.
 
 ### Relationships
 
@@ -321,35 +329,36 @@ The Change Order has several supporting tables beyond the main `change_orders` t
 
 ### API Endpoints
 
-| Method | Path                                                  | Description                            |
-| ------ | ----------------------------------------------------- | -------------------------------------- |
-| GET    | `/api/v1/items/search?itemType=ChangeOrder`              | Search/list change orders              |
-| GET    | `/api/v1/change-orders/$id`                              | Get change order with full details     |
-| POST   | `/api/v1/items/$id`                                      | Create change order                    |
-| PUT    | `/api/v1/items/$id`                                      | Update change order                    |
-| GET    | `/api/v1/change-orders/$id/affected-items`               | List affected items                    |
-| POST   | `/api/v1/change-orders/$id/affected-items`               | Add affected item                      |
-| POST   | `/api/v1/change-orders/$id/checkout`                     | Checkout items to ECO branch           |
-| GET    | `/api/v1/change-orders/$id/designs`                      | List designs affected by ECO           |
-| GET    | `/api/v1/change-orders/$id/designs/$designId/structure`  | View BOM structure on ECO branch       |
-| POST   | `/api/v1/change-orders/$id/impact-assessment`            | Run impact assessment                  |
-| GET    | `/api/v1/change-orders/$id/risks`                        | List risk assessments                  |
-| GET    | `/api/v1/change-orders/$id/conflicts`                    | Detect merge conflicts                 |
-| POST   | `/api/v1/change-orders/$id/resolve-conflicts`            | Resolve merge conflicts                |
-| GET    | `/api/v1/change-orders/$id/conflict-reviews`             | Review conflict resolutions            |
-| POST   | `/api/v1/change-orders/$id/release`                      | Release (merge to main)                |
-| GET    | `/api/v1/change-orders/$id/summary`                      | Get ECO summary                        |
-| GET    | `/api/v1/change-orders/$id/bom-changes`                  | View BOM-level changes                 |
-| GET    | `/api/v1/change-orders/$id/branch-history`               | View branch commit history             |
-| GET    | `/api/v1/change-orders/$id/branch-history/graph`         | Visual commit graph                    |
-| POST   | `/api/v1/change-orders/$id/workflow/transition`          | Transition workflow state              |
-| GET    | `/api/v1/change-orders/$id/workflow/validate-transition` | Validate a transition before executing |
-| GET    | `/api/v1/change-orders/$id/workflow/history`             | Workflow transition history            |
-| GET    | `/api/v1/change-orders/$id/workflow/structure`           | Workflow definition structure          |
-| GET    | `/api/v1/change-orders/$id/approvals`                    | List approval records                  |
-| GET    | `/api/v1/change-orders/$id/approvals/can-approve`        | Check if current user can approve      |
-| POST   | `/api/v1/change-orders/$id/approvals/$stateId`           | Submit approval/rejection              |
-| GET    | `/api/v1/change-orders/editable`                         | List ECOs the user can edit            |
+| Method | Path                                                      | Description                            |
+| ------ | --------------------------------------------------------- | -------------------------------------- |
+| GET    | `/api/v1/items/search?itemType=ChangeOrder`               | Search/list change orders              |
+| GET    | `/api/v1/change-orders/{id}`                              | Get change order with full details     |
+| POST   | `/api/v1/items`                                           | Create change order                    |
+| PUT    | `/api/v1/items/{id}`                                      | Update change order                    |
+| GET    | `/api/v1/change-orders/{id}/affected-items`               | List affected items                    |
+| POST   | `/api/v1/change-orders/{id}/affected-items`               | Add affected item                      |
+| POST   | `/api/v1/change-orders/{id}/checkout`                     | Checkout items to ECO branch           |
+| GET    | `/api/v1/change-orders/{id}/designs`                      | List designs affected by ECO           |
+| GET    | `/api/v1/change-orders/{id}/designs/{designId}/structure` | View BOM structure on ECO branch       |
+| POST   | `/api/v1/change-orders/{id}/impact-assessment`            | Run impact assessment                  |
+| GET    | `/api/v1/change-orders/{id}/risks`                        | List risk assessments                  |
+| GET    | `/api/v1/change-orders/{id}/conflicts`                    | Detect merge conflicts                 |
+| POST   | `/api/v1/change-orders/{id}/resolve-conflicts`            | Resolve merge conflicts                |
+| GET    | `/api/v1/change-orders/{id}/conflict-reviews`             | Review conflict resolutions            |
+| GET    | `/api/v1/change-orders/{id}/release`                      | Preview the merge before release       |
+| GET    | `/api/v1/change-orders/{id}/summary`                      | Get ECO summary                        |
+| POST   | `/api/v1/change-orders/{id}/bom-changes`                  | Stage a BOM-level change               |
+| DELETE | `/api/v1/change-orders/{id}/bom-changes`                  | Remove a staged BOM change             |
+| GET    | `/api/v1/change-orders/{id}/branch-history`               | View branch commit history             |
+| GET    | `/api/v1/change-orders/{id}/branch-history/graph`         | Visual commit graph                    |
+| POST   | `/api/v1/change-orders/{id}/workflow/transition`          | Transition workflow state              |
+| POST   | `/api/v1/change-orders/{id}/workflow/validate-transition` | Validate a transition before executing |
+| GET    | `/api/v1/change-orders/{id}/workflow/history`             | Workflow transition history            |
+| GET    | `/api/v1/change-orders/{id}/workflow/structure`           | Workflow definition structure          |
+| GET    | `/api/v1/change-orders/{id}/approvals`                    | List approval records                  |
+| GET    | `/api/v1/change-orders/{id}/approvals/can-approve`        | Check if current user can approve      |
+| POST   | `/api/v1/change-orders/{id}/approvals/{stateId}`          | Submit approval/rejection              |
+| GET    | `/api/v1/change-orders/editable`                          | List ECOs the user can edit            |
 
 ### UI Pages
 
@@ -361,11 +370,11 @@ The Change Order has several supporting tables beyond the main `change_orders` t
 
 ### Key Files
 
-- Schema: `src/lib/db/schema/items.ts` (change_orders and related tables)
-- Types: `src/lib/items/types/change-order.ts`
-- Form: `src/components/change-orders/ChangeOrderForm.tsx`
-- Service: `src/lib/items/services/ChangeOrderService.ts`
-- Release: `src/lib/services/EcoReleaseService.ts` (in service layer)
+- Schema: `packages/core/src/lib/db/schema/items.ts` (change_orders and related tables)
+- Types: `packages/core/src/lib/items/types/change-order.ts`
+- Form: `packages/core/src/components/change-orders/ChangeOrderForm.tsx`
+- Service: `packages/core/src/lib/items/services/ChangeOrderService.ts`
+- Release: `packages/core/src/lib/services/ChangeOrderMergeService.ts` (in service layer)
 
 ---
 
@@ -391,7 +400,7 @@ The Change Order has several supporting tables beyond the main `change_orders` t
 | `acceptance_criteria`   | text                   | Conditions for requirement satisfaction                                               |
 | `source`                | varchar(200)           | Origin of the requirement (e.g., customer, standard, regulation)                      |
 | `category`              | varchar(100)           | Grouping category                                                                     |
-| `verification_method`   | varchar(50)            | `Analysis`, `Inspection`, `Demonstration`, or `Test`                                  |
+| `verification_method`   | varchar(50)            | `Analysis`, `Inspection`, `Demonstration`, `Test`, or `Documentation`                 |
 | `verification_status`   | varchar(50)            | `NotStarted`, `InProgress`, `Passed`, `Failed`, or `Waived`                           |
 | `allocated_design_id`   | UUID (FK to designs)   | Design element this requirement is allocated to                                       |
 | `parent_requirement_id` | UUID (FK to items)     | Parent requirement (for derived requirements hierarchy)                               |
@@ -421,21 +430,21 @@ Requirements support formal verification tracking (common in aerospace and defen
 
 ### API Endpoints
 
-| Method | Path                                           | Description                                 |
-| ------ | ---------------------------------------------- | ------------------------------------------- |
-| GET    | `/api/v1/items/search?itemType=Requirement`       | Search/list requirements                    |
-| GET    | `/api/v1/items/$id`                               | Get requirement by ID                       |
-| POST   | `/api/v1/items/$id`                               | Create requirement                          |
-| PUT    | `/api/v1/items/$id`                               | Update requirement                          |
-| GET    | `/api/v1/requirements/$id`                        | Requirement-specific detail                 |
-| POST   | `/api/v1/requirements/$id/derive`                 | Create derived (child) requirement          |
-| GET    | `/api/v1/requirements/$id/parent`                 | Get parent requirement                      |
-| POST   | `/api/v1/requirements/$id/satisfy`                | Mark requirement as satisfied by a part     |
-| GET    | `/api/v1/requirements/$id/verifying-tests`        | Get test cases that verify this requirement |
-| GET    | `/api/v1/items/$id/satisfied-requirements`        | Get requirements satisfied by an item       |
-| GET    | `/api/v1/designs/$designId/requirements-coverage` | Requirements coverage report                |
-| GET    | `/api/v1/designs/$designId/verification-gaps`     | Find unverified requirements                |
-| GET    | `/api/v1/designs/$designId/gap-analysis`          | Full gap analysis                           |
+| Method | Path                                               | Description                                 |
+| ------ | -------------------------------------------------- | ------------------------------------------- |
+| GET    | `/api/v1/items/search?itemType=Requirement`        | Search/list requirements                    |
+| GET    | `/api/v1/items/{id}`                               | Get requirement by ID                       |
+| POST   | `/api/v1/items`                                    | Create requirement                          |
+| PUT    | `/api/v1/items/{id}`                               | Update requirement                          |
+| GET    | `/api/v1/requirements/{id}`                        | Requirement-specific detail                 |
+| POST   | `/api/v1/requirements/{id}/derive`                 | Create derived (child) requirement          |
+| GET    | `/api/v1/requirements/{id}/parent`                 | Get parent requirement                      |
+| POST   | `/api/v1/requirements/{id}/satisfy`                | Mark requirement as satisfied by a part     |
+| GET    | `/api/v1/requirements/{id}/verifying-tests`        | Get test cases that verify this requirement |
+| GET    | `/api/v1/items/{id}/satisfied-requirements`        | Get requirements satisfied by an item       |
+| GET    | `/api/v1/designs/{designId}/requirements-coverage` | Requirements coverage report                |
+| GET    | `/api/v1/designs/{designId}/verification-gaps`     | Find unverified requirements                |
+| GET    | `/api/v1/designs/{designId}/gap-analysis`          | Full gap analysis                           |
 
 ### UI Pages
 
@@ -447,9 +456,9 @@ Requirements support formal verification tracking (common in aerospace and defen
 
 ### Key Files
 
-- Schema: `src/lib/db/schema/items.ts` (requirements table)
-- Types: `src/lib/items/types/requirement.ts`
-- Form: `src/components/requirements/RequirementForm.tsx`
+- Schema: `packages/core/src/lib/db/schema/items.ts` (requirements table)
+- Types: `packages/core/src/lib/items/types/requirement.ts`
+- Form: `packages/core/src/components/requirements/RequirementForm.tsx`
 
 ---
 
@@ -494,13 +503,13 @@ Also: Cancelled
 
 ### API Endpoints
 
-| Method | Path                              | Description          |
-| ------ | --------------------------------- | -------------------- |
+| Method | Path                                 | Description          |
+| ------ | ------------------------------------ | -------------------- |
 | GET    | `/api/v1/items/search?itemType=Task` | Search/list tasks    |
-| GET    | `/api/v1/items/$id`                  | Get task by ID       |
-| POST   | `/api/v1/items/$id`                  | Create task          |
-| PUT    | `/api/v1/items/$id`                  | Update task          |
-| GET    | `/api/v1/tasks/$id`                  | Task-specific detail |
+| GET    | `/api/v1/items/{id}`                 | Get task by ID       |
+| POST   | `/api/v1/items`                      | Create task          |
+| PUT    | `/api/v1/items/{id}`                 | Update task          |
+| GET    | `/api/v1/tasks/{id}`                 | Task-specific detail |
 
 ### UI Pages
 
@@ -512,9 +521,9 @@ Also: Cancelled
 
 ### Key Files
 
-- Schema: `src/lib/db/schema/items.ts` (tasks table)
-- Types: `src/lib/items/types/task.ts`
-- Form: `src/components/tasks/TaskForm.tsx`
+- Schema: `packages/core/src/lib/db/schema/items.ts` (tasks table)
+- Types: `packages/core/src/lib/items/types/task.ts`
+- Form: `packages/core/src/components/tasks/TaskForm.tsx`
 
 ---
 
@@ -605,22 +614,13 @@ Notifies work instruction authors when linked parts change.
 | `previous_values` / `new_values` | JSONB                | Before/after values                                      |
 | `status`                         | varchar(20)          | `pending`, `acknowledged`, or `dismissed`                |
 
-#### Executions (`work_instruction_executions`)
+#### Executions moved to work orders
 
-Records of work instruction execution by operators, with captured data from data collection fields.
-
-| Column                        | Type                | Description                                                                         |
-| ----------------------------- | ------------------- | ----------------------------------------------------------------------------------- |
-| `id`                          | UUID (PK)           | Execution identifier                                                                |
-| `work_instruction_id`         | UUID (FK)           | Executed work instruction                                                           |
-| `work_instruction_revision`   | varchar(10)         | Revision at time of execution                                                       |
-| `work_order_id`               | UUID (FK, nullable) | Associated work order                                                               |
-| `executed_by`                 | UUID (FK)           | Operator                                                                            |
-| `status`                      | varchar(30)         | `In Progress`, `Complete`, `Incomplete`, `Pending Approval`, `Approved`, `Rejected` |
-| `started_at` / `completed_at` | timestamp           | Execution timeframe                                                                 |
-| `duration`                    | integer             | Elapsed seconds                                                                     |
-| `step_data`                   | JSONB               | Captured data from data collection fields                                           |
-| `current_step_index`          | integer             | Progress tracking                                                                   |
+A work instruction is a **template** — it is never executed directly. Work
+orders instantiate templates into traveler lines (`work_order_instructions`,
+a frozen content snapshot per line) and executions (`instruction_executions`)
+record runs of those lines. See the Work Order section below and
+[work-instructions.md](./work-instructions.md) for the execution model.
 
 ### Lifecycle States
 
@@ -635,49 +635,43 @@ Draft -> In Review -> Approved -> Released -> Obsolete
 
 ### API Endpoints
 
-| Method | Path                                                          | Description                          |
-| ------ | ------------------------------------------------------------- | ------------------------------------ |
-| GET    | `/api/v1/items/search?itemType=WorkInstruction`                  | Search/list work instructions        |
-| GET    | `/api/v1/items/$id`                                              | Get work instruction by ID           |
-| POST   | `/api/v1/items/$id`                                              | Create work instruction              |
-| PUT    | `/api/v1/items/$id`                                              | Update work instruction              |
-| GET    | `/api/v1/work-instructions/$id`                                  | Work instruction detail (with steps) |
-| GET    | `/api/v1/work-instructions/$id/steps`                            | List steps                           |
-| POST   | `/api/v1/work-instructions/$id/steps`                            | Add step                             |
-| PUT    | `/api/v1/work-instructions/$id/steps/$stepId`                    | Update step                          |
-| DELETE | `/api/v1/work-instructions/$id/steps/$stepId`                    | Delete step                          |
-| GET    | `/api/v1/work-instructions/$id/operations`                       | List operations                      |
-| POST   | `/api/v1/work-instructions/$id/operations`                       | Add operation                        |
-| PUT    | `/api/v1/work-instructions/$id/operations/$operationId`          | Update operation                     |
-| DELETE | `/api/v1/work-instructions/$id/operations/$operationId`          | Delete operation                     |
-| GET    | `/api/v1/work-instructions/$id/parts`                            | List attached parts                  |
-| POST   | `/api/v1/work-instructions/$id/parts`                            | Attach part                          |
-| DELETE | `/api/v1/work-instructions/$id/parts`                            | Detach part                          |
-| GET    | `/api/v1/work-instructions/$id/alerts`                           | List change alerts                   |
-| GET    | `/api/v1/work-instructions/$id/resolve-parametric`               | Resolve parametric block values      |
-| GET    | `/api/v1/work-instructions/$id/executions`                       | List execution records               |
-| POST   | `/api/v1/work-instructions/$id/executions`                       | Start new execution                  |
-| GET    | `/api/v1/work-instructions/$id/executions/$executionId`          | Get execution detail                 |
-| POST   | `/api/v1/work-instructions/$id/executions/$executionId/complete` | Complete execution                   |
-| POST   | `/api/v1/work-instructions/$id/executions/$executionId/sign-off` | Sign off execution                   |
+| Method | Path                                                      | Description                          |
+| ------ | --------------------------------------------------------- | ------------------------------------ |
+| GET    | `/api/v1/items/search?itemType=WorkInstruction`           | Search/list work instructions        |
+| GET    | `/api/v1/items/{id}`                                      | Get work instruction by ID           |
+| POST   | `/api/v1/items`                                           | Create work instruction              |
+| PUT    | `/api/v1/items/{id}`                                      | Update work instruction              |
+| GET    | `/api/v1/work-instructions/{id}`                          | Work instruction detail (with steps) |
+| GET    | `/api/v1/work-instructions/{id}/steps`                    | List steps                           |
+| POST   | `/api/v1/work-instructions/{id}/steps`                    | Add step                             |
+| PUT    | `/api/v1/work-instructions/{id}/steps/{stepId}`           | Update step                          |
+| DELETE | `/api/v1/work-instructions/{id}/steps/{stepId}`           | Delete step                          |
+| GET    | `/api/v1/work-instructions/{id}/operations`               | List operations                      |
+| POST   | `/api/v1/work-instructions/{id}/operations`               | Add operation                        |
+| PUT    | `/api/v1/work-instructions/{id}/operations/{operationId}` | Update operation                     |
+| DELETE | `/api/v1/work-instructions/{id}/operations/{operationId}` | Delete operation                     |
+| GET    | `/api/v1/work-instructions/{id}/parts`                    | List attached parts                  |
+| POST   | `/api/v1/work-instructions/{id}/parts`                    | Attach part                          |
+| DELETE | `/api/v1/work-instructions/{id}/parts`                    | Detach part                          |
+| GET    | `/api/v1/work-instructions/{id}/alerts`                   | List change alerts                   |
+| GET    | `/api/v1/work-instructions/{id}/resolve-parametric`       | Resolve parametric block values      |
+| GET    | `/api/v1/work-instructions/{id}/usage`                    | Traveler lines instantiated from it  |
 
 ### UI Pages
 
-| Path                                             | Component                      | Description                                 |
-| ------------------------------------------------ | ------------------------------ | ------------------------------------------- |
-| `/work-instructions`                             | Work Instructions index        | List/search all work instructions           |
-| `/work-instructions/new`                         | WorkInstructionForm            | Create new work instruction                 |
-| `/work-instructions/$id`                         | Work instruction detail/editor | Block-based step editor                     |
-| `/work-instructions/$id/execute`                 | Execution view                 | Step-by-step operator execution interface   |
-| `/work-instructions/$id/present`                 | Presentation view              | Full-screen display for shop floor          |
-| `/work-instructions/$id/executions/$executionId` | Execution record               | View completed execution with captured data |
+| Path                             | Component                      | Description                        |
+| -------------------------------- | ------------------------------ | ---------------------------------- |
+| `/work-instructions`             | Work Instructions index        | List/search all work instructions  |
+| `/work-instructions/new`         | WorkInstructionForm            | Create new work instruction        |
+| `/work-instructions/$id`         | Work instruction detail/editor | Block-based step editor            |
+| `/work-instructions/$id/present` | Presentation view              | Full-screen display for shop floor |
 
 ### Key Files
 
-- Schema: `src/lib/db/schema/items.ts` (work_instructions and related tables)
-- Types: `src/lib/items/types/work-instruction.ts`
-- Form: `src/components/work-instructions/WorkInstructionForm.tsx`
-- Components: `src/components/work-instructions/` (StepEditor, ParametricBlock, etc.)
+- Schema: `packages/core/src/lib/db/schema/items.ts` (work_instructions and related tables)
+- Types: `packages/core/src/lib/items/types/work-instruction.ts`
+- Form: `packages/core/src/components/work-instructions/WorkInstructionForm.tsx`
+- Components: `packages/core/src/components/work-instructions/` (StepEditor, ParametricBlock, etc.)
 
 ---
 
@@ -729,13 +723,13 @@ Also: Cancelled
 
 ### API Endpoints
 
-| Method | Path                               | Description           |
-| ------ | ---------------------------------- | --------------------- |
+| Method | Path                                  | Description           |
+| ------ | ------------------------------------- | --------------------- |
 | GET    | `/api/v1/items/search?itemType=Issue` | Search/list issues    |
-| GET    | `/api/v1/items/$id`                   | Get issue by ID       |
-| POST   | `/api/v1/items/$id`                   | Create issue          |
-| PUT    | `/api/v1/items/$id`                   | Update issue          |
-| GET    | `/api/v1/issues/$id`                  | Issue-specific detail |
+| GET    | `/api/v1/items/{id}`                  | Get issue by ID       |
+| POST   | `/api/v1/items`                       | Create issue          |
+| PUT    | `/api/v1/items/{id}`                  | Update issue          |
+| GET    | `/api/v1/issues/{id}`                 | Issue-specific detail |
 
 ### UI Pages
 
@@ -747,13 +741,18 @@ Also: Cancelled
 
 ### Key Files
 
-- Schema: `src/lib/db/schema/items.ts` (issues table)
-- Types: `src/lib/items/types/issue.ts`
-- Form: `src/components/issues/IssueForm.tsx`
+- Schema: `packages/core/src/lib/db/schema/items.ts` (issues table)
+- Types: `packages/core/src/lib/items/types/issue.ts`
+- Form: `packages/core/src/components/issues/IssueForm.tsx`
 
 ---
 
-## 8. Project (Programs and Designs)
+## Organizational Containers (Programs and Designs)
+
+> Not item types. Programs and Designs are the containers items live in; they
+> are documented here because the numbering, permission, and versioning rules
+> above only make sense against this hierarchy. See
+> [Programs & Designs](./programs-and-designs.md) for the full feature guide.
 
 **Purpose:** Programs and Designs form the organizational hierarchy of Cascadia PLM. They are not item types in the `ItemTypeRegistry` sense (they do not use the two-table pattern), but they are the top-level containers that organize all items.
 
@@ -794,12 +793,13 @@ Users are granted access to programs through membership records.
 
 #### Program API Endpoints
 
-| Method | Path                                | Description                  |
-| ------ | ----------------------------------- | ---------------------------- |
-| GET    | `/api/v1/programs/$id`                 | Get program details          |
-| PUT    | `/api/v1/programs/$id`                 | Update program               |
-| GET    | `/api/v1/programs/$id/members/$userId` | Get/manage member            |
-| GET    | `/api/v1/programs/$id/history/graph`   | Program commit history graph |
+| Method | Path                                     | Description                  |
+| ------ | ---------------------------------------- | ---------------------------- |
+| GET    | `/api/v1/programs/{id}`                  | Get program details          |
+| PUT    | `/api/v1/programs/{id}`                  | Update program               |
+| PUT    | `/api/v1/programs/{id}/members/{userId}` | Update a member's role       |
+| DELETE | `/api/v1/programs/{id}/members/{userId}` | Remove a member              |
+| GET    | `/api/v1/programs/{id}/history/graph`    | Program commit history graph |
 
 #### Program UI Pages
 
@@ -845,14 +845,14 @@ A Design is a version-controlled container for items within a program. Designs h
 
 #### Design API Endpoints
 
-| Method | Path                                           | Description                  |
-| ------ | ---------------------------------------------- | ---------------------------- |
-| GET    | `/api/v1/designs/families`                        | List design families         |
-| GET    | `/api/v1/designs/$designId/requirements-coverage` | Requirements coverage report |
-| GET    | `/api/v1/designs/$designId/test-coverage`         | Test coverage report         |
-| GET    | `/api/v1/designs/$designId/verification-gaps`     | Verification gap analysis    |
-| GET    | `/api/v1/designs/$designId/gap-analysis`          | Full gap analysis            |
-| GET    | `/api/v1/designs/$id/history/graph`               | Design commit history graph  |
+| Method | Path                                               | Description                  |
+| ------ | -------------------------------------------------- | ---------------------------- |
+| GET    | `/api/v1/designs/families`                         | List design families         |
+| GET    | `/api/v1/designs/{designId}/requirements-coverage` | Requirements coverage report |
+| GET    | `/api/v1/designs/{designId}/test-coverage`         | Test coverage report         |
+| GET    | `/api/v1/designs/{designId}/verification-gaps`     | Verification gap analysis    |
+| GET    | `/api/v1/designs/{designId}/gap-analysis`          | Full gap analysis            |
+| GET    | `/api/v1/designs/{id}/history/graph`               | Design commit history graph  |
 
 #### Design UI Pages
 
@@ -864,14 +864,15 @@ A Design is a version-controlled container for items within a program. Designs h
 | `/designs/$id/edit`                 | Design edit          | Edit design metadata                                |
 | `/designs/workspaces`               | Workspace index      | List personal workspaces                            |
 | `/designs/workspaces/$id`           | Workspace detail     | Personal workspace view                             |
+| `/designs/collaborative/$sessionId` | Collaborative design | AI-powered collaborative design session             |
 
 ### Key Files
 
-- Program schema: `src/lib/db/schema/programs.ts`
-- Design schema: `src/lib/db/schema/designs.ts`
-- Versioning schema: `src/lib/db/schema/versioning.ts` (branches, commits, tags)
-- Program form: `src/components/programs/ProgramForm.tsx`
-- Design form: `src/components/designs/DesignForm.tsx`
+- Program schema: `packages/core/src/lib/db/schema/programs.ts`
+- Design schema: `packages/core/src/lib/db/schema/designs.ts`
+- Versioning schema: `packages/core/src/lib/db/schema/versioning.ts` (branches, commits, tags)
+- Program form: `packages/core/src/components/programs/ProgramForm.tsx`
+- Design form: `packages/core/src/components/designs/DesignForm.tsx`
 
 ---
 
@@ -918,7 +919,108 @@ A Design is a version-controlled container for items within a program. Designs h
 
 **Test Executions** are stored in the `test_executions` table with status, duration, actual results, and notes.
 
-**API:** `/api/v1/test-cases/$id/executions`
+**API:** `/api/v1/test-cases/{id}/executions`
+
+### Work Order
+
+**Purpose:** Manufacturing execution record — what to build, in what quantity, and the traceability anchor for consumed and produced material. An item type since Phase 2.5 of the physical-parts effort (previously a standalone table), so work orders hold vault attachments and participate in `item_relationships` edges. Non-versioned (Tool pattern: no `designId`, Free lifecycle).
+
+**Lifecycle:** Free | **Default State:** Not Started | **Numbering:** `WO-000001`
+
+| Field                | Type         | Description                                                  |
+| -------------------- | ------------ | ------------------------------------------------------------ |
+| `part_id`            | UUID (FK)    | The exact part **version** this WO builds                    |
+| `quantity`           | integer      | Quantity ordered                                             |
+| `quantity_completed` | integer      | Derived from produced units (serial-tracked) or set manually |
+| `priority`           | varchar(10)  | `Low`, `Normal`, `High`, `Urgent`                            |
+| `due_date`           | timestamptz  | Due date                                                     |
+| `customer_order`     | varchar(200) | Customer order reference (also the item name)                |
+| `assigned_to`        | JSONB        | Assigned user ids                                            |
+| `program_id`         | UUID (FK)    | Program boundary (WOs have no design)                        |
+| `requires_sign_off`  | boolean      | Executions need supervisor approval                          |
+| `completed_at`       | timestamptz  | Set when the WO reaches Complete                             |
+
+**States:** Not Started → In Progress → Complete / Cancelled. Starting an execution auto-starts a Not Started order; completion is **gated on the traveler** — every non-skipped instruction line must be complete or explicitly skipped with a reason.
+
+**Traveler:** work orders carry instances of WorkInstruction templates in `work_order_instructions` (frozen content snapshot, target part, `required_count` runs, sequence). Runs are recorded in `instruction_executions`; supervisor reviews in `execution_sign_offs`. See [work-instructions.md](./work-instructions.md) and `docs/proposals/work-order-traveler.md`.
+
+**Edges (in `item_relationships`, WO always the source):** `Consumes` → PhysicalPart or Part version (bulk, qty pinned to the consumed revision); `Produces` → PhysicalPart units.
+
+**API:** `/api/v1/work-orders`, plus `/:id/instructions` (traveler), `/:id/executions`, `/:id/materials`, `/:id/produce(d)`, `/:id/qualification`
+
+### Physical Part
+
+**Purpose:** A physical instance of a Part — a **serialized unit** or an **identified lot/batch**. The digital-twin record: it accumulates documents (material certs, test reports, CoCs) in the vault, carries requirement evidence assertions, and anchors genealogy. Non-versioned (Tool pattern).
+
+**Lifecycle:** Free | **Default State:** Available | **Numbering:** `PP-000001` (stable handle; the display identity is the serial/lot)
+
+| Field                     | Type         | Description                                    |
+| ------------------------- | ------------ | ---------------------------------------------- |
+| `instance_kind`           | varchar(10)  | `unit` (serialNumber) or `lot` (lotNumber)     |
+| `part_master_id`          | UUID         | The Part lineage this instantiates (masterId)  |
+| `serial_number`           | varchar(200) | Unique per part lineage (units)                |
+| `lot_number`              | varchar(200) | Unique per part lineage (lots)                 |
+| `manufacturer_part_id`    | UUID (FK)    | Which approved source (AML) this physically is |
+| `as_built_item_id`        | UUID (FK)    | Exact part version row it was built as         |
+| `producing_work_order_id` | UUID (FK)    | The WO that produced it                        |
+| `erp_ref`                 | varchar(200) | Future ERP reconciliation handle               |
+
+**States:** Available ↔ Consumed / In Service → Scrapped
+
+**Edges:** target of `Consumes`/`Produces` (from WOs); source of `Evidences` → Requirement (qualification assertions).
+
+**API:** `/api/v1/physical-parts` (register is find-or-create on part + serial/lot), plus `/:id/genealogy`, `/:id/evidence`, `/recall`
+
+See `docs/proposals/physical-parts-and-traceability.md` for the full design.
+
+### Software
+
+**Purpose:** A firmware or software configuration item, versioned alongside the hardware it ships with. Source lives in a content-addressed store (`software_blobs` + immutable `software_manifests`) and the `manifestId` pointer rides the item version, so branch isolation and time travel work with no special cases.
+
+**Lifecycle:** Driven (shares the Part lifecycle — ECO-controlled) | **Default State:** Draft | **Numbering:** `SW-000001`
+
+| Field                    | Type         | Description                                                                 |
+| ------------------------ | ------------ | --------------------------------------------------------------------------- |
+| `description`            | text         | What this item is                                                           |
+| `software_type`          | varchar(30)  | `firmware`, `application`, `library`, `configuration`, or `fpga`            |
+| `source_mode`            | varchar(20)  | `internal` (source lives in Cascadia) or `external` (pinned repo reference) |
+| `version`                | varchar(50)  | User-managed version string, distinct from the PLM revision letter          |
+| `target_hardware`        | varchar(200) | The hardware this build targets                                             |
+| `toolchain`              | varchar(200) | Compiler/toolchain identification                                           |
+| `manifest_id`            | UUID (FK)    | Immutable source-tree snapshot for **this** item version                    |
+| `draft_manifest_id`      | UUID (FK)    | Uncommitted working-copy edits; promoted by an explicit commit              |
+| `build_artifact_file_id` | UUID         | Primary build artifact in the vault (`.bin`/`.hex`/`.elf`/`.zip`)           |
+
+**States:** Draft, In Review, Approved, Released, Obsolete
+
+**Source editing:** `SoftwareSourceService` handles imports (files or zip), tree/file/diff reads, and checkout-gated draft editing. Edits accumulate in `draftManifestId`; an explicit commit promotes the draft and records per-file `source`-category field changes. `ConflictDetectionService` sharpens software manifest conflicts to per-file granularity.
+
+**API:** `/api/v1/software/{id}`, plus `/tree`, `/file`, `/files`, `/file/rename`, `/diff`, `/blob/{hash}`, `/commit`, `/draft/discard`, `/versions`
+
+See `docs/proposals/software-management.md` for the full design.
+
+### Tool
+
+**Purpose:** A piece of manufacturing, quality, or utility equipment — a 3D printer, CNC mill, laser cutter, CMM. Tools are the capability inventory the design engine's Toolset Establishment stage draws on to constrain BOM and CAD generation. Non-versioned (no `designId`, Free lifecycle).
+
+**Lifecycle:** Free | **Default State:** Draft | **Numbering:** `TOOL-000001`
+
+| Field          | Type         | Description                                                     |
+| -------------- | ------------ | --------------------------------------------------------------- |
+| `tool_type`    | varchar(50)  | `manufacturing`, `quality`, or `utility`                        |
+| `tool_subtype` | varchar(50)  | `fdm_printer`, `cnc_mill`, `laser_cutter`, …                    |
+| `manufacturer` | varchar(200) | Equipment manufacturer                                          |
+| `model`        | varchar(200) | Equipment model                                                 |
+| `capabilities` | JSONB        | Structured capability envelope; schema varies by `tool_subtype` |
+| `tool_status`  | varchar(20)  | `available`, `in_use`, `maintenance`, or `retired`              |
+| `location`     | varchar(500) | Physical location                                               |
+| `notes`        | text         | Free-form notes                                                 |
+
+**States:** Draft, Active, Maintenance, Retired
+
+**Relationships:** none — tools are standalone.
+
+**API:** `/api/v1/tools/{id}`
 
 ---
 
@@ -926,18 +1028,18 @@ A Design is a version-controlled container for items within a program. Designs h
 
 All item types are registered in `ItemTypeRegistry`, which implements a two-tier configuration pattern:
 
-1. **Code definitions** -- Type-safe configs defined in `src/lib/items/registerItemTypes.server.ts` (schemas, components, table names, default states).
+1. **Code definitions** -- Type-safe configs defined in `packages/core/src/lib/items/registerItemTypes.server.ts` (schemas, components, table names, default states).
 2. **Runtime configs** -- Business rules from the database `item_type_configs` table (overridable labels, permissions, lifecycle assignments, relationships).
 
 Runtime configs override code defaults for configurable fields. Components and schemas always come from code for type safety.
 
 ### Registration Source
 
-`src/lib/items/registerItemTypes.server.ts`
+`packages/core/src/lib/items/registerItemTypes.server.ts`
 
 ### Lifecycle Assignment
 
-Each item type is assigned a lifecycle definition by ID (stored in `src/lib/items/lifecycle-ids.ts`). The lifecycle controls valid states and transition rules. Multiple item types can share the same lifecycle definition.
+Each item type is assigned a lifecycle definition by ID (stored in `packages/core/src/lib/items/lifecycle-ids.ts`). The lifecycle controls valid states and transition rules. Multiple item types can share the same lifecycle definition.
 
 ### Permissions Model
 
@@ -978,7 +1080,7 @@ The `item_relationships` table stores typed, directed relationships between any 
 
 Relationship records include optional fields for quantity, reference designator, find number, SysML composition/multiplicity, and cross-design traceability (source/target design, derivation method).
 
-**API:** `GET/POST/DELETE /api/relationships`
+**API:** `GET /api/v1/relationships`, `POST /api/v1/relationships/batch-create`, `PUT`/`DELETE /api/v1/relationships/{relationshipId}`
 
 ---
 
@@ -986,18 +1088,18 @@ Relationship records include optional fields for quantity, reference designator,
 
 All item types share these common endpoints via the unified `ItemService`:
 
-| Method | Path                                    | Description                                                                    |
-| ------ | --------------------------------------- | ------------------------------------------------------------------------------ |
-| GET    | `/api/v1/items/search`                     | Search items with filters (`itemType`, `designId`, `state`, `q`, pagination)   |
-| GET    | `/api/v1/items/$id`                        | Get item by ID with optional version context (`?branch=`, `?commit=`, `?tag=`) |
-| POST   | `/api/v1/items/$id`                        | Create item (type determined by `itemType` field in body)                      |
-| PUT    | `/api/v1/items/$id`                        | Update item                                                                    |
-| DELETE | `/api/v1/items/$id`                        | Soft-delete item                                                               |
-| GET    | `/api/v1/items/$id/history`                | Version history across revisions                                               |
-| GET    | `/api/v1/items/$id/available-contexts`     | List branches/commits where item exists                                        |
-| POST   | `/api/v1/items/$id/checkin`                | Check in after editing                                                         |
-| POST   | `/api/v1/items/$id/cancel-checkout`        | Cancel checkout                                                                |
-| GET    | `/api/v1/items/$id/lock-status`            | Check lock status                                                              |
-| POST   | `/api/v1/items/$id/unlock`                 | Force unlock                                                                   |
-| GET    | `/api/v1/items/$id/impact-analysis`        | Run impact analysis on item                                                    |
-| GET    | `/api/v1/items/$id/satisfied-requirements` | Requirements satisfied by this item                                            |
+| Method | Path                                        | Description                                                                    |
+| ------ | ------------------------------------------- | ------------------------------------------------------------------------------ |
+| GET    | `/api/v1/items/search`                      | Search items with filters (`itemType`, `designId`, `state`, `q`, pagination)   |
+| GET    | `/api/v1/items/{id}`                        | Get item by ID with optional version context (`?branch=`, `?commit=`, `?tag=`) |
+| POST   | `/api/v1/items`                             | Create item (type determined by `itemType` field in body)                      |
+| PUT    | `/api/v1/items/{id}`                        | Update item                                                                    |
+| DELETE | `/api/v1/items/{id}`                        | Soft-delete item                                                               |
+| GET    | `/api/v1/items/{id}/history`                | Version history across revisions                                               |
+| GET    | `/api/v1/items/{id}/available-contexts`     | List branches/commits where item exists                                        |
+| POST   | `/api/v1/items/{id}/checkin`                | Check in after editing                                                         |
+| POST   | `/api/v1/items/{id}/cancel-checkout`        | Cancel checkout                                                                |
+| GET    | `/api/v1/items/{id}/lock-status`            | Check lock status                                                              |
+| POST   | `/api/v1/items/{id}/unlock`                 | Force unlock                                                                   |
+| POST   | `/api/v1/items/{id}/impact-analysis`        | Run impact analysis on item                                                    |
+| GET    | `/api/v1/items/{id}/satisfied-requirements` | Requirements satisfied by this item                                            |

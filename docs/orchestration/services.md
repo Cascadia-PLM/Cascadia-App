@@ -4,14 +4,14 @@ This document describes each deployable service in the Cascadia PLM system.
 
 ## Service Summary
 
-| Service          | Image                   | Purpose                | Required   |
-| ---------------- | ----------------------- | ---------------------- | ---------- |
-| `cascadia-app`   | `ghcr.io/cascadia-plm/cascadia-app`          | Core web application   | Yes        |
-| `cascadia-vault` | `cascadia/vault`        | File storage service   | Optional\* |
-| `cascadia-jobs`  | `ghcr.io/cascadia-plm/cascadia-jobs-worker`         | Background job workers | Optional   |
-| `postgres`       | `postgres:18-alpine`    | Database               | Yes        |
-| `rabbitmq`       | `rabbitmq:3-management` | Message broker         | With Jobs  |
-| `minio`          | `minio/minio`           | S3-compatible storage  | Optional   |
+| Service          | Image                                       | Purpose                | Required   |
+| ---------------- | ------------------------------------------- | ---------------------- | ---------- |
+| `cascadia-app`   | `ghcr.io/cascadia-plm/cascadia-app`         | Core web application   | Yes        |
+| `cascadia-vault` | `cascadia/vault`                            | File storage service   | Optional\* |
+| `cascadia-jobs`  | `ghcr.io/cascadia-plm/cascadia-jobs-worker` | Background job workers | Optional   |
+| `postgres`       | `postgres:18-alpine`                        | Database               | Yes        |
+| `rabbitmq`       | `rabbitmq:3-management`                     | Message broker         | With Jobs  |
+| `minio`          | `minio/minio`                               | S3-compatible storage  | Optional   |
 
 \*Vault can be embedded in Core App or run separately.
 
@@ -57,7 +57,7 @@ docker build -t ghcr.io/cascadia-plm/cascadia-app -f docker/app.Dockerfile .
 ### Health Check
 
 ```
-GET /api/health
+GET /api/v1/health
 ```
 
 ### Volumes
@@ -277,7 +277,7 @@ All services share the same database schema. Migrations run from Core App:
 
 ```bash
 # Apply schema changes
-docker exec cascadia-app npx drizzle-kit push
+docker exec cascadia-app npm run db:push
 
 # Generate migration files
 docker exec cascadia-app npx drizzle-kit generate

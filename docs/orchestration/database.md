@@ -200,13 +200,13 @@ All Cascadia services share the same database schema. Run migrations from Core A
 
 ```bash
 # Docker Compose
-docker-compose exec app npx drizzle-kit push
+docker-compose exec app npm run db:push
 
 # Kubernetes
-kubectl exec -it deployment/cascadia-app -- npx drizzle-kit push
+kubectl exec -it deployment/cascadia-app -- npm run db:push
 
 # Direct (with DATABASE_URL set)
-npx drizzle-kit push
+npm run db:push
 ```
 
 ### Migration Strategy

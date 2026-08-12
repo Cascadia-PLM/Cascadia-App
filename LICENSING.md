@@ -78,5 +78,5 @@ already released. Everything listed under "Open core" above stays AGPL going for
 
 ---
 
-*This document describes our licensing policy in plain language; it is not legal advice
-and does not modify the terms of the [LICENSE](./LICENSE) or any commercial agreement.*
+_This document describes our licensing policy in plain language; it is not legal advice
+and does not modify the terms of the [LICENSE](./LICENSE) or any commercial agreement._

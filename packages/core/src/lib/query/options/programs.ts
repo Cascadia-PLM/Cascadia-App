@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
+import { queryOptions } from '@tanstack/react-query'
+import { qk } from '../keys'
+import { gridParamsToSearchParams } from '../grid-params'
+import { entityQuery } from './entities'
+import type { GridParams, GridQuery } from '../grid-params'
+import type { Program } from '@/lib/types/program'
+import { apiFetch } from '@/lib/api/client'
+
+export interface ProgramCounts {
+  active: number
+  onHold: number
+  completed: number
+}
+
+const EMPTY_COUNTS: ProgramCounts = { active: 0, onHold: 0, completed: 0 }
+
+/** Every program — the picker/reference list loaded by five routes. */
+export function programListQuery() {
+  return queryOptions({
+    queryKey: qk.list('programs', {}),
+    queryFn: async (): Promise<Array<Program>> => {
+      const result = await apiFetch<{ data: { programs: Array<Program> } }>(
+        '/api/v1/programs',
+      )
+      return result.data.programs
+    },
+  })
+}
+
+/** The paged programs grid. */
+export function programGridQuery(grid: GridParams): GridQuery<Program> {
+  return {
+    queryKey: qk.list('programs', grid),
+    queryFn: async () => {
+      const qs = gridParamsToSearchParams(grid)
+      const result = await apiFetch<{
+        data: { programs: Array<Program>; total: number }
+      }>(`/api/v1/programs?${qs}`)
+      return { items: result.data.programs, total: result.data.total }
+    },
+  }
+}
+
+/** Program counts by status, served in one call alongside a minimal page. */
+export function programCountsQuery() {
+  return queryOptions({
+    queryKey: qk.collection('programs', 'counts'),
+    queryFn: async (): Promise<ProgramCounts> => {
+      const result = await apiFetch<{
+        data: { counts?: ProgramCounts }
+      }>('/api/v1/programs?includeCounts=true&limit=1')
+      return result.data.counts ?? EMPTY_COUNTS
+    },
+  })
+}
+
+export function programDetailQuery(id: string) {
+  return entityQuery<Program>('programs', id, 'program')
+}

@@ -116,7 +116,7 @@ When a part is revised from Rev A to Rev B, a new row is inserted with a new `id
 ```
 items table:
   id: "abc-111"  masterId: "master-001"  itemNumber: "PN-001"  revision: "A"  isCurrent: false
-  id: "abc-222"  masterId: "master-001"  itemNumber: "PN-001"  revision: "B"  isCurrent: true
+  id: "abc-222"  masterId: "master-001"  itemNumber: "PN-001"  revision: "B"  isCurrent: false
   id: "abc-333"  masterId: "master-001"  itemNumber: "PN-001"  revision: "C"  isCurrent: true
 ```
 
@@ -281,12 +281,15 @@ Branch items are created lazily -- only when an item is first checked out to a b
 ### Branch Lifecycle
 
 ```
-Created (active) --> Locked (ECO submitted for approval) --> Merged/Archived (ECO released)
-                                |
-                                +--> Unlocked (ECO rejected, rework needed)
+Created (active) --> Merged/Archived (ECO released or cancelled)
 ```
 
-- **Locked branches** prevent further commits while the ECO is in review.
+- Review freezes the ECO's **scope** (which items it covers), not its branch:
+  work on the items already in scope continues throughout. See
+  [Scope Locking](./change-management.md#scope-locking).
+- **Locked branches** (`isLocked`) prevent further commits. Locking is a manual
+  administrative action (`PATCH /api/v1/branches/:id`); no workflow transition
+  sets it.
 - **Archived branches** are retained for history but hidden from active branch lists.
 
 ### Branch Protection
@@ -332,7 +335,8 @@ The `ChangeOrderMergeService.mergeBranchToMain()` method orchestrates the follow
    - Create the released item version on main.
 
 3. **For each deleted item:**
-   - Mark the item as `Obsolete` on main.
+   - Set the item's state to the lifecycle's obsolete state and soft-delete it
+     (`isDeleted`), then drop its `branchItem` row from main.
 
 4. **After all items are processed:**
    - Create a merge commit on the main branch recording all changes.
@@ -347,15 +351,22 @@ The `ChangeOrderMergeService.mergeBranchToMain()` method orchestrates the follow
 
 Before merge, the system runs conflict detection via `ConflictDetectionService`:
 
-| Conflict Type             | Severity | Description                                                                              |
-| ------------------------- | -------- | ---------------------------------------------------------------------------------------- |
-| `checkout`                | Error    | Item is still checked out (must check in first)                                          |
-| `concurrent_modification` | Warning  | Same item was modified on main since the branch was created (another ECO released first) |
-| `cross_eco`               | Warning  | Same item is being modified by another active ECO                                        |
-| `field_conflict`          | Warning  | Same field was changed differently on two branches                                       |
-| `no_changes`              | Info     | Branch has no changes to merge (skipped)                                                 |
+| Conflict Type             | Severity | Description                                                                           |
+| ------------------------- | -------- | ------------------------------------------------------------------------------------- |
+| `checkout`                | Warning  | Item is still checked out; the release checks it in automatically                     |
+| `concurrent_modification` | Error    | Main moved on for this item since the branch was created (another ECO released first) |
+| `field_conflict`          | Error    | Same field was changed differently on two branches                                    |
+| `cross_eco`               | Warning  | Same item is being modified by another active ECO                                     |
+| `no_changes`              | Info     | Branch has no changes to merge (skipped)                                              |
+| `branch_not_found`        | Error    | Invalid branch reference                                                              |
 
-Error-severity conflicts block the merge. Warning-severity conflicts can be acknowledged by an authorized user to proceed.
+Error-severity conflicts block the release, and the same verdict is reported by
+the Conflicts tab, the release preview, and the merge itself. Resolve them with
+rebase or pull-from-main.
+
+Warnings do not block. They can be marked reviewed (`conflictReviews`) to record
+that someone looked at them -- an audit annotation, not an override: nothing is
+gated on it.
 
 ---
 
@@ -671,6 +682,6 @@ User requests item at context
 
 ## See Also
 
-- [Change Orders](../change-management-deep-dive.md) -- ECO workflow and lifecycle
+- [Change Orders](./change-management.md) -- ECO workflow and lifecycle
 - [Architecture](../architecture/) -- Overall system architecture
-- Developer reference: `src/lib/services/VersionResolver.ts`, `src/lib/services/CommitService.ts`, `src/lib/services/BranchService.ts`
+- Developer reference: `packages/core/src/lib/services/VersionResolver.ts`, `packages/core/src/lib/services/CommitService.ts`, `packages/core/src/lib/services/BranchService.ts`

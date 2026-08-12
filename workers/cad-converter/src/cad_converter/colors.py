@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2026 Cascadia PLM LLC
+
 """Extract per-face/solid colors from STEP XDE documents via XCAFDoc_ColorTool."""
 
 from __future__ import annotations

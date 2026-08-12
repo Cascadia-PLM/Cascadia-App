@@ -4,25 +4,25 @@ The Files API manages the vault file system in Cascadia PLM. It provides file up
 
 ## Endpoints Overview
 
-| Method | Endpoint                          | Description             |
-| ------ | --------------------------------- | ----------------------- |
-| GET    | `/api/files`                      | List all files          |
-| DELETE | `/api/files/:fileId`              | Delete a file           |
-| GET    | `/api/files/:fileId/download`     | Download a file         |
-| GET    | `/api/files/:fileId/metadata`     | Get file metadata       |
-| GET    | `/api/files/:fileId/versions`     | List file versions      |
-| POST   | `/api/files/:fileId/checkout`     | Check out a file        |
-| POST   | `/api/files/:fileId/checkin`      | Check in a file         |
-| GET    | `/api/files/:fileId/lock-status`  | Get file lock status    |
-| POST   | `/api/files/batch-checkout`       | Batch file checkout     |
-| POST   | `/api/files/batch-checkin`        | Batch file checkin      |
-| GET    | `/api/items/:itemId/files`        | List files for an item  |
-| POST   | `/api/items/:itemId/files/upload` | Upload files to an item |
+| Method | Endpoint                             | Description             |
+| ------ | ------------------------------------ | ----------------------- |
+| GET    | `/api/v1/files`                      | List all files          |
+| DELETE | `/api/v1/files/:fileId`              | Delete a file           |
+| GET    | `/api/v1/files/:fileId/download`     | Download a file         |
+| GET    | `/api/v1/files/:fileId/metadata`     | Get file metadata       |
+| GET    | `/api/v1/files/:fileId/versions`     | List file versions      |
+| POST   | `/api/v1/files/:fileId/checkout`     | Check out a file        |
+| POST   | `/api/v1/files/:fileId/checkin`      | Check in a file         |
+| GET    | `/api/v1/files/:fileId/lock-status`  | Get file lock status    |
+| POST   | `/api/v1/files/batch-checkout`       | Batch file checkout     |
+| POST   | `/api/v1/files/batch-checkin`        | Batch file checkin      |
+| GET    | `/api/v1/items/:itemId/files`        | List files for an item  |
+| POST   | `/api/v1/items/:itemId/files/upload` | Upload files to an item |
 
 ## List Files
 
 ```
-GET /api/files
+GET /api/v1/files
 ```
 
 Lists all files in the vault. Auth required.
@@ -58,7 +58,7 @@ Lists all files in the vault. Auth required.
 ## Upload Files
 
 ```
-POST /api/items/:itemId/files/upload
+POST /api/v1/items/:itemId/files/upload
 ```
 
 Upload one or more files to an item. Uses `multipart/form-data`. Auth required.
@@ -66,7 +66,7 @@ Upload one or more files to an item. Uses `multipart/form-data`. Auth required.
 ### Request
 
 ```bash
-curl -X POST /api/items/ITEM_UUID/files/upload \
+curl -X POST /api/v1/items/ITEM_UUID/files/upload \
   -F "file1=@motor_housing.step" \
   -F "file1_description=STEP model of motor housing" \
   -F "file2=@motor_housing.pdf" \
@@ -105,7 +105,7 @@ curl -X POST /api/items/ITEM_UUID/files/upload \
 ## Download File
 
 ```
-GET /api/files/:fileId/download
+GET /api/v1/files/:fileId/download
 ```
 
 Downloads a file's binary content. Requires `documents.read` permission. Checks design access through the file's parent item.
@@ -126,13 +126,13 @@ For files larger than 10 MB, the response is streamed.
 ### Example
 
 ```bash
-curl -O /api/files/FILE_UUID/download
+curl -O /api/v1/files/FILE_UUID/download
 ```
 
 ## File Metadata
 
 ```
-GET /api/files/:fileId/metadata
+GET /api/v1/files/:fileId/metadata
 ```
 
 Returns file metadata without downloading the content. Requires `documents.read` permission.
@@ -163,7 +163,7 @@ Returns file metadata without downloading the content. Requires `documents.read`
 ## File Versions
 
 ```
-GET /api/files/:fileId/versions
+GET /api/v1/files/:fileId/versions
 ```
 
 Lists all versions of a file. Requires `documents.read` permission.
@@ -199,7 +199,7 @@ Lists all versions of a file. Requires `documents.read` permission.
 ## Delete File
 
 ```
-DELETE /api/files/:fileId
+DELETE /api/v1/files/:fileId
 ```
 
 Soft-deletes a file. Requires `documents.delete` permission.
@@ -218,7 +218,7 @@ Soft-deletes a file. Requires `documents.delete` permission.
 ## List Item Files
 
 ```
-GET /api/items/:itemId/files
+GET /api/v1/items/:itemId/files
 ```
 
 Lists all files associated with an item. Supports branch-aware file listing. Auth required.
@@ -244,7 +244,7 @@ Lists all files associated with an item. Supports branch-aware file listing. Aut
 ## File Check-Out
 
 ```
-POST /api/files/:fileId/checkout
+POST /api/v1/files/:fileId/checkout
 ```
 
 Checks out a file for exclusive editing. Requires `documents.update` permission. Prevents other users from modifying the file until checked in.
@@ -270,7 +270,7 @@ Checks out a file for exclusive editing. Requires `documents.update` permission.
 ## File Check-In
 
 ```
-POST /api/files/:fileId/checkin
+POST /api/v1/files/:fileId/checkin
 ```
 
 Checks in a file, optionally uploading a new version. Requires `documents.update` permission.
@@ -278,7 +278,7 @@ Checks in a file, optionally uploading a new version. Requires `documents.update
 ### Without New Version (unlock only)
 
 ```bash
-curl -X POST /api/files/FILE_UUID/checkin
+curl -X POST /api/v1/files/FILE_UUID/checkin
 ```
 
 Response:
@@ -295,7 +295,7 @@ Response:
 ### With New Version
 
 ```bash
-curl -X POST /api/files/FILE_UUID/checkin \
+curl -X POST /api/v1/files/FILE_UUID/checkin \
   -F "file=@motor_housing_v2.step" \
   -F "description=Updated cooling channels"
 ```
@@ -320,7 +320,7 @@ Response:
 ## File Lock Status
 
 ```
-GET /api/files/:fileId/lock-status
+GET /api/v1/files/:fileId/lock-status
 ```
 
 Returns the current lock/checkout status for a file. Requires `documents.read` permission. Checks design access through the file's parent item.
@@ -356,7 +356,7 @@ Returns the current lock/checkout status for a file. Requires `documents.read` p
 ## Batch File Checkout
 
 ```
-POST /api/files/batch-checkout
+POST /api/v1/files/batch-checkout
 ```
 
 Check out multiple files at once. Useful for CAD assemblies. Requires `documents.update` permission. Limited to 100 files per batch.
@@ -397,7 +397,7 @@ Returns `201` (all succeeded), `207` (partial success), or `400` (all failed):
 ## Batch File Checkin
 
 ```
-POST /api/files/batch-checkin
+POST /api/v1/files/batch-checkin
 ```
 
 Check in multiple files at once (unlock without new versions). Requires `documents.update` permission. Limited to 100 files per batch.
@@ -428,7 +428,7 @@ Returns `200` (all succeeded), `207` (partial success), or `400` (all failed):
 }
 ```
 
-Note: Batch checkin only unlocks files. To upload new file versions, use the individual file checkin endpoint (`POST /api/files/:fileId/checkin`) with `multipart/form-data`.
+Note: Batch checkin only unlocks files. To upload new file versions, use the individual file checkin endpoint (`POST /api/v1/files/:fileId/checkin`) with `multipart/form-data`.
 
 ## Lock Hierarchy
 
@@ -436,11 +436,11 @@ Cascadia provides three complementary locking systems that work together to mana
 
 ### Lock Types
 
-| Lock Type     | Purpose                                     | Scope                           | API Endpoints                                  |
-| ------------- | ------------------------------------------- | ------------------------------- | ---------------------------------------------- |
-| **Checkout**  | Branch-scoped edit session for PLM workflow | Item on a specific branch       | `/api/items/:id/checkout`                      |
-| **Item Lock** | Exclusive edit rights for concurrent access | Single item across all branches | `/api/items/:id/lock`, `/api/items/:id/unlock` |
-| **File Lock** | CAD-specific file lock for external tools   | Individual file                 | `/api/files/:fileId/lock-status`               |
+| Lock Type     | Purpose                                     | Scope                           | API Endpoints                                        |
+| ------------- | ------------------------------------------- | ------------------------------- | ---------------------------------------------------- |
+| **Checkout**  | Branch-scoped edit session for PLM workflow | Item on a specific branch       | `/api/v1/items/:id/checkout`                         |
+| **Item Lock** | Exclusive edit rights for concurrent access | Single item across all branches | `/api/v1/items/:id/lock`, `/api/v1/items/:id/unlock` |
+| **File Lock** | CAD-specific file lock for external tools   | Individual file                 | `/api/v1/files/:fileId/lock-status`                  |
 
 ### Lock Precedence
 
@@ -461,15 +461,15 @@ Item Lock (highest - blocks ALL operations)
 ### Item Lock API
 
 ```
-POST /api/items/:id/lock      # Lock an item
-POST /api/items/:id/unlock    # Unlock an item
-GET  /api/items/:id/lock-status  # Get lock status
+POST /api/v1/items/:id/lock      # Lock an item
+POST /api/v1/items/:id/unlock    # Unlock an item
+GET  /api/v1/items/:id/lock-status  # Get lock status
 ```
 
 #### Lock Request
 
 ```bash
-curl -X POST /api/items/ITEM_UUID/lock \
+curl -X POST /api/v1/items/ITEM_UUID/lock \
   -H "Content-Type: application/json" \
   -d '{ "force": false }'
 ```
@@ -502,10 +502,10 @@ The `lockedFor` field shows lock duration in minutes.
 ### Item Checkout API
 
 ```
-POST   /api/items/:id/checkout   # Check out item to branch
-GET    /api/items/:id/checkout   # Get checkout status
-DELETE /api/items/:id/checkout   # Cancel checkout
-POST   /api/items/:id/checkin    # Check in item
+POST   /api/v1/items/:id/checkout   # Check out item to branch
+GET    /api/v1/items/:id/checkout   # Get checkout status
+DELETE /api/v1/items/:id/checkout   # Cancel checkout
+POST   /api/v1/items/:id/checkin    # Check in item
 ```
 
 All checkout operations require a `branchId` parameter.
@@ -513,7 +513,7 @@ All checkout operations require a `branchId` parameter.
 #### Checkout Request
 
 ```bash
-curl -X POST /api/items/ITEM_UUID/checkout \
+curl -X POST /api/v1/items/ITEM_UUID/checkout \
   -H "Content-Type: application/json" \
   -d '{ "branchId": "branch-uuid" }'
 ```
@@ -521,7 +521,7 @@ curl -X POST /api/items/ITEM_UUID/checkout \
 #### Batch Item Checkout
 
 ```bash
-curl -X POST /api/items/batch-checkout \
+curl -X POST /api/v1/items/batch-checkout \
   -H "Content-Type: application/json" \
   -d '{ "itemIds": ["uuid1", "uuid2"], "branchId": "branch-uuid" }'
 ```
@@ -543,7 +543,7 @@ Recommended workflow for CAD tools integrating with Cascadia:
 1. **Start editing session** -- batch checkout items:
 
    ```
-   POST /api/items/batch-checkout
+   POST /api/v1/items/batch-checkout
    ```
 
 2. **Make changes locally in CAD tool**
@@ -551,13 +551,13 @@ Recommended workflow for CAD tools integrating with Cascadia:
 3. **Save changes to Cascadia** -- upload files and update metadata:
 
    ```
-   POST /api/items/:id/files/upload
-   PUT /api/items/:id
+   POST /api/v1/items/:id/files/upload
+   PUT /api/v1/items/:id
    ```
 
 4. **End editing session** -- batch checkin:
    ```
-   POST /api/items/batch-checkin
+   POST /api/v1/items/batch-checkin
    ```
 
 ### Best Practices

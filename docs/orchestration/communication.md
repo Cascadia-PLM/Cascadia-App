@@ -287,7 +287,7 @@ Core App queries database for job status:
 
 ```typescript
 // Polling endpoint
-GET /api/jobs/:id
+GET /api/v1/jobs/:id
 {
   "id": "job-uuid",
   "type": "conversion.pdf",

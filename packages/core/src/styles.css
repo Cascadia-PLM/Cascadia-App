@@ -1,0 +1,563 @@
+@import 'tailwindcss';
+@import './lib/tour/tour-styles.css';
+@import './components/versioning/graph-animations.css';
+
+/* Enable class-based dark mode */
+@variant dark (.dark &);
+
+/*
+ * ── Light-mode palette ──────────────────────────────────────────────────────
+ *
+ * Light mode used to render on paper-white: `bg-white` cards sat on a
+ * `bg-slate-50` page only 1.6% apart in perceptual lightness, so the layering
+ * was invisible and the whole UI read as one glaring sheet. This block dims the
+ * light end of every scale and, in doing so, opens the gaps between layers.
+ *
+ * HOW IT WORKS. Tailwind v4 compiles colour utilities to `var(--color-*)`
+ * lookups — `.bg-white` is `background-color: var(--color-white)`, never a
+ * literal. Redefining those variables here therefore recolours every existing
+ * utility across the app with no class churn. The `:not(.dark)` scope is what
+ * keeps it light-mode only: dark mode reads Tailwind's stock values, untouched.
+ * (This block is unlayered and more specific than Tailwind's `@layer theme`
+ * `:root, :host`, so it wins on both counts regardless of import order.)
+ *
+ * THE RULES. Values are the stock Tailwind colours with lightness capped —
+ * hue and chroma are preserved, and a step already darker than its cap is left
+ * alone, so nothing here makes anything lighter.
+ *
+ *   surfaces   50 → 95.2%   100 → 92.8%   200 → 89.0%   300 → 84.5%
+ *   white      → 97.6%, with a trace of the slate hue so cards sit in-family
+ *   neutral muted   400 → 68.0%   500 → 53.5%
+ *   accent text     600/700 → 3% darker
+ *
+ * The last two lines are not decoration: dimming a surface costs contrast
+ * against the text on it, and the muted/accent steps are where that mattered.
+ * Dropping them buys it back — every pairing the app actually uses (body and
+ * muted text on all three surfaces, `text-*-700` on `bg-*-100` chips,
+ * `text-*-800` on `bg-*-100`, accent text on cards, white on filled buttons)
+ * measures at or above where it sat before, and the warm-hue chips that used to
+ * scrape AA at 4.50:1 now clear it. Chroma is trimmed only where darkening
+ * pushed a colour outside sRGB, since clipping would have read as *more* vivid.
+ *
+ * CAVEAT: in light mode `bg-white` is no longer #ffffff. That is the point —
+ * treat it as "the top surface", not as the literal colour. To retune the
+ * theme, move the caps here; do not reach for one-off colours in components.
+ */
+:root:not(.dark) {
+  --color-white: oklch(97.6% 0.003 250);
+
+  --color-slate-50: oklch(95.2% 0.003 247.858);
+  --color-slate-100: oklch(92.8% 0.007 247.896);
+  --color-slate-200: oklch(89% 0.013 255.508);
+  --color-slate-300: oklch(84.5% 0.022 252.894);
+  --color-slate-400: oklch(68% 0.04 256.788);
+  --color-slate-500: oklch(53.5% 0.046 257.417);
+
+  --color-gray-50: oklch(95.2% 0.002 247.839);
+  --color-gray-100: oklch(92.8% 0.003 264.542);
+  --color-gray-200: oklch(89% 0.006 264.531);
+  --color-gray-300: oklch(84.5% 0.01 258.338);
+  --color-gray-400: oklch(68% 0.022 261.325);
+  --color-gray-500: oklch(53.5% 0.027 264.364);
+
+  --color-zinc-50: oklch(95.2% 0 0);
+  --color-zinc-100: oklch(92.8% 0.001 286.375);
+  --color-zinc-200: oklch(89% 0.004 286.32);
+  --color-zinc-300: oklch(84.5% 0.006 286.286);
+  --color-zinc-400: oklch(68% 0.015 286.067);
+  --color-zinc-500: oklch(53.5% 0.016 285.938);
+
+  --color-neutral-50: oklch(95.2% 0 0);
+  --color-neutral-100: oklch(92.8% 0 0);
+  --color-neutral-200: oklch(89% 0 0);
+  --color-neutral-300: oklch(84.5% 0 0);
+  --color-neutral-400: oklch(68% 0 0);
+  --color-neutral-500: oklch(53.5% 0 0);
+
+  --color-stone-50: oklch(95.2% 0.001 106.423);
+  --color-stone-100: oklch(92.8% 0.001 106.424);
+  --color-stone-200: oklch(89% 0.003 48.717);
+  --color-stone-300: oklch(84.5% 0.005 56.366);
+  --color-stone-400: oklch(68% 0.01 56.259);
+  --color-stone-500: oklch(53.5% 0.013 58.071);
+
+  --color-red-50: oklch(95.2% 0.013 17.38);
+  --color-red-100: oklch(92.8% 0.032 17.717);
+  --color-red-600: oklch(54.7% 0.223 27.325);
+  --color-red-700: oklch(47.5% 0.194 27.518);
+
+  --color-orange-50: oklch(95.2% 0.016 73.684);
+  --color-orange-100: oklch(92.8% 0.038 75.164);
+  --color-orange-200: oklch(89% 0.076 70.697);
+  --color-orange-600: oklch(61.6% 0.189 41.116);
+  --color-orange-700: oklch(52.3% 0.169 38.402);
+
+  --color-amber-50: oklch(95.2% 0.022 95.277);
+  --color-amber-100: oklch(92.8% 0.059 95.617);
+  --color-amber-200: oklch(89% 0.12 95.746);
+  --color-amber-300: oklch(84.5% 0.169 91.605);
+  --color-amber-600: oklch(63.6% 0.151 58.318);
+  --color-amber-700: oklch(52.5% 0.14 48.998);
+
+  --color-yellow-50: oklch(95.2% 0.026 102.212);
+  --color-yellow-100: oklch(92.8% 0.071 103.193);
+  --color-yellow-200: oklch(89% 0.129 101.54);
+  --color-yellow-300: oklch(84.5% 0.174 98.111);
+  --color-yellow-600: oklch(65.1% 0.136 75.834);
+  --color-yellow-700: oklch(52.4% 0.116 66.442);
+
+  --color-lime-50: oklch(95.2% 0.031 120.757);
+  --color-lime-100: oklch(92.8% 0.067 122.328);
+  --color-lime-200: oklch(89% 0.127 124.321);
+  --color-lime-300: oklch(84.5% 0.196 126.665);
+  --color-lime-600: oklch(61.8% 0.17 131.684);
+  --color-lime-700: oklch(50.2% 0.138 131.589);
+
+  --color-green-50: oklch(95.2% 0.018 155.826);
+  --color-green-100: oklch(92.8% 0.044 156.743);
+  --color-green-200: oklch(89% 0.084 155.995);
+  --color-green-300: oklch(84.5% 0.15 154.449);
+  --color-green-600: oklch(59.7% 0.167 149.214);
+  --color-green-700: oklch(49.7% 0.136 150.069);
+
+  --color-emerald-50: oklch(95.2% 0.021 166.113);
+  --color-emerald-100: oklch(92.8% 0.052 163.051);
+  --color-emerald-200: oklch(89% 0.093 164.15);
+  --color-emerald-600: oklch(56.6% 0.122 163.225);
+  --color-emerald-700: oklch(47.8% 0.099 165.612);
+
+  --color-teal-50: oklch(95.2% 0.014 180.72);
+  --color-teal-100: oklch(92.8% 0.051 180.801);
+  --color-teal-200: oklch(89% 0.096 180.426);
+  --color-teal-300: oklch(84.5% 0.138 181.071);
+  --color-teal-600: oklch(57% 0.1 184.704);
+  --color-teal-700: oklch(48.1% 0.084 186.391);
+
+  --color-cyan-50: oklch(95.2% 0.019 200.873);
+  --color-cyan-100: oklch(92.8% 0.045 203.388);
+  --color-cyan-200: oklch(89% 0.08 205.041);
+  --color-cyan-300: oklch(84.5% 0.127 207.078);
+  --color-cyan-600: oklch(57.9% 0.106 221.723);
+  --color-cyan-700: oklch(49% 0.091 223.128);
+
+  --color-sky-50: oklch(95.2% 0.013 236.62);
+  --color-sky-100: oklch(92.8% 0.026 236.824);
+  --color-sky-200: oklch(89% 0.058 230.902);
+  --color-sky-600: oklch(55.8% 0.132 241.966);
+  --color-sky-700: oklch(47% 0.113 242.749);
+
+  --color-blue-50: oklch(95.2% 0.014 254.604);
+  --color-blue-100: oklch(92.8% 0.032 255.585);
+  --color-blue-600: oklch(51.6% 0.245 262.881);
+  --color-blue-700: oklch(45.8% 0.243 264.376);
+
+  --color-indigo-50: oklch(95.2% 0.018 272.314);
+  --color-indigo-100: oklch(92.8% 0.034 272.788);
+  --color-indigo-600: oklch(48.1% 0.262 276.966);
+  --color-indigo-700: oklch(42.7% 0.24 277.023);
+
+  --color-violet-50: oklch(95.2% 0.016 293.756);
+  --color-violet-100: oklch(92.8% 0.029 294.588);
+  --color-violet-200: oklch(89% 0.057 293.283);
+  --color-violet-600: oklch(51.1% 0.281 293.009);
+  --color-violet-700: oklch(46.1% 0.256 292.581);
+
+  --color-purple-50: oklch(95.2% 0.014 308.299);
+  --color-purple-100: oklch(92.8% 0.033 307.174);
+  --color-purple-200: oklch(89% 0.063 306.703);
+  --color-purple-600: oklch(52.8% 0.278 302.321);
+  --color-purple-700: oklch(46.6% 0.246 301.924);
+
+  --color-fuchsia-50: oklch(95.2% 0.017 320.058);
+  --color-fuchsia-100: oklch(92.8% 0.037 318.852);
+  --color-fuchsia-200: oklch(89% 0.076 319.62);
+  --color-fuchsia-600: oklch(56.1% 0.265 322.896);
+  --color-fuchsia-700: oklch(48.8% 0.229 323.949);
+
+  --color-pink-50: oklch(95.2% 0.014 343.198);
+  --color-pink-100: oklch(92.8% 0.028 342.258);
+  --color-pink-200: oklch(89% 0.061 343.231);
+  --color-pink-600: oklch(56.2% 0.227 0.584);
+  --color-pink-700: oklch(49.5% 0.199 3.958);
+
+  --color-rose-50: oklch(95.2% 0.015 12.422);
+  --color-rose-100: oklch(92.8% 0.03 12.58);
+  --color-rose-200: oklch(89% 0.058 10.001);
+  --color-rose-600: oklch(55.6% 0.222 17.585);
+  --color-rose-700: oklch(48.4% 0.193 16.935);
+
+  /*
+   * React Flow paints its own chrome from hardcoded literals (#fefefe buttons,
+   * #fff minimap and edge labels) that the variable remap above cannot reach,
+   * which would leave the graph widgets glowing on a calmed canvas. These are
+   * the library's documented override hooks — it reads them ahead of its
+   * `-default` values, so setting them here inherits into every <ReactFlow>.
+   */
+  --xy-controls-button-background-color: var(--color-white);
+  --xy-controls-button-background-color-hover: var(--color-slate-100);
+  --xy-controls-button-border-color: var(--color-slate-200);
+  --xy-minimap-background-color: var(--color-white);
+  --xy-edge-label-background-color: var(--color-white);
+}
+
+/*
+ * Tell the UA which palette to render native chrome in — scrollbars, form
+ * control internals (checkbox/radio ticks, select popups), date & time
+ * pickers, autofill backgrounds and spellcheck underlines. Without this they
+ * stay light-on-light while the rest of the app is dark. The inline script in
+ * index.html sets this on <html> before first paint; these rules are the
+ * durable source of truth once stylesheets load.
+ */
+:root {
+  color-scheme: light;
+
+  /*
+   * Chart tooltip surface. Recharts renders tooltips through inline styles, so
+   * Tailwind's dark: variants can't reach them — these custom properties are
+   * how DashboardCharts stays theme-aware. Keep in sync with the slate scale
+   * as resolved above, not with stock Tailwind.
+   */
+  --tooltip-bg: #f6f7f9; /* white */
+  --tooltip-border: #d5dbe3; /* slate-200 */
+  --tooltip-fg: #0f172a; /* slate-900 */
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  --tooltip-bg: #1e293b; /* slate-800 */
+  --tooltip-border: #334155; /* slate-700 */
+  --tooltip-fg: #f1f5f9; /* slate-100 */
+}
+
+body {
+  @apply m-0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family:
+    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Global auto-hiding scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+*:hover {
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 3px;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+}
+
+.dark *:hover {
+  scrollbar-color: rgba(107, 114, 128, 0.5) transparent;
+}
+
+.dark *:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(107, 114, 128, 0.5);
+}
+
+/* Gear animations */
+@keyframes gear-slow-cw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gear-slow-ccw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes gear-fast-cw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gear-fast-ccw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.animate-gear-slow-cw {
+  animation: gear-slow-cw 20s linear infinite;
+}
+
+.animate-gear-slow-ccw {
+  animation: gear-slow-ccw 20s linear infinite;
+}
+
+.animate-gear-fast-cw {
+  animation: gear-fast-cw 1s linear infinite;
+}
+
+.animate-gear-fast-ccw {
+  animation: gear-fast-ccw 1s linear infinite;
+}
+
+/* Loading spinner animation */
+@keyframes spin-smooth {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-smooth {
+  animation: spin-smooth 2s linear infinite;
+}
+
+/* Button spring animation */
+@keyframes button-press {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.button-press-active {
+  animation: button-press 0.2s ease-out;
+}
+
+/* Input shake animation for validation errors */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-4px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Checkmark draw animation */
+@keyframes draw-check {
+  0% {
+    stroke-dashoffset: 20;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw-check {
+  stroke-dasharray: 20;
+  animation: draw-check 0.3s ease-out forwards;
+}
+
+/* Tree expand/collapse animations */
+@keyframes tree-expand {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tree-collapse {
+  from {
+    opacity: 1;
+    max-height: 2000px;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.tree-expand-enter {
+  animation: tree-expand 0.3s ease-out forwards;
+  overflow: hidden;
+}
+
+.tree-collapse-exit {
+  animation: tree-collapse 0.2s ease-in forwards;
+  overflow: hidden;
+}
+
+/* Tree node slide-in animation */
+@keyframes slide-in-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in-from-left 0.3s ease-out;
+}
+
+/* Tree node fade-in with stagger support */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.3s ease-out;
+}
+
+/* Chevron rotation animation */
+.chevron-rotate {
+  transition: transform 0.2s ease-out;
+}
+
+.chevron-rotate-down {
+  transform: rotate(0deg);
+}
+
+.chevron-rotate-right {
+  transform: rotate(-90deg);
+}
+
+/* BOM item hover lift */
+.bom-item-hover {
+  transition: all 0.2s ease-out;
+}
+
+.bom-item-hover:hover {
+  transform: translateX(4px);
+  box-shadow: -4px 0 0 0 #0891b2;
+}
+
+/* Progress bar animation */
+@keyframes progress-fill {
+  from {
+    width: 0;
+  }
+}
+
+.animate-progress {
+  animation: progress-fill 0.6s ease-out;
+}
+
+/* Badge pulse on update */
+@keyframes badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-badge-pulse {
+  animation: badge-pulse 0.4s ease-out;
+}
+
+/* Auto-hiding scrollbar - appears on hover */
+.auto-hide-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+.auto-hide-scroll:hover {
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.auto-hide-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.auto-hide-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.auto-hide-scroll::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 3px;
+  transition: background-color 0.3s ease;
+}
+
+.auto-hide-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+}
+
+.dark .auto-hide-scroll:hover {
+  scrollbar-color: rgba(107, 114, 128, 0.5) transparent;
+}
+
+.dark .auto-hide-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(107, 114, 128, 0.5);
+}

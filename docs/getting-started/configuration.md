@@ -133,12 +133,13 @@ To set up Azure AD OAuth:
 
 ### AI providers (optional)
 
-Cascadia includes an AI chatbot that requires an API key from a supported provider.
+Cascadia includes an AI chatbot and design engine that require API keys from supported providers.
 
-| Variable            | Description                            |
-| ------------------- | -------------------------------------- |
-| `OPENAI_API_KEY`    | OpenAI API key for GPT models          |
-| `ANTHROPIC_API_KEY` | Anthropic API key for Claude models    |
+| Variable            | Description                                                                       |
+| ------------------- | --------------------------------------------------------------------------------- |
+| `OPENAI_API_KEY`    | OpenAI API key for GPT models                                                     |
+| `ANTHROPIC_API_KEY` | Anthropic API key for Claude models                                               |
+| `ZOO_API_KEY`       | Zoo API key for text-to-CAD generation (can also be set in the UI at `/admin/ai`) |
 
 At least one of `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` is required for AI features. If neither is set, the AI chatbot panel is hidden but the rest of the application works normally.
 
@@ -160,6 +161,27 @@ npm run cad:worker:stop
 ```
 
 No additional environment variables are needed -- the converter connects to the same RabbitMQ and PostgreSQL instances.
+
+### Optional packages (licensed separately)
+
+Some functionality ships in the codebase but is only available on instances
+entitled to it. Entitlement is set at deploy time and read once at process
+start; there is deliberately no in-app toggle.
+
+| Variable            | Description                                                                 |
+| ------------------- | --------------------------------------------------------------------------- |
+| `CASCADIA_PACKAGES` | Comma-separated package ids, or `*` for all. Known ids: `advanced-auditing` |
+
+```bash
+CASCADIA_PACKAGES=advanced-auditing
+```
+
+If unset, no optional packages are enabled and the rest of the application works
+normally. Administrators can see which packages an instance holds at `/admin`.
+
+**Advanced Auditing** adds digital signatures on workflow approvals and has its
+own configuration — including the reverse proxy setup required for CAC/PIV
+signing. See [Advanced Auditing](../features/advanced-auditing.md#configuration-reference).
 
 ---
 
@@ -254,21 +276,21 @@ interface RuntimeItemTypeConfig {
 
 ```bash
 # List all configurations
-GET /api/admin/item-type-configs
+GET /api/v1/admin/item-type-configs
 
 # Get one item type
-GET /api/admin/item-type-configs/:itemType
+GET /api/v1/admin/item-type-configs/:itemType
 
 # Create or update
-POST /api/admin/item-type-configs
+POST /api/v1/admin/item-type-configs
 Content-Type: application/json
 { "itemType": "Part", "config": { "label": "Component" } }
 
 # Delete (revert to code defaults)
-DELETE /api/admin/item-type-configs/:itemType
+DELETE /api/v1/admin/item-type-configs/:itemType
 
 # Hot-reload all configs
-POST /api/admin/reload-config
+POST /api/v1/admin/reload-config
 ```
 
 ### Database table: `settings`
@@ -365,4 +387,4 @@ AZURE_REDIRECT_URI=https://plm.example.com/auth/callback/azure
 ## Further reading
 
 - [Orchestration configuration reference](../orchestration/configuration.md) -- Docker Compose, Kubernetes, and cloud deployment variables
-- [Runtime configuration deep dive](../runtime-configuration.md) -- Full runtime config system documentation with examples
+- [Runtime configuration deep dive](../admin/system-settings.md) -- Full runtime config system documentation with examples

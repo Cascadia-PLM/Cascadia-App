@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2026 Cascadia PLM LLC
+
 """Assembly decomposition — extract individual parts from STEP assemblies using XDE."""
 
 from __future__ import annotations

@@ -70,7 +70,7 @@ This document describes the high-level architecture of Cascadia PLM, the design 
 | **ORM**            | Drizzle ORM                              | Type-safe SQL queries with schema-driven migrations                |
 | **Auth**           | @oslojs/crypto, @oslojs/encoding, Arctic | Session tokens (SHA-256 hashed), Argon2id passwords, OAuth         |
 | **Graph Viz**      | React Flow (@xyflow/react) + Dagre       | BOM and workflow graph visualization                               |
-| **AI**             | TanStack AI + Anthropic/OpenAI adapters  | AI chatbot                                                         |
+| **AI**             | TanStack AI + Anthropic/OpenAI adapters  | AI chatbot and collaborative design engine                         |
 | **3D Viewer**      | React Three Fiber + Three.js             | In-browser CAD model viewing (STL, OBJ, GLB)                       |
 | **CAD Conversion** | Python + pythonocc-core                  | STEP/IGES to STL/GLB conversion with color preservation            |
 | **Message Queue**  | RabbitMQ (amqplib)                       | Async job processing for CAD conversion, notifications             |
@@ -92,7 +92,7 @@ Cascadia takes the opposite approach:
 
 - **Item types are TypeScript interfaces** registered via `ItemTypeRegistry`. Adding a field means adding a Drizzle column and a Zod property.
 - **Workflows are code-defined state machines** stored in `workflow_definitions` with transitions validated by `WorkflowService`.
-- **Permissions are declared in code** (`ROLE_DEFINITIONS` in `src/lib/auth/permissions.ts`) and enforced via `apiHandler()`.
+- **Permissions are declared in code** (`ROLE_DEFINITIONS` in `packages/core/src/lib/auth/permissions.ts`) and enforced via `apiHandler()`.
 - **All customization lives in the Git repository**, reviewed through PRs, tested with Vitest/Playwright.
 
 A two-tier configuration pattern allows runtime overrides from the database (labels, icons, lifecycle assignment) while keeping schemas, validation, and components strictly in code. See [two-table-pattern.md](./two-table-pattern.md) for details.
@@ -138,7 +138,7 @@ Programs are the permission boundary. Users are program members. Designs belong 
 
 ## Project Structure
 
-### `src/components/`
+### `packages/core/src/components/`
 
 React UI components, organized by domain.
 
@@ -147,13 +147,14 @@ components/
 ├── ui/                  # Base primitives: Button, Card, DataGrid, Dialog, Badge, etc.
 │                        # Uses Radix UI + Tailwind. Import via @/components/ui/
 ├── ai/                  # AI chatbot panel and message rendering
+├── design-engine/       # Collaborative design workspace (stages, artifacts, BOM tools)
 ├── work-instructions/   # Work instruction authoring and execution
 ├── designs/             # Design management (AddPartToDesignDialog, DesignBranchSelector)
 ├── versioning/          # Version comparison, commit history, diff views
 └── forms/               # Item-type-specific form components (PartForm, DocumentForm, etc.)
 ```
 
-### `src/lib/`
+### `packages/core/src/lib/`
 
 All business logic, organized by concern.
 
@@ -183,12 +184,14 @@ lib/
 ├── jobs/                # Background job system (RabbitMQ producer/consumer)
 ├── errors/              # Typed error hierarchy (AppError, NotFoundError, ValidationError, ...)
 ├── ai/                  # AI chatbot tools, adapters, session service
+├── design-engine/       # Collaborative design engine (stages, tools, materialization)
+├── cad-generation/      # CAD generation pipeline (Zoo API, KCL)
 └── sysml/               # SysML v2 serialization
 ```
 
-### `src/server/`
+### `packages/core/src/server/`
 
-Hono API server. Route modules live in `src/server/routes/` (one file per domain), mounted in `src/server/index.ts`.
+Hono API server. Route modules live in `packages/core/src/server/routes/` (one file per domain), mounted in `packages/core/src/server/index.ts`.
 
 ```
 server/
@@ -206,14 +209,14 @@ server/
     └── ...
 ```
 
-### `src/routes/`
+### `packages/core/src/routes/`
 
 TanStack Router file-based routes for the Vite SPA frontend.
 
 ```
 routes/
 ├── parts/               # UI routes for parts (list, detail)
-├── designs/             # UI routes for designs
+├── designs/             # UI routes for designs (collaborative workspace)
 ├── admin/               # Admin UI (users, roles, system settings)
 └── ...
 ```
@@ -225,8 +228,9 @@ External worker processes that run in separate containers.
 ```
 workers/
 ├── node/                # Node.js job worker Dockerfile
-└── cad-converter/       # Python worker using pythonocc-core
-    └── src/             # STEP/IGES -> STL/GLB conversion with color preservation
+├── cad-converter/       # Python worker using pythonocc-core
+│   └── src/             # STEP/IGES -> STL/GLB conversion with color preservation
+└── cad-generator/       # Python worker: Parametric CAD (CadQuery)
 ```
 
 ### `scripts/`

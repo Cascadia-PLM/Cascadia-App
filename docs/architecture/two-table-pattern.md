@@ -53,7 +53,7 @@ The `itemId` column in each extension table is both the primary key and a foreig
 
 ## The Shared `items` Table
 
-Defined in `src/lib/db/schema/items.ts`:
+Defined in `packages/core/src/lib/db/schema/items.ts`:
 
 ```typescript
 export const items = pgTable(
@@ -142,7 +142,7 @@ export const parts = pgTable('parts', {
 
 ## ItemService: Automatic Two-Table Handling
 
-`ItemService` in `src/lib/items/services/ItemService.ts` handles both tables transparently. When you create or update an item, ItemService:
+`ItemService` in `packages/core/src/lib/items/services/ItemService.ts` handles both tables transparently. When you create or update an item, ItemService:
 
 1. **Looks up the type config** via `ItemTypeRegistry.getType(type)` to find the extension table name
 2. **Validates the full payload** against the Zod schema for that type (e.g., `partSchema`)
@@ -156,7 +156,7 @@ When querying, `ItemService.findById()` joins `items` with the appropriate exten
 
 ## ItemTypeRegistry
 
-`ItemTypeRegistry` in `src/lib/items/registry.ts` is the central registry where every item type declares its configuration:
+`ItemTypeRegistry` in `packages/core/src/lib/items/registry.ts` is the central registry where every item type declares its configuration:
 
 ```typescript
 ItemTypeRegistry.register({
@@ -184,7 +184,7 @@ ItemTypeRegistry.register({
 
 The registry implements a two-tier configuration system:
 
-- **Code definitions**: Type-safe configs defined in TypeScript files (`src/lib/items/registerItemTypes.server.ts`). These include schemas, component references, and relationships.
+- **Code definitions**: Type-safe configs defined in TypeScript files (`packages/core/src/lib/items/registerItemTypes.server.ts`). These include schemas, component references, and relationships.
 - **Runtime configs**: Business rules loaded from the `item_type_configs` database table. These can override labels, icons, lifecycle assignment, and permissions without a code deploy.
 
 Runtime overrides are merged on top of code defaults via `mergeConfigs()`. Components and schemas always come from code for type safety.
@@ -299,13 +299,13 @@ Type-specific columns only exist in the extension table. A ChangeOrder row does 
 
 Start with these files:
 
-| File                                        | Contains                                                                 |
-| ------------------------------------------- | ------------------------------------------------------------------------ |
-| `src/lib/db/schema/items.ts`                | The `items` table + all extension tables + `itemRelationships`           |
-| `src/lib/db/schema/versioning.ts`           | `branches`, `commits`, `branchItems`, `itemVersions`, `itemFieldChanges` |
-| `src/lib/db/schema/designs.ts`              | `designs` table                                                          |
-| `src/lib/db/schema/users.ts`                | `users`, `sessions`, `roles`, `userRoles`, `authEvents`                  |
-| `src/lib/items/types/part.ts`               | Part-specific Zod schema and interface                                   |
-| `src/lib/items/types/base.ts`               | `BaseItem` interface and `ItemTypeConfig` definition                     |
-| `src/lib/items/registry.ts`                 | `ItemTypeRegistry` class                                                 |
-| `src/lib/items/registerItemTypes.server.ts` | All item type registrations                                              |
+| File                                                      | Contains                                                                 |
+| --------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `packages/core/src/lib/db/schema/items.ts`                | The `items` table + all extension tables + `itemRelationships`           |
+| `packages/core/src/lib/db/schema/versioning.ts`           | `branches`, `commits`, `branchItems`, `itemVersions`, `itemFieldChanges` |
+| `packages/core/src/lib/db/schema/designs.ts`              | `designs` table                                                          |
+| `packages/core/src/lib/db/schema/users.ts`                | `users`, `sessions`, `roles`, `userRoles`, `authEvents`                  |
+| `packages/core/src/lib/items/types/part.ts`               | Part-specific Zod schema and interface                                   |
+| `packages/core/src/lib/items/types/base.ts`               | `BaseItem` interface and `ItemTypeConfig` definition                     |
+| `packages/core/src/lib/items/registry.ts`                 | `ItemTypeRegistry` class                                                 |
+| `packages/core/src/lib/items/registerItemTypes.server.ts` | All item type registrations                                              |

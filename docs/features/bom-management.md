@@ -22,7 +22,7 @@ Key principles of Cascadia's BOM approach:
 
 BOM relationships use the general-purpose `item_relationships` table. A BOM relationship connects a **source** (parent assembly) to a **target** (child component).
 
-**Schema** (`src/lib/db/schema/items.ts`):
+**Schema** (`packages/core/src/lib/db/schema/items.ts`):
 
 ```
 item_relationships
@@ -135,7 +135,7 @@ Cascadia provides an expandable tree-table view for visualizing BOM structures. 
 
 ### Component Architecture
 
-The BOM tree visualization is built from reusable components in `src/components/bom/`:
+The BOM tree visualization is built from reusable components in `packages/core/src/components/bom/`:
 
 | Component            | Purpose                                            |
 | -------------------- | -------------------------------------------------- |
@@ -153,7 +153,7 @@ The BOM tree visualization is built from reusable components in `src/components/
 
 ### BOMTreeNode Interface
 
-All BOM tree components share a common node type (`src/components/bom/types.ts`):
+All BOM tree components share a common node type (`packages/core/src/components/bom/types.ts`):
 
 ```typescript
 interface BOMTreeNode {
@@ -189,15 +189,15 @@ interface BOMTreeNode {
 
 The BOM tree is used in several contexts:
 
-1. **Design Structure Tab** (`src/components/designs/StructureTab.tsx`) -- the main BOM view for a design, showing root assemblies, their children, orphan items, and cross-design references.
+1. **Design Structure Tab** (`packages/core/src/components/designs/StructureTab.tsx`) -- the main BOM view for a design, showing root assemblies, their children, orphan items, and cross-design references.
 
-2. **Part Relationships Panel** (`src/components/items/PartRelationshipsPanel.tsx`) -- the BOM tab on a part detail page, showing both the children (outgoing BOM) and where-used (incoming BOM) of a specific part, with graph, table, and tree views.
+2. **Part Relationships Panel** (`packages/core/src/components/items/PartRelationshipsPanel.tsx`) -- the BOM tab on a part detail page, showing both the children (outgoing BOM) and where-used (incoming BOM) of a specific part, with graph, table, and tree views.
 
-3. **ECO Tree Table** (`src/components/change-orders/EcoTreeTable.tsx`) -- the BOM tree within an ECO context, highlighting which items are affected and their change actions.
+3. **ECO Tree Table** (`packages/core/src/components/change-orders/EcoTreeTable.tsx`) -- the BOM tree within an ECO context, highlighting which items are affected and their change actions.
 
 ### Tree Construction
 
-The BOM tree is built server-side in the `GET /api/designs/:id/structure` endpoint (`src/routes/api/designs/$id/structure.ts`):
+The BOM tree is built server-side in the `GET /api/v1/designs/:id/structure` endpoint (`packages/core/src/server/routes/designs.ts`):
 
 1. **Resolve items for the current branch context** (main, ECO branch, historical tag/commit)
 2. **Query all BOM relationships** where source items are in the design
@@ -225,7 +225,7 @@ A where-used query answers the question: "What assemblies use this part?" It tra
 
 ### Implementation
 
-Where-used queries are implemented as a recursive CTE (Common Table Expression) in PostgreSQL, found in `ImpactAssessmentService.findWhereUsed()` (`src/lib/items/services/ImpactAssessmentService.ts`):
+Where-used queries are implemented as a recursive CTE (Common Table Expression) in PostgreSQL, found in `ImpactAssessmentService.findWhereUsed()` (`packages/core/src/lib/items/services/ImpactAssessmentService.ts`):
 
 ```sql
 WITH RECURSIVE where_used AS (
@@ -276,7 +276,7 @@ Key characteristics:
 
 1. **Graph navigator** on the Part Relationships Panel -- set direction to "incoming" to see where-used as a visual graph
 2. **Impact Assessment** -- when running impact analysis on an ECO, where-used traversal identifies all assemblies that could be affected by a part change
-3. **API**: `GET /api/items/:id/graph?direction=incoming` returns the where-used graph data
+3. **API**: `GET /api/v1/items/:id/graph?direction=incoming` returns the where-used graph data
 
 ### WhereUsedNode Type
 
@@ -325,7 +325,7 @@ The expansion algorithm:
 
 ### CSV Export
 
-The BOM tree can be exported to CSV via `exportBomTreeToCsv()` (`src/components/bom/exportBomTree.ts`). The export:
+The BOM tree can be exported to CSV via `exportBomTreeToCsv()` (`packages/core/src/components/bom/exportBomTree.ts`). The export:
 
 - Flattens the tree with a `Level` column (0 = root, 1 = first child level, etc.)
 - Includes: Level, Item Number, Name, Revision, State, Type, Quantity, Find Number, Design, External
@@ -340,7 +340,7 @@ Cross-design references allow a design to link to items managed in other designs
 
 ### Data Model
 
-Cross-design references use a dedicated table (`src/lib/db/schema/crossReferences.ts`):
+Cross-design references use a dedicated table (`packages/core/src/lib/db/schema/crossReferences.ts`):
 
 ```
 design_cross_references
@@ -381,7 +381,7 @@ In the BOM tree:
 
 ### Service
 
-`CrossDesignReferenceService` (`src/lib/services/CrossDesignReferenceService.ts`) handles:
+`CrossDesignReferenceService` (`packages/core/src/lib/services/CrossDesignReferenceService.ts`) handles:
 
 - Creating references (validates item exists, is in a different design)
 - Querying references for a design (with branch awareness)
@@ -403,7 +403,7 @@ After a design's initial release, all BOM changes must go through an Engineering
 
 ### API Endpoint
 
-`POST /api/change-orders/:id/bom-changes` (`src/routes/api/change-orders/$id/bom-changes.ts`):
+`POST /api/v1/change-orders/:id/bom-changes` (`packages/core/src/server/routes/change-orders.ts`):
 
 ```typescript
 // Request body
@@ -422,7 +422,7 @@ After a design's initial release, all BOM changes must go through an Engineering
 - The parent item must be an affected item in the ECO (matched by affectedItemId or masterId)
 - The child item must exist
 
-`DELETE /api/change-orders/:id/bom-changes?relationshipId=<id>`:
+`DELETE /api/v1/change-orders/:id/bom-changes?relationshipId=<id>`:
 
 - Removes a specific BOM relationship by its relationship ID
 - Same validation: ECO must be editable, parent must be an affected item
@@ -494,7 +494,7 @@ WA-1201     | Motor           | Purchase
 
 ### Auto-Detection
 
-The import system automatically detects the BOM format based on which columns are mapped (`src/lib/import/bom-parser.ts`):
+The import system automatically detects the BOM format based on which columns are mapped (`packages/core/src/lib/import/bom-parser.ts`):
 
 | Mapped Columns                      | Detected Format         | Confidence |
 | ----------------------------------- | ----------------------- | ---------- |
@@ -507,10 +507,11 @@ Having a `quantity` column increases confidence by 0.10.
 
 ### Import API
 
-Two API endpoints handle BOM import:
+One endpoint handles BOM import:
 
-- `POST /api/import/parts` -- Create parts from validated rows
-- `POST /api/import/parts-bom` -- Create parts AND establish BOM relationships together
+- `POST /api/v1/import/parts` -- Creates parts from validated rows. Pass an optional
+  `bomRelationships` array in the same request body to wire up parent-child links
+  between the newly created parts and/or existing parts in the design, in one call.
 
 The import supports:
 
@@ -559,7 +560,7 @@ designs table:
 
 ### Creation Process
 
-`MbomService.createFromEbom()` (`src/lib/services/MbomService.ts`) handles MBOM creation:
+`MbomService.createFromEbom()` (`packages/core/src/lib/services/MbomService.ts`) handles MBOM creation:
 
 1. Validates the source is an Engineering design
 2. Creates a new Manufacturing design with source tracking
@@ -591,8 +592,8 @@ The `upstreamChanges` table tracks when the source EBOM changes, allowing the MB
 
 ### Relationship CRUD
 
-| Method | Endpoint                          | Description                                                            |
-| ------ | --------------------------------- | ---------------------------------------------------------------------- |
+| Method | Endpoint                             | Description                                                            |
+| ------ | ------------------------------------ | ---------------------------------------------------------------------- |
 | GET    | `/api/v1/items/:id/relationships`    | Get relationships for an item (optional `?type=BOM&branch=<id>`)       |
 | POST   | `/api/v1/items/:id/relationships`    | Add a relationship                                                     |
 | PUT    | `/api/v1/relationships/:id`          | Update relationship fields (quantity, findNumber, referenceDesignator) |
@@ -601,35 +602,34 @@ The `upstreamChanges` table tracks when the source EBOM changes, allowing the MB
 
 ### Design Structure
 
-| Method | Endpoint                            | Description                                                                     |
-| ------ | ----------------------------------- | ------------------------------------------------------------------------------- |
+| Method | Endpoint                               | Description                                                                     |
+| ------ | -------------------------------------- | ------------------------------------------------------------------------------- |
 | GET    | `/api/v1/designs/:id/structure`        | Get BOM tree (optional `?branch=<id>&tag=<id>&commit=<id>&expandExternal=true`) |
 | GET    | `/api/v1/designs/:id/cross-references` | Get cross-design references                                                     |
 
 ### Graph / Where-Used
 
-| Method | Endpoint               | Description                                                                             |
-| ------ | ---------------------- | --------------------------------------------------------------------------------------- |
+| Method | Endpoint                  | Description                                                                             |
+| ------ | ------------------------- | --------------------------------------------------------------------------------------- |
 | GET    | `/api/v1/items/:id/graph` | Get relationship graph (optional `?depth=2&direction=all&types=BOM&includeUsages=true`) |
 
 ### ECO BOM Changes
 
-| Method | Endpoint                                                 | Description                                       |
-| ------ | -------------------------------------------------------- | ------------------------------------------------- |
+| Method | Endpoint                                                    | Description                                       |
+| ------ | ----------------------------------------------------------- | ------------------------------------------------- |
 | POST   | `/api/v1/change-orders/:id/bom-changes`                     | Add/remove/modify BOM relationship in ECO context |
 | DELETE | `/api/v1/change-orders/:id/bom-changes?relationshipId=<id>` | Remove BOM relationship by ID in ECO context      |
 
 ### Import
 
-| Method | Endpoint                | Description                         |
-| ------ | ----------------------- | ----------------------------------- |
-| POST   | `/api/v1/import/parts`     | Import parts from spreadsheet       |
-| POST   | `/api/v1/import/parts-bom` | Import parts with BOM relationships |
+| Method | Endpoint               | Description                                                      |
+| ------ | ---------------------- | ---------------------------------------------------------------- |
+| POST   | `/api/v1/import/parts` | Import parts, optionally with BOM relationships in the same body |
 
 ### MBOM
 
-| Method | Endpoint                                          | Description               |
-| ------ | ------------------------------------------------- | ------------------------- |
+| Method | Endpoint                                             | Description               |
+| ------ | ---------------------------------------------------- | ------------------------- |
 | POST   | `/api/v1/mbom`                                       | Create MBOM from EBOM     |
 | GET    | `/api/v1/mbom/:designId/upstream-changes`            | Get upstream EBOM changes |
 | POST   | `/api/v1/mbom/:designId/upstream-changes/:id/review` | Review an upstream change |
@@ -638,27 +638,26 @@ The `upstreamChanges` table tracks when the source EBOM changes, allowing the MB
 
 ## Key Source Files
 
-| File                                                  | Purpose                                          |
-| ----------------------------------------------------- | ------------------------------------------------ |
-| `src/lib/db/schema/items.ts`                          | `itemRelationships` table definition             |
-| `src/lib/db/schema/crossReferences.ts`                | `designCrossReferences` table definition         |
-| `src/lib/items/services/ItemRelationshipService.ts`   | Relationship CRUD with branch merging            |
-| `src/lib/items/services/ImpactAssessmentService.ts`   | Where-used traversal and impact analysis         |
-| `src/lib/services/CrossDesignReferenceService.ts`     | Cross-design reference management                |
-| `src/lib/services/MbomService.ts`                     | MBOM creation and upstream change tracking       |
-| `src/lib/services/ChangeOrderMergeService.ts`         | BOM relationship copying during ECO release      |
-| `src/lib/import/bom-parser.ts`                        | BOM format detection and relationship extraction |
-| `src/lib/import/types.ts`                             | BOM import type definitions                      |
-| `src/components/bom/BomTreeView.tsx`                  | Core tree-table UI component                     |
-| `src/components/bom/types.ts`                         | Shared `BOMTreeNode` interface                   |
-| `src/components/bom/exportBomTree.ts`                 | CSV export of BOM trees                          |
-| `src/components/bom/useTreeSelection.ts`              | Multi-select hook for tree views                 |
-| `src/components/designs/StructureTab.tsx`             | Design structure BOM tab                         |
-| `src/components/items/PartRelationshipsPanel.tsx`     | Part-level relationships panel                   |
-| `src/components/designs/AddPartToStructureDialog.tsx` | Add child to BOM dialog                          |
-| `src/routes/api/designs/$id/structure.ts`             | BOM tree API endpoint                            |
-| `src/routes/api/items/$id/relationships.ts`           | Relationship API endpoint                        |
-| `src/routes/api/items/$id/graph.ts`                   | Graph/where-used API endpoint                    |
-| `src/routes/api/change-orders/$id/bom-changes.ts`     | ECO BOM changes API                              |
-| `src/routes/api/relationships/batch-create.ts`        | Batch relationship creation                      |
-| `tests/e2e/workflows/bom-management.spec.ts`          | E2E tests for BOM workflows                      |
+| File                                                                | Purpose                                          |
+| ------------------------------------------------------------------- | ------------------------------------------------ |
+| `packages/core/src/lib/db/schema/items.ts`                          | `itemRelationships` table definition             |
+| `packages/core/src/lib/db/schema/crossReferences.ts`                | `designCrossReferences` table definition         |
+| `packages/core/src/lib/items/services/ItemRelationshipService.ts`   | Relationship CRUD with branch merging            |
+| `packages/core/src/lib/items/services/ImpactAssessmentService.ts`   | Where-used traversal and impact analysis         |
+| `packages/core/src/lib/services/CrossDesignReferenceService.ts`     | Cross-design reference management                |
+| `packages/core/src/lib/services/MbomService.ts`                     | MBOM creation and upstream change tracking       |
+| `packages/core/src/lib/services/ChangeOrderMergeService.ts`         | BOM relationship copying during ECO release      |
+| `packages/core/src/lib/import/bom-parser.ts`                        | BOM format detection and relationship extraction |
+| `packages/core/src/lib/import/types.ts`                             | BOM import type definitions                      |
+| `packages/core/src/components/bom/BomTreeView.tsx`                  | Core tree-table UI component                     |
+| `packages/core/src/components/bom/types.ts`                         | Shared `BOMTreeNode` interface                   |
+| `packages/core/src/components/bom/exportBomTree.ts`                 | CSV export of BOM trees                          |
+| `packages/core/src/components/bom/useTreeSelection.ts`              | Multi-select hook for tree views                 |
+| `packages/core/src/components/designs/StructureTab.tsx`             | Design structure BOM tab                         |
+| `packages/core/src/components/items/PartRelationshipsPanel.tsx`     | Part-level relationships panel                   |
+| `packages/core/src/components/designs/AddPartToStructureDialog.tsx` | Add child to BOM dialog                          |
+| `packages/core/src/server/routes/designs.ts`                        | BOM tree API endpoint                            |
+| `packages/core/src/server/routes/items.ts`                          | Relationship and graph/where-used endpoints      |
+| `packages/core/src/server/routes/change-orders.ts`                  | ECO BOM changes API                              |
+| `packages/core/src/server/routes/relationships.ts`                  | Batch relationship creation                      |
+| `tests/e2e/workflows/bom-management.spec.ts`                        | E2E tests for BOM workflows                      |

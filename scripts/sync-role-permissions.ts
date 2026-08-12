@@ -1,14 +1,17 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
 /**
  * Sync Role Permissions
  * Updates all roles in the database to match the current ROLE_DEFINITIONS in code.
  * Run this after adding new permissions to permissions.ts.
  */
-import { db } from '../src/lib/db/index.ts'
-import { roles } from '../src/lib/db/schema/users.ts'
+import { db } from '../packages/core/src/lib/db/index.ts'
+import { roles } from '../packages/core/src/lib/db/schema/users.ts'
 import {
   ROLE_DEFINITIONS,
   roleToDbFormat,
-} from '../src/lib/auth/permissions.ts'
+} from '../packages/core/src/lib/auth/permissions.ts'
 
 async function syncRolePermissions() {
   console.log('Syncing role permissions from code to database...\n')

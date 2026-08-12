@@ -104,7 +104,12 @@ npm run db:push
 
 This is an interactive command that uses `drizzle-kit push` to apply the schema directly. It will prompt to confirm table creation. For development, this is the fastest way to get started.
 
-> **Note**: `db:push` applies the schema without creating migration files. For production deployments, use `npm run db:generate` followed by `npm run db:migrate` to create and run versioned migrations.
+> **Note**: Pre-1.0, `db:push` is the path in _every_ environment — dev, CI, and
+> compose. There are no committed migrations, and `db:generate` / `db:migrate` are
+> unused. At the first production release, mint a baseline migration with
+> `npm run db:generate` (it emits the full schema as `0000`) and switch persistent
+> environments to `npm run db:migrate` from there. See
+> [Database Patterns](../development/database-patterns.md).
 
 ## Seed the database
 
@@ -123,7 +128,7 @@ Seeding minimal database...
  Admin User (admin@cascadia.local / Cascadia)
  Default Program
  Standard Parts Library (Global)
- Default Lifecycles (Part, Document, ChangeOrder)
+ Default Lifecycles (Part, Document, Requirement, ChangeOrder)
  Flexible Workflow (Dynamic Change Order)
  Issue Lifecycle (Free)
  Item Type Configs (with lifecycle assignments)

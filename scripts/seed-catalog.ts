@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
 /**
  * Component Catalog Seed Script
  *
@@ -9,7 +12,7 @@
  * Usage: npx tsx scripts/seed-catalog.ts
  */
 
-import { CatalogSeedService } from '../src/lib/services/CatalogSeedService.ts'
+import { CatalogSeedService } from '../packages/core/src/lib/services/CatalogSeedService.ts'
 
 async function main() {
   console.log('=== Component Catalog Seed ===\n')

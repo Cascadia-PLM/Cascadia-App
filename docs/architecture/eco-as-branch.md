@@ -54,7 +54,7 @@ Key fields:
 | `headCommitId`      | The tip of the branch -- advances with each commit                         |
 | `baseCommitId`      | The main branch commit this ECO was forked from (fixed at creation)        |
 | `changeOrderItemId` | Links to the ChangeOrder item that owns this branch                        |
-| `isLocked`          | Set to `true` when ECO is submitted for approval -- prevents further edits |
+| `isLocked`          | Manual freeze (`PATCH /branches/:id`) -- blocks commits. Not set by review |
 | `isArchived`        | Set to `true` after merge -- branch becomes read-only for audit            |
 
 ### branchItems
@@ -149,7 +149,10 @@ When a user edits an item on the ECO branch:
    - Sets `checkedOutBy` and `checkedOutAt` (prevents concurrent editing)
 
 2. **Save changes**: `CheckoutService.saveChanges()`
-   - Creates a **new `items` row** with modified fields (new `id`, same `masterId`, `revision = 'DRAFT'`)
+   - On the first save, creates a **new `items` row** with the modified fields
+     (new `id`, same `masterId`, branch-scoped working revision). Later saves
+     edit that working copy in place -- inserting a row per save would collide
+     on the items unique constraint
    - Computes field-level diffs via `computeFieldChanges(oldItem, newItem)`
    - Updates `branchItem.currentItemId` to point to the new version
    - Sets `branchItem.changeType = 'modified'`
@@ -160,17 +163,28 @@ When a user edits an item on the ECO branch:
 AFTER EDIT:
   main:         ───C0───C1───C2───C3 (HEAD, P-1001 rev A)
                                   /
-  eco/ECO-001:                  C3───C4 (P-1001 modified, revision='DRAFT')
+  eco/ECO-001:                  C3───C4 (P-1001 modified, revision='-2bb23103')
                                       └─ itemFieldChanges: weight 10→15
 ```
 
-### Phase 3: Submission (Branch Locking)
+### Phase 3: Submission (Scope Locking)
 
-When the ECO transitions to "Submitted for Approval" via the workflow:
+When the ECO leaves its initial state via the workflow:
 
-- `BranchService.lockBranch(branchId)` sets `branches.isLocked = true`
-- `CommitService.create()` checks the lock and rejects new commits
-- Users can still view changes but cannot edit
+- The workflow instance's `scopeLocked` flag is set
+- **New** items can no longer be brought into the ECO -- by any route: the
+  change-order service methods, `POST /items/:id/checkout`, batch checkout,
+  create-on-branch, or the AI tools (`assertBranchAcceptsNewItems`)
+- Working copies already in scope stay fully editable
+
+The lock freezes _what the change covers_, not the work on it, so reviewers
+evaluate a fixed scope while engineers keep refining the detail. Returning the
+ECO to its initial state ("Return to Draft") clears the flag, so rework can
+correct the scope it was sent back to fix.
+
+The branch itself is **not** locked. `BranchService.lockBranch()` exists and
+`CommitService`/`CheckoutService` honour `isLocked`, but nothing in the ECO
+workflow calls it -- a manual `PATCH /api/v1/branches/:id` is the only caller.
 
 ### Phase 4: Approval and Release (Merge)
 
@@ -212,7 +226,7 @@ AFTER MERGE:
 
 ## Branch Isolation
 
-The isolation guarantee is implemented by `VersionResolver` in `src/lib/services/VersionResolver.ts`.
+The isolation guarantee is implemented by `VersionResolver` in `packages/core/src/lib/services/VersionResolver.ts`.
 
 ### How It Works
 
@@ -255,7 +269,12 @@ No data duplication for unmodified items. The branch stores only deltas.
 
 Revisions are assigned **only on merge to main**, never during ECO work.
 
-While on an ECO branch, items have `revision = 'DRAFT'`. On merge, `ChangeOrderMergeService` calls `RevisionService.getNextRevision()`:
+While on an ECO branch, items carry a branch-scoped working revision
+(`-{first 8 chars of branchId}`), so two branches can hold a working copy of
+the same item without colliding on the `(item_number, revision, design_id,
+item_type)` unique constraint. `RevisionService.getWorkingRevision()` writes it
+and `isWorkingRevision()` recognises it. On merge, `ChangeOrderMergeService`
+calls `RevisionService.getNextRevision()`:
 
 | Current Revision on Main | Next Revision |
 | ------------------------ | ------------- |
@@ -288,7 +307,7 @@ Once a design enters post-release, there is no going back. All changes must flow
 
 ## Conflict Detection
 
-`ConflictDetectionService` in `src/lib/services/ConflictDetectionService.ts` detects three kinds of conflicts:
+`ConflictDetectionService` in `packages/core/src/lib/services/ConflictDetectionService.ts` detects three kinds of conflicts:
 
 ### 1. Checkout Locks
 
@@ -310,26 +329,33 @@ Two active ECOs modifying the same item. Detected by scanning `branchItems` acro
 
 ### Field-Level Conflict Resolution
 
-During merge, if a conflict is detected, the system compares which specific fields each side changed:
+There is no auto-merge. When main has moved on, the comparison classifies the
+divergence and the user resolves it before releasing:
 
-- **Different fields modified** -- auto-merge (JSON merge)
-- **Same field with same value** -- no conflict
-- **Same field with different values** -- manual resolution required
+- **Same field with the same value** -- no conflict
+- **Same field with different values** -- `field_conflict`, blocking
+- **Main diverged at all (fields, extension data or BOM structure)** --
+  `concurrent_modification`, also blocking: releasing would replace main's
+  content with this branch's and revert whatever released in between
+
+Resolution is explicit and user-driven, via `rebaseItem()` (start from main's
+current version and re-apply our non-conflicting changes) or
+`pullChangesFromMain()` (main's values win). Both run under `REPEATABLE READ`.
 
 ---
 
 ## Key Service Files
 
-| Service                    | File                                           | Key Methods                                                       |
-| -------------------------- | ---------------------------------------------- | ----------------------------------------------------------------- |
-| `BranchService`            | `src/lib/services/BranchService.ts`            | `createEcoBranch()`, `lockBranch()`, `archiveBranch()`            |
-| `CommitService`            | `src/lib/services/CommitService.ts`            | `create()`, `createMergeCommit()`, `getBranchChanges()`           |
-| `CheckoutService`          | `src/lib/services/CheckoutService.ts`          | `checkout()`, `saveChanges()`, `createOnBranch()`                 |
-| `VersionResolver`          | `src/lib/services/VersionResolver.ts`          | `getReleasedVersion()`, `getWorkingVersion()`, `getBranchItems()` |
-| `ChangeOrderMergeService`  | `src/lib/services/ChangeOrderMergeService.ts`  | `merge()`, `mergeBranchToMain()`, `validateMerge()`               |
-| `ConflictDetectionService` | `src/lib/services/ConflictDetectionService.ts` | `detectConflictsForBranch()`, `detectCrossEcoConflicts()`         |
-| `ChangeOrderService`       | `src/lib/items/services/ChangeOrderService.ts` | `addAffectedItem()`, `close()`                                    |
-| `RevisionService`          | `src/lib/services/RevisionService.ts`          | `getNextRevision()`                                               |
+| Service                    | File                                                         | Key Methods                                                       |
+| -------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------- |
+| `BranchService`            | `packages/core/src/lib/services/BranchService.ts`            | `createEcoBranch()`, `lockBranch()`, `archiveBranch()`            |
+| `CommitService`            | `packages/core/src/lib/services/CommitService.ts`            | `create()`, `createMergeCommit()`, `getBranchChanges()`           |
+| `CheckoutService`          | `packages/core/src/lib/services/CheckoutService.ts`          | `checkout()`, `saveChanges()`, `createOnBranch()`                 |
+| `VersionResolver`          | `packages/core/src/lib/services/VersionResolver.ts`          | `getReleasedVersion()`, `getWorkingVersion()`, `getBranchItems()` |
+| `ChangeOrderMergeService`  | `packages/core/src/lib/services/ChangeOrderMergeService.ts`  | `merge()`, `mergeBranchToMain()`, `validateMerge()`               |
+| `ConflictDetectionService` | `packages/core/src/lib/services/ConflictDetectionService.ts` | `detectConflictsForBranch()`, `detectCrossEcoConflicts()`         |
+| `ChangeOrderService`       | `packages/core/src/lib/items/services/ChangeOrderService.ts` | `addAffectedItem()`, `close()`                                    |
+| `RevisionService`          | `packages/core/src/lib/services/RevisionService.ts`          | `getNextRevision()`                                               |
 
 ---
 
@@ -338,7 +364,7 @@ During merge, if a conflict is detected, the system compares which specific fiel
 All ECO state transitions go through a single endpoint:
 
 ```
-POST /api/change-orders/:id/workflow/transition
+POST /api/v1/change-orders/:id/workflow/transition
 ```
 
 When transitioning to a final state (e.g., "Approved"), the endpoint auto-triggers `close()` which orchestrates the merge. There are no separate `/submit`, `/approve`, or `/release` routes.
@@ -347,6 +373,6 @@ When transitioning to a final state (e.g., "Approved"), the endpoint auto-trigge
 
 ## Related Documentation
 
-- [Change Management Deep Dive](../change-management-deep-dive.md) -- exhaustive code-level walkthrough with data examples
+- [Change Management Deep Dive](../features/change-management.md) -- exhaustive code-level walkthrough with data examples
 - [Service Layer](./service-layer.md) -- service dependencies and layering
 - [Two-Table Pattern](./two-table-pattern.md) -- how items are stored

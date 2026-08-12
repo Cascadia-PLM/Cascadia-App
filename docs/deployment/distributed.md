@@ -157,7 +157,7 @@ Before starting any app servers, push the schema to PostgreSQL:
 
 ```bash
 # From your development machine, with DATABASE_URL pointing to the infrastructure server
-DATABASE_URL=postgresql://postgres:<password>@<infra-host>:5432/cascadia npx drizzle-kit push
+DATABASE_URL=postgresql://postgres:<password>@<infra-host>:5432/cascadia npm run db:push
 ```
 
 Or let the first app server handle it on startup (the compose command includes `drizzle-kit push`).
@@ -363,7 +363,7 @@ Access at `http://<infra-host>:15672` to monitor queue depths, message rates, an
 
 All services expose health endpoints:
 
-- App: `GET http://<app-host>:3000/api/health`
+- App: `GET http://<app-host>:3000/api/v1/health`
 - Jobs workers: `GET http://<jobs-host>:3002/health`
 - MinIO: `GET http://<infra-host>:9000/minio/health/live`
 - PostgreSQL: `pg_isready -U postgres -d cascadia`

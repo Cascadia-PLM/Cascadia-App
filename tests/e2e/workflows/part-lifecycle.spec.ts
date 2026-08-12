@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
 /**
  * Part Lifecycle E2E Workflow Tests
  *
@@ -85,7 +88,9 @@ test.describe('Part Lifecycle Workflow', () => {
     await page.click('[data-testid="part-submit"]')
 
     // 4. Wait for navigation to detail page
-    await expect(page).toHaveURL(/\/parts\/[a-f0-9-]+(\?.*)?$/, { timeout: 10000 })
+    await expect(page).toHaveURL(/\/parts\/[a-f0-9-]+(\?.*)?$/, {
+      timeout: 10000,
+    })
 
     // Extract part ID from URL for cleanup
     const url = page.url()
@@ -122,7 +127,9 @@ test.describe('Part Lifecycle Workflow', () => {
     await fillField(page, '[data-testid="part-name"]', 'Part to Edit')
     await page.click('[data-testid="part-submit"]')
 
-    await expect(page).toHaveURL(/\/parts\/[a-f0-9-]+(\?.*)?$/, { timeout: 10000 })
+    await expect(page).toHaveURL(/\/parts\/[a-f0-9-]+(\?.*)?$/, {
+      timeout: 10000,
+    })
 
     const url = page.url()
     createdPartId = url.split('/').pop() || null
@@ -184,7 +191,9 @@ test.describe('Part Lifecycle Workflow', () => {
     await fillField(page, '[data-testid="part-name"]', 'Part for List Test')
     await page.click('[data-testid="part-submit"]')
 
-    await expect(page).toHaveURL(/\/parts\/[a-f0-9-]+(\?.*)?$/, { timeout: 10000 })
+    await expect(page).toHaveURL(/\/parts\/[a-f0-9-]+(\?.*)?$/, {
+      timeout: 10000,
+    })
 
     const url = page.url()
     createdPartId = url.split('/').pop() || null

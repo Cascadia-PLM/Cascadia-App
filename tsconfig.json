@@ -1,37 +1,24 @@
 {
+  "extends": "./tsconfig.base.json",
+  // Everything outside the workspace packages: root tooling and the E2E suite.
+  // The packages and apps each have their own project; this one catches what
+  // would otherwise belong to none, which type-aware linting treats as an error.
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "scripts/**/*.ts",
+    "scripts/**/*.mjs",
+    "publish/**/*.ts",
+    "publish/**/*.mjs",
+    "tests/**/*.ts",
+    "*.config.ts",
     "eslint.config.js",
-    "prettier.config.js",
-    "vite.config.js"
+    "prettier.config.js"
   ],
-
   "compilerOptions": {
-    "target": "ES2022",
-    "jsx": "react-jsx",
-    "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "verbatimModuleSyntax": false,
-    "noEmit": true,
-
-    /* Linting */
-    "skipLibCheck": true,
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "noUncheckedSideEffectImports": true,
+    "allowJs": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./packages/core/src/*"],
+      "@cascadia/core/*": ["./packages/core/src/*"]
     }
   }
 }

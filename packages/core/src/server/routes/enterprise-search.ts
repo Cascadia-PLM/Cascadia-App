@@ -1,0 +1,292 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
+import { Hono } from 'hono'
+import { eq, inArray, or } from 'drizzle-orm'
+import { z } from 'zod'
+import { tagged } from '../adapter'
+import { readableItemTypes } from './items'
+import type { GlobalSearchCriteria } from '@/lib/items/services/ItemService'
+import { ItemService } from '@/lib/items/services/ItemService'
+import { ItemTypeRegistry } from '@/lib/items/registry'
+import { ValidationError } from '@/lib/errors'
+import { db } from '@/lib/db'
+import { designs } from '@/lib/db/schema/designs'
+import { ProgramService } from '@/lib/services/ProgramService'
+import { apiHandler, parseQuery } from '@/lib/api/handler'
+// Register item types (server-side version)
+import '@/lib/items/registerItemTypes.server'
+
+const adapt = tagged('Enterprise Search')
+
+/**
+ * Get design IDs accessible to a user based on their program memberships
+ * Returns design IDs from user's programs + library designs
+ */
+async function getAccessibleDesignIds(userId: string): Promise<Array<string>> {
+  // Get user's programs
+  const userPrograms = await ProgramService.listByUser(userId)
+  const programIds = userPrograms.map((p) => p.id)
+
+  // Get designs from user's programs + library designs (null programId with library type)
+  const accessibleDesigns = await db
+    .select({ id: designs.id })
+    .from(designs)
+    .where(
+      or(
+        programIds.length > 0
+          ? inArray(designs.programId, programIds)
+          : undefined,
+        eq(designs.designType, 'Library'),
+      ),
+    )
+
+  return accessibleDesigns.map((d) => d.id)
+}
+
+/**
+ * Enrich items with design metadata
+ */
+async function enrichWithDesignMetadata<T extends { designId?: string | null }>(
+  items: Array<T>,
+) {
+  // Collect unique design IDs
+  const designIds = [
+    ...new Set(
+      items
+        .map((i) => i.designId)
+        .filter((id): id is string => id !== null && id !== undefined),
+    ),
+  ]
+
+  if (designIds.length === 0) {
+    return items.map((item) => ({
+      ...item,
+      designCode: null,
+      designName: null,
+    }))
+  }
+
+  // Fetch design metadata
+  const designsData = await db
+    .select({ id: designs.id, code: designs.code, name: designs.name })
+    .from(designs)
+    .where(inArray(designs.id, designIds))
+
+  const designMap = new Map(
+    designsData.map((d) => [d.id, { code: d.code, name: d.name }]),
+  )
+
+  // Enrich items
+  return items.map((item) => {
+    const design = item.designId ? designMap.get(item.designId) : null
+    return {
+      ...item,
+      designCode: design?.code ?? null,
+      designName: design?.name ?? null,
+    }
+  })
+}
+
+/**
+ * Search across multiple item types and return grouped results
+ */
+async function searchAcrossTypes(
+  query: string,
+  userId: string,
+  limit: number = 50,
+): Promise<{
+  results: Array<{ itemType: string; items: Array<any>; total: number }>
+}> {
+  // Get all registered item types
+  const allTypes = ItemTypeRegistry.getAllTypes()
+
+  // Get accessible design IDs for the user
+  const designIds = await getAccessibleDesignIds(userId)
+
+  // Search each item type in parallel
+  const searchPromises = allTypes.map(async (typeConfig) => {
+    try {
+      const results = await ItemService.searchByItemNumber(query, {
+        limit,
+        itemTypes: [typeConfig.name],
+        designIds,
+      })
+
+      // Enrich with design metadata
+      const enrichedResults = await enrichWithDesignMetadata(results)
+
+      return {
+        itemType: typeConfig.name,
+        label: typeConfig.pluralLabel,
+        icon: typeConfig.icon,
+        items: enrichedResults,
+        total: enrichedResults.length,
+      }
+    } catch (error) {
+      console.error(`Error searching ${typeConfig.name}:`, error)
+      return {
+        itemType: typeConfig.name,
+        label: typeConfig.pluralLabel,
+        icon: typeConfig.icon,
+        items: [],
+        total: 0,
+      }
+    }
+  })
+
+  const results = await Promise.all(searchPromises)
+
+  // Filter out types with no results
+  const filteredResults = results.filter((r) => r.total > 0)
+
+  // Cap total results to requested limit (proportional truncation)
+  const totalItems = filteredResults.reduce((sum, r) => sum + r.items.length, 0)
+  if (totalItems > limit) {
+    const ratio = limit / totalItems
+    for (const result of filteredResults) {
+      const capped = Math.max(1, Math.round(result.items.length * ratio))
+      result.items = result.items.slice(0, capped)
+      result.total = result.items.length
+    }
+  }
+
+  return { results: filteredResults }
+}
+
+const resultsQuerySchema = z.object({
+  globalSearch: z.string().optional(),
+  limit: z.coerce.number().int().positive().max(100).default(25),
+  offset: z.coerce.number().int().min(0).default(0),
+  sortField: z.string().optional(),
+  sortDirection: z.enum(['asc', 'desc']).optional(),
+  /** JSON-encoded record of column filters, as sent by the DataGrid layer. */
+  columnFilters: z.string().optional(),
+})
+
+const searchResultRowSchema = z.object({
+  id: z.string().uuid(),
+  itemNumber: z.string(),
+  name: z.string().nullable(),
+  itemType: z.string(),
+  revision: z.string().nullable(),
+  state: z.string().nullable(),
+  modifiedAt: z.string().nullable(),
+  createdAt: z.string().nullable(),
+  designId: z.string().uuid().nullable(),
+  designCode: z.string().nullable(),
+  designName: z.string().nullable(),
+  programId: z.string().uuid().nullable(),
+  programCode: z.string().nullable(),
+  programName: z.string().nullable(),
+})
+
+/**
+ * Pull the itemType filter out of the grid's column filters: it is enforced
+ * through `readableItemTypes` rather than passed through as a plain filter,
+ * so a crafted filter cannot widen the search beyond the user's permissions.
+ */
+function splitItemTypeFilter(
+  columnFilters: GlobalSearchCriteria['columnFilters'],
+): {
+  requestedTypes: Array<string> | null
+  rest: GlobalSearchCriteria['columnFilters']
+} {
+  if (!columnFilters || !('itemType' in columnFilters)) {
+    return { requestedTypes: null, rest: columnFilters }
+  }
+  const { itemType, ...rest } = columnFilters
+  if (typeof itemType === 'string') {
+    return { requestedTypes: itemType.trim() ? [itemType.trim()] : null, rest }
+  }
+  if (Array.isArray(itemType)) {
+    return { requestedTypes: itemType.length > 0 ? itemType : null, rest }
+  }
+  return { requestedTypes: null, rest }
+}
+
+const app = new Hono()
+
+// GET /api/enterprise-search
+app.get(
+  '/',
+  adapt(
+    apiHandler({}, async ({ request, user }) => {
+      const url = new URL(request.url)
+      const query = url.searchParams.get('q')
+      const limit = parseInt(url.searchParams.get('limit') || '50')
+
+      if (!query || query.trim().length === 0) {
+        throw new ValidationError('Search query (q) is required')
+      }
+
+      const results = await searchAcrossTypes(query.trim(), user.id, limit)
+
+      return results
+    }),
+  ),
+)
+
+// GET /api/enterprise-search/results — the paged grid behind the /search page
+app.get(
+  '/results',
+  adapt(
+    apiHandler(
+      {
+        openapi: {
+          summary: 'Search all item types with paging, sorting and filters',
+          description:
+            'Flat, paged search across every item type the user may read, ' +
+            'scoped to designs in their programs plus library designs. ' +
+            'Sortable and filterable on base item columns; `program` and ' +
+            '`design` column filters take ids. Rows carry the full base ' +
+            'item record plus design and program identity.',
+          request: { query: resultsQuerySchema },
+          responses: {
+            200: {
+              schema: z.object({
+                items: z.array(searchResultRowSchema),
+                total: z.number(),
+              }),
+            },
+          },
+        },
+      },
+      async ({ request, user }) => {
+        const params = parseQuery(request, resultsQuerySchema)
+
+        let columnFilters: GlobalSearchCriteria['columnFilters']
+        if (params.columnFilters) {
+          try {
+            columnFilters = JSON.parse(params.columnFilters)
+          } catch {
+            // Ignore invalid columnFilters JSON (matches the items route)
+          }
+        }
+        const { requestedTypes, rest } = splitItemTypeFilter(columnFilters)
+
+        // Permission gate: requested types are intersected with the types
+        // the user may read; no request widens beyond the readable set.
+        const readable = await readableItemTypes(user.id)
+        const itemTypes = requestedTypes
+          ? requestedTypes.filter((t) => readable.has(t))
+          : [...readable]
+
+        const designIds = await getAccessibleDesignIds(user.id)
+
+        return await ItemService.searchGlobal({
+          query: params.globalSearch,
+          itemTypes,
+          designIds,
+          limit: params.limit,
+          offset: params.offset,
+          sortField: params.sortField,
+          sortDirection: params.sortDirection,
+          columnFilters: rest,
+        })
+      },
+    ),
+  ),
+)
+
+export default app

@@ -62,7 +62,7 @@ services:
     networks:
       - cascadia-internal
     # Run migrations on startup
-    command: sh -c "npx drizzle-kit push --force && npm run serve"
+    command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
 
   # Optional: pgAdmin for database management
   pgadmin:

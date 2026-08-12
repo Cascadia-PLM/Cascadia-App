@@ -27,7 +27,9 @@ COPY . .
 
 # Build application (increase heap for large TanStack Start builds)
 ENV NODE_OPTIONS="--max-old-space-size=4096"
-RUN npm run build
+# Which edition's job handlers this worker carries. See docker/app.Dockerfile.
+ARG APP=cascadia
+RUN npm run build:app -- "$APP"
 
 # =============================================================================
 # Stage 3: Production
@@ -57,7 +59,7 @@ RUN npm ci --omit=dev && \
 COPY --from=builder /app/.output ./.output
 
 # Copy job-related code
-COPY --from=builder /app/src/lib/db ./src/lib/db
+COPY --from=builder /app/packages/core/src/lib/db ./packages/core/src/lib/db
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -87,4 +89,8 @@ LABEL org.opencontainers.image.description="Background job workers for Cascadia 
 ENTRYPOINT ["dumb-init", "--"]
 
 # Start jobs worker
-CMD ["node", ".output/server/jobs-worker.mjs"]
+# Re-declared: an ARG from an earlier stage is not in scope here. Shell form so
+# ${APP} expands — the exec form would pass it literally.
+ARG APP=cascadia
+ENV APP=${APP}
+CMD node .output/${APP}/server/jobs-worker.mjs

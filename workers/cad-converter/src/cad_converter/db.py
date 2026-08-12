@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2026 Cascadia PLM LLC
+
 """PostgreSQL operations — reads/updates jobs and vault_files tables."""
 
 from __future__ import annotations

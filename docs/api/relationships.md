@@ -4,19 +4,19 @@ The Relationships API manages parent-child and other typed relationships between
 
 ## Endpoints Overview
 
-| Method | Endpoint                             | Description                     |
-| ------ | ------------------------------------ | ------------------------------- |
-| GET    | `/api/relationships`                 | List relationships for a design |
-| GET    | `/api/items/:id/relationships`       | List relationships for an item  |
-| POST   | `/api/items/:id/relationships`       | Create a relationship           |
-| PUT    | `/api/relationships/:relationshipId` | Update relationship properties  |
-| DELETE | `/api/relationships/:relationshipId` | Delete a relationship           |
-| POST   | `/api/relationships/batch-create`    | Batch create relationships      |
+| Method | Endpoint                                | Description                     |
+| ------ | --------------------------------------- | ------------------------------- |
+| GET    | `/api/v1/relationships`                 | List relationships for a design |
+| GET    | `/api/v1/items/:id/relationships`       | List relationships for an item  |
+| POST   | `/api/v1/items/:id/relationships`       | Create a relationship           |
+| PUT    | `/api/v1/relationships/:relationshipId` | Update relationship properties  |
+| DELETE | `/api/v1/relationships/:relationshipId` | Delete a relationship           |
+| POST   | `/api/v1/relationships/batch-create`    | Batch create relationships      |
 
 ## List Relationships by Design
 
 ```
-GET /api/relationships
+GET /api/v1/relationships
 ```
 
 Returns all relationships for items within a design. Auth required.
@@ -48,7 +48,7 @@ Returns all relationships for items within a design. Auth required.
 ## List Relationships for an Item
 
 ```
-GET /api/items/:id/relationships
+GET /api/v1/items/:id/relationships
 ```
 
 Returns all relationships where the item is the source (parent). Supports branch-aware queries.
@@ -96,16 +96,16 @@ Relationships include full details of both source and target items:
 
 ```bash
 # Get BOM children for an assembly
-curl /api/items/PARENT_UUID/relationships?type=bom
+curl /api/v1/items/PARENT_UUID/relationships?type=bom
 
 # Get branch-specific BOM
-curl /api/items/PARENT_UUID/relationships?type=bom&branch=BRANCH_UUID
+curl /api/v1/items/PARENT_UUID/relationships?type=bom&branch=BRANCH_UUID
 ```
 
 ## Create Relationship
 
 ```
-POST /api/items/:id/relationships
+POST /api/v1/items/:id/relationships
 ```
 
 Creates a new relationship from the specified item (source) to a target item. Auth required.
@@ -123,7 +123,7 @@ Creates a new relationship from the specified item (source) to a target item. Au
 ### Example
 
 ```bash
-curl -X POST /api/items/PARENT_UUID/relationships \
+curl -X POST /api/v1/items/PARENT_UUID/relationships \
   -H "Content-Type: application/json" \
   -d '{
     "targetId": "child-item-uuid",
@@ -149,7 +149,7 @@ curl -X POST /api/items/PARENT_UUID/relationships \
 ## Update Relationship
 
 ```
-PUT /api/relationships/:relationshipId
+PUT /api/v1/relationships/:relationshipId
 ```
 
 Updates relationship properties. Auth required.
@@ -167,7 +167,7 @@ All fields are optional:
 ### Example
 
 ```bash
-curl -X PUT /api/relationships/REL_UUID \
+curl -X PUT /api/v1/relationships/REL_UUID \
   -H "Content-Type: application/json" \
   -d '{
     "quantity": 6,
@@ -196,7 +196,7 @@ curl -X PUT /api/relationships/REL_UUID \
 ## Delete Relationship
 
 ```
-DELETE /api/relationships/:relationshipId
+DELETE /api/v1/relationships/:relationshipId
 ```
 
 Removes a relationship. Auth required.
@@ -215,7 +215,7 @@ Removes a relationship. Auth required.
 ## Batch Create Relationships
 
 ```
-POST /api/relationships/batch-create
+POST /api/v1/relationships/batch-create
 ```
 
 Create multiple relationships in a single request. Limited to 500 relationships per batch. Supports optional replacement of existing relationships.
@@ -242,7 +242,7 @@ Each relationship object:
 ### Example
 
 ```bash
-curl -X POST /api/relationships/batch-create \
+curl -X POST /api/v1/relationships/batch-create \
   -H "Content-Type: application/json" \
   -d '{
     "relationships": [
@@ -322,11 +322,11 @@ To find all items that use a specific item (reverse BOM lookup), query relations
 
 ```bash
 # Get all assemblies containing part PRT-001
-curl /api/items/PRT_001_UUID/relationships?type=bom
+curl /api/v1/items/PRT_001_UUID/relationships?type=bom
 ```
 
 Note: The current API returns relationships where the item is the source. For true where-used (item as target), use the item graph endpoint:
 
 ```bash
-GET /api/items/:id/graph
+GET /api/v1/items/:id/graph
 ```

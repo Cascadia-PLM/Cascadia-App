@@ -1,3 +1,28 @@
-# Generated snapshot is byte-compared by scripts/snapshot-openapi.ts --check;
-# keep it LF on every platform so checkout never introduces CRLF drift.
-docs/api/openapi.v1.json text eol=lf
+# Normalize line endings to LF in the working tree on every platform.
+#
+# CI runs on Linux; development happens on Windows and elsewhere. A Windows
+# checkout with `core.autocrlf=true` (git's default there) writes CRLF into the
+# working tree, so any tool that inspects line endings disagrees with CI:
+#
+#   - `npm run format:check` reported 1167 files — effectively the whole repo —
+#     because Prettier's `endOfLine` default is "lf". Real drift was invisible
+#     in that noise, and CI's 6 genuine hits went unnoticed across two merges.
+#   - `docs/api/openapi.v1.json` is byte-compared by
+#     `scripts/snapshot-openapi.ts --check`, which is why it already carried
+#     this rule individually. The rule below generalizes it.
+#
+# `eol=lf` is what does the work: `text=auto` on its own still lets
+# core.autocrlf convert on checkout. With this in place the working tree is
+# byte-identical across platforms, so every tool — Prettier, ESLint, the
+# OpenAPI byte compare, shell scripts, Docker builds — sees what CI sees.
+#
+# Deliberately NOT paired with Prettier's `endOfLine: "auto"`. That would also
+# make the check pass on Windows, but only by tolerating mixed endings, and
+# only for Prettier. This fixes the cause rather than one symptom.
+#
+# One-time refresh for existing clones after this lands — see the
+# Windows-Specific Notes section of CLAUDE.md:
+#
+#   git rm --cached -r . && git reset --hard
+#
+* text=auto eol=lf

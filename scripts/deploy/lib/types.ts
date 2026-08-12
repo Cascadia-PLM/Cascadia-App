@@ -1,12 +1,12 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
 /**
  * Type definitions for the Cascadia PLM deployment installer
  */
 
 export type DeploymentType =
-  | 'single-server'
-  | 'distributed'
-  | 'cloud-database'
-  | 'kubernetes'
+  'single-server' | 'distributed' | 'cloud-database' | 'kubernetes'
 
 export type CloudProvider = 'aws-rds' | 'gcp-cloudsql' | 'azure' | 'other'
 

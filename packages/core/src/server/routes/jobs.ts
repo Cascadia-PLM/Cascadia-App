@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
+import { Hono } from 'hono'
+import { tagged } from '../adapter'
+import { JobService } from '@/lib/jobs/JobService'
+import { apiHandler } from '@/lib/api/handler'
+import { NotFoundError } from '@/lib/errors'
+
+const adapt = tagged('Jobs')
+
+const app = new Hono()
+
+// GET /api/jobs/:id
+app.get(
+  '/:id',
+  adapt(
+    apiHandler<{ id: string }>({}, async ({ params }) => {
+      const { id } = params
+      const job = await JobService.get(id)
+      if (!job) {
+        throw new NotFoundError('Job', id)
+      }
+
+      return {
+        id: job.id,
+        type: job.type,
+        status: job.status,
+        progress: job.progress,
+        progressMessage: job.progressMessage,
+        result: job.result,
+        error: job.error,
+        createdAt: job.createdAt,
+        startedAt: job.startedAt,
+        completedAt: job.completedAt,
+      }
+    }),
+  ),
+)
+
+export default app

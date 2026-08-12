@@ -12,7 +12,7 @@ This guide covers the UI component conventions, base primitives, and common patt
 
 ## Base Components
 
-Base UI primitives live in `src/components/ui/`. These are low-level building blocks used throughout the application.
+Base UI primitives live in `packages/core/src/components/ui/`. These are low-level building blocks used throughout the application.
 
 ### Available Components
 
@@ -100,7 +100,7 @@ import { Input } from '@/components/ui/Input'
 
 ### The zodValidator Wrapper
 
-Zod v4 does not implement `StandardSchemaV1` which TanStack Form expects. Use the `zodValidator()` wrapper from `src/lib/form-validation.ts`:
+Zod v4 does not implement `StandardSchemaV1` which TanStack Form expects. Use the `zodValidator()` wrapper from `packages/core/src/lib/form-validation.ts`:
 
 ```typescript
 import { useForm } from '@tanstack/react-form'
@@ -179,7 +179,7 @@ const partType = form.useStore((state) => state.values.partType)
 
 ### Helper Functions
 
-`src/lib/form-validation.ts` exports additional helpers:
+`packages/core/src/lib/form-validation.ts` exports additional helpers:
 
 ```typescript
 import { zodValidator, getFieldError, hasErrors } from '@/lib/form-validation'
@@ -195,7 +195,7 @@ if (hasErrors(form.state.errors)) {
 
 ## DataGrid Component
 
-`DataGrid` in `src/components/ui/DataGrid.tsx` wraps TanStack Table with sorting, filtering, pagination, global search, row expansion, and context menus.
+`DataGrid` in `packages/core/src/components/ui/DataGrid.tsx` wraps TanStack Table with sorting, filtering, pagination, global search, row expansion, and context menus.
 
 ### Basic Usage
 

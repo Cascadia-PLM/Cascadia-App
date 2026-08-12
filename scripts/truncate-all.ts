@@ -1,114 +1,44 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
 /**
- * Truncate all tables to reset the database for fresh seeding
+ * Truncate all tables to reset the database for fresh seeding.
  *
- * This must cover every pgTable() defined in src/lib/db/schema/.
- * When adding a new table to the schema, add it here too.
+ * Covers every `pgTable()` in the edition's composed schema — core's and every
+ * module's — because it reads that schema rather than restating it.
  *
  * Queries pg_tables to skip any that haven't been migrated yet,
  * so newly added schema files won't break the reset.
  */
-import { sql } from 'drizzle-orm'
-import { db } from '../src/lib/db/index.ts'
+import { getTableName, is, sql } from 'drizzle-orm'
+import { PgTable } from 'drizzle-orm/pg-core'
+import { db, describeConnection } from '../packages/core/src/lib/db/index.ts'
+import { resolveApp } from './edition.mjs'
 
-/** Every table from src/lib/db/schema/, grouped by domain. */
-const ALL_TABLES = [
-  // Items & type-specific tables
-  'items',
-  'parts',
-  'documents',
-  'change_orders',
-  'requirements',
-  'tasks',
-  'work_instructions',
-  'tools',
-  'issues',
-  // Item relationships
-  'item_relationships',
-  // Change order detail tables
-  'change_order_affected_items',
-  'change_order_impacted_items',
-  'change_order_risks',
-  'change_order_impact_reports',
-  'change_order_designs',
-  // Test management
-  'test_plans',
-  'test_cases',
-  'test_executions',
-  // Issue detail tables
-  'issue_designs',
-  'issue_affected_items',
-  // Work instruction detail tables
-  'work_instruction_operations',
-  'work_instruction_steps',
-  'work_instruction_part_attachments',
-  'work_instruction_change_alerts',
-  // Versioning & branching
-  'designs',
-  'branches',
-  'commits',
-  'tags',
-  'item_versions',
-  'branch_items',
-  'item_field_changes',
-  'conflict_reviews',
-  // Threading
-  'upstream_changes',
-  'thread_path_cache',
-  // Programs & products
-  'programs',
-  'program_members',
-  'products',
-  // Users & auth
-  'users',
-  'roles',
-  'user_roles',
-  'sessions',
-  'auth_events',
-  // Workflows
-  'workflow_definitions',
-  'workflow_instances',
-  'workflow_history',
-  'workflow_state_approvers',
-  'workflow_approval_votes',
-  // Config & settings
-  'item_type_configs',
-  'settings',
-  'number_sequences',
-  // Vault (file storage)
-  'vault_files',
-  'vault_file_history',
-  // Component catalog
-  'component_catalog_media',
-  'component_catalog_entries',
-  'component_catalog_categories',
-  // COTS components
-  'cots_components',
-  'part_cots_mapping',
-  // Cross references
-  'design_cross_references',
-  // Design engine
-  // AI
-  'ai_chat_sessions',
-  'ai_chat_messages',
-  'ai_settings',
-  'ai_usage_logs',
-  // Jobs
-  'jobs',
-  'job_logs',
-  // Reports
-  'reports',
-  'report_columns',
-  'report_filters',
-  'report_sorts',
-  'report_executions',
-  'report_exports',
-  // Work orders
-  'work_orders',
-  'work_instruction_executions',
-  'execution_sign_offs',
-  // Error logs
-  'error_logs',
-]
+// Resolved at runtime rather than imported by name: naming the enterprise app
+// outright breaks a core-only tree, which is what `npm run core:standalone`
+// builds. This script serves whichever edition the tree actually contains.
+const app = resolveApp()
+const schema = (await import(`../apps/${app}/src/modules.schema.ts`)) as Record<
+  string,
+  unknown
+>
+
+console.log(`Target database: ${describeConnection()}  (edition: ${app})`)
+
+/**
+ * Every table this edition owns, derived from the composed schema rather than
+ * listed by hand.
+ *
+ * It used to be a hand-maintained array of ~110 names with a comment asking you
+ * to remember. Forgetting left rows behind after `db:reset`, and silently: a
+ * name missing from the list looks exactly like a table that has not been
+ * migrated yet, which this script is designed to skip without complaint.
+ * Reading the schema means a new table is covered the moment it exists.
+ */
+const ALL_TABLES = Object.values(schema)
+  .filter((value): value is PgTable => is(value, PgTable))
+  .map((table) => getTableName(table))
 
 // Query which of our tables actually exist in the database
 // (some schema tables may not have been migrated yet)

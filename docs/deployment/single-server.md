@@ -168,13 +168,13 @@ services:
       - app_vault:/app/vault
     networks:
       - cascadia-internal
-    command: sh -c "npx drizzle-kit push --force && npm run serve"
+    command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
 ```
 
 Key points:
 
 - The app waits for PostgreSQL to pass its health check before starting.
-- On startup, the app runs `npx drizzle-kit push --force` to apply any pending schema changes, then starts the server.
+- On startup, the app runs `node scripts/drizzle.mjs push --force` to apply any pending schema changes, then starts the server.
 - `VAULT_MODE=embedded` and `JOBS_MODE=embedded` mean no external vault service or RabbitMQ is required.
 - All inter-service communication happens over the `cascadia-internal` bridge network.
 
@@ -338,7 +338,7 @@ docker compose logs postgres
 If `drizzle-kit push` fails on startup, run it manually:
 
 ```bash
-docker compose exec app npx drizzle-kit push
+docker compose exec app npm run db:push
 ```
 
 ### Reset Everything

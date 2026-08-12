@@ -1,2 +1,0 @@
-ALTER TABLE "vault_files" ADD COLUMN "is_item_thumbnail" boolean DEFAULT false NOT NULL;--> statement-breakpoint
-CREATE INDEX "idx_vault_files_item_thumbnail" ON "vault_files" USING btree ("is_item_thumbnail");

@@ -4,14 +4,14 @@ This guide covers how to add API routes in Cascadia using Hono route modules and
 
 ## Route Architecture
 
-API routes are defined in `src/server/routes/`, one file per domain. Each file creates a `Hono` app, defines routes using `adapt()` + `apiHandler()`, and exports the app. The routes are mounted in `src/server/index.ts`.
+API routes are defined in `packages/core/src/server/routes/`, one file per domain. Each file creates a `Hono` app, defines routes using `adapt()` + `apiHandler()`, and exports the app. The routes are mounted in `packages/core/src/server/index.ts`.
 
-| File                              | Mounted At                  |
-| --------------------------------- | --------------------------- |
-| `src/server/routes/parts.ts`      | `/api/v1/parts`                |
-| `src/server/routes/programs.ts`   | `/api/v1/programs`             |
-| `src/server/routes/designs.ts`    | `/api/v1/designs`              |
-| `src/server/routes/change-orders.ts` | `/api/v1/change-orders`     |
+| File                                               | Mounted At              |
+| -------------------------------------------------- | ----------------------- |
+| `packages/core/src/server/routes/parts.ts`         | `/api/v1/parts`         |
+| `packages/core/src/server/routes/programs.ts`      | `/api/v1/programs`      |
+| `packages/core/src/server/routes/designs.ts`       | `/api/v1/designs`       |
+| `packages/core/src/server/routes/change-orders.ts` | `/api/v1/change-orders` |
 
 Route parameters use the `:param` naming convention (e.g., `/:id`, `/:designId/branches`).
 
@@ -20,7 +20,7 @@ Route parameters use the `:param` naming convention (e.g., `/:id`, `/:designId/b
 Every API route file creates a `Hono` app, uses `adapt()` to bridge Hono's context to the `apiHandler()` signature, and wraps handlers with `apiHandler()`:
 
 ```typescript
-// src/server/routes/widgets.ts
+// packages/core/src/server/routes/widgets.ts
 import { Hono } from 'hono'
 import { adapt } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'
@@ -30,22 +30,19 @@ import '@/lib/items/registerItemTypes.server'
 
 const app = new Hono()
 
-// GET /api/widgets/:id
+// GET /api/v1/widgets/:id
 app.get(
   '/:id',
   adapt(
-    apiHandler(
-      { permission: ['widgets', 'read'] },
-      async ({ params }) => {
-        const widget = await ItemService.findById(params.id)
-        if (!widget) throw new NotFoundError('Widget', params.id)
-        return { widget }
-      },
-    ),
+    apiHandler({ permission: ['widgets', 'read'] }, async ({ params }) => {
+      const widget = await ItemService.findById(params.id)
+      if (!widget) throw new NotFoundError('Widget', params.id)
+      return { widget }
+    }),
   ),
 )
 
-// PUT /api/widgets/:id
+// PUT /api/v1/widgets/:id
 app.put(
   '/:id',
   adapt(
@@ -60,24 +57,21 @@ app.put(
   ),
 )
 
-// DELETE /api/widgets/:id
+// DELETE /api/v1/widgets/:id
 app.delete(
   '/:id',
   adapt(
-    apiHandler(
-      { permission: ['widgets', 'delete'] },
-      async ({ params }) => {
-        await ItemService.delete(params.id)
-        return { success: true }
-      },
-    ),
+    apiHandler({ permission: ['widgets', 'delete'] }, async ({ params }) => {
+      await ItemService.delete(params.id)
+      return { success: true }
+    }),
   ),
 )
 
 export default app
 ```
 
-Then mount the route in `src/server/index.ts`:
+Then mount the route in `packages/core/src/server/index.ts`:
 
 ```typescript
 import widgets from './routes/widgets'
@@ -87,7 +81,7 @@ app.route('/api/v1/widgets', widgets)
 
 ## The adapt() Bridge
 
-`adapt()` from `src/server/adapter.ts` bridges Hono's `Context` to the `apiHandler()` signature. It extracts `params` and `request` from the Hono context and passes them to the legacy handler:
+`adapt()` from `packages/core/src/server/adapter.ts` bridges Hono's `Context` to the `apiHandler()` signature. It extracts `params` and `request` from the Hono context and passes them to the legacy handler:
 
 ```typescript
 export function adapt(handler: LegacyHandler) {
@@ -103,7 +97,7 @@ You always wrap `apiHandler()` calls with `adapt()` when defining Hono routes.
 
 ## The apiHandler() Wrapper
 
-`apiHandler()` from `src/lib/api/handler.ts` wraps every API handler. It provides:
+`apiHandler()` from `packages/core/src/lib/api/handler.ts` wraps every API handler. It provides:
 
 1. **Authentication** — verifies session or API key, extracts user
 2. **Authorization** — checks permissions if specified
@@ -163,12 +157,15 @@ interface HandlerContext {
 **Return an object** — auto-wrapped as `{ data: { ... } }` with 200 status:
 
 ```typescript
-app.get('/:id', adapt(
-  apiHandler({}, async ({ params }) => {
-    const widget = await ItemService.findById(params.id)
-    return { widget }
-  })
-))
+app.get(
+  '/:id',
+  adapt(
+    apiHandler({}, async ({ params }) => {
+      const widget = await ItemService.findById(params.id)
+      return { widget }
+    }),
+  ),
+)
 // Response: { "data": { "widget": { ... } } }
 ```
 
@@ -177,16 +174,19 @@ app.get('/:id', adapt(
 ```typescript
 import { created } from '@/lib/api/handler'
 
-app.post('/', adapt(
-  apiHandler(
-    { permission: ['parts', 'create'] },
-    async ({ request, user }) => {
-      const data = await request.json()
-      const part = await ItemService.create('Part', data, user.id)
-      return created({ part })
-    },
-  )
-))
+app.post(
+  '/',
+  adapt(
+    apiHandler(
+      { permission: ['parts', 'create'] },
+      async ({ request, user }) => {
+        const data = await request.json()
+        const part = await ItemService.create('Part', data, user.id)
+        return created({ part })
+      },
+    ),
+  ),
+)
 // Response: 201 Created, { "data": { "part": { ... } } }
 ```
 
@@ -195,12 +195,15 @@ app.post('/', adapt(
 ### JSON Body
 
 ```typescript
-app.post('/', adapt(
-  apiHandler({}, async ({ request }) => {
-    const data = await request.json()
-    // data is unknown — validate with Zod or pass to service
-  })
-))
+app.post(
+  '/',
+  adapt(
+    apiHandler({}, async ({ request }) => {
+      const data = await request.json()
+      // data is unknown — validate with Zod or pass to service
+    }),
+  ),
+)
 ```
 
 ### Query Parameters
@@ -211,15 +214,18 @@ Use `parseQuery()` with a Zod schema for validated, typed query parameters:
 import { apiHandler, parseQuery } from '@/lib/api/handler'
 import { paginationSchema } from '@/lib/api/schemas'
 
-app.get('/', adapt(
-  apiHandler({}, async ({ request }) => {
-    const query = parseQuery(request, paginationSchema)
-    // query.limit is number (default 50), query.offset is number (default 0)
-  })
-))
+app.get(
+  '/',
+  adapt(
+    apiHandler({}, async ({ request }) => {
+      const query = parseQuery(request, paginationSchema)
+      // query.limit is number (default 50), query.offset is number (default 0)
+    }),
+  ),
+)
 ```
 
-Common query schemas from `src/lib/api/schemas.ts`:
+Common query schemas from `packages/core/src/lib/api/schemas.ts`:
 
 ```typescript
 // Pagination
@@ -249,11 +255,14 @@ const itemListSchema = paginationSchema.merge(versionContextSchema).extend({
 URL parameters come from the `params` object. For a route at `/api/v1/parts/:id`:
 
 ```typescript
-app.get('/:id', adapt(
-  apiHandler({}, async ({ params }) => {
-    const { id } = params // string
-  })
-))
+app.get(
+  '/:id',
+  adapt(
+    apiHandler({}, async ({ params }) => {
+      const { id } = params // string
+    }),
+  ),
+)
 ```
 
 ## Error Handling
@@ -261,13 +270,16 @@ app.get('/:id', adapt(
 **Do not use try/catch in routes.** Just throw errors — `apiHandler` catches them:
 
 ```typescript
-app.get('/:id', adapt(
-  apiHandler({}, async ({ params }) => {
-    const part = await ItemService.findById(params.id)
-    if (!part) throw new NotFoundError('Part', params.id)
-    return { part }
-  })
-))
+app.get(
+  '/:id',
+  adapt(
+    apiHandler({}, async ({ params }) => {
+      const part = await ItemService.findById(params.id)
+      if (!part) throw new NotFoundError('Part', params.id)
+      return { part }
+    }),
+  ),
+)
 ```
 
 The service layer can also throw errors, and they propagate up:
@@ -292,7 +304,7 @@ app.post('/checkout', adapt(
 
 ## Response Helpers
 
-For responses that need custom status codes, use helpers from `src/lib/api/handler.ts`:
+For responses that need custom status codes, use helpers from `packages/core/src/lib/api/handler.ts`:
 
 ```typescript
 import { apiHandler, created, jsonResponse } from '@/lib/api/handler'
@@ -304,7 +316,7 @@ return created({ part })
 return jsonResponse({ results }, 207) // Multi-status
 ```
 
-Or use response builders from `src/lib/api/response.ts` for more control:
+Or use response builders from `packages/core/src/lib/api/response.ts` for more control:
 
 ```typescript
 import {
@@ -335,26 +347,32 @@ For routes that need design-level or branch-level access checks beyond simple pe
 ```typescript
 import { requireDesignAccess, requireBranchAccess } from '@/lib/auth/access'
 
-app.get('/designs/:designId/items', adapt(
-  apiHandler({}, async ({ params, user, request }) => {
-    await requireDesignAccess(request, params.designId, user)
-    // ... user has access to this design
-  })
-))
+app.get(
+  '/designs/:designId/items',
+  adapt(
+    apiHandler({}, async ({ params, user, request }) => {
+      await requireDesignAccess(request, params.designId, user)
+      // ... user has access to this design
+    }),
+  ),
+)
 
-app.post('/branches/:branchId/items', adapt(
-  apiHandler({}, async ({ params, user, request }) => {
-    await requireBranchAccess(request, params.branchId, user)
-    // ... user has access to this branch
-  })
-))
+app.post(
+  '/branches/:branchId/items',
+  adapt(
+    apiHandler({}, async ({ params, user, request }) => {
+      await requireBranchAccess(request, params.branchId, user)
+      // ... user has access to this branch
+    }),
+  ),
+)
 ```
 
 ## Important Notes
 
 ### Mounting New Routes
 
-After creating a new route file, you must import and mount it in `src/server/index.ts`:
+After creating a new route file, you must import and mount it in `packages/core/src/server/index.ts`:
 
 ```typescript
 import widgets from './routes/widgets'
@@ -388,7 +406,7 @@ Use `import type` for types, and dynamic imports for server-only services when n
 ### Collection Endpoint (List + Search)
 
 ```typescript
-// src/server/routes/widgets.ts
+// packages/core/src/server/routes/widgets.ts
 import { Hono } from 'hono'
 import { adapt } from '../adapter'
 import { apiHandler, parseQuery, created } from '@/lib/api/handler'
@@ -398,28 +416,25 @@ import '@/lib/items/registerItemTypes.server'
 
 const app = new Hono()
 
-// GET /api/widgets
+// GET /api/v1/widgets
 app.get(
   '/',
   adapt(
-    apiHandler(
-      { permission: ['widgets', 'read'] },
-      async ({ request }) => {
-        const query = parseQuery(request, itemListSchema)
-        const result = await ItemService.search({
-          itemType: 'Widget',
-          limit: query.limit,
-          offset: query.offset,
-          search: query.search,
-          designId: query.designId,
-        })
-        return { widgets: result.items, total: result.total }
-      },
-    ),
+    apiHandler({ permission: ['widgets', 'read'] }, async ({ request }) => {
+      const query = parseQuery(request, itemListSchema)
+      const result = await ItemService.search({
+        itemType: 'Widget',
+        limit: query.limit,
+        offset: query.offset,
+        search: query.search,
+        designId: query.designId,
+      })
+      return { widgets: result.items, total: result.total }
+    }),
   ),
 )
 
-// POST /api/widgets
+// POST /api/v1/widgets
 app.post(
   '/',
   adapt(
@@ -440,14 +455,14 @@ export default app
 ### Action Endpoint (Non-CRUD)
 
 ```typescript
-// src/server/routes/change-orders.ts (excerpt)
+// packages/core/src/server/routes/change-orders.ts (excerpt)
 import { Hono } from 'hono'
 import { adapt } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'
 
 const app = new Hono()
 
-// POST /api/change-orders/:id/workflow/transition
+// POST /api/v1/change-orders/:id/workflow/transition
 app.post(
   '/:id/workflow/transition',
   adapt(

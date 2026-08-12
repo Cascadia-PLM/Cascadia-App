@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  // The app-level configs are type-checked code too — without them here,
+  // ESLint has no project for them and refuses to parse.
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts",
+    "drizzle.config.ts"
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../../packages/core/src/*"],
+      "@cascadia/core/*": ["../../packages/core/src/*"]
+    }
+  }
+}

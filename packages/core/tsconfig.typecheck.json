@@ -1,0 +1,15 @@
+{
+  // What `npm run typecheck:strict` checks for this package.
+  //
+  // Identical to `tsconfig.json` except that route files are left out. Each
+  // `createFileRoute()` call is typed by the module augmentation in a generated
+  // `routeTree.gen.ts`, and that tree is per-app by design — so route files are
+  // checked in the app projects, which pull them in through their own tree.
+  //
+  // Kept separate rather than excluding them in `tsconfig.json` because ESLint's
+  // `project: true` resolves the *nearest* tsconfig, and a file excluded there
+  // is a file ESLint refuses to parse at all. Type-checking scope and lint
+  // scope want different answers; this is the one that is only about tsc.
+  "extends": "./tsconfig.json",
+  "exclude": ["src/routes/**"]
+}

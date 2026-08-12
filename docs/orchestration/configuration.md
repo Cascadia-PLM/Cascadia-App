@@ -76,6 +76,38 @@ Adjust `script-src` and `style-src` to remove `'unsafe-inline'` if your deployme
 | `AZURE_CLIENT_SECRET`  | Azure AD OAuth secret      |
 | `AZURE_TENANT_ID`      | Azure AD tenant ID         |
 
+### Optional Packages
+
+Separately-licensed functionality. Read once at process start; there is no
+in-app toggle, so an instance cannot enable a package it is not entitled to.
+
+| Variable            | Default | Description                                                                 |
+| ------------------- | ------- | --------------------------------------------------------------------------- |
+| `CASCADIA_PACKAGES` | -       | Comma-separated package ids, or `*` for all. Known ids: `advanced-auditing` |
+
+### Advanced Auditing Package
+
+Only meaningful when `CASCADIA_PACKAGES` includes `advanced-auditing`. See
+[Advanced Auditing](../features/advanced-auditing.md) for the required reverse
+proxy configuration.
+
+| Variable                                   | Default              | Description                                                                                                   |
+| ------------------------------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `CASCADIA_SIGNATURE_METHOD`                | `pki-preferred`      | Credential required to sign: `pki`, `pki-preferred`, or `password`. Use `pki` for DoD deployments.            |
+| `CASCADIA_CLIENT_CERT_HEADER`              | -                    | Header the mTLS terminator forwards the client certificate in. **PKI signing is disabled until this is set.** |
+| `CASCADIA_SIGNING_CA_BUNDLE`               | -                    | Path to a PEM bundle of trusted issuers (e.g. the DoD PKI roots).                                             |
+| `CASCADIA_SIGNATURE_REQUIRE_TRUSTED_CHAIN` | `true` with a bundle | Reject certificates that do not chain to a configured anchor.                                                 |
+| `CASCADIA_SIGNATURE_ENROLLMENT`            | `auto`               | How a card binds to a user: `auto` (trust on first use) or `admin`.                                           |
+| `CASCADIA_PDF_SIGNING_P12`                 | -                    | PKCS#12 archive holding the instance signing key. **Signing released PDFs is disabled until this is set.**    |
+| `CASCADIA_PDF_SIGNING_PASSPHRASE`          | `''`                 | Passphrase for that archive.                                                                                  |
+| `CASCADIA_PDF_SIGNING_NAME`                | `Cascadia PLM`       | Signer name shown in a PDF reader's signature panel.                                                          |
+| `CASCADIA_PDF_SIGNING_CONTACT`             | -                    | Contact shown alongside the signature.                                                                        |
+| `CASCADIA_PDF_SIGNING_LOCATION`            | -                    | Location shown alongside the signature.                                                                       |
+
+> **Security:** `CASCADIA_CLIENT_CERT_HEADER` makes Cascadia trust a request
+> header as proof of identity. Only set it once the reverse proxy overwrites
+> that header on every request and the app is unreachable except through it.
+
 ---
 
 ## Vault Service Configuration

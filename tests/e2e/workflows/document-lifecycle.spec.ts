@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
 /**
  * Document Lifecycle E2E Workflow Tests
  *
@@ -85,7 +88,9 @@ test.describe('Document Lifecycle Workflow', () => {
     await page.click('[data-testid="document-submit"]')
 
     // 4. Wait for navigation to detail page
-    await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+(\?.*)?$/, { timeout: 10000 })
+    await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+(\?.*)?$/, {
+      timeout: 10000,
+    })
 
     // Extract document ID from URL for cleanup
     const url = page.url()
@@ -158,7 +163,9 @@ test.describe('Document Lifecycle Workflow', () => {
     )
     await page.click('[data-testid="document-submit"]')
 
-    await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+(\?.*)?$/, { timeout: 10000 })
+    await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+(\?.*)?$/, {
+      timeout: 10000,
+    })
 
     const url = page.url()
     createdDocumentId = url.split('/').pop() || null

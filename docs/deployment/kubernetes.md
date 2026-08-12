@@ -257,7 +257,7 @@ spec:
 ```yaml
 livenessProbe:
   httpGet:
-    path: /api/health
+    path: /api/v1/health
     port: http
   initialDelaySeconds: 30
   periodSeconds: 10
@@ -265,7 +265,7 @@ livenessProbe:
 
 readinessProbe:
   httpGet:
-    path: /api/health
+    path: /api/v1/health
     port: http
   initialDelaySeconds: 10
   periodSeconds: 5
@@ -491,7 +491,7 @@ kubectl exec -it deployment/cascadia-app -n cascadia -- sh
 Run manually if the app does not apply migrations on startup:
 
 ```bash
-kubectl exec -it deployment/cascadia-app -n cascadia -- npx drizzle-kit push
+kubectl exec -it deployment/cascadia-app -n cascadia -- npm run db:push
 ```
 
 ### Common Issues

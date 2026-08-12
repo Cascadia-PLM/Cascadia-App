@@ -355,7 +355,7 @@ private, type count).
 
 ## Report API Reference
 
-### `GET /api/reports`
+### `GET /api/v1/reports`
 
 List all reports accessible to the current user.
 
@@ -376,7 +376,7 @@ List all reports accessible to the current user.
 }
 ```
 
-### `POST /api/reports`
+### `POST /api/v1/reports`
 
 Create a new report. Body must conform to the `reportSchema` (see
 [Report Definitions](#report-definitions) for the full structure). At least one
@@ -392,7 +392,7 @@ column is required.
 }
 ```
 
-### `GET /api/reports/:id`
+### `GET /api/v1/reports/:id`
 
 Get a single report definition with its columns, filters, and sorts.
 
@@ -406,13 +406,13 @@ Get a single report definition with its columns, filters, and sorts.
 }
 ```
 
-### `PUT /api/reports/:id`
+### `PUT /api/v1/reports/:id`
 
 Update a report definition. Accepts a partial body -- only the fields included
 are updated. When columns, filters, or sorts are provided, they fully replace
 the existing set (delete-and-reinsert).
 
-### `DELETE /api/reports/:id`
+### `DELETE /api/v1/reports/:id`
 
 Delete a report and all its associated columns, filters, sorts, executions, and
 exports (cascade).
@@ -427,7 +427,7 @@ exports (cascade).
 }
 ```
 
-### `POST /api/reports/:id/execute`
+### `POST /api/v1/reports/:id/execute`
 
 Execute a report and return results.
 
@@ -445,7 +445,7 @@ Execute a report and return results.
 
 **Response:** See [Execution Result](#execution-result) above.
 
-### `POST /api/reports/:id/export`
+### `POST /api/v1/reports/:id/export`
 
 Execute a report and return the result as a CSV file download.
 

@@ -77,5 +77,5 @@ grants licenses only and is not a copyright assignment.
 
 ---
 
-*Based on the Apache Software Foundation Individual Contributor License Agreement v2.2,
-adapted for dual licensing.*
+_Based on the Apache Software Foundation Individual Contributor License Agreement v2.2,
+adapted for dual licensing._

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (C) 2026 Cascadia PLM contributors
+# Copyright (c) 2026 Cascadia PLM LLC
 
 """Entry point: CLI mode for standalone conversion, or worker mode for RabbitMQ."""
 

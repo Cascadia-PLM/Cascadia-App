@@ -10,6 +10,9 @@ The file vault is Cascadia's enterprise file management system. It provides PDM-
 - [File Upload and Download](#file-upload-and-download)
   - [Uploading Files](#uploading-files)
   - [Downloading Files](#downloading-files)
+  - [Previewing Files In-App](#previewing-files-in-app)
+  - [Marking Up a File](#marking-up-a-file)
+  - [Watermarking](#watermarking)
   - [Batch Uploads](#batch-uploads)
 - [Check-Out for Edit](#check-out-for-edit)
 - [Check-In with Versioning](#check-in-with-versioning)
@@ -20,6 +23,8 @@ The file vault is Cascadia's enterprise file management system. It provides PDM-
 - [Multiple Files Per Item](#multiple-files-per-item)
 - [File Metadata](#file-metadata)
   - [File Categories](#file-categories)
+  - [Correcting a Category](#correcting-a-category)
+  - [Image Gallery](#image-gallery)
   - [CAD Metadata](#cad-metadata)
   - [Audit History](#audit-history)
 - [Branch-Aware Storage](#branch-aware-storage)
@@ -46,7 +51,7 @@ Cascadia's vault provides:
 - **Soft delete** -- Deleted files are recoverable. Permanent deletion is a separate admin-only operation.
 - **Storage abstraction** -- The vault can store files on the local filesystem or in any S3-compatible object store (AWS S3, MinIO, DigitalOcean Spaces, etc.).
 
-The vault is implemented primarily in `src/lib/vault/`, with the `FileService` class providing the service layer and the `VaultStorage` interface abstracting the storage backend.
+The vault is implemented primarily in `packages/core/src/lib/vault/`, with the `FileService` class providing the service layer and the `VaultStorage` interface abstracting the storage backend.
 
 ---
 
@@ -57,7 +62,7 @@ The vault is implemented primarily in `src/lib/vault/`, with the `FileService` c
 Files are attached to items (Parts, Documents, Change Orders, etc.) via multipart form upload. The upload route is:
 
 ```
-POST /api/items/{itemId}/files/upload
+POST /api/v1/items/{itemId}/files/upload
 Content-Type: multipart/form-data
 ```
 
@@ -84,7 +89,7 @@ On upload, the vault performs these steps:
 **Example: Upload a file via the API**
 
 ```bash
-curl -X POST "http://localhost:3000/api/items/{itemId}/files/upload" \
+curl -X POST "http://localhost:3000/api/v1/items/{itemId}/files/upload" \
   -H "Cookie: session=..." \
   -F "file_0=@bracket.step" \
   -F "branchId=eco-branch-uuid"
@@ -121,7 +126,7 @@ curl -X POST "http://localhost:3000/api/items/{itemId}/files/upload" \
 Files are downloaded via streaming or buffered response depending on size:
 
 ```
-GET /api/files/{fileId}/download
+GET /api/v1/files/{fileId}/download
 ```
 
 - Files smaller than 10 MB are returned as a complete buffer.
@@ -138,6 +143,185 @@ X-Content-Type-Options: nosniff
 
 Design-level access control is enforced: the system checks that the requesting user has access to the design that owns the item.
 
+### Previewing Files In-App
+
+Attached documents can be read without leaving Cascadia. A separate endpoint
+serves the same bytes for _rendering_ rather than for _saving_:
+
+```
+GET /api/v1/files/{fileId}/content
+```
+
+It differs from `/download` in three ways, each deliberate:
+
+|                       | `/download`           | `/content`                           |
+| --------------------- | --------------------- | ------------------------------------ |
+| `Content-Disposition` | `attachment`          | `inline`                             |
+| `Content-Type`        | the stored `mimeType` | resolved from the file **extension** |
+| History action logged | `download`            | `view`                               |
+
+**The Content-Type is never echoed back from the upload.** The stored
+`mimeType` is whatever the uploading client asserted, so a file claiming to be
+`application/pdf` would otherwise be served inline under that type. The
+extension has already passed the vault's upload allowlist, so it is the
+trustworthy signal; a `.txt` uploaded as `application/pdf` is served as
+`text/plain`. Responses also carry `X-Content-Type-Options: nosniff` and
+`Content-Security-Policy: sandbox; default-src 'none'`.
+
+Only formats Cascadia can display are served, up to a **50 MB ceiling**
+(neither the storage layer nor the API speaks HTTP Range yet, so the viewer
+fetches a file whole; past that point downloading is the cheaper path). Anything
+else returns `415 FILE_TYPE_NOT_ALLOWED`; anything larger returns
+`413 FILE_TOO_LARGE`.
+
+| Kind    | Extensions                                  | Rendered by                                    |
+| ------- | ------------------------------------------- | ---------------------------------------------- |
+| `pdf`   | `.pdf`                                      | pdf.js, on canvas with a selectable text layer |
+| `image` | `.png` `.jpg` `.jpeg` `.gif` `.bmp` `.webp` | `<img>`                                        |
+| `text`  | `.txt` `.md` `.csv` `.log`                  | preformatted text                              |
+
+SVG and TIFF are excluded — SVG is scriptable and these bytes are served from
+the app's own origin, the same reasoning that excludes it from thumbnails.
+
+The vocabulary lives in `packages/core/src/lib/vault/preview.ts` and is shared by the server
+(the allowlist) and the client (whether to offer a Preview action, and which
+viewer to mount). Adding a format means adding one entry there.
+
+**In the UI.** The `FileList` row actions carry a Preview button for every
+previewable file, so every item type that renders a file list — Part, Document,
+Change Order, Physical Part, and any type added later — gets the viewer without
+further work. Documents additionally have a full-width **Preview tab**
+(`/documents/{id}?tab=preview`) backed by `ItemFilePreviewPanel`, which is
+itself item-type agnostic and can be dropped into any detail page. Like the
+[Gallery tab](#image-gallery), it only appears when there is something to show —
+`useItemPreviewableFiles` answers that from the file list's own query.
+
+The image extensions come from `image-files.ts`, the same list the gallery and
+the thumbnail designation use, so the three cannot drift. Only the mapping from
+extension to `Content-Type` lives in `preview.ts`, because only the content
+endpoint serves bytes. Note that `isDisplayableImage` falls back to the stored
+`mimeType` for oddly-named uploads and the preview allowlist deliberately does
+not: deciding whether to _show_ a file an `<img>` already fetched is a different
+risk from deciding what `Content-Type` to _serve_ it under.
+
+The viewer fetches with `fetch` and hands the bytes over as an object URL
+rather than pointing an `<iframe>` at the endpoint: every API response carries
+`X-Frame-Options: DENY`, and the endpoint is session-cookie authenticated.
+
+pdf.js is code-split behind a dynamic import, so the roughly 1.4 MB of viewer
+and worker is only fetched the first time someone opens a PDF. Its character
+maps and Base-14 font data are copied into the build by `vite-plugin-static-copy`
+and served from `/pdfjs/` — not a CDN — so previewing works in air-gapped
+deployments.
+
+### Marking Up a File
+
+Redlines are drawn directly in the viewer: highlight, box, freehand, comment
+pin, and text label, in five colours.
+
+**Markup is stored as PLM data, not written into the PDF.** A vault file version
+is immutable and carries the SHA-256 recorded at upload, so writing a stroke
+back into the bytes would mint a new version on every pen-down and invalidate
+that hash. Keeping markup beside the file also makes it queryable and
+attributable, and it can still be flattened into a PDF on demand.
+
+Geometry is stored in **normalized page coordinates** (`0..1` from the top-left
+of the unrotated page). A stroke drawn at 400% zoom on a rotated page has to
+land in the same place when reopened at 100% on a different screen, and when
+stamped into the PDF by a worker that never saw the viewport.
+
+**Writing markup requires holding the owning item's checkout.** Marking up a
+released drawing is an edit to the engineering record, not a personal sticky
+note, so it belongs to whoever currently owns that record — which also means
+redlines accumulate against a branch someone is accountable for instead of
+appearing on main with nobody's name on the change. Reading is not gated: a
+reviewer with design access sees the redlines without taking the lock away from
+whoever is drawing them.
+
+The gate is the checkout itself, deliberately _not_
+`ItemService.requireContentEditable`. That is the contract for **structural**
+edits, and it additionally insists a revision working copy exist before a
+released item can be touched; markup writes no item row and no relationship, so
+requiring it would mean revising a document before you could redline it. The
+lookup matches on `itemMasterId`, so markup keeps working across the moment a
+working copy is created and the branch row's `currentItemId` moves.
+
+| Situation                     | Result                       |
+| ----------------------------- | ---------------------------- |
+| Nobody holds the checkout     | `409 ITEM_CHECKOUT_REQUIRED` |
+| Somebody else holds it        | `423 RESOURCE_LOCKED`        |
+| Branch locked (ECO submitted) | `403 BRANCH_PROTECTION`      |
+| You hold it                   | Markup is written            |
+
+Only the **author** may revise their own markup — an annotation is an attributed
+statement about the document, and letting someone else rewrite it under that
+name would make the attribution a lie. Anyone holding the checkout may _delete_
+markup that no longer applies.
+
+Markup hangs off a `vault_files` row — one version of one file — so branch
+visibility and file versioning come for free: redlines drawn on an ECO branch
+are visible exactly where that file version is, and are promoted with it on
+release.
+
+```
+GET    /api/v1/files/{fileId}/annotations
+POST   /api/v1/files/{fileId}/annotations
+PATCH  /api/v1/files/{fileId}/annotations/{annotationId}
+DELETE /api/v1/files/{fileId}/annotations/{annotationId}
+```
+
+Vocabulary lives in `packages/core/src/lib/vault/annotations.ts`, shared by the viewer, the
+API, and anything that renders markup into a PDF.
+
+### Watermarking
+
+Stamping a mark — `SUPERSEDED`, `UNCONTROLLED COPY`, `FOR REVIEW ONLY` — runs as
+the background job `document.watermark.apply`.
+
+A stamp is drawn as **page content, not a PDF annotation**, so it cannot be
+toggled off in a reader or removed by "strip annotations". Someone holding a
+superseded drawing has to see that it is superseded. Three positions are
+available: `diagonal` (corner to corner, sized to ~80% of the page diagonal so
+an A0 sheet and a Letter spec are both legibly marked) and `top-banner` /
+`bottom-banner` (a solid bar, better on a dense sheet where the diagonal would
+cross the drawing).
+
+**Automatic on ECO release.** When an ECO merges, every revision it superseded
+gets its PDFs stamped `SUPERSEDED`, subtitled with the revision that replaced
+it. Files belong to an item _version_ row, so the superseded revision still owns
+its own attachments — the ones stamped are exactly those, and the new revision's
+files are untouched. One job is queued per superseded revision, so a document
+whose attachments fail to stamp can be retried without re-stamping the rest.
+
+Dispatched rather than done inline: a release can supersede dozens of documents,
+and a stamping failure must be retried on its own rather than rolling back a
+release that has already happened. If the dispatch itself fails, the release
+still succeeds and the failure is logged.
+
+Manual dispatch, same job, same trace in the file history:
+
+```
+POST /api/v1/files/{fileId}/watermark
+{ "text": "UNCONTROLLED COPY", "position": "bottom-banner" }   → 202 { jobId }
+```
+
+Stamping writes a **new file version** through `FileService.replaceContent`, so
+the pre-stamp original stays downloadable in the version history. That method is
+the system-driven counterpart to check-in and is deliberately not an escape
+hatch around the lock: it refuses a file someone has checked out (their
+check-in would silently discard the stamp) and refuses anything but the latest
+version (superseded versions are frozen history). The job also skips files that
+already carry the same mark, so re-running a release cannot stack two identical
+stamps.
+
+Per-file failures are collected rather than thrown: one vendor PDF that pdf-lib
+cannot parse must not stop the other forty being marked.
+
+Stamping uses [`@cantoo/pdf-lib`](https://www.npmjs.com/package/@cantoo/pdf-lib)
+— the maintained MIT fork of `pdf-lib`, which has had no release since 2022. MIT
+matters: Cascadia is dual licensed, and its proprietary edition cannot take an
+AGPL dependency such as MuPDF without a commercial licence from Artifex.
+
 ### Batch Uploads
 
 The upload endpoint accepts multiple files in a single request. Each file in the form data is processed sequentially, and all resulting file records are returned together.
@@ -151,7 +335,7 @@ Checking out a file is the vault's mechanism for exclusive editing. When a user 
 **Why is this needed?** In engineering workflows, two people editing the same CAD model simultaneously leads to lost work. Unlike text files that can be merged, binary CAD files cannot. Check-out prevents this by ensuring only one person edits at a time.
 
 ```
-POST /api/files/{fileId}/checkout
+POST /api/v1/files/{fileId}/checkout
 ```
 
 **What happens on checkout:**
@@ -164,7 +348,7 @@ POST /api/files/{fileId}/checkout
 **Batch checkout** is available for workflows where multiple files need to be locked simultaneously (common in CAD assembly editing):
 
 ```
-POST /api/files/batch-checkout
+POST /api/v1/files/batch-checkout
 { "fileIds": ["file-uuid-1", "file-uuid-2", ...] }
 ```
 
@@ -183,7 +367,7 @@ The batch limit is 100 files per request.
 Checking in a file releases the lock. Optionally, the user can upload a new version of the file at the same time.
 
 ```
-POST /api/files/{fileId}/checkin
+POST /api/v1/files/{fileId}/checkin
 ```
 
 There are two modes:
@@ -197,7 +381,7 @@ Send the request with no body or a JSON body. The file is unlocked (`isCheckedOu
 Send a `multipart/form-data` request containing the updated file:
 
 ```bash
-curl -X POST "http://localhost:3000/api/files/{fileId}/checkin" \
+curl -X POST "http://localhost:3000/api/v1/files/{fileId}/checkin" \
   -H "Cookie: session=..." \
   -F "file=@bracket_v2.step" \
   -F "description=Updated mounting holes"
@@ -214,7 +398,7 @@ When a new file is included, the service:
 **Batch check-in** is also available:
 
 ```
-POST /api/files/batch-checkin
+POST /api/v1/files/batch-checkin
 { "fileIds": ["file-uuid-1", "file-uuid-2", ...] }
 ```
 
@@ -229,7 +413,7 @@ Note: Batch check-in only performs the "unlock only" variant. To upload new vers
 If a user decides not to make changes after checking out a file, they can check it in without uploading a new version. This is functionally the same as "check-in without new version" described above -- the lock is released and no new version is created.
 
 ```
-POST /api/files/{fileId}/checkin
+POST /api/v1/files/{fileId}/checkin
 ```
 
 With no file body attached, this simply clears the checkout state. The file returns to its previous state with no version history entry for the discard.
@@ -243,7 +427,7 @@ Note that this is distinct from item-level checkout cancellation (see [Lock Hier
 The lock (checkout) status of any file can be queried:
 
 ```
-GET /api/files/{fileId}/lock-status
+GET /api/v1/files/{fileId}/lock-status
 ```
 
 **Response when locked:**
@@ -288,14 +472,14 @@ Action buttons adapt based on lock state:
 
 ## Lock Hierarchy
 
-Cascadia has three complementary locking mechanisms that operate at different levels. For full details, see [`docs/api/lock-hierarchy.md`](../api/lock-hierarchy.md).
+Cascadia has three complementary locking mechanisms that operate at different levels.
 
 ### 1. Item Checkout (PLM Workflow)
 
 The primary mechanism for editing items in Cascadia's branching workflow. When an item is checked out to an ECO branch, it creates a `branchItem` record linking the item to the branch. This prevents other users from checking out the same item on the same branch, but does **not** prevent edits on other branches.
 
 - **Scope:** Item on a specific branch
-- **API:** `POST /api/items/{id}/checkout`
+- **API:** `POST /api/v1/items/{id}/checkout`
 - **Service:** `CheckoutService`
 
 ### 2. Item Lock (Global Exclusive Access)
@@ -303,14 +487,14 @@ The primary mechanism for editing items in Cascadia's branching workflow. When a
 A stronger lock stored directly on the `items` table. When an item is locked, no user can edit it on any branch. Used sparingly for administrative operations, external system coordination, or data migration.
 
 - **Scope:** Single item across all branches
-- **API:** `POST /api/items/{id}/lock`
+- **API:** `POST /api/v1/items/{id}/lock`
 
 ### 3. File Lock (Vault-Level)
 
 The lock described in this document. Operates on individual files within the vault. Independent of item-level locks -- a file can be locked even if its parent item is not.
 
 - **Scope:** Individual file
-- **API:** `POST /api/files/{fileId}/checkout`
+- **API:** `POST /api/v1/files/{fileId}/checkout`
 
 ### Precedence Rules
 
@@ -337,7 +521,7 @@ Each item can have one file designated as its **primary model**. This is used fo
 **Manual designation:**
 
 ```
-PUT /api/items/{itemId}/files/primary
+PUT /api/v1/items/{itemId}/files/primary
 { "fileId": "file-uuid" }
 ```
 
@@ -346,7 +530,7 @@ This unsets the current primary (if any) and sets the specified file. The file m
 **Query the primary model:**
 
 ```
-GET /api/items/{itemId}/files/primary
+GET /api/v1/items/{itemId}/files/primary
 ```
 
 Returns `{ hasPrimary: true, file: {...} }` or `{ hasPrimary: false, file: null }`.
@@ -364,8 +548,8 @@ Items can have any number of attached files. This is typical in engineering work
 The file listing endpoint returns all files for an item:
 
 ```
-GET /api/items/{itemId}/files
-GET /api/items/{itemId}/files?branchId=...&mainBranchId=...
+GET /api/v1/items/{itemId}/files
+GET /api/v1/items/{itemId}/files?branchId=...&mainBranchId=...
 ```
 
 The optional `branchId` and `mainBranchId` query parameters enable branch-aware filtering (see [Branch-Aware Storage](#branch-aware-storage)).
@@ -373,7 +557,7 @@ The optional `branchId` and `mainBranchId` query parameters enable branch-aware 
 There is also a specialized endpoint for retrieving only viewable CAD files (STL, OBJ, GLB, glTF), including files from related CAD Document items:
 
 ```
-GET /api/items/{itemId}/cad-files
+GET /api/v1/items/{itemId}/cad-files
 ```
 
 This endpoint traverses "CAD Doc" relationships to find viewable models attached to related Document items, returning both direct and related files.
@@ -406,7 +590,8 @@ Every file record in the vault contains:
 | `uploadedBy`       | UUID              | User who uploaded the file                                  |
 | `uploadedAt`       | timestamp         | Upload timestamp                                            |
 | `metadata`         | JSONB             | Extracted and user-provided metadata                        |
-| `fileCategory`     | string            | Auto-detected category                                      |
+| `fileCategory`     | string            | File category (detected at upload, correctable)             |
+| `categorySource`   | string            | `auto` while detected, `manual` once a person has set it    |
 | `isPrimaryModel`   | boolean           | Primary CAD model designation                               |
 | `isItemThumbnail`  | boolean           | User-designated item thumbnail (at most one per item)       |
 | `cadMetadata`      | JSONB             | CAD-specific properties                                     |
@@ -421,12 +606,58 @@ Files are automatically categorized based on their extension and filename:
 | Category        | Extensions / Patterns                                                                                                                     | Description                     |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
 | `cad_model`     | `.step`, `.stp`, `.stl`, `.obj`, `.sldprt`, `.prt`, `.ipt`, `.catpart`, `.3dm`, `.ply`, `.glb`, `.gltf`, `.sldasm`, `.iam`, `.catproduct` | 3D CAD models and assemblies    |
-| `drawing`       | `.dwg`, `.dxf`, `.pdf` (with "drawing" in filename)                                                                                       | 2D engineering drawings         |
-| `specification` | `.pdf`, Word docs with "spec", "requirement", or "datasheet" in filename                                                                  | Technical specifications        |
-| `analysis`      | Files with "analysis", "fea", or "simulation" in filename                                                                                 | Analysis and simulation results |
+| `drawing`       | `.dwg`, `.dxf`, `.slddrw`, `.idw`, `.drw`, `.dft`, `.catdrawing`, or "drawing"/"dwg" in the filename                                      | 2D engineering drawings         |
+| `analysis`      | "analysis", "fea", or "simulation" in the filename                                                                                        | Analysis and simulation results |
+| `specification` | PDF, Word, or text files with "spec", "requirement", or "datasheet" in the filename                                                       | Technical specifications        |
 | `reference`     | Everything else                                                                                                                           | General reference documents     |
 
+An extension decides the category only when the format itself is unambiguous —
+a `.sldprt` is always a model, a `.slddrw` is always a drawing. **A `.pdf` is
+not**: it can hold a drawing, a spec, a certificate, a test report, or anything
+else, so PDFs (and `.doc`/`.docx`/`.rtf`/`.odt`/`.txt`) are categorized by
+filename hints and otherwise stay `reference` rather than being asserted as
+drawings.
+
+Filename hints match whole words, bounded by the start of the name or a
+separator (space, dash, underscore, dot). `Inspection_Report.pdf` is therefore
+not read as a "spec", and `Feature_List.pdf` is not read as an "fea" run.
+
 Thumbnails (generated by the CAD converter service) have a special `thumbnail` category and are automatically excluded from normal file listings.
+
+The vocabulary lives in `packages/core/src/lib/vault/file-categories.ts` — labels, badge
+styling, filter options, and the picker all read from it, so adding a category
+means adding one entry there.
+
+### Correcting a Category
+
+Detection is a guess from the filename, so every category is correctable. The
+category picker sits in the file row actions on the item detail page and in the
+row and context menus on `/files`.
+
+```
+PATCH /api/v1/files/{fileId}/category
+{ "category": "specification" }   // record a person's answer
+{ "category": null }              // clear the override, detect again
+```
+
+A category set this way is stored with `categorySource: 'manual'` and is
+authoritative from then on: nothing re-detects over it, including a new version
+uploaded on check-in. Sending `null` clears the override and re-runs detection
+against the current filename. Either way the change is written to the file's
+audit history as a `set_category` entry recording the old and new values.
+
+Two things follow a category change:
+
+- **Primary model.** `isPrimaryModel` only ever rides a `cad_model`.
+  Recategorizing the primary model as something else clears the flag (without
+  promoting another file — the item simply has no primary until someone picks
+  one); categorizing a file as `cad_model` adopts the flag if the item has no
+  primary yet, and leaves an existing primary alone.
+- **Generated thumbnails** are system-managed and rejected — their category is
+  what keeps them out of file listings.
+
+Files uploaded before a detection rule changed keep the category they were
+given at upload; the rules apply at upload time, not retroactively.
 
 ### Item Thumbnails
 
@@ -455,6 +686,26 @@ replacement is no longer a usable image.
 | PUT    | `/api/v1/items/{itemId}/files/thumbnail` | `documents:update` | Designate a file (body: `{ fileId }`) |
 | DELETE | `/api/v1/items/{itemId}/files/thumbnail` | `documents:update` | Clear the designation                 |
 
+### Image Gallery
+
+Parts and documents with image attachments grow a **Gallery** tab
+(`?tab=gallery`) beside Details. It shows every attached image the browser can
+render — the same PNG/JPEG/GIF/BMP/WebP rule the thumbnail designation uses,
+shared from `packages/core/src/lib/vault/image-files.ts` — as a grid of tiles, and opens any
+of them full size in a lightbox with previous/next navigation (arrow keys
+included) and a download button.
+
+The tab is hidden when an item has no images, and the gallery resolves files in
+the current version context, so an image uploaded on an ECO branch appears only
+while that branch is selected. It reads the same `GET /api/v1/items/{itemId}/files`
+query as the file list — no separate endpoint, and no extra request.
+
+The gallery and the [Preview tab](#previewing-files-in-app) answer different
+questions and both can be present. Gallery is a contact sheet: every image at
+once, click to enlarge. Preview is a document reader: one file, paged, zoomed,
+and markable. A document with a spec PDF and three photos shows both; one with
+only photos shows only Gallery.
+
 ### CAD Metadata
 
 CAD model files carry additional structured metadata in the `cadMetadata` JSONB column:
@@ -476,22 +727,25 @@ CAD model files carry additional structured metadata in the `cadMetadata` JSONB 
 
 Every significant file action is logged to the `vault_file_history` table:
 
-| Action        | When Logged                                   |
-| ------------- | --------------------------------------------- |
-| `upload`      | File first uploaded                           |
-| `download`    | File downloaded (including version downloads) |
-| `checkout`    | File checked out                              |
-| `checkin`     | File checked in (with or without new version) |
-| `delete`      | File soft-deleted                             |
-| `restore`     | Soft-deleted file restored                    |
-| `set_primary` | File designated as primary model              |
+| Action        | When Logged                                    |
+| ------------- | ---------------------------------------------- |
+| `upload`      | File first uploaded                            |
+| `download`    | File downloaded (including version downloads)  |
+| `view`        | File rendered in the in-app viewer             |
+| `watermark`   | A mark was stamped onto a PDF (new version)    |
+| `sign`        | A digital signature was embedded (new version) |
+| `checkout`    | File checked out                               |
+| `checkin`     | File checked in (with or without new version)  |
+| `delete`      | File soft-deleted                              |
+| `restore`     | Soft-deleted file restored                     |
+| `set_primary` | File designated as primary model               |
 
 Each history record includes the performing user, timestamp, and a JSONB `details` field with action-specific data (file size, version number, original filename, etc.).
 
 The history for a specific file is available via:
 
 ```
-GET /api/files/{fileId}/versions
+GET /api/v1/files/{fileId}/versions
 ```
 
 This returns all versions ordered by version number descending, with uploader information.
@@ -515,7 +769,7 @@ Every vault file has an optional `branchId` field. This field determines where t
 When listing files for an item, the API accepts `branchId` and `mainBranchId` query parameters to filter accordingly:
 
 ```
-GET /api/items/{itemId}/files?branchId=eco-123&mainBranchId=main-456
+GET /api/v1/items/{itemId}/files?branchId=eco-123&mainBranchId=main-456
 ```
 
 The service applies this logic:
@@ -652,10 +906,18 @@ The factory caches the storage instance and reuses it across requests. Call `Sto
 | GET    | `/api/v1/items/{itemId}/thumbnail`                   | `parts:read`       | Serve the item's resolved thumbnail image        |
 | GET    | `/api/v1/items/{itemId}/cad-files`                   | Authenticated      | List viewable CAD files (including related docs) |
 | GET    | `/api/v1/files/{fileId}/download`                    | `documents:read`   | Download a file                                  |
+| GET    | `/api/v1/files/{fileId}/content`                     | `documents:read`   | Stream a file inline for the in-app viewer       |
+| GET    | `/api/v1/files/{fileId}/annotations`                 | `documents:read`   | List markup on a file                            |
+| POST   | `/api/v1/files/{fileId}/annotations`                 | `documents:update` | Add markup (requires the item's checkout)        |
+| PATCH  | `/api/v1/files/{fileId}/annotations/{id}`            | `documents:update` | Revise markup (author only)                      |
+| DELETE | `/api/v1/files/{fileId}/annotations/{id}`            | `documents:update` | Remove markup                                    |
+| POST   | `/api/v1/files/{fileId}/watermark`                   | `documents:update` | Queue a watermark stamp (202, returns a job id)  |
+| POST   | `/api/v1/files/{fileId}/sign`                        | `documents:update` | Embed a signature (Advanced Auditing)            |
 | GET    | `/api/v1/files/{fileId}/metadata`                    | `documents:read`   | Get file metadata                                |
 | GET    | `/api/v1/files/{fileId}/versions`                    | `documents:read`   | List all versions                                |
 | GET    | `/api/v1/files/{fileId}/versions/{version}/download` | `documents:read`   | Download specific version                        |
 | GET    | `/api/v1/files/{fileId}/thumbnail`                   | `documents:read`   | Get file thumbnail                               |
+| PATCH  | `/api/v1/files/{fileId}/category`                    | `documents:update` | Set a file's category, or null to re-detect      |
 | DELETE | `/api/v1/files/{fileId}`                             | `documents:delete` | Soft-delete a file                               |
 
 ### Lock Operations
@@ -678,17 +940,25 @@ The factory caches the storage instance and reuses it across requests. Call `Sto
 
 ## Key Files
 
-| File                                       | Purpose                                                                |
-| ------------------------------------------ | ---------------------------------------------------------------------- |
-| `src/lib/vault/services/FileService.ts`    | Core service: upload, download, checkout, checkin, versioning, listing |
-| `src/lib/vault/storage/types.ts`           | `VaultStorage` interface and configuration types                       |
-| `src/lib/vault/storage/local-storage.ts`   | Local filesystem storage implementation                                |
-| `src/lib/vault/storage/s3-storage.ts`      | S3-compatible storage implementation                                   |
-| `src/lib/vault/storage/storage-factory.ts` | Factory for creating storage instances from config                     |
-| `src/lib/vault/utils/file-utils.ts`        | File validation, hashing, categorization, path generation              |
-| `src/lib/db/schema/vault.ts`               | Database schema: `vault_files` and `vault_file_history` tables         |
-| `src/components/vault/FileList.tsx`        | UI component: file listing with lock status and actions                |
-| `src/components/vault/FileUploadZone.tsx`  | UI component: drag-and-drop file upload                                |
-| `src/routes/api/files/`                    | API route handlers for all file operations                             |
-| `src/routes/api/items/$itemId/files/`      | API route handlers for item-scoped file operations                     |
-| `docs/api/lock-hierarchy.md`               | Detailed documentation of all three lock types                         |
+| File                                                          | Purpose                                                                   |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `packages/core/src/lib/vault/services/FileService.ts`         | Core service: upload, download, checkout, checkin, versioning, listing    |
+| `packages/core/src/lib/vault/storage/types.ts`                | `VaultStorage` interface and configuration types                          |
+| `packages/core/src/lib/vault/storage/local-storage.ts`        | Local filesystem storage implementation                                   |
+| `packages/core/src/lib/vault/storage/s3-storage.ts`           | S3-compatible storage implementation                                      |
+| `packages/core/src/lib/vault/storage/storage-factory.ts`      | Factory for creating storage instances from config                        |
+| `packages/core/src/lib/vault/utils/file-utils.ts`             | File validation, hashing, category detection, path generation             |
+| `packages/core/src/lib/vault/file-categories.ts`              | Shared category vocabulary: labels, badges, filter options                |
+| `packages/core/src/lib/vault/preview.ts`                      | Shared preview allowlist: which formats render in-app, and as what        |
+| `packages/core/src/lib/db/schema/vault.ts`                    | Database schema: `vault_files` and `vault_file_history` tables            |
+| `packages/core/src/components/vault/FileList.tsx`             | UI component: file listing with lock status and actions                   |
+| `packages/core/src/components/vault/PdfViewer.tsx`            | UI component: pdf.js viewer (code-split; not exported from the barrel)    |
+| `packages/core/src/components/vault/FilePreview.tsx`          | UI component: fetches bytes and mounts the viewer for the format          |
+| `packages/core/src/components/vault/FilePreviewDialog.tsx`    | UI component: preview one file in a dialog, opened from `FileList`        |
+| `packages/core/src/components/vault/ItemFilePreviewPanel.tsx` | UI component: in-page preview of an item's files (Documents' Preview tab) |
+| `packages/core/src/components/vault/PdfAnnotationLayer.tsx`   | UI component: the markup surface over one rendered PDF page               |
+| `packages/core/src/components/vault/useFileMarkup.tsx`        | Markup state, mutations, and the comment/label prompt                     |
+| `packages/core/src/components/vault/FileCategoryMenu.tsx`     | UI component: category picker for correcting a file's category            |
+| `packages/core/src/components/vault/FileUploadZone.tsx`       | UI component: drag-and-drop file upload                                   |
+| `packages/core/src/server/routes/files.ts`                    | API route handlers for all file operations                                |
+| `packages/core/src/server/routes/items.ts`                    | API route handlers for item-scoped file operations                        |

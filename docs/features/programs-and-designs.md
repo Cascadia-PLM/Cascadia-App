@@ -61,13 +61,13 @@ Program codes are **system-wide unique**. The code format is enforced as `^[A-Z0
 
 ### Program CRUD
 
-| Operation                | Endpoint                   | Permission                                                          |
-| ------------------------ | -------------------------- | ------------------------------------------------------------------- |
-| List accessible programs | `GET /api/programs`        | Authenticated (returns only user's programs; Global Admin sees all) |
-| Create program           | `POST /api/programs`       | `programs:create` permission                                        |
-| Get program              | `GET /api/programs/:id`    | Program member or `programs:read` permission                        |
-| Update program           | `PUT /api/programs/:id`    | Program admin or `programs:update` permission                       |
-| Delete program           | `DELETE /api/programs/:id` | Program admin or `programs:delete` permission                       |
+| Operation                | Endpoint                      | Permission                                                          |
+| ------------------------ | ----------------------------- | ------------------------------------------------------------------- |
+| List accessible programs | `GET /api/v1/programs`        | Authenticated (returns only user's programs; Global Admin sees all) |
+| Create program           | `POST /api/v1/programs`       | `programs:create` permission                                        |
+| Get program              | `GET /api/v1/programs/:id`    | Program member or `programs:read` permission                        |
+| Update program           | `PUT /api/v1/programs/:id`    | Program admin or `programs:update` permission                       |
+| Delete program           | `DELETE /api/v1/programs/:id` | Program admin or `programs:delete` permission                       |
 
 When a program is created, the creator is automatically added as an **admin** member with full permissions.
 
@@ -121,12 +121,12 @@ Default values are set based on role (see the table above), but can be overridde
 
 ### Membership API
 
-| Operation     | Endpoint                                   | Who Can Do It             |
-| ------------- | ------------------------------------------ | ------------------------- |
-| List members  | `GET /api/programs/:id/members`            | Any program member        |
-| Add member    | `POST /api/programs/:id/members`           | Program `admin` or `lead` |
-| Update member | `PUT /api/programs/:id/members/:userId`    | Program `admin` only      |
-| Remove member | `DELETE /api/programs/:id/members/:userId` | Program `admin` only      |
+| Operation     | Endpoint                                      | Who Can Do It             |
+| ------------- | --------------------------------------------- | ------------------------- |
+| List members  | `GET /api/v1/programs/:id/members`            | Any program member        |
+| Add member    | `POST /api/v1/programs/:id/members`           | Program `admin` or `lead` |
+| Update member | `PUT /api/v1/programs/:id/members/:userId`    | Program `admin` only      |
+| Remove member | `DELETE /api/v1/programs/:id/members/:userId` | Program `admin` only      |
 
 **Safety rule:** The last admin cannot be removed from a program. Attempting to do so returns a validation error.
 
@@ -163,7 +163,7 @@ Check role + permission flags for specific operations
 
 ## Program Dashboard
 
-The program history graph endpoint (`GET /api/programs/:id/history/graph`) provides a visual commit history across all designs within a program. This powers the program-level history view, showing:
+The program history graph endpoint (`GET /api/v1/programs/:id/history/graph`) provides a visual commit history across all designs within a program. This powers the program-level history view, showing:
 
 - Commits across all designs in the program, organized by design column.
 - ECO branch activity, merge commits, and tag/baseline creation.
@@ -210,13 +210,13 @@ Designs are version containers that hold engineering items. Each design has its 
 
 ### Design CRUD
 
-| Operation      | Endpoint                  | Permission                                                          |
-| -------------- | ------------------------- | ------------------------------------------------------------------- |
-| List designs   | `GET /api/designs`        | Authenticated (filtered by program access)                          |
-| Create design  | `POST /api/designs`       | `canManageProducts` in target program, or `designs:create` globally |
-| Get design     | `GET /api/designs/:id`    | Program member or Global Admin                                      |
-| Update design  | `PUT /api/designs/:id`    | `canManageProducts` or `designs:update`                             |
-| Archive design | `DELETE /api/designs/:id` | `canManageProducts` or `designs:delete` (soft delete)               |
+| Operation      | Endpoint                     | Permission                                                          |
+| -------------- | ---------------------------- | ------------------------------------------------------------------- |
+| List designs   | `GET /api/v1/designs`        | Authenticated (filtered by program access)                          |
+| Create design  | `POST /api/v1/designs`       | `canManageProducts` in target program, or `designs:create` globally |
+| Get design     | `GET /api/v1/designs/:id`    | Program member or Global Admin                                      |
+| Update design  | `PUT /api/v1/designs/:id`    | `canManageProducts` or `designs:update`                             |
+| Archive design | `DELETE /api/v1/designs/:id` | `canManageProducts` or `designs:delete` (soft delete)               |
 
 **On creation**, Engineering, Library, and Manufacturing designs automatically get:
 
@@ -230,7 +230,7 @@ Designs are version containers that hold engineering items. Each design has its 
 
 ### Design Listing with Access Control
 
-The `GET /api/designs` endpoint returns designs filtered by the user's access:
+The `GET /api/v1/designs` endpoint returns designs filtered by the user's access:
 
 - **Global Admin**: Sees all non-archived designs.
 - **Regular user**: Sees designs from their programs, plus global libraries, plus unassigned designs.
@@ -251,12 +251,12 @@ Family designs are containers that group related Engineering designs. They follo
 
 ### Family API
 
-| Operation              | Endpoint                                       | Description                          |
-| ---------------------- | ---------------------------------------------- | ------------------------------------ |
-| Get available families | `GET /api/designs/families?programId=...`      | List families in a program           |
-| Get family members     | `GET /api/designs/:id/members`                 | List child designs of a family       |
-| Add design to family   | `POST /api/designs/:id/members`                | Set parentDesignId on a child design |
-| Remove from family     | `DELETE /api/designs/:id/members?designId=...` | Clear parentDesignId                 |
+| Operation              | Endpoint                                          | Description                          |
+| ---------------------- | ------------------------------------------------- | ------------------------------------ |
+| Get available families | `GET /api/v1/designs/families?programId=...`      | List families in a program           |
+| Get family members     | `GET /api/v1/designs/:id/members`                 | List child designs of a family       |
+| Add design to family   | `POST /api/v1/designs/:id/members`                | Set parentDesignId on a child design |
+| Remove from family     | `DELETE /api/v1/designs/:id/members?designId=...` | Clear parentDesignId                 |
 
 Family members are returned with enriched data: item count, release status (has any Released items), and latest tag name.
 
@@ -276,7 +276,7 @@ Each design has a **protection status** that determines how items can be modifie
 The status endpoint:
 
 ```
-GET /api/designs/:id/status
+GET /api/v1/designs/:id/status
 ```
 
 Returns:
@@ -322,11 +322,11 @@ Design-level statistics are available through several endpoints:
 
 ### Item Counts
 
-`GET /api/designs/:id/items` returns items with total count. Supports filtering by type, state, and search. Also supports historical views via `tag` or `commit` query parameters for point-in-time queries.
+`GET /api/v1/designs/:id/items` returns items with total count. Supports filtering by type, state, and search. Also supports historical views via `tag` or `commit` query parameters for point-in-time queries.
 
 ### ECO Activity
 
-`GET /api/designs/:id/ecos` lists Engineering Change Orders affecting the design. For each ECO, the response includes:
+`GET /api/v1/designs/:id/ecos` lists Engineering Change Orders affecting the design. For each ECO, the response includes:
 
 - ECO item number, name, and state.
 - Reason for change.
@@ -338,11 +338,11 @@ Supports filtering by ECO status (Draft, In Review, Approved, Released, etc.).
 
 ### Branch Listing
 
-`GET /api/designs/:id/branches` returns all branches for the design with optional `includeArchived` filter. Each branch includes its type, head/base commit IDs, and lock/archive status.
+`GET /api/v1/designs/:id/branches` returns all branches for the design with optional `includeArchived` filter. Each branch includes its type, head/base commit IDs, and lock/archive status.
 
 ### Tags and Baselines
 
-`GET /api/designs/:id/tags` lists named baselines for the design. Each tag points to a specific commit and has a type:
+`GET /api/v1/designs/:id/tags` lists named baselines for the design. Each tag points to a specific commit and has a type:
 
 | Tag Type      | Description                                   |
 | ------------- | --------------------------------------------- |
@@ -382,7 +382,7 @@ When `suffixItemNumbers: true`, cloned item numbers are suffixed with the target
 ### Clone API
 
 ```
-POST /api/designs/:id/clone
+POST /api/v1/designs/:id/clone
 ```
 
 Request body:
@@ -438,12 +438,12 @@ When an ECO is released, branch-specific references are merged:
 
 ### Cross-Design Reference API
 
-| Operation             | Endpoint                                                        | Method |
-| --------------------- | --------------------------------------------------------------- | ------ |
-| List references       | `GET /api/designs/:id/cross-references?branch=...`              | GET    |
-| Create reference      | `PUT /api/designs/:id/cross-references`                         | PUT    |
-| Remove reference      | `DELETE /api/designs/:id/cross-references?refId=...&branch=...` | DELETE |
-| Pull in as usage copy | `POST /api/designs/:id/cross-references`                        | POST   |
+| Operation             | Endpoint                                                           | Method |
+| --------------------- | ------------------------------------------------------------------ | ------ |
+| List references       | `GET /api/v1/designs/:id/cross-references?branch=...`              | GET    |
+| Create reference      | `PUT /api/v1/designs/:id/cross-references`                         | PUT    |
+| Remove reference      | `DELETE /api/v1/designs/:id/cross-references?refId=...&branch=...` | DELETE |
+| Pull in as usage copy | `POST /api/v1/designs/:id/cross-references`                        | POST   |
 
 **Creating a reference** validates that:
 
@@ -473,7 +473,7 @@ Cross-design references appear in the BOM tree as additional root nodes marked w
 The design structure endpoint returns the full hierarchical BOM tree for a design.
 
 ```
-GET /api/designs/:id/structure
+GET /api/v1/designs/:id/structure
 ```
 
 ### Query Parameters
@@ -562,7 +562,7 @@ With `expandExternal=true` (default), the structure endpoint:
 
 ## Related Documentation
 
-- [Change Orders](../../docs/user-guide/change-orders.md) -- ECO workflow details
-- [Versioning](../../docs/development/versioning.md) -- Branch, commit, and version resolution internals
+- [Change Orders](../api/change-orders.md) -- ECO workflow details
+- [Versioning](./versioning.md) -- Branch, commit, and version resolution internals
 - [Service Patterns](../../docs/development/service-patterns.md) -- How ProgramService and DesignService follow common patterns
-- [Permissions](../../docs/admin-guide/permissions.md) -- Role-based access control details
+- [Permissions](../admin/access-control.md) -- Role-based access control details

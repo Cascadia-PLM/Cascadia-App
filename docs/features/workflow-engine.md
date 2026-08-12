@@ -34,15 +34,15 @@ Both are stored in the same `workflow_definitions` table and share a common stru
 
 ### Key Principles
 
-- **All item state changes go through ECOs.** Parts, Documents, and Requirements cannot transition directly. Their states change only when an ECO's workflow transitions execute `transition_driven_item` actions.
+- **Item state changes are lifecycle-enforced by the server.** Driven types (Parts, Documents, Requirements) cannot transition directly — their states change only through ECO release. Free types (Issues, Tools, ...) transition through `POST /api/v1/items/:id/transition`, validated against their lifecycle's transitions. The generic item-update API rejects attempts to change `state`, `revision`, or `isCurrent` outright.
 - **Workflow definitions are JSON-based.** States, transitions, guards, and actions are stored as JSONB in PostgreSQL. No code changes are required to create new workflows.
-- **Guard evaluation is pluggable.** Three guard types are supported out of the box: `field_value`, `user_role`, and `approval_count`.
+- **Guard evaluation is pluggable.** Two guard types are supported out of the box: `field_value` and `user_role`. (Approval gating is not a guard — the transition path enforces it directly, from state approvers and the transition's `requiredCount`.)
 - **Flexible workflows** allow per-instance customization of states and transitions. The definition serves as a template that users can modify on each change order.
 
 ### Architecture
 
 ```
-src/lib/workflows/
+packages/core/src/lib/workflows/
   WorkflowService.ts          # CRUD, transitions, validation, lifecycle effects
   WorkflowApprovalService.ts  # Approval voting and tracking
   GuardEvaluator.ts           # Guard condition evaluation
@@ -50,10 +50,10 @@ src/lib/workflows/
   types.ts                    # TypeScript interfaces
   index.ts                    # Public exports
 
-src/lib/services/
+packages/core/src/lib/services/
   LifecycleService.ts         # Lifecycle-specific operations (phases, revisions)
 
-src/lib/types/
+packages/core/src/lib/types/
   lifecycle.ts                # Revision schemes, phases, change action mappings
 ```
 
@@ -63,11 +63,11 @@ src/lib/types/
 
 Every workflow/lifecycle definition has a `lifecycleType` that determines its behavior:
 
-| Lifecycle Type | Behavior                                                                                                                                      | Examples                         |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| **Free**       | Self-controlled with manual transitions. Users can transition states directly without an ECO.                                                 | Issues, Tasks, Work Instructions |
-| **Driven**     | ECO-controlled. Declares valid states only. State changes happen when a Driving lifecycle executes `transition_driven_item` actions.          | Parts, Documents, Requirements   |
-| **Driving**    | Controls Driven lifecycles. Has `transition_driven_item` actions on its transitions that move affected items through their Driven lifecycles. | ECO Workflow, Flexible ECO       |
+| Lifecycle Type | Behavior                                                                                                                      | Examples                         |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **Free**       | Self-controlled with manual transitions. Users can transition states directly without an ECO.                                 | Issues, Tasks, Work Instructions |
+| **Driven**     | ECO-controlled. Declares valid states plus `changeActionMappings` that the merge applies at change-order release.             | Parts, Documents, Requirements   |
+| **Driving**    | Change-order approval workflows. Completing one with a release runs the merge, which applies the Driven lifecycles' mappings. | ECO Workflow, Flexible ECO       |
 
 ### Relationship Between Types
 
@@ -77,11 +77,12 @@ Every workflow/lifecycle definition has a `lifecycleType` that determines its be
   Draft ──> In Review ──> Approved          Draft ──> Released ──> Superseded
                            │                            ^
                            │                            |
-                           └── transition_driven_item ──┘
-                               (Draft → Released)
+                           └── release merge applies ───┘
+                               changeActionMappings
+                               (release: Draft → Released)
 ```
 
-When an ECO transitions to "Approved", the `transition_driven_item` action on that transition automatically moves all affected parts from "Draft" to "Released".
+When an ECO completes in a `finalKind: 'release'` state, the merge applies each affected item's change action through its Driven lifecycle's `changeActionMappings` (release: Draft → Released, revise: old → Superseded / new → Released, obsolete: Released → Obsolete) and assigns revision letters. This is the **single mechanism** for ECO-driven state change — there are no per-transition item actions.
 
 ### Drivers Configuration
 
@@ -94,24 +95,42 @@ drivers: [LIFECYCLE_IDS.changeOrder, LIFECYCLE_IDS.flexibleChangeOrder]
 
 If no drivers are configured, any Driving lifecycle can act (permissive default).
 
+The allow-list is **enforced** (remediation WI-4.4):
+
+- `ChangeOrderService.addAffectedItem` rejects state-changing actions from an
+  unauthorized ECO at scope entry.
+- `ChangeOrderMergeService.merge` re-checks every state-changing affected item
+  before releasing, on both the branch and affected-items paths.
+- The transition-validation preview reports driver violations up front.
+- Saving a definition validates that every listed driver ID references an
+  existing **Driving** definition.
+
 ---
 
 ## Lifecycle Management
 
 ### State Definitions
 
+**State identity is the `id`, everywhere** (remediation WI-5.1/5.2): it is
+what the engine matches on, what `items.state`, `workflow_instances.
+current_state`, and `workflow_history` store, and what
+`changeActionMappings` reference — definition save rejects a mapping that
+references anything else (`MAPPING_UNKNOWN_STATE`). The `name` is display
+only and may differ from the `id` freely.
+
 Each state in a lifecycle has these properties:
 
-| Property      | Type      | Description                                                             |
-| ------------- | --------- | ----------------------------------------------------------------------- |
-| `id`          | `string`  | Unique identifier within the definition (e.g., `"Draft"`, `"InReview"`) |
-| `name`        | `string`  | Display name (e.g., `"In Review"`)                                      |
-| `color`       | `string`  | Visual indicator color (e.g., `"gray"`, `"green"`, `"red"`)             |
-| `description` | `string`  | Human-readable description of this state                                |
-| `isInitial`   | `boolean` | Whether this is the starting state (exactly one per definition)         |
-| `isFinal`     | `boolean` | Whether this is a terminal state (zero or more per definition)          |
-| `phaseId`     | `string`  | Optional lifecycle phase assignment                                     |
-| `position`    | `{x, y}`  | Position for visual layout in the workflow editor                       |
+| Property      | Type                    | Description                                                                                                                                                                                                                                                                                                  |
+| ------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`          | `string`                | **The state's identity** — unique within the definition, stored and matched by the engine (e.g., `"Draft"`, `"InReview"`)                                                                                                                                                                                    |
+| `name`        | `string`                | Display name, never load-bearing (e.g., `"In Review"`)                                                                                                                                                                                                                                                       |
+| `color`       | `string`                | Visual indicator color (e.g., `"gray"`, `"green"`, `"red"`)                                                                                                                                                                                                                                                  |
+| `description` | `string`                | Human-readable description of this state                                                                                                                                                                                                                                                                     |
+| `isInitial`   | `boolean`               | Whether this is the starting state (exactly one per definition)                                                                                                                                                                                                                                              |
+| `isFinal`     | `boolean`               | Whether this is a terminal state (zero or more per definition)                                                                                                                                                                                                                                               |
+| `finalKind`   | `'release' \| 'cancel'` | **Required on final states of Driving lifecycles.** Declares what completing the workflow here means: `release` merges ECO branches and assigns revisions; `cancel` archives branches without merging. The engine fails closed if it is missing — release-vs-cancel is never inferred from the state's name. |
+| `phaseId`     | `string`                | Optional lifecycle phase assignment                                                                                                                                                                                                                                                                          |
+| `position`    | `{x, y}`                | Position for visual layout in the workflow editor                                                                                                                                                                                                                                                            |
 
 ### Standard State Colors
 
@@ -131,23 +150,61 @@ emerald   Verified
 
 Transitions connect states and define how an item moves between them:
 
-| Property              | Type                  | Description                                |
-| --------------------- | --------------------- | ------------------------------------------ |
-| `id`                  | `string`              | Unique identifier                          |
-| `name`                | `string`              | Display name (e.g., `"Submit for Review"`) |
-| `fromStateId`         | `string`              | Source state ID                            |
-| `toStateId`           | `string`              | Target state ID                            |
-| `guards`              | `TransitionGuard[]`   | Conditions that must pass                  |
-| `actions`             | `TransitionAction[]`  | Side effects to execute                    |
-| `allowedRoles`        | `string[]`            | Role-based access control                  |
-| `approvalRequirement` | `ApprovalRequirement` | Approval voting requirements               |
-| `lifecycleEffects`    | `LifecycleEffect[]`   | ECO-to-item lifecycle coordination         |
+| Property              | Type                 | Description                                    |
+| --------------------- | -------------------- | ---------------------------------------------- |
+| `id`                  | `string`             | Unique identifier                              |
+| `name`                | `string`             | Display name (e.g., `"Submit for Review"`)     |
+| `fromStateId`         | `string`             | Source state ID                                |
+| `toStateId`           | `string`             | Target state ID                                |
+| `guards`              | `TransitionGuard[]`  | Conditions that must pass                      |
+| `actions`             | `TransitionAction[]` | Side effects to execute                        |
+| `approvalRequirement` | `{ requiredCount }`  | Minimum distinct approvals at the source state |
+
+Approvals gate a transition two ways, and both must pass:
+
+- **Named state approvers** — the users or roles configured on the source state
+  (see Approval System below). Every _required_ approver needs an active
+  approved vote.
+- **`approvalRequirement.requiredCount`** — a minimum number of distinct active
+  approved votes at the source state, from anyone. Set it in the lifecycle
+  editor's transition panel ("Required approvals"). `0` (the default) means
+  named approvers alone decide; with no named approvers either, anyone holding
+  the permission may transition.
+
+The formerly-stored `allowedRoles` field was removed in remediation WI-4.3 and
+has not returned — role gating is a `user_role` guard. `requiredCount` was
+removed at the same time and restored afterwards: it had only ever been
+enforced on flexible instance transitions, which left "require two approvals"
+unanswerable for the fixed ECO workflow most change orders use.
 
 ### Initial and Final States
 
 - Every definition must have exactly **one** initial state. New items start here.
-- Final states are optional but recommended. When a workflow instance reaches a final state, the instance is marked as completed (`completedAt` is set).
-- For ECO workflows, reaching a final state automatically triggers `ChangeOrderService.close()` which merges branches and assigns revisions.
+- Final states are optional but recommended. When a workflow instance reaches a final state, the instance is marked as completed (`completedAt` is set). Completed instances are terminal — they cannot be transitioned again.
+- On Driving lifecycles every final state must declare `finalKind` (`release` or `cancel`); definitions and flexible-instance edits are rejected without it, and a transition into a final state that somehow lacks it fails closed.
+- For change-order workflows, transitioning into a final state runs the release orchestration in `ChangeOrderService.executeWorkflowTransition()` — the single entry point shared by the API route, the AI tools, and `submit`/`approve`/`reject`:
+  1. An exclusive **release claim** is taken on the instance (compare-and-swap). While held, all other transitions are blocked, so a release cannot double-fire.
+  2. The release (`close()` → merge, assign revisions) or cancellation (archive branches) runs **before** any workflow state is written.
+  3. Only if that work succeeds does the workflow actually enter the final state, in a compare-and-swap write that also clears the claim.
+
+  If the merge fails, the claim is released and the ECO remains in its pre-final state with the error surfaced — retrying the same transition after fixing the problem just works. The workflow can never be "Approved" without the merge having happened.
+
+### Free Lifecycle Transitions
+
+Free-lifecycle items (Issues, Tools, ...) transition through a dedicated endpoint — the only sanctioned write path for their state:
+
+```
+GET  /api/v1/items/:id/transitions   # transitions valid from the current state
+POST /api/v1/items/:id/transition    # { toState, comments? } — id or display name
+```
+
+Handled by `LifecycleService.transitionFreeItem()`:
+
+- **Lazy workflow instance.** The item gets a workflow instance on its first transition, so history, guards, approvals, and the hardened transition engine all apply. If the item's stored state predates the endpoint and diverges from the fresh instance, the instance **adopts** it first (recorded in history as `state_adopted`).
+- **ECO-controlled types are refused** with a clear error — Parts and Documents change state at change-order release, never here. Change orders are refused too (they have their own workflow endpoint).
+- **Reopening is allowed.** Completed-instance terminality applies to Driving lifecycles only; a Free lifecycle that defines a transition out of a final state (Closed → Open) can reopen, clearing `completedAt`.
+
+The Issue detail page's transition buttons and the AI `transition_item_state` tool both go through this path.
 
 ### Validation Rules
 
@@ -172,17 +229,17 @@ Each item type is assigned a lifecycle definition via the `item_type_configs` ta
 
 ### Default Lifecycle Assignments
 
-| Item Type       | Lifecycle                    | Type    | Lifecycle ID                    |
-| --------------- | ---------------------------- | ------- | ------------------------------- |
-| Part            | Part - Default Lifecycle     | Driven  | `LIFECYCLE_IDS.part`            |
-| Document        | Document - Default Lifecycle | Driven  | `LIFECYCLE_IDS.document`        |
-| Requirement     | (uses same pattern as Part)  | Driven  | `LIFECYCLE_IDS.requirement`     |
-| ChangeOrder     | ECO - Default Workflow       | Driving | `LIFECYCLE_IDS.changeOrder`     |
-| Issue           | Issue - Default Lifecycle    | Free    | `LIFECYCLE_IDS.issue`           |
-| Task            | (Free lifecycle)             | Free    | `LIFECYCLE_IDS.task`            |
-| WorkInstruction | (Free lifecycle)             | Free    | `LIFECYCLE_IDS.workInstruction` |
+| Item Type       | Lifecycle                       | Type    | Lifecycle ID                    |
+| --------------- | ------------------------------- | ------- | ------------------------------- |
+| Part            | Part - Default Lifecycle        | Driven  | `LIFECYCLE_IDS.part`            |
+| Document        | Document - Default Lifecycle    | Driven  | `LIFECYCLE_IDS.document`        |
+| Requirement     | Requirement - Default Lifecycle | Driven  | `LIFECYCLE_IDS.requirement`     |
+| ChangeOrder     | ECO - Default Workflow          | Driving | `LIFECYCLE_IDS.changeOrder`     |
+| Issue           | Issue - Default Lifecycle       | Free    | `LIFECYCLE_IDS.issue`           |
+| Task            | (Free lifecycle)                | Free    | `LIFECYCLE_IDS.task`            |
+| WorkInstruction | (Free lifecycle)                | Free    | `LIFECYCLE_IDS.workInstruction` |
 
-The `LIFECYCLE_IDS` constants are defined in `src/lib/items/lifecycle-ids.ts` as well-known UUIDs to ensure consistent linkage between seed scripts and code.
+The `LIFECYCLE_IDS` constants are defined in `packages/core/src/lib/items/lifecycle-ids.ts` as well-known UUIDs to ensure consistent linkage between seed scripts and code.
 
 ### Changing a Lifecycle Assignment
 
@@ -325,7 +382,9 @@ The `definition` column stores the complete workflow configuration:
 
 ```typescript
 {
-  definitionType: "lifecycle" | "workflow",   // Legacy field
+  // (Rows written before the unified lifecycle model may still carry a
+  // legacy definitionType key; only normalize.ts reads it. Nothing writes
+  // it anymore.)
   lifecycleType: "Free" | "Driven" | "Driving",
   description: "Human-readable description",
   applicableItemTypes: ["Part", "Document"],
@@ -382,17 +441,9 @@ Guards are conditions evaluated before a transition is allowed:
 }
 ```
 
-**Approval Count Guard** (`approval_count`)
-
-```typescript
-{
-  type: "approval_count",
-  config: {
-    requiredCount: 2,
-    requiredRoles: ["Reviewer"]    // Optional role filter
-  }
-}
-```
+(An `approval_count` guard type used to exist; it was removed in remediation
+WI-4.3 because it was dead three independent ways. Approval gating is state
+approvers plus the transition's `requiredCount`.)
 
 ### Guard Presets
 
@@ -404,34 +455,22 @@ import { GuardPresets } from '@/lib/workflows'
 GuardPresets.requiredField('reasonForChange') // Field must not be empty
 GuardPresets.fieldEquals('priority', 'High') // Field must equal value
 GuardPresets.hasRole(['Engineer', 'Manager']) // User must have role
-GuardPresets.minApprovals(2, ['Reviewer']) // Minimum approval count
 ```
 
 ### Action Types
 
 Actions execute side effects during a transition:
 
-| Type                     | Execute On   | Description                                          |
-| ------------------------ | ------------ | ---------------------------------------------------- |
-| `update_field`           | before/after | Update a field on the item                           |
-| `send_notification`      | before/after | Send notification to users or roles                  |
-| `create_task`            | before/after | Create a task (not yet implemented)                  |
-| `transition_driven_item` | after        | Transition affected items on their Driven lifecycles |
+| Type                | Execute On   | Description                                                                                                                                                                     |
+| ------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `update_field`      | before/after | Update an allowlisted field on the item (`name` only — lifecycle-controlled and type-specific columns are not writable from configuration; enforced at save and execution time) |
+| `send_notification` | before/after | Send notification to users or roles                                                                                                                                             |
 
-The `transition_driven_item` action is the key mechanism by which ECO workflows drive item state changes:
+(A `create_task` action type used to be offered; it only ever threw
+`NotImplementedError` and was removed in remediation WI-4.3. Saving a
+definition with an unknown guard or action type is rejected.)
 
-```typescript
-{
-  type: "transition_driven_item",
-  executeOn: "after",
-  config: {
-    drivenLifecycleId: "00000000-0000-4000-8000-000000000100",  // Part lifecycle
-    fromStateId: "Draft",
-    targetStateId: "Released",
-    validateGates: true
-  }
-}
-```
+Actions are side effects of the workflow itself (notifications, item renames). They never write affected-item state: ECO-driven state change happens exclusively through `changeActionMappings` at release, applied by the merge. (The former `transition_driven_item` action type and `lifecycleEffects` were removed in remediation Phase 3.)
 
 ---
 
@@ -516,6 +555,21 @@ Validation ensures:
 - All transitions reference valid states.
 - Current state has at least one outgoing transition (unless it is final).
 - Cannot modify a completed workflow.
+
+### Instance-Level Approvals (WI-4.2)
+
+Custom states added on a flexible instance carry real, enforced approvals:
+
+- **Instance approvers** live in `workflow_instance_approvers`, managed via
+  `GET/PUT /api/v1/change-orders/:id/workflow/states/:stateId/approvers`
+  (editable while the workflow is flexible and not completed — the same gate
+  as structure edits). Gating uses the union of definition-level and
+  instance-level approvers.
+- **Per-transition minimum count**: instance transitions carry
+  `approvalRequirement: { requiredCount: n }`, exactly as definition-level
+  transitions do — the transition is blocked until `n` distinct users have an
+  active approved vote at the source state. With no named approvers, anyone may
+  vote (once). Both gates compose.
 
 ### Effective Structure Resolution
 
@@ -605,15 +659,33 @@ workflow_approval_votes
   vote                  VARCHAR     "approved" or "rejected"
   comments              TEXT        Vote comments
   votedAt               TIMESTAMP
+  supersededAt          TIMESTAMP   Set when a rework transition invalidated this vote
+
+workflow_instance_approvers
+  id                    UUID
+  workflowInstanceId    UUID        FK to workflow_instances
+  stateId               VARCHAR     State on the instance's effective structure
+  approverType          VARCHAR     "user" or "role"
+  approverId            UUID        FK to users.id or roles.id
+  isRequired            BOOLEAN     Required approvers gate transitions
+  createdAt             TIMESTAMP
+  createdBy             UUID        FK to users
 ```
 
 ### Approval Flow
 
-1. Approvers are configured on workflow definition states (Admin UI).
-2. When a workflow instance enters a state with approvers, they can submit votes.
-3. The system checks `WorkflowApprovalService.canUserApprove()` before accepting votes.
-4. When all required approvers have approved, `areApprovalsComplete()` returns `met: true`.
-5. Transitions check approval status as part of guard evaluation.
+1. Approvers are configured on workflow definition states (Admin UI), and — for
+   flexible workflows — on the instance's own states, including custom ones
+   (`PUT /api/v1/change-orders/:id/workflow/states/:stateId/approvers`).
+2. Gating always reads the **union** of definition-level and instance-level
+   approvers; duplicate entries collapse, with required winning.
+3. When a workflow instance enters a state with approvers, they can submit votes.
+4. The system checks `WorkflowApprovalService.canUserApprove()` before accepting votes.
+5. When all required approvers have approved, `areApprovalsComplete()` returns `met: true`.
+6. Transitions check approval status as part of guard evaluation. Instance-level
+   transitions additionally enforce their own `approvalRequirement.requiredCount`
+   — a minimum number of distinct active approved votes at the source state,
+   from anyone; it composes with named approvers.
 
 ### Approval Status Checking
 
@@ -623,15 +695,48 @@ const status = await WorkflowApprovalService.areApprovalsComplete(
   instanceId,
   stateId,
 )
-// Returns: { met: boolean, required: number, current: number, pending: [...] }
+// Returns: { met, required, current, pending: [...], totalApproved }
+// totalApproved = distinct users with an active approved vote (feeds the
+// instance-transition requiredCount gate)
 ```
 
 ### Voting Rules
 
-- A user can only vote once per state per instance.
-- If no approvers are defined for a state, anyone can approve.
-- When a workflow transitions backward, approvals for forward states are cleared.
+- A user can only vote once per state per instance — counting **active** votes;
+  a superseded vote means they may, and must, vote again.
+- If no approvers are defined for a state, anyone can approve (once). This is
+  how the `requiredCount`-only gate collects votes.
+- When a workflow transitions **backward** (the target state can reach the
+  source again), all active votes on the re-traversable segment are
+  **superseded** (`supersededAt` set) — the second pass requires fresh
+  approvals. Votes are never deleted: the [Advanced
+  Auditing](./advanced-auditing.md) trail must show they existed and were
+  superseded.
 - Users can approve as themselves (direct approver) or on behalf of a role they hold.
+
+### Digital Signatures (Advanced Auditing package)
+
+On instances licensed for the [Advanced Auditing](./advanced-auditing.md)
+package, **every approval vote must be digitally signed**. The requirement is
+enforced inside `WorkflowApprovalService.submitApproval()` — the single path all
+approval routes take — so there is no unsigned route to an approval, and the
+vote and its signature are written in one transaction.
+
+What changes when the package is enabled:
+
+| Behavior          | Without the package         | With the package                                                                         |
+| ----------------- | --------------------------- | ---------------------------------------------------------------------------------------- |
+| Submitting a vote | Session authentication only | Requires a CAC/PIV certificate on the connection, or account password re-authentication  |
+| Vote record       | `workflow_approval_votes`   | Same, plus a `digital_signatures` row hash-chained to the previous signature             |
+| Approval history  | Votes and comments          | Plus a signature manifest: printed name, meaning, credential, certificate evidence, time |
+
+Approval endpoints accept two extra body fields in this mode — `password` (only
+on the password path) and an optional `signatureMeaning` override. The signature
+snapshot binds to the item as it stood at signing time, so an auditor sees the
+number, revision, and state the signer actually saw.
+
+Unlicensed instances are unaffected: `submitApproval()` writes the vote exactly
+as documented above.
 
 ---
 
@@ -643,7 +748,7 @@ Every transition supports an optional `comments` field. When a user triggers a t
 
 ```typescript
 // Via the API
-POST /api/change-orders/:id/workflow/transition
+POST /api/v1/change-orders/:id/workflow/transition
 {
   "toStateId": "InReview",
   "comments": "Ready for engineering review. All BOM changes validated."
@@ -736,6 +841,10 @@ A standard PLM lifecycle for parts. All state changes go through ECOs.
 
 Identical structure to the Part lifecycle but assigned to Documents. Same states, same change action mappings.
 
+### Requirement - Default Lifecycle (Driven)
+
+Identical structure to the Part lifecycle but assigned to Requirements. Same states, same change action mappings — requirements are versioned items that live on Designs, are checked out to ECO branches, and receive revision letters at merge.
+
 ### ECO - Default Workflow (Driving, Strict)
 
 A simple three-state approval workflow for Engineering Change Orders.
@@ -752,16 +861,12 @@ A simple three-state approval workflow for Engineering Change Orders.
 
 **Transitions:**
 
-| Transition        | From     | To       | Actions                                                              |
-| ----------------- | -------- | -------- | -------------------------------------------------------------------- |
-| Submit for Review | Draft    | InReview | (none)                                                               |
-| Approve           | InReview | Approved | Release Parts (Draft->Released), Release Documents (Draft->Released) |
+| Transition        | From     | To       |
+| ----------------- | -------- | -------- |
+| Submit for Review | Draft    | InReview |
+| Approve           | InReview | Approved |
 
-When "Approve" is executed:
-
-1. The workflow transitions to the "Approved" final state.
-2. `transition_driven_item` actions release all affected Parts and Documents from Draft to Released.
-3. Because "Approved" is a final state, `ChangeOrderService.close()` runs automatically, merging the ECO branch to main and assigning revision letters.
+When "Approve" is executed, "Approved" is a final state with `finalKind: 'release'`, so the release orchestration runs: the merge processes the ECO (branch merge or affected-items implementation), applying each item's `changeActionMappings` (Draft → Released) and assigning revision letters — and only then does the workflow actually enter Approved.
 
 ### Dynamic Change Order (Driving, Flexible)
 
@@ -776,7 +881,7 @@ A minimal two-state template for ad-hoc change orders. Users customize the workf
     Complete
 ```
 
-Users can add intermediate states (e.g., "Engineering Review", "Quality Review") and transitions on each instance. The "Complete" transition includes the same `transition_driven_item` actions as the default ECO workflow.
+Users can add intermediate states (e.g., "Engineering Review", "Quality Review") and transitions on each instance. "Complete" is a final state with `finalKind: 'release'`, so completing it runs the same merge-driven release as the default ECO workflow.
 
 ### Issue - Default Lifecycle (Free)
 
@@ -822,8 +927,8 @@ A self-controlled lifecycle for issue tracking. Users can transition states dire
 
 ### Workflow Definitions
 
-| Method   | Endpoint                      | Description                                                                  |
-| -------- | ----------------------------- | ---------------------------------------------------------------------------- |
+| Method   | Endpoint                         | Description                                                                  |
+| -------- | -------------------------------- | ---------------------------------------------------------------------------- |
 | `GET`    | `/api/v1/workflows`              | List all definitions (supports `?isActive=true&type=lifecycle`)              |
 | `POST`   | `/api/v1/workflows`              | Create a new definition                                                      |
 | `GET`    | `/api/v1/workflows/:id`          | Get a definition by ID                                                       |
@@ -833,8 +938,8 @@ A self-controlled lifecycle for issue tracking. Users can transition states dire
 
 ### Workflow Approvers
 
-| Method   | Endpoint                                                   | Description                              |
-| -------- | ---------------------------------------------------------- | ---------------------------------------- |
+| Method   | Endpoint                                                      | Description                              |
+| -------- | ------------------------------------------------------------- | ---------------------------------------- |
 | `GET`    | `/api/v1/workflows/:id/approvers`                             | Get all state approvers for a definition |
 | `GET`    | `/api/v1/workflows/:id/states/:stateId/approvers`             | Get approvers for a specific state       |
 | `PUT`    | `/api/v1/workflows/:id/states/:stateId/approvers`             | Replace all approvers for a state        |
@@ -844,8 +949,8 @@ A self-controlled lifecycle for issue tracking. Users can transition states dire
 
 ### Change Order Workflow
 
-| Method | Endpoint                                              | Description                              |
-| ------ | ----------------------------------------------------- | ---------------------------------------- |
+| Method | Endpoint                                                 | Description                              |
+| ------ | -------------------------------------------------------- | ---------------------------------------- |
 | `GET`  | `/api/v1/change-orders/:id/workflow`                     | Get workflow instance for a change order |
 | `POST` | `/api/v1/change-orders/:id/workflow`                     | Start a workflow for a change order      |
 | `GET`  | `/api/v1/change-orders/:id/workflow/transition`          | Get available transitions                |

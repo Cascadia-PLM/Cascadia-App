@@ -4,12 +4,12 @@ The Cascadia HTTP API is mounted under `/api/v1/` and described by an OpenAPI 3.
 
 ## Where to find the contract
 
-| Surface             | Path                                | Notes                                                                 |
-| ------------------- | ----------------------------------- | --------------------------------------------------------------------- |
-| Live spec           | `GET /openapi.json`                 | Generated from route metadata on every request — never stale          |
-| Live docs UI        | `GET /api/docs`                     | [Scalar](https://scalar.com/) — try requests interactively            |
-| Frozen v1 contract  | `docs/api/openapi.v1.json`          | Snapshot committed to this repo; the authoritative v1 contract        |
-| Generation script   | `scripts/snapshot-openapi.ts`       | `npm run openapi:snapshot` rewrites the snapshot from the live app    |
+| Surface            | Path                          | Notes                                                              |
+| ------------------ | ----------------------------- | ------------------------------------------------------------------ |
+| Live spec          | `GET /openapi.json`           | Generated from route metadata on every request — never stale       |
+| Live docs UI       | `GET /api/docs`               | [Scalar](https://scalar.com/) — try requests interactively         |
+| Frozen v1 contract | `docs/api/openapi.v1.json`    | Snapshot committed to this repo; the authoritative v1 contract     |
+| Generation script  | `scripts/snapshot-openapi.ts` | `npm run openapi:snapshot` rewrites the snapshot from the live app |
 
 ## Versioning policy
 
@@ -19,7 +19,7 @@ The Cascadia HTTP API is mounted under `/api/v1/` and described by an OpenAPI 3.
 
 ## How the spec is generated
 
-Every route module in `src/server/routes/` declares a default tag at the top of the file:
+Every route module in `packages/core/src/server/routes/` declares a default tag at the top of the file:
 
 ```typescript
 import { tagged } from '../adapter'
@@ -51,7 +51,7 @@ app.get(
 )
 ```
 
-The shared error envelope (400/401/403/404/500) is added automatically by `metadataToSpec` in `src/lib/api/openapi-helpers.ts`. Success payloads are wrapped in the standard `{ data: ... }` envelope.
+The shared error envelope (400/401/403/404/500) is added automatically by `metadataToSpec` in `packages/core/src/lib/api/openapi-helpers.ts`. Success payloads are wrapped in the standard `{ data: ... }` envelope.
 
 ## CI gate
 

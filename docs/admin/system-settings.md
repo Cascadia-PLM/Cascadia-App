@@ -34,7 +34,7 @@ Cascadia uses a hybrid code-first + runtime configuration model. Item types (Par
 #### List all item type configurations
 
 ```
-GET /api/admin/item-type-configs
+GET /api/v1/admin/item-type-configs
 ```
 
 Returns every registered item type with its code definition, runtime override (if any), and the merged result.
@@ -61,7 +61,7 @@ Returns every registered item type with its code definition, runtime override (i
 #### Create or update a runtime override
 
 ```
-POST /api/admin/item-type-configs
+POST /api/v1/admin/item-type-configs
 Content-Type: application/json
 
 {
@@ -86,13 +86,13 @@ Returns `201` for a new configuration or `200` for an update.
 #### Delete a runtime override (revert to code defaults)
 
 ```
-DELETE /api/admin/item-type-configs/:itemType
+DELETE /api/v1/admin/item-type-configs/:itemType
 ```
 
 #### Reload all configurations
 
 ```
-POST /api/admin/reload-config
+POST /api/v1/admin/reload-config
 ```
 
 Forces all instances to reload runtime configurations from the database. Use this after direct database changes or in multi-instance deployments.
@@ -122,8 +122,6 @@ Runtime configurations are stored in `item_type_configs`:
 | `modified_by` | UUID        | User who last modified                  |
 | `modified_at` | TIMESTAMPTZ | Last modification time                  |
 | `created_at`  | TIMESTAMPTZ | Creation time                           |
-
-For complete documentation, see `docs/runtime-configuration.md`.
 
 ## Lifecycle Configuration
 
@@ -228,7 +226,7 @@ Cascadia supports AI-assisted operations with configurable providers. Settings a
 
 ### Configuring AI
 
-**API endpoint**: `GET /api/admin/ai-settings`
+**API endpoint**: `GET /api/v1/admin/ai-settings`
 
 Returns the current global AI configuration and indicates which environment variables are set:
 
@@ -241,7 +239,7 @@ Returns the current global AI configuration and indicates which environment vari
       "config": {
         "provider": "anthropic",
         "apiKey": "sk-ant-a...1234",
-        "model": "claude-sonnet-4-20250514"
+        "model": "claude-sonnet-5"
       }
     },
     "envVars": {
@@ -254,7 +252,7 @@ Returns the current global AI configuration and indicates which environment vari
 
 API keys are masked in responses (first 8 and last 4 characters shown).
 
-**API endpoint**: `POST /api/admin/ai-settings`
+**API endpoint**: `POST /api/v1/admin/ai-settings`
 
 ```json
 {
@@ -263,7 +261,7 @@ API keys are masked in responses (first 8 and last 4 characters shown).
   "config": {
     "provider": "anthropic",
     "apiKey": "sk-ant-api-key-here",
-    "model": "claude-sonnet-4-20250514",
+    "model": "claude-sonnet-5",
     "baseURL": "https://api.anthropic.com"
   }
 }
@@ -284,7 +282,7 @@ The `ai_settings` table stores global settings (where `program_id` is null) as w
 
 ### Testing AI Configuration
 
-**API endpoint**: `POST /api/admin/ai-settings/test`
+**API endpoint**: `POST /api/v1/admin/ai-settings/test`
 
 Tests the configured AI provider by sending a simple request and verifying connectivity.
 
@@ -294,7 +292,7 @@ The vault is Cascadia's file storage system for CAD files, documents, and other 
 
 ### Viewing Vault Configuration
 
-**API endpoint**: `GET /api/admin/vault-config`
+**API endpoint**: `GET /api/v1/admin/vault-config`
 
 Returns the effective vault configuration with source tracking (which values come from environment variables vs. database settings):
 
@@ -345,6 +343,57 @@ All S3 settings are configured via environment variables:
 | `S3_ENDPOINT`          | No       | Custom endpoint (for MinIO, etc.) |
 | `S3_FORCE_PATH_STYLE`  | No       | Use path-style URLs (for MinIO)   |
 
+## Licensed Packages
+
+Some Cascadia functionality is **separately licensed**. The `/admin` page lists
+every optional package the build knows about and whether this instance holds it.
+
+The listing is **read-only, by design**. Entitlement comes from the
+`CASCADIA_PACKAGES` environment variable, read once at process start — there is
+no in-app toggle, so an administrator cannot enable a package the organization
+has not purchased. Enabling one is a deployment change, not a settings change.
+
+```bash
+# Deployment manifest / .env
+CASCADIA_PACKAGES=advanced-auditing
+```
+
+### API Endpoint
+
+```
+GET /api/v1/packages
+```
+
+Returns every catalog package with its `enabled` state, name, description, and
+feature list. Requires authentication; no special role.
+
+```json
+{
+  "data": {
+    "packages": [
+      {
+        "id": "advanced-auditing",
+        "name": "Advanced Auditing",
+        "description": "Regulated-industry audit controls: signed approvals with a tamper-evident audit trail.",
+        "features": ["Digital signature collection on every workflow approval"],
+        "enabled": true
+      }
+    ]
+  }
+}
+```
+
+### Available Packages
+
+| Package             | Adds                                                                                                           |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `advanced-auditing` | CAC/PIV digital signatures on workflow approvals, certificate enrollment, hash-chained append-only audit trail |
+
+Each package has its own configuration and administration guidance — see
+[Advanced Auditing](../features/advanced-auditing.md).
+
+---
+
 ## General Settings
 
 The `settings` table provides a key-value store for application-wide configuration. Each setting has a key, an optional text value, an optional JSON value, and audit fields.
@@ -366,19 +415,19 @@ The `settings` table provides a key-value store for application-wide configurati
 #### Get all settings
 
 ```
-GET /api/admin/settings
+GET /api/v1/admin/settings
 ```
 
 #### Get a single setting
 
 ```
-GET /api/admin/settings?key=vault_root
+GET /api/v1/admin/settings?key=vault_root
 ```
 
 #### Create or update a setting
 
 ```
-POST /api/admin/settings
+POST /api/v1/admin/settings
 Content-Type: application/json
 
 {
@@ -404,15 +453,15 @@ For structured values, use `jsonValue` instead of `value`:
 #### Delete a setting
 
 ```
-DELETE /api/admin/settings?key=vault_root
+DELETE /api/v1/admin/settings?key=vault_root
 ```
 
 ### Thread Cache Administration
 
 The thread cache stores precomputed data for performance. Admin endpoints are available for monitoring and maintenance:
 
-| Endpoint                          | Method | Description              |
-| --------------------------------- | ------ | ------------------------ |
+| Endpoint                             | Method | Description              |
+| ------------------------------------ | ------ | ------------------------ |
 | `/api/v1/admin/thread-cache/stats`   | GET    | View cache statistics    |
 | `/api/v1/admin/thread-cache/warm`    | POST   | Warm the cache           |
 | `/api/v1/admin/thread-cache/clear`   | POST   | Clear all cached entries |

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
 /**
  * Tool Seed Script
  *
@@ -21,10 +24,10 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import { and, eq, inArray, sql } from 'drizzle-orm'
-import { db } from '../src/lib/db/index.ts'
-import { users } from '../src/lib/db/schema/users.ts'
-import { items, tools } from '../src/lib/db/schema/items.ts'
-import { numberSequences } from '../src/lib/db/schema/numbering.ts'
+import { db } from '../packages/core/src/lib/db/index.ts'
+import { users } from '../packages/core/src/lib/db/schema/users.ts'
+import { items, tools } from '../packages/core/src/lib/db/schema/items.ts'
+import { numberSequences } from '../packages/core/src/lib/db/schema/numbering.ts'
 
 // ============================================================================
 // Config
@@ -32,7 +35,7 @@ import { numberSequences } from '../src/lib/db/schema/numbering.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
-const DATA_FILE = join(REPO_ROOT, 'test-data', 'tools.json')
+const DATA_FILE = join(REPO_ROOT, 'packages', 'core', 'test-data', 'tools.json')
 
 /** Mirrors the `Tool` interface in src/lib/items/types/tool.ts */
 interface ToolSeedRow {

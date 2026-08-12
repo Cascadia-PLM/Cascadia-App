@@ -4,16 +4,16 @@ Bulk data import endpoints for creating items from external sources (CSV, XLSX, 
 
 ## Overview
 
-| Endpoint                          | Method | Auth          | Description                           |
-| --------------------------------- | ------ | ------------- | ------------------------------------- |
-| `/api/import/parts`               | POST   | Auth required | Bulk import parts (with optional BOM) |
-| `/api/import/documents`           | POST   | Auth required | Bulk import documents                 |
-| `/api/import/issues`              | POST   | Auth required | Bulk import issues                    |
-| `/api/import/templates/parts`     | GET    | Public        | Download parts CSV template           |
-| `/api/import/templates/documents` | GET    | Public        | Download documents CSV template       |
-| `/api/import/templates/issues`    | GET    | Public        | Download issues CSV template          |
+| Endpoint                             | Method | Auth          | Description                           |
+| ------------------------------------ | ------ | ------------- | ------------------------------------- |
+| `/api/v1/import/parts`               | POST   | Auth required | Bulk import parts (with optional BOM) |
+| `/api/v1/import/documents`           | POST   | Auth required | Bulk import documents                 |
+| `/api/v1/import/issues`              | POST   | Auth required | Bulk import issues                    |
+| `/api/v1/import/templates/parts`     | GET    | Public        | Download parts CSV template           |
+| `/api/v1/import/templates/documents` | GET    | Public        | Download documents CSV template       |
+| `/api/v1/import/templates/issues`    | GET    | Public        | Download issues CSV template          |
 
-## POST /api/import/parts
+## POST /api/v1/import/parts
 
 Bulk-create parts from an array of row data. Optionally includes BOM relationships that wire up parent-child links between the newly created parts and/or existing parts in the design.
 
@@ -142,7 +142,7 @@ When `bomRelationships` are provided, the endpoint:
 
 ---
 
-## POST /api/import/documents
+## POST /api/v1/import/documents
 
 Bulk-create documents. Follows the same branch-aware pattern as parts import. Additionally enforces design access and branch access checks, and requires the `Administrator` role to use `bypassBranchProtection`.
 
@@ -185,7 +185,7 @@ Same structure as parts import (without BOM relationship fields).
 
 ---
 
-## POST /api/import/issues
+## POST /api/v1/import/issues
 
 Bulk-create issues. Issues use a free lifecycle (`Open` state) and do not require design or branch context. They can optionally be associated with a program.
 
@@ -236,17 +236,17 @@ Same structure as parts import (without BOM relationship fields).
 
 ---
 
-## GET /api/import/templates/:type
+## GET /api/v1/import/templates/:type
 
 Download a CSV template with headers and an example row for the specified item type.
 
 ### Endpoints
 
-| URL                               | File name                       |
-| --------------------------------- | ------------------------------- |
-| `/api/import/templates/parts`     | `parts-import-template.csv`     |
-| `/api/import/templates/documents` | `documents-import-template.csv` |
-| `/api/import/templates/issues`    | `issues-import-template.csv`    |
+| URL                                  | File name                       |
+| ------------------------------------ | ------------------------------- |
+| `/api/v1/import/templates/parts`     | `parts-import-template.csv`     |
+| `/api/v1/import/templates/documents` | `documents-import-template.csv` |
+| `/api/v1/import/templates/issues`    | `issues-import-template.csv`    |
 
 ### Query Parameters
 

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
 /**
  * Drop all tables in the public schema.
  * Used during demo deployments to ensure a clean database
@@ -6,9 +9,10 @@
  * Uses dynamic SQL to discover and drop all tables, which works
  * with RDS users that don't have permission to DROP SCHEMA.
  */
-import { db } from '../src/lib/db/index.ts'
+import { db, describeConnection } from '../packages/core/src/lib/db/index.ts'
 
 try {
+  console.log(`Target database: ${describeConnection()}`)
   console.log('Dropping all tables in public schema...')
 
   // Drop all tables dynamically

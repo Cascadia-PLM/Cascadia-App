@@ -117,7 +117,7 @@ Follow your cloud provider's instructions above.
 ```bash
 # From your local machine with DATABASE_URL set
 cd CascadiaApp
-npx drizzle-kit push
+npm run db:push
 ```
 
 ### Step 3: Deploy Application

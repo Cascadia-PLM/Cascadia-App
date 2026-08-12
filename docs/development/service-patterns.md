@@ -1,19 +1,19 @@
 # Service Layer Patterns
 
-This guide covers the conventions and patterns used in Cascadia's service layer, located in `src/lib/services/` and `src/lib/items/services/`.
+This guide covers the conventions and patterns used in Cascadia's service layer, located in `packages/core/src/lib/services/` and `packages/core/src/lib/items/services/`.
 
 ## Architecture Overview
 
 Cascadia uses a three-layer architecture for server-side logic:
 
 ```
-API Routes (src/routes/api/)
+API Routes (packages/core/src/server/routes/)
     │  Thin handlers — parse request, call service, return response
     ▼
-Service Layer (src/lib/services/, src/lib/items/services/)
+Service Layer (packages/core/src/lib/services/, packages/core/src/lib/items/services/)
     │  Business logic, validation, orchestration
     ▼
-Database Layer (src/lib/db/, Drizzle ORM)
+Database Layer (packages/core/src/lib/db/, Drizzle ORM)
     │  Schema definitions, queries, transactions
     ▼
 PostgreSQL
@@ -34,7 +34,7 @@ PostgreSQL
 All services use static methods on a class. There are no instances to manage or inject.
 
 ```typescript
-// src/lib/services/BranchService.ts
+// packages/core/src/lib/services/BranchService.ts
 export class BranchService {
   static async getById(id: string) {
     const result = await db
@@ -71,7 +71,7 @@ const part = await ItemService.findById(partId)
 - Types/interfaces exported alongside the service
 
 ```
-src/lib/services/
+packages/core/src/lib/services/
 ├── BranchService.ts          # Branch management
 ├── BranchService.test.ts     # Tests
 ├── CheckoutService.ts        # Item checkout/checkin
@@ -112,7 +112,7 @@ const validatedData = typeConfig.schema.parse(dataWithType)
 
 ### Typed Error Classes
 
-Services throw typed errors from `src/lib/errors/`. Each error maps to an HTTP status code automatically.
+Services throw typed errors from `packages/core/src/lib/errors/`. Each error maps to an HTTP status code automatically.
 
 | Error Class               | HTTP Status | When to Use              |
 | ------------------------- | ----------- | ------------------------ |
@@ -158,7 +158,7 @@ throw new PermissionDeniedError('parts', 'delete')
 
 ### How apiHandler Catches Errors
 
-The `apiHandler()` wrapper in `src/lib/api/handler.ts` catches all errors thrown by services and converts them to proper HTTP responses automatically. You never need try/catch in routes:
+The `apiHandler()` wrapper in `packages/core/src/lib/api/handler.ts` catches all errors thrown by services and converts them to proper HTTP responses automatically. You never need try/catch in routes:
 
 ```typescript
 // In the route — just throw, apiHandler catches it
@@ -310,16 +310,16 @@ export class CheckoutService {
 
 ## Key Services Reference
 
-| Service                    | Location                  | Purpose                                 |
-| -------------------------- | ------------------------- | --------------------------------------- |
-| `ItemService`              | `src/lib/items/services/` | CRUD for all item types                 |
-| `BranchService`            | `src/lib/services/`       | Branch creation, locking, archiving     |
-| `CheckoutService`          | `src/lib/services/`       | Item checkout/checkin on branches       |
-| `CommitService`            | `src/lib/services/`       | Create version commits                  |
-| `VersionResolver`          | `src/lib/services/`       | Resolve item versions per branch/commit |
-| `ChangeOrderMergeService`  | `src/lib/services/`       | Merge ECO branches to main              |
-| `DesignService`            | `src/lib/services/`       | Design management                       |
-| `LifecycleService`         | `src/lib/services/`       | Lifecycle state transitions             |
-| `ConflictDetectionService` | `src/lib/services/`       | Detect merge conflicts                  |
-| `RevisionService`          | `src/lib/services/`       | Assign revision letters on release      |
-| `JobService`               | `src/lib/jobs/`           | Submit and manage background jobs       |
+| Service                    | Location                                | Purpose                                 |
+| -------------------------- | --------------------------------------- | --------------------------------------- |
+| `ItemService`              | `packages/core/src/lib/items/services/` | CRUD for all item types                 |
+| `BranchService`            | `packages/core/src/lib/services/`       | Branch creation, locking, archiving     |
+| `CheckoutService`          | `packages/core/src/lib/services/`       | Item checkout/checkin on branches       |
+| `CommitService`            | `packages/core/src/lib/services/`       | Create version commits                  |
+| `VersionResolver`          | `packages/core/src/lib/services/`       | Resolve item versions per branch/commit |
+| `ChangeOrderMergeService`  | `packages/core/src/lib/services/`       | Merge ECO branches to main              |
+| `DesignService`            | `packages/core/src/lib/services/`       | Design management                       |
+| `LifecycleService`         | `packages/core/src/lib/services/`       | Lifecycle state transitions             |
+| `ConflictDetectionService` | `packages/core/src/lib/services/`       | Detect merge conflicts                  |
+| `RevisionService`          | `packages/core/src/lib/services/`       | Assign revision letters on release      |
+| `JobService`               | `packages/core/src/lib/jobs/`           | Submit and manage background jobs       |

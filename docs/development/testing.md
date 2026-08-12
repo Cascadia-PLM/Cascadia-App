@@ -1,6 +1,6 @@
 # Testing Guide
 
-This guide covers the testing infrastructure, philosophy, and utilities for Cascadia PLM. For the complete reference, see the root-level `docs/testing.md`.
+This guide covers the testing infrastructure, philosophy, and utilities for Cascadia PLM.
 
 ## Testing Philosophy
 
@@ -17,13 +17,13 @@ This guide covers the testing infrastructure, philosophy, and utilities for Casc
 
 ### What Does NOT Require Tests
 
-| Category          | Examples                         | Why                              |
-| ----------------- | -------------------------------- | -------------------------------- |
-| **API Routes**    | `/api/v1/parts`, `/api/v1/documents`   | Just delegate to tested services |
-| **UI Components** | PartForm, DocumentList           | E2E tests cover user flows       |
-| **Utilities**     | formatDate, cn(), string helpers | Trivial code                     |
-| **Schemas/Types** | Zod schemas, TypeScript types    | Testing library code             |
-| **Config/Errors** | Error classes, config files      | Just data structures             |
+| Category          | Examples                             | Why                              |
+| ----------------- | ------------------------------------ | -------------------------------- |
+| **API Routes**    | `/api/v1/parts`, `/api/v1/documents` | Just delegate to tested services |
+| **UI Components** | PartForm, DocumentList               | E2E tests cover user flows       |
+| **Utilities**     | formatDate, cn(), string helpers     | Trivial code                     |
+| **Schemas/Types** | Zod schemas, TypeScript types        | Testing library code             |
+| **Config/Errors** | Error classes, config files          | Just data structures             |
 
 ### Decision Tree
 
@@ -44,7 +44,7 @@ npm run test:coverage # Run with coverage report
 npm run test:ui       # Open Vitest UI
 
 # Run a single file
-npx vitest run src/lib/services/BranchService.test.ts
+npx vitest run packages/core/src/lib/services/BranchService.test.ts
 
 # Run tests matching a pattern
 npx vitest run -t "should create branch"
@@ -67,17 +67,17 @@ npm run test:e2e:full     # Reset database + seed + run tests
 Tests are co-located with the code they test:
 
 ```
-src/lib/services/
+packages/core/src/lib/services/
 ├── BranchService.ts
 ├── BranchService.test.ts     # Co-located test
 ├── CheckoutService.ts
 ├── CheckoutService.test.ts
 ```
 
-Shared test infrastructure lives in `src/__tests__/`:
+Shared test infrastructure lives in `packages/core/src/__tests__/`:
 
 ```
-src/__tests__/
+packages/core/src/__tests__/
 ├── setup.ts              # Test setup (runs before each file)
 ├── global-setup.ts       # Global setup (runs once)
 ├── fixtures/             # Test data factories
@@ -98,7 +98,7 @@ src/__tests__/
 Vitest globals are enabled — `describe`, `it`, `expect`, `vi` are available without import.
 
 ```typescript
-// src/lib/services/BranchService.test.ts
+// packages/core/src/lib/services/BranchService.test.ts
 describe('BranchService', () => {
   describe('createEcoBranch', () => {
     it('creates a branch named eco/{itemNumber}', async () => {
@@ -383,7 +383,18 @@ Avoid CSS selectors and index-based selectors.
 
 ## CI/CD
 
-Tests run in GitHub Actions with a real PostgreSQL service container. See the workflow in `.github/workflows/test.yml`.
+Tests run in GitHub Actions with a real PostgreSQL service container. There is one
+workflow, `.github/workflows/ci.yml`, running on every PR to `main` and every push
+to `main`. Its jobs: Lint, OpenAPI Snapshot, Unit Tests, E2E Tests, Build (which
+also runs `typecheck:strict`), Compose Config Validation, and Large File Guard.
+
+Unit tests run `npm run test`, not `test:coverage` — no coverage thresholds are
+enforced.
+
+> **Checks run but do not block.** The `Cascadia-PLM` org is on the GitHub Free
+> plan, where branch protection and rulesets are unavailable on private repos.
+> Results appear on every PR, but nothing prevents merging on red. Red CI is a
+> convention here, not a gate.
 
 Key CI concerns:
 

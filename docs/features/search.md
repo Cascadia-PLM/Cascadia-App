@@ -29,7 +29,7 @@ Selecting a result navigates directly to the item detail page.
 
 ### How It Works
 
-1. The client calls `GET /api/enterprise-search?q=<query>&limit=20`.
+1. The client calls `GET /api/v1/enterprise-search?q=<query>&limit=20`.
 2. The server resolves which designs the current user can access (from their
    program memberships plus any Library-type designs).
 3. For each registered item type, `ItemService.searchByItemNumber()` is called
@@ -51,7 +51,7 @@ Items in designs outside the user's program memberships are excluded.
 ## Type-Specific Search
 
 Each item listing page (Parts, Documents, Requirements, etc.) uses the
-`GET /api/items/search` endpoint with the `itemType` parameter. This provides
+`GET /api/v1/items/search` endpoint with the `itemType` parameter. This provides
 richer filtering than the enterprise search bar and is backed by
 `ItemSearchService.search()`.
 
@@ -82,7 +82,7 @@ The `globalSearch` parameter performs a case-insensitive ILIKE match against bot
 `itemNumber` and `name`:
 
 ```
-GET /api/items/search?itemType=Part&globalSearch=motor
+GET /api/v1/items/search?itemType=Part&globalSearch=motor
 ```
 
 This returns any Part whose item number or name contains "motor" (case-insensitive).
@@ -142,7 +142,7 @@ Part-specific columns:
 Pass `sortField` and `sortDirection` to sort results at the database level:
 
 ```
-GET /api/items/search?itemType=Part&sortField=cost&sortDirection=desc&limit=25
+GET /api/v1/items/search?itemType=Part&sortField=cost&sortDirection=desc&limit=25
 ```
 
 Sortable fields for all types: `itemNumber`, `name`, `state`, `revision`,
@@ -158,7 +158,7 @@ When no sort is specified, results default to `createdAt` descending.
 All search endpoints support offset-based pagination:
 
 ```
-GET /api/items/search?itemType=Part&limit=25&offset=50
+GET /api/v1/items/search?itemType=Part&limit=25&offset=50
 ```
 
 The response includes:
@@ -185,7 +185,7 @@ example, the Affected Items Manager on change orders, the Add Part to Design
 dialog, and the BOM child picker.
 
 ```
-GET /api/items/search?q=MTR-001&types=Part,Document&limit=10
+GET /api/v1/items/search?q=MTR-001&types=Part,Document&limit=10
 ```
 
 This calls `ItemSearchService.searchByItemNumber()` which:
@@ -209,6 +209,10 @@ The `designScope` query parameter controls which designs are searched:
 | _(omitted)_ | No design filter applied                       |
 
 An explicit `designIds` parameter (comma-separated UUIDs) overrides the scope.
+
+A requested scope that resolves to no designs matches nothing rather than
+falling back to an unfiltered search — so `library` on an instance without a
+Standard Library, or `all` for a user in no program, returns no results.
 
 ---
 
@@ -255,7 +259,7 @@ It supports the same filter vocabulary:
 
 ## Search API Reference
 
-### `GET /api/enterprise-search`
+### `GET /api/v1/enterprise-search`
 
 Cross-type search for the navigation bar.
 
@@ -289,7 +293,7 @@ Cross-type search for the navigation bar.
 }
 ```
 
-### `GET /api/items/search`
+### `GET /api/v1/items/search`
 
 Type-specific search with full filtering, sorting, and pagination.
 

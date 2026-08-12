@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cascadia PLM</title>
+    <link rel="icon" type="image/svg+xml" href="/cascadia-plm-logo-icon.svg" />
+    <!--
+      Resolve the theme before first paint. Without this the document renders
+      unthemed until ThemeProvider's effect runs, which flashes a white page at
+      dark-mode users on every load. Keep this in sync with src/lib/theme.tsx.
+    -->
+    <script>
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('theme')
+          var theme =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+          document.documentElement.classList.add(theme)
+          document.documentElement.style.colorScheme = theme
+        } catch (e) {
+          /* private mode / storage disabled — fall back to CSS defaults */
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

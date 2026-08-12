@@ -4,11 +4,11 @@ Cascadia PLM ships as a set of Docker images built from a single monorepo. Each 
 
 ## Docker Images
 
-| Image                    | Dockerfile                         | Base Image                                       | Purpose                         | Port |
-| ------------------------ | ---------------------------------- | ------------------------------------------------ | ------------------------------- | ---- |
+| Image                                         | Dockerfile                         | Base Image                                       | Purpose                         | Port |
+| --------------------------------------------- | ---------------------------------- | ------------------------------------------------ | ------------------------------- | ---- |
 | `ghcr.io/cascadia-plm/cascadia-app`           | `docker/app.Dockerfile`            | `node:20-alpine`                                 | Core web application (UI + API) | 3000 |
-| `cascadia/vault`         | `docker/vault.Dockerfile`          | `node:20-alpine`                                 | Standalone file storage service | 3001 |
-| `ghcr.io/cascadia-plm/cascadia-jobs-worker`          | `workers/node/Dockerfile`          | `node:20-alpine`                                 | Background job workers          | 3002 |
+| `cascadia/vault`                              | `docker/vault.Dockerfile`          | `node:20-alpine`                                 | Standalone file storage service | 3001 |
+| `ghcr.io/cascadia-plm/cascadia-jobs-worker`   | `workers/node/Dockerfile`          | `node:20-alpine`                                 | Background job workers          | 3002 |
 | `ghcr.io/cascadia-plm/cascadia-cad-converter` | `workers/cad-converter/Dockerfile` | `condaforge/miniforge3` + `debian:bookworm-slim` | STEP/IGES to STL/GLB conversion | 3003 |
 
 ### Building Images
@@ -42,9 +42,9 @@ All Node.js images use a three-stage build pattern to minimize image size and se
 Key details:
 
 - The production stage reinstalls all npm dependencies (including dev) because seed scripts require `tsx`.
-- Drizzle schema files (`src/lib/db/`) are copied to support runtime migrations via `npx drizzle-kit push`.
+- Drizzle schema files (`packages/core/src/lib/db/`) are copied to support runtime migrations via `npm run db:push`.
 - Storage directories `/app/storage/files` and `/app/vault` are created with correct ownership.
-- Health check hits `GET /api/health` on port 3000.
+- Health check hits `GET /api/v1/health` on port 3000.
 - Entrypoint uses `dumb-init` for signal forwarding; default command is `npm run serve`.
 
 ### Vault Service (`docker/vault.Dockerfile`)
@@ -52,7 +52,7 @@ Key details:
 Same three-stage pattern. Differences from the app image:
 
 - Production stage installs only production dependencies (`npm ci --only=production`).
-- Copies only vault-specific code (`src/lib/vault`, `src/lib/db`).
+- Copies only vault-specific code (`packages/core/src/lib/vault`, `packages/core/src/lib/db`).
 - Exposes port 3001.
 - Default environment: `STORAGE_TYPE=local`, `STORAGE_PATH=/app/vault`.
 - Health check hits `GET /health` on port 3001.
@@ -103,14 +103,14 @@ docker compose --profile tools up -d
 
 ### Development Services
 
-| Service             | Profile      | Description                                            |
-| ------------------- | ------------ | ------------------------------------------------------ |
-| `postgres`          | default      | PostgreSQL 18 database                                 |
-| `app`               | default      | Core app (builds from local source)                    |
-| `rabbitmq`          | default      | RabbitMQ with management UI                            |
-| `jobs-worker-dev`   | `dev`        | Jobs worker with source mount and `tsx watch`          |
-| `cad-converter-dev` | `dev`, `cad` | CAD converter built from `workers/cad-converter/`      |
-| `pgadmin`           | `tools`      | pgAdmin 4 for database management                      |
+| Service             | Profile      | Description                                       |
+| ------------------- | ------------ | ------------------------------------------------- |
+| `postgres`          | default      | PostgreSQL 18 database                            |
+| `app`               | default      | Core app (builds from local source)               |
+| `rabbitmq`          | default      | RabbitMQ with management UI                       |
+| `jobs-worker-dev`   | `dev`        | Jobs worker with source mount and `tsx watch`     |
+| `cad-converter-dev` | `dev`, `cad` | CAD converter built from `workers/cad-converter/` |
+| `pgadmin`           | `tools`      | pgAdmin 4 for database management                 |
 
 ### Development Worker Notes
 
@@ -161,7 +161,7 @@ docker compose up -d
 Runs PostgreSQL + the app container on one machine. The app runs migrations on startup:
 
 ```yaml
-command: sh -c "npx drizzle-kit push --force && npm run serve"
+command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
 ```
 
 ### Production Image References
@@ -217,7 +217,7 @@ All services include Docker health checks:
 | Service       | Endpoint                                       | Interval | Start Period |
 | ------------- | ---------------------------------------------- | -------- | ------------ |
 | PostgreSQL    | `pg_isready`                                   | 10s      | 30s          |
-| Core App      | `GET /api/health`                              | 30s      | 40s          |
+| Core App      | `GET /api/v1/health`                           | 30s      | 40s          |
 | Vault Service | `GET /health`                                  | 30s      | 20s          |
 | Jobs Server   | `GET /health`                                  | 30s      | 20s          |
 | RabbitMQ      | `rabbitmq-diagnostics check_port_connectivity` | 30s      | 30s          |
@@ -254,7 +254,7 @@ docker compose logs -f jobs-worker-dev
 docker compose restart app
 
 # Run database migrations
-docker compose exec app npx drizzle-kit push
+docker compose exec app npm run db:push
 
 # Run seed scripts
 docker compose exec app npm run db:seed

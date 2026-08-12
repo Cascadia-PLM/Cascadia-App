@@ -60,7 +60,7 @@ services:
       - cascadia-app
 
     # Run migrations on startup (safe for cloud DBs)
-    command: sh -c "npx drizzle-kit push --force && npm run serve"
+    command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
 
 volumes:
   app_storage:

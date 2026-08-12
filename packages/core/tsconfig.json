@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  // The Vite base config is real, type-checked code that lives beside `src`,
+  // not inside it. Left out, ESLint refuses to parse it at all.
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.base.ts"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@test/*": ["./src/__tests__/*"]
+    }
+  }
+}

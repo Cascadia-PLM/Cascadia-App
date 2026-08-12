@@ -27,7 +27,10 @@ COPY . .
 
 # Build the application (increase heap for large Vite builds)
 ENV NODE_OPTIONS="--max-old-space-size=4096"
-RUN npm run build
+# Which edition this image contains. This tree carries only the AGPL
+# community build.
+ARG APP=cascadia
+RUN npm run build:app -- "$APP"
 
 # =============================================================================
 # Stage 3: Production
@@ -54,15 +57,16 @@ COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 
-# Admin scripts (seed, migrate, reset) run via tsx and import from src/.
-# The server itself doesn't read src/ at runtime — only `scripts/*.ts` do.
-COPY --from=builder /app/drizzle.config.ts ./
+# Admin scripts (seed, migrate, reset) run via tsx and import from the
+# workspace packages. The server itself reads none of this at runtime — only
+# `scripts/*.ts` do. The catalog seed JSON under packages/core/test-data comes
+# along with them: the bundled server inlines it, but tsx-run scripts read it
+# from disk.
+COPY --from=builder /app/tsconfig.base.json ./
 COPY --from=builder /app/tsconfig.json ./
-COPY --from=builder /app/src ./src
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/apps ./apps
 COPY --from=builder /app/scripts ./scripts
-# Catalog seed JSON — imported by scripts/seed/catalog-data/entries.ts.
-# The bundled server inlines these, but tsx-run admin scripts need them on disk.
-COPY --from=builder /app/test-data ./test-data
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -90,5 +94,10 @@ LABEL org.opencontainers.image.source="https://github.com/Cascadia-PLM/Cascadia-
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Default command - can be overridden
-CMD ["npm", "run", "serve"]
+# Re-declared: an ARG from an earlier stage is not in scope here. Carried into
+# the environment so the CMD below can name the edition's output directory.
+ARG APP=cascadia
+ENV APP=${APP}
+
+# Shell form deliberately — the exec form does not expand ${APP}.
+CMD node .output/${APP}/server/index.mjs

@@ -1,5 +1,0 @@
-export { PartAttachmentPanel } from './PartAttachmentPanel'
-export { StepEditor } from './StepEditor'
-export { WorkInstructionForm } from './WorkInstructionForm'
-export { WorkInstructionsForPartPanel } from './WorkInstructionsForPartPanel'
-export { WorkInstructionTable } from './WorkInstructionTable'

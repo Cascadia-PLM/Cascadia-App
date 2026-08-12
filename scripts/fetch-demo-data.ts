@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
 /**
  * Fetch the TDJ-25 robot-arm demo dataset into ./demo-data/.
  *
@@ -19,7 +22,14 @@
  */
 
 import { spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -31,7 +41,8 @@ const REPO_ROOT = resolve(__dirname, '..')
 const DEFAULT_REF = 'v1.0.0'
 
 const REF = process.env.DEMO_DATA_REF ?? DEFAULT_REF
-const REPO = process.env.DEMO_DATA_REPO ?? 'https://github.com/Cascadia-PLM/Demo-Data.git'
+const REPO =
+  process.env.DEMO_DATA_REPO ?? 'https://github.com/Cascadia-PLM/Demo-Data.git'
 const DEST = process.env.DEMO_DATA_DIR ?? join(REPO_ROOT, 'demo-data')
 const FORCE = process.env.FORCE === '1'
 
@@ -48,7 +59,11 @@ function run(cmd: string, args: Array<string>): void {
 // Skip if we already have exactly this ref
 // ----------------------------------------------------------------------------
 
-if (!FORCE && existsSync(STAMP) && existsSync(join(DEST, 'robot-arm', 'manifest.json'))) {
+if (
+  !FORCE &&
+  existsSync(STAMP) &&
+  existsSync(join(DEST, 'robot-arm', 'manifest.json'))
+) {
   const have = readFileSync(STAMP, 'utf-8').trim()
   if (have === REF) {
     console.log(`[demo:fetch] ${DEST} already at ${REF} — nothing to do`)
@@ -114,11 +129,20 @@ const expected = manifest.parts.filter((p) => p.cadFileBase).length
 
 const missing = manifest.parts
   .filter((p) => p.cadFileBase)
-  .filter((p) => !existsSync(join(DEST, 'robot-arm', 'glb', `${p.cadFileBase}.glb`)))
+  .filter(
+    (p) => !existsSync(join(DEST, 'robot-arm', 'glb', `${p.cadFileBase}.glb`)),
+  )
 
 if (missing.length > 0) {
-  console.error(`[demo:fetch] ${missing.length}/${expected} GLB files are missing from the clone.`)
-  console.error(`[demo:fetch] first few: ${missing.slice(0, 3).map((p) => p.cadFileBase).join(', ')}`)
+  console.error(
+    `[demo:fetch] ${missing.length}/${expected} GLB files are missing from the clone.`,
+  )
+  console.error(
+    `[demo:fetch] first few: ${missing
+      .slice(0, 3)
+      .map((p) => p.cadFileBase)
+      .join(', ')}`,
+  )
   process.exit(1)
 }
 

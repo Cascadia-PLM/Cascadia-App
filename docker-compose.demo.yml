@@ -124,7 +124,7 @@ services:
     # First boot: push schema → minimal seed → demo seed → serve.
     # All steps are idempotent so reboots are safe.
     command: >
-      sh -c "npx drizzle-kit push --force
+      sh -c "node scripts/drizzle.mjs push --force
       && npx tsx scripts/seed-minimal.ts
       && npx tsx scripts/seed-demo-robot-arm.ts
       && npm run serve"

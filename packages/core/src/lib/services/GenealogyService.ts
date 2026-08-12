@@ -12,7 +12,7 @@ import { NotFoundError } from '@/lib/errors'
 
 /**
  * Build genealogy, derived — never stored — from Consumes/Produces edges
- * (docs/proposals/physical-parts-and-traceability.md Phase 4).
+ * (docs/features/physical-parts-and-traceability.md Phase 4).
  *
  * Downward (composition): unit → producing WO → consumed targets → each
  * consumed unit's own producing WO → …  Upward (where-used): unit/lot →

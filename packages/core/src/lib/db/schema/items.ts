@@ -109,7 +109,7 @@ export const parts = pgTable('parts', {
   partType: varchar('part_type', { length: 20 }),
   // Physical instance tracking policy: 'none' | 'lot' | 'serial'.
   // Engineering-owned; drives what WO material consumption requires and what
-  // WO completion creates (see docs/proposals/physical-parts-and-traceability.md).
+  // WO completion creates (see docs/features/physical-parts-and-traceability.md).
   trackingMode: varchar('tracking_mode', { length: 10 })
     .notNull()
     .default('none'),
@@ -1252,7 +1252,7 @@ export const toolsRelations = relations(tools, ({ one }) => ({
 // ============================================================================
 // Physical Parts — physical instances of Parts (serialized units and lots)
 // Non-versioned items (Tool pattern: no designId, Free lifecycle).
-// See docs/proposals/physical-parts-and-traceability.md §4.4.
+// See docs/features/physical-parts-and-traceability.md §4.4.
 // ============================================================================
 
 export const physicalParts = pgTable(

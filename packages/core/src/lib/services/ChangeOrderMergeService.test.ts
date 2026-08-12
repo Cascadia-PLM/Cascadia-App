@@ -20,7 +20,7 @@ import {
   expect,
   it,
 } from 'vitest'
-import { and, eq, inArray, isNotNull } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import { ItemService } from '../items/services/ItemService'
 import { ChangeOrderService } from '../items/services/ChangeOrderService'
 import { ChangeOrderMergeService } from './ChangeOrderMergeService'
@@ -41,6 +41,7 @@ import {
   programs,
   tags,
   upstreamChanges,
+  vaultFiles,
   workflowDefinitions,
   workflowInstances,
 } from '@/lib/db/schema'
@@ -915,6 +916,214 @@ describe('ChangeOrderMergeService', () => {
 
       expect(result.mergeCommit).toBeDefined()
       expect(result.mergeCommit.message).toContain('Merged ECO branch')
+    })
+  })
+
+  /**
+   * Files hang off an item *version* row, and release of an added item mints a
+   * brand new row for the released revision. Without the merge carrying files
+   * across, a part's CAD and attachments become invisible the moment the ECO
+   * releases: every file listing resolves the item to its released row and
+   * queries `vault_files.item_id` against it.
+   *
+   * The invariant under test is continuity, not row identity - what must hold
+   * is that whatever a user could see on the branch, they can still see on the
+   * released revision.
+   */
+  describe('file continuity across release', () => {
+    async function attachFile(
+      itemId: string,
+      opts: {
+        branchId?: string | null
+        name?: string
+        category?: string | null
+        isPrimaryModel?: boolean
+      } = {},
+    ) {
+      const name = opts.name ?? 'model.step'
+      return takeFirst(
+        await testDb.db
+          .insert(vaultFiles)
+          .values({
+            itemId,
+            branchId: opts.branchId ?? null,
+            fileName: name,
+            originalFileName: name,
+            fileSize: 2048,
+            mimeType: 'application/step',
+            fileHash: randomUUID().replace(/-/g, ''),
+            storagePath: `vault/${randomUUID()}/${name}`,
+            fileCategory: opts.category ?? 'cad_model',
+            isPrimaryModel: opts.isPrimaryModel ?? true,
+            uploadedBy: user.id,
+          })
+          .returning(),
+      )
+    }
+
+    /** What a file listing for this item version would return. */
+    async function visibleFiles(itemId: string) {
+      return testDb.db
+        .select()
+        .from(vaultFiles)
+        .where(and(eq(vaultFiles.itemId, itemId), isNull(vaultFiles.deletedAt)))
+    }
+
+    it('keeps files reachable on the released revision of an added item', async () => {
+      const eco = await createChangeOrder()
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+
+      // A part created on the ECO branch, with CAD uploaded against it there.
+      const part = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-file-add`,
+          revision: '-',
+          name: 'Test Part file-add',
+          designId,
+          state: 'Draft',
+        } as any,
+        user.id,
+      )
+      await testDb.db.insert(branchItems).values({
+        branchId: branch.id,
+        itemMasterId: part.masterId!,
+        currentItemId: part.id,
+        baseItemId: null,
+        changeType: 'added',
+      })
+      await attachFile(part.id, { branchId: branch.id })
+
+      await ChangeOrderMergeService.mergeBranchToMain(
+        branch.id,
+        eco.id,
+        user.id,
+      )
+
+      // Resolve the item the way main now resolves it.
+      const mainBranch = await BranchService.getMainBranch(designId)
+      const released = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(
+            and(
+              eq(branchItems.branchId, mainBranch!.id),
+              eq(branchItems.itemMasterId, part.masterId),
+            ),
+          ),
+      )
+      expect(released.currentItemId).not.toBe(part.id)
+
+      const files = await visibleFiles(released.currentItemId!)
+      expect(files).toHaveLength(1)
+      expect(files[0]!.originalFileName).toBe('model.step')
+      // Released content is visible everywhere, not scoped to the dead branch.
+      expect(files[0]!.branchId).toBeNull()
+    })
+
+    it('carries the prior revision files onto a revised item, leaving the superseded revision its own', async () => {
+      const part = await createPart('file-mod', 'Released')
+      const mainBranch = await BranchService.getMainBranch(designId)
+      await testDb.db.insert(branchItems).values({
+        branchId: mainBranch!.id,
+        itemMasterId: part.masterId!,
+        currentItemId: part.id,
+        baseItemId: part.id,
+        changeType: null,
+      })
+      // CAD released on main against revision A.
+      await attachFile(part.id, { name: 'revA.step' })
+
+      const eco = await createChangeOrder()
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+
+      // The real revise path: a working copy on the ECO branch.
+      const { workingCopy } =
+        await ChangeOrderService.createRevisionWorkingCopy(
+          part,
+          branch.id,
+          user.id,
+        )
+
+      // The engineer must see the inherited CAD while working on the branch.
+      const onBranch = await visibleFiles(workingCopy.id)
+      expect(onBranch.map((f) => f.originalFileName)).toContain('revA.step')
+
+      await ChangeOrderMergeService.mergeBranchToMain(
+        branch.id,
+        eco.id,
+        user.id,
+      )
+
+      const releasedRow = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(
+            and(
+              eq(branchItems.branchId, mainBranch!.id),
+              eq(branchItems.itemMasterId, part.masterId),
+            ),
+          ),
+      )
+      const releasedFiles = await visibleFiles(releasedRow.currentItemId!)
+      expect(releasedFiles.map((f) => f.originalFileName)).toContain(
+        'revA.step',
+      )
+
+      // The superseded revision keeps its own attachments - the SUPERSEDED
+      // watermark job stamps exactly those, and must not reach into the new one.
+      const supersededFiles = await visibleFiles(part.id)
+      expect(supersededFiles.map((f) => f.originalFileName)).toContain(
+        'revA.step',
+      )
+      expect(supersededFiles[0]!.id).not.toBe(releasedFiles[0]!.id)
+    })
+
+    /**
+     * The affected-item 'revise' action with no working copy mints the new
+     * revision through ItemService.revise at release time - a different code
+     * path to the branch merge, with the same version-row coupling.
+     */
+    it('keeps files on a revision minted by the affected-item revise action', async () => {
+      const part = await createPart('file-revise', 'Released')
+      await attachFile(part.id, { name: 'drawing.pdf', category: 'drawing' })
+
+      const eco = await createChangeOrder()
+      await testDb.db.insert(changeOrderAffectedItems).values({
+        changeOrderId: eco.id,
+        affectedItemId: part.id,
+        affectedItemMasterId: part.masterId,
+        changeAction: 'revise',
+        currentState: 'Released',
+        currentRevision: 'A',
+        targetRevision: 'B',
+        createdBy: user.id,
+      })
+      await approveEco(eco.id)
+
+      await ChangeOrderMergeService.merge(eco.id, user.id)
+
+      const revisionB = takeFirst(
+        await testDb.db
+          .select()
+          .from(items)
+          .where(
+            and(eq(items.masterId, part.masterId), eq(items.revision, 'B')),
+          ),
+      )
+
+      const files = await visibleFiles(revisionB.id)
+      expect(files.map((f) => f.originalFileName)).toEqual(['drawing.pdf'])
     })
   })
 

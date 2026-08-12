@@ -19,7 +19,12 @@ interface RelationshipData {
   sourceId: string
   targetId: string
   relationshipType: string
-  quantity?: number
+  /**
+   * Stored as text, so a string arrives verbatim. BOM quantities are not all
+   * integers — "2.5", or a unit-carrying "0.5 m" — and the column has always
+   * held whatever was typed.
+   */
+  quantity?: number | string
   referenceDesignator?: string
   findNumber?: number
   metadata?: Record<string, any>

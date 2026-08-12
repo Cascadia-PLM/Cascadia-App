@@ -113,7 +113,7 @@ export type WorkOrderUpdateInput = z.infer<typeof workOrderUpdateSchema>
 
 // =====================================================================
 // Traveler: work order instructions (instances of WI templates) and
-// their executions. See docs/proposals/work-order-traveler.md.
+// their executions. See docs/features/work-order-traveler.md.
 // =====================================================================
 
 /** Derived from executions — never stored. */

@@ -5,7 +5,7 @@
  * Physical Traceability E2E Workflow Test
  *
  * The proposal's deferred acceptance test
- * (docs/proposals/physical-parts-and-traceability.md §6 Phase 5 / §8):
+ * (docs/features/physical-parts-and-traceability.md §6 Phase 5 / §8):
  * create a work order → consume a serial and a lot at the bench → record
  * produced serials → verify the derived genealogy page, the qualification
  * rollup (the uncertified lot is flagged), and the digital thread's

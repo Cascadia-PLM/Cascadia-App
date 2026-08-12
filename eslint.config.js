@@ -14,16 +14,27 @@ import { PROPRIETARY } from './scripts/edition-manifest.mjs'
  * cannot drift. Directory entries become `**` groups; single files are matched
  * with and without their extension, since that is how they get imported.
  */
-const ENTERPRISE_SRC = 'packages/enterprise/src/'
+// Derived from the manifest, not listed. Writing the names here would put a
+// proprietary package id inside a core file — `boundary:check` says so, and it
+// is right: this file is published, where those packages do not exist. In the
+// public tree `PROPRIETARY` is empty, so both lists below are empty and the
+// rule below restricts nothing, which is exactly correct there.
+const MODULE_PACKAGES = [
+  ...new Set(
+    PROPRIETARY.map((p) => /^packages\/([^/]+)\//.exec(p)?.[1]).filter(
+      (name) => name !== undefined && name !== 'core',
+    ),
+  ),
+]
+const MODULE_SRC = MODULE_PACKAGES.map((p) => `packages/${p}/src/`)
 
 const proprietaryImportPatterns = [
-  '@cascadia/enterprise',
-  '@cascadia/enterprise/**',
-  ...PROPRIETARY.filter(
-    (p) => p.startsWith(ENTERPRISE_SRC) && !p.endsWith('.md'),
-  ).flatMap((p) => {
+  ...MODULE_PACKAGES.flatMap((p) => [`@cascadia/${p}`, `@cascadia/${p}/**`]),
+  ...PROPRIETARY.filter((p) => !p.endsWith('.md')).flatMap((p) => {
+    const src = MODULE_SRC.find((s) => p.startsWith(s))
+    if (!src) return []
     const path = p.endsWith('/**') ? p.slice(0, -3) : p.replace(/\.tsx?$/, '')
-    const within = path.slice(ENTERPRISE_SRC.length)
+    const within = path.slice(src.length)
     const suffix = p.endsWith('/**') ? '/**' : ''
     return [`@/${within}${suffix}`, `**/${within}${suffix}`]
   }),
@@ -112,25 +123,34 @@ export default [
   //
   // Proprietary files and the composition roots are exempt — a module importing
   // its own package, and a root wiring modules in, are the point.
-  {
-    // Scoped to core by path now, so no ignore list is needed: module files
-    // simply are not in `packages/core`.
-    files: ['packages/core/src/**/*.ts', 'packages/core/src/**/*.tsx'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
+  //
+  // Omitted entirely when there is nothing to restrict. ESLint rejects an empty
+  // `group`, so a config that always declares the rule fails to *load* in the
+  // published tree, where `PROPRIETARY` is empty by design — lint would not
+  // report a violation there, it would refuse to run at all.
+  ...(proprietaryImportPatterns.length > 0
+    ? [
         {
-          patterns: [
-            {
-              group: proprietaryImportPatterns,
-              message:
-                'Core cannot import proprietary code. Invert it through a registry — see docs/proposals/loadable-modules-architecture.md.',
-            },
-          ],
+          // Scoped to core by path, so no ignore list is needed: module files
+          // simply are not in `packages/core`.
+          files: ['packages/core/src/**/*.ts', 'packages/core/src/**/*.tsx'],
+          rules: {
+            'no-restricted-imports': [
+              'error',
+              {
+                patterns: [
+                  {
+                    group: proprietaryImportPatterns,
+                    message:
+                      'Core cannot import proprietary code. Invert it through a registry — see docs/architecture/loadable-modules-architecture.md.',
+                  },
+                ],
+              },
+            ],
+          },
         },
-      ],
-    },
-  },
+      ]
+    : []),
   // Nudge API routes toward apiHandler/response builders instead of raw Response construction
   {
     files: ['packages/*/src/routes/api/**/*.ts'],

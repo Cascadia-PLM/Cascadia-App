@@ -808,6 +808,42 @@ This sets `branchId = null` on every vault file that was uploaded on the ECO bra
 
 This is step 7 in the ECO merge sequence, ensuring that file visibility is always consistent with item visibility after release.
 
+### Branch visibility is only half of it
+
+`branchId` answers _where_ a file is visible. `itemId` answers _which version owns
+it_ — and it is a foreign key to a row in `items`, meaning one **version** of an
+item, not the item's `masterId`. Every file listing resolves the item to a single
+version row and looks files up by that row's id.
+
+That matters because most of the versioning machinery works by minting a **new**
+`items` row:
+
+| Step                                                              | New row for                        |
+| ----------------------------------------------------------------- | ---------------------------------- |
+| `ChangeOrderService.createRevisionWorkingCopy()`                  | the working copy on the ECO branch |
+| `CheckoutService.saveChanges()` (first save)                      | the working copy on the branch     |
+| `ConflictDetectionService.rebaseItem()` / `pullChangesFromMain()` | the rebased working copy           |
+| `ChangeOrderMergeService` merging an `added` item                 | the released revision              |
+| `ItemService.revise()` (affected-item `revise` action)            | the released revision              |
+
+A new row starts with no files. Promoting `branchId` does nothing about this: the
+rows still point at the version that was superseded, so the part's CAD and
+attachments simply stop appearing. Each of these steps therefore calls
+`FileService.copyFilesToItem()`, the same way each already carries type-specific
+data and BOM structure forward.
+
+The revise path that promotes a working copy **in place** (the common case) needs
+no copy at merge time — the released row and the working copy are the same row —
+which is why the gap was invisible for so long.
+
+**Files are copied, never moved.** The superseded version keeps owning its own
+attachments; that is what lets the `SUPERSEDED` stamp mark the old revision's PDFs
+without touching the new one, and what makes time travel to an earlier commit show
+the files that version actually had. Copies share the source's `storagePath`
+instead of duplicating bytes, which is safe because a rewrite
+(`FileService.replaceContent`) always writes a fresh path and never mutates a blob
+in place.
+
 ---
 
 ## Storage Abstraction

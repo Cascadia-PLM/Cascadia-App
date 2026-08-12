@@ -942,7 +942,7 @@ A Design is a version-controlled container for items within a program. Designs h
 
 **States:** Not Started → In Progress → Complete / Cancelled. Starting an execution auto-starts a Not Started order; completion is **gated on the traveler** — every non-skipped instruction line must be complete or explicitly skipped with a reason.
 
-**Traveler:** work orders carry instances of WorkInstruction templates in `work_order_instructions` (frozen content snapshot, target part, `required_count` runs, sequence). Runs are recorded in `instruction_executions`; supervisor reviews in `execution_sign_offs`. See [work-instructions.md](./work-instructions.md) and `docs/proposals/work-order-traveler.md`.
+**Traveler:** work orders carry instances of WorkInstruction templates in `work_order_instructions` (frozen content snapshot, target part, `required_count` runs, sequence). Runs are recorded in `instruction_executions`; supervisor reviews in `execution_sign_offs`. See [work-instructions.md](./work-instructions.md) and `docs/features/work-order-traveler.md`.
 
 **Edges (in `item_relationships`, WO always the source):** `Consumes` → PhysicalPart or Part version (bulk, qty pinned to the consumed revision); `Produces` → PhysicalPart units.
 
@@ -971,7 +971,7 @@ A Design is a version-controlled container for items within a program. Designs h
 
 **API:** `/api/v1/physical-parts` (register is find-or-create on part + serial/lot), plus `/:id/genealogy`, `/:id/evidence`, `/recall`
 
-See `docs/proposals/physical-parts-and-traceability.md` for the full design.
+See `docs/features/physical-parts-and-traceability.md` for the full design.
 
 ### Software
 
@@ -997,7 +997,7 @@ See `docs/proposals/physical-parts-and-traceability.md` for the full design.
 
 **API:** `/api/v1/software/{id}`, plus `/tree`, `/file`, `/files`, `/file/rename`, `/diff`, `/blob/{hash}`, `/commit`, `/draft/discard`, `/versions`
 
-See `docs/proposals/software-management.md` for the full design.
+See `docs/features/software-management.md` for the full design.
 
 ### Tool
 

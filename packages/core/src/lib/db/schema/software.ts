@@ -25,7 +25,7 @@ import { users } from './users'
 // (software_manifests). The `software` extension row points at the manifest
 // for that item VERSION, so version pinning rides the items master/instance
 // pattern with no extra resolution logic.
-// See docs/proposals/software-management.md.
+// See docs/features/software-management.md.
 // ============================================================================
 
 /** A single file entry within a manifest snapshot. */

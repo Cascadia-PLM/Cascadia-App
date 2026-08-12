@@ -36,6 +36,10 @@ import { editionOf, normalize } from './edition-manifest.mjs'
 /** Entitlement ids that belong to a proprietary package. */
 const PROPRIETARY_PACKAGE_IDS = ['advanced-auditing']
 
+/** The module packages, in the order `@/` searches them after core. */
+const MODULE_PACKAGES = ['advanced-auditing', 'design-engine', 'cad-generation']
+const MODULE_SRC = MODULE_PACKAGES.map((p) => `packages/${p}/src`)
+
 /**
  * Entry points, which are allowed to import a composition root.
  *
@@ -61,7 +65,7 @@ const ENTRY_POINTS = [
  * permanent amnesty.
  *
  * Every entry names an open item from Phase 1 of
- * `docs/proposals/loadable-modules-architecture.md`.
+ * `docs/architecture/loadable-modules-architecture.md`.
  */
 const KNOWN_PENDING = new Map([
   // Empty as of 2026-08-10, when Phase 1 closed. Core reaches nothing
@@ -126,8 +130,8 @@ function tryExtensions(base) {
 function resolveSpecifier(specifier, fromFile) {
   let base
   if (specifier.startsWith('@/')) {
-    // Mirrors the app tsconfigs: core first, then enterprise.
-    for (const root of ['packages/core/src', 'packages/enterprise/src']) {
+    // Mirrors the app tsconfigs: core first, then the module packages.
+    for (const root of ['packages/core/src', ...MODULE_SRC]) {
       const hit = tryExtensions(join(root, specifier.slice(2)))
       if (hit) return hit
     }
@@ -136,13 +140,16 @@ function resolveSpecifier(specifier, fromFile) {
     return tryExtensions(
       join('packages/core/src', specifier.slice('@cascadia/core/'.length)),
     )
-  } else if (specifier.startsWith('@cascadia/enterprise/')) {
-    return tryExtensions(
-      join(
-        'packages/enterprise/src',
-        specifier.slice('@cascadia/enterprise/'.length),
-      ),
-    )
+  } else if (specifier.startsWith('@cascadia/')) {
+    for (const name of MODULE_PACKAGES) {
+      const prefix = `@cascadia/${name}/`
+      if (specifier.startsWith(prefix)) {
+        return tryExtensions(
+          join('packages', name, 'src', specifier.slice(prefix.length)),
+        )
+      }
+    }
+    return null
   } else if (specifier.startsWith('.')) {
     base = normalize(resolve(dirname(fromFile), specifier)).slice(
       normalize(process.cwd()).length + 1,
@@ -209,7 +216,7 @@ if (fresh.length > 0) {
   }
   console.error(
     'Core must not reach a module. Invert the dependency through a registry —\n' +
-      'see docs/proposals/loadable-modules-architecture.md, "Phase 1 — Seams".',
+      'see docs/architecture/loadable-modules-architecture.md, "Phase 1 — Seams".',
   )
   process.exit(1)
 }

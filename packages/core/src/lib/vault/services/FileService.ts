@@ -52,6 +52,7 @@ export interface CadMetadata {
   units?: string // e.g., 'mm', 'in', 'ft'
   polygonCount?: number // For mesh files (STL, OBJ)
   boundingBox?: { x: number; y: number; z: number } // Model dimensions
+  hasColors?: boolean // Per-face colors preserved (GLB written by the CAD converter)
 }
 
 export interface FileRecord {
@@ -591,6 +592,95 @@ export class FileService {
       .returning({ id: vaultFiles.id })
 
     return result.length
+  }
+
+  /**
+   * Carry an item version's files onto another version of that item.
+   *
+   * A file row belongs to one item *version*, so every place that mints a new
+   * version - a working copy on an ECO branch, the released revision at merge -
+   * starts with no files unless they are brought across. Left alone, a part's
+   * CAD and attachments vanish the moment the new row becomes the one listings
+   * resolve to.
+   *
+   * The rows are copied, not moved: the version being superseded keeps owning
+   * its own attachments, which is what lets the SUPERSEDED watermark stamp the
+   * old revision's PDFs without touching the new one. Copies reference the same
+   * `storagePath` rather than duplicating bytes - safe because a rewrite
+   * (`replaceContent`) always writes a fresh path and never mutates a blob in
+   * place, so the two versions can never scribble on each other.
+   *
+   * Only the latest non-deleted version of each file comes across. Superseded
+   * file versions stay with the row they happened on; the new item version
+   * starts from the file as it stands, not its editing history.
+   */
+  static async copyFilesToItem(args: {
+    sourceItemId: string
+    targetItemId: string
+    /** Where the copies are visible; null means everywhere (i.e. released). */
+    branchId?: string | null
+    tx?: TransactionClient
+  }): Promise<number> {
+    const { sourceItemId, targetItemId, branchId = null, tx } = args
+
+    // Promotion in place - the files already hang off the target.
+    if (sourceItemId === targetItemId) return 0
+
+    const client = tx ?? db
+
+    const sourceFiles = await client
+      .select()
+      .from(vaultFiles)
+      .where(
+        and(
+          eq(vaultFiles.itemId, sourceItemId),
+          eq(vaultFiles.isLatestVersion, true),
+          isNull(vaultFiles.deletedAt),
+        ),
+      )
+
+    if (sourceFiles.length === 0) return 0
+
+    // Ids are minted up front so a CAD file's generated thumbnail can be
+    // re-pointed at the copied thumbnail rather than the old version's.
+    const newIds = new Map<string, string>()
+    for (const file of sourceFiles) {
+      newIds.set(file.id, crypto.randomUUID())
+    }
+
+    await client.insert(vaultFiles).values(
+      sourceFiles.map((file) => ({
+        id: newIds.get(file.id)!,
+        itemId: targetItemId,
+        branchId,
+        fileName: file.fileName,
+        originalFileName: file.originalFileName,
+        fileSize: file.fileSize,
+        mimeType: file.mimeType,
+        fileHash: file.fileHash,
+        storageType: file.storageType,
+        storagePath: file.storagePath,
+        fileVersion: file.fileVersion,
+        isLatestVersion: true,
+        // A held edit lock belongs to the version it was taken on.
+        isCheckedOut: false,
+        // Provenance is the upload, not this copy: the file was not re-uploaded
+        // by whoever released the change, and listings order on uploadedAt.
+        uploadedBy: file.uploadedBy,
+        uploadedAt: file.uploadedAt,
+        metadata: file.metadata,
+        fileCategory: file.fileCategory,
+        categorySource: file.categorySource,
+        isPrimaryModel: file.isPrimaryModel,
+        isItemThumbnail: file.isItemThumbnail,
+        cadMetadata: file.cadMetadata,
+        thumbnailFileId: file.thumbnailFileId
+          ? (newIds.get(file.thumbnailFileId) ?? null)
+          : null,
+      })),
+    )
+
+    return sourceFiles.length
   }
 
   /**

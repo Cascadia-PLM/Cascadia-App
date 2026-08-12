@@ -12,7 +12,7 @@ import { takeFirst } from '@/lib/db/take-first'
  * Approved Manufacturer List (AML) service.
  *
  * Manufacturer parts are sourcing master data bound to a part's masterId so
- * the AML survives revisions (see docs/proposals/physical-parts-and-traceability.md).
+ * the AML survives revisions (see docs/features/physical-parts-and-traceability.md).
  * Not change-controlled in v1; qualificationStatus carries the workflow.
  */
 

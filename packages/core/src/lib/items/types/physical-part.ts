@@ -12,7 +12,7 @@ import type { BaseItem, RelationshipConfig, StateConfig } from './base'
  * certs, test reports) in the vault and participates in Consumes/Produces
  * traceability edges.
  *
- * See docs/proposals/physical-parts-and-traceability.md.
+ * See docs/features/physical-parts-and-traceability.md.
  */
 
 export type PhysicalPartInstanceKind = 'unit' | 'lot'

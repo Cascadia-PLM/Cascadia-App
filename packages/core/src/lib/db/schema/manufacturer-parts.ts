@@ -23,7 +23,7 @@ import { users } from './users'
  * manufacturer's part live as sub-rows in supplierLinks — Yamaha is a
  * manufacturer, Digi-Key is a supplier of Yamaha's part (AML vs AVL).
  *
- * See docs/proposals/physical-parts-and-traceability.md §4.2/§4.3.
+ * See docs/features/physical-parts-and-traceability.md §4.2/§4.3.
  */
 
 export interface SupplierLink {

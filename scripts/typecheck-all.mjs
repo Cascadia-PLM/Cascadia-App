@@ -22,7 +22,10 @@ const PROJECTS = [
   // files — those are checked in the app projects, through the generated tree
   // that types them. See the comment in packages/core/tsconfig.typecheck.json.
   ['packages/core', 'tsconfig.typecheck.json', null],
-  ['packages/enterprise', 'tsconfig.typecheck.json', null],
+  ['packages/advanced-auditing', 'tsconfig.json', null],
+  ['packages/design-engine', 'tsconfig.typecheck.json', null],
+  ['packages/cad-generation', 'tsconfig.json', null],
+  ['packages/odoo-integration', 'tsconfig.json', null],
   ['apps/cascadia', 'tsconfig.json', 'apps/cascadia/src/routeTree.gen.ts'],
   [
     'apps/cascadia-enterprise',
@@ -39,7 +42,7 @@ for (const [project, configName, requires] of PROJECTS) {
   const config = `${project}/${configName}`.replace('./', '')
 
   // A project that is not in this tree is a different edition, not a failure —
-  // the core-only tree has no `packages/enterprise` by construction.
+  // the core-only tree has no module packages by construction.
   if (!existsSync(config)) {
     skipped.push(`${project} (not present in this tree)`)
     continue

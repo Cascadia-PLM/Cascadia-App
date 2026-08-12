@@ -10,7 +10,7 @@ import type { BaseItem, RelationshipConfig } from './base'
 //
 // A Software item is the configuration item behind a BOM line: the Part with
 // partType 'Software' occupies the product structure, and links here via the
-// Part's 'Software' relationship. See docs/proposals/software-management.md.
+// Part's 'Software' relationship. See docs/features/software-management.md.
 // ============================================================================
 
 export const SOFTWARE_TYPES = [

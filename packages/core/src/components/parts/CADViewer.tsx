@@ -12,7 +12,6 @@ import {
 } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import {
-  Center,
   ContactShadows,
   Environment,
   GizmoHelper,
@@ -40,6 +39,62 @@ export interface CADViewerHandle {
   setView: (view: StandardView) => void
 }
 
+/** What a loaded model reports back about itself. */
+export interface CADModelStats {
+  /** Triangle count across every mesh in the model */
+  polygonCount: number
+  /** Size of the model's bounding box (x/y/z extents) */
+  boundingBox: THREE.Vector3
+  /**
+   * Center of that bounding box, in the model's native part coordinates.
+   * Geometry is never recentered, so a part authored away from its origin
+   * sits away from the world origin here too, and this is what the camera
+   * has to aim at to frame it.
+   */
+  boundingBoxCenter: THREE.Vector3
+}
+
+/** The volume the camera frames: a model's extents and where they sit. */
+interface ModelBounds {
+  size: THREE.Vector3
+  center: THREE.Vector3
+}
+
+/** A second model rendered as an overlay for version comparison. */
+export interface CADComparisonModel {
+  /** URL to the comparison CAD file */
+  fileUrl: string
+  /** File type/extension (stl, obj, glb, gltf) */
+  fileType: string
+  /** Optional file name for the legend */
+  fileName?: string
+}
+
+/** Visual settings for the comparison overlay. */
+export interface CADComparisonDisplay {
+  /** Tint applied to the primary model while comparing */
+  baseColor: string
+  /** Tint applied to the comparison model */
+  compareColor: string
+  /** Primary model opacity, 0..1 */
+  baseOpacity: number
+  /** Comparison model opacity, 0..1 */
+  compareOpacity: number
+  /** Whether the primary model is rendered */
+  baseVisible: boolean
+  /** Whether the comparison model is rendered */
+  compareVisible: boolean
+}
+
+export const DEFAULT_COMPARISON_DISPLAY: CADComparisonDisplay = {
+  baseColor: '#3b82f6',
+  compareColor: '#f97316',
+  baseOpacity: 0.6,
+  compareOpacity: 0.6,
+  baseVisible: true,
+  compareVisible: true,
+}
+
 interface CADViewerProps {
   /** URL to the CAD file to display */
   fileUrl: string
@@ -57,10 +112,21 @@ interface CADViewerProps {
   materialPreset?: MaterialPreset
   /** Whether the file has embedded colors (e.g. glTF with per-material colors) */
   hasEmbeddedColors?: boolean
+  /**
+   * A second model overlaid on the first for version comparison. Both models
+   * render in their native part coordinates, so two versions of the same
+   * part align without any registration step. While set, both models are
+   * tinted per `comparisonDisplay` so differences read as distinct colors.
+   */
+  comparison?: CADComparisonModel | null
+  /** Overlay colors/opacity/visibility; defaults to DEFAULT_COMPARISON_DISPLAY */
+  comparisonDisplay?: CADComparisonDisplay
   /** Loading callback */
-  onLoad?: (stats: { polygonCount: number; boundingBox: THREE.Vector3 }) => void
+  onLoad?: (stats: CADModelStats) => void
   /** Error callback */
   onError?: (error: Error) => void
+  /** Comparison model failed to load (viewer keeps rendering the primary) */
+  onComparisonError?: (error: Error) => void
 }
 
 /**
@@ -79,78 +145,54 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
       backgroundPreset = 'dark',
       materialPreset = 'default',
       hasEmbeddedColors = false,
+      comparison = null,
+      comparisonDisplay = DEFAULT_COMPARISON_DISPLAY,
       onLoad,
       onError,
+      onComparisonError,
     },
     ref,
   ) {
     const [error, setError] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
-    const [modelBounds, setModelBounds] = useState<THREE.Vector3 | null>(null)
+    const [baseBounds, setBaseBounds] = useState<ModelBounds | null>(null)
+    const [comparisonBounds, setComparisonBounds] =
+      useState<ModelBounds | null>(null)
+    const [comparisonLoading, setComparisonLoading] = useState(false)
+    const [comparisonFailed, setComparisonFailed] = useState(false)
     const controlsRef = useRef<any>(null)
     const cameraRef = useRef<THREE.PerspectiveCamera>(null)
 
-    // Calculate optimal camera distance based on model size
-    const getOptimalCameraDistance = (bounds: THREE.Vector3): number => {
-      const maxDimension = Math.max(bounds.x, bounds.y, bounds.z)
-      // Use FOV to calculate distance that fits the model with some padding
-      const fov = 50 * (Math.PI / 180) // Convert to radians
-      const distance = maxDimension / 2 / Math.tan(fov / 2)
-      return distance * 1.5 // Add 50% padding for comfortable viewing
+    // A new comparison target starts its own load cycle
+    const comparisonUrl = comparison?.fileUrl ?? null
+    useEffect(() => {
+      setComparisonLoading(Boolean(comparisonUrl))
+      setComparisonFailed(false)
+      setComparisonBounds(null)
+    }, [comparisonUrl])
+
+    // What the camera frames: both versions at once while comparing, so
+    // neither overlaid model can sit outside the view. Memoized because its
+    // identity is what re-triggers the auto-fit.
+    const modelBounds = useMemo(
+      () => (baseBounds ? unionBounds(baseBounds, comparisonBounds) : null),
+      [baseBounds, comparisonBounds],
+    )
+
+    // Set camera to a standard view
+    const setView = (view: StandardView) => {
+      if (!cameraRef.current || !modelBounds) return
+      applyStandardView(
+        cameraRef.current,
+        controlsRef.current,
+        modelBounds,
+        view,
+      )
     }
 
     // Reset camera view to fit model
     const resetView = () => {
-      if (controlsRef.current && cameraRef.current && modelBounds) {
-        const distance = getOptimalCameraDistance(modelBounds)
-        cameraRef.current.position.set(distance * 0.5, distance * 0.3, distance)
-        cameraRef.current.up.set(0, 1, 0)
-        cameraRef.current.lookAt(0, 0, 0)
-        controlsRef.current.target.set(0, 0, 0)
-        controlsRef.current.update()
-      }
-    }
-
-    // Set camera to a standard view
-    const setView = (view: StandardView) => {
-      if (!controlsRef.current || !cameraRef.current || !modelBounds) return
-
-      const distance = getOptimalCameraDistance(modelBounds)
-      const camera = cameraRef.current
-      const controls = controlsRef.current
-
-      // Always reset up vector before setting position
-      camera.up.set(0, 1, 0)
-
-      switch (view) {
-        case 'front':
-          camera.position.set(0, 0, distance)
-          break
-        case 'back':
-          camera.position.set(0, 0, -distance)
-          break
-        case 'left':
-          camera.position.set(-distance, 0, 0)
-          break
-        case 'right':
-          camera.position.set(distance, 0, 0)
-          break
-        case 'top':
-          camera.position.set(0, distance, 0)
-          camera.up.set(0, 0, -1)
-          break
-        case 'bottom':
-          camera.position.set(0, -distance, 0)
-          camera.up.set(0, 0, 1)
-          break
-        case 'iso':
-          camera.position.set(distance * 0.5, distance * 0.3, distance)
-          break
-      }
-
-      camera.lookAt(0, 0, 0)
-      controls.target.set(0, 0, 0)
-      controls.update()
+      setView('iso')
     }
 
     // Expose resetView and setView via ref
@@ -170,13 +212,22 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
       onError?.(err)
     }
 
-    const handleModelLoad = (stats: {
-      polygonCount: number
-      boundingBox: THREE.Vector3
-    }) => {
-      setModelBounds(stats.boundingBox)
+    const handleModelLoad = (stats: CADModelStats) => {
+      setBaseBounds(boundsFromStats(stats))
       setIsLoading(false)
       onLoad?.(stats)
+    }
+
+    // Comparison failures degrade to a badge; the primary model keeps rendering
+    const handleComparisonLoad = (stats: CADModelStats) => {
+      setComparisonBounds(boundsFromStats(stats))
+      setComparisonLoading(false)
+    }
+
+    const handleComparisonError = (err: Error) => {
+      setComparisonLoading(false)
+      setComparisonFailed(true)
+      onComparisonError?.(err)
     }
 
     if (error) {
@@ -195,31 +246,25 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
     }
 
     // Calculate dynamic zoom limits based on model size
-    const maxDim = modelBounds
-      ? Math.max(modelBounds.x, modelBounds.y, modelBounds.z)
-      : 100
+    const size = modelBounds?.size
+    const maxDim = size ? Math.max(size.x, size.y, size.z) : 100
     const minZoomDistance = Math.max(0.1, maxDim * 0.01)
     const maxZoomDistance = Math.max(1000, maxDim * 10)
-    const initialCameraDistance = modelBounds
-      ? getOptimalCameraDistance(modelBounds)
-      : 5
+    const initialCameraDistance = size ? getOptimalCameraDistance(size) : 5
 
     const bgConfig = BACKGROUND_PRESETS[backgroundPreset]
 
     // Calculate grid cell size based on model bounds
-    const gridCellSize = modelBounds
-      ? Math.pow(
-          10,
-          Math.floor(
-            Math.log10(
-              Math.max(modelBounds.x, modelBounds.y, modelBounds.z) / 5,
-            ),
-          ),
-        )
+    const gridCellSize = size
+      ? Math.pow(10, Math.floor(Math.log10(maxDim / 5)))
       : 1
 
-    // Grid Y offset — position below the model
-    const gridY = modelBounds ? -(modelBounds.y / 2) - 0.01 : 0
+    // Ground plane for the grid and contact shadows — just below the model,
+    // which sits wherever its native coordinates put it rather than at the
+    // origin, so this is measured down from the bounding-box center.
+    const groundY = modelBounds
+      ? modelBounds.center.y - modelBounds.size.y / 2 - 0.01
+      : 0
 
     return (
       <div className="relative w-full h-full rounded-lg overflow-hidden">
@@ -266,25 +311,55 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
             <Environment preset={bgConfig.environmentPreset as any} />
           </Suspense>
 
-          {/* Model */}
+          {/* Models. Geometry is deliberately never recentered: both render
+              in the part's native coordinates, which is exactly what lets two
+              versions overlay and align without a registration step. The
+              camera aims at the union of their bounding boxes instead — see
+              CameraAutoFit. */}
           <Suspense fallback={null}>
-            <Center>
+            <Model
+              fileUrl={fileUrl}
+              fileType={fileType}
+              wireframe={wireframe}
+              materialPreset={materialPreset}
+              hasEmbeddedColors={hasEmbeddedColors}
+              tint={
+                comparison
+                  ? {
+                      color: comparisonDisplay.baseColor,
+                      opacity: comparisonDisplay.baseOpacity,
+                    }
+                  : null
+              }
+              visible={!comparison || comparisonDisplay.baseVisible}
+              renderOrder={0}
+              onLoad={handleModelLoad}
+              onError={handleError}
+            />
+            {comparison && (
               <Model
-                fileUrl={fileUrl}
-                fileType={fileType}
+                key={comparison.fileUrl}
+                fileUrl={comparison.fileUrl}
+                fileType={comparison.fileType}
                 wireframe={wireframe}
                 materialPreset={materialPreset}
-                hasEmbeddedColors={hasEmbeddedColors}
-                onLoad={handleModelLoad}
-                onError={handleError}
+                hasEmbeddedColors={false}
+                tint={{
+                  color: comparisonDisplay.compareColor,
+                  opacity: comparisonDisplay.compareOpacity,
+                }}
+                visible={comparisonDisplay.compareVisible}
+                renderOrder={1}
+                onLoad={handleComparisonLoad}
+                onError={handleComparisonError}
               />
-            </Center>
+            )}
           </Suspense>
 
           {/* Grid */}
           {showGrid && (
             <Grid
-              position={[0, gridY, 0]}
+              position={[0, groundY, 0]}
               args={[100, 100]}
               cellSize={gridCellSize}
               cellThickness={0.5}
@@ -301,7 +376,7 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
           {/* Contact shadows for studio mode */}
           {bgConfig.contactShadows && modelBounds && (
             <ContactShadows
-              position={[0, gridY, 0]}
+              position={[modelBounds.center.x, groundY, modelBounds.center.z]}
               opacity={0.4}
               scale={maxDim * 3}
               blur={2}
@@ -341,11 +416,48 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
           )}
         </Canvas>
 
-        {/* File name overlay */}
+        {/* File name overlay; becomes a color legend while comparing */}
         {fileName && !isLoading && (
           <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg">
-            <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
-              {fileName}
+            {comparison ? (
+              <div className="space-y-1">
+                <p className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: comparisonDisplay.baseColor }}
+                  />
+                  {fileName}
+                </p>
+                <p className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: comparisonDisplay.compareColor }}
+                  />
+                  {comparison.fileName ?? 'Comparison model'}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                {fileName}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Comparison load status — bottom center, clear of the legend
+            (bottom-left) and the compare panel (bottom-right) */}
+        {comparison && comparisonLoading && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Loading comparison…
+            </p>
+          </div>
+        )}
+        {comparison && comparisonFailed && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg">
+            <p className="text-xs font-medium text-red-500 dark:text-red-400">
+              Comparison model failed to load
             </p>
           </div>
         )}
@@ -392,34 +504,117 @@ function SceneBackground({
   return null
 }
 
+/** The volume a freshly loaded model occupies, in its native coordinates. */
+function boundsFromStats(stats: CADModelStats): ModelBounds {
+  return { size: stats.boundingBox, center: stats.boundingBoxCenter }
+}
+
 /**
- * Component to auto-fit camera to model bounds on initial load
+ * Smallest volume containing both models, for framing a comparison overlay.
+ * Two versions of a part share native coordinates but not extents — a boss
+ * added in the newer revision pushes one box past the other.
+ */
+function unionBounds(
+  base: ModelBounds,
+  other: ModelBounds | null,
+): ModelBounds {
+  if (!other) return base
+
+  const box = new THREE.Box3().setFromCenterAndSize(base.center, base.size)
+  box.union(new THREE.Box3().setFromCenterAndSize(other.center, other.size))
+
+  const size = new THREE.Vector3()
+  const center = new THREE.Vector3()
+  box.getSize(size)
+  box.getCenter(center)
+  return { size, center }
+}
+
+/** Calculate optimal camera distance based on model size */
+function getOptimalCameraDistance(size: THREE.Vector3): number {
+  const maxDimension = Math.max(size.x, size.y, size.z)
+  // Use FOV to calculate distance that fits the model with some padding
+  const fov = 50 * (Math.PI / 180) // Convert to radians
+  const distance = maxDimension / 2 / Math.tan(fov / 2)
+  return distance * 1.5 // Add 50% padding for comfortable viewing
+}
+
+/** Where the camera sits relative to the model, and which way is up, per view */
+function getViewPlacement(
+  view: StandardView,
+  distance: number,
+): { offset: THREE.Vector3; up: THREE.Vector3 } {
+  const yUp = new THREE.Vector3(0, 1, 0)
+
+  switch (view) {
+    case 'front':
+      return { offset: new THREE.Vector3(0, 0, distance), up: yUp }
+    case 'back':
+      return { offset: new THREE.Vector3(0, 0, -distance), up: yUp }
+    case 'left':
+      return { offset: new THREE.Vector3(-distance, 0, 0), up: yUp }
+    case 'right':
+      return { offset: new THREE.Vector3(distance, 0, 0), up: yUp }
+    case 'top':
+      return {
+        offset: new THREE.Vector3(0, distance, 0),
+        up: new THREE.Vector3(0, 0, -1),
+      }
+    case 'bottom':
+      return {
+        offset: new THREE.Vector3(0, -distance, 0),
+        up: new THREE.Vector3(0, 0, 1),
+      }
+    case 'iso':
+      return {
+        offset: new THREE.Vector3(distance * 0.5, distance * 0.3, distance),
+        up: yUp,
+      }
+  }
+}
+
+/**
+ * Frame a model from a standard direction.
+ *
+ * Every placement is relative to the model's bounding-box center, never the
+ * world origin: geometry keeps its native part coordinates, so a part
+ * authored far from its origin would otherwise sit outside the frame while
+ * the camera stared at empty space.
+ */
+function applyStandardView(
+  camera: THREE.Camera,
+  controls: { target: THREE.Vector3; update: () => void } | null,
+  bounds: ModelBounds,
+  view: StandardView,
+) {
+  const distance = getOptimalCameraDistance(bounds.size)
+  const { offset, up } = getViewPlacement(view, distance)
+
+  camera.up.copy(up)
+  camera.position.copy(bounds.center).add(offset)
+  camera.lookAt(bounds.center)
+
+  if (controls) {
+    controls.target.copy(bounds.center)
+    controls.update()
+  }
+}
+
+/**
+ * Component to auto-fit camera to model bounds whenever a model loads.
+ * `bounds` is a fresh object per load, so switching CAD files re-frames.
  */
 function CameraAutoFit({
   bounds,
   controlsRef,
 }: {
-  bounds: THREE.Vector3
+  bounds: ModelBounds
   controlsRef: React.RefObject<any>
 }) {
   const { camera } = useThree()
-  const hasAutoFit = useRef(false)
 
   useEffect(() => {
-    if (hasAutoFit.current) return
-    hasAutoFit.current = true
-
-    const maxDimension = Math.max(bounds.x, bounds.y, bounds.z)
-    const fov = 50 * (Math.PI / 180)
-    const distance = (maxDimension / 2 / Math.tan(fov / 2)) * 1.5
-
-    camera.position.set(distance * 0.5, distance * 0.3, distance)
-    camera.lookAt(0, 0, 0)
-
-    if (controlsRef.current) {
-      controlsRef.current.target.set(0, 0, 0)
-      controlsRef.current.update()
-    }
+    applyStandardView(camera, controlsRef.current, bounds, 'iso')
   }, [bounds, camera, controlsRef])
 
   return null
@@ -430,6 +625,11 @@ function CameraAutoFit({
  * Supports STL, OBJ, and glTF/GLB file formats.
  * For glTF files with embedded colors, supports switching between
  * original materials and preset overrides.
+ *
+ * A `tint` replaces every material with a flat translucent color — the
+ * comparison overlay's rendering mode. Translucent tints skip depth writes
+ * so two near-coincident shells blend instead of z-fighting; unchanged
+ * regions read as the blend of both colors, differences as a single color.
  */
 function Model({
   fileUrl,
@@ -437,6 +637,9 @@ function Model({
   wireframe = false,
   materialPreset = 'default',
   hasEmbeddedColors = false,
+  tint = null,
+  visible = true,
+  renderOrder = 0,
   onLoad,
   onError,
 }: {
@@ -445,7 +648,10 @@ function Model({
   wireframe?: boolean
   materialPreset?: MaterialPreset
   hasEmbeddedColors?: boolean
-  onLoad: (stats: { polygonCount: number; boundingBox: THREE.Vector3 }) => void
+  tint?: { color: string; opacity: number } | null
+  visible?: boolean
+  renderOrder?: number
+  onLoad: (stats: CADModelStats) => void
   onError: (error: Error) => void
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
@@ -550,7 +756,9 @@ function Model({
           })
 
           const size = new THREE.Vector3()
+          const center = new THREE.Vector3()
           box.getSize(size)
+          box.getCenter(center)
 
           disposablesRef.current = { geometry: null, gltfScene: scene }
           setGltfScene(scene)
@@ -558,6 +766,7 @@ function Model({
           onLoadRef.current({
             polygonCount: Math.floor(totalPolygons),
             boundingBox: size,
+            boundingBoxCenter: center,
           })
         } else {
           let loadedGeometry: THREE.BufferGeometry
@@ -611,8 +820,10 @@ function Model({
           loadedGeometry.computeBoundingBox()
           const boundingBox = loadedGeometry.boundingBox
           const size = new THREE.Vector3()
+          const center = new THREE.Vector3()
           if (boundingBox) {
             boundingBox.getSize(size)
+            boundingBox.getCenter(center)
           }
 
           const polygonCount = loadedGeometry.index
@@ -626,6 +837,7 @@ function Model({
           onLoadRef.current({
             polygonCount: Math.floor(polygonCount),
             boundingBox: size,
+            boundingBoxCenter: center,
           })
         }
       } catch (error) {
@@ -655,18 +867,34 @@ function Model({
     }
   }, [fileUrl, fileType])
 
-  // Apply material overrides to glTF scene when preset or wireframe changes
+  // Apply material overrides to glTF scene when tint, preset, or wireframe changes
+  const tintColor = tint?.color
+  const tintOpacity = tint?.opacity
   useEffect(() => {
     if (!gltfScene) return
 
     const origMats = originalMaterialsRef.current
+    const tinted = tintColor !== undefined && tintOpacity !== undefined
     const useOriginal =
-      hasEmbeddedColors && materialPreset === 'default' && !wireframe
+      !tinted && hasEmbeddedColors && materialPreset === 'default' && !wireframe
 
     gltfScene.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return
 
-      if (useOriginal) {
+      child.renderOrder = renderOrder
+
+      if (tinted) {
+        // Comparison tint replaces everything, embedded colors included
+        child.material = new THREE.MeshStandardMaterial({
+          color: tintColor,
+          metalness: 0.15,
+          roughness: 0.6,
+          transparent: true,
+          opacity: tintOpacity,
+          depthWrite: tintOpacity >= 0.99,
+          wireframe,
+        })
+      } else if (useOriginal) {
         // Restore original glTF materials
         const orig = origMats.get(child.uuid)
         if (orig) {
@@ -685,14 +913,31 @@ function Model({
         })
       }
     })
-  }, [gltfScene, materialPreset, wireframe, hasEmbeddedColors])
+  }, [
+    gltfScene,
+    materialPreset,
+    wireframe,
+    hasEmbeddedColors,
+    tintColor,
+    tintOpacity,
+    renderOrder,
+  ])
 
   const mat = MATERIAL_PRESETS[materialPreset]
+  // Translucent tints don't write depth or cast shadows — overlapping
+  // version shells must blend rather than occlude or double-shadow
+  const tintIsSolid = !tint || tint.opacity >= 0.99
 
   // Render glTF scene
   if (gltfScene) {
     return (
-      <primitive ref={groupRef} object={gltfScene} castShadow receiveShadow />
+      <primitive
+        ref={groupRef}
+        object={gltfScene}
+        visible={visible}
+        castShadow={tintIsSolid}
+        receiveShadow
+      />
     )
   }
 
@@ -702,13 +947,23 @@ function Model({
   }
 
   return (
-    <mesh ref={meshRef} geometry={geometry} castShadow receiveShadow>
+    <mesh
+      ref={meshRef}
+      geometry={geometry}
+      visible={visible}
+      renderOrder={renderOrder}
+      castShadow={tintIsSolid}
+      receiveShadow
+    >
       <meshStandardMaterial
-        color={wireframe ? '#3b82f6' : mat.color}
-        metalness={wireframe ? 0.1 : mat.metalness}
-        roughness={wireframe ? 0.8 : mat.roughness}
+        color={tint ? tint.color : wireframe ? '#3b82f6' : mat.color}
+        metalness={tint ? 0.15 : wireframe ? 0.1 : mat.metalness}
+        roughness={tint ? 0.6 : wireframe ? 0.8 : mat.roughness}
         flatShading={false}
         wireframe={wireframe}
+        transparent={Boolean(tint)}
+        opacity={tint?.opacity ?? 1}
+        depthWrite={tintIsSolid}
       />
     </mesh>
   )

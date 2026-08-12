@@ -11,11 +11,15 @@ import { defineConfig } from 'vitest/config'
 import viteTsConfigPaths from 'vite-tsconfig-paths'
 import viteReact from '@vitejs/plugin-react'
 
-// Filtered by existence: the published core repo has no `packages/enterprise`,
+// Filtered by existence: the published core repo has none of the module
+// packages,
 // and naming a missing tsconfig here would fail before a single test ran.
 const tsconfigProjects = [
   './packages/core/tsconfig.json',
-  './packages/enterprise/tsconfig.json',
+  './packages/advanced-auditing/tsconfig.json',
+  './packages/design-engine/tsconfig.json',
+  './packages/cad-generation/tsconfig.json',
+  './packages/odoo-integration/tsconfig.json',
 ].filter((project) => existsSync(project))
 
 export default defineConfig({

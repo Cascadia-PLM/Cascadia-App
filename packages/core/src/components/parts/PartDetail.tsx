@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Link, useNavigate } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft,
@@ -9,6 +10,7 @@ import {
   Eye,
   EyeOff,
   GitBranch,
+  GitCompare,
   Info,
   Loader2,
   Lock,
@@ -19,7 +21,11 @@ import {
 } from 'lucide-react'
 import type { Part } from '@/lib/items/types/part'
 import type { Design } from '@/lib/types/design'
-import type { CADViewerHandle } from '@/components/parts/CADViewer'
+import type {
+  CADComparisonDisplay,
+  CADModelStats,
+  CADViewerHandle,
+} from '@/components/parts/CADViewer'
 import type { DesignStatus } from '@/components/versioning/DesignPhaseIndicator'
 import type {
   BackgroundPreset,
@@ -46,7 +52,11 @@ import { WorkInstructionsForPartPanel } from '@/components/work-instructions'
 import { DesignPhaseIndicator } from '@/components/versioning/DesignPhaseIndicator'
 import { BranchSelector } from '@/components/versioning/BranchSelector'
 import { CheckoutDialog } from '@/components/items/CheckoutDialog'
-import { CADViewer } from '@/components/parts/CADViewer'
+import {
+  CADViewer,
+  DEFAULT_COMPARISON_DISPLAY,
+} from '@/components/parts/CADViewer'
+import { CADComparePanel } from '@/components/parts/CADComparePanel'
 import { CADViewerToolbar } from '@/components/parts/CADViewerToolbar'
 import { useCADViewerKeyboard } from '@/components/parts/useCADViewerKeyboard'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
@@ -93,7 +103,7 @@ import { PartThumbnail } from '@/components/parts/PartThumbnail'
 import { PartAmlSection } from '@/components/parts/PartAmlSection'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useInvalidateResources } from '@/lib/query'
+import { itemModelVersionsQuery, useInvalidateResources } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
 
 // Constants
@@ -311,10 +321,7 @@ export function PartDetail({
   const [selectedCADFile, setSelectedCADFile] = useState<CADFileEntry | null>(
     null,
   )
-  const [cadModelStats, setCADModelStats] = useState<{
-    polygonCount?: number
-    boundingBox?: { x: number; y: number; z: number }
-  }>({})
+  const [cadModelStats, setCADModelStats] = useState<Partial<CADModelStats>>({})
   const [showCADViewer, setShowCADViewer] = useState(true)
   const [cadWireframe, setCADWireframe] = useState(false)
   const [cadShowGrid, setCADShowGrid] = useState(false)
@@ -323,6 +330,12 @@ export function PartDetail({
   const [cadMaterial, setCADMaterial] = useState<MaterialPreset>('default')
   const cadViewerRef = useRef<CADViewerHandle>(null)
   const viewerContainerRef = useRef<HTMLDivElement>(null)
+
+  // Version comparison overlay state
+  const [cadCompareOpen, setCADCompareOpen] = useState(false)
+  const [cadCompareKey, setCADCompareKey] = useState<string | null>(null)
+  const [cadCompareDisplay, setCADCompareDisplay] =
+    useState<CADComparisonDisplay>(DEFAULT_COMPARISON_DISPLAY)
 
   // Bumped whenever the item's thumbnail may have changed, to bust the img cache
   const [thumbnailVersion, setThumbnailVersion] = useState(0)
@@ -563,6 +576,34 @@ export function PartDetail({
   // The part to display (version-aware for existing parts)
   const currentPart = isCreateMode ? part : displayedPart
 
+  // Comparable versions of this part's master, fetched when the compare
+  // panel is open. Master-scoped, so every entry stays valid as the user
+  // moves between version contexts of the same part.
+  const { data: modelVersions = [], isLoading: modelVersionsLoading } =
+    useQuery(
+      itemModelVersionsQuery(
+        isCreateMode ? undefined : displayedPart.id,
+        cadCompareOpen,
+      ),
+    )
+
+  // A different version row means the comparison baseline changed
+  useEffect(() => {
+    setCADCompareKey(null)
+  }, [displayedPart.id])
+
+  const cadCompareEntry = cadCompareOpen
+    ? modelVersions.find((v) => v.key === cadCompareKey)
+    : undefined
+  const cadComparison =
+    cadCompareEntry?.file && cadCompareEntry.file.id !== selectedCADFile?.id
+      ? {
+          fileUrl: `/api/v1/files/${cadCompareEntry.file.id}/download`,
+          fileType: cadCompareEntry.file.fileType,
+          fileName: cadCompareEntry.file.fileName,
+        }
+      : null
+
   // Attached images drive the Gallery tab. Shares FileList's query — same
   // item, same version context — so this costs no extra request.
   const { images: galleryImages } = useItemImages(
@@ -705,10 +746,7 @@ export function PartDetail({
     setShowCADViewer(true)
   }
 
-  const handleCADModelLoad = (stats: {
-    polygonCount: number
-    boundingBox: { x: number; y: number; z: number }
-  }) => {
+  const handleCADModelLoad = (stats: CADModelStats) => {
     setCADModelStats(stats)
   }
 
@@ -1306,6 +1344,18 @@ export function PartDetail({
                             </Select>
                           )}
                           <Button
+                            variant={cadCompareOpen ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => {
+                              if (cadCompareOpen) setCADCompareKey(null)
+                              setCADCompareOpen(!cadCompareOpen)
+                            }}
+                            title="Overlay another version of this part"
+                          >
+                            <GitCompare className="h-4 w-4 mr-2" />
+                            Compare
+                          </Button>
+                          <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setShowCADViewer(false)}
@@ -1357,13 +1407,35 @@ export function PartDetail({
                             selectedCADFile.hasColors &&
                             selectedCADFile.fileType === 'glb'
                           }
+                          comparison={cadComparison}
+                          comparisonDisplay={cadCompareDisplay}
                           onLoad={handleCADModelLoad}
                           onError={(error) =>
                             handleError(error, {
                               title: 'Failed to load CAD model',
                             })
                           }
+                          onComparisonError={(error) =>
+                            handleError(error, {
+                              title: 'Failed to load comparison model',
+                            })
+                          }
                         />
+                        {cadCompareOpen && (
+                          <CADComparePanel
+                            versions={modelVersions}
+                            isLoading={modelVersionsLoading}
+                            selectedKey={cadCompareKey}
+                            onSelect={setCADCompareKey}
+                            display={cadCompareDisplay}
+                            onDisplayChange={setCADCompareDisplay}
+                            currentFileId={selectedCADFile.id}
+                            onClose={() => {
+                              setCADCompareOpen(false)
+                              setCADCompareKey(null)
+                            }}
+                          />
+                        )}
                       </div>
                     </CardContent>
                   </Card>

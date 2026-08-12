@@ -28,7 +28,7 @@ import { takeFirst } from '@/lib/db/take-first'
  * Traveler management: instances of WorkInstruction templates inside a
  * work order. Instantiation freezes the template content into a snapshot;
  * line status is derived from executions, never stored.
- * See docs/proposals/work-order-traveler.md.
+ * See docs/features/work-order-traveler.md.
  */
 
 /** Maximum BOM depth walked by populate(); guards against cycles. */

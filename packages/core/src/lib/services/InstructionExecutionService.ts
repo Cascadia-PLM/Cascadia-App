@@ -20,7 +20,7 @@ import { takeFirst } from '@/lib/db/take-first'
  * Runs of traveler lines (work order instructions). An execution always
  * belongs to a line — there are no standalone executions; performing a
  * procedure outside an order means creating an order for it.
- * See docs/proposals/work-order-traveler.md.
+ * See docs/features/work-order-traveler.md.
  */
 
 /** Line joined with its order — the context every run needs. */

@@ -765,6 +765,11 @@ export class CheckoutService {
         ? await LifecycleService.getInitialStateId(item.itemType)
         : item.state
 
+    // Loaded dynamically, and before the transaction opens: ItemService imports
+    // this module, so importing FileService statically here would close the
+    // cycle CheckoutService -> FileService -> ItemService -> CheckoutService.
+    const { FileService } = await import('../vault/services/FileService')
+
     return db.transaction(
       async (tx) => {
         // 1. Create new item record with changes. Working copies are never
@@ -805,6 +810,17 @@ export class CheckoutService {
             tx,
           )
         }
+
+        // 1c. Carry the base version's files onto the working copy. Files hang
+        // off an item version, so without this the first save on a branch
+        // silently strips the item of its CAD and attachments - and the merge
+        // releases that copy in place, making the loss permanent.
+        await FileService.copyFilesToItem({
+          sourceItemId: item.id,
+          targetItemId: newItem.id,
+          branchId: validated.branchId,
+          tx,
+        })
 
         // 2. Compute field-level changes
         // Include extension fields on both sides so type-category changes

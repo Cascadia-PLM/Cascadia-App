@@ -18,7 +18,7 @@ import { SATISFIES_RELATIONSHIP } from '@/lib/services/RequirementService'
 
 /**
  * Qualification evidence and rollup
- * (docs/proposals/physical-parts-and-traceability.md Phase 5).
+ * (docs/features/physical-parts-and-traceability.md Phase 5).
  *
  * An `Evidences` edge asserts, by a human, that a physical instance's
  * documentation satisfies a requirement — e.g. "this feedstock lot's mill

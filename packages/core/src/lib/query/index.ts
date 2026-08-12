@@ -88,6 +88,8 @@ export {
   testPlanTestCasesQuery,
 } from './options/tests'
 export type { TestExecution, TestPlanTestCase } from './options/tests'
+export { itemModelVersionsQuery } from './options/model-versions'
+export type { ModelVersionEntry } from './options/model-versions'
 export { designItemsGridQuery } from './options/design-items'
 export type { DesignItem, DesignItemsContext } from './options/design-items'
 export { authSessionQuery } from './options/auth'

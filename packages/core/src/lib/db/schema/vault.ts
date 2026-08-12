@@ -68,6 +68,7 @@ export const vaultFiles = pgTable(
       units?: string // e.g., 'mm', 'in', 'ft'
       polygonCount?: number // For mesh files (STL, OBJ)
       boundingBox?: { x: number; y: number; z: number } // Model dimensions
+      hasColors?: boolean // Per-face colors preserved (GLB written by the CAD converter)
     }>(),
 
     thumbnailFileId: uuid('thumbnail_file_id'), // Self-referencing FK added via raw SQL migration

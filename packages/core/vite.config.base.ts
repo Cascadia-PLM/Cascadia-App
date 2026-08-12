@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { fileURLToPath } from 'node:url'
-import { existsSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, statSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
@@ -14,7 +14,22 @@ import type { VirtualRootRoute } from '@tanstack/virtual-file-routes'
 
 const CORE_DIR = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(CORE_DIR, '../..')
-const ENTERPRISE_SRC = resolve(REPO_ROOT, 'packages/enterprise/src')
+// Discovered, not named: writing a module package's id here would put
+// proprietary knowledge in a core file — `boundary:check` says so, and it is
+// right, because this file is published to a tree where those packages do not
+// exist. Presence on disk is the test instead, the same principle as
+// `scripts/workers.mjs` choosing its CAD services by `existsSync`: a directory
+// that is not there contributes nothing, with no flag to get wrong.
+const MODULE_PACKAGES = existsSync(resolve(REPO_ROOT, 'packages'))
+  ? readdirSync(resolve(REPO_ROOT, 'packages')).filter(
+      (name) =>
+        name !== 'core' &&
+        existsSync(resolve(REPO_ROOT, 'packages', name, 'src')),
+    )
+  : []
+const MODULE_SRC = new Map(
+  MODULE_PACKAGES.map((p) => [p, resolve(REPO_ROOT, 'packages', p, 'src')]),
+)
 
 const EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.css', '.json']
 
@@ -23,7 +38,7 @@ const posixPath = (...segments: Array<string>) =>
   resolve(...segments).replace(/\\/g, '/')
 
 /**
- * Resolve `@/`, `@cascadia/core/` and `@cascadia/enterprise/` against the
+ * Resolve `@/`, `@cascadia/core/` and each `@cascadia/<module>/` against the
  * package roots this edition includes.
  *
  * Written out rather than delegating to `vite-tsconfig-paths` because that
@@ -62,9 +77,15 @@ function cascadiaAliases(roots: Array<string>): Plugin {
       } else if (source.startsWith('@cascadia/core/')) {
         rest = source.slice('@cascadia/core/'.length)
         search = [resolve(CORE_DIR, 'src')]
-      } else if (source.startsWith('@cascadia/enterprise/')) {
-        rest = source.slice('@cascadia/enterprise/'.length)
-        search = [ENTERPRISE_SRC]
+      } else {
+        for (const [name, dir] of MODULE_SRC) {
+          const prefix = `@cascadia/${name}/`
+          if (source.startsWith(prefix)) {
+            rest = source.slice(prefix.length)
+            search = [dir]
+            break
+          }
+        }
       }
       if (rest === null) return null
 
@@ -91,7 +112,7 @@ export interface AppViteOptions {
    *
    * The one thing that genuinely differs between editions on the client: which
    * directories are scanned for route files. See "Client route composition" in
-   * `docs/proposals/loadable-modules-architecture.md`.
+   * `docs/architecture/loadable-modules-architecture.md`.
    */
   virtualRouteConfig: VirtualRootRoute
 }

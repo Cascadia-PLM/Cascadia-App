@@ -14,7 +14,7 @@ Requirement --> Part (EBOM) --> Part (MBOM) --> Work Instruction --> Work Order 
                               "what to build"   "how to build it"   "this build's copy"   "proof it was built"
 ```
 
-A WorkInstruction is a **template** -- authored content describing a procedure. It is never executed directly. Work orders **instantiate** templates into their traveler (`work_order_instructions` -- one frozen copy per template × part), and executions (`instruction_executions`) record runs of those traveler lines. This definition/usage separation follows the same SysML v2 pattern used for Parts throughout Cascadia; the full design is in `docs/proposals/work-order-traveler.md`.
+A WorkInstruction is a **template** -- authored content describing a procedure. It is never executed directly. Work orders **instantiate** templates into their traveler (`work_order_instructions` -- one frozen copy per template × part), and executions (`instruction_executions`) record runs of those traveler lines. This definition/usage separation follows the same SysML v2 pattern used for Parts throughout Cascadia; the full design is in `docs/features/work-order-traveler.md`.
 
 ### Item Type Registration
 

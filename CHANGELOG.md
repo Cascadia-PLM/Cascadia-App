@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Identity and genealogy for real material, without crossing into quantity or value —
 no inventory balances, no costing. See
-[docs/proposals/physical-parts-and-traceability.md](./docs/proposals/physical-parts-and-traceability.md).
+[docs/features/physical-parts-and-traceability.md](./docs/features/physical-parts-and-traceability.md).
 
 - **PhysicalPart item type** — A physical instance of a Part: a serialized **unit** or an identified **lot**. Non-versioned (Tool pattern). It accumulates documents in the vault (material certs, test reports, CoCs), carries requirement evidence, and anchors genealogy. Numbered `PP-000001` as a stable handle; the display identity is the serial or lot number, unique per part lineage
 - **Work Orders promoted to an item type** — Previously a standalone table. As items they hold vault attachments and participate in `item_relationships`, and keep the same `WO-000001` numbering so migrated and new numbers are indistinguishable
@@ -29,7 +29,7 @@ no inventory balances, no costing. See
 #### Software Management
 
 Firmware and software configuration items versioned alongside the hardware they
-ship with. See [docs/proposals/software-management.md](./docs/proposals/software-management.md).
+ship with. See [docs/features/software-management.md](./docs/features/software-management.md).
 
 - **Software item type** — `softwareType` (firmware, application, library, configuration, fpga), target hardware, toolchain, and a build-artifact slot in the vault. Shares the Part lifecycle, so it is ECO-controlled like any other released engineering item
 - **Content-addressed source store** — `software_blobs` plus immutable `software_manifests`. The `manifestId` pointer rides the item version, so branch isolation and time travel work with no special cases

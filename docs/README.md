@@ -16,34 +16,38 @@ This documentation covers the Cascadia PLM application architecture, features, A
 
 ## Architecture
 
-| Document                                                 | Description                                                        |
-| -------------------------------------------------------- | ------------------------------------------------------------------ |
-| [Overview](./architecture/overview.md)                   | System architecture, tech stack, design philosophy                 |
-| [Two-Table Pattern](./architecture/two-table-pattern.md) | Item type architecture (base + type-specific tables)               |
-| [ECO-as-Branch](./architecture/eco-as-branch.md)         | The signature Git-style branching model for engineering changes    |
-| [Service Layer](./architecture/service-layer.md)         | Three-layer service architecture, dependency graph, error handling |
-| [Security](./architecture/security.md)                   | Authentication, CSRF, CORS, RBAC, input validation                 |
+| Document                                                                                                | Description                                                         |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| [Overview](./architecture/overview.md)                                                                  | System architecture, tech stack, design philosophy                  |
+| [Two-Table Pattern](./architecture/two-table-pattern.md)                                                | Item type architecture (base + type-specific tables)                |
+| [ECO-as-Branch](./architecture/eco-as-branch.md)                                                        | The signature Git-style branching model for engineering changes     |
+| [Service Layer](./architecture/service-layer.md)                                                        | Three-layer service architecture, dependency graph, error handling  |
+| [Security](./architecture/security.md)                                                                  | Authentication, CSRF, CORS, RBAC, input validation                  |
+| [Change Order / Versioning / Lifecycle](./architecture/change-order-versioning-lifecycle-assessment.md) | As-built record of that domain: ten findings, how each was resolved |
 
 ## Features
 
-| Document                                                 | Description                                                                                                                                                  |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [Item Types](./features/item-types.md)                   | All 13 item types: Part, Document, Change Order, Requirement, Task, Work Instruction, Issue, Test Plan, Test Case, Software, Tool, Physical Part, Work Order |
-| [Change Management](./features/change-management.md)     | ECO workflow, change actions, impact analysis, conflict detection                                                                                            |
-| [BOM Management](./features/bom-management.md)           | Bill of Materials hierarchies, where-used, cross-design references                                                                                           |
-| [File Vault](./features/file-vault.md)                   | Document control, check-in/out, vault storage, lock hierarchy                                                                                                |
-| [Workflow Engine](./features/workflow-engine.md)         | Lifecycle management, workflow definitions, approval voting                                                                                                  |
-| [Versioning](./features/versioning.md)                   | Git-style versioning, branches, commits, tags, revision schemes                                                                                              |
-| [Programs & Designs](./features/programs-and-designs.md) | Organizational hierarchy, program membership, design cloning                                                                                                 |
-| [Search](./features/search.md)                           | Enterprise search, type-specific search, filtering                                                                                                           |
-| [Reporting](./features/reporting.md)                     | Report engine, CSV export, saved configurations                                                                                                              |
-| [Visualization](./features/visualization.md)             | BOM trees, relationship graphs, 3D CAD viewer, history graphs                                                                                                |
-| [Import/Export](./features/import-export.md)             | Excel/CSV import, BOM import, column auto-mapping                                                                                                            |
-| [Work Instructions](./features/work-instructions.md)     | Manufacturing instructions, execution tracking, PLM integration                                                                                              |
-| [AI Assistant](./features/ai-assistant.md)               | LLM chatbot with PLM tools, multi-provider support                                                                                                           |
-| [MCP Servers](./features/mcp.md)                         | Model Context Protocol servers: PLM tools for external agents, dev/admin tools for self-hosters                                                              |
-| [Design Engine](./features/design-engine.md)             | AI-assisted collaborative design: requirements, BOM, CAD, assembly                                                                                           |
-| [CAD Services](./features/cad-services.md)               | CAD conversion (STEP/IGES to STL/GLB) and generation (Zoo API, KCL)                                                                                          |
+| Document                                                                       | Description                                                                                                                                                  |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [Item Types](./features/item-types.md)                                         | All 13 item types: Part, Document, Change Order, Requirement, Task, Work Instruction, Issue, Test Plan, Test Case, Software, Tool, Physical Part, Work Order |
+| [Change Management](./features/change-management.md)                           | ECO workflow, change actions, impact analysis, conflict detection                                                                                            |
+| [BOM Management](./features/bom-management.md)                                 | Bill of Materials hierarchies, where-used, cross-design references                                                                                           |
+| [File Vault](./features/file-vault.md)                                         | Document control, check-in/out, vault storage, lock hierarchy                                                                                                |
+| [Workflow Engine](./features/workflow-engine.md)                               | Lifecycle management, workflow definitions, approval voting                                                                                                  |
+| [Versioning](./features/versioning.md)                                         | Git-style versioning, branches, commits, tags, revision schemes                                                                                              |
+| [Programs & Designs](./features/programs-and-designs.md)                       | Organizational hierarchy, program membership, design cloning                                                                                                 |
+| [Search](./features/search.md)                                                 | Enterprise search, type-specific search, filtering                                                                                                           |
+| [Reporting](./features/reporting.md)                                           | Report engine, CSV export, saved configurations                                                                                                              |
+| [Visualization](./features/visualization.md)                                   | BOM trees, relationship graphs, 3D CAD viewer, history graphs                                                                                                |
+| [Import/Export](./features/import-export.md)                                   | Excel/CSV import, BOM import, column auto-mapping                                                                                                            |
+| [Work Instructions](./features/work-instructions.md)                           | Manufacturing instructions, execution tracking, PLM integration                                                                                              |
+| [Work Order Traveler](./features/work-order-traveler.md)                       | Traveler lines, frozen content snapshots, execution runs and sign-offs                                                                                       |
+| [Physical Parts & Traceability](./features/physical-parts-and-traceability.md) | Serialized units and lots, work-order genealogy, the AML, qualification rollup                                                                               |
+| [Software Management](./features/software-management.md)                       | Software items, content-addressed source store, in-app editing, per-file diffs                                                                               |
+| [AI Assistant](./features/ai-assistant.md)                                     | LLM chatbot with PLM tools, multi-provider support                                                                                                           |
+| [MCP Servers](./features/mcp.md)                                               | Model Context Protocol servers: PLM tools for external agents, dev/admin tools for self-hosters                                                              |
+| [Design Engine](./features/design-engine.md)                                   | AI-assisted collaborative design: requirements, BOM, CAD, assembly                                                                                           |
+| [CAD Services](./features/cad-services.md)                                     | CAD conversion (STEP/IGES to STL/GLB) and generation (Zoo API, KCL)                                                                                          |
 
 ## Optional Packages
 
@@ -134,18 +138,17 @@ Ready-to-use configurations, each with the compose file or manifests alongside i
 
 ## Design Proposals
 
-Design records for larger efforts. A proposal describes intent and, once shipped,
-carries an implementation record noting where the build deviated from the plan.
+Work that is proposed but not finished. **A proposal leaves this section when it
+ships** — implemented designs move to Architecture or Features above, where
+someone looking for how the system works will actually find them. What remains
+here is genuinely open.
 
 Each doc's own header carries the authoritative status; the summary below is a pointer.
 
 | Document                                                                                                                | Status                                                                                         |
 | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| [Physical Parts & Traceability](./proposals/physical-parts-and-traceability.md)                                         | Phases 0–5 implemented; thread swim-lane split into a follow-up                                |
-| [Software Management](./proposals/software-management.md)                                                               | Phases 1–2 implemented; 3–4 (external repos, drift alerts) not started                         |
 | [Aras Migration Tool](./proposals/aras-migration-tool-scope.md)                                                         | Not started (scope + [implementation plan](./proposals/aras-migration-implementation-plan.md)) |
-| [Change Order / Versioning / Lifecycle Assessment](./proposals/change-order-versioning-lifecycle-assessment.md)         | All ten findings fixed; §8 is the as-built record, with a short still-open list                |
-| [Change Order / Versioning / Lifecycle Simplification](./proposals/change-order-versioning-lifecycle-simplification.md) | §2 (deletions) done; §§3–7 open. Companion quality read to the assessment above                |
+| [Change Order / Versioning / Lifecycle Simplification](./proposals/change-order-versioning-lifecycle-simplification.md) | §2 (deletions) done; §§3–7 open. Companion to the as-built record under Architecture           |
 
 ## Other Resources
 

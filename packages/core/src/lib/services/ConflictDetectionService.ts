@@ -12,6 +12,7 @@ import {
 } from '../db/schema'
 import { ItemService } from '../items/services/ItemService'
 import { getTypeHandler } from '../items/type-handlers'
+import { FileService } from '../vault/services/FileService'
 import { bomStructureOf, describeBomStructure } from './item-structure'
 import '../items/type-handlers/init'
 import { BranchService } from './BranchService'
@@ -1056,6 +1057,18 @@ export class ConflictDetectionService {
           await typeHandler.insert(newWorkingCopy.id, extFields, tx)
         }
 
+        // Rebase mints a version row like every other step that does, so the
+        // copy starts with no files unless they are carried. They come from
+        // the copy being rebased rather than the new base, because the branch
+        // copy is the authority on branch content - sourcing them from the new
+        // base would silently discard files uploaded during the ECO.
+        await FileService.copyFilesToItem({
+          sourceItemId: ourItem.id,
+          targetItemId: newWorkingCopy.id,
+          branchId: bi.branchId,
+          tx,
+        })
+
         // Update branch item
         await tx
           .update(branchItems)
@@ -1161,6 +1174,16 @@ export class ConflictDetectionService {
           const { itemId: _ignored, ...extFields } = mergedData
           await typeHandler.insert(newWorkingCopy.id, extFields, tx)
         }
+
+        // Main wins on fields here, but not on files: they are not part of the
+        // three-way field comparison, so taking main's would delete whatever
+        // was uploaded on the branch with no way to get it back.
+        await FileService.copyFilesToItem({
+          sourceItemId: ourItem.id,
+          targetItemId: newWorkingCopy.id,
+          branchId: bi.branchId,
+          tx,
+        })
 
         // Update branch item to point to new working copy and new base
         await tx

@@ -255,6 +255,7 @@ STEP and IGES files are not rendered directly. They are converted server-side by
 
 - **Trackball controls:** Rotate, pan, and zoom with mouse. Rotation is fully unconstrained (no polar-angle limit), so models can be tumbled freely in any direction for interrogation. Damping is enabled for smooth motion.
 - **Auto-fit camera:** On model load, the camera automatically positions itself to frame the entire model with comfortable padding.
+- **Native part coordinates:** Geometry is never recentered — a part authored away from its origin renders away from the world origin, so two versions of the same part can be overlaid and compared without a registration step. Framing is therefore always expressed relative to the model's bounding-box _center_: the camera position, the controls target, the grid, and the contact shadows all derive from it, never from the world origin. (Wrapping the model in drei's `<Center>` looks like the alternative, but its layout effect does not depend on children, so it measures an empty box before the async load finishes and silently does nothing.)
 - **Dynamic zoom limits:** Min and max zoom distances are calculated from the model's bounding box, preventing both clipping into the model and zooming too far away.
 - **Wireframe mode:** Toggle wireframe rendering. In wireframe mode, the model renders as blue lines.
 - **Grid overlay:** Toggle an infinite grid positioned below the model. Grid cell size scales based on model dimensions.

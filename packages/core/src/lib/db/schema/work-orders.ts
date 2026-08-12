@@ -26,7 +26,7 @@ import type { StepContent } from './items'
 // ('Not Started' | 'In Progress' | 'Complete' | 'Cancelled'), created/
 // modified audit. This table holds the manufacturing-specific fields.
 // Promoted from a standalone table so WOs get vault attachments and
-// digital-thread membership — docs/proposals/physical-parts-and-traceability.md §4.5.
+// digital-thread membership — docs/features/physical-parts-and-traceability.md §4.5.
 // =====================================================================
 
 export const workOrders = pgTable(

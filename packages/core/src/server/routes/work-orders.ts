@@ -140,7 +140,7 @@ app.delete(
 
 // =====================================================================
 // Traveler — instances of work instruction templates inside this order.
-// See docs/proposals/work-order-traveler.md.
+// See docs/features/work-order-traveler.md.
 // =====================================================================
 
 // GET /api/work-orders/:id/instructions — the traveler, in sequence

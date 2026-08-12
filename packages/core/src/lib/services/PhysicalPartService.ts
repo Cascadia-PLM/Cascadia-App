@@ -15,7 +15,7 @@ import { ItemService } from '@/lib/items/services/ItemService'
  * Register is find-or-create on the traceability identity
  * (partMasterId + serialNumber|lotNumber) so register-on-consumption can
  * call it blindly: the first scan of a serial creates the record, every
- * later scan returns it. See docs/proposals/physical-parts-and-traceability.md.
+ * later scan returns it. See docs/features/physical-parts-and-traceability.md.
  */
 
 export const physicalPartRegisterSchema = z

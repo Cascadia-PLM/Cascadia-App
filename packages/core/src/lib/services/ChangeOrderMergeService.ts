@@ -31,6 +31,7 @@ import { CrossDesignReferenceService } from './CrossDesignReferenceService'
 import { DesignService } from './DesignService'
 import { LifecycleService } from './LifecycleService'
 import { MbomService } from './MbomService'
+import { ReleaseHookRegistry } from './release-hooks'
 import { RevisionService } from './RevisionService'
 import { bomStructureOf } from './item-structure'
 import type { TransactionClient } from '../db'
@@ -1421,6 +1422,17 @@ export class ChangeOrderMergeService {
                 tx,
               )
 
+              // Files belong to an item version, and this release minted a new
+              // row - without carrying them the part's CAD and attachments are
+              // invisible on main, because listings resolve the item to the
+              // released row and look files up by it. Released, so branchless.
+              await FileService.copyFilesToItem({
+                sourceItemId: currentItem.id,
+                targetItemId: releasedItem.id,
+                branchId: null,
+                tx,
+              })
+
               // Mark old item as not current
               await tx
                 .update(items)
@@ -1558,6 +1570,15 @@ export class ChangeOrderMergeService {
                   releasedItem.id,
                   tx,
                 )
+
+                // Same new-row problem as the added path: a revision created
+                // here would otherwise be released with no files at all.
+                await FileService.copyFilesToItem({
+                  sourceItemId: currentItem.id,
+                  targetItemId: releasedItem.id,
+                  branchId: null,
+                  tx,
+                })
 
                 releasedItemId = releasedItem.id
                 finalRevision = newRevision
@@ -1901,6 +1922,27 @@ export class ChangeOrderMergeService {
       await this.submitSupersededWatermarkJobs(itemChanges, userId)
     } catch (error) {
       serviceLogger.warn({ error }, 'Failed to submit superseded watermark job')
+    }
+
+    // Post-release module hooks (e.g. an ERP connector syncing the released
+    // design). Same contract as the dispatches above: the release has already
+    // committed, so a hook failure is logged — and retried by whatever the
+    // hook queued — never rolled back into the merge.
+    for (const hook of ReleaseHookRegistry.all()) {
+      try {
+        await hook.afterRelease({
+          changeOrderId,
+          designId: branch.designId,
+          userId,
+          changedItems: upstreamItems,
+          revisionsAssigned,
+        })
+      } catch (error) {
+        serviceLogger.warn(
+          { error, hook: hook.name },
+          'Release hook failed after merge',
+        )
+      }
     }
 
     return {

@@ -24,6 +24,7 @@ import { DesignService } from '../../services/DesignService'
 import { ChangeOrderMergeService } from '../../services/ChangeOrderMergeService'
 import { LifecycleService } from '../../services/LifecycleService'
 import { RevisionService } from '../../services/RevisionService'
+import { FileService } from '../../vault/services/FileService'
 import { ConflictError, NotFoundError, ValidationError } from '../../errors'
 import { CHANGE_ACTION_LABELS } from '../types/change-order'
 import { copyTypeSpecificData } from '../type-handlers/copy'
@@ -557,6 +558,18 @@ export class ChangeOrderService {
           )
           .onConflictDoNothing()
       }
+
+      // 3b. Carry the item's files onto the working copy, for the same reason
+      //     its structure is carried: the working copy is what the branch
+      //     shows and what the merge releases. Without this the engineer opens
+      //     the part on the ECO branch to find no CAD and no attachments, and
+      //     releasing the copy in place publishes a revision that has none.
+      await FileService.copyFilesToItem({
+        sourceItemId: sourceItem.id,
+        targetItemId: wc.id,
+        branchId,
+        tx,
+      })
 
       // 4. Create (or repoint) the branchItem entry tracking this on the
       // branch. A plain checkout may have created the row already, pointing

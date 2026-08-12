@@ -29,6 +29,7 @@ import { DesignService } from '@/lib/services/DesignService'
 import { ProgramService } from '@/lib/services/ProgramService'
 import { VersionResolver } from '@/lib/services/VersionResolver'
 import { CheckoutService } from '@/lib/services/CheckoutService'
+import { ModelVersionService } from '@/lib/services/ModelVersionService'
 import { RequirementService } from '@/lib/services/RequirementService'
 import { LifecycleService } from '@/lib/services/LifecycleService'
 import { UsageService } from '@/lib/services/UsageService'
@@ -3250,7 +3251,7 @@ app.get(
           fileName: f.originalFileName,
           fileType: f.originalFileName.toLowerCase().split('.').pop() || '',
           isPrimaryModel: f.isPrimaryModel,
-          hasColors: (f as any).cadMetadata?.hasColors ?? false,
+          hasColors: f.cadMetadata?.hasColors ?? false,
           source: 'direct' as const,
           sourceItemId: itemId,
           sourceItemNumber: null as string | null,
@@ -3295,7 +3296,7 @@ app.get(
             fileName: f.originalFileName,
             fileType: f.originalFileName.toLowerCase().split('.').pop() || '',
             isPrimaryModel: f.isPrimaryModel,
-            hasColors: (f as any).cadMetadata?.hasColors ?? false,
+            hasColors: f.cadMetadata?.hasColors ?? false,
             source: 'cad_doc' as const,
             sourceItemId: rel.targetId,
             sourceItemNumber: rel.targetItem!.itemNumber,
@@ -3312,6 +3313,77 @@ app.get(
         relatedCount: relatedCADFiles.length,
       }
     }),
+  ),
+)
+
+const modelVersionFileSchema = z.object({
+  id: z.string().uuid(),
+  fileName: z.string(),
+  fileType: z.string(),
+  hasColors: z.boolean(),
+  fileSize: z.number(),
+  uploadedAt: z.string(),
+})
+
+const modelVersionEntrySchema = z.object({
+  key: z.string(),
+  kind: z.enum(['current', 'branch', 'historical']),
+  itemId: z.string().uuid(),
+  revision: z.string(),
+  state: z.string(),
+  modifiedAt: z.string(),
+  branch: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string(),
+      branchType: z.string(),
+      changeOrderItemId: z.string().uuid().nullable(),
+      changeOrderNumber: z.string().nullable(),
+    })
+    .nullable(),
+  file: modelVersionFileSchema.nullable(),
+})
+
+// GET /api/items/:itemId/model-versions
+app.get(
+  '/:itemId/model-versions',
+  adapt(
+    apiHandler<{ itemId: string }>(
+      {
+        openapi: {
+          summary: "List an item's versions with their viewable 3D models",
+          description:
+            "Enumerates the released version, active branch working versions, and historical revisions of the item's master, each resolved to the viewable CAD model file that version context would display. Powers the 3D comparison overlay on the part detail page.",
+          request: { params: z.object({ itemId: z.string().uuid() }) },
+          responses: {
+            200: {
+              schema: z.object({
+                versions: z.array(modelVersionEntrySchema),
+              }),
+            },
+          },
+        },
+      },
+      async ({ params, user }) => {
+        const { itemId } = params
+
+        const itemRow = await db
+          .select()
+          .from(items)
+          .where(eq(items.id, itemId))
+          .limit(1)
+          .then((r) => r.at(0))
+        if (!itemRow) {
+          throw new NotFoundError('Item', itemId)
+        }
+        if (itemRow.designId) {
+          await requireDesignAccess(user.id, itemRow.designId)
+        }
+
+        const versions = await ModelVersionService.listForItem(itemRow)
+        return { versions }
+      },
+    ),
   ),
 )
 

@@ -18,7 +18,7 @@ import { serviceLogger } from '@/lib/logging/logger'
 
 /**
  * Material consumption for work orders, recorded as `Consumes` edges in
- * item_relationships (docs/proposals/physical-parts-and-traceability.md §4.6).
+ * item_relationships (docs/features/physical-parts-and-traceability.md §4.6).
  *
  * Edge convention: the operational item (the work order) is ALWAYS the
  * source. Versioned items appear only as targets (bulk consumption pins the

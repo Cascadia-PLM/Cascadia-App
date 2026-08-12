@@ -36,6 +36,7 @@ import {
   itemRelationships,
   items,
   programs,
+  vaultFiles,
 } from '@/lib/db/schema'
 
 // Import to register item types
@@ -844,6 +845,91 @@ describe('ConflictDetectionService', () => {
       expect(result.success).toBe(true)
       expect(result.itemMasterId).toBe(part.masterId)
       expect(result.newBaseItemId).toBe(newBaseItem.id)
+    })
+
+    /**
+     * A rebase mints a new item version row, and files hang off a version. If
+     * they are not carried across, rebasing an in-flight ECO strips the item of
+     * its CAD and attachments - and because the merge releases that copy, the
+     * loss ships to main.
+     */
+    it('keeps the item files on the rebased working copy', async () => {
+      const part = await createPartOnMain('Filed Part', 'has attachments')
+
+      await testDb.db.insert(vaultFiles).values({
+        itemId: part.id,
+        fileName: 'housing.step',
+        originalFileName: 'housing.step',
+        fileSize: 4096,
+        mimeType: 'application/step',
+        fileHash: 'a'.repeat(64),
+        storagePath: `vault/${part.id}/housing.step`,
+        fileCategory: 'cad_model',
+        uploadedBy: user.id,
+      })
+
+      const eco = await createChangeOrder()
+      const { branch: ecoBranch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+      await CheckoutService.checkout(
+        { itemMasterId: part.masterId, branchId: ecoBranch.id },
+        user.id,
+      )
+      await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
+
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
+
+      const newBaseItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: part.masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: part.itemNumber,
+            revision: 'B',
+            name: 'New Base Name',
+            state: 'Draft',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
+
+      const result = await ConflictDetectionService.rebaseItem(
+        branchItem.id,
+        newBaseItem.id,
+        user.id,
+      )
+
+      expect(result.success).toBe(true)
+
+      // The rebase repoints the branch item at the copy it just created.
+      const rebased = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.id, branchItem.id)),
+      )
+      expect(rebased.currentItemId).not.toBe(part.id)
+
+      const filesOnRebased = await testDb.db
+        .select()
+        .from(vaultFiles)
+        .where(eq(vaultFiles.itemId, rebased.currentItemId!))
+
+      expect(filesOnRebased.map((f) => f.originalFileName)).toEqual([
+        'housing.step',
+      ])
     })
 
     it('applies resolutions when provided', async () => {

@@ -16,7 +16,7 @@
  * - blobs are never mutated: same content = same hash = same row
  * - manifests are never mutated: any tree change creates a new manifest
  *
- * See docs/proposals/software-management.md.
+ * See docs/features/software-management.md.
  */
 
 import { createHash } from 'node:crypto'

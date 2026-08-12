@@ -613,6 +613,18 @@ export class ItemService {
         )
       }
 
+      // Carry the item's files onto the new revision. File rows point at one
+      // item *version*, so the revision would otherwise be born with no CAD and
+      // no attachments - and this runs during ECO release, where that ships to
+      // main. Loaded dynamically because FileService imports this module.
+      const { FileService } = await import('../../vault/services/FileService')
+      await FileService.copyFilesToItem({
+        sourceItemId: currentItem.id,
+        targetItemId: newItem.id,
+        branchId: null,
+        tx,
+      })
+
       return {
         ...newItem,
         name: newItem.name,

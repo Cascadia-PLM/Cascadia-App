@@ -173,7 +173,12 @@ export function createAppViteConfig({
         // 127.0.0.1, not localhost: on Windows `localhost` resolves ::1 first,
         // so any stray IPv6 listener on 3001 intercepts the proxy target ahead
         // of the real API.
-        '/api': { target: 'http://127.0.0.1:3001' },
+        // `API_PORT` so the pair can move together — see CLIENT_PORT in
+        // scripts/dev.mjs. Hardcoding both is what limited the machine to one
+        // running checkout.
+        '/api': {
+          target: `http://127.0.0.1:${process.env.API_PORT ?? '3001'}`,
+        },
       },
     },
   })

@@ -22,13 +22,20 @@ const only = process.argv.includes('--client')
     ? 'api'
     : null
 
+// The API half already honoured `API_PORT`; the client half did not, so the
+// pair could only ever run on 3000/3001. One checkout per machine, then — a
+// second worktree's `npm run dev` or E2E run fails on a port the first holds,
+// which is how an E2E verification of the published tree ended up blocked by an
+// unrelated session on the same machine.
+const CLIENT_PORT = process.env.CLIENT_PORT ?? '3000'
+
 const RESET = '\x1b[0m'
 const procs = [
   {
     name: 'client',
     color: '\x1b[34m',
     cmd: 'vite',
-    args: ['--port', '3000', '--config', `apps/${APP}/vite.config.ts`],
+    args: ['--port', CLIENT_PORT, '--config', `apps/${APP}/vite.config.ts`],
   },
   // `watch` so edits to server/lib files auto-reload the API (matches Vite HMR
   // on the client side); without it the API serves stale code until restarted.

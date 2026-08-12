@@ -14,7 +14,7 @@
 
 import * as esbuild from 'esbuild'
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { assertBundleParses, cjsInteropBanner } from './build-shared.mjs'
 import { resolveApp } from './edition.mjs'
@@ -78,6 +78,43 @@ async function bundle(entry, outfile) {
   console.log(`✅ Built: ${outfile}`)
 }
 
+/**
+ * Fail the build if the client bundle shipped Tailwind's preflight and no
+ * utilities.
+ *
+ * Tailwind v4 detects sources automatically, rooted at the Vite root. The
+ * Phase 2 split moved that root to `apps/<app>/` while every component stayed
+ * in `packages/`, so detection quietly found nothing: ~19 KB of resets and
+ * theme variables, not one `.bg-*` rule, in **both** editions. Everything
+ * worked — routing, auth, the API — and the application rendered as unstyled
+ * HTML. `packages/core/src/styles.css` now declares its sources explicitly.
+ *
+ * A missing stylesheet is loud. A stylesheet that builds, loads, and contains
+ * no utilities is silent, which is why this asserts on content rather than
+ * existence. Found by someone standing the artefact up and looking at it.
+ */
+function assertStyled(edition) {
+  const dir = resolve(`dist/${edition}/assets`)
+  const sheets = existsSync(dir)
+    ? readdirSync(dir).filter((f) => f.endsWith('.css'))
+    : []
+  const css = sheets.map((f) => readFileSync(resolve(dir, f), 'utf8')).join('')
+  const utilities = new Set(
+    css.match(/\.(?:bg|text|flex|grid|p|m)-[a-z0-9-]+/g),
+  )
+  if (utilities.size < 50) {
+    console.error(
+      `\n✗ The ${edition} client bundle contains ${utilities.size} utility ` +
+        `class(es) across ${sheets.length} stylesheet(s).\n` +
+        '  Tailwind found no source files to scan — the app will render ' +
+        'unstyled.\n  Check the `@source` directives in ' +
+        'packages/core/src/styles.css.',
+    )
+    process.exit(1)
+  }
+  console.log(`  ${utilities.size} utility classes emitted`)
+}
+
 // Client first — it generates routeTree.gen.ts, which the server bundle's
 // type-level imports and the app's typecheck both depend on.
 console.log(`\n▶ Client bundle (${app})`)
@@ -86,6 +123,8 @@ execFileSync(
   ['vite', 'build', '--config', `apps/${app}/vite.config.ts`],
   { stdio: 'inherit', shell: process.platform === 'win32' },
 )
+
+assertStyled(app)
 
 console.log(`\n▶ API server (${app})`)
 await bundle(`apps/${app}/src/server/prod.ts`, `${outBase}/server/index.mjs`)

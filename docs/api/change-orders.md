@@ -171,7 +171,7 @@ Returns a comprehensive summary of the ECO across all affected designs. Requires
 {
   "data": {
     "changeOrder": { ... },
-    "products": [
+    "designs": [
       {
         "designId": "design-uuid",
         "designName": "Widget Assembly",

@@ -10,6 +10,19 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
+ * The dev server this run drives, and the URL it is reached at.
+ *
+ * `CLIENT_PORT` is the same variable `scripts/dev.mjs` reads, so the server
+ * Playwright starts and the URL it waits on cannot disagree. Both were 3000,
+ * hardcoded in two files, which meant one checkout per machine: a second
+ * worktree running `npm run dev` made every E2E run here fail before starting a
+ * single test, with `already used, make sure that nothing is running`.
+ */
+const CLIENT_PORT = process.env.CLIENT_PORT ?? '3000'
+const BASE_URL =
+  process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${CLIENT_PORT}`
+
+/**
  * Read environment variables from .env file
  * See: https://github.com/motdotla/dotenv
  */
@@ -50,7 +63,7 @@ export default defineConfig({
   /* Shared settings for all the projects below */
   use: {
     /* Base URL for navigation actions */
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
+    baseURL: BASE_URL,
 
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
@@ -129,7 +142,7 @@ export default defineConfig({
    * Uses the health endpoint via proxy to ensure both Vite AND Hono are ready. */
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3000/api/v1/health',
+    url: `${BASE_URL}/api/v1/health`,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

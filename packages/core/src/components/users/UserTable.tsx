@@ -24,7 +24,7 @@ interface UserTableProps {
   onEdit?: (user: UserWithRoles) => void
   onDelete?: (user: UserWithRoles) => void
   onManageRoles?: (user: UserWithRoles) => void
-  onChangePassword?: (user: UserWithRoles) => void
+  onResetPassword?: (user: UserWithRoles) => void
 }
 
 export function UserTable({
@@ -32,7 +32,7 @@ export function UserTable({
   onEdit,
   onDelete,
   onManageRoles,
-  onChangePassword,
+  onResetPassword,
 }: UserTableProps) {
   const columns: Array<DataGridColumn<UserWithRoles>> = [
     {
@@ -148,7 +148,7 @@ export function UserTable({
   const renderRowActions = (row: Row<UserWithRoles>) => {
     const user = row.original
     const hasActions =
-      user.id || onEdit || onManageRoles || onChangePassword || onDelete
+      user.id || onEdit || onManageRoles || onResetPassword || onDelete
     if (!hasActions) return null
 
     return (
@@ -180,10 +180,10 @@ export function UserTable({
               Manage roles
             </DropdownMenuItem>
           )}
-          {onChangePassword && user.provider === 'local' && (
-            <DropdownMenuItem onClick={() => onChangePassword(user)}>
+          {onResetPassword && user.provider === 'local' && (
+            <DropdownMenuItem onClick={() => onResetPassword(user)}>
               <Key className="mr-2 h-4 w-4" />
-              Change password
+              Reset password
             </DropdownMenuItem>
           )}
           {onDelete && (

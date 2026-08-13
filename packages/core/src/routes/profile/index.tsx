@@ -2,7 +2,9 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
-import { KeyRound, Mail, User } from 'lucide-react'
+import { useState } from 'react'
+import { KeyRound, LockKeyhole, Mail, User } from 'lucide-react'
+import type { FormEvent } from 'react'
 import { PageContainer } from '@/components/layout'
 import {
   Button,
@@ -11,7 +13,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Input,
+  Label,
 } from '@/components/ui'
+import { apiFetch } from '@/lib/api/client'
 
 export const Route = createFileRoute('/profile/')({
   component: ProfilePage,
@@ -112,11 +117,13 @@ function ProfilePage() {
           {/* Coming Soon Notice */}
           <div className="pt-6 border-t border-slate-300 dark:border-slate-700">
             <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-4">
-              Profile editing and additional settings coming soon
+              Profile detail editing and additional settings coming soon
             </p>
           </div>
         </CardContent>
       </Card>
+
+      <PasswordChangeCard />
 
       {/* API Keys */}
       <Card>
@@ -146,5 +153,130 @@ function ProfilePage() {
         </CardContent>
       </Card>
     </PageContainer>
+  )
+}
+
+function PasswordChangeCard() {
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError(null)
+    setSuccess(null)
+
+    if (password.length < 8) {
+      setError('New password must be at least 8 characters')
+      return
+    }
+
+    if (password.length > 128) {
+      setError('New password must not exceed 128 characters')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError('New passwords do not match')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await apiFetch('/api/v1/auth/password', {
+        method: 'PUT',
+        body: JSON.stringify({ currentPassword, password }),
+        retry: false,
+      })
+
+      setCurrentPassword('')
+      setPassword('')
+      setConfirmPassword('')
+      setSuccess('Password changed. Your other sessions have been signed out.')
+    } catch (changeError) {
+      setError(
+        changeError instanceof Error
+          ? changeError.message
+          : 'Failed to change password',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <LockKeyhole className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+          <CardTitle>Change Password</CardTitle>
+        </div>
+        <CardDescription>
+          Verify your current password before choosing a new one
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+          <div className="space-y-2">
+            <Label htmlFor="current-password">Current Password</Label>
+            <Input
+              id="current-password"
+              type="password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="new-password">New Password</Label>
+            <Input
+              id="new-password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={128}
+              required
+            />
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              8 to 128 characters
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+            <Input
+              id="confirm-new-password"
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={128}
+              required
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          )}
+          {success && (
+            <p className="text-sm text-green-600 dark:text-green-400">
+              {success}
+            </p>
+          )}
+
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Changing...' : 'Change Password'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

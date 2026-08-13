@@ -8,6 +8,9 @@ import { NotFoundError, ValidationError } from '@/lib/errors'
 import { hashSessionToken } from '@/lib/auth/password'
 import { AuthService } from '@/lib/auth/AuthService'
 import { apiHandler, created } from '@/lib/api/handler'
+import { getClientIp } from '@/lib/api/rate-limit'
+import { db } from '@/lib/db'
+import { authEvents } from '@/lib/db/schema/users'
 
 const adapt = tagged('Users')
 
@@ -125,8 +128,8 @@ app.put(
   '/:id/password',
   adapt(
     apiHandler<{ id: string }>(
-      { permission: ['users', 'manage'] },
-      async ({ params, request }) => {
+      { permission: ['users', 'manage'], rateLimit: 'login' },
+      async ({ params, request, user }) => {
         const { id } = params
         const { password, currentPassword } = await request.json()
         if (!password || typeof password !== 'string') {
@@ -149,6 +152,14 @@ app.put(
           currentPassword,
           currentSessionId,
         )
+
+        await db.insert(authEvents).values({
+          userId: id,
+          eventType: 'password_changed',
+          ipAddress: getClientIp(request),
+          metadata: { actorUserId: user.id, method: 'verified_admin_change' },
+        })
+
         return { success: true }
       },
     ),
@@ -160,8 +171,8 @@ app.post(
   '/:id/reset-password',
   adapt(
     apiHandler<{ id: string }>(
-      { permission: ['users', 'manage'] },
-      async ({ params, request }) => {
+      { permission: ['users', 'manage'], rateLimit: 'login' },
+      async ({ params, request, user }) => {
         const { id } = params
         const { password } = await request.json()
         if (!password || typeof password !== 'string') {
@@ -169,6 +180,14 @@ app.post(
         }
 
         await UserService.adminResetPassword(id, password)
+
+        await db.insert(authEvents).values({
+          userId: id,
+          eventType: 'password_reset',
+          ipAddress: getClientIp(request),
+          metadata: { actorUserId: user.id },
+        })
+
         return { success: true }
       },
     ),

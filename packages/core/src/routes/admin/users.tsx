@@ -4,24 +4,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import {
-  AlertCircle,
-  CheckCircle,
-  KeyRound,
-  Lock,
-  Search,
-  Users,
-} from 'lucide-react'
+import { KeyRound, Lock, Search, Users } from 'lucide-react'
 import type { AdminUser } from '@/lib/query'
-import { Badge, Button, Card, Input, Label } from '@/components/ui'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/Dialog'
+import { Badge, Button, Card, Input } from '@/components/ui'
+import { PasswordResetDialog } from '@/components/users/PasswordResetDialog'
 import { adminUserListQuery, useInvalidateResources } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
 
@@ -44,65 +30,15 @@ function UsersPage() {
     placeholderData: keepPreviousData,
   })
 
-  // Reset password dialog state
   const [resetUser, setResetUser] = useState<AdminUser | null>(null)
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [resetLoading, setResetLoading] = useState(false)
-  const [resetStatus, setResetStatus] = useState<'idle' | 'success' | 'error'>(
-    'idle',
-  )
-  const [resetError, setResetError] = useState('')
 
-  const openResetDialog = (user: AdminUser) => {
-    setResetUser(user)
-    setNewPassword('')
-    setConfirmPassword('')
-    setResetStatus('idle')
-    setResetError('')
-  }
+  const handleResetPassword = async (userId: string, password: string) => {
+    await apiFetch(`/api/v1/users/${userId}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    })
 
-  const closeResetDialog = () => {
-    setResetUser(null)
-    setNewPassword('')
-    setConfirmPassword('')
-    setResetStatus('idle')
-    setResetError('')
-  }
-
-  const handleResetPassword = async () => {
-    if (!resetUser) return
-
-    if (newPassword.length < 8) {
-      setResetError('Password must be at least 8 characters')
-      setResetStatus('error')
-      return
-    }
-
-    if (newPassword !== confirmPassword) {
-      setResetError('Passwords do not match')
-      setResetStatus('error')
-      return
-    }
-
-    setResetLoading(true)
-    setResetStatus('idle')
-
-    try {
-      await apiFetch(`/api/v1/users/${resetUser.id}/reset-password`, {
-        method: 'POST',
-        body: JSON.stringify({ password: newPassword }),
-      })
-
-      await invalidate('users')
-      setResetStatus('success')
-      setTimeout(closeResetDialog, 1500)
-    } catch (err) {
-      setResetError(err instanceof Error ? err.message : 'An error occurred')
-      setResetStatus('error')
-    } finally {
-      setResetLoading(false)
-    }
+    await invalidate('users')
   }
 
   const isLocked = (user: AdminUser) =>
@@ -234,7 +170,7 @@ function UsersPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => openResetDialog(user)}
+                      onClick={() => setResetUser(user)}
                     >
                       <KeyRound className="h-3.5 w-3.5 mr-1.5" />
                       Reset Password
@@ -257,70 +193,12 @@ function UsersPage() {
         </div>
       </Card>
 
-      {/* Reset Password Dialog */}
-      <Dialog
-        open={!!resetUser}
-        onOpenChange={(open) => !open && closeResetDialog()}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Reset Password</DialogTitle>
-            <DialogDescription>
-              Set a new password for{' '}
-              <strong>{resetUser?.name || resetUser?.email}</strong>. This will
-              sign them out of all active sessions.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
-              <Input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Minimum 8 characters"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm Password</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter password"
-              />
-            </div>
-
-            {resetStatus === 'success' && (
-              <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                <CheckCircle className="h-4 w-4" />
-                Password reset successfully.
-              </div>
-            )}
-            {resetStatus === 'error' && (
-              <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-                <AlertCircle className="h-4 w-4" />
-                {resetError}
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={closeResetDialog}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleResetPassword}
-              disabled={resetLoading || !newPassword || !confirmPassword}
-            >
-              {resetLoading ? 'Resetting...' : 'Reset Password'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PasswordResetDialog
+        user={resetUser}
+        open={resetUser !== null}
+        onClose={() => setResetUser(null)}
+        onSave={handleResetPassword}
+      />
     </div>
   )
 }

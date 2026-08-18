@@ -1,8 +1,7 @@
 # Build context filter for the repo-root builds (docker/app.Dockerfile,
-# docker/vault.Dockerfile, workers/node/Dockerfile). All three do `COPY . .`
-# in their builder stage, so anything not excluded here is both transferred to
-# the daemon and baked into a builder layer that `cache-to: gha,mode=max`
-# uploads.
+# workers/node/Dockerfile). Both do `COPY . .` in their builder stage, so
+# anything not excluded here is both transferred to the daemon and baked into
+# a builder layer that `cache-to: gha,mode=max` uploads.
 #
 # Keep in sync with .gitignore: a path that is gitignored but not listed here
 # is absent in CI (fresh checkout) yet ships from every developer machine.

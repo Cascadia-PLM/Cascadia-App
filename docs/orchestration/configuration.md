@@ -14,26 +14,28 @@ Complete reference for all environment variables used across Cascadia services.
 
 ### Required Variables
 
-| Variable         | Description                               | Example                               |
-| ---------------- | ----------------------------------------- | ------------------------------------- |
-| `DATABASE_URL`   | PostgreSQL connection string              | `postgresql://user:pass@host:5432/db` |
-| `SESSION_SECRET` | Secret for session encryption (32+ chars) | `your-random-32-character-string`     |
+| Variable       | Description                  | Example                               |
+| -------------- | ---------------------------- | ------------------------------------- |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
+
+There is no session-secret variable: sessions are opaque random tokens stored
+hashed in the database, so no signing key exists to configure or rotate.
 
 ### Security
 
-| Variable                | Description                                                         | Example                                                                                  |
-| ----------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `ENCRYPTION_KEY`        | AES-256 key for encrypting sensitive data (API keys) - 64 hex chars | Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
-| `DATABASE_CA_CERT_PATH` | Path to CA certificate for database SSL/TLS verification            | `/etc/ssl/certs/db-ca.pem`                                                               |
+| Variable                | Description                                                                                                                                                       | Example                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `ENCRYPTION_KEY`        | AES-256-GCM key for encrypting admin-entered provider API keys at rest - 64 hex chars. When unset, those keys are stored in plaintext (the server logs a warning) | Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| `DATABASE_CA_CERT_PATH` | Path to CA certificate for database SSL/TLS verification                                                                                                          | `/etc/ssl/certs/db-ca.pem`                                                               |
 
 ### Application Settings
 
-| Variable    | Default                 | Description                                            |
-| ----------- | ----------------------- | ------------------------------------------------------ |
-| `NODE_ENV`  | `production`            | Environment mode (`development`, `production`, `test`) |
-| `PORT`      | `3000`                  | HTTP port to listen on                                 |
-| `BASE_URL`  | `http://localhost:3000` | Public URL of the application                          |
-| `LOG_LEVEL` | `info`                  | Logging verbosity (`debug`, `info`, `warn`, `error`)   |
+| Variable    | Default                 | Description                                                                                                           |
+| ----------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`  | `production`            | Environment mode (`development`, `production`, `test`)                                                                |
+| `PORT`      | `3000`                  | HTTP port to listen on                                                                                                |
+| `BASE_URL`  | `http://localhost:3000` | Public URL of the application. Read only to build the OAuth callback URL (GitHub); everything else is origin-relative |
+| `LOG_LEVEL` | `info`                  | Logging verbosity (`debug`, `info`, `warn`, `error`)                                                                  |
 
 ### Security Headers
 
@@ -50,13 +52,15 @@ Adjust `script-src` and `style-src` to remove `'unsafe-inline'` if your deployme
 
 ### Vault Configuration
 
-| Variable              | Default              | Description                                |
-| --------------------- | -------------------- | ------------------------------------------ |
-| `VAULT_TYPE`          | `local`              | Storage backend: `local` or `s3`           |
-| `VAULT_ROOT`          | `/app/vault`         | Local storage directory                    |
-| `FILE_STORAGE_PATH`   | `/app/storage/files` | General file storage                       |
-| `VAULT_SERVICE_URL`   | -                    | URL when running vault as separate service |
-| `VAULT_SERVICE_TOKEN` | -                    | Auth token for vault service               |
+| Variable            | Default              | Description                      |
+| ------------------- | -------------------- | -------------------------------- |
+| `VAULT_TYPE`        | `local`              | Storage backend: `local` or `s3` |
+| `VAULT_ROOT`        | `/app/vault`         | Local storage directory          |
+| `FILE_STORAGE_PATH` | `/app/storage/files` | General file storage             |
+
+> **Note:** the app always uses its configured storage backend directly — the
+> local root resolves DB setting → `VAULT_ROOT` → `./vault`. There is no
+> remote vault service to point it at.
 
 ### Jobs Configuration
 
@@ -66,24 +70,26 @@ Adjust `script-src` and `style-src` to remove `'unsafe-inline'` if your deployme
 
 ### OAuth Providers (Optional)
 
+GitHub is the only implemented provider. Setting both variables is what enables it
+-- there is no separate on/off flag -- and the callback URL is derived from `BASE_URL`
+(`{BASE_URL}/api/v1/auth/callback/github`), so it has no variable of its own.
+
 | Variable               | Description                |
 | ---------------------- | -------------------------- |
 | `GITHUB_CLIENT_ID`     | GitHub OAuth app client ID |
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth app secret    |
-| `GOOGLE_CLIENT_ID`     | Google OAuth client ID     |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `AZURE_CLIENT_ID`      | Azure AD OAuth client ID   |
-| `AZURE_CLIENT_SECRET`  | Azure AD OAuth secret      |
-| `AZURE_TENANT_ID`      | Azure AD tenant ID         |
+
+No `GOOGLE_*` or `AZURE_*` variable is read by any code. Those providers are
+roadmap items, not configuration.
 
 ### Optional Packages
 
 Separately-licensed functionality. Read once at process start; there is no
 in-app toggle, so an instance cannot enable a package it is not entitled to.
 
-| Variable            | Default | Description                                                                 |
-| ------------------- | ------- | --------------------------------------------------------------------------- |
-| `CASCADIA_PACKAGES` | -       | Comma-separated package ids, or `*` for all. Known ids: `advanced-auditing` |
+| Variable            | Default | Description                                                                                     |
+| ------------------- | ------- | ----------------------------------------------------------------------------------------------- |
+| `CASCADIA_PACKAGES` | -       | Comma-separated package ids, or `*` for all. Known ids: `advanced-auditing`, `odoo-integration` |
 
 ### Advanced Auditing Package
 
@@ -110,30 +116,14 @@ proxy configuration.
 
 ---
 
-## Vault Service Configuration
+## Vault Storage Configuration
 
-When running vault as a standalone service.
-
-### Required Variables
-
-| Variable        | Description                               |
-| --------------- | ----------------------------------------- |
-| `DATABASE_URL`  | PostgreSQL connection string              |
-| `SERVICE_TOKEN` | Shared secret for Core App authentication |
-
-### Storage Configuration
-
-#### Local Storage
+The file vault runs inside the Core App — there is no standalone vault
+service. `VAULT_TYPE=local` (the default) stores files under `VAULT_ROOT`.
+For S3-compatible storage:
 
 ```bash
-STORAGE_TYPE=local
-STORAGE_PATH=/app/vault
-```
-
-#### S3/MinIO Storage
-
-```bash
-STORAGE_TYPE=s3
+VAULT_TYPE=s3
 S3_BUCKET=cascadia-vault
 S3_REGION=us-east-1
 S3_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
@@ -141,23 +131,6 @@ S3_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 S3_ENDPOINT=                        # Leave empty for AWS, set for MinIO
 S3_FORCE_PATH_STYLE=false           # Set true for MinIO
 ```
-
-#### Azure Blob Storage
-
-```bash
-STORAGE_TYPE=azure
-AZURE_STORAGE_ACCOUNT=cascadiavault
-AZURE_STORAGE_KEY=your-storage-key
-AZURE_CONTAINER=vault
-```
-
-### Service Settings
-
-| Variable             | Default | Description                                |
-| -------------------- | ------- | ------------------------------------------ |
-| `PORT`               | `3001`  | HTTP port for internal API                 |
-| `MAX_FILE_SIZE`      | `500MB` | Maximum upload size                        |
-| `ALLOWED_EXTENSIONS` | `*`     | Comma-separated whitelist (or `*` for all) |
 
 ---
 
@@ -225,12 +198,10 @@ SMTP_FROM=plm@yourcompany.com
 
 ### File Access
 
-| Variable              | Description                       |
-| --------------------- | --------------------------------- |
-| `VAULT_SERVICE_URL`   | Vault service URL for file access |
-| `VAULT_SERVICE_TOKEN` | Auth token for vault service      |
+Workers read and write vault files through the shared storage backend — a
+vault directory both containers mount, or S3.
 
-Or for direct S3 access:
+For direct S3 access:
 
 ```bash
 S3_BUCKET=cascadia-vault
@@ -292,9 +263,6 @@ When running MinIO for S3-compatible storage.
 # Database
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cascadia
 
-# Security
-SESSION_SECRET=dev-session-secret-change-in-prod
-
 # Application
 NODE_ENV=development
 BASE_URL=http://localhost:3000
@@ -318,7 +286,6 @@ POSTGRES_PORT=5432
 APP_PORT=3000
 NODE_ENV=production
 BASE_URL=http://localhost:3000
-SESSION_SECRET=generate-a-random-32-character-string
 
 # Vault (local storage)
 VAULT_TYPE=local
@@ -336,9 +303,6 @@ PGADMIN_PORT=5050
 ```bash
 # Database (managed)
 DATABASE_URL=postgresql://cascadia:${DB_PASSWORD}@db.example.com:5432/cascadia?sslmode=require
-
-# Security
-SESSION_SECRET=${SESSION_SECRET}  # From secrets manager
 
 # Application
 NODE_ENV=production
@@ -371,7 +335,6 @@ data:
   NODE_ENV: 'production'
   BASE_URL: 'https://plm.example.com'
   LOG_LEVEL: 'info'
-  VAULT_SERVICE_URL: 'http://vault-service:3001'
 ```
 
 ### Kubernetes Secret
@@ -384,8 +347,6 @@ metadata:
 type: Opaque
 stringData:
   DATABASE_URL: 'postgresql://...'
-  SESSION_SECRET: '...'
-  VAULT_SERVICE_TOKEN: '...'
   RABBITMQ_URL: 'amqp://...'
 ```
 
@@ -398,7 +359,7 @@ stringData:
 On startup, services validate required variables:
 
 ```typescript
-const required = ['DATABASE_URL', 'SESSION_SECRET']
+const required = ['DATABASE_URL']
 const missing = required.filter((key) => !process.env[key])
 
 if (missing.length > 0) {
@@ -418,11 +379,6 @@ await db.execute(sql`SELECT 1`)
 // RabbitMQ (if configured)
 if (process.env.RABBITMQ_URL) {
   await rabbitmq.connect()
-}
-
-// Vault Service (if external)
-if (process.env.VAULT_SERVICE_URL) {
-  await fetch(`${process.env.VAULT_SERVICE_URL}/health`)
 }
 ```
 
@@ -449,14 +405,11 @@ Use Docker secrets for sensitive values:
 secrets:
   db_password:
     file: ./secrets/db_password.txt
-  session_secret:
-    file: ./secrets/session_secret.txt
 
 services:
   app:
     secrets:
       - db_password
-      - session_secret
     environment:
       DATABASE_URL: postgresql://postgres:$(cat /run/secrets/db_password)@postgres:5432/cascadia
 ```
@@ -493,5 +446,4 @@ const { SecretString } = await secrets.getSecretValue({
 const config = JSON.parse(SecretString)
 
 process.env.DATABASE_URL = config.DATABASE_URL
-process.env.SESSION_SECRET = config.SESSION_SECRET
 ```

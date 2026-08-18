@@ -29,6 +29,7 @@ import { ConflictError, NotFoundError, ValidationError } from '../../errors'
 import { CHANGE_ACTION_LABELS } from '../types/change-order'
 import { copyTypeSpecificData } from '../type-handlers/copy'
 import { ItemService } from './ItemService'
+import type { TransactionClient } from '../../db'
 import type {
   AffectedItem,
   ChangeAction,
@@ -792,14 +793,16 @@ export class ChangeOrderService {
     itemMasterId: string,
     itemId: string | null,
     userId: string,
+    tx?: TransactionClient,
   ): Promise<void> {
+    const client = tx ?? db
     const branch = await BranchService.getById(branchId)
     if (!branch || branch.branchType !== 'eco' || !branch.changeOrderItemId) {
       return
     }
     const changeOrderId = branch.changeOrderItemId
 
-    const existing = await db
+    const existing = await client
       .select({ id: changeOrderAffectedItems.id })
       .from(changeOrderAffectedItems)
       .where(
@@ -813,13 +816,13 @@ export class ChangeOrderService {
 
     if (existing) return
 
-    const item = itemId ? await ItemService.findById(itemId) : null
+    const item = itemId ? await ItemService.findById(itemId, tx) : null
     if (!item) return
 
     const changeAction = await this.inferChangeAction(item.itemType, item.state)
     if (!changeAction) return
 
-    await db.insert(changeOrderAffectedItems).values({
+    await client.insert(changeOrderAffectedItems).values({
       changeOrderId,
       affectedItemId: item.id,
       affectedItemMasterId: itemMasterId,
@@ -1790,6 +1793,202 @@ export class ChangeOrderService {
     }
 
     return { branchItem, branch }
+  }
+
+  /**
+   * Adopt a workspace branch's content into this change order.
+   *
+   * Workspace drafts live outside the ECO pipeline: no merge ever reads a
+   * workspace branch, and an item created on one has no released version for
+   * the ECO checkout path to start from — `checkoutItemToEco` throws
+   * NotFound for exactly the items a workspace exists to draft. Adoption
+   * therefore moves the branch rows themselves: each workspace branch item
+   * is re-homed onto the ECO branch, after which the ordinary merge
+   * machinery (scope assertion, branch merge, revision assignment, main
+   * bookkeeping) sees the workspace's work exactly as if it had been done
+   * on the ECO branch. Content is never copied, so nothing is lost in the
+   * transfer and the emptied workspace can be deleted safely.
+   *
+   * A master already on the ECO branch or in its affected-item scope is
+   * skipped, not merged — reconciling two working copies of one item is
+   * conflict resolution, which adoption does not attempt.
+   */
+  static async adoptWorkspaceItems(
+    changeOrderId: string,
+    workspaceBranchId: string,
+    userId: string,
+  ): Promise<{ itemsAdopted: number; itemsSkipped: number }> {
+    // Same scope gates as checkoutItemToEco: adoption grows the reviewed set
+    const WorkflowService = await getWorkflowService()
+    const workflowInstance =
+      await WorkflowService.getInstanceByItemId(changeOrderId)
+    if (workflowInstance?.scopeLocked) {
+      throw new ValidationError(
+        'Cannot adopt workspace items: ECO scope is locked after leaving Draft state',
+      )
+    }
+    if (workflowInstance?.completedAt) {
+      throw new ValidationError(
+        'Cannot adopt workspace items: ECO workflow has been completed',
+      )
+    }
+
+    const changeOrder = await ItemService.findById(changeOrderId)
+    if (!changeOrder) {
+      throw new NotFoundError('Change Order', changeOrderId, {
+        operation: 'adoptWorkspaceItems',
+      })
+    }
+    if (changeOrder.itemType !== 'ChangeOrder') {
+      throw new ValidationError('Item is not a change order')
+    }
+
+    const workspace = await BranchService.getById(workspaceBranchId)
+    if (!workspace) {
+      throw new NotFoundError('Workspace', workspaceBranchId, {
+        operation: 'adoptWorkspaceItems',
+      })
+    }
+    if (workspace.branchType !== 'workspace') {
+      throw new ValidationError(
+        'Items can only be adopted from a workspace branch',
+      )
+    }
+
+    const workspaceRows = await db
+      .select()
+      .from(branchItems)
+      .where(eq(branchItems.branchId, workspaceBranchId))
+
+    if (workspaceRows.length === 0) {
+      throw new ValidationError('Workspace has no items to adopt')
+    }
+
+    // ECO branch and design association, created the same way (and in the
+    // same non-transactional position) as checkoutItemToEco: a branch left
+    // behind by a later failure is a normal, reusable state.
+    const { branch: ecoBranch, created } =
+      await BranchService.getOrCreateEcoBranch(
+        workspace.designId,
+        changeOrderId,
+        userId,
+      )
+
+    const ecoDesign = await db
+      .select()
+      .from(changeOrderDesigns)
+      .where(
+        and(
+          eq(changeOrderDesigns.changeOrderId, changeOrderId),
+          eq(changeOrderDesigns.designId, workspace.designId),
+        ),
+      )
+      .limit(1)
+      .then((r) => r.at(0))
+
+    if (!ecoDesign) {
+      await db.insert(changeOrderDesigns).values({
+        changeOrderId,
+        designId: workspace.designId,
+        branchId: ecoBranch.id,
+        mergeStatus: 'pending',
+      })
+    } else if (!ecoDesign.branchId && created) {
+      await db
+        .update(changeOrderDesigns)
+        .set({ branchId: ecoBranch.id, updatedAt: new Date() })
+        .where(eq(changeOrderDesigns.id, ecoDesign.id))
+    }
+
+    // Masters the change order already carries, either as ECO branch content
+    // or as reviewed scope — those are skipped, never overwritten
+    // (branch_items is unique per (branchId, itemMasterId)).
+    const ecoBranchMasters = new Set(
+      (
+        await db
+          .select({ itemMasterId: branchItems.itemMasterId })
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id))
+      ).map((r) => r.itemMasterId),
+    )
+    const scopeMasters = new Set(
+      (
+        await db
+          .select({
+            affectedItemMasterId: changeOrderAffectedItems.affectedItemMasterId,
+          })
+          .from(changeOrderAffectedItems)
+          .where(eq(changeOrderAffectedItems.changeOrderId, changeOrderId))
+      )
+        .map((r) => r.affectedItemMasterId)
+        .filter((id): id is string => id !== null),
+    )
+
+    let itemsAdopted = 0
+    let itemsSkipped = 0
+
+    await db.transaction(async (tx) => {
+      const adoptedChanges: Array<{
+        itemId: string
+        changeType: 'added' | 'modified' | 'deleted'
+      }> = []
+
+      for (const row of workspaceRows) {
+        if (
+          ecoBranchMasters.has(row.itemMasterId) ||
+          scopeMasters.has(row.itemMasterId)
+        ) {
+          itemsSkipped++
+          continue
+        }
+
+        await tx
+          .update(branchItems)
+          .set({ branchId: ecoBranch.id })
+          .where(eq(branchItems.id, row.id))
+
+        // Register on the reviewed scope the same way the organic ECO paths
+        // do. For an item the workspace created, the draft itself is what is
+        // under review; for a modification or deletion, the base released
+        // version is (matching what a checkout would have registered).
+        const registerItemId =
+          row.changeType === 'added'
+            ? row.currentItemId
+            : (row.baseItemId ?? row.currentItemId)
+        await this.registerBranchChange(
+          ecoBranch.id,
+          row.itemMasterId,
+          registerItemId,
+          userId,
+          tx,
+        )
+
+        itemsAdopted++
+        if (row.changeType && row.currentItemId) {
+          adoptedChanges.push({
+            itemId: row.currentItemId,
+            changeType: row.changeType as 'added' | 'modified' | 'deleted',
+          })
+        }
+      }
+
+      // Record the adoption in the ECO branch's history, so the commit graph
+      // explains where this content came from.
+      if (adoptedChanges.length > 0) {
+        await CommitService.create(
+          {
+            branchId: ecoBranch.id,
+            message: `Adopted ${adoptedChanges.length} item${adoptedChanges.length === 1 ? '' : 's'} from ${workspace.name}`,
+            changeOrderItemId: changeOrderId,
+            itemChanges: adoptedChanges,
+          },
+          userId,
+          tx,
+        )
+      }
+    })
+
+    return { itemsAdopted, itemsSkipped }
   }
 
   /**

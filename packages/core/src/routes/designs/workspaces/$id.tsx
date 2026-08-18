@@ -80,11 +80,12 @@ function WorkspaceDetailPage() {
   const displayName = workspace.name.replace('workspace/', '')
 
   const handleDelete = () => {
-    const itemCount = workspace.itemCount
+    // Only items created on the workspace die with it — checkouts revert
+    const draftCount = workspace.workspaceOnlyItemCount
 
     let description = `Are you sure you want to delete the workspace "${displayName}"?`
-    if (itemCount > 0) {
-      description += `\n\nThis will permanently delete ${itemCount} item${itemCount === 1 ? '' : 's'} that exist${itemCount === 1 ? 's' : ''} only on this workspace.`
+    if (draftCount > 0) {
+      description += `\n\nThis will permanently delete ${draftCount} item${draftCount === 1 ? '' : 's'} that exist${draftCount === 1 ? 's' : ''} only on this workspace.`
     }
     description += '\n\nThis action cannot be undone.'
 
@@ -92,8 +93,8 @@ function WorkspaceDetailPage() {
       title: 'Delete Workspace',
       description,
       actionLabel:
-        itemCount > 0
-          ? `Delete Workspace and ${itemCount} Item${itemCount === 1 ? '' : 's'}`
+        draftCount > 0
+          ? `Delete Workspace and ${draftCount} Item${draftCount === 1 ? '' : 's'}`
           : 'Delete Workspace',
       cancelLabel: 'Cancel',
       variant: 'destructive',
@@ -222,9 +223,7 @@ function WorkspaceDetailPage() {
                     Created
                   </dt>
                   <dd className="mt-1 text-lg text-slate-900 dark:text-white">
-                    {workspace.createdAt instanceof Date
-                      ? workspace.createdAt.toLocaleDateString()
-                      : new Date(workspace.createdAt).toLocaleDateString()}
+                    {new Date(workspace.createdAt).toLocaleDateString()}
                   </dd>
                 </div>
               </dl>
@@ -292,11 +291,7 @@ function WorkspaceDetailPage() {
 
         {/* Items Tab */}
         <TabsContent value="items" className="mt-6">
-          <WorkspaceItemsPanel
-            workspaceId={workspace.id}
-            workspaceName={displayName}
-            designId={workspace.designId}
-          />
+          <WorkspaceItemsPanel workspaceId={workspace.id} />
         </TabsContent>
 
         {/* Commits Tab */}

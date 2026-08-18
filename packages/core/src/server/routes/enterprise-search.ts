@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
-import { eq, inArray, or } from 'drizzle-orm'
+import { inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../adapter'
 import { readableItemTypes } from './items'
@@ -12,37 +12,12 @@ import { ItemTypeRegistry } from '@/lib/items/registry'
 import { ValidationError } from '@/lib/errors'
 import { db } from '@/lib/db'
 import { designs } from '@/lib/db/schema/designs'
-import { ProgramService } from '@/lib/services/ProgramService'
+import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { apiHandler, parseQuery } from '@/lib/api/handler'
 // Register item types (server-side version)
 import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('Enterprise Search')
-
-/**
- * Get design IDs accessible to a user based on their program memberships
- * Returns design IDs from user's programs + library designs
- */
-async function getAccessibleDesignIds(userId: string): Promise<Array<string>> {
-  // Get user's programs
-  const userPrograms = await ProgramService.listByUser(userId)
-  const programIds = userPrograms.map((p) => p.id)
-
-  // Get designs from user's programs + library designs (null programId with library type)
-  const accessibleDesigns = await db
-    .select({ id: designs.id })
-    .from(designs)
-    .where(
-      or(
-        programIds.length > 0
-          ? inArray(designs.programId, programIds)
-          : undefined,
-        eq(designs.designType, 'Library'),
-      ),
-    )
-
-  return accessibleDesigns.map((d) => d.id)
-}
 
 /**
  * Enrich items with design metadata
@@ -102,7 +77,8 @@ async function searchAcrossTypes(
   const allTypes = ItemTypeRegistry.getAllTypes()
 
   // Get accessible design IDs for the user
-  const designIds = await getAccessibleDesignIds(userId)
+  const accessDesignIds =
+    await AccessControlService.getAccessibleDesignIds(userId)
 
   // Search each item type in parallel
   const searchPromises = allTypes.map(async (typeConfig) => {
@@ -110,7 +86,7 @@ async function searchAcrossTypes(
       const results = await ItemService.searchByItemNumber(query, {
         limit,
         itemTypes: [typeConfig.name],
-        designIds,
+        accessDesignIds,
       })
 
       // Enrich with design metadata
@@ -272,12 +248,13 @@ app.get(
           ? requestedTypes.filter((t) => readable.has(t))
           : [...readable]
 
-        const designIds = await getAccessibleDesignIds(user.id)
+        const accessDesignIds =
+          await AccessControlService.getAccessibleDesignIds(user.id)
 
         return await ItemService.searchGlobal({
           query: params.globalSearch,
           itemTypes,
-          designIds,
+          accessDesignIds,
           limit: params.limit,
           offset: params.offset,
           sortField: params.sortField,

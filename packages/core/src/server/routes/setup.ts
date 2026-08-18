@@ -43,17 +43,17 @@ app.get(
   '/status',
   adapt(
     apiHandler({}, async ({ user }) => {
-      const [completedRaw, stored, isGlobalAdmin] = await Promise.all([
+      const [completedRaw, stored, isAdmin] = await Promise.all([
         SettingsService.getValue(SettingKeys.SETUP_COMPLETED),
         SettingsService.getJsonValue<Partial<SetupProgress>>(
           SettingKeys.SETUP_PROGRESS,
         ),
-        AccessControlService.isGlobalAdmin(user.id),
+        AccessControlService.hasCrossProgramAccess(user.id),
       ])
 
       return {
         completed: completedRaw === 'true',
-        isGlobalAdmin,
+        isAdmin,
         progress: stored
           ? { ...DEFAULT_PROGRESS, ...stored }
           : DEFAULT_PROGRESS,

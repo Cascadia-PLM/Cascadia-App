@@ -23,7 +23,12 @@ import {
   workOrderCreateSchema,
   workOrderUpdateSchema,
 } from '@/lib/items/types/work-order'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+import {
+  NotFoundError,
+  PermissionDeniedError,
+  ValidationError,
+} from '@/lib/errors'
+import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { apiHandler } from '@/lib/api/handler'
 
 const adapt = tagged('Work Orders')
@@ -34,30 +39,46 @@ const app = new Hono()
 app.get(
   '/',
   adapt(
-    apiHandler({ permission: ['work_orders', 'read'] }, async ({ request }) => {
-      const url = new URL(request.url)
-      const status = url.searchParams.get('status') || undefined
-      const partId = url.searchParams.get('partId') || undefined
-      const search = url.searchParams.get('search') || undefined
-      const programId = url.searchParams.get('programId') || undefined
-      const limit = url.searchParams.get('limit')
-        ? parseInt(url.searchParams.get('limit')!)
-        : undefined
-      const offset = url.searchParams.get('offset')
-        ? parseInt(url.searchParams.get('offset')!)
-        : undefined
+    apiHandler(
+      { permission: ['work_orders', 'read'] },
+      async ({ request, user }) => {
+        const url = new URL(request.url)
+        const status = url.searchParams.get('status') || undefined
+        const partId = url.searchParams.get('partId') || undefined
+        const search = url.searchParams.get('search') || undefined
+        const programId = url.searchParams.get('programId') || undefined
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!)
+          : undefined
+        const offset = url.searchParams.get('offset')
+          ? parseInt(url.searchParams.get('offset')!)
+          : undefined
 
-      const result = await WorkOrderService.search({
-        status,
-        partId,
-        search,
-        programId,
-        limit,
-        offset,
-      })
+        // Naming a program is a program-scoped read; the access scope bounds
+        // the list either way, so omitting every filter cannot mean "no
+        // scoping at all".
+        if (
+          programId &&
+          !(await AccessControlService.canAccessProgram(user.id, programId))
+        ) {
+          throw new PermissionDeniedError('program work orders', 'read')
+        }
 
-      return result
-    }),
+        const result = await WorkOrderService.search({
+          status,
+          partId,
+          search,
+          programId,
+          accessProgramIds: await AccessControlService.getAccessibleProgramIds(
+            user.id,
+          ),
+          limit,
+          offset,
+        })
+
+        return result
+      },
+    ),
   ),
 )
 

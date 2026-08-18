@@ -52,7 +52,6 @@ cd docs/orchestration/deployments/single-server/
 cp .env.example .env
 
 # Edit .env and set required values:
-#   SESSION_SECRET - generate with: openssl rand -hex 32
 #   POSTGRES_PASSWORD - use a strong password
 vi .env
 
@@ -70,10 +69,12 @@ open http://localhost:3000
 
 ### Required Variables
 
-| Variable            | Description                                 | How to Generate              |
-| ------------------- | ------------------------------------------- | ---------------------------- |
-| `SESSION_SECRET`    | 32+ character secret for session encryption | `openssl rand -hex 32`       |
-| `POSTGRES_PASSWORD` | PostgreSQL password                         | Use a strong random password |
+| Variable            | Description         | How to Generate              |
+| ------------------- | ------------------- | ---------------------------- |
+| `POSTGRES_PASSWORD` | PostgreSQL password | Use a strong random password |
+
+There is no session-secret variable: sessions are opaque random tokens stored
+hashed in the database, so no signing key exists to configure.
 
 ### Optional Variables
 
@@ -90,7 +91,6 @@ open http://localhost:3000
 
 ```bash
 # REQUIRED
-SESSION_SECRET=
 POSTGRES_PASSWORD=
 
 # APPLICATION
@@ -154,7 +154,6 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cascadia}
-      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
       BASE_URL: ${BASE_URL:-http://localhost:3000}
       VAULT_MODE: embedded
       VAULT_TYPE: local
@@ -251,15 +250,18 @@ volumes:
 
 ### Enable OAuth
 
-Add OAuth provider credentials to your `.env`:
+Add GitHub OAuth credentials to your `.env`. GitHub is the only implemented
+provider, and the presence of both variables is what enables it -- there is no
+separate on/off flag:
 
 ```bash
-ENABLE_OAUTH=true
 GITHUB_CLIENT_ID=your-client-id
 GITHUB_CLIENT_SECRET=your-client-secret
 ```
 
-Set `BASE_URL` to your public URL so OAuth callback URLs resolve correctly.
+Set `BASE_URL` to your public URL so the callback URL
+(`{BASE_URL}/api/v1/auth/callback/github`) resolves correctly and matches the
+authorization callback URL you registered with GitHub.
 
 ## Backup and Restore
 
@@ -302,10 +304,10 @@ docker cp cascadia-app:/app/vault ./vault-backup
 # Pull or build new image
 docker compose build app
 
-# Restart with the new image (migrations run on startup)
+# Restart with the new image (the schema push runs on startup)
 docker compose up -d app
 
-# Check logs for migration output
+# Check logs for schema-push output
 docker compose logs -f app
 ```
 
@@ -322,7 +324,6 @@ docker compose logs app
 Common causes:
 
 - `POSTGRES_PASSWORD is required` -- set the variable in `.env`.
-- `SESSION_SECRET is required` -- set the variable in `.env`.
 - Database not ready -- the `depends_on` health check should handle this, but check PostgreSQL logs: `docker compose logs postgres`.
 
 ### Database Connection Refused

@@ -25,12 +25,11 @@ All three layers must pass for a request to succeed.
 
 ### Role Definitions
 
-Cascadia ships with six built-in roles. Each role is stored in the `roles` table with a `permissions` JSONB column containing the full permission matrix.
+Cascadia ships with five built-in roles. Each role is stored in the `roles` table with a `permissions` JSONB column containing the full permission matrix.
 
 | Role          | Description                                                                                                                        |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Global Admin  | System-wide administrator. Bypasses all program-based access checks. Full access to all resources across all programs.             |
-| Administrator | Full access within assigned programs. Can manage users, roles, workflows, and all item types. Cannot create programs.              |
+| Administrator | Top-level administrator. Bypasses all program-based access checks, manages programs, users, roles, and system settings.            |
 | Power User    | Can create, read, update, and delete all item types. Can manage workflows. Read-only access to users, roles, programs, and system. |
 | Approver      | Can read and update items, plus approve items and change orders. Cannot create or delete items.                                    |
 | User          | Can create and update draft items. Read access to released items. Cannot delete items or approve change orders.                    |
@@ -75,25 +74,38 @@ Permissions are defined as resource-action pairs. Each role specifies which acti
 
 The complete permission matrix for each role:
 
-| Resource          | Global Admin | Administrator | Power User | Approver | User | View Only |
-| ----------------- | ------------ | ------------- | ---------- | -------- | ---- | --------- |
-| parts             | CRUDAM       | CRUDA         | CRUD       | RUA      | CRU  | R         |
-| documents         | CRUDAM       | CRUDA         | CRUD       | RUA      | CRU  | R         |
-| change_orders     | CRUDAM       | CRUDA         | CRUD       | RUA      | CR   | R         |
-| designs           | CRUDM        | CRUD          | CRUD       | RU       | CRU  | R         |
-| requirements      | CRUDAM       | CRUDA         | CRUD       | RUA      | CRU  | R         |
-| tasks             | CRUDM        | CRUD          | CRUD       | RU       | CRU  | R         |
-| work_instructions | CRUDM        | CRUD          | CRUD       | RUA      | CRU  | R         |
-| work_orders       | CRUDM        | CRUD          | CRUD       | RUA      | CRU  | R         |
-| issues            | CRUDAM       | CRUDA         | CRUD       | RUA      | CRU  | R         |
-| workflows         | CRUDM        | CRUDM         | RM         | R        | R    | R         |
-| users             | CRUDM        | CRUDM         | R          | R        | R    | R         |
-| roles             | CRUDM        | CRUDM         | R          | R        | R    | R         |
-| programs          | CRUDM        | RU            | R          | R        | R    | R         |
-| reports           | CRUDM        | CRUD          | CRUD       | R        | R    | R         |
-| system            | RM           | RM            | R          | R        | R    | R         |
+| Resource          | Administrator | Power User | Approver | User | View Only |
+| ----------------- | ------------- | ---------- | -------- | ---- | --------- |
+| parts             | CRUDA         | CRUD       | RUA      | CRU  | R         |
+| documents         | CRUDA         | CRUD       | RUA      | CRU  | R         |
+| change_orders     | CRUDA         | CRUD       | RUA      | CR   | R         |
+| designs           | CRUD          | CRUD       | RU       | CRU  | R         |
+| requirements      | CRUDA         | CRUD       | RUA      | CRU  | R         |
+| tasks             | CRUD          | CRUD       | RU       | CRU  | R         |
+| work_instructions | CRUD          | CRUD       | RUA      | CRU  | R         |
+| work_orders       | CRUD          | CRUD       | RUA      | CRU  | R         |
+| issues            | CRUDA         | CRUD       | RUA      | CRU  | R         |
+| workflows         | CRUDM         | RM         | R        | R    | R         |
+| users             | CRUDM         | R          | R        | R    | R         |
+| roles             | CRUDM         | R          | R        | R    | R         |
+| programs          | CRUDM         | R          | R        | R    | R         |
+| reports           | CRUD          | CRUD       | R        | R    | R         |
+| system            | RM            | R          | R        | R    | R         |
 
 Legend: C=create, R=read, U=update, D=delete, A=approve, M=manage
+
+`programs:manage` is special: it is the **cross-program-authority grant**.
+`AccessControlService.hasCrossProgramAccess()` keys the program-membership
+bypass on it, so any role carrying it — built-in or custom — sees and manages
+every program. Grant it only to roles that should function as top-level
+administrators.
+
+> **History**: earlier versions shipped a sixth role, `Global Admin`, from an
+> abandoned multi-tenant design; the bypass was keyed to that literal role
+> name. It has been merged into Administrator and the bypass re-keyed onto
+> `programs:manage`. Deployments seeded with the old role need no migration —
+> its stored permissions include `programs:manage`, so the permission check
+> matches the same users the name check did.
 
 ### Optional Package Permissions
 
@@ -166,31 +178,63 @@ Programs are the primary permission boundary in Cascadia. Users can only see dat
 
 The `program_members` table tracks which users belong to which programs:
 
-| Column                | Type        | Description                                               |
-| --------------------- | ----------- | --------------------------------------------------------- |
-| `program_id`          | UUID        | The program                                               |
-| `user_id`             | UUID        | The user                                                  |
-| `role`                | VARCHAR(50) | Program-level role: `admin`, `lead`, `engineer`, `viewer` |
-| `can_create_eco`      | BOOLEAN     | Can create ECOs in this program (default: true)           |
-| `can_approve_eco`     | BOOLEAN     | Can approve ECOs in this program (default: false)         |
-| `can_manage_products` | BOOLEAN     | Can manage products in this program (default: false)      |
-| `joined_at`           | TIMESTAMPTZ | When the user was added                                   |
-| `invited_by`          | UUID        | Who invited this user                                     |
+| Column               | Type        | Description                                                              |
+| -------------------- | ----------- | ------------------------------------------------------------------------ |
+| `program_id`         | UUID        | The program                                                              |
+| `user_id`            | UUID        | The user                                                                 |
+| `role`               | VARCHAR(50) | Program-level role: `admin`, `lead`, `engineer`, `viewer`                |
+| `can_create_eco`     | BOOLEAN     | Can create ECOs in this program (default: true)                          |
+| `can_approve_eco`    | BOOLEAN     | Can approve ECOs in this program (default: false)                        |
+| `can_manage_designs` | BOOLEAN     | Can create, update, and archive designs in this program (default: false) |
+| `joined_at`          | TIMESTAMPTZ | When the user was added                                                  |
+| `invited_by`         | UUID        | Who invited this user                                                    |
 
 A user-program pair is unique (enforced by a database constraint).
+
+### Managing Membership
+
+The program's team is managed on the program page's **Team** tab, backed by
+`/api/v1/programs/:id/members`:
+
+| Action              | Who may do it                                                                       |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| List members        | Any member of the program; `programs:manage` or `programs:update`                   |
+| Add a member        | Program `admin` or `lead` (a lead cannot grant the `admin` role); `programs:manage` |
+| Update role / flags | Program `admin`; `programs:manage`                                                  |
+| Remove a member     | Program `admin`; `programs:manage`                                                  |
+
+Member payloads are strictly validated: the role must be one of the four
+program roles, and unknown keys are rejected (the row-identity columns —
+`userId`, `programId`, `joinedAt`, `invitedBy` — are never writable through
+the API). A program can never lose its last `admin`, whether by removing or
+by demoting them. Changing a member's role re-baselines the three permission
+flags to the new role's defaults; flags passed explicitly in the same request
+win over those defaults.
 
 ### Program-Level Roles
 
 Within a program, users have one of four roles that control fine-grained permissions:
 
-| Program Role | `can_create_eco` | `can_approve_eco` | `can_manage_products` |
-| ------------ | ---------------- | ----------------- | --------------------- |
-| `admin`      | true             | true              | true                  |
-| `lead`       | true             | true              | false                 |
-| `engineer`   | true             | false             | false                 |
-| `viewer`     | false            | false             | false                 |
+| Program Role | `can_create_eco` | `can_approve_eco` | `can_manage_designs` |
+| ------------ | ---------------- | ----------------- | -------------------- |
+| `admin`      | true             | true              | true                 |
+| `lead`       | true             | true              | false                |
+| `engineer`   | true             | false             | false                |
+| `viewer`     | false            | false             | false                |
 
 These defaults are assigned automatically when a user is added to a program. The boolean flags can be individually overridden for fine-grained control.
+
+The flags are enforced at the API layer:
+
+- `can_create_eco` — gates creating a ChangeOrder item in a design that
+  belongs to the program (`POST /api/v1/items`)
+- `can_approve_eco` — gates submitting approval votes on a change order in
+  the program (`POST /api/v1/change-orders/:id/approvals`), in addition to
+  whatever the workflow's approval requirements say
+- `can_manage_designs` — gates creating, updating, and archiving designs in
+  the program
+
+Cross-program authority (`programs:manage`) bypasses all three, like every other program-level check.
 
 ### Program Isolation
 
@@ -198,17 +242,28 @@ The `AccessControlService` (`packages/core/src/lib/auth/AccessControlService.ts`
 
 - `canAccessProgram(userId, programId)` -- Checks if the user is a member of the program
 - `getAccessiblePrograms(userId)` -- Returns only programs the user belongs to
-- `getAccessibleProgramIds(userId)` -- Returns program IDs for query filtering (returns `null` for Global Admin, meaning "all programs")
+- `getAccessibleProgramIds(userId)` -- Returns program IDs for query filtering (returns `null` for cross-program authority, meaning "all programs")
 
 When listing items, designs, or other program-scoped data, the system filters results to only include data from the user's accessible programs.
 
-### Global Admin Bypass
+Program detail reads (`GET /api/v1/programs/:id` and its `/graph` and
+`/members` sub-resources) require membership, the cross-program bypass, or
+the RBAC `programs:update` grant (write-implies-read, for custom roles that
+may edit programs without holding the full bypass). The RBAC `programs:read`
+permission alone is deliberately **not** sufficient — every built-in role
+carries it, so treating it as a fallback would expose any program's metadata
+(customer, contract number) to any authenticated user who guessed or
+obtained an ID. The program _list_ remains membership-scoped for everyone
+without cross-program authority.
 
-Users with the **Global Admin** role bypass all program-based access checks. They can:
+### Cross-Program Bypass
+
+Users whose roles carry `programs:manage` — the built-in Administrator role,
+or any custom role granted it — bypass all program-based access checks:
 
 - See all programs and their data
 - Access all designs regardless of program membership
-- The `AccessControlService.isGlobalAdmin()` check is performed first in every access check method
+- The `AccessControlService.hasCrossProgramAccess()` check is performed first in every access check method
 
 ## Design-Level Access
 
@@ -216,7 +271,7 @@ Designs inherit access from their parent program, with special handling for glob
 
 ### Access Rules
 
-1. **Global Admin**: Can access all designs
+1. **Cross-program authority** (`programs:manage`): Can access all designs
 2. **Global libraries** (designs with `programId = null` and `designType = 'Library'`): Accessible to all authenticated users
 3. **Unassigned designs** (designs with `programId = null`): Accessible to all authenticated users (allows newly created designs to be visible before program assignment)
 4. **Program-assigned designs**: Requires membership in the design's program
@@ -277,7 +332,7 @@ After changing runtime permissions:
 
 ### User gets 403 Forbidden on admin endpoints
 
-Most admin endpoints require the `Administrator` role specifically (checked via `requireRole(request, 'Administrator')`). Verify the user has either the `Administrator` or `Global Admin` role assigned.
+Most admin endpoints require `system:manage` (some import endpoints check the `Administrator` role name via `requireRole(request, 'Administrator')`). Verify the user has the `Administrator` role assigned.
 
 ### Permission changes not taking effect
 

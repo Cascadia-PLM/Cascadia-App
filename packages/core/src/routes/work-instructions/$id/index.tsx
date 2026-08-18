@@ -200,8 +200,18 @@ function WorkInstructionDetailView({
     'another user'
 
   const handleStartEditing = useCallback(async () => {
+    if (!workInstruction.id) return
+
     const ctx = editContext ?? (await loadEditContext())
-    if (!ctx || !workInstruction.id) return
+    if (!ctx) {
+      handleError(
+        new Error(
+          'Could not determine where this work instruction can be edited. Reload the page and try again.',
+        ),
+        { title: 'Cannot edit' },
+      )
+      return
+    }
 
     if (!ctx.lockBranchId) {
       if (ctx.isMainProtected) {
@@ -209,8 +219,15 @@ function WorkInstructionDetailView({
         setCheckoutDialogOpen(true)
         return
       }
+      // A work instruction takes its design from its output part, so it always
+      // has somewhere to be edited — unless it predates that rule or its design
+      // has no main branch. Say which, rather than "not in this context".
       handleError(
-        new Error('This work instruction cannot be edited in this context'),
+        new Error(
+          ctx.designId
+            ? "This work instruction's design has no main branch, so there is nowhere to hold the edit lock."
+            : 'This work instruction has no output part, so it does not belong to a design yet. Attach the part it builds and set it as the output part.',
+        ),
         { title: 'Cannot edit' },
       )
       return

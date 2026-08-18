@@ -248,7 +248,7 @@ await db
     role: 'admin',
     canCreateEco: true,
     canApproveEco: true,
-    canManageProducts: true,
+    canManageDesigns: true,
   })
   .onConflictDoNothing()
 

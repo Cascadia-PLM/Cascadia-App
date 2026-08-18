@@ -65,6 +65,7 @@ export function ConvertToEcoDialog({
           ecoId: string
           ecoNumber: string
           itemsConverted: number
+          itemsSkipped: number
           workspaceDeleted: boolean
         }
       }>(`/api/v1/workspaces/${workspaceId}/convert-to-eco`, {
@@ -79,7 +80,7 @@ export function ConvertToEcoDialog({
 
       showSuccess(
         'Workspace converted to ECO',
-        `Created ${response.data.ecoNumber} with ${response.data.itemsConverted} item${response.data.itemsConverted !== 1 ? 's' : ''}`,
+        `Created ${response.data.ecoNumber} with ${response.data.itemsConverted} item${response.data.itemsConverted !== 1 ? 's' : ''}${response.data.itemsSkipped > 0 ? ` (${response.data.itemsSkipped} skipped)` : ''}`,
       )
 
       onOpenChange(false)

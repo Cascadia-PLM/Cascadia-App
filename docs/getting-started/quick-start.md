@@ -15,7 +15,7 @@ This creates:
 | Item                       | Details                                                             |
 | -------------------------- | ------------------------------------------------------------------- |
 | **Admin user**             | `admin@cascadia.local` / `Cascadia`                                 |
-| **Roles**                  | Global Admin, Administrator, Power User, Approver, User, View Only  |
+| **Roles**                  | Administrator, Power User, Approver, User, View Only                |
 | **Default Program**        | Code: `DEFAULT`                                                     |
 | **Standard Parts Library** | Code: `STD-LIB` (global, not tied to any program)                   |
 | **Lifecycles**             | Part, Document (Driven by ECO), ChangeOrder (Driving), Issue (Free) |

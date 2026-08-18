@@ -196,7 +196,7 @@ host    cascadia    cascadia    10.0.0.0/8    scram-sha-256
 
 ### Initial Setup
 
-All Cascadia services share the same database schema. Run migrations from Core App:
+All Cascadia services share the same database schema. Push it from Core App:
 
 ```bash
 # Docker Compose
@@ -211,11 +211,12 @@ npm run db:push
 
 ### Migration Strategy
 
-```bash
-# Generate migration files (development)
-npm run db:generate
+Pre-1.0 there are no committed migration files — every environment (dev, CI,
+production) applies the schema with `db:push`. `db:generate`/`db:migrate` only
+become the mechanism once a release mints a migration baseline.
 
-# Apply migrations (production)
+```bash
+# Apply the schema (the pre-1.0 path everywhere)
 npm run db:push
 
 # View current schema
@@ -227,7 +228,6 @@ npm run db:studio
 All services connect to the same database:
 
 - **Core App**: Full access to all tables
-- **Vault Service**: Access to vault-related tables
 - **Jobs Server**: Access to jobs and item tables
 
 Consider separate database users with limited permissions per service for enhanced security.

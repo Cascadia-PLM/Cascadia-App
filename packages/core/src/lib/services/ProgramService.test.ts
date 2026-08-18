@@ -93,7 +93,7 @@ describe('ProgramService', () => {
       expect(member!.role).toBe('admin')
       expect(member!.canCreateEco).toBe(true)
       expect(member!.canApproveEco).toBe(true)
-      expect(member!.canManageProducts).toBe(true)
+      expect(member!.canManageDesigns).toBe(true)
     })
 
     it('throws ValidationError on duplicate code', async () => {
@@ -450,7 +450,7 @@ describe('ProgramService', () => {
       expect(member.role).toBe('engineer')
       expect(member.canCreateEco).toBe(true)
       expect(member.canApproveEco).toBe(false)
-      expect(member.canManageProducts).toBe(false)
+      expect(member.canManageDesigns).toBe(false)
     })
 
     it('sets admin default permissions correctly', async () => {
@@ -469,7 +469,7 @@ describe('ProgramService', () => {
 
       expect(member.canCreateEco).toBe(true)
       expect(member.canApproveEco).toBe(true)
-      expect(member.canManageProducts).toBe(true)
+      expect(member.canManageDesigns).toBe(true)
     })
 
     it('sets viewer default permissions correctly', async () => {
@@ -488,7 +488,7 @@ describe('ProgramService', () => {
 
       expect(member.canCreateEco).toBe(false)
       expect(member.canApproveEco).toBe(false)
-      expect(member.canManageProducts).toBe(false)
+      expect(member.canManageDesigns).toBe(false)
     })
 
     it('throws ValidationError when user is already a member', async () => {

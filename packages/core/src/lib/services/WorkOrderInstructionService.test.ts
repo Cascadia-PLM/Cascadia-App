@@ -100,7 +100,14 @@ describe('WorkOrderInstructionService', () => {
     await testDb.rollback()
   })
 
-  async function createTemplate(name: string, stepTitles: Array<string>) {
+  async function createTemplate(
+    name: string,
+    stepTitles: Array<string>,
+    outputPartId?: string,
+  ) {
+    // A template is authored against the part it builds, and that part is what
+    // puts the work instruction in a design — so one is made if not supplied.
+    const outputPart = outputPartId ?? (await createPart(`${name} Output`)).id
     const wi = (await ItemService.create(
       'WorkInstruction',
       {
@@ -108,6 +115,7 @@ describe('WorkOrderInstructionService', () => {
         revision: 'A',
         name,
         description: `${name} description`,
+        outputPartId: outputPart,
       } as never,
       user.id,
     )) as { id: string }

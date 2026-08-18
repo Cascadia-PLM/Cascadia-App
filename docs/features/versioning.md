@@ -271,12 +271,24 @@ Branch items are created lazily -- only when an item is first checked out to a b
 
 ### Branch Types
 
-| Type        | Naming                       | Purpose                              | Who Creates                | Merges To                      |
-| ----------- | ---------------------------- | ------------------------------------ | -------------------------- | ------------------------------ |
-| `main`      | `main`                       | Released/production baseline         | System (one per design)    | N/A                            |
-| `eco`       | `eco/ECO-001`                | Engineering Change Order work        | System (on first checkout) | main (on release)              |
-| `workspace` | `workspace/thermal-analysis` | Personal drafts and experiments      | User                       | Not merged (deleted when done) |
-| `release`   | `release/v1.0`               | Hotfix branch from a tagged baseline | User                       | main                           |
+| Type        | Naming                       | Purpose                              | Who Creates                | Merges To                                  |
+| ----------- | ---------------------------- | ------------------------------------ | -------------------------- | ------------------------------------------ |
+| `main`      | `main`                       | Released/production baseline         | System (one per design)    | N/A                                        |
+| `eco`       | `eco/ECO-001`                | Engineering Change Order work        | System (on first checkout) | main (on release)                          |
+| `workspace` | `workspace/thermal-analysis` | Personal drafts and experiments      | User                       | Never directly — adopted into an ECO first |
+| `release`   | `release/v1.0`               | Hotfix branch from a tagged baseline | User                       | main                                       |
+
+Workspace branches never merge to main themselves. Their exit path is
+**adoption**: converting the workspace to a new ECO
+(`POST /api/v1/workspaces/:id/convert-to-eco`) or merging it into an existing
+one (`POST /api/v1/workspaces/:id/merge-to-eco`). Both are backed by
+`ChangeOrderService.adoptWorkspaceItems()`, which **moves** the workspace's
+branch items onto the ECO branch — the drafted versions themselves transfer,
+nothing is copied — and registers each one in the ECO's reviewed scope
+(created items as `release`, checked-out items as `revise`). From there the
+normal ECO release machinery merges them to main and assigns revisions. Items
+whose master is already on the ECO are skipped, and a workspace emptied by
+adoption can be deleted safely.
 
 ### Branch Lifecycle
 

@@ -14,16 +14,11 @@ import type {
   ProgramGraphDesign,
 } from '@/lib/versioning/graph-types'
 import type { ScopeGraphEdge, ScopeGraphNode } from '@/lib/api/scope-graph'
-import { ProgramService } from '@/lib/services/ProgramService'
+import { ProgramService, memberAddSchema } from '@/lib/services/ProgramService'
 import { DesignService } from '@/lib/services/DesignService'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { requirePermission } from '@/lib/auth/server'
-import { permissionService } from '@/lib/auth/permission-service'
-import {
-  NotFoundError,
-  PermissionDeniedError,
-  ValidationError,
-} from '@/lib/errors'
+import { NotFoundError, PermissionDeniedError } from '@/lib/errors'
 import { db } from '@/lib/db'
 import { branches, commits, tags } from '@/lib/db/schema/versioning'
 import { users } from '@/lib/db/schema/users'
@@ -1035,10 +1030,19 @@ app.get(
   '/:id',
   adapt(
     apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
-      // Check if user is a member (or has global permission)
-      const canAccess = await ProgramService.canUserAccess(user.id, params.id)
+      // Programs are the permission boundary: detail reads require
+      // membership (or the cross-program bypass inside canAccessProgram),
+      // with programs:update as a narrower read-only fallback for custom
+      // roles that may edit programs without holding the full bypass. The
+      // fallback is deliberately NOT programs:read — every built-in role
+      // has that, so it would expose any program's metadata (customer,
+      // contract number) to any authenticated user by ID.
+      const canAccess = await AccessControlService.canAccessProgram(
+        user.id,
+        params.id,
+      )
       if (!canAccess) {
-        await requirePermission(request, 'programs', 'read')
+        await requirePermission(request, 'programs', 'update')
       }
 
       const program = await ProgramService.getById(params.id)
@@ -1074,9 +1078,12 @@ app.get(
       },
       async ({ params, request, user }) => {
         // Same access rule as GET /api/programs/:id
-        const canAccess = await ProgramService.canUserAccess(user.id, params.id)
+        const canAccess = await AccessControlService.canAccessProgram(
+          user.id,
+          params.id,
+        )
         if (!canAccess) {
-          await requirePermission(request, 'programs', 'read')
+          await requirePermission(request, 'programs', 'update')
         }
 
         const program = await ProgramService.getById(params.id)
@@ -1167,11 +1174,10 @@ app.get(
       }
 
       // Check access
-      const isGlobalAdmin = await permissionService.hasRole(
+      const hasBypass = await AccessControlService.hasCrossProgramAccess(
         user.id,
-        'Global Admin',
       )
-      if (!isGlobalAdmin) {
+      if (!hasBypass) {
         const canAccess = await ProgramService.canUserAccess(user.id, params.id)
         if (!canAccess) {
           throw new PermissionDeniedError('program history', 'read')
@@ -1202,10 +1208,16 @@ app.get(
 app.get(
   '/:id/members',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params, user }) => {
-      const canAccess = await ProgramService.canUserAccess(user.id, params.id)
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      // Any member may see the team; cross-program authority bypasses via
+      // canAccessProgram, and programs:update reads the team the same way
+      // it reads the program itself.
+      const canAccess = await AccessControlService.canAccessProgram(
+        user.id,
+        params.id,
+      )
       if (!canAccess) {
-        throw new PermissionDeniedError('program members', 'read')
+        await requirePermission(request, 'programs', 'update')
       }
 
       const members = await ProgramService.listMembers(params.id)
@@ -1219,23 +1231,26 @@ app.post(
   '/:id/members',
   adapt(
     apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
-      // Check if user is an admin of the program
+      // Program admins and leads manage the team; anyone else needs the
+      // RBAC programs:manage grant (the Administrator role has it).
+      // Authorize before parsing so outsiders get a 403, not a schema tour.
       const userRole = await ProgramService.getUserRole(user.id, params.id)
       if (userRole !== 'admin' && userRole !== 'lead') {
-        throw new PermissionDeniedError('program members', 'add')
+        await requirePermission(request, 'programs', 'manage')
       }
 
-      const data = await request.json()
-      const { userId, role } = data
+      const body = memberAddSchema.parse(await request.json())
 
-      if (!userId || !role) {
-        throw new ValidationError('userId and role are required')
+      if (userRole === 'lead' && body.role === 'admin') {
+        // A lead must not mint program admins — that is a privilege the
+        // lead does not hold themselves.
+        throw new PermissionDeniedError('program admin membership', 'grant')
       }
 
       const member = await ProgramService.addMember(
         params.id,
-        userId,
-        role,
+        body.userId,
+        body.role,
         user.id,
       )
 
@@ -1253,9 +1268,12 @@ app.put(
       async ({ params, request, user }) => {
         const userRole = await ProgramService.getUserRole(user.id, params.id)
         if (userRole !== 'admin') {
-          throw new PermissionDeniedError('program member', 'update')
+          await requirePermission(request, 'programs', 'manage')
         }
 
+        // updateMember strict-parses the body (unknown keys → 400), guards
+        // the last admin against demotion, and re-baselines flags on role
+        // change.
         const data = await request.json()
         const member = await ProgramService.updateMember(
           params.id,
@@ -1272,15 +1290,18 @@ app.put(
 app.delete(
   '/:id/members/:userId',
   adapt(
-    apiHandler<{ id: string; userId: string }>({}, async ({ params, user }) => {
-      const userRole = await ProgramService.getUserRole(user.id, params.id)
-      if (userRole !== 'admin') {
-        throw new PermissionDeniedError('program member', 'remove')
-      }
+    apiHandler<{ id: string; userId: string }>(
+      {},
+      async ({ params, request, user }) => {
+        const userRole = await ProgramService.getUserRole(user.id, params.id)
+        if (userRole !== 'admin') {
+          await requirePermission(request, 'programs', 'manage')
+        }
 
-      await ProgramService.removeMember(params.id, params.userId)
-      return { success: true }
-    }),
+        await ProgramService.removeMember(params.id, params.userId)
+        return { success: true }
+      },
+    ),
   ),
 )
 

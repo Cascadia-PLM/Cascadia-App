@@ -100,6 +100,7 @@ function NewWorkInstructionPage() {
             onSubmit={handleSubmit}
             onCancel={handleCancel}
             isSubmitting={isSubmitting}
+            showOutputPart
           />
         </CardContent>
       </Card>

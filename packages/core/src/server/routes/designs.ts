@@ -29,7 +29,6 @@ import {
 import { JobService } from '@/lib/jobs/JobService'
 import { requirePermission } from '@/lib/auth/server'
 import { requireDesignAccess } from '@/lib/auth/access'
-import { permissionService } from '@/lib/auth/permission-service'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import {
   NotFoundError,
@@ -839,9 +838,11 @@ app.get(
 
         const accessibleProgramIds =
           await AccessControlService.getAccessibleProgramIds(user.id)
-        const isGlobalAdmin = await AccessControlService.isGlobalAdmin(user.id)
+        const hasBypass = await AccessControlService.hasCrossProgramAccess(
+          user.id,
+        )
 
-        const filteredDesigns = isGlobalAdmin
+        const filteredDesigns = hasBypass
           ? hierarchicalDesigns
           : hierarchicalDesigns.filter(
               (d) =>
@@ -939,10 +940,17 @@ app.post(
       const data = await request.json()
 
       // If programId is provided, check user has permission in that program
+      // (canManageDesigns member flag, or the cross-program bypass — this
+      // endpoint used to lack the bypass its sibling create endpoint has).
       if (data.programId) {
-        const member = await ProgramService.getMember(data.programId, user.id)
-        if (!member || !member.canManageProducts) {
-          throw new PermissionDeniedError('designs', 'create')
+        const hasBypass = await AccessControlService.hasCrossProgramAccess(
+          user.id,
+        )
+        if (!hasBypass) {
+          const member = await ProgramService.getMember(data.programId, user.id)
+          if (!member || !member.canManageDesigns) {
+            throw new PermissionDeniedError('designs', 'create')
+          }
         }
       } else {
         // Creating design without program requires global permission
@@ -965,13 +973,12 @@ app.get(
       const design = await DesignService.getById(designId)
       if (!design) throw new NotFoundError('Design', designId)
 
-      // Check access - Global Admin bypasses program membership check
+      // Check access - cross-program authority bypasses program membership check
       if (design.programId) {
-        const isGlobalAdmin = await permissionService.hasRole(
+        const hasBypass = await AccessControlService.hasCrossProgramAccess(
           user.id,
-          'Global Admin',
         )
-        if (!isGlobalAdmin) {
+        if (!hasBypass) {
           const canAccess = await ProgramService.canUserAccess(
             user.id,
             design.programId,
@@ -1125,7 +1132,7 @@ app.put(
       // Check permission
       if (design.programId) {
         const member = await ProgramService.getMember(design.programId, user.id)
-        if (!member || !member.canManageProducts) {
+        if (!member || !member.canManageDesigns) {
           await requirePermission(request, 'designs', 'update')
         }
       } else {
@@ -1151,7 +1158,7 @@ app.delete(
       // Check permission
       if (design.programId) {
         const member = await ProgramService.getMember(design.programId, user.id)
-        if (!member || !member.canManageProducts) {
+        if (!member || !member.canManageDesigns) {
           await requirePermission(request, 'designs', 'delete')
         }
       } else {
@@ -1352,16 +1359,15 @@ app.post(
 
       // Check create permission in target program
       if (targetProgramId) {
-        const isGlobalAdmin = await permissionService.hasRole(
+        const hasBypass = await AccessControlService.hasCrossProgramAccess(
           user.id,
-          'Global Admin',
         )
-        if (!isGlobalAdmin) {
+        if (!hasBypass) {
           const member = await ProgramService.getMember(
             targetProgramId,
             user.id,
           )
-          if (!member || !member.canManageProducts) {
+          if (!member || !member.canManageDesigns) {
             throw new PermissionDeniedError('design', 'create')
           }
         }
@@ -1849,7 +1855,7 @@ app.get(
         throw new NotFoundError('Design', designId)
       }
 
-      // Check access via design access control (handles Global Admin bypass)
+      // Check access via design access control (handles the cross-program bypass)
       await requireDesignAccess(user.id, design.id)
 
       // Parse query params
@@ -2384,7 +2390,7 @@ app.post(
           familyDesign.programId,
           user.id,
         )
-        if (!member || !member.canManageProducts) {
+        if (!member || !member.canManageDesigns) {
           await requirePermission(request, 'designs', 'update')
         }
       } else {
@@ -2436,7 +2442,7 @@ app.delete(
           familyDesign.programId,
           user.id,
         )
-        if (!member || !member.canManageProducts) {
+        if (!member || !member.canManageDesigns) {
           await requirePermission(request, 'designs', 'update')
         }
       } else {
@@ -3310,13 +3316,12 @@ app.post(
         throw new NotFoundError('Design', designId)
       }
 
-      // Check permission - Global Admin or program admin/lead can create tags
+      // Check permission - cross-program authority or program admin/lead can create tags
       if (design.programId) {
-        const isGlobalAdmin = await permissionService.hasRole(
+        const hasBypass = await AccessControlService.hasCrossProgramAccess(
           user.id,
-          'Global Admin',
         )
-        if (!isGlobalAdmin) {
+        if (!hasBypass) {
           const role = await ProgramService.getUserRole(
             user.id,
             design.programId,

@@ -40,7 +40,6 @@ The simplest deployment - all components on one machine.
 cp .env.example .env
 
 # 2. Edit .env and set required values
-#    - SESSION_SECRET (generate random 32+ chars)
 #    - POSTGRES_PASSWORD (strong password)
 
 # 3. Start services

@@ -22,7 +22,10 @@ export function getGitHubProvider(): GitHub {
   const clientId = process.env.GITHUB_CLIENT_ID
   const clientSecret = process.env.GITHUB_CLIENT_SECRET
   const baseUrl = process.env.BASE_URL || 'http://localhost:3000'
-  const redirectURI = `${baseUrl}/api/auth/callback/github`
+  // Must match where the auth module is actually mounted (`/api/v1/auth` in
+  // `server/index.ts`): GitHub validates this against the app's registered
+  // callback URL at the authorize hop and again at the token exchange.
+  const redirectURI = `${baseUrl}/api/v1/auth/callback/github`
 
   if (!clientId || !clientSecret) {
     throw new Error(

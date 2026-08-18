@@ -28,7 +28,7 @@ Cascadia is a modern PLM system designed to replace traditional low-code PLM pla
 - **Type-Safe** - Full TypeScript throughout the stack with Zod validation
 - **Enterprise-Ready** - PostgreSQL, ACID compliance, audit trails
 - **Background Jobs** - RabbitMQ-powered async processing
-- **Modern Auth** - Session-based with OAuth support (Azure AD, Google, GitHub)
+- **Modern Auth** - Session-based with GitHub OAuth (Azure AD and Google planned)
 - **SysML v2 Compatible** - Native support for SysML 2.0 with API endpoints
 - **Flexible Storage** - Local filesystem or S3-compatible object storage
 - **Batch Operations** - Bulk create items and relationships via API
@@ -282,8 +282,10 @@ Optional:
 ```
 FILE_STORAGE_PATH=/path/to/vault  # Default: ./vault-storage
 RABBITMQ_URL=amqp://localhost     # For background jobs
-SESSION_SECRET=your-secret-key    # Session encryption
 ```
+
+There is no session secret to configure: sessions are opaque random tokens
+stored hashed in the database.
 
 See [`.env.example`](./.env.example) for the full list.
 

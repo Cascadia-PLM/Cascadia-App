@@ -20,8 +20,7 @@ This documentation describes Cascadia's modular, containerized architecture desi
 
 Each component of Cascadia can run independently:
 
-- **Core App** - Main web application (UI + API)
-- **Vault Service** - File storage and management
+- **Core App** - Main web application (UI + API, embedded file vault)
 - **Jobs Server** - Background task processing
 - **Database** - PostgreSQL (self-hosted or managed)
 
@@ -78,19 +77,18 @@ See [Deployment Examples](./deployments/) for configurations including:
 │                     Load Balancer / Reverse Proxy               │
 └──────────────────────────────┬──────────────────────────────────┘
                                │
-       ┌───────────────────────┼───────────────────────┐
-       │                       │                       │
-       ▼                       ▼                       ▼
-┌─────────────┐        ┌─────────────┐        ┌─────────────┐
-│  Core App   │        │   Vault     │        │    Jobs     │
-│   Server    │◄──────►│  Service    │        │   Server    │
-│             │        │             │        │             │
-│ - Web UI    │        │ - File I/O  │        │ - Workers   │
-│ - REST API  │        │ - Versions  │        │ - Queue     │
-│ - Auth      │        │ - Check-in  │        │ - Convert   │
-└──────┬──────┘        └──────┬──────┘        └──────┬──────┘
-       │                      │                      │
-       └──────────────────────┼──────────────────────┘
+       ┌───────────────────────┴─────────────────────┐
+       ▼                                             ▼
+┌─────────────┐                               ┌─────────────┐
+│  Core App   │                               │    Jobs     │
+│   Server    │                               │   Server    │
+│             │                               │             │
+│ - Web UI    │                               │ - Workers   │
+│ - REST API  │                               │ - Queue     │
+│ - File I/O  │                               │ - Convert   │
+└──────┬──────┘                               └──────┬──────┘
+       │                                             │
+       └──────────────────────┬──────────────────────┘
                               │
                               ▼
                     ┌───────────────────┐

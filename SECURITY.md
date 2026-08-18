@@ -39,13 +39,10 @@ Only the latest release receives security patches. We recommend always running t
 
 ### Authentication
 
-- Set `SESSION_SECRET` to a strong random value — never ship a default:
-  ```bash
-  openssl rand -hex 32
-  ```
+- Sessions are opaque 256-bit random tokens stored hashed in the database — there is no session signing secret to configure or rotate. Revoking a session is a database row delete.
 - **Immediately change the default `admin@cascadia.local` password** (`Cascadia`) — it is only intended for local development bootstrap.
 - Enable HTTPS in production. Session cookies are not secure over plain HTTP.
-- Configure OAuth providers (GitHub, Azure AD, Google) for SSO where possible.
+- Configure GitHub OAuth for SSO where possible — it is the only OAuth provider implemented today.
 
 ### Database
 
@@ -57,6 +54,12 @@ Only the latest release receives security patches. We recommend always running t
 
 - For production deployments, use S3-compatible storage with server-side encryption.
 - If using local storage, ensure the vault directory has restricted file permissions.
+
+### Secrets at Rest
+
+- Set `ENCRYPTION_KEY` (64 hex characters — generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) so provider API keys entered in the admin UI are encrypted with AES-256-GCM before storage. **When it is unset, those keys are stored in plaintext in the database**; the server logs a warning each time that happens.
+- Keys saved before `ENCRYPTION_KEY` was configured remain plaintext — re-save them once the key is set.
+- Treat `ENCRYPTION_KEY` like any other secret (see Environment Variables below). Rotating it makes previously encrypted values undecryptable until they are re-entered.
 
 ### Network
 

@@ -41,7 +41,7 @@ describe('ItemSearchService.searchGlobal', () => {
 
   async function insertItem(overrides: {
     itemNumber: string
-    designId: string
+    designId: string | null
     itemType?: string
     name?: string
     state?: string
@@ -130,24 +130,58 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'SCOPE',
       itemTypes: ['Part'],
-      designIds: [designAId],
+      accessDesignIds: [designAId],
     })
 
     expect(result.items.map((i) => i.itemNumber)).toEqual(['SCOPE-001'])
     expect(result.total).toBe(1)
   })
 
-  it('matches nothing when the design scope is empty', async () => {
+  it('reaches no design when the access scope is empty', async () => {
     await insertItem({ itemNumber: 'SCOPE-001', designId: designAId })
 
     const result = await ItemSearchService.searchGlobal({
       query: 'SCOPE',
       itemTypes: ['Part'],
-      designIds: [],
+      accessDesignIds: [],
     })
 
     expect(result.items).toEqual([])
     expect(result.total).toBe(0)
+  })
+
+  // `null` is the cross-program-authority scope. It has to be distinguishable
+  // from `[]`, or an admin and a user who reaches nothing would get the same
+  // answer — and only one of those answers can be "everything".
+  it('searches every design when the access scope is null', async () => {
+    await insertItem({ itemNumber: 'SCOPE-001', designId: designAId })
+    await insertItem({ itemNumber: 'SCOPE-002', designId: designBId })
+
+    const result = await ItemSearchService.searchGlobal({
+      query: 'SCOPE',
+      itemTypes: ['Part'],
+      accessDesignIds: null,
+    })
+
+    expect(result.items.map((i) => i.itemNumber).sort()).toEqual([
+      'SCOPE-001',
+      'SCOPE-002',
+    ])
+  })
+
+  // An item in no design sits outside every program, so no membership can
+  // gate it and scoping must not swallow it.
+  it('keeps design-less items in scope however narrow the scope', async () => {
+    await insertItem({ itemNumber: 'SCOPE-ORPHAN', designId: null })
+
+    for (const accessDesignIds of [[], [designAId]]) {
+      const result = await ItemSearchService.searchGlobal({
+        query: 'SCOPE-ORPHAN',
+        itemTypes: ['Part'],
+        accessDesignIds,
+      })
+      expect(result.items.map((i) => i.itemNumber)).toEqual(['SCOPE-ORPHAN'])
+    }
   })
 
   it('matches nothing when no item types are allowed', async () => {
@@ -156,7 +190,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'SCOPE',
       itemTypes: [],
-      designIds: [designAId, designBId],
+      accessDesignIds: [designAId, designBId],
     })
 
     expect(result.items).toEqual([])
@@ -174,7 +208,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'TYPE',
       itemTypes: ['Document'],
-      designIds: [designAId],
+      accessDesignIds: [designAId],
     })
 
     expect(result.items.map((i) => i.itemNumber)).toEqual(['TYPE-002'])
@@ -187,7 +221,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'PROG',
       itemTypes: ['Part'],
-      designIds: [designAId, designBId],
+      accessDesignIds: [designAId, designBId],
       columnFilters: { program: programBId },
     })
 
@@ -215,7 +249,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'NUM-MATCH',
       itemTypes: ['Part'],
-      designIds: [designAId],
+      accessDesignIds: [designAId],
     })
 
     expect(result.items.map((i) => i.itemNumber).sort()).toEqual([
@@ -232,7 +266,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'PAGE',
       itemTypes: ['Part'],
-      designIds: [designAId],
+      accessDesignIds: [designAId],
       limit: 2,
       offset: 0,
     })
@@ -261,7 +295,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'CUR',
       itemTypes: ['Part'],
-      designIds: [designAId],
+      accessDesignIds: [designAId],
     })
 
     expect(result.items.map((i) => i.itemNumber).sort()).toEqual([
@@ -276,7 +310,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: '!!!',
       itemTypes: ['Part'],
-      designIds: [designAId],
+      accessDesignIds: [designAId],
     })
 
     expect(result.items).toEqual([])

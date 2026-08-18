@@ -15888,12 +15888,23 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "List the current user’s workspace branches",
         "tags": [
           "Workspaces"
         ]
       },
       "post": {
         "operationId": "postApiV1Workspaces",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "vendor": "zod"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "400": {
             "$ref": "#/components/responses/ValidationError"
@@ -15911,6 +15922,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Create a workspace branch on a design",
         "tags": [
           "Workspaces"
         ]
@@ -15925,6 +15937,8 @@
             "name": "id",
             "required": true,
             "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "type": "string"
             }
           }
@@ -15946,6 +15960,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Delete a workspace, and with it any drafts that exist only there",
         "tags": [
           "Workspaces"
         ]
@@ -15958,11 +15973,132 @@
             "name": "id",
             "required": true,
             "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "type": "string"
             }
           }
         ],
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "baseCommitId": {
+                          "anyOf": [
+                            {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "designCode": {
+                          "type": "string"
+                        },
+                        "designId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "designName": {
+                          "type": "string"
+                        },
+                        "headCommitId": {
+                          "anyOf": [
+                            {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "isArchived": {
+                          "anyOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "isLocked": {
+                          "anyOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "itemCount": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "ownerId": {
+                          "anyOf": [
+                            {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "workspaceOnlyItemCount": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "designId",
+                        "designName",
+                        "designCode",
+                        "createdAt",
+                        "isLocked",
+                        "isArchived",
+                        "ownerId",
+                        "headCommitId",
+                        "baseCommitId",
+                        "itemCount",
+                        "workspaceOnlyItemCount"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -15979,6 +16115,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Get a workspace with its design and item counts",
         "tags": [
           "Workspaces"
         ]
@@ -15993,10 +16130,22 @@
             "name": "id",
             "required": true,
             "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "vendor": "zod"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "400": {
             "$ref": "#/components/responses/ValidationError"
@@ -16014,6 +16163,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Create a new ECO carrying this workspace’s content",
         "tags": [
           "Workspaces"
         ]
@@ -16028,6 +16178,8 @@
             "name": "id",
             "required": true,
             "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "type": "string"
             }
           }
@@ -16049,6 +16201,55 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "List the items on a workspace branch",
+        "tags": [
+          "Workspaces"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{id}/items/{masterId}": {
+      "delete": {
+        "operationId": "deleteApiV1WorkspacesByIdItemsByMasterId",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "masterId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Remove an item from a workspace, discarding the workspace’s changes to it",
         "tags": [
           "Workspaces"
         ]
@@ -16063,10 +16264,22 @@
             "name": "id",
             "required": true,
             "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "vendor": "zod"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "400": {
             "$ref": "#/components/responses/ValidationError"
@@ -16084,6 +16297,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Move this workspace’s content into an existing ECO",
         "tags": [
           "Workspaces"
         ]

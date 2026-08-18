@@ -22,22 +22,22 @@ Production-grade deployment on Kubernetes with auto-scaling, health probes, and 
 |  |                 (nginx-ingress / traefik)                     | |
 |  +------------------------------+-------------------------------+ |
 |                                 |                                  |
-|     +--------------------------++--------------------------+       |
-|     |                          |                           |       |
-|     v                          v                           v       |
-|  +-----------+          +-----------+              +-----------+   |
-|  | cascadia  |          | cascadia  |              | cascadia  |   |
-|  |   app     |          |  vault    |              |   jobs    |   |
-|  | Deployment|          | Deployment|              | Deployment|   |
-|  | (2+ pods) |          | (2 pods)  |              | (N pods)  |   |
-|  +-----+-----+          +-----+-----+              +-----+-----+   |
-|        |                       |                          |        |
-|  +-----+-----+          +-----+-----+                    |        |
-|  |  Service   |          |  Service   |                    |        |
-|  | ClusterIP  |          | ClusterIP  |                    |        |
-|  +-----------+          +-----------+                    |        |
-|                                                           |        |
-|  +--------------------------------------------------------+        |
+|     +--------------------------+---------------------------+       |
+|     |                                                      |       |
+|     v                                                      v       |
+|  +-----------+                                     +-----------+   |
+|  | cascadia  |                                     | cascadia  |   |
+|  |   app     |                                     |   jobs    |   |
+|  | Deployment|                                     | Deployment|   |
+|  | (2+ pods) |                                     | (N pods)  |   |
+|  +-----+-----+                                     +-----+-----+   |
+|        |                                                 |         |
+|  +-----+-----+                                           |         |
+|  |  Service  |                                           |         |
+|  | ClusterIP |                                           |         |
+|  +-----------+                                           |         |
+|                                                          |         |
+|  +-------------------------------------------------------+         |
 |  |                                                                 |
 |  |  PostgreSQL (StatefulSet or External)                           |
 |  |  RabbitMQ (StatefulSet, optional)                               |
@@ -111,11 +111,9 @@ metadata:
 type: Opaque
 stringData:
   database-url: 'postgresql://cascadia:PASSWORD@db-host:5432/cascadia?sslmode=require'
-  session-secret: 'your-64-character-hex-string'
   s3-access-key: 'AKIA...'
   s3-secret-key: '...'
   rabbitmq-url: 'amqp://user:pass@rabbitmq-host:5672'
-  vault-service-token: ''
 ```
 
 **Do not commit `secrets.yaml` to version control.** For production, consider using sealed-secrets, external-secrets, or your cloud provider's secrets manager.
@@ -486,9 +484,9 @@ kubectl port-forward service/cascadia-app 3000:80 -n cascadia
 kubectl exec -it deployment/cascadia-app -n cascadia -- sh
 ```
 
-### Schema Migration
+### Schema Push
 
-Run manually if the app does not apply migrations on startup:
+Pre-1.0 there are no committed migration files — the schema is applied with a push. Run manually if the app does not push it on startup:
 
 ```bash
 kubectl exec -it deployment/cascadia-app -n cascadia -- npm run db:push
@@ -497,6 +495,6 @@ kubectl exec -it deployment/cascadia-app -n cascadia -- npm run db:push
 ### Common Issues
 
 - **ImagePullBackOff**: Verify the image exists in your registry and pull secrets are configured.
-- **CrashLoopBackOff**: Check logs for missing environment variables (`DATABASE_URL`, `SESSION_SECRET`).
+- **CrashLoopBackOff**: Check logs for missing environment variables (`DATABASE_URL`).
 - **Readiness probe failing**: The app may still be starting. Check `initialDelaySeconds` and `startupProbe` if needed.
 - **HPA not scaling**: Ensure metrics-server is installed in the cluster.

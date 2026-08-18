@@ -17,7 +17,7 @@
  * `truncate-all.ts` and `snapshot-openapi.ts`, which already do this.
  *
  * **Runs from the app directory.** The config's `schema: './src/modules.schema.ts'`
- * and `out: '../../drizzle'` are relative to the config, and drizzle-kit
+ * and `out: './drizzle'` are relative to the config, and drizzle-kit
  * resolves them against the working directory instead. Invoked from the repo
  * root it therefore looked for `<root>/src/modules.schema.ts` and failed with
  * "No schema files found" — which is what `npm run db:push` has done in *both*

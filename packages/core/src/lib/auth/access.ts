@@ -15,7 +15,7 @@ import {
 
 /**
  * Verify user can access a design. Throws PermissionDeniedError if not.
- * Handles Global Admin bypass internally via AccessControlService.
+ * Handles the cross-program-authority bypass internally via AccessControlService.
  */
 export async function requireDesignAccess(
   userId: string,

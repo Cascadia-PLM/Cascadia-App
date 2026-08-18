@@ -44,12 +44,16 @@ services:
       # on the private cascadia-network. Override to "require" if you put a
       # TLS-terminating proxy in front or swap in a managed Postgres.
       DATABASE_SSL: ${DATABASE_SSL:-disable}
-      SESSION_SECRET: ${SESSION_SECRET:-change-this-to-a-random-32-char-string}
       BASE_URL: ${BASE_URL:-http://localhost:3000}
       FILE_STORAGE_PATH: ${FILE_STORAGE_PATH:-/app/storage/files}
       VAULT_ROOT: ${VAULT_ROOT:-/app/vault}
       VAULT_TYPE: ${VAULT_TYPE:-local}
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-cascadia}:${RABBITMQ_PASSWORD:-cascadia}@rabbitmq:5672/${RABBITMQ_VHOST:-}
+      # AES-256-GCM key (64 hex chars) for encrypting admin-entered provider
+      # API keys at rest. Unset, those keys are stored in plaintext in the
+      # database. Generate with:
+      #   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
     ports:
       - '${APP_PORT:-3000}:3000'
     volumes:

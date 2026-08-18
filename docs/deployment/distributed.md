@@ -183,7 +183,6 @@ cp .env.example .env
 Edit `.env`, pointing all URLs to the infrastructure server:
 
 ```bash
-SESSION_SECRET=<same-secret-across-all-app-servers>
 DATABASE_URL=postgresql://postgres:<password>@<infra-host>:5432/cascadia
 RABBITMQ_URL=amqp://cascadia:<password>@<infra-host>:5672/cascadia
 S3_ENDPOINT=http://<infra-host>:9000
@@ -192,7 +191,9 @@ S3_SECRET_KEY=<minio-password>
 BASE_URL=https://plm.example.com
 ```
 
-**Important**: `SESSION_SECRET` must be identical on all app servers so sessions are portable across the load balancer.
+Sessions are opaque random tokens stored hashed in the shared database, so they
+are portable across all app servers behind the load balancer with no shared
+secret to distribute — no sticky sessions required.
 
 Start the app:
 

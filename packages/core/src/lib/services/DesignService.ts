@@ -375,7 +375,7 @@ export class DesignService {
   }
 
   /**
-   * List all designs (for Global Admins)
+   * List all designs (for cross-program authority)
    */
   static async listAll(filters?: DesignFilters) {
     const conditions: Array<ReturnType<typeof eq>> = []
@@ -437,6 +437,35 @@ export class DesignService {
         ),
       )
       .orderBy(desc(designs.createdAt))
+  }
+
+  /**
+   * Every design id the given programs can reach, as one query.
+   *
+   * The membership arm plus the two program-less arms are exactly the design
+   * arms of `AccessControlService.canAccessDesign`, so a list scoped with
+   * these ids admits precisely the designs a per-id access check would.
+   *
+   * Archived designs are deliberately included: archiving retires a design,
+   * it does not revoke access to it, and dropping them here would make the
+   * items inside vanish from every scoped list.
+   */
+  static async listAccessibleIds(
+    programIds: Array<string>,
+  ): Promise<Array<string>> {
+    const rows = await db
+      .select({ id: designs.id })
+      .from(designs)
+      .where(
+        programIds.length > 0
+          ? or(
+              inArray(designs.programId, programIds),
+              isNull(designs.programId),
+            )
+          : isNull(designs.programId),
+      )
+
+    return rows.map((d) => d.id)
   }
 
   /**

@@ -376,14 +376,14 @@ export const programMemberCreateSchema = z.object({
   role: programMemberRoleSchema.default('viewer'),
   canCreateEco: z.boolean().optional().default(false),
   canApproveEco: z.boolean().optional().default(false),
-  canManageProducts: z.boolean().optional().default(false),
+  canManageDesigns: z.boolean().optional().default(false),
 })
 
 export const programMemberUpdateSchema = z.object({
   role: programMemberRoleSchema.optional(),
   canCreateEco: z.boolean().optional(),
   canApproveEco: z.boolean().optional(),
-  canManageProducts: z.boolean().optional(),
+  canManageDesigns: z.boolean().optional(),
 })
 
 export type ProgramMemberCreate = z.infer<typeof programMemberCreateSchema>

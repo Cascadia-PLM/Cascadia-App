@@ -5,25 +5,29 @@
  * Access Control Service
  *
  * Centralized service for program-based access control (PBAC).
- * Handles Global Admin bypass, program membership checks, and global library access.
+ * Handles the cross-program bypass, program membership checks, and global
+ * library access.
  */
 
 import { ProgramService } from '../services/ProgramService'
 import { DesignService } from '../services/DesignService'
 import { permissionService } from './permission-service'
-import type { RoleName } from './permissions'
-
-/**
- * Global Admin role name - users with this role bypass all program-based access checks
- */
-export const GLOBAL_ADMIN_ROLE: RoleName = 'Global Admin'
 
 export class AccessControlService {
   /**
-   * Check if user is a Global Admin (bypasses all program checks)
+   * Whether the user carries cross-program authority — the bypass for every
+   * program-membership check.
+   *
+   * Keyed on the RBAC `programs:manage` permission, not a role name. The
+   * built-in Administrator role holds it; a deployment can craft custom
+   * roles with or without it to grant or withhold the bypass. (This
+   * replaced a check for the literal role name 'Global Admin', a leftover
+   * from an early multi-tenant design. Deployments seeded with that role
+   * keep working unchanged: its stored permissions include programs:manage,
+   * so the permission check matches the same users the name check did.)
    */
-  static async isGlobalAdmin(userId: string): Promise<boolean> {
-    return permissionService.hasRole(userId, GLOBAL_ADMIN_ROLE)
+  static async hasCrossProgramAccess(userId: string): Promise<boolean> {
+    return permissionService.canUser(userId, 'manage', 'programs')
   }
 
   /**
@@ -33,8 +37,8 @@ export class AccessControlService {
     userId: string,
     programId: string,
   ): Promise<boolean> {
-    // Global Admin bypasses all checks
-    if (await this.isGlobalAdmin(userId)) {
+    // Cross-program authority bypasses all checks
+    if (await this.hasCrossProgramAccess(userId)) {
       return true
     }
 
@@ -50,8 +54,8 @@ export class AccessControlService {
     userId: string,
     designId: string,
   ): Promise<boolean> {
-    // Global Admin bypasses all checks
-    if (await this.isGlobalAdmin(userId)) {
+    // Cross-program authority bypasses all checks
+    if (await this.hasCrossProgramAccess(userId)) {
       return true
     }
 
@@ -77,8 +81,8 @@ export class AccessControlService {
    * Get all programs a user can access
    */
   static async getAccessiblePrograms(userId: string) {
-    // Global Admin sees all programs
-    if (await this.isGlobalAdmin(userId)) {
+    // Cross-program authority sees all programs
+    if (await this.hasCrossProgramAccess(userId)) {
       return ProgramService.listAll()
     }
 
@@ -89,8 +93,8 @@ export class AccessControlService {
    * Get all designs a user can access
    */
   static async getAccessibleDesigns(userId: string) {
-    // Global Admin sees all designs
-    if (await this.isGlobalAdmin(userId)) {
+    // Cross-program authority sees all designs
+    if (await this.hasCrossProgramAccess(userId)) {
       return DesignService.listAll()
     }
 
@@ -112,14 +116,38 @@ export class AccessControlService {
   }
 
   /**
+   * Every design id the user may read, or `null` for "all designs".
+   *
+   * The scope counterpart to `canAccessDesign`: that answers the question for
+   * one design, this answers it for a list query in one round trip. Both admit
+   * the same set, so a row surviving this filter would also survive a per-id
+   * check.
+   *
+   * `null` means unrestricted, matching `getAccessibleProgramIds`. It is not
+   * the same as `[]`, which means the user reaches no design at all — a list
+   * given `[]` must return nothing, never everything.
+   */
+  static async getAccessibleDesignIds(
+    userId: string,
+  ): Promise<Array<string> | null> {
+    // Cross-program authority - return null to indicate "all"
+    if (await this.hasCrossProgramAccess(userId)) {
+      return null
+    }
+
+    const programs = await ProgramService.listByUser(userId)
+    return DesignService.listAccessibleIds(programs.map((p) => p.id))
+  }
+
+  /**
    * Get all program IDs a user can access (for filtering queries)
-   * Returns null for Global Admin (meaning "all programs")
+   * Returns null for cross-program authority (meaning "all programs")
    */
   static async getAccessibleProgramIds(
     userId: string,
   ): Promise<Array<string> | null> {
-    // Global Admin - return null to indicate "all"
-    if (await this.isGlobalAdmin(userId)) {
+    // Cross-program authority - return null to indicate "all"
+    if (await this.hasCrossProgramAccess(userId)) {
       return null
     }
 

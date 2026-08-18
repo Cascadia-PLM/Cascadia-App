@@ -115,7 +115,7 @@ npm run serve         # Preview production build
 
 # Database
 npm run db:push       # Push schema directly (the pre-1.0 path everywhere: dev, CI, compose)
-npm run db:generate   # Mint migration SQL (unused pre-1.0 — no committed migrations)
+npm run db:generate   # Mint migration SQL into the app's own drizzle/ dir (unused pre-1.0; emits the 0000 baseline at first release)
 npm run db:migrate    # Run pending migrations (none exist pre-1.0)
 npm run db:studio     # Open Drizzle Studio GUI
 npm run db:seed       # Minimal seed (admin, roles, program, standard library)
@@ -443,11 +443,10 @@ The OpenAPI document is regenerated from these annotations at request time (`/op
 ### Adding a Field to an Existing Item Type
 
 1. Add column to schema in `packages/core/src/lib/db/schema/items.ts`
-2. Run `npm run db:generate` to create migration
-3. Run `npm run db:push` to apply changes
-4. Update Zod schema in `packages/core/src/lib/items/types/`
-5. Update form component to include new field
-6. Update ItemService type-specific methods if needed
+2. Run `npm run db:push` to apply changes (pre-1.0: no migration files — every environment is push + seeds)
+3. Update Zod schema in `packages/core/src/lib/items/types/`
+4. Update form component to include new field
+5. Update ItemService type-specific methods if needed
 
 ### Adding an API Route
 
@@ -644,8 +643,10 @@ Optional:
 ```
 FILE_STORAGE_PATH=/path/to/vault  # Default: ./vault-storage
 RABBITMQ_URL=amqp://localhost     # For background jobs
-SESSION_SECRET=your-secret-key    # Session encryption
 ```
+
+There is no session secret: sessions are opaque random tokens stored hashed in
+the database, so no signing key exists to configure.
 
 ## CAD Conversion Worker
 
@@ -914,15 +915,13 @@ Cascadia supports flexible deployment from single-server to distributed Kubernet
 
 ### Service Components
 
-- **Core App** (`cascadia-app`) - Web UI + API
-- **Vault Service** (`cascadia-vault`) - File storage (optional standalone)
+- **Core App** (`cascadia-app`) - Web UI + API (file vault runs in-process)
 - **Jobs Server** (`cascadia-jobs`) - Background processing (optional standalone)
 - **CAD Converter** (`cascadia-cad-converter`) - Python STEP/IGES → STL/GLB conversion
 
 ### Key Files
 
 - `docker/app.Dockerfile` - Core app container
-- `docker/vault.Dockerfile` - Vault service container
 - `workers/node/Dockerfile` - Node.js jobs worker container
 - `workers/cad-converter/Dockerfile` - CAD converter container
 - `docs/orchestration/README.md` - Full orchestration guide

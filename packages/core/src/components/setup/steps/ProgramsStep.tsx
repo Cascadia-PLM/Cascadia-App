@@ -565,7 +565,7 @@ export function ProgramsStep({ onCompleted }: ProgramsStepProps) {
       </Card>
 
       <div>
-        <Button onClick={onCompleted}>Continue to summary</Button>
+        <Button onClick={onCompleted}>Continue</Button>
       </div>
     </div>
   )

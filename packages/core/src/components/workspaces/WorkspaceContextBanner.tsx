@@ -1,49 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { ExternalLink, GitBranch } from 'lucide-react'
 import { Badge, Card } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
+import { workspaceDetailQuery } from '@/lib/query'
 
 interface WorkspaceContextBannerProps {
   branchId: string
 }
 
-interface WorkspaceInfo {
-  id: string
-  name: string
-  designId: string
-  designName: string
-  itemCount: number
-}
-
 export function WorkspaceContextBanner({
   branchId,
 }: WorkspaceContextBannerProps) {
-  const [workspace, setWorkspace] = useState<WorkspaceInfo | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Shares the workspace detail cache entry with the workspace pages. A
+  // branch that turns out not to be a workspace puts the query in an error
+  // state, which renders as nothing — the banner is a probe, not a gate.
+  const { data: workspace } = useQuery(workspaceDetailQuery(branchId))
 
-  useEffect(() => {
-    async function fetchWorkspace() {
-      setLoading(true)
-      try {
-        const response = await apiFetch<{ data: WorkspaceInfo }>(
-          `/api/v1/workspaces/${branchId}`,
-        )
-        setWorkspace(response.data)
-      } catch {
-        setWorkspace(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchWorkspace()
-  }, [branchId])
-
-  if (loading || !workspace) {
+  if (!workspace) {
     return null
   }
 

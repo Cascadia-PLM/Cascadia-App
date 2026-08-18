@@ -4,7 +4,7 @@
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
-import { programMembers, programs } from '../db/schema'
+import { programMembers, programs, users } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import type { SQL } from 'drizzle-orm'
 import { takeFirst } from '@/lib/db/take-first'
@@ -31,14 +31,32 @@ export const programUpdateSchema = programCreateSchema.partial()
 export type CreateProgramInput = z.infer<typeof programCreateSchema>
 export type UpdateProgramInput = z.infer<typeof programUpdateSchema>
 
-export type ProgramRole = 'admin' | 'lead' | 'engineer' | 'viewer'
+export const programRoleSchema = z.enum(['admin', 'lead', 'engineer', 'viewer'])
+export type ProgramRole = z.infer<typeof programRoleSchema>
 
-export interface ProgramMemberUpdate {
-  role?: ProgramRole
-  canCreateEco?: boolean
-  canApproveEco?: boolean
-  canManageProducts?: boolean
-}
+/**
+ * Add-member request body. Strict: the columns of program_members not listed
+ * here (id, programId, joinedAt, invitedBy, the flag columns) are set by the
+ * server, never by the caller.
+ */
+export const memberAddSchema = z.strictObject({
+  userId: z.string().uuid(),
+  role: programRoleSchema,
+})
+
+/**
+ * Update-member request body. Strict so a request body cannot reach columns
+ * it must never touch (userId/programId/id/joinedAt would re-point the
+ * membership row itself).
+ */
+export const memberUpdateSchema = z.strictObject({
+  role: programRoleSchema.optional(),
+  canCreateEco: z.boolean().optional(),
+  canApproveEco: z.boolean().optional(),
+  canManageDesigns: z.boolean().optional(),
+})
+
+export type ProgramMemberUpdate = z.infer<typeof memberUpdateSchema>
 
 export interface ProgramFilters {
   status?: string
@@ -123,7 +141,7 @@ export class ProgramService {
       role: 'admin',
       canCreateEco: true,
       canApproveEco: true,
-      canManageProducts: true,
+      canManageDesigns: true,
       invitedBy: userId,
     })
 
@@ -203,7 +221,7 @@ export class ProgramService {
   }
 
   /**
-   * List all programs (for Global Admins)
+   * List all programs (for cross-program authority)
    */
   static async listAll(filters?: ProgramFilters) {
     const limit = filters?.limit || 50
@@ -412,6 +430,15 @@ export class ProgramService {
     role: ProgramRole,
     invitedBy: string,
   ) {
+    const parsedRole = programRoleSchema.safeParse(role)
+    if (!parsedRole.success) {
+      throw new ValidationError(
+        `Invalid program role '${String(role)}'`,
+        undefined,
+        { field: 'role' },
+      )
+    }
+
     const program = await this.getById(programId)
     if (!program) {
       throw new NotFoundError('Program', programId, { operation: 'addMember' })
@@ -441,7 +468,7 @@ export class ProgramService {
           role,
           canCreateEco: permissions.canCreateEco,
           canApproveEco: permissions.canApproveEco,
-          canManageProducts: permissions.canManageProducts,
+          canManageDesigns: permissions.canManageDesigns,
           invitedBy,
         })
         .returning(),
@@ -458,6 +485,13 @@ export class ProgramService {
     userId: string,
     updates: ProgramMemberUpdate,
   ) {
+    // Strict parse: unknown keys (userId, programId, joinedAt, …) are a
+    // mass-assignment attempt, not a partial update — reject them.
+    const validated = memberUpdateSchema.parse(updates)
+    if (Object.keys(validated).length === 0) {
+      throw new ValidationError('No member fields to update')
+    }
+
     const existing = await this.getMember(programId, userId)
     if (!existing) {
       throw new NotFoundError('Program member', `${programId}/${userId}`, {
@@ -465,9 +499,37 @@ export class ProgramService {
       })
     }
 
+    // A program must always keep at least one admin — demoting the last one
+    // would strand it, same as removing them.
+    if (
+      existing.role === 'admin' &&
+      validated.role !== undefined &&
+      validated.role !== 'admin'
+    ) {
+      const adminCount = await this.countAdmins(programId)
+      if (adminCount <= 1) {
+        throw new ValidationError(
+          'Cannot demote the last admin of a program',
+          undefined,
+          { field: 'role' },
+        )
+      }
+    }
+
+    // A role change re-baselines the flags to the new role's defaults;
+    // explicit flags in the same request win over the defaults.
+    const changes: ProgramMemberUpdate = { ...validated }
+    if (validated.role !== undefined && validated.role !== existing.role) {
+      const defaults = this.getDefaultPermissions(validated.role)
+      changes.canCreateEco = validated.canCreateEco ?? defaults.canCreateEco
+      changes.canApproveEco = validated.canApproveEco ?? defaults.canApproveEco
+      changes.canManageDesigns =
+        validated.canManageDesigns ?? defaults.canManageDesigns
+    }
+
     const [updated] = await db
       .update(programMembers)
-      .set(updates)
+      .set(changes)
       .where(
         and(
           eq(programMembers.programId, programId),
@@ -492,17 +554,8 @@ export class ProgramService {
 
     // Prevent removing the last admin
     if (existing.role === 'admin') {
-      const adminCount = await db
-        .select({ id: programMembers.id })
-        .from(programMembers)
-        .where(
-          and(
-            eq(programMembers.programId, programId),
-            eq(programMembers.role, 'admin'),
-          ),
-        )
-
-      if (adminCount.length <= 1) {
+      const adminCount = await this.countAdmins(programId)
+      if (adminCount <= 1) {
         throw new ValidationError('Cannot remove the last admin from a program')
       }
     }
@@ -536,7 +589,8 @@ export class ProgramService {
   }
 
   /**
-   * List all members of a program
+   * List all members of a program, with the user identity joined in so
+   * callers (the Team tab) can render names without N+1 user lookups.
    */
   static async listMembers(programId: string) {
     const program = await this.getById(programId)
@@ -546,11 +600,21 @@ export class ProgramService {
       })
     }
 
-    return db
-      .select()
+    const rows = await db
+      .select({
+        member: programMembers,
+        userName: users.name,
+        userEmail: users.email,
+      })
       .from(programMembers)
+      .innerJoin(users, eq(programMembers.userId, users.id))
       .where(eq(programMembers.programId, programId))
       .orderBy(programMembers.joinedAt)
+
+    return rows.map((r) => ({
+      ...r.member,
+      user: { id: r.member.userId, name: r.userName, email: r.userEmail },
+    }))
   }
 
   /**
@@ -579,37 +643,50 @@ export class ProgramService {
   // Helper Methods
   // ============================================================================
 
+  private static async countAdmins(programId: string): Promise<number> {
+    const admins = await db
+      .select({ id: programMembers.id })
+      .from(programMembers)
+      .where(
+        and(
+          eq(programMembers.programId, programId),
+          eq(programMembers.role, 'admin'),
+        ),
+      )
+    return admins.length
+  }
+
   private static getDefaultPermissions(role: ProgramRole) {
     switch (role) {
       case 'admin':
         return {
           canCreateEco: true,
           canApproveEco: true,
-          canManageProducts: true,
+          canManageDesigns: true,
         }
       case 'lead':
         return {
           canCreateEco: true,
           canApproveEco: true,
-          canManageProducts: false,
+          canManageDesigns: false,
         }
       case 'engineer':
         return {
           canCreateEco: true,
           canApproveEco: false,
-          canManageProducts: false,
+          canManageDesigns: false,
         }
       case 'viewer':
         return {
           canCreateEco: false,
           canApproveEco: false,
-          canManageProducts: false,
+          canManageDesigns: false,
         }
       default:
         return {
           canCreateEco: false,
           canApproveEco: false,
-          canManageProducts: false,
+          canManageDesigns: false,
         }
     }
   }

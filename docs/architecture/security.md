@@ -154,8 +154,7 @@ Six predefined roles with hierarchical permissions:
 
 | Role              | Scope             | Key Capabilities                                |
 | ----------------- | ----------------- | ----------------------------------------------- |
-| **Global Admin**  | All programs      | Full access everywhere, manages system settings |
-| **Administrator** | Assigned programs | Full access within programs, user management    |
+| **Administrator** | All programs      | Full access everywhere, manages system settings |
 | **Power User**    | Assigned programs | Create/edit/delete all item types               |
 | **Approver**      | Assigned programs | Read + update + approve (no create/delete)      |
 | **User**          | Assigned programs | Create and edit drafts, read released           |
@@ -209,8 +208,8 @@ export class AccessControlService {
     userId: string,
     designId: string,
   ): Promise<boolean> {
-    // Global Admin bypasses all checks
-    if (await this.isGlobalAdmin(userId)) return true
+    // Cross-program authority (programs:manage) bypasses all checks
+    if (await this.hasCrossProgramAccess(userId)) return true
 
     const design = await DesignService.getById(designId)
 
@@ -441,9 +440,11 @@ Files are stored in an isolated path structure that prevents path traversal:
 
 ## OAuth Integration
 
-The system supports OAuth authentication via the **Arctic** library (`arctic` package), which provides type-safe OAuth client implementations for multiple providers. The `users` table includes `provider` and `providerId` fields for OAuth-authenticated accounts.
+The system supports OAuth authentication via the **Arctic** library (`arctic` package). The `users` table includes `provider` and `providerId` fields for OAuth-authenticated accounts.
 
-OAuth configuration is provider-specific and controlled via environment variables.
+**GitHub is the only implemented provider.** The authorization hop (`GET /api/v1/auth/github`) issues a random state token in an HttpOnly, `SameSite=Lax`, 10-minute cookie; the callback (`GET /api/v1/auth/callback/github`) rejects the exchange unless the returned `state` matches that cookie, then clears it. Accounts are matched on `provider` + `providerId`, or linked to an existing user by verified email -- an account with no verified email is refused rather than admitted without one. The redirect URI is derived from `BASE_URL` and is not separately configurable, so it cannot drift from the route the callback is mounted on.
+
+Configuration is limited to `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`; the `azure` and `google` provider values are reserved in the schema but have no client or callback route. See [user management](../admin/user-management.md#oauth-providers).
 
 ---
 

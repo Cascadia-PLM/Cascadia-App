@@ -63,13 +63,12 @@ export default defineConfig({
     // Reporter configuration
     reporters: ['default', 'html'],
 
-    // Pool configuration - each test file runs in its own forked process
+    // Pool configuration - each test file runs in its own forked process.
+    // Vitest 4 removed `poolOptions`; the `forks.singleFork: false` that used
+    // to sit here was already the default (one fork per file, run in
+    // parallel), so dropping it changes nothing. Set `maxWorkers: 1` plus
+    // `isolate: false` if a single shared fork is ever wanted again.
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: false,
-      },
-    },
 
     // Timeouts - 30s accommodates integration tests with heavy DB setup
     testTimeout: 30000,

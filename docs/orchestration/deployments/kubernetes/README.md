@@ -13,22 +13,21 @@ Production-grade deployment on Kubernetes with auto-scaling and high availabilit
 │  │                   (nginx-ingress / traefik)                   │  │
 │  └─────────────────────────────┬─────────────────────────────────┘  │
 │                                │                                    │
-│    ┌───────────────────────────┼───────────────────────────────┐    │
-│    │                           │                               │    │
-│    ▼                           ▼                               ▼    │
-│  ┌─────────────┐        ┌─────────────┐                ┌───────────┐│
-│  │  cascadia   │        │  cascadia   │                │ cascadia  ││
-│  │    app      │        │   vault     │                │   jobs    ││
-│  │ Deployment  │        │ Deployment  │                │ Deployment││
-│  │  (3 pods)   │        │  (2 pods)   │                │  (N pods) ││
-│  └──────┬──────┘        └──────┬──────┘                └─────┬─────┘│
-│         │                      │                              │     │
-│  ┌──────┴──────┐        ┌──────┴──────┐                       │     │
-│  │   Service   │        │   Service   │                       │     │
-│  │  ClusterIP  │        │  ClusterIP  │                       │     │
-│  └─────────────┘        └─────────────┘                       │     │
-│                                                               │     │
-│  ┌────────────────────────────────────────────────────────────┘     │
+│         ┌──────────────────────┴─────────────────────────────┐      │
+│         ▼                                                    ▼      │
+│  ┌─────────────┐                                      ┌───────────┐ │
+│  │  cascadia   │                                      │ cascadia  │ │
+│  │    app      │                                      │   jobs    │ │
+│  │ Deployment  │                                      │ Deployment│ │
+│  │  (3 pods)   │                                      │  (N pods) │ │
+│  └──────┬──────┘                                      └─────┬─────┘ │
+│         │                                                   │       │
+│  ┌──────┴──────┐                                            │       │
+│  │   Service   │                                            │       │
+│  │  ClusterIP  │                                            │       │
+│  └─────────────┘                                            │       │
+│                                                             │       │
+│  ┌──────────────────────────────────────────────────────────┘       │
 │  │                                                                  │
 │  │  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐         │
 │  │  │  PostgreSQL  │   │   RabbitMQ   │   │    Redis     │         │
@@ -70,9 +69,6 @@ kubernetes/
 │   ├── deployment.yaml
 │   ├── service.yaml
 │   └── hpa.yaml
-├── vault/
-│   ├── deployment.yaml
-│   └── service.yaml
 ├── jobs/
 │   ├── deployment.yaml
 │   └── hpa.yaml
@@ -107,7 +103,6 @@ kubectl apply -f configmap.yaml
 
 ```bash
 kubectl apply -f app/
-kubectl apply -f vault/   # Optional: if using separate vault
 kubectl apply -f jobs/    # Optional: if using job workers
 ```
 

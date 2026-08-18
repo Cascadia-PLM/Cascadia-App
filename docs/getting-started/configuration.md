@@ -14,10 +14,12 @@ cp .env.example .env
 
 These must be set for the application to start:
 
-| Variable         | Description                                           | Example                                                  |
-| ---------------- | ----------------------------------------------------- | -------------------------------------------------------- |
-| `DATABASE_URL`   | PostgreSQL connection string                          | `postgresql://postgres:postgres@localhost:5432/cascadia` |
-| `SESSION_SECRET` | Secret for session cookie encryption (32+ characters) | `your-random-32-character-string`                        |
+| Variable       | Description                  | Example                                                  |
+| -------------- | ---------------------------- | -------------------------------------------------------- |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:postgres@localhost:5432/cascadia` |
+
+There is no session-secret variable: sessions are opaque random tokens stored
+hashed in the database, so no signing key exists to configure or rotate.
 
 ### Application settings
 
@@ -74,7 +76,7 @@ Generate an encryption key:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-This key is optional for development but recommended for production. It encrypts sensitive values like stored API keys.
+This key is optional for development but should always be set in production: it encrypts sensitive values like admin-entered provider API keys before they are stored. When it is unset, those values are stored in plaintext in the database and the server logs a warning.
 
 ### Background jobs (RabbitMQ)
 
@@ -113,23 +115,25 @@ Required for notification jobs in production. In development, emails are logged 
 
 ### OAuth providers (optional)
 
-Cascadia supports OAuth login via Azure AD and Google. These are optional -- local email/password authentication works without them.
+Cascadia supports OAuth login via GitHub. It is optional -- local email/password authentication works without it.
 
-| Variable               | Description                                                      |
-| ---------------------- | ---------------------------------------------------------------- |
-| `AZURE_TENANT_ID`      | Azure AD tenant ID                                               |
-| `AZURE_CLIENT_ID`      | Azure AD OAuth application client ID                             |
-| `AZURE_CLIENT_SECRET`  | Azure AD OAuth application secret                                |
-| `AZURE_REDIRECT_URI`   | Callback URL (e.g., `http://localhost:3000/auth/callback/azure`) |
-| `GOOGLE_CLIENT_ID`     | Google OAuth client ID                                           |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret                                       |
+| Variable               | Description                            |
+| ---------------------- | -------------------------------------- |
+| `GITHUB_CLIENT_ID`     | GitHub OAuth application client ID     |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth application client secret |
 
-To set up Azure AD OAuth:
+There is no separate redirect-URI variable: the callback URL is derived from `BASE_URL`.
 
-1. Register an application in the Azure Portal under App Registrations.
-2. Set the redirect URI to `{BASE_URL}/auth/callback/azure`.
-3. Copy the Tenant ID, Client ID, and create a Client Secret.
-4. Add the values to your `.env` file.
+To set up GitHub OAuth:
+
+1. Create an OAuth App under GitHub **Settings -> Developer settings -> OAuth Apps**.
+2. Set the authorization callback URL to `{BASE_URL}/api/v1/auth/callback/github` -- for a default local install, `http://localhost:3000/api/v1/auth/callback/github`.
+3. Copy the Client ID, generate a Client Secret, and add both to your `.env` file.
+4. Make sure `BASE_URL` matches the origin the browser reaches Cascadia on, or the callback will not match what you registered.
+
+Both variables are required. The login page shows the GitHub button either way, but clicking it fails until both are set.
+
+**Azure AD and Google are not implemented.** They are long-term roadmap items (see [cascadia-feature-list.md](../../cascadia-feature-list.md)); no `AZURE_*` or `GOOGLE_*` variable is read by any code today.
 
 ### AI providers (optional)
 
@@ -348,7 +352,6 @@ When multiple configuration sources exist, they are resolved in this order (high
 
 ```bash
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cascadia
-SESSION_SECRET=dev-session-secret-change-in-prod
 NODE_ENV=development
 BASE_URL=http://localhost:3000
 ```
@@ -358,7 +361,6 @@ BASE_URL=http://localhost:3000
 ```bash
 DATABASE_URL=postgresql://cascadia:${DB_PASSWORD}@db.example.com:5432/cascadia?sslmode=require
 DATABASE_CA_CERT_PATH=/etc/ssl/certs/db-ca.pem
-SESSION_SECRET=${SESSION_SECRET}
 ENCRYPTION_KEY=${ENCRYPTION_KEY}
 NODE_ENV=production
 BASE_URL=https://plm.example.com
@@ -378,10 +380,8 @@ RABBITMQ_URL=amqp://cascadia:${MQ_PASSWORD}@mq.example.com:5672
 ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
 
 # OAuth
-AZURE_TENANT_ID=${AZURE_TENANT_ID}
-AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
-AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
-AZURE_REDIRECT_URI=https://plm.example.com/auth/callback/azure
+GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
 ```
 
 ## Further reading

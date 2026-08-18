@@ -16,8 +16,6 @@ services:
       # Cloud database connection (AWS RDS, Cloud SQL, Azure)
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
 
-      # Session
-      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
       BASE_URL: ${BASE_URL:-http://localhost:3000}
 
       # Vault - local storage (or configure S3)
@@ -59,7 +57,7 @@ services:
     networks:
       - cascadia-app
 
-    # Run migrations on startup (safe for cloud DBs)
+    # Push the schema on startup (pre-1.0: no migration files; safe for cloud DBs)
     command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
 
 volumes:

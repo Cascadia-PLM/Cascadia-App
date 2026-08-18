@@ -22,16 +22,9 @@ This method now lives in `RevisionService.getNextRevision()` and `RevisionServic
 
 ## 3. Workspace Branch Changes Not Committable Without ECO
 
-**Severity**: Design clarification needed
+**Severity**: Resolved
 
-Workspace branches (`workspace/name`) allow personal drafts and experiments. However, there is no documented or implemented path to merge workspace branch changes into main. The only merge path goes through ECO branches.
-
-This is likely by design (workspace branches are throwaway), but it means:
-
-- Work done on a workspace branch cannot be promoted without recreating it on an ECO branch.
-- There is no "promote workspace to ECO" workflow.
-
-**Recommendation**: Document workspace branches as explicitly non-mergeable and consider whether a "promote to ECO" feature would be valuable.
+Workspace branches (`workspace/name`) allow personal drafts and experiments; only ECO branches can merge to main, and that part is by design. The promotion path this issue asked for now exists: `POST /api/v1/workspaces/:id/convert-to-eco` (new ECO) and `POST /api/v1/workspaces/:id/merge-to-eco` (existing ECO), both backed by `ChangeOrderService.adoptWorkspaceItems()`. Adoption **moves** the workspace's branch items onto the ECO branch — content is transferred, not copied — and registers each in the ECO's reviewed scope, so the ordinary merge machinery releases workspace work exactly as if it had been drafted on the ECO branch. See `docs/features/versioning.md`.
 
 ---
 

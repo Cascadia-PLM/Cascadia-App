@@ -87,7 +87,6 @@ The defaults work for local development with a standard PostgreSQL setup:
 ```bash
 # .env (minimum required)
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cascadia
-SESSION_SECRET=change-this-to-a-random-32-char-string
 ```
 
 If your PostgreSQL uses a different username, password, or port, update `DATABASE_URL` accordingly.
@@ -124,7 +123,7 @@ Expected output:
 ```
 Seeding minimal database...
 
- Roles (Global Admin, Administrator, Power User, Approver, User, View Only)
+ Roles (Administrator, Power User, Approver, User, View Only)
  Admin User (admin@cascadia.local / Cascadia)
  Default Program
  Standard Parts Library (Global)
@@ -138,7 +137,7 @@ Seeding minimal database...
 Admin User:
   Email: admin@cascadia.local
   Password: Cascadia
-  Roles: Global Admin, Administrator
+  Roles: Administrator
 ```
 
 ## First run

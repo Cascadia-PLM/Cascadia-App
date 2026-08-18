@@ -175,7 +175,7 @@ export const repoConnections = pgTable('repo_connections', {
   provider: varchar('provider', { length: 20 }).notNull(), // 'github' | 'bitbucket' | 'gitlab'
   baseUrl: text('base_url'), // for self-hosted GHE / Bitbucket Server
   authType: varchar('auth_type', { length: 20 }).notNull(), // 'pat' | 'oauth' | 'app'
-  encryptedCredentials: text('encrypted_credentials').notNull(), // AES-GCM via SESSION_SECRET-derived key
+  encryptedCredentials: text('encrypted_credentials').notNull(), // AES-GCM via ENCRYPTION_KEY-derived key
   createdBy: uuid('created_by')
     .notNull()
     .references(() => users.id),

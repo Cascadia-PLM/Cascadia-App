@@ -16,8 +16,6 @@ services:
       # Database (on infrastructure server)
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
 
-      # Session
-      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
       BASE_URL: ${BASE_URL:-http://localhost:3000}
 
       # Vault - use S3/MinIO on infrastructure server

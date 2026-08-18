@@ -21,6 +21,13 @@ export interface WorkInstruction extends BaseItem {
   difficulty?: 'Easy' | 'Medium' | 'Hard'
   safetyNotes?: string
   requiredTools?: string
+  /**
+   * The part this procedure builds. Write-only creation input, not a column on
+   * `work_instructions`: it is persisted as the attachment row flagged
+   * `isOutput`, and it is what `designId` is inherited from. Read it back via
+   * `GET /api/v1/work-instructions/:id/parts`.
+   */
+  outputPartId?: string
 }
 
 // Operation interface
@@ -58,6 +65,8 @@ export interface WorkInstructionPartAttachment {
   id: string
   workInstructionId: string
   partId: string
+  /** The part this procedure builds. At most one per work instruction. */
+  isOutput: boolean
   inheritToMBOM: boolean
   inheritedFromId?: string | null
   createdAt?: Date | string
@@ -99,14 +108,35 @@ export interface WorkInstructionChangeAlert {
   }
 }
 
-// WorkInstruction validation schema
-export const workInstructionSchema = baseItemSchema.extend({
+/**
+ * A work instruction's own fields — everything that is actually a column on
+ * `work_instructions`. Edits validate against this, because the output part is
+ * an attachment rather than a column and an edit does not restate it.
+ */
+export const workInstructionEditSchema = baseItemSchema.extend({
   itemType: z.literal('WorkInstruction'),
   description: z.string().max(5000).optional(),
   estimatedTime: z.number().int().positive().optional(),
   difficulty: z.enum(['Easy', 'Medium', 'Hard']).optional(),
   safetyNotes: z.string().max(5000).optional(),
   requiredTools: z.string().max(2000).optional(),
+})
+
+/**
+ * The creation contract, and what `ItemTypeRegistry` registers for this type.
+ *
+ * A work instruction is a procedure for building one specific part, so it
+ * cannot be created without naming that part — exactly how `partSchema`
+ * requires `designId`. Registering it here means both server creation paths
+ * (`ItemService.create` and `ItemVersioningFacade.createOnBranch`) enforce it,
+ * so a programmatic caller cannot mint a design-less work instruction either.
+ *
+ * Only creation parses this: `ItemService.update` does not validate against the
+ * type schema, and `createRevision` copies the stored `work_instructions` row
+ * straight across without going near Zod.
+ */
+export const workInstructionSchema = workInstructionEditSchema.extend({
+  outputPartId: z.string().uuid({ message: 'Output part is required' }),
 })
 
 // Operation validation schema
@@ -165,6 +195,7 @@ export const workInstructionStepSchema = z.object({
 export const workInstructionPartAttachmentSchema = z.object({
   workInstructionId: z.string().uuid(),
   partId: z.string().uuid(),
+  isOutput: z.boolean().default(false),
   inheritToMBOM: z.boolean().default(false),
 })
 

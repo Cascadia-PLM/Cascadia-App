@@ -474,7 +474,7 @@ app.post(
     apiHandler(
       // 'ai_settings' was never a ResourceType, and hasPermission() denies any
       // resource no role declares - so this endpoint 403'd for everyone,
-      // Global Admin included. Admin config is 'system' everywhere else,
+      // administrators included. Admin config is 'system' everywhere else,
       // including admin.ts's own AI provider routes.
       { permission: ['system', 'manage'] },
       async ({ request }) => {

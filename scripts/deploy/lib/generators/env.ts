@@ -5,7 +5,7 @@
  * Environment file generators for each deployment type
  */
 
-import { generatePassword, generateSecureSecret } from '../secrets.js'
+import { generatePassword } from '../secrets.js'
 import type {
   CloudDatabaseConfig,
   DistributedConfig,
@@ -20,12 +20,10 @@ import type {
 export function generateSingleServerEnv(
   config: SingleServerConfig,
 ): GenerationResult {
-  const sessionSecret = config.sessionSecret || generateSecureSecret(32)
   const postgresPassword = config.postgresPassword || generatePassword(16)
   const pgAdminPassword = config.pgAdminPassword || generatePassword(12)
 
   const credentials: Record<string, string> = {
-    SESSION_SECRET: sessionSecret,
     POSTGRES_PASSWORD: postgresPassword,
   }
 
@@ -44,12 +42,6 @@ export function generateSingleServerEnv(
 NODE_ENV=${config.nodeEnv}
 APP_PORT=${config.appPort}
 BASE_URL=${config.baseUrl}
-
-# =============================================================================
-# SECRETS (auto-generated if not provided)
-# =============================================================================
-
-SESSION_SECRET=${sessionSecret}
 
 # =============================================================================
 # DATABASE
@@ -98,11 +90,9 @@ PGADMIN_PORT=${config.pgAdminPort}
 export function generateDistributedEnv(
   config: DistributedConfig,
 ): GenerationResult {
-  const sessionSecret = config.sessionSecret || generateSecureSecret(32)
   const pgAdminPassword = config.pgAdminPassword || generatePassword(12)
 
   const credentials: Record<string, string> = {
-    SESSION_SECRET: sessionSecret,
     POSTGRES_PASSWORD: config.postgresPassword,
     RABBITMQ_PASSWORD: config.rabbitmqPassword,
     MINIO_PASSWORD: config.minioPassword,
@@ -183,12 +173,6 @@ NODE_ENV=${config.nodeEnv}
 APP_PORT=${config.appPort}
 BASE_URL=${config.baseUrl}
 APP_VERSION=latest
-
-# =============================================================================
-# SECRETS
-# =============================================================================
-
-SESSION_SECRET=${sessionSecret}
 
 # =============================================================================
 # DATABASE (connect to infrastructure server)
@@ -275,11 +259,7 @@ S3_BUCKET=${config.s3Bucket}
 export function generateCloudDatabaseEnv(
   config: CloudDatabaseConfig,
 ): GenerationResult {
-  const sessionSecret = config.sessionSecret || generateSecureSecret(32)
-
-  const credentials: Record<string, string> = {
-    SESSION_SECRET: sessionSecret,
-  }
+  const credentials: Record<string, string> = {}
 
   let content = `# Cascadia PLM - Cloud Database Deployment
 # Generated: ${new Date().toISOString()}
@@ -294,12 +274,6 @@ NODE_ENV=${config.nodeEnv}
 APP_PORT=${config.appPort}
 BASE_URL=${config.baseUrl}
 APP_VERSION=latest
-
-# =============================================================================
-# SECRETS
-# =============================================================================
-
-SESSION_SECRET=${sessionSecret}
 
 # =============================================================================
 # DATABASE (managed cloud database)
@@ -347,11 +321,7 @@ S3_SECRET_KEY=${config.s3SecretKey}
 export function generateKubernetesEnv(
   config: KubernetesConfig,
 ): GenerationResult {
-  const sessionSecret = config.sessionSecret || generateSecureSecret(32)
-
-  const credentials: Record<string, string> = {
-    SESSION_SECRET: sessionSecret,
-  }
+  const credentials: Record<string, string> = {}
 
   if (config.s3AccessKey) credentials.S3_ACCESS_KEY = config.s3AccessKey
   if (config.s3SecretKey) credentials.S3_SECRET_KEY = config.s3SecretKey

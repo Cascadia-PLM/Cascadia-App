@@ -7,7 +7,8 @@ import { apiFetch } from '@/lib/api/client'
 
 export interface SessionSetupStatus {
   completed: boolean
-  isGlobalAdmin: boolean
+  /** Whether the user carries cross-program (top-level admin) authority. */
+  isAdmin: boolean
 }
 
 export interface SessionState {

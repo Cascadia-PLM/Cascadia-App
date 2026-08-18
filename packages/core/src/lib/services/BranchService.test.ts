@@ -19,14 +19,23 @@ import {
   expect,
   it,
 } from 'vitest'
+import { and, eq } from 'drizzle-orm'
 import { ItemService } from '../items/services/ItemService'
 import { BranchService } from './BranchService'
 import { DesignService } from './DesignService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { branchItems, programs } from '@/lib/db/schema'
+import {
+  NotFoundError,
+  PermissionDeniedError,
+  ValidationError,
+} from '@/lib/errors'
+import {
+  branchItems,
+  changeOrderAffectedItems,
+  programs,
+} from '@/lib/db/schema'
 import { takeFirst } from '@/lib/db/take-first'
 
 // Import to register item types
@@ -788,13 +797,156 @@ describe('BranchService', () => {
 
       await expect(
         BranchService.deleteWorkspaceBranch(branch.id, otherUserId),
-      ).rejects.toThrow(ValidationError)
+      ).rejects.toThrow(PermissionDeniedError)
     })
 
     it('throws NotFoundError for non-existent branch', async () => {
       await expect(
         BranchService.deleteWorkspaceBranch(
           '00000000-0000-0000-0000-000000000000',
+          user.id,
+        ),
+      ).rejects.toThrow(NotFoundError)
+    })
+
+    it('spares added items whose master a change order references', async () => {
+      const branch = await BranchService.createWorkspaceBranch(
+        designId,
+        user.id,
+        'referenced-delete',
+      )
+
+      const part = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-REF-${Date.now()}`,
+          revision: 'A',
+          name: 'Adopted Workspace Part',
+          state: 'Draft',
+          designId,
+        } as any,
+        user.id,
+      )
+
+      await testDb.db.insert(branchItems).values({
+        branchId: branch.id,
+        itemMasterId: part.masterId!,
+        currentItemId: part.id,
+        baseItemId: null,
+        changeType: 'added',
+      })
+
+      // A change order carries the master as an affected item — the shape a
+      // convert-to-eco leaves behind
+      const changeOrder = await createChangeOrder()
+      await testDb.db.insert(changeOrderAffectedItems).values({
+        changeOrderId: changeOrder.id!,
+        affectedItemId: part.id,
+        affectedItemMasterId: part.masterId!,
+        changeAction: 'release',
+        createdBy: user.id,
+      })
+
+      await BranchService.deleteWorkspaceBranch(branch.id, user.id)
+
+      // Branch gone, referenced item spared
+      const deletedBranch = await BranchService.getById(branch.id)
+      expect(deletedBranch?.isArchived).toBe(true)
+      const survivor = await ItemService.findById(part.id)
+      expect(survivor).not.toBeNull()
+    })
+  })
+
+  describe('removeWorkspaceItem', () => {
+    async function workspaceWithDraft(name: string) {
+      const branch = await BranchService.createWorkspaceBranch(
+        designId,
+        user.id,
+        name,
+      )
+      const part = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-RM-${Date.now()}`,
+          revision: 'A',
+          name: 'Workspace Draft',
+          state: 'Draft',
+          designId,
+        } as any,
+        user.id,
+      )
+      await testDb.db.insert(branchItems).values({
+        branchId: branch.id,
+        itemMasterId: part.masterId!,
+        currentItemId: part.id,
+        baseItemId: null,
+        changeType: 'added',
+      })
+      return { branch, part }
+    }
+
+    it('deletes the draft item along with its branch row', async () => {
+      const { branch, part } = await workspaceWithDraft('rm-draft')
+
+      await BranchService.removeWorkspaceItem(branch.id, part.masterId, user.id)
+
+      const rows = await testDb.db
+        .select()
+        .from(branchItems)
+        .where(
+          and(
+            eq(branchItems.branchId, branch.id),
+            eq(branchItems.itemMasterId, part.masterId),
+          ),
+        )
+      expect(rows).toHaveLength(0)
+
+      const deleted = await ItemService.findById(part.id)
+      expect(deleted).toBeNull()
+    })
+
+    it('keeps the draft item when a change order references its master', async () => {
+      const { branch, part } = await workspaceWithDraft('rm-referenced')
+
+      const changeOrder = await createChangeOrder()
+      await testDb.db.insert(changeOrderAffectedItems).values({
+        changeOrderId: changeOrder.id!,
+        affectedItemId: part.id,
+        affectedItemMasterId: part.masterId!,
+        changeAction: 'release',
+        createdBy: user.id,
+      })
+
+      await BranchService.removeWorkspaceItem(branch.id, part.masterId, user.id)
+
+      const survivor = await ItemService.findById(part.id)
+      expect(survivor).not.toBeNull()
+    })
+
+    it('only the owner may remove items', async () => {
+      const { branch, part } = await workspaceWithDraft('rm-owner')
+      const otherUserId = crypto.randomUUID()
+
+      await expect(
+        BranchService.removeWorkspaceItem(
+          branch.id,
+          part.masterId,
+          otherUserId,
+        ),
+      ).rejects.toThrow(PermissionDeniedError)
+    })
+
+    it('throws NotFoundError for an item not on the workspace', async () => {
+      const branch = await BranchService.createWorkspaceBranch(
+        designId,
+        user.id,
+        'rm-missing',
+      )
+
+      await expect(
+        BranchService.removeWorkspaceItem(
+          branch.id,
+          crypto.randomUUID(),
           user.id,
         ),
       ).rejects.toThrow(NotFoundError)

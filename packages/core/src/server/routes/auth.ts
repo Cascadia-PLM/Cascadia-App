@@ -105,19 +105,19 @@ app.get(
         // failure can't break login.
         let setupStatus: {
           completed: boolean
-          isGlobalAdmin: boolean
+          isAdmin: boolean
         } = {
           completed: true,
-          isGlobalAdmin: false,
+          isAdmin: false,
         }
         try {
-          const [completedRaw, isGlobalAdmin] = await Promise.all([
+          const [completedRaw, isAdmin] = await Promise.all([
             SettingsService.getValue(SettingKeys.SETUP_COMPLETED),
-            AccessControlService.isGlobalAdmin(sessionData.user.id),
+            AccessControlService.hasCrossProgramAccess(sessionData.user.id),
           ])
           setupStatus = {
             completed: completedRaw === 'true',
-            isGlobalAdmin,
+            isAdmin,
           }
         } catch {
           // Default to "completed" so a transient failure doesn't lock

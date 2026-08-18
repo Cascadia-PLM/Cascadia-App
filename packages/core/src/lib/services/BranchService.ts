@@ -5,8 +5,18 @@ import { and, desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
 import { notDeleted } from '../db/filters'
-import { branchItems, branches, items, tags } from '../db/schema'
-import { NotFoundError, ValidationError } from '../errors'
+import {
+  branchItems,
+  branches,
+  changeOrderAffectedItems,
+  items,
+  tags,
+} from '../db/schema'
+import {
+  NotFoundError,
+  PermissionDeniedError,
+  ValidationError,
+} from '../errors'
 import { DesignService } from './DesignService'
 import type { TransactionClient } from '../db'
 import { takeFirst } from '@/lib/db/take-first'
@@ -260,6 +270,13 @@ export class BranchService {
    * Delete a workspace branch
    * Only the owner can delete their workspace branches.
    * Also deletes all items that exist only on this workspace (changeType: 'added').
+   *
+   * An 'added' item whose master a change order references is spared: a
+   * converted or merged workspace hands its drafts to the ECO, and deleting
+   * the workspace afterwards must not gut the ECO's affected items. (Adoption
+   * moves the branch rows off the workspace, so this guard matters only for
+   * data that referenced workspace content before adoption existed — and as
+   * a backstop against any future path that references first, moves later.)
    */
   static async deleteWorkspaceBranch(branchId: string, userId: string) {
     const branch = await this.getById(branchId)
@@ -279,16 +296,17 @@ export class BranchService {
     }
 
     if (branch.ownerId !== userId) {
-      throw new ValidationError(
-        'You can only delete your own workspace branches',
-      )
+      throw new PermissionDeniedError('workspace', 'delete')
     }
 
     await db.transaction(async (tx) => {
       // Find all items that were created on this workspace (changeType: 'added')
       // These items exist only on this branch and should be deleted
       const workspaceOnlyItems = await tx
-        .select({ currentItemId: branchItems.currentItemId })
+        .select({
+          currentItemId: branchItems.currentItemId,
+          itemMasterId: branchItems.itemMasterId,
+        })
         .from(branchItems)
         .where(
           and(
@@ -297,8 +315,30 @@ export class BranchService {
           ),
         )
 
+      // Masters some change order has adopted as affected items — their item
+      // rows must survive the workspace
+      const masterIds = workspaceOnlyItems.map((bi) => bi.itemMasterId)
+      const referencedMasters = new Set(
+        masterIds.length > 0
+          ? (
+              await tx
+                .select({
+                  masterId: changeOrderAffectedItems.affectedItemMasterId,
+                })
+                .from(changeOrderAffectedItems)
+                .where(
+                  inArray(
+                    changeOrderAffectedItems.affectedItemMasterId,
+                    masterIds,
+                  ),
+                )
+            ).map((r) => r.masterId)
+          : [],
+      )
+
       // Delete the actual items
       const itemIds = workspaceOnlyItems
+        .filter((bi) => !referencedMasters.has(bi.itemMasterId))
         .map((bi) => bi.currentItemId)
         .filter((id): id is string => id !== null)
 
@@ -307,7 +347,6 @@ export class BranchService {
       }
 
       // Soft delete the branch by archiving
-      // This will also cascade delete branchItems records
       await tx
         .update(branches)
         .set({
@@ -334,6 +373,97 @@ export class BranchService {
       )
 
     return result.length
+  }
+
+  /**
+   * Both item counts a workspace's UI needs, in one read: every item on the
+   * branch (checkouts included — what convert/merge would carry), and the
+   * subset created here (what deleting the workspace would destroy).
+   */
+  static async getWorkspaceItemCounts(
+    branchId: string,
+  ): Promise<{ total: number; workspaceOnly: number }> {
+    const rows = await db
+      .select({ changeType: branchItems.changeType })
+      .from(branchItems)
+      .where(eq(branchItems.branchId, branchId))
+
+    return {
+      total: rows.length,
+      workspaceOnly: rows.filter((r) => r.changeType === 'added').length,
+    }
+  }
+
+  /**
+   * Remove one item from a workspace branch.
+   *
+   * An 'added' row is a draft that exists nowhere else: removing it deletes
+   * the draft item itself — unless a change order has since adopted the
+   * master, in which case only the branch row goes and the item survives for
+   * the ECO. For every other row only the branch row is removed: the
+   * workspace stops overriding the item and it resolves to its released
+   * version again. A modified row's working copy is left behind unreferenced,
+   * exactly as deleteWorkspaceBranch leaves it; working revisions never
+   * resolve outside their branch, so it is inert.
+   */
+  static async removeWorkspaceItem(
+    branchId: string,
+    itemMasterId: string,
+    userId: string,
+  ) {
+    const branch = await this.getById(branchId)
+    if (!branch) {
+      throw new NotFoundError('Workspace', branchId, {
+        operation: 'removeWorkspaceItem',
+      })
+    }
+
+    if (branch.branchType !== 'workspace') {
+      throw new ValidationError('Can only remove items from workspace branches')
+    }
+
+    if (branch.ownerId !== userId) {
+      throw new PermissionDeniedError('workspace', 'modify')
+    }
+
+    const row = (
+      await db
+        .select()
+        .from(branchItems)
+        .where(
+          and(
+            eq(branchItems.branchId, branchId),
+            eq(branchItems.itemMasterId, itemMasterId),
+          ),
+        )
+        .limit(1)
+    ).at(0)
+
+    if (!row) {
+      throw new NotFoundError('Workspace item', itemMasterId, {
+        operation: 'removeWorkspaceItem',
+      })
+    }
+
+    await db.transaction(async (tx) => {
+      await tx.delete(branchItems).where(eq(branchItems.id, row.id))
+
+      if (row.changeType === 'added' && row.currentItemId) {
+        const referenced = (
+          await tx
+            .select({ id: changeOrderAffectedItems.id })
+            .from(changeOrderAffectedItems)
+            .where(
+              eq(changeOrderAffectedItems.affectedItemMasterId, itemMasterId),
+            )
+            .limit(1)
+        ).at(0)
+
+        if (!referenced) {
+          await tx.delete(items).where(eq(items.id, row.currentItemId))
+        }
+      }
+    })
   }
 
   /**

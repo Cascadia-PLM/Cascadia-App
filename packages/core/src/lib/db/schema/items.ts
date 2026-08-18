@@ -12,6 +12,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
@@ -1043,6 +1044,12 @@ export const workInstructionSteps = pgTable(
 /**
  * Work Instruction Part Attachments - many-to-many junction table
  * Links Work Instructions to Parts (typically MBOM parts)
+ *
+ * Exactly one attachment per work instruction is the **output part** — the part
+ * the procedure builds. It is the anchor for the WI's `items.designId`: a work
+ * instruction has no design of its own, it borrows the one its output part
+ * lives in. The remaining attachments are the parts the procedure also applies
+ * to (MBOM twins, shared subassemblies) and carry no design meaning.
  */
 export const workInstructionPartAttachments = pgTable(
   'work_instruction_part_attachments',
@@ -1054,6 +1061,8 @@ export const workInstructionPartAttachments = pgTable(
     partId: uuid('part_id')
       .notNull()
       .references(() => items.id, { onDelete: 'cascade' }),
+    // The part this procedure builds. Source of the WI's designId.
+    isOutput: boolean('is_output').default(false).notNull(),
     // If attached to EBOM part, auto-attach to derived MBOMs
     inheritToMBOM: boolean('inherit_to_mbom').default(false),
     // Tracks which source attachment this was inherited from (EBOM → MBOM)
@@ -1070,6 +1079,11 @@ export const workInstructionPartAttachments = pgTable(
       table.workInstructionId,
       table.partId,
     ),
+    // At most one output part per work instruction. Partial, so the many
+    // non-output attachments are unconstrained.
+    uniqueIndex('wi_output_part_unique')
+      .on(table.workInstructionId)
+      .where(sql`${table.isOutput}`),
     index('idx_wi_part_wi').on(table.workInstructionId),
     index('idx_wi_part_part').on(table.partId),
   ],

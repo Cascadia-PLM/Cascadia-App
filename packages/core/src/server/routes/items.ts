@@ -20,6 +20,7 @@ import {
   itemTypeToResource,
 } from '@/lib/items/item-type-resources'
 import { ItemService } from '@/lib/items/services/ItemService'
+import { isBranchProtectionExempt } from '@/lib/items/branch-protection'
 import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
 import { enrichItemFromUrl } from '@/lib/items/enrichment/enrich-from-url'
 import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
@@ -44,6 +45,7 @@ import {
   parseQuery,
 } from '@/lib/api/handler'
 import { requireBranchAccess, requireDesignAccess } from '@/lib/auth/access'
+import { AccessControlService } from '@/lib/auth/AccessControlService'
 import {
   batchCreateRequestSchema,
   calculateLockDuration,
@@ -84,13 +86,21 @@ const adapt = tagged('Items')
  * Exported for the enterprise-search results route, which gates the same way.
  */
 export async function readableItemTypes(userId: string): Promise<Set<string>> {
-  const readable = new Set<string>()
-  for (const [itemType, resource] of Object.entries(ITEM_TYPE_RESOURCES)) {
-    if (await permissionService.canUser(userId, 'read', resource)) {
-      readable.add(itemType)
-    }
-  }
-  return readable
+  // Concurrent, not sequential: the checks are independent, and on a cold
+  // permission cache an awaited loop costs one database round trip per item
+  // type rather than one for the lot.
+  const checks = await Promise.all(
+    Object.entries(ITEM_TYPE_RESOURCES).map(
+      async ([itemType, resource]) =>
+        [
+          itemType,
+          await permissionService.canUser(userId, 'read', resource),
+        ] as const,
+    ),
+  )
+  return new Set(
+    checks.filter(([, canRead]) => canRead).map(([itemType]) => itemType),
+  )
 }
 
 type DesignScope = 'current' | 'all' | 'library'
@@ -127,45 +137,23 @@ const itemSearchQuerySchema = z.object({
 })
 
 /**
- * Get design IDs accessible to a user based on their program memberships
- * Returns design IDs from user's programs + library designs
- */
-async function getAccessibleDesignIds(userId: string): Promise<Array<string>> {
-  // Get user's programs
-  const userPrograms = await ProgramService.listByUser(userId)
-  const programIds = userPrograms.map((p) => p.id)
-
-  // Get designs from user's programs + library designs (null programId with library type)
-  const accessibleDesigns = await db
-    .select({ id: designs.id })
-    .from(designs)
-    .where(
-      or(
-        programIds.length > 0
-          ? inArray(designs.programId, programIds)
-          : undefined,
-        eq(designs.designType, 'Library'),
-      ),
-    )
-
-  return accessibleDesigns.map((d) => d.id)
-}
-
-/**
  * The designs a search should look in, or `undefined` for no design filter.
+ *
+ * This is the *requested* scope only. It narrows within what the caller may
+ * already read — the access scope is a second, independent filter passed as
+ * `accessDesignIds`, so no value here can widen a search past the caller's
+ * program memberships.
  *
  * A scope the caller asked for resolves to a list even when that list is
  * empty, and an empty list matches nothing downstream. "No designs matched"
  * must not fall through to "search every design" — that is how
  * `designScope=library` used to return the whole catalogue on an instance with
- * no Standard Library, and `designScope=all` still returned everything to a
- * user who belonged to no program.
+ * no Standard Library.
  */
 async function resolveDesignScope(
   scope: DesignScope | null,
   contextDesignId: string | undefined,
   designIdsParam: string | undefined,
-  userId: string,
 ): Promise<Array<string> | undefined> {
   // Explicit designIds win (e.g. from the breadcrumb program filter)
   if (designIdsParam) return designIdsParam.split(',').filter(Boolean)
@@ -178,8 +166,9 @@ async function resolveDesignScope(
       const stdLib = await DesignService.getStandardLibrary()
       return stdLib ? [stdLib.id] : []
     }
+    // 'all' asks for no narrowing at all; the access scope still applies.
     case 'all':
-      return getAccessibleDesignIds(userId)
+      return undefined
   }
 }
 
@@ -445,7 +434,6 @@ app.get(
             designScope ?? null,
             contextDesignId,
             designIdsParam,
-            user.id,
           )
 
           const searchResults = await ItemService.searchByItemNumber(q, {
@@ -453,6 +441,9 @@ app.get(
             offset,
             itemTypes,
             designIds,
+            accessDesignIds: await AccessControlService.getAccessibleDesignIds(
+              user.id,
+            ),
           })
 
           const enrichedItems = await enrichWithDesignMetadata(
@@ -477,7 +468,6 @@ app.get(
           designScope ?? null,
           contextDesignId,
           designIdsParam,
-          user.id,
         )
 
         const results = await ItemService.search(itemType, {
@@ -486,6 +476,9 @@ app.get(
           limit,
           offset,
           designIds,
+          accessDesignIds: await AccessControlService.getAccessibleDesignIds(
+            user.id,
+          ),
         })
 
         // Enrich with design metadata
@@ -1132,6 +1125,13 @@ app.get(
       // Resolve programId to designIds when no specific designId is set
       let resolvedDesignIds: Array<string> | undefined
       if (programId && !designId) {
+        // Filtering by a program is a program-scoped read: a non-member
+        // naming someone else's programId must be refused, not served.
+        if (
+          !(await AccessControlService.canAccessProgram(user.id, programId))
+        ) {
+          throw new PermissionDeniedError('program items', 'read')
+        }
         const programDesigns = await db
           .select({ id: designs.id })
           .from(designs)
@@ -1262,12 +1262,20 @@ app.get(
         // The fallback searches Parts when no type is given
         await requirePermission(request, 'parts', 'read')
       }
+      // Nothing above narrowed this to a design the caller was checked
+      // against, so the caller's own reach is the only bound left. Without
+      // it this path listed every item in the instance.
+      const accessDesignIds = await AccessControlService.getAccessibleDesignIds(
+        user.id,
+      )
+
       const result = await ItemService.search(itemType || 'Part', {
         query: search || globalSearch,
         state,
         limit,
         offset,
         designIds: resolvedDesignIds,
+        accessDesignIds,
         sortField,
         sortDirection,
         columnFilters,
@@ -1287,6 +1295,7 @@ app.get(
               limit: 1,
               state: stateName,
               designIds: resolvedDesignIds,
+              accessDesignIds,
             }),
           ),
         )
@@ -1318,6 +1327,29 @@ app.post(
       const resourceType = getResourceType(itemType)
       await requirePermission(request, resourceType, 'create')
 
+      // A work instruction has no design of its own — it borrows the one its
+      // output part lives in, so parametric blocks, MBOM inheritance, and part
+      // lookups all resolve in the right design. Resolved before the access
+      // checks below so permission is evaluated against the design the work
+      // instruction will actually land in, not one the caller supplied.
+      if (itemType === 'WorkInstruction') {
+        if (!itemData.outputPartId) {
+          throw new ValidationError(
+            'outputPartId is required: a work instruction must name the part it builds',
+          )
+        }
+        const outputPart = await ItemService.findById(itemData.outputPartId)
+        if (!outputPart || outputPart.itemType !== 'Part') {
+          throw new NotFoundError('Part', itemData.outputPartId)
+        }
+        if (!outputPart.designId) {
+          throw new ValidationError(
+            `Part ${outputPart.itemNumber} is not in a design and cannot be a work instruction's output part`,
+          )
+        }
+        itemData.designId = outputPart.designId
+      }
+
       // If branchId provided, create on that branch
       if (branchId) {
         // Get branch to check access
@@ -1334,6 +1366,15 @@ app.post(
         // Check user has access to this design
         await requireDesignAccess(user.id, design.id)
 
+        // createOnBranch takes the item's design from the branch, so an output
+        // part living somewhere else would silently produce a work instruction
+        // whose design and output part disagree.
+        if (itemData.designId && itemData.designId !== branch.designId) {
+          throw new ValidationError(
+            'Output part belongs to a different design than the target branch',
+          )
+        }
+
         const result = await ItemService.createOnBranch(
           itemType,
           itemData,
@@ -1345,7 +1386,31 @@ app.post(
         return created({ item: result.item, commit: result.commit })
       }
 
-      // No branchId: create directly on main (pre-release phase)
+      // No branchId: create directly on main (pre-release phase).
+      // This path historically skipped the design/program check entirely —
+      // the branch path above has always had it — so any authenticated user
+      // with the type-level create permission could write into any
+      // program's designs.
+      if (itemData.designId) {
+        await requireDesignAccess(user.id, itemData.designId)
+
+        // ECO creation honors the per-member canCreateEco flag (a program
+        // 'viewer' has it off). Non-members reaching this point hold the
+        // cross-program bypass, which covers the flag as well.
+        if (itemType === 'ChangeOrder') {
+          const design = await DesignService.getById(itemData.designId)
+          if (design?.programId) {
+            const member = await ProgramService.getMember(
+              design.programId,
+              user.id,
+            )
+            if (member && !member.canCreateEco) {
+              throw new PermissionDeniedError('change order', 'create')
+            }
+          }
+        }
+      }
+
       const item = await ItemService.create(itemType, itemData, user.id)
 
       // Auto-start workflow for ChangeOrders
@@ -1435,18 +1500,11 @@ app.get(
         await requirePermission(request, resource, 'read')
       }
 
-      // Check access if item is in a design
+      // Check access if item is in a design. requireDesignAccess carries the
+      // cross-program bypass — the previous inline membership check did not,
+      // locking administrators out of items in programs they hadn't joined.
       if (baseItem.designId) {
-        const design = await DesignService.getById(baseItem.designId)
-        if (design?.programId) {
-          const canAccess = await ProgramService.canUserAccess(
-            user.id,
-            design.programId,
-          )
-          if (!canAccess) {
-            throw new PermissionDeniedError('item', 'read')
-          }
-        }
+        await requireDesignAccess(user.id, baseItem.designId)
       }
 
       // If no version context specified, return the item as-is
@@ -2045,9 +2103,13 @@ app.get(
       let isMainProtected = false
 
       if (!branchInfo && item.designId) {
-        isMainProtected = await BranchService.isMainBranchProtected(
-          item.designId,
-        )
+        // Exempt types (work instructions) take the lock on main regardless of
+        // protection — they are editable there by design, so reporting main as
+        // protected would push the client into a revise-through-an-ECO dialog
+        // for an item that needs no ECO.
+        isMainProtected = isBranchProtectionExempt(item.itemType)
+          ? false
+          : await BranchService.isMainBranchProtected(item.designId)
         if (!isMainProtected) {
           const mainBranch = await BranchService.getMainBranch(item.designId)
           lockBranchId = mainBranch?.id ?? null

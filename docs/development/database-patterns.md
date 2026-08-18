@@ -302,10 +302,15 @@ return db.transaction(async (tx) => {
 
 > **Pre-1.0: no committed migrations.** Every environment applies schema with
 > `db:push` (local dev, CI, and all docker-compose stacks) and gets its data
-> from the seed scripts, so the repo intentionally carries no `drizzle/`
+> from the seed scripts, so the repo intentionally carries no committed
 > migration files. At the first production release, mint a baseline migration
 > with `npm run db:generate` (it will emit the full schema as `0000`) and
 > switch persistent environments to `npm run db:migrate` from there.
+
+Migration SQL is emitted into the app's own `drizzle/` directory, next to the
+config — app-relative for the same reason the config lives in the app: the
+schema is composed there, in `modules.schema.ts`, so the migration history it
+generates belongs to that composition.
 
 ### Schema Change Workflow
 

@@ -11,7 +11,6 @@ const baseConfigSchema = z.object({
   baseUrl: z.string().url('Must be a valid URL'),
   appPort: z.coerce.number().int().min(1).max(65535),
   nodeEnv: z.enum(['production', 'development']),
-  sessionSecret: z.string().min(32).optional(),
   outputDir: z.string().min(1),
   validateDb: z.boolean(),
   runDeploy: z.boolean(),

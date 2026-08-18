@@ -85,13 +85,13 @@ export const PERMISSION_ACTIONS = Object.keys(
 ) as Array<PermissionAction>
 
 // Role names
+//
+// There is deliberately no 'Global Admin': it was a leftover from an early
+// multi-tenant design. In this single-tenant architecture, Administrator IS
+// the top-level role — its programs:manage grant is what carries
+// cross-program authority (see AccessControlService.hasCrossProgramAccess).
 export type RoleName =
-  | 'Global Admin'
-  | 'Administrator'
-  | 'Power User'
-  | 'Approver'
-  | 'User'
-  | 'View Only'
+  'Administrator' | 'Power User' | 'Approver' | 'User' | 'View Only'
 
 // Permission structure
 export interface Permission {
@@ -109,101 +109,17 @@ export interface RoleDefinition {
 /**
  * Role Definitions
  *
- * Global Admin: System-wide administrator with full access to all programs and data
- * Administrator: Full system access within assigned programs
+ * Administrator: Top-level administrator — all programs, all settings
  * Power User: Can create and edit all item types, manage workflows
  * Approver: Can approve items and change states, limited editing
  * User: Can create and edit draft items, view released items
  * View Only: Read-only access to all items
  */
 export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
-  'Global Admin': {
-    name: 'Global Admin',
-    description:
-      'System-wide administrator with full access to all programs and data',
-    permissions: [
-      {
-        resource: 'parts',
-        actions: ['create', 'read', 'update', 'delete', 'approve', 'manage'],
-      },
-      {
-        resource: 'documents',
-        actions: ['create', 'read', 'update', 'delete', 'approve', 'manage'],
-      },
-      {
-        resource: 'change_orders',
-        actions: ['create', 'read', 'update', 'delete', 'approve', 'manage'],
-      },
-      {
-        resource: 'designs',
-        actions: ['create', 'read', 'update', 'delete', 'manage'],
-      },
-      {
-        resource: 'requirements',
-        actions: ['create', 'read', 'update', 'delete', 'approve', 'manage'],
-      },
-      {
-        resource: 'tasks',
-        actions: ['create', 'read', 'update', 'delete', 'manage'],
-      },
-      {
-        resource: 'tools',
-        actions: ['create', 'read', 'update', 'delete', 'manage'],
-      },
-      {
-        resource: 'software',
-        actions: ['create', 'read', 'update', 'delete', 'approve', 'manage'],
-      },
-      {
-        resource: 'test_plans',
-        actions: ['create', 'read', 'update', 'delete', 'approve', 'manage'],
-      },
-      {
-        resource: 'test_cases',
-        actions: ['create', 'read', 'update', 'delete', 'approve', 'manage'],
-      },
-      {
-        resource: 'work_instructions',
-        actions: ['create', 'read', 'update', 'delete', 'manage'],
-      },
-      {
-        resource: 'work_orders',
-        actions: ['create', 'read', 'update', 'delete', 'manage'],
-      },
-      {
-        resource: 'physical_parts',
-        actions: ['create', 'read', 'update', 'delete', 'manage'],
-      },
-      {
-        resource: 'issues',
-        actions: ['create', 'read', 'update', 'delete', 'approve', 'manage'],
-      },
-      {
-        resource: 'workflows',
-        actions: ['create', 'read', 'update', 'delete', 'manage'],
-      },
-      {
-        resource: 'users',
-        actions: ['create', 'read', 'update', 'delete', 'manage'],
-      },
-      {
-        resource: 'roles',
-        actions: ['create', 'read', 'update', 'delete', 'manage'],
-      },
-      {
-        resource: 'programs',
-        actions: ['create', 'read', 'update', 'delete', 'manage'],
-      },
-      {
-        resource: 'reports',
-        actions: ['create', 'read', 'update', 'delete', 'manage'],
-      },
-      { resource: 'system', actions: ['read', 'manage'] },
-    ],
-  },
   Administrator: {
     name: 'Administrator',
-    description: 'Full system access within assigned programs',
+    description:
+      'Top-level administrator with full access to all programs, users, and system settings',
     permissions: [
       {
         resource: 'parts',
@@ -264,7 +180,14 @@ export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
         resource: 'roles',
         actions: ['create', 'read', 'update', 'delete', 'manage'],
       },
-      { resource: 'programs', actions: ['read', 'update'] },
+      // programs:manage is the cross-program-authority grant: it is what
+      // AccessControlService.hasCrossProgramAccess() keys the membership
+      // bypass on, so it belongs only on a role that should see and manage
+      // every program.
+      {
+        resource: 'programs',
+        actions: ['create', 'read', 'update', 'delete', 'manage'],
+      },
       { resource: 'reports', actions: ['create', 'read', 'update', 'delete'] },
       { resource: 'system', actions: ['read', 'manage'] },
     ],

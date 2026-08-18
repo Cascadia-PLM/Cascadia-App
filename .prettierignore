@@ -20,3 +20,12 @@ apps/*/src/routeTree.gen.ts
 # Two of them: the API contract is edition-specific, and the second is the
 # community spec the overlay publishes in place of this tree's.
 docs/api/openapi.v1.json
+
+# Claude Code worktrees under the primary checkout. Git hides them via
+# .git/info/exclude, which Prettier does not read — so a format:check run in
+# the primary checkout otherwise scans every worktree's full tree, where the
+# anchored ignores above (e.g. docs/api/openapi.v1.json) do not match the
+# nested copies and even a pristine worktree fails the scan. It also keeps
+# `npm run format` from rewriting files inside live worktrees. CI checkouts
+# never contain these.
+.claude/worktrees/

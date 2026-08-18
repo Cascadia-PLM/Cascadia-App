@@ -2,12 +2,13 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
-import { and, eq, gte, isNull, or, sql } from 'drizzle-orm'
+import { and, eq, gte, inArray, isNull, or, sql } from 'drizzle-orm'
 import { tagged } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
 import { ProgramService } from '@/lib/services/ProgramService'
+import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { db } from '@/lib/db'
 import { items, parts, tasks } from '@/lib/db/schema'
 import '@/lib/items/registerItemTypes.server'
@@ -20,7 +21,15 @@ const app = new Hono()
 app.get(
   '/stats',
   adapt(
-    apiHandler({}, async () => {
+    apiHandler({}, async ({ user }) => {
+      // Every tile is a count of things the caller may open. Passing
+      // `programIds: null` here meant "all programs" — the admin scope — so
+      // the home page reported the whole instance to everyone.
+      const [accessDesignIds, programIds] = await Promise.all([
+        AccessControlService.getAccessibleDesignIds(user.id),
+        AccessControlService.getAccessibleProgramIds(user.id),
+      ])
+
       const [
         partsResult,
         documentsResult,
@@ -30,13 +39,13 @@ app.get(
         designsResult,
         programsResult,
       ] = await Promise.all([
-        ItemService.search('Part', { limit: 1 }),
-        ItemService.search('Document', { limit: 1 }),
-        ItemService.search('ChangeOrder', { limit: 1 }),
-        ItemService.search('Requirement', { limit: 1 }),
-        ItemService.search('Task', { limit: 1 }),
-        DesignService.search({ limit: 1, programIds: null }),
-        ProgramService.search({ limit: 1, programIds: null }),
+        ItemService.search('Part', { limit: 1, accessDesignIds }),
+        ItemService.search('Document', { limit: 1, accessDesignIds }),
+        ItemService.search('ChangeOrder', { limit: 1, accessDesignIds }),
+        ItemService.search('Requirement', { limit: 1, accessDesignIds }),
+        ItemService.search('Task', { limit: 1, accessDesignIds }),
+        DesignService.search({ limit: 1, programIds }),
+        ProgramService.search({ limit: 1, programIds }),
       ])
 
       return {
@@ -58,10 +67,25 @@ app.get(
 app.get(
   '/charts',
   adapt(
-    apiHandler({}, async () => {
+    apiHandler({}, async ({ user }) => {
       const sevenDaysAgo = new Date()
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
       sevenDaysAgo.setHours(0, 0, 0, 0)
+
+      // Same bound as /stats: these charts count rows, and a count is a
+      // disclosure. `undefined` for cross-program authority drops out of the
+      // `and(...)` below, leaving the query as it was.
+      const accessDesignIds = await AccessControlService.getAccessibleDesignIds(
+        user.id,
+      )
+      const inScope = accessDesignIds
+        ? or(
+            accessDesignIds.length > 0
+              ? inArray(items.designId, accessDesignIds)
+              : undefined,
+            isNull(items.designId),
+          )
+        : undefined
 
       const [
         changeOrdersByDay,
@@ -81,6 +105,7 @@ app.get(
               eq(items.itemType, 'ChangeOrder'),
               gte(items.createdAt, sevenDaysAgo),
               or(isNull(items.isDeleted), eq(items.isDeleted, false)),
+              inScope,
             ),
           )
           .groupBy(sql`DATE(${items.createdAt})`)
@@ -99,6 +124,7 @@ app.get(
               eq(items.state, 'Released'),
               gte(items.modifiedAt, sevenDaysAgo),
               or(isNull(items.isDeleted), eq(items.isDeleted, false)),
+              inScope,
             ),
           )
           .groupBy(sql`DATE(${items.modifiedAt})`)
@@ -112,7 +138,12 @@ app.get(
           })
           .from(parts)
           .innerJoin(items, eq(parts.itemId, items.id))
-          .where(or(isNull(items.isDeleted), eq(items.isDeleted, false)))
+          .where(
+            and(
+              or(isNull(items.isDeleted), eq(items.isDeleted, false)),
+              inScope,
+            ),
+          )
           .groupBy(parts.partType),
 
         // Tasks by priority (non-completed only)
@@ -127,6 +158,7 @@ app.get(
             and(
               or(isNull(items.isDeleted), eq(items.isDeleted, false)),
               or(eq(items.state, 'Draft'), eq(items.state, 'InReview')),
+              inScope,
             ),
           )
           .groupBy(tasks.priority),

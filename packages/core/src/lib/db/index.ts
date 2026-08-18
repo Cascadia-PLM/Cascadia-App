@@ -9,7 +9,6 @@
 // overrides an already-set variable, so CI and Docker still win.
 import 'dotenv/config'
 import fs from 'node:fs'
-import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as schema from './schema'
@@ -280,27 +279,6 @@ export async function withTx<T>(
   txConfig?: PgTransactionConfig,
 ): Promise<T> {
   return tx ? fn(tx) : db.transaction(fn, txConfig)
-}
-
-/**
- * Execute a database transaction with RLS session variables set.
- *
- * Uses SET LOCAL so variables are scoped to the transaction only —
- * no leakage across pooled connections.
- */
-export async function withUserContext<T>(
-  userId: string,
-  isGlobalAdmin: boolean,
-  fn: (tx: TransactionClient) => Promise<T>,
-  txConfig?: PgTransactionConfig,
-): Promise<T> {
-  return db.transaction(async (tx) => {
-    await tx.execute(sql`SET LOCAL app.current_user_id = ${userId}`)
-    await tx.execute(
-      sql`SET LOCAL app.is_global_admin = ${isGlobalAdmin ? 'true' : 'false'}`,
-    )
-    return fn(tx)
-  }, txConfig)
 }
 
 // For migrations

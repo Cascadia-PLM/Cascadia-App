@@ -53,7 +53,6 @@ export function generateSingleServerCompose(
         environment: {
           NODE_ENV: '${NODE_ENV}',
           DATABASE_URL: '${DATABASE_URL}',
-          SESSION_SECRET: '${SESSION_SECRET}',
           BASE_URL: '${BASE_URL}',
           VAULT_MODE: '${VAULT_MODE:-embedded}',
           VAULT_TYPE: '${VAULT_TYPE:-local}',
@@ -250,7 +249,6 @@ export function generateDistributedCompose(
           environment: {
             NODE_ENV: '${NODE_ENV}',
             DATABASE_URL: '${DATABASE_URL}',
-            SESSION_SECRET: '${SESSION_SECRET}',
             BASE_URL: '${BASE_URL}',
             VAULT_MODE: '${VAULT_MODE:-embedded}',
             VAULT_TYPE: '${VAULT_TYPE:-s3}',
@@ -363,7 +361,6 @@ export function generateCloudDatabaseCompose(
         environment: {
           NODE_ENV: '${NODE_ENV}',
           DATABASE_URL: '${DATABASE_URL}',
-          SESSION_SECRET: '${SESSION_SECRET}',
           BASE_URL: '${BASE_URL}',
           VAULT_MODE: '${VAULT_MODE:-embedded}',
           VAULT_TYPE: '${VAULT_TYPE:-local}',

@@ -60,6 +60,9 @@ export class WorkInstructionInheritanceService {
         .values({
           workInstructionId: attachment.workInstructionId,
           partId: targetPartId,
+          // isOutput stays false (DB default): the MBOM twin is another part
+          // this procedure applies to, and the WI already has its one output
+          // part on the EBOM side, which is where its designId came from.
           inheritToMBOM: false, // Inherited attachments don't cascade further
           inheritedFromId: attachment.id, // Track provenance
           createdBy: userId,

@@ -5,7 +5,8 @@
  * AccessControlService Tests
  *
  * Integration tests for the AccessControlService class.
- * Tests cover program-based access control, Global Admin bypass, and design access.
+ * Tests cover program-based access control, the cross-program-authority
+ * bypass (keyed on the RBAC programs:manage permission), and design access.
  *
  * Run: npm run test -- src/lib/auth/AccessControlService.test.ts
  */
@@ -20,7 +21,7 @@ import {
   it,
 } from 'vitest'
 import { eq } from 'drizzle-orm'
-import { AccessControlService, GLOBAL_ADMIN_ROLE } from './AccessControlService'
+import { AccessControlService } from './AccessControlService'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { roles, userRoles } from '@/lib/db/schema/users'
@@ -101,72 +102,71 @@ describe('AccessControlService', () => {
     return design
   }
 
-  // Helper to create Global Admin role and assign to user
-  async function makeGlobalAdmin(userId: string) {
-    // Check if Global Admin role exists
-    let globalAdminRole = await testDb.db.query.roles.findFirst({
-      where: eq(roles.name, GLOBAL_ADMIN_ROLE),
+  // Helper to assign a role carrying cross-program authority. Uses the
+  // built-in Administrator role name, but the bypass keys on the
+  // programs:manage permission inside it, not on the name.
+  async function makeAdmin(userId: string) {
+    let adminRole = await testDb.db.query.roles.findFirst({
+      where: eq(roles.name, 'Administrator'),
     })
 
-    if (!globalAdminRole) {
-      // Create Global Admin role
-      const newRole = takeFirst(
+    if (!adminRole) {
+      adminRole = takeFirst(
         await testDb.db
           .insert(roles)
           .values({
-            name: GLOBAL_ADMIN_ROLE,
-            description: 'System-wide administrator',
+            name: 'Administrator',
+            description: 'Top-level administrator',
             permissions: {
-              parts: [
-                'create',
-                'read',
-                'update',
-                'delete',
-                'approve',
-                'manage',
-              ],
-              documents: [
-                'create',
-                'read',
-                'update',
-                'delete',
-                'approve',
-                'manage',
-              ],
+              parts: ['create', 'read', 'update', 'delete', 'approve'],
               users: ['create', 'read', 'update', 'delete', 'manage'],
+              programs: ['create', 'read', 'update', 'delete', 'manage'],
               system: ['read', 'manage'],
             },
           })
           .returning(),
       )
-      globalAdminRole = newRole
     }
 
-    // Assign role to user
     await testDb.db.insert(userRoles).values({
       userId,
-      roleId: globalAdminRole.id,
+      roleId: adminRole.id,
     })
   }
 
-  describe('isGlobalAdmin', () => {
-    it('returns true for Global Admin user', async () => {
-      const user = await insertTestUser(testDb.db, {
-        name: 'Global Admin Test',
-      })
-      await makeGlobalAdmin(user.id)
+  // Helper to assign an arbitrary role with the given permissions map.
+  async function assignRoleWithPermissions(
+    userId: string,
+    name: string,
+    permissions: Record<string, Array<string>>,
+  ) {
+    const role = takeFirst(
+      await testDb.db
+        .insert(roles)
+        .values({ name, description: name, permissions })
+        .returning(),
+    )
+    await testDb.db.insert(userRoles).values({ userId, roleId: role.id })
+  }
 
-      const result = await AccessControlService.isGlobalAdmin(user.id)
+  describe('hasCrossProgramAccess', () => {
+    it('returns true for an Administrator', async () => {
+      const user = await insertTestUser(testDb.db, {
+        name: 'Admin Bypass Test',
+      })
+      await makeAdmin(user.id)
+
+      const result = await AccessControlService.hasCrossProgramAccess(user.id)
 
       expect(result).toBe(true)
     })
 
-    it('returns false for regular user', async () => {
+    it('returns false for a user without programs:manage', async () => {
       const user = await insertTestUser(testDb.db, {
         name: 'Regular User Test',
       })
 
-      const result = await AccessControlService.isGlobalAdmin(user.id)
+      const result = await AccessControlService.hasCrossProgramAccess(user.id)
 
       expect(result).toBe(false)
     })
@@ -174,18 +174,56 @@ describe('AccessControlService', () => {
     it('returns false for non-existent user', async () => {
       const fakeUserId = '00000000-0000-0000-0000-000000000000'
 
-      const result = await AccessControlService.isGlobalAdmin(fakeUserId)
+      const result =
+        await AccessControlService.hasCrossProgramAccess(fakeUserId)
 
       expect(result).toBe(false)
+    })
+
+    it('keys on the permission, not the role name', async () => {
+      // A role named like an admin but without programs:manage gets nothing…
+      const impostor = await insertTestUser(testDb.db, { name: 'Impostor' })
+      await assignRoleWithPermissions(impostor.id, 'Administrator II', {
+        programs: ['create', 'read', 'update', 'delete'],
+        system: ['read', 'manage'],
+      })
+      expect(
+        await AccessControlService.hasCrossProgramAccess(impostor.id),
+      ).toBe(false)
+
+      // …while any custom role carrying programs:manage gets the bypass.
+      const custom = await insertTestUser(testDb.db, { name: 'Custom Role' })
+      await assignRoleWithPermissions(custom.id, 'PMO Lead', {
+        programs: ['read', 'manage'],
+      })
+      expect(await AccessControlService.hasCrossProgramAccess(custom.id)).toBe(
+        true,
+      )
+    })
+
+    it('still honors a legacy Global Admin role row', async () => {
+      // Deployments seeded before the merge have a role literally named
+      // 'Global Admin' whose stored permissions include programs:manage.
+      // The permission-keyed bypass must keep matching those users.
+      const legacy = await insertTestUser(testDb.db, { name: 'Legacy GA' })
+      await assignRoleWithPermissions(legacy.id, 'Global Admin', {
+        parts: ['create', 'read', 'update', 'delete', 'approve', 'manage'],
+        programs: ['create', 'read', 'update', 'delete', 'manage'],
+        system: ['read', 'manage'],
+      })
+
+      expect(await AccessControlService.hasCrossProgramAccess(legacy.id)).toBe(
+        true,
+      )
     })
   })
 
   describe('canAccessProgram', () => {
-    it('returns true for Global Admin regardless of membership', async () => {
+    it('returns true for an Administrator regardless of membership', async () => {
       const admin = await insertTestUser(testDb.db, {
         name: 'Admin Access Test',
       })
-      await makeGlobalAdmin(admin.id)
+      await makeAdmin(admin.id)
 
       const program = await createTestProgram(
         'Admin Test Program',
@@ -256,11 +294,11 @@ describe('AccessControlService', () => {
   })
 
   describe('canAccessDesign', () => {
-    it('returns true for Global Admin regardless of design program', async () => {
+    it('returns true for an Administrator regardless of design program', async () => {
       const admin = await insertTestUser(testDb.db, {
         name: 'Admin Design Test',
       })
-      await makeGlobalAdmin(admin.id)
+      await makeAdmin(admin.id)
 
       const program = await createTestProgram(
         'Design Admin Program',
@@ -404,11 +442,11 @@ describe('AccessControlService', () => {
   })
 
   describe('getAccessiblePrograms', () => {
-    it('returns all programs for Global Admin', async () => {
+    it('returns all programs for an Administrator', async () => {
       const admin = await insertTestUser(testDb.db, {
         name: 'Admin Programs Test',
       })
-      await makeGlobalAdmin(admin.id)
+      await makeAdmin(admin.id)
 
       await createTestProgram('Program 1', `P1-${Date.now()}`, admin.id)
       await createTestProgram('Program 2', `P2-${Date.now()}`, admin.id)
@@ -459,11 +497,11 @@ describe('AccessControlService', () => {
   })
 
   describe('getAccessibleDesigns', () => {
-    it('returns all designs for Global Admin', async () => {
+    it('returns all designs for an Administrator', async () => {
       const admin = await insertTestUser(testDb.db, {
         name: 'Admin Designs Test',
       })
-      await makeGlobalAdmin(admin.id)
+      await makeAdmin(admin.id)
 
       const program = await createTestProgram(
         'Admin Design Program',
@@ -577,9 +615,9 @@ describe('AccessControlService', () => {
   })
 
   describe('getAccessibleProgramIds', () => {
-    it('returns null for Global Admin (meaning all programs)', async () => {
+    it('returns null for an Administrator (meaning all programs)', async () => {
       const admin = await insertTestUser(testDb.db, { name: 'Admin IDs Test' })
-      await makeGlobalAdmin(admin.id)
+      await makeAdmin(admin.id)
 
       const result = await AccessControlService.getAccessibleProgramIds(
         admin.id,
@@ -623,9 +661,131 @@ describe('AccessControlService', () => {
     })
   })
 
-  describe('GLOBAL_ADMIN_ROLE constant', () => {
-    it('exports the correct Global Admin role name', () => {
-      expect(GLOBAL_ADMIN_ROLE).toBe('Global Admin')
+  // ==========================================================================
+  // canAccessDesign vs getAccessibleDesignIds
+  //
+  // The same rule is written twice — once as TypeScript branches for a single
+  // design, once as a SQL predicate for a whole list. They must admit the
+  // same set, or a list would show rows that opening them denies (a leak) or
+  // hide rows the user may read (a phantom).
+  //
+  // Nothing in the type system ties the two together, so this differential
+  // check is the tie. It is what the duplicate scope helpers that used to
+  // live in items.ts and enterprise-search.ts lacked: both had drifted from
+  // canAccessDesign, one admitting any design merely typed 'Library' and
+  // both denying an administrator the cross-program bypass.
+  //
+  // Extend the matrix, not just the branches, when a new access rule lands.
+  // ==========================================================================
+
+  describe('getAccessibleDesignIds agrees with canAccessDesign', () => {
+    it('admits exactly the same designs, for every kind of user', async () => {
+      const owner = await insertTestUser(testDb.db, { name: 'Matrix Owner' })
+
+      const programA = await createTestProgram(
+        'Matrix A',
+        `MTXA-${Date.now()}`,
+        owner.id,
+      )
+      const programB = await createTestProgram(
+        'Matrix B',
+        `MTXB-${Date.now()}`,
+        owner.id,
+      )
+
+      const designs_ = {
+        inA: await createTestDesign('In A', `DA-${Date.now()}`, owner.id, {
+          programId: programA.id,
+        }),
+        inB: await createTestDesign('In B', `DB-${Date.now()}`, owner.id, {
+          programId: programB.id,
+        }),
+        // A Library that belongs to a program is not global: it follows that
+        // program's membership like any other design.
+        libraryInA: await createTestDesign(
+          'Library In A',
+          `DLA-${Date.now()}`,
+          owner.id,
+          { programId: programA.id, designType: 'Library' },
+        ),
+        globalLibrary: await createTestDesign(
+          'Global Library',
+          `DGL-${Date.now()}`,
+          owner.id,
+          { programId: null, designType: 'Library' },
+        ),
+        unassigned: await createTestDesign(
+          'Unassigned',
+          `DUN-${Date.now()}`,
+          owner.id,
+          { programId: null, designType: 'Engineering' },
+        ),
+      }
+
+      const admin = await insertTestUser(testDb.db, { name: 'Matrix Admin' })
+      await makeAdmin(admin.id)
+
+      const memberOfA = await insertTestUser(testDb.db, {
+        name: 'Matrix Member A',
+      })
+      await addProgramMember(programA.id, memberOfA.id)
+
+      const memberOfBoth = await insertTestUser(testDb.db, {
+        name: 'Matrix Member Both',
+      })
+      await addProgramMember(programA.id, memberOfBoth.id)
+      await addProgramMember(programB.id, memberOfBoth.id)
+
+      const noPrograms = await insertTestUser(testDb.db, {
+        name: 'Matrix No Programs',
+      })
+
+      for (const user of [admin, memberOfA, memberOfBoth, noPrograms]) {
+        const scope = await AccessControlService.getAccessibleDesignIds(user.id)
+
+        for (const [label, design] of Object.entries(designs_)) {
+          // `null` scope is cross-program authority — it reaches everything.
+          const inScope = scope === null || scope.includes(design.id)
+          const pointCheck = await AccessControlService.canAccessDesign(
+            user.id,
+            design.id,
+          )
+
+          expect(
+            inScope,
+            `${user.name} / ${label}: list scope says ${inScope}, ` +
+              `canAccessDesign says ${pointCheck}`,
+          ).toBe(pointCheck)
+        }
+      }
+    })
+
+    it('reaches the global library even for a user in no program', async () => {
+      const owner = await insertTestUser(testDb.db, { name: 'Lib Owner' })
+      const library = await createTestDesign(
+        'Standard Library',
+        `STDLIB-${Date.now()}`,
+        owner.id,
+        { programId: null, designType: 'Library' },
+      )
+      const user = await insertTestUser(testDb.db, { name: 'Lib Reader' })
+
+      const scope = await AccessControlService.getAccessibleDesignIds(user.id)
+
+      // Not null — this user has no bypass — but still contains the library.
+      expect(scope).not.toBeNull()
+      expect(scope).toContain(library.id)
+    })
+
+    it('returns null, not a list, for cross-program authority', async () => {
+      const admin = await insertTestUser(testDb.db, { name: 'Scope Admin' })
+      await makeAdmin(admin.id)
+
+      // null and [] must stay distinguishable: one means "everything", the
+      // other "nothing but design-less items".
+      expect(
+        await AccessControlService.getAccessibleDesignIds(admin.id),
+      ).toBeNull()
     })
   })
 })

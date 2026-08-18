@@ -23,7 +23,6 @@ export interface BaseConfig {
   baseUrl: string
   appPort: number
   nodeEnv: 'production' | 'development'
-  sessionSecret?: string
   outputDir: string
   validateDb: boolean
   runDeploy: boolean

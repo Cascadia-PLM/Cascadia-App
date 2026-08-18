@@ -16,7 +16,7 @@ export interface SetupProgressState {
 
 export interface SetupStatus {
   completed: boolean
-  isGlobalAdmin: boolean
+  isAdmin: boolean
   progress: SetupProgressState
 }
 
@@ -31,7 +31,7 @@ export const DEFAULT_SETUP_PROGRESS: SetupProgressState = {
 
 const DEFAULT_STATUS: SetupStatus = {
   completed: false,
-  isGlobalAdmin: false,
+  isAdmin: false,
   progress: DEFAULT_SETUP_PROGRESS,
 }
 

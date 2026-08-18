@@ -40,21 +40,22 @@ function WorkspacesPage() {
   const handleDeleteWorkspace = async (workspace: Workspace) => {
     const displayName = workspace.name.replace('workspace/', '')
 
-    // Fetch item count to show in confirmation
-    let itemCount = 0
+    // Fetch the draft count to show in the confirmation — only items created
+    // on the workspace die with it
+    let draftCount = 0
     try {
       const detail = await queryClient.fetchQuery(
         workspaceDetailQuery(workspace.id),
       )
-      itemCount = detail.itemCount
+      draftCount = detail.workspaceOnlyItemCount
     } catch {
       // If we can't fetch, proceed without count
     }
 
     // Build description with item count warning
     let description = `Are you sure you want to delete the workspace "${displayName}" from ${workspace.designName}?`
-    if (itemCount > 0) {
-      description += `\n\nThis will permanently delete ${itemCount} item${itemCount === 1 ? '' : 's'} that exist${itemCount === 1 ? 's' : ''} only on this workspace.`
+    if (draftCount > 0) {
+      description += `\n\nThis will permanently delete ${draftCount} item${draftCount === 1 ? '' : 's'} that exist${draftCount === 1 ? 's' : ''} only on this workspace.`
     }
     description += '\n\nThis action cannot be undone.'
 
@@ -62,8 +63,8 @@ function WorkspacesPage() {
       title: 'Delete Workspace',
       description,
       actionLabel:
-        itemCount > 0
-          ? `Delete Workspace and ${itemCount} Item${itemCount === 1 ? '' : 's'}`
+        draftCount > 0
+          ? `Delete Workspace and ${draftCount} Item${draftCount === 1 ? '' : 's'}`
           : 'Delete Workspace',
       cancelLabel: 'Cancel',
       variant: 'destructive',
@@ -175,11 +176,9 @@ function WorkspacesPage() {
                             </div>
                             <div className="text-sm text-slate-500">
                               Created{' '}
-                              {workspace.createdAt instanceof Date
-                                ? workspace.createdAt.toLocaleDateString()
-                                : new Date(
-                                    workspace.createdAt,
-                                  ).toLocaleDateString()}
+                              {new Date(
+                                workspace.createdAt,
+                              ).toLocaleDateString()}
                             </div>
                           </div>
                           {workspace.isLocked && (

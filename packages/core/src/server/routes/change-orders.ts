@@ -33,8 +33,13 @@ import { apiHandler, created, jsonResponse } from '@/lib/api/handler'
 import {
   AlreadyExistsError,
   NotFoundError,
+  PermissionDeniedError,
   ValidationError,
 } from '@/lib/errors'
+import { AccessControlService } from '@/lib/auth/AccessControlService'
+import { ProgramService } from '@/lib/services/ProgramService'
+import { DesignService } from '@/lib/services/DesignService'
+import { requireDesignAccess } from '@/lib/auth/access'
 import { markConflictReviewedRequestSchema } from '@/lib/services/types/conflict-review'
 import { db } from '@/lib/db'
 import { branchItems } from '@/lib/db/schema'
@@ -65,6 +70,37 @@ async function assertChangeOrderEditable(changeOrderId: string): Promise<void> {
     throw new ValidationError(
       'Cannot modify this change order: its workflow has been completed',
     )
+  }
+}
+
+/**
+ * Program-membership gate for approval votes.
+ *
+ * RBAC (change_orders:update on the route) says the user may vote on change
+ * orders in general; this says they may vote on *this* one. The ECO's design
+ * resolves to a program; voting requires membership there with the
+ * canApproveEco flag on. Cross-program authority bypasses, and an ECO outside
+ * any program (no design, or an unassigned design) falls back to RBAC alone.
+ *
+ * Runs before the workflow-instance lookup so a denial is a clean 403
+ * regardless of workflow configuration.
+ */
+async function requireEcoApprovalAccess(
+  userId: string,
+  changeOrderItemId: string,
+): Promise<void> {
+  const eco = await ItemService.findById(changeOrderItemId)
+  if (!eco) throw new NotFoundError('ChangeOrder', changeOrderItemId)
+  if (!eco.designId) return
+
+  const design = await DesignService.getById(eco.designId)
+  if (!design?.programId) return
+
+  if (await AccessControlService.hasCrossProgramAccess(userId)) return
+
+  const member = await ProgramService.getMember(design.programId, userId)
+  if (!member || !member.canApproveEco) {
+    throw new PermissionDeniedError('change order approval', 'submit')
   }
 }
 
@@ -123,13 +159,37 @@ app.get(
   adapt(
     apiHandler(
       { permission: ['change_orders', 'read'] },
-      async ({ request }) => {
+      async ({ request, user }) => {
         const url = new URL(request.url)
         const designId = url.searchParams.get('designId')
         const programId = url.searchParams.get('programId')
+
+        // Scope filters are program-scoped reads: require access to the
+        // program/design being asked about, not just change_orders:read
+        // (which every role has). NOTE: the unfiltered branch below still
+        // returns change orders across all programs — see the it.fails test
+        // in program-isolation.access.test.ts pinning that known gap.
+        if (designId) {
+          await requireDesignAccess(user.id, designId)
+        }
+        if (programId) {
+          const canAccess = await AccessControlService.canAccessProgram(
+            user.id,
+            programId,
+          )
+          if (!canAccess) {
+            throw new PermissionDeniedError('program change orders', 'read')
+          }
+        }
         const limit = parseInt(url.searchParams.get('limit') || '50', 10)
         const offset = parseInt(url.searchParams.get('offset') || '0', 10)
         const includeCounts = url.searchParams.get('includeCounts') === 'true'
+
+        // The unfiltered list below is bounded by nothing else, so the
+        // caller's own reach is what bounds it. Resolved once and shared with
+        // the counts, which must agree with the rows they sit above.
+        const accessDesignIds =
+          await AccessControlService.getAccessibleDesignIds(user.id)
 
         const getStateCounts = async (changeOrderIds?: Array<string>) => {
           if (changeOrderIds && changeOrderIds.length > 0) {
@@ -144,14 +204,20 @@ app.get(
             }
           }
           const [draft, inReview, released] = await Promise.all([
-            ItemService.search('ChangeOrder', { limit: 1, state: 'Draft' }),
+            ItemService.search('ChangeOrder', {
+              limit: 1,
+              state: 'Draft',
+              accessDesignIds,
+            }),
             ItemService.search('ChangeOrder', {
               limit: 1,
               state: 'InReview',
+              accessDesignIds,
             }),
             ItemService.search('ChangeOrder', {
               limit: 1,
               state: 'Released',
+              accessDesignIds,
             }),
           ])
           return {
@@ -247,6 +313,7 @@ app.get(
         const result = await ItemService.search('ChangeOrder', {
           limit,
           offset,
+          accessDesignIds,
         })
 
         const response: Record<string, unknown> = {
@@ -544,6 +611,8 @@ app.post(
           throw new ValidationError("vote must be 'approved' or 'rejected'")
         }
 
+        await requireEcoApprovalAccess(user.id, params.id)
+
         // Get the workflow instance for this change order
         const instance = await WorkflowService.getInstanceByItemId(params.id)
 
@@ -629,6 +698,8 @@ app.post(
         if (!data.vote || !['approved', 'rejected'].includes(data.vote)) {
           throw new ValidationError("vote must be 'approved' or 'rejected'")
         }
+
+        await requireEcoApprovalAccess(user.id, params.id)
 
         // Get the workflow instance for this change order
         const instance = await WorkflowService.getInstanceByItemId(params.id)

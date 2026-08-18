@@ -24,10 +24,13 @@ export function workspaceListQuery() {
 }
 
 export interface WorkspaceDetail extends Workspace {
-  designCode?: string
+  designCode: string
   headCommitId: string | null
   baseCommitId: string | null
+  /** Every item on the branch, untouched checkouts included — what convert/merge would carry. */
   itemCount: number
+  /** Items created on this workspace and existing nowhere else — what deleting it would destroy. */
+  workspaceOnlyItemCount: number
 }
 
 /**
@@ -48,17 +51,21 @@ export function workspaceDetailQuery(id: string) {
   })
 }
 
-/** An item checked out onto a workspace branch. */
+/**
+ * An item on a workspace branch. The item fields come from a left join and a
+ * null `changeType` is an untouched checkout, so several fields are nullable
+ * in shapes the UI has to survive rather than states it can rely on.
+ */
 export interface WorkspaceItem {
   id: string
-  itemId: string
+  itemId: string | null
   itemMasterId: string
-  itemNumber: string
+  itemNumber: string | null
   itemName: string | null
-  itemType: string
-  revision: string
-  state: string
-  changeType: 'added' | 'modified' | 'deleted'
+  itemType: string | null
+  revision: string | null
+  state: string | null
+  changeType: 'added' | 'modified' | 'deleted' | null
   checkedOutBy: string | null
   checkedOutAt: string | Date | null
 }

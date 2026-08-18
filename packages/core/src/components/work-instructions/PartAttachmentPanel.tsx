@@ -3,7 +3,15 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ArrowDownRight, Link2, Plus, Search, Trash2, X } from 'lucide-react'
+import {
+  ArrowDownRight,
+  Link2,
+  Package,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react'
 import {
   Badge,
   Button,
@@ -29,6 +37,7 @@ interface PartSearchResult {
 interface PartAttachment {
   id: string
   partId: string
+  isOutput: boolean
   inheritToMBOM: boolean
   inheritedFromId?: string | null
   createdAt: string
@@ -79,7 +88,12 @@ export function PartAttachmentPanel({
         throw new Error('Failed to load attachments')
       }
       const data = await response.json()
-      setAttachments(data.data?.attachments ?? [])
+      // Output part first — it is the one that decides the WI's design, so it
+      // should not be somewhere in the middle of a long attachment list.
+      const rows: Array<PartAttachment> = data.data?.attachments ?? []
+      setAttachments(
+        [...rows].sort((a, b) => Number(b.isOutput) - Number(a.isOutput)),
+      )
     } catch (error) {
       onError?.(error as Error)
     } finally {
@@ -146,6 +160,7 @@ export function PartAttachmentPanel({
       const newAttachment: PartAttachment = {
         id: created?.id ?? part.id,
         partId: part.id,
+        isOutput: created?.isOutput ?? false,
         inheritToMBOM: created?.inheritToMBOM ?? false,
         inheritedFromId: created?.inheritedFromId ?? null,
         createdAt: created?.createdAt ?? new Date().toISOString(),
@@ -207,6 +222,36 @@ export function PartAttachmentPanel({
     }
   }
 
+  /**
+   * Re-point the output part. This moves the work instruction into the new
+   * part's design server-side, so the whole list is reloaded rather than
+   * patched locally — the old output attachment also changed.
+   */
+  const handleSetOutput = async (attachment: PartAttachment) => {
+    try {
+      const response = await fetch(
+        `/api/v1/work-instructions/${workInstructionId}/parts`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ partId: attachment.partId, isOutput: true }),
+        },
+      )
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(
+          error.details || error.error || 'Failed to set output part',
+        )
+      }
+
+      await loadAttachments()
+      onSuccess?.(`${attachment.part.itemNumber} is now the output part`)
+    } catch (error) {
+      onError?.(error as Error)
+    }
+  }
+
   const handleDetach = async (attachment: PartAttachment) => {
     try {
       const response = await fetch(
@@ -236,7 +281,8 @@ export function PartAttachmentPanel({
               Attached Parts
             </CardTitle>
             <CardDescription>
-              Parts that use this work instruction
+              The output part is what this procedure builds and sets the work
+              instruction's design; the rest are parts it also applies to.
             </CardDescription>
           </div>
           {!showSearch && !readOnly && (
@@ -375,6 +421,12 @@ export function PartAttachmentPanel({
                     <Badge variant="secondary" className="text-xs">
                       Rev {attachment.part.revision}
                     </Badge>
+                    {attachment.isOutput && (
+                      <Badge variant="default" className="text-xs gap-1">
+                        <Package className="h-3 w-3" />
+                        Output Part
+                      </Badge>
+                    )}
                     {attachment.inheritedFromId && (
                       <Badge variant="outline" className="text-xs gap-1">
                         <ArrowDownRight className="h-3 w-3" />
@@ -417,15 +469,25 @@ export function PartAttachmentPanel({
                           : 'No MBOM inherit'}
                       </button>
                     ))}
-                  {!readOnly && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-slate-400 hover:text-red-600 dark:hover:text-red-400"
-                      onClick={() => handleDetach(attachment)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  {!readOnly && !attachment.isOutput && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSetOutput(attachment)}
+                        title="Make this the part the procedure builds. Moves the work instruction into this part's design."
+                      >
+                        Set as output
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-slate-400 hover:text-red-600 dark:hover:text-red-400"
+                        onClick={() => handleDetach(attachment)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>

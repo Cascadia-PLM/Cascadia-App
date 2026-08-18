@@ -1363,6 +1363,7 @@ describe('CheckoutService', () => {
   // silently loses the instruction content.
   describe('work instruction revision copies', () => {
     it('copies extension row, operations, steps, and part attachments', async () => {
+      const outputPart = await createReleasedPart({ name: 'Output Part' })
       const wi = await ItemService.create(
         'WorkInstruction',
         {
@@ -1373,6 +1374,7 @@ describe('CheckoutService', () => {
           designId,
           description: 'Assembly instructions',
           estimatedTime: 45,
+          outputPartId: outputPart.id,
         } as any,
         user.id,
         { bypassBranchProtection: true },
@@ -1456,9 +1458,17 @@ describe('CheckoutService', () => {
         .where(
           eq(workInstructionPartAttachments.workInstructionId, workingCopy.id),
         )
-      expect(wcAttachments.length).toBe(1)
-      expect(wcAttachments[0]!.partId).toBe(attachedPart.id)
-      expect(wcAttachments[0]!.inheritToMBOM).toBe(true)
+      expect(wcAttachments.length).toBe(2)
+
+      // The output part has to survive the revision: it is what the new
+      // version's designId is derived from, so losing the flag would leave the
+      // working copy in a design with nothing anchoring it there.
+      const wcOutput = wcAttachments.find((a) => a.isOutput)
+      expect(wcOutput!.partId).toBe(outputPart.id)
+
+      const wcExtra = wcAttachments.find((a) => !a.isOutput)
+      expect(wcExtra!.partId).toBe(attachedPart.id)
+      expect(wcExtra!.inheritToMBOM).toBe(true)
     })
   })
 })

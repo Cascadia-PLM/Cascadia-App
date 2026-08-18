@@ -398,6 +398,6 @@ enforced.
 
 Key CI concerns:
 
-- Tests use forked process pool for parallelization (`singleFork: false` is required)
+- Tests use the forked process pool for parallelization — one fork per file, which is the default. Do not collapse that to a single shared fork (`maxWorkers: 1` plus `isolate: false` under Vitest 4; the removed `singleFork: true` before it): the per-file isolation below depends on it
 - Each test file gets its own worker process, isolating database connections
 - `idle_in_transaction_session_timeout = 30s` auto-kills stuck test transactions

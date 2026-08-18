@@ -570,6 +570,112 @@ describe('ItemService', () => {
 
       expect(updated.state).toBe('Released')
     })
+
+    it('rejects clearing an item’s design through update', async () => {
+      const created = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-DESIGN-001`,
+          revision: 'A',
+          name: 'Design Guard',
+          designId,
+        } as any,
+        user.id,
+      )
+
+      // `designId: null` used to write straight through, stranding the part
+      // outside versioning while its commits stayed with the design.
+      await expect(
+        ItemService.update(created.id, { designId: null } as any, user.id),
+      ).rejects.toThrow(ValidationError)
+
+      const after = await ItemService.findById(created.id)
+      expect(after?.designId).toBe(designId)
+    })
+
+    it('rejects moving an item to another design through update', async () => {
+      const otherDesign = takeFirst(
+        await testDb.db
+          .insert(designs)
+          .values({
+            name: 'Other Design',
+            code: `OTHER-${uniquePrefix}`,
+            designType: 'Engineering',
+            createdBy: user.id,
+          })
+          .returning(),
+      )
+
+      const created = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-DESIGN-002`,
+          revision: 'A',
+          name: 'Design Move Guard',
+          designId,
+        } as any,
+        user.id,
+      )
+
+      await expect(
+        ItemService.update(
+          created.id,
+          { designId: otherDesign.id } as any,
+          user.id,
+        ),
+      ).rejects.toThrow(ValidationError)
+
+      const after = await ItemService.findById(created.id)
+      expect(after?.designId).toBe(designId)
+    })
+
+    it('tolerates an echoed unchanged designId (whole-object form saves)', async () => {
+      const created = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-DESIGN-003`,
+          revision: 'A',
+          name: 'Design Echo',
+          designId,
+        } as any,
+        user.id,
+      )
+
+      // The part form PUTs the whole item back, designId included, so the
+      // guard has to pass this through rather than reject every save.
+      const updated = await ItemService.update<Part>(
+        created.id,
+        { name: 'Design Echo Updated', designId },
+        user.id,
+      )
+
+      expect(updated.name).toBe('Design Echo Updated')
+      expect(updated.designId).toBe(designId)
+    })
+
+    it('still adopts a design-less item into a design', async () => {
+      // The one direction that adds history instead of orphaning it — how a
+      // legacy design-less item gets repaired.
+      const created = await ItemService.create(
+        'Task',
+        {
+          itemNumber: `TSK-${uniquePrefix}-DESIGN-004`,
+          revision: 'A',
+          name: 'Adoptable Task',
+          priority: 'Low',
+        } as any,
+        user.id,
+      )
+      expect(created.designId).toBeNull()
+
+      const updated = await ItemService.update(
+        created.id,
+        { designId },
+        user.id,
+      )
+
+      expect(updated.designId).toBe(designId)
+    })
   })
 
   describe('delete', () => {

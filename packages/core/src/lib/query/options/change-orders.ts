@@ -27,6 +27,34 @@ export function changeOrderDetailQuery(id: string) {
   return entityQuery<ChangeOrder>('change-orders', id, 'changeOrder')
 }
 
+/** A change order as the `/change-orders/editable` endpoint lists it. */
+export interface EditableChangeOrder {
+  id: string
+  itemNumber: string
+  name: string | null
+  state: string
+  changeType: string
+}
+
+/**
+ * Change orders that can still accept affected items (scope not locked),
+ * optionally narrowed to one design. Drives the "merge workspace into an
+ * existing ECO" picker.
+ */
+export function editableChangeOrdersQuery(designId?: string) {
+  return queryOptions({
+    queryKey: qk.list('change-orders', { editable: true, designId }),
+    queryFn: async (): Promise<Array<EditableChangeOrder>> => {
+      const params = new URLSearchParams()
+      if (designId) params.set('designId', designId)
+      const result = await apiFetch<{
+        data: { changeOrders: Array<EditableChangeOrder> }
+      }>(`/api/v1/change-orders/editable?${params}`)
+      return result.data.changeOrders
+    },
+  })
+}
+
 /** A design pulled into an ECO, joined to the design it points at. */
 export interface EcoDesign {
   id: string

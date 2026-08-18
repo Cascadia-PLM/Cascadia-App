@@ -12,6 +12,25 @@ export type Program = Serialized<typeof programs.$inferSelect> & {
   userRole?: string
 }
 
+export type ProgramMemberRole = 'admin' | 'lead' | 'engineer' | 'viewer'
+
+/**
+ * A program-membership row as `/api/v1/programs/:id/members` returns it,
+ * with the user identity joined in for display.
+ */
+export interface ProgramMember {
+  id: string
+  programId: string
+  userId: string
+  role: ProgramMemberRole
+  canCreateEco: boolean | null
+  canApproveEco: boolean | null
+  canManageDesigns: boolean | null
+  joinedAt: string
+  invitedBy: string | null
+  user: { id: string; name: string | null; email: string }
+}
+
 export type CreateProgramInput = {
   name: string
   code: string

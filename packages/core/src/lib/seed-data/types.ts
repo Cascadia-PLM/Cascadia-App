@@ -72,7 +72,7 @@ export interface AddProgramMemberInput {
   permissions?: {
     canCreateEco?: boolean
     canApproveEco?: boolean
-    canManageProducts?: boolean
+    canManageDesigns?: boolean
   }
 }
 

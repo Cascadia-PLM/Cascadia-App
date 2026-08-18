@@ -1,7 +1,7 @@
 # Cascadia PLM Feature List
 
-> **Last Updated:** April 2026
-> **Version:** 0.1.0 (Initial Open-Source Release)
+> **Last Updated:** August 2026
+> **Version:** 0.5.0 (Open-Source Edition)
 
 This document tracks all implemented features in Cascadia PLM, organized by category. Use ✅ for complete, 🟡 for partial/in-progress, and ⬜ for planned.
 
@@ -9,18 +9,25 @@ This document tracks all implemented features in Cascadia PLM, organized by cate
 
 ## Core Item Types
 
-Eight core PLM item types are implemented with full CRUD operations.
+Thirteen core PLM item types are implemented with full CRUD operations, registered
+through `ItemTypeRegistry`. (Programs and designs are the organizational hierarchy
+_above_ items, not item types — see [Program & Design Hierarchy](#program--design-hierarchy).)
 
-| Item Type            | Status | Description                                                                                                        |
-| -------------------- | ------ | ------------------------------------------------------------------------------------------------------------------ |
-| **Part**             | ✅     | Parts with materials, partType (Manufacture/Purchase/Phantom/Software), cost, lead times                           |
-| **Document**         | ✅     | Version-controlled files with check-in/check-out                                                                   |
-| **Change Order**     | ✅     | ECO/ECN/MCO/Deviation workflows for change management                                                              |
-| **Project**          | ✅     | Programs and designs for organizational hierarchy                                                                  |
-| **Requirement**      | ✅     | Requirements tracking with acceptance criteria, priority, source                                                   |
-| **Task**             | ✅     | Work items with assignees, due dates, estimated/actual hours                                                       |
-| **Work Instruction** | ✅     | Rich step-by-step manufacturing instructions with parametric data                                                  |
-| **Issue**            | 🟡     | Defect/quality tracking with severity, category, root cause (initial — unified CRUD, import; dedicated UI planned) |
+| Item Type            | Status | Description                                                                                                                                                                |
+| -------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Part**             | ✅     | Parts with materials, partType (Manufacture/Purchase/Phantom/Software), cost, lead times                                                                                   |
+| **Document**         | ✅     | Version-controlled files with check-in/check-out                                                                                                                           |
+| **Change Order**     | ✅     | ECO/ECN/MCO/Deviation workflows for change management                                                                                                                      |
+| **Requirement**      | ✅     | Requirements tracking with acceptance criteria, priority, source. Coverage counts links: "verified" means a VERIFIED_BY edge to a test case exists, not that a test passed |
+| **Task**             | ✅     | Work items with assignees, due dates, estimated/actual hours                                                                                                               |
+| **Test Plan**        | ✅     | Verification planning: scope, environment, entry/exit criteria, grouped test cases                                                                                         |
+| **Test Case**        | ✅     | Executable verification with recorded execution history (NotRun/Passed/Failed/Blocked)                                                                                     |
+| **Work Instruction** | ✅     | Rich step-by-step manufacturing instructions with parametric data                                                                                                          |
+| **Issue**            | ✅     | Defect/quality tracking with severity, category, root cause; dedicated list/detail UI and spreadsheet import                                                               |
+| **Tool**             | ✅     | Manufacturing/quality/utility equipment as non-versioned records (the Tool pattern)                                                                                        |
+| **Software**         | ✅     | Firmware/software configuration items with a content-addressed source store — see [Software Management](#software-management)                                              |
+| **Work Order**       | ✅     | Manufacturing execution: traveler, material consumption, qualification — see [Physical Traceability](#physical-traceability)                                               |
+| **Physical Part**    | ✅     | Serialized units and identified lots of a Part — see [Physical Traceability](#physical-traceability)                                                                       |
 
 ### Two-Table Pattern
 
@@ -47,6 +54,7 @@ The signature differentiator: Git-style branching for engineering changes.
 | ECO approval workflow            | ✅     | Configurable state machine (Draft → In Review → Approved → Released) |
 | ECO release with merge           | ✅     | Branch merged to main, revision letters assigned                     |
 | Conflict detection               | ✅     | Identifies when multiple ECOs modify same items                      |
+| Conflict review                  | ✅     | Warning-level conflicts can be acknowledged as reviewed, with audit  |
 | ECO cancellation                 | ✅     | Clean branch deletion, no residual state                             |
 
 ### Change Actions ✅
@@ -80,6 +88,18 @@ The signature differentiator: Git-style branching for engineering changes.
 | View branch items    | ✅     | Items modified on branch           |
 | Merge to main        | ✅     | On ECO release                     |
 | Branch history/graph | ✅     | Visual commit history              |
+
+### Workspaces ✅
+
+Personal sandbox branches for exploratory work that has not yet earned an ECO.
+
+| Feature              | Status | Notes                                                        |
+| -------------------- | ------ | ------------------------------------------------------------ |
+| Create workspace     | ✅     | Per-user branch on any design the user can access            |
+| Workspace item edits | ✅     | Same checkout/edit flow as an ECO branch, isolated from main |
+| Convert to ECO       | ✅     | Promote the workspace into a new change order                |
+| Merge into ECO       | ✅     | Fold workspace changes into an existing change order         |
+| Workspace UI         | ✅     | Context banner, items panel, create/convert/merge dialogs    |
 
 ---
 
@@ -189,7 +209,7 @@ Enterprise authentication with flexible identity options.
 | Email/password login | ✅     | Oslo.js crypto for password hashing        |
 | Session management   | ✅     | Secure session tokens, SameSite=Strict     |
 | Session expiration   | ✅     | Configurable timeouts                      |
-| OAuth support        | ✅     | Arctic library integration                 |
+| GitHub OAuth login   | ✅     | Arctic; only implemented provider          |
 | Account lockout      | ✅     | Brute-force protection after failed logins |
 
 ### Security Hardening ✅
@@ -288,13 +308,14 @@ Finding items across the system.
 
 Graphical interfaces for complex data.
 
-| Feature              | Status | Notes                            |
-| -------------------- | ------ | -------------------------------- |
-| BOM tree view        | ✅     | Hierarchical grid tree-table     |
-| Relationship graph   | ✅     | React Flow visualization         |
-| Design history graph | ✅     | Branch/commit timeline           |
-| Affected items tree  | ✅     | ECO impact visualization         |
-| 3D CAD viewer        | ✅     | STL/OBJ/GLB rendering in browser |
+| Feature              | Status | Notes                                                            |
+| -------------------- | ------ | ---------------------------------------------------------------- |
+| BOM tree view        | ✅     | Hierarchical grid tree-table                                     |
+| Relationship graph   | ✅     | React Flow visualization                                         |
+| Design history graph | ✅     | Branch/commit timeline                                           |
+| Affected items tree  | ✅     | ECO impact visualization                                         |
+| Digital thread view  | ✅     | Swim-lane navigator across five domains, with cross-context diff |
+| 3D CAD viewer        | ✅     | STL/OBJ/GLB rendering in browser                                 |
 
 ### 3D Viewer Features ✅
 
@@ -397,19 +418,28 @@ RESTful API for external system integration.
 
 ### REST API ✅
 
-| Endpoint Category | Status | Notes                                  |
-| ----------------- | ------ | -------------------------------------- |
-| Items CRUD        | ✅     | All item types                         |
-| Relationships     | ✅     | Create, update, delete                 |
-| Files             | ✅     | Upload, download, check-in/out         |
-| Workflows         | ✅     | Transitions, history                   |
-| Change Orders     | ✅     | Full ECO lifecycle + impact assessment |
-| Users & Roles     | ✅     | Administration                         |
-| Reports           | ✅     | Execute and export                     |
-| Search            | ✅     | Enterprise search                      |
-| Work Instructions | ✅     | Template CRUD, usage, change alerts    |
-| Work Instructions | ✅     | CRUD, executions, change alerts        |
-| AI Chat           | ✅     | Conversations with tool use            |
+| Endpoint Category  | Status | Notes                                           |
+| ------------------ | ------ | ----------------------------------------------- |
+| Items CRUD         | ✅     | All item types                                  |
+| Relationships      | ✅     | Create, update, delete                          |
+| Files              | ✅     | Upload, download, check-in/out                  |
+| Workflows          | ✅     | Transitions, history                            |
+| Change Orders      | ✅     | Full ECO lifecycle + impact assessment          |
+| Users & Roles      | ✅     | Administration                                  |
+| Reports            | ✅     | Execute and export                              |
+| Search             | ✅     | Enterprise search                               |
+| Work Instructions  | ✅     | Template CRUD, usage, change alerts             |
+| Requirements & V&V | ✅     | Derive, satisfy, verify, coverage, gap analysis |
+| Test Plans & Cases | ✅     | Plan membership, execution recording            |
+| Digital Thread     | ✅     | Thread graph, cross-context comparison          |
+| Workspaces         | ✅     | CRUD, convert-to-ECO, merge-to-ECO              |
+| Physical Parts     | ✅     | Register, genealogy, recall, as-built           |
+| Work Orders        | ✅     | Traveler, materials, qualification              |
+| Software           | ✅     | Source tree, diff, draft commit                 |
+| MBOM               | ✅     | EBOM-to-MBOM creation and tracking              |
+| Manufacturer Parts | ✅     | AML bound to the part master                    |
+| Dashboard          | ✅     | Cross-program stats and charts                  |
+| AI Chat            | ✅     | Conversations with tool use                     |
 
 ### Batch Operations ✅
 
@@ -420,10 +450,14 @@ RESTful API for external system integration.
 
 ### CAD Integration
 
-| Integration          | Status | Notes                                                                           |
-| -------------------- | ------ | ------------------------------------------------------------------------------- |
-| SolidWorks connector | 🟡     | Development started                                                             |
-| Solid Edge connector | 🟡     | Nearing phase 1 complete (Part/BOM push, no file transfer or PDM functionality) |
+Native CAD connectors are planned commercial-edition features (see
+[LICENSING.md](./LICENSING.md)). No connector code lives in this repository —
+CAD files reach Cascadia through the file vault today.
+
+| Integration          | Status | Notes                                                                              |
+| -------------------- | ------ | ---------------------------------------------------------------------------------- |
+| Solid Edge connector | ⬜     | Planned, commercial edition. Phase 1 scope: Part/BOM push, no file transfer or PDM |
+| SolidWorks connector | ⬜     | Planned, commercial edition                                                        |
 
 ---
 
@@ -472,15 +506,15 @@ Enterprise-scale async processing.
 
 Quality assurance framework.
 
-| Component               | Status | Notes                                   |
-| ----------------------- | ------ | --------------------------------------- |
-| Vitest setup            | ✅     | Fast unit test runner                   |
-| Playwright setup        | ✅     | E2E browser testing                     |
-| Test database helper    | ✅     | Isolated test transactions              |
-| Test data builder       | ✅     | Fluent fixture creation                 |
-| Test coverage reporting | ✅     | Vitest + Playwright coverage            |
-| CI/CD integration       | ✅     | GitHub Actions workflows for unit & E2E |
-| Page object model       | ✅     | Playwright POM pattern                  |
+| Component               | Status | Notes                                                                      |
+| ----------------------- | ------ | -------------------------------------------------------------------------- |
+| Vitest setup            | ✅     | Fast unit test runner                                                      |
+| Playwright setup        | ✅     | E2E browser testing                                                        |
+| Test database helper    | ✅     | Isolated test transactions                                                 |
+| Test data builder       | ✅     | Fluent fixture creation                                                    |
+| Test coverage reporting | ✅     | Coverage is reported (`npm run test:coverage`); no thresholds are enforced |
+| CI/CD integration       | ✅     | GitHub Actions workflows for unit & E2E                                    |
+| Page object model       | ✅     | Playwright POM pattern                                                     |
 
 ---
 
@@ -562,6 +596,7 @@ LLM-powered chatbot for navigating and querying PLM data.
 | API-key auth + scoping      | ✅     | Bearer `csc_` keys; key scope intersects role permissions                                    |
 | Dev server (`cascadia-dev`) | ✅     | Stdio server for self-hosters: status, docs, db push/seed/reset                              |
 | Shared tool registry        | ✅     | One tool stack for the in-app chatbot and MCP (`packages/core/src/lib/ai/tools/registry.ts`) |
+| API key management UI       | ✅     | Self-service (profile) and admin issuance: scope editor, activity log, policy                |
 
 ---
 
@@ -666,6 +701,62 @@ ship with, ECO-controlled like any other engineering item.
 
 ---
 
+## Requirements & Verification
+
+Requirements engineering and V&V backbone: requirement hierarchies, satisfaction
+and verification links as first-class relationships, test execution records, and
+design-level rollups. Links are structural — see the coverage caveat on the
+Requirement item type.
+
+### Requirement Relationships ✅
+
+| Feature              | Status | Notes                                                                  |
+| -------------------- | ------ | ---------------------------------------------------------------------- |
+| Derived requirements | ✅     | `DERIVES_FROM` child→parent hierarchy, `POST /requirements/:id/derive` |
+| Satisfaction links   | ✅     | `SATISFIES` edges from parts/documents to requirements                 |
+| Allocation links     | ✅     | `ALLOCATED_TO` edges from requirements to parts                        |
+| Verification links   | ✅     | `VERIFIED_BY` edges from test cases to requirements                    |
+| Validation links     | ✅     | `VALIDATES` edges from test cases to parts                             |
+| Satisfied-by lookup  | ✅     | `GET /items/:id/satisfied-requirements` — reverse view from an item    |
+
+### Test Management ✅
+
+| Feature             | Status | Notes                                                              |
+| ------------------- | ------ | ------------------------------------------------------------------ |
+| Test plans          | ✅     | Scope, environment, entry/exit criteria; group test cases          |
+| Test case execution | ✅     | `POST /test-cases/:id/execute` records executor, status, timestamp |
+| Execution history   | ✅     | Full run history per test case; latest status shown on the item    |
+| Execution statuses  | ✅     | NotRun / Passed / Failed / Blocked                                 |
+
+### Design-Level Rollups ✅
+
+| Feature               | Status | Notes                                                                                                                                                                                           |
+| --------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Requirements coverage | ✅     | `GET /designs/:id/requirements-coverage` — link-based matrix                                                                                                                                    |
+| Test coverage         | ✅     | `GET /designs/:id/test-coverage`                                                                                                                                                                |
+| Verification gaps     | ✅     | `GET /designs/:id/verification-gaps`                                                                                                                                                            |
+| Gap analysis          | ✅     | Seven gap types (unallocated/unsatisfied/unverified requirements, untested parts, unmapped EBOM, orphan MBOM, missing documentation) with severity, per-domain counts, and a completeness score |
+| Gap analysis UI       | ✅     | Summary cards, filterable results table, analysis dialog                                                                                                                                        |
+
+---
+
+## Digital Thread
+
+Cross-domain traceability graph connecting an item to everything it touches,
+walked on demand from real relationships — never stored as a parallel structure.
+
+| Feature             | Status | Notes                                                                                                                   |
+| ------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Thread graph API    | ✅     | `GET /thread/:itemId` — the full graph for an item                                                                      |
+| Five domains        | ✅     | Requirements, engineering, manufacturing, validation, physical                                                          |
+| Synthetic edges     | ✅     | `INSTANCE_OF` (physical part → part lineage) and `BUILDS` (work order → version) derived from columns, not stored edges |
+| Swim-lane navigator | ✅     | Interactive thread view, one lane per domain                                                                            |
+| Thread comparison   | ✅     | `POST /thread/:itemId/compare` — diff the thread at two version contexts (branch/commit/tag) with field-level diffs     |
+| Comparison targets  | ✅     | Valid contexts enumerated per item                                                                                      |
+| Thread cache        | ✅     | Server-side cache with admin warm/clear/stats/cleanup endpoints                                                         |
+
+---
+
 ## Work Instructions
 
 Rich step-by-step manufacturing instructions linked to parts and work orders.
@@ -709,29 +800,31 @@ Modern, responsive interface.
 
 ### Technology ✅
 
-| Component  | Technology             |
-| ---------- | ---------------------- |
-| Framework  | TanStack Start (React) |
-| Styling    | Tailwind CSS 4         |
-| Components | Radix UI primitives    |
-| Icons      | Lucide React           |
-| Forms      | TanStack Form          |
-| Tables     | TanStack Table         |
-| Routing    | TanStack Router        |
+| Component  | Technology                         |
+| ---------- | ---------------------------------- |
+| Framework  | Vite SPA + TanStack Router (React) |
+| Styling    | Tailwind CSS 4                     |
+| Components | Radix UI primitives                |
+| Icons      | Lucide React                       |
+| Forms      | TanStack Form                      |
+| Tables     | TanStack Table                     |
+| Routing    | TanStack Router                    |
 
 ### Features ✅
 
-| Feature               | Status | Notes                              |
-| --------------------- | ------ | ---------------------------------- |
-| Responsive design     | ✅     | Desktop-first, mobile-friendly     |
-| Dark mode             | 🟡     | Tailwind support, not fully styled |
-| Accessible components | ✅     | Radix primitives                   |
-| Form validation       | ✅     | Zod schemas                        |
-| Loading states        | ✅     | Skeleton loaders                   |
-| Error handling        | ✅     | Toast notifications                |
-| Breadcrumb navigation | ✅     | Context-aware                      |
-| Resizable sidebar     | ✅     | Drag to resize, collapsible        |
-| AI chat panel         | ✅     | Slide-out assistant panel          |
+| Feature               | Status | Notes                                                       |
+| --------------------- | ------ | ----------------------------------------------------------- |
+| Responsive design     | ✅     | Desktop-first, mobile-friendly                              |
+| Dark mode             | 🟡     | Tailwind support, not fully styled                          |
+| Accessible components | ✅     | Radix primitives                                            |
+| Form validation       | ✅     | Zod schemas                                                 |
+| Loading states        | ✅     | Skeleton loaders                                            |
+| Error handling        | ✅     | Toast notifications                                         |
+| Breadcrumb navigation | ✅     | Context-aware                                               |
+| Resizable sidebar     | ✅     | Drag to resize, collapsible                                 |
+| AI chat panel         | ✅     | Slide-out assistant panel                                   |
+| Home dashboard        | ✅     | Cross-program stats and activity charts on the landing page |
+| Guided tour           | ✅     | In-app product tour                                         |
 
 ---
 
@@ -757,19 +850,17 @@ User and developer documentation.
 
 ### Near-Term
 
-| Feature                     | Priority | Notes                                                     |
-| --------------------------- | -------- | --------------------------------------------------------- |
-| Flexible workflows          | High     | Ad-hoc workflow routing                                   |
-| Issue tracking dedicated UI | High     | Unified CRUD exists; needs dedicated forms and list views |
-| Increase test coverage      | Medium   | Target 70%+ line coverage                                 |
-| Solid Edge connector        | Medium   | Easy early CAD target                                     |
+| Feature              | Priority | Notes                                     |
+| -------------------- | -------- | ----------------------------------------- |
+| Flexible workflows   | High     | Ad-hoc workflow routing                   |
+| Solid Edge connector | Medium   | Easy early CAD target; commercial edition |
+| SolidWorks connector | Medium   | Follows Solid Edge; commercial edition    |
 
 ### Medium-Term
 
 | Feature                      | Priority | Notes                                   |
 | ---------------------------- | -------- | --------------------------------------- |
 | Full MBOM management         | Medium   | Complete manufacturing BOM UI/workflows |
-| Digital Thread visualization | Medium   | Full traceability view                  |
 | RAG implementation           | Medium   | Semantic search with pgvector           |
 | STEP file viewing in browser | Medium   | Server-side conversion already exists   |
 
@@ -787,20 +878,20 @@ User and developer documentation.
 
 ## Technical Stack Summary
 
-| Layer                | Technology                                       |
-| -------------------- | ------------------------------------------------ |
-| **Frontend**         | TanStack Start (React), Tailwind CSS 4, Radix UI |
-| **Backend**          | TypeScript, Node.js, Hono                        |
-| **Database**         | PostgreSQL 18+, Drizzle ORM                      |
-| **Auth**             | Oslo.js, Arctic (OAuth)                          |
-| **Validation**       | Zod                                              |
-| **AI Integration**   | TanStack AI with Anthropic and OpenAI adapters   |
-| **CAD Conversion**   | Python, pythonocc-core (STEP/IGES → STL/GLB)     |
-| **Testing**          | Vitest, Playwright                               |
-| **Message Queue**    | RabbitMQ                                         |
-| **File Storage**     | Local filesystem / S3-compatible                 |
-| **Containerization** | Docker, Docker Compose                           |
-| **CI/CD**            | GitHub Actions                                   |
+| Layer                | Technology                                                   |
+| -------------------- | ------------------------------------------------------------ |
+| **Frontend**         | Vite SPA + TanStack Router (React), Tailwind CSS 4, Radix UI |
+| **Backend**          | TypeScript, Node.js, Hono                                    |
+| **Database**         | PostgreSQL 18+, Drizzle ORM                                  |
+| **Auth**             | Oslo.js, Arctic (OAuth)                                      |
+| **Validation**       | Zod                                                          |
+| **AI Integration**   | TanStack AI with Anthropic and OpenAI adapters               |
+| **CAD Conversion**   | Python, pythonocc-core (STEP/IGES → STL/GLB)                 |
+| **Testing**          | Vitest, Playwright                                           |
+| **Message Queue**    | RabbitMQ                                                     |
+| **File Storage**     | Local filesystem / S3-compatible                             |
+| **Containerization** | Docker, Docker Compose                                       |
+| **CI/CD**            | GitHub Actions                                               |
 
 ---
 

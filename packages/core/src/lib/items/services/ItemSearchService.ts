@@ -40,6 +40,18 @@ export interface SearchCriteria {
   createdBy?: string
   designId?: string // Filter by single design
   designIds?: Array<string> // Filter by multiple designs (for cross-design search)
+  /**
+   * The designs the *caller* may read, as opposed to the ones they asked for.
+   *
+   * A separate axis from `designIds` on purpose, and ANDed with it: a user
+   * narrowing the view to one design must not thereby widen it past their
+   * program memberships. `null`/omitted is unrestricted (cross-program
+   * authority); `[]` reaches only design-less items.
+   *
+   * Omitting it returns every item in the instance, so a route serving a
+   * logged-in user should pass it — see `AccessControlService`.
+   */
+  accessDesignIds?: Array<string> | null
   currentOnly?: boolean // Only return isCurrent=true items (default: true)
   definitionsOnly?: boolean // Only return definitions (usageOf IS NULL), excludes usages
   includeUsageCount?: boolean // Include count of usages for each definition
@@ -74,10 +86,11 @@ export interface GlobalSearchCriteria {
    */
   itemTypes: Array<string>
   /**
-   * Designs the user may see. An empty array matches nothing — "no
+   * Designs the user may see, or `null` for unrestricted (cross-program
+   * authority). An empty array reaches only design-less items — "no
    * accessible designs" must not fall through to "search every design".
    */
-  designIds: Array<string>
+  accessDesignIds: Array<string> | null
   limit?: number
   offset?: number
   sortField?: string
@@ -100,6 +113,29 @@ export interface GlobalSearchRow extends BaseItem {
   programId: string | null
   programCode: string | null
   programName: string | null
+}
+
+/**
+ * Restrict a query to the designs the caller may read.
+ *
+ * Returns `null` when there is nothing to restrict — `undefined`/`null` scope
+ * is cross-program authority, which sees everything.
+ *
+ * Design-less items (`items.designId IS NULL`) are always admitted. They sit
+ * outside every program, so there is no boundary to isolate them across, and
+ * `AccessControlService.canAccessDesign` treats a design with no program the
+ * same permissive way. Dropping them would make an ECO that never got linked
+ * to a design invisible to everyone, including the person who filed it.
+ */
+function accessScopeCondition(
+  accessDesignIds: Array<string> | null | undefined,
+): SQL<unknown> | null {
+  if (!accessDesignIds) return null
+  if (accessDesignIds.length === 0) return isNull(items.designId)
+  return or(
+    inArray(items.designId, accessDesignIds),
+    isNull(items.designId),
+  ) as SQL<unknown>
 }
 
 /**
@@ -163,6 +199,9 @@ export class ItemSearchService {
           : sql`false`,
       )
     }
+
+    const searchAccessScope = accessScopeCondition(criteria.accessDesignIds)
+    if (searchAccessScope) conditions.push(searchAccessScope)
 
     // Global search: full-text search for 3+ chars, ILIKE fallback for short queries
     if (criteria.globalSearch && criteria.globalSearch.trim()) {
@@ -357,6 +396,8 @@ export class ItemSearchService {
       itemTypes?: Array<string>
       currentOnly?: boolean
       designIds?: Array<string> // Filter by multiple designs (for cross-design search)
+      /** Designs the caller may read; `null`/omitted is unrestricted. See `SearchCriteria`. */
+      accessDesignIds?: Array<string> | null
     },
   ): Promise<Array<BaseItem>> {
     if (!query || query.length < 2) {
@@ -407,6 +448,9 @@ export class ItemSearchService {
       )
     }
 
+    const byNumberAccessScope = accessScopeCondition(options?.accessDesignIds)
+    if (byNumberAccessScope) conditions.push(byNumberAccessScope)
+
     const results = await db
       .select()
       .from(items)
@@ -449,17 +493,14 @@ export class ItemSearchService {
       isNull(items.usageOf),
     ]
 
-    // Both scopes match nothing when empty — see GlobalSearchCriteria.
+    // An empty readable-type set matches nothing — see GlobalSearchCriteria.
     conditions.push(
       criteria.itemTypes.length > 0
         ? inArray(items.itemType, criteria.itemTypes)
         : sql`false`,
     )
-    conditions.push(
-      criteria.designIds.length > 0
-        ? inArray(items.designId, criteria.designIds)
-        : sql`false`,
-    )
+    const globalAccessScope = accessScopeCondition(criteria.accessDesignIds)
+    if (globalAccessScope) conditions.push(globalAccessScope)
 
     const textCondition = this.buildTextSearchCondition(criteria.query)
     if (textCondition === 'no-match') {

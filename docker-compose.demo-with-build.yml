@@ -92,14 +92,18 @@ services:
       # Demo Postgres is on a private compose network — no TLS available.
       DATABASE_SSL: disable
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cascadia
-      BETTER_AUTH_SECRET: cascadia-demo-secret-replace-for-real-deploys
-      BETTER_AUTH_URL: http://localhost:3000
       BASE_URL: http://localhost:3000
       FILE_STORAGE_PATH: /app/storage/files
       VAULT_TYPE: local
       VAULT_ROOT: /app/vault
       RABBITMQ_URL: amqp://cascadia:cascadia@rabbitmq:5672
       DEMO_DATA_DIR: /app/demo-data
+      # AES-256-GCM key (64 hex chars) for encrypting admin-entered provider
+      # API keys at rest; without it they are stored in plaintext. Optional for
+      # a throwaway demo, but set it if you paste real provider keys into the
+      # admin UI. Generate with:
+      #   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
     ports:
       - '${DEMO_APP_PORT:-3000}:3000'
     volumes:

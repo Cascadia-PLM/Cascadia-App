@@ -5,7 +5,7 @@ import { Hono } from 'hono'
 import { tagged } from '../adapter'
 import { DesignService } from '@/lib/services/DesignService'
 import { ProgramService } from '@/lib/services/ProgramService'
-import { permissionService } from '@/lib/auth/permission-service'
+import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { NotFoundError, PermissionDeniedError } from '@/lib/errors'
 import { apiHandler } from '@/lib/api/handler'
 
@@ -38,13 +38,12 @@ app.delete(
       const design = await DesignService.getById(tag.designId)
       if (!design) throw new NotFoundError('Design', tag.designId)
 
-      // Check permission - Global Admin or program admin/lead can delete tags
+      // Check permission - cross-program authority or program admin/lead can delete tags
       if (design.programId) {
-        const isGlobalAdmin = await permissionService.hasRole(
+        const hasBypass = await AccessControlService.hasCrossProgramAccess(
           user.id,
-          'Global Admin',
         )
-        if (!isGlobalAdmin) {
+        if (!hasBypass) {
           const role = await ProgramService.getUserRole(
             user.id,
             design.programId,

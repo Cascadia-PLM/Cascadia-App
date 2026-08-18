@@ -1,17 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import {
-  FolderTree,
-  GitBranch,
-  Loader2,
-  Plus,
-  Table as TableIcon,
-  X,
-} from 'lucide-react'
+import { GitBranch, Loader2, X } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
+import type { WorkspaceItem } from '@/lib/query'
 import {
   Badge,
   Button,
@@ -23,19 +16,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
 } from '@/components/ui'
 import { apiFetch } from '@/lib/api/client'
+import { getItemRoute } from '@/components/bom/helpers'
+import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { useInvalidateResources, workspaceItemsQuery } from '@/lib/query'
 
 interface WorkspaceItemsPanelProps {
   workspaceId: string
-  workspaceName: string
-  designId: string
   readOnly?: boolean
 }
 
@@ -48,37 +37,59 @@ const changeTypeColor: Record<
   deleted: 'destructive',
 }
 
-const itemTypeIcons: Record<string, string> = {
-  Part: '🔧',
-  Document: '📄',
-  Requirement: '📋',
-  Task: '✓',
-  ChangeOrder: '🔄',
-}
-
 export function WorkspaceItemsPanel({
   workspaceId,
   readOnly = false,
 }: WorkspaceItemsPanelProps) {
+  const { confirm } = useAlertDialog()
   const { handleError, showSuccess } = useErrorHandler()
   const invalidate = useInvalidateResources()
-  const [activeTab, setActiveTab] = useState<'table' | 'tree'>('table')
   const { data: items = [], isLoading } = useQuery(
     workspaceItemsQuery(workspaceId),
   )
 
-  // Handle remove from workspace (undo checkout)
-  const handleRemove = async (itemId: string, itemNumber: string) => {
+  const removeItem = async (item: WorkspaceItem) => {
+    const label = item.itemNumber ?? 'Item'
     try {
-      await apiFetch(`/api/v1/items/${itemId}/cancel-checkout`, {
-        method: 'POST',
-        body: JSON.stringify({ branchId: workspaceId }),
-      })
-
-      showSuccess('Item removed', `${itemNumber} removed from workspace`)
+      await apiFetch(
+        `/api/v1/workspaces/${workspaceId}/items/${item.itemMasterId}`,
+        { method: 'DELETE' },
+      )
+      showSuccess('Item removed', `${label} removed from workspace`)
       await invalidate('workspaces')
     } catch (error) {
       handleError(error, { title: 'Failed to remove item' })
+    }
+  }
+
+  // Removing an item a workspace created destroys the draft itself; removing
+  // a modified item discards the workspace's edits. Both deserve a warning —
+  // undoing an untouched checkout does not.
+  const handleRemove = (item: WorkspaceItem) => {
+    const label = item.itemNumber ?? 'this item'
+    if (item.changeType === 'added') {
+      confirm({
+        title: 'Delete Draft Item',
+        description: `"${label}" was created on this workspace and exists nowhere else. Removing it permanently deletes the draft.\n\nThis action cannot be undone.`,
+        actionLabel: 'Delete Draft',
+        cancelLabel: 'Cancel',
+        variant: 'destructive',
+        onConfirm: () => removeItem(item),
+      })
+    } else if (
+      item.changeType === 'modified' ||
+      item.changeType === 'deleted'
+    ) {
+      confirm({
+        title: 'Discard Workspace Changes',
+        description: `Remove "${label}" from this workspace? The changes made on this workspace are discarded and the item reverts to its released version.\n\nThis action cannot be undone.`,
+        actionLabel: 'Discard Changes',
+        cancelLabel: 'Cancel',
+        variant: 'destructive',
+        onConfirm: () => removeItem(item),
+      })
+    } else {
+      void removeItem(item)
     }
   }
 
@@ -121,133 +132,96 @@ export function WorkspaceItemsPanel({
             )}
           </div>
         </div>
-        {!readOnly && (
-          <Button size="sm" disabled>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Item (Coming Soon)
-          </Button>
-        )}
       </div>
 
-      {/* Tabs */}
-      <Tabs
-        value={activeTab}
-        onValueChange={(v) => setActiveTab(v as 'table' | 'tree')}
-      >
-        <TabsList>
-          <TabsTrigger value="table" className="gap-2">
-            <TableIcon className="h-4 w-4" />
-            Table View
-          </TabsTrigger>
-          <TabsTrigger value="tree" className="gap-2" disabled>
-            <FolderTree className="h-4 w-4" />
-            Tree View (Coming Soon)
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Table View Tab */}
-        <TabsContent value="table" className="mt-4">
-          <Card>
-            <CardContent className="pt-6">
-              {items.length === 0 ? (
-                <div className="text-center py-8 border rounded-lg">
-                  <GitBranch className="h-12 w-12 mx-auto mb-4 opacity-50 text-slate-400" />
-                  <p className="text-slate-500 dark:text-slate-400">
-                    No items in this workspace yet
-                  </p>
-                  <p className="text-sm text-slate-400 dark:text-slate-500 mt-2">
-                    Check out items to this workspace to start working on them
-                  </p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item Number</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Change Type</TableHead>
-                      <TableHead>State</TableHead>
-                      <TableHead>Rev</TableHead>
-                      {!readOnly && (
-                        <TableHead className="text-right">Actions</TableHead>
-                      )}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">
-                          <Link
-                            to={
-                              `/${item.itemType.toLowerCase()}s/${item.itemId}` as any
-                            }
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {item.itemNumber}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="text-slate-600 dark:text-slate-400">
-                          {item.itemName || '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            <span className="mr-1">
-                              {itemTypeIcons[item.itemType] || '📦'}
-                            </span>
-                            {item.itemType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={changeTypeColor[item.changeType]}>
-                            {item.changeType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm">{item.state}</span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm font-mono">
-                            {item.revision}
-                          </span>
-                        </TableCell>
-                        {!readOnly && (
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() =>
-                                  handleRemove(item.itemId, item.itemNumber)
-                                }
-                                title="Remove from workspace"
-                              >
-                                <X className="h-4 w-4 text-red-600 dark:text-red-400" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Tree View Tab (placeholder) */}
-        <TabsContent value="tree" className="mt-4">
-          <Card>
-            <CardContent className="py-12 text-center">
-              <FolderTree className="h-12 w-12 mx-auto mb-4 opacity-50 text-slate-400" />
+      <Card>
+        <CardContent className="pt-6">
+          {items.length === 0 ? (
+            <div className="text-center py-8 border rounded-lg">
+              <GitBranch className="h-12 w-12 mx-auto mb-4 opacity-50 text-slate-400" />
               <p className="text-slate-500 dark:text-slate-400">
-                Tree view coming soon
+                No items in this workspace yet
               </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              <p className="text-sm text-slate-400 dark:text-slate-500 mt-2">
+                Check out items to this workspace to start working on them
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Item Number</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Change Type</TableHead>
+                  <TableHead>State</TableHead>
+                  <TableHead>Rev</TableHead>
+                  {!readOnly && (
+                    <TableHead className="text-right">Actions</TableHead>
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">
+                      {item.itemId && item.itemType ? (
+                        <Link
+                          to={getItemRoute(item.itemType, item.itemId)}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {item.itemNumber}
+                        </Link>
+                      ) : (
+                        (item.itemNumber ?? '-')
+                      )}
+                    </TableCell>
+                    <TableCell className="text-slate-600 dark:text-slate-400">
+                      {item.itemName || '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{item.itemType ?? '-'}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {item.changeType ? (
+                        <Badge variant={changeTypeColor[item.changeType]}>
+                          {item.changeType}
+                        </Badge>
+                      ) : (
+                        <span className="text-sm text-slate-400">
+                          checked out
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{item.state ?? '-'}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm font-mono">
+                        {item.revision ?? '-'}
+                      </span>
+                    </TableCell>
+                    {!readOnly && (
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleRemove(item)}
+                            title="Remove from workspace"
+                          >
+                            <X className="h-4 w-4 text-red-600 dark:text-red-400" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

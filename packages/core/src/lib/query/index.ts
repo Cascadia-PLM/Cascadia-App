@@ -73,6 +73,7 @@ export {
   ecoDesignStructureQuery,
   changeOrderSummaryQuery,
   changeOrderWorkflowStructureQuery,
+  editableChangeOrdersQuery,
 } from './options/change-orders'
 export type {
   ChangeOrderApprovals,
@@ -82,6 +83,7 @@ export type {
   EcoDesign,
   EcoDesignSummary,
   EcoSummary,
+  EditableChangeOrder,
 } from './options/change-orders'
 export {
   testCaseExecutionsQuery,
@@ -99,6 +101,7 @@ export {
   programDetailQuery,
   programGridQuery,
   programListQuery,
+  programMembersQuery,
 } from './options/programs'
 export type { ProgramCounts } from './options/programs'
 export {
@@ -157,6 +160,7 @@ export type {
   PhysicalPartSearch,
 } from './options/physical-parts'
 export {
+  activeUserListQuery,
   adminUserListQuery,
   roleListQuery,
   userDetailQuery,

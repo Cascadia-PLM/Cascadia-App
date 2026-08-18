@@ -29,7 +29,6 @@ Edit `.env` with your database credentials. At minimum, set:
 
 ```
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cascadia
-SESSION_SECRET=change-this-to-a-random-32-char-string
 ```
 
 ### 3. Set Up the Database
@@ -201,7 +200,6 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | Variable                | Required | Default                 | Description                         |
 | ----------------------- | -------- | ----------------------- | ----------------------------------- |
 | `DATABASE_URL`          | Yes      | —                       | PostgreSQL connection string        |
-| `SESSION_SECRET`        | Yes      | —                       | Session encryption key (32+ chars)  |
 | `BASE_URL`              | No       | `http://localhost:3000` | Application base URL                |
 | `NODE_ENV`              | No       | `development`           | Environment mode                    |
 | `FILE_STORAGE_PATH`     | No       | `./storage/files`       | Local file storage path             |
@@ -224,9 +222,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ## Database Management
 
 ```bash
-npm run db:generate   # Generate migrations from schema changes
-npm run db:migrate    # Run pending migrations
-npm run db:push       # Push schema directly (dev only)
+npm run db:push       # Push schema directly (the pre-1.0 path everywhere: dev, CI, compose)
+npm run db:generate   # Mint migration SQL (unused pre-1.0 — no committed migrations)
+npm run db:migrate    # Run pending migrations (none exist pre-1.0)
 npm run db:studio     # Open Drizzle Studio GUI
 npm run db:seed       # Minimal seed (admin, roles, program, standard library)
 npm run db:reset      # Truncate all tables
@@ -245,7 +243,16 @@ npm run db:reset:seed # Truncate + minimal seed
 
 - **`db:push` hangs:** Drizzle-kit is interactive. Run it in a terminal that supports prompts, not inside a non-interactive script.
 - **Seed duplicate key errors:** Always run `npm run db:reset` before reseeding. Use `npm run db:reset:seed` for a clean one-step reset.
-- **Port 3000 in use:** The dev server defaults to port 3000. Change it with `npm run dev -- --port 3001`.
+- **Port 3000 in use:** `npm run dev` runs two halves — the client on `CLIENT_PORT` (default 3000) and the API on `API_PORT` (default 3001). There is no `--port` flag; set the environment variable instead. The client proxies `/api` to `API_PORT`, so move both if 3001 is taken too:
+
+  ```bash
+  CLIENT_PORT=3100 API_PORT=3101 npm run dev
+  ```
+
+  ```powershell
+  $env:CLIENT_PORT=3100; $env:API_PORT=3101; npm run dev
+  ```
+
 - **RabbitMQ connection refused:** Ensure RabbitMQ is running (`docker compose up -d rabbitmq`) and the URL in `.env` matches the container credentials.
 
 ## Next Steps

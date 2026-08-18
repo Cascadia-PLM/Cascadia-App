@@ -43,7 +43,6 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cascadia}
-      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
       BASE_URL: ${BASE_URL:-http://localhost:3000}
 
       # Vault embedded mode
@@ -61,7 +60,7 @@ services:
       - app_vault:/app/vault
     networks:
       - cascadia-internal
-    # Run migrations on startup
+    # Push the schema on startup (pre-1.0: no migration files)
     command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
 
   # Optional: pgAdmin for database management

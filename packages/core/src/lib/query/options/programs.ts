@@ -4,9 +4,9 @@
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
 import { gridParamsToSearchParams } from '../grid-params'
-import { entityQuery } from './entities'
+import { entityQuery, entitySubQuery } from './entities'
 import type { GridParams, GridQuery } from '../grid-params'
-import type { Program } from '@/lib/types/program'
+import type { Program, ProgramMember } from '@/lib/types/program'
 import { apiFetch } from '@/lib/api/client'
 
 export interface ProgramCounts {
@@ -59,4 +59,12 @@ export function programCountsQuery() {
 
 export function programDetailQuery(id: string) {
   return entityQuery<Program>('programs', id, 'program')
+}
+
+/**
+ * The program's team. Keyed under the program entity, so invalidating
+ * `programs` refreshes it along with the detail record.
+ */
+export function programMembersQuery(id: string) {
+  return entitySubQuery<ProgramMember>('programs', id, 'members', 'members')
 }

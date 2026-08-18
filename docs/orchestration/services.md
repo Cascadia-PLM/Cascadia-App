@@ -4,16 +4,16 @@ This document describes each deployable service in the Cascadia PLM system.
 
 ## Service Summary
 
-| Service          | Image                                       | Purpose                | Required   |
-| ---------------- | ------------------------------------------- | ---------------------- | ---------- |
-| `cascadia-app`   | `ghcr.io/cascadia-plm/cascadia-app`         | Core web application   | Yes        |
-| `cascadia-vault` | `cascadia/vault`                            | File storage service   | Optional\* |
-| `cascadia-jobs`  | `ghcr.io/cascadia-plm/cascadia-jobs-worker` | Background job workers | Optional   |
-| `postgres`       | `postgres:18-alpine`                        | Database               | Yes        |
-| `rabbitmq`       | `rabbitmq:3-management`                     | Message broker         | With Jobs  |
-| `minio`          | `minio/minio`                               | S3-compatible storage  | Optional   |
+| Service         | Image                                       | Purpose                | Required  |
+| --------------- | ------------------------------------------- | ---------------------- | --------- |
+| `cascadia-app`  | `ghcr.io/cascadia-plm/cascadia-app`         | Core web application   | Yes       |
+| `cascadia-jobs` | `ghcr.io/cascadia-plm/cascadia-jobs-worker` | Background job workers | Optional  |
+| `postgres`      | `postgres:18-alpine`                        | Database               | Yes       |
+| `rabbitmq`      | `rabbitmq:3-management`                     | Message broker         | With Jobs |
+| `minio`         | `minio/minio`                               | S3-compatible storage  | Optional  |
 
-\*Vault can be embedded in Core App or run separately.
+File storage (the vault) runs inside the Core App process — see
+[File Vault](#file-vault-embedded-in-core-app) below.
 
 ---
 
@@ -39,16 +39,18 @@ docker build -t ghcr.io/cascadia-plm/cascadia-app -f docker/app.Dockerfile .
 
 ### Environment Variables
 
-| Variable            | Required     | Default                 | Description                          |
-| ------------------- | ------------ | ----------------------- | ------------------------------------ |
-| `DATABASE_URL`      | Yes          | -                       | PostgreSQL connection string         |
-| `SESSION_SECRET`    | Yes          | -                       | 32+ character secret for sessions    |
-| `BASE_URL`          | No           | `http://localhost:3000` | Public URL for the app               |
-| `NODE_ENV`          | No           | `production`            | Environment mode                     |
-| `VAULT_MODE`        | No           | `embedded`              | `embedded` or `service`              |
-| `VAULT_SERVICE_URL` | If `service` | -                       | URL to vault service                 |
-| `JOBS_MODE`         | No           | `embedded`              | `embedded`, `service`, or `disabled` |
-| `RABBITMQ_URL`      | If Jobs      | -                       | AMQP connection string               |
+| Variable       | Required | Default                 | Description                          |
+| -------------- | -------- | ----------------------- | ------------------------------------ |
+| `DATABASE_URL` | Yes      | -                       | PostgreSQL connection string         |
+| `BASE_URL`     | No       | `http://localhost:3000` | Public URL for the app               |
+| `NODE_ENV`     | No       | `production`            | Environment mode                     |
+| `VAULT_TYPE`   | No       | `local`                 | Vault storage backend: `local`, `s3` |
+| `VAULT_ROOT`   | No       | `./vault`               | Root directory for local storage     |
+| `JOBS_MODE`    | No       | `embedded`              | `embedded`, `service`, or `disabled` |
+| `RABBITMQ_URL` | If Jobs  | -                       | AMQP connection string               |
+
+Sessions are opaque random tokens stored hashed in the database — there is no
+session-secret variable to set.
 
 ### Ports
 
@@ -62,83 +64,33 @@ GET /api/v1/health
 
 ### Volumes
 
-- `/app/storage` - Local file storage (if vault embedded)
-- `/app/vault` - Vault files (if vault embedded)
+- `/app/storage` - General file storage
+- `/app/vault` - Vault files (local storage backend)
 
 ### Dependencies
 
 - PostgreSQL (required)
 - RabbitMQ (if using external jobs service)
-- Vault Service (if `VAULT_MODE=service`)
 
 ---
 
-## Vault Service (`cascadia-vault`)
+## File Vault (embedded in Core App)
 
-Optional standalone service for file management. When deployed separately, the Core App delegates file operations to this service.
+File storage is part of the Core App process. The vault library
+(`packages/core/src/lib/vault/`) handles upload/download, check-out/check-in,
+version management, and storage abstraction — there is no separate vault
+container to build or deploy.
 
-### Responsibilities
+Storage backends:
 
-- File upload and download
-- Check-out/check-in workflow
-- Version management
-- Storage abstraction (local, S3, Azure Blob)
-- Thumbnail generation hooks
+- **Local filesystem** (default) — `VAULT_TYPE=local`; the root directory
+  resolves from the admin setting in the database, then `VAULT_ROOT`, then
+  `./vault`.
+- **S3-compatible** — `VAULT_TYPE=s3` with `S3_BUCKET`, `S3_REGION`,
+  credentials, and an optional `S3_ENDPOINT` for MinIO.
 
-### When to Separate
-
-- High file I/O workloads
-- Need for dedicated storage infrastructure
-- Integration with enterprise content management
-- Compliance requirements for file isolation
-
-### Image Build
-
-```bash
-docker build -t cascadia/vault -f docker/vault.Dockerfile .
-```
-
-### Environment Variables
-
-| Variable        | Required | Default      | Description                     |
-| --------------- | -------- | ------------ | ------------------------------- |
-| `DATABASE_URL`  | Yes      | -            | PostgreSQL connection string    |
-| `STORAGE_TYPE`  | No       | `local`      | `local`, `s3`, `azure`          |
-| `STORAGE_PATH`  | If local | `/app/vault` | Local storage directory         |
-| `S3_BUCKET`     | If s3    | -            | S3 bucket name                  |
-| `S3_REGION`     | If s3    | -            | AWS region                      |
-| `S3_ACCESS_KEY` | If s3    | -            | AWS access key ID               |
-| `S3_SECRET_KEY` | If s3    | -            | AWS secret access key           |
-| `S3_ENDPOINT`   | If s3    | -            | Custom endpoint (MinIO)         |
-| `SERVICE_TOKEN` | Yes      | -            | Shared secret for Core App auth |
-
-### Ports
-
-- `3001` - HTTP (internal API)
-
-### Health Check
-
-```
-GET /health
-```
-
-### Volumes (if local storage)
-
-- `/app/vault` - File storage root
-
-### API Endpoints
-
-Internal API consumed by Core App:
-
-```
-POST   /files              # Upload file
-GET    /files/:id          # Download file
-GET    /files/:id/metadata # Get file metadata
-POST   /files/:id/checkout # Check out file
-POST   /files/:id/checkin  # Check in new version
-DELETE /files/:id          # Soft delete file
-GET    /files/:id/versions # List versions
-```
+To scale file I/O, scale the Core App horizontally and point every instance at
+shared S3-compatible storage.
 
 ---
 
@@ -192,13 +144,12 @@ docker build -t ghcr.io/cascadia-plm/cascadia-jobs-worker -f workers/node/Docker
 
 ### Environment Variables
 
-| Variable             | Required    | Default | Description                          |
-| -------------------- | ----------- | ------- | ------------------------------------ |
-| `DATABASE_URL`       | Yes         | -       | PostgreSQL connection string         |
-| `RABBITMQ_URL`       | Yes         | -       | AMQP connection string               |
-| `VAULT_SERVICE_URL`  | If external | -       | Vault service URL                    |
-| `WORKER_CONCURRENCY` | No          | `5`     | Max concurrent jobs                  |
-| `JOB_TYPES`          | No          | `*`     | Comma-separated job types to process |
+| Variable             | Required | Default | Description                          |
+| -------------------- | -------- | ------- | ------------------------------------ |
+| `DATABASE_URL`       | Yes      | -       | PostgreSQL connection string         |
+| `RABBITMQ_URL`       | Yes      | -       | AMQP connection string               |
+| `WORKER_CONCURRENCY` | No       | `5`     | Max concurrent jobs                  |
+| `JOB_TYPES`          | No       | `*`     | Comma-separated job types to process |
 
 ### Worker Specialization
 
@@ -224,7 +175,7 @@ Returns worker status and queue depth.
 
 - PostgreSQL (required)
 - RabbitMQ (required)
-- Vault Service or S3 (for file access)
+- Shared vault volume or S3 (for file access)
 
 ---
 
@@ -273,14 +224,16 @@ DATABASE_URL=postgresql://user:pass@server.postgres.database.azure.com:5432/casc
 
 ### Schema Management
 
-All services share the same database schema. Migrations run from Core App:
+All services share the same database schema. It is pushed from Core App —
+pre-1.0 there are no committed migration files:
 
 ```bash
 # Apply schema changes
 docker exec cascadia-app npm run db:push
 
-# Generate migration files
-docker exec cascadia-app npx drizzle-kit generate
+# Mint migration SQL into the app's own drizzle/ dir
+# (unused pre-1.0; the first release mints per-edition baselines)
+docker exec cascadia-app npm run db:generate
 ```
 
 ---
@@ -349,8 +302,8 @@ minio:
 ### Configuration
 
 ```bash
-# For Vault Service
-STORAGE_TYPE=s3
+# App vault on MinIO
+VAULT_TYPE=s3
 S3_BUCKET=cascadia-vault
 S3_ENDPOINT=http://minio:9000
 S3_ACCESS_KEY=cascadia
@@ -362,13 +315,11 @@ S3_FORCE_PATH_STYLE=true  # Required for MinIO
 
 ## Service Communication Matrix
 
-| From          | To            | Protocol  | Purpose         |
-| ------------- | ------------- | --------- | --------------- |
-| Core App      | PostgreSQL    | TCP/5432  | Data storage    |
-| Core App      | Vault Service | HTTP/3001 | File operations |
-| Core App      | RabbitMQ      | AMQP/5672 | Job submission  |
-| Vault Service | PostgreSQL    | TCP/5432  | File metadata   |
-| Vault Service | S3/MinIO      | HTTP/9000 | File storage    |
-| Jobs Server   | PostgreSQL    | TCP/5432  | Job records     |
-| Jobs Server   | RabbitMQ      | AMQP/5672 | Job consumption |
-| Jobs Server   | Vault Service | HTTP/3001 | File access     |
+| From        | To         | Protocol  | Purpose         |
+| ----------- | ---------- | --------- | --------------- |
+| Core App    | PostgreSQL | TCP/5432  | Data storage    |
+| Core App    | S3/MinIO   | HTTP/9000 | File storage    |
+| Core App    | RabbitMQ   | AMQP/5672 | Job submission  |
+| Jobs Server | PostgreSQL | TCP/5432  | Job records     |
+| Jobs Server | RabbitMQ   | AMQP/5672 | Job consumption |
+| Jobs Server | S3/MinIO   | HTTP/9000 | File access     |

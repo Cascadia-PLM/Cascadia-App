@@ -26,6 +26,7 @@ import {
   isEncryptionConfigured,
 } from '@/lib/crypto/encryption'
 import { getAdapter } from '@/lib/ai/adapters'
+import { aiLogger } from '@/lib/logging/logger'
 import { AI_PROVIDERS, isAiProviderType } from '@/lib/ai/model-catalog'
 import { listProviderModels } from '@/lib/ai/model-discovery'
 import {
@@ -158,6 +159,11 @@ app.post(
       const configToStore: AIProviderDBConfig = { ...config }
       if (configToStore.apiKey && isEncryptionConfigured()) {
         configToStore.apiKey = encrypt(configToStore.apiKey)
+      } else if (configToStore.apiKey) {
+        aiLogger.warn(
+          { provider },
+          'ENCRYPTION_KEY is not configured — storing AI provider API key in plaintext at rest. Set ENCRYPTION_KEY (see SECURITY.md) and re-save the key to encrypt it.',
+        )
       }
 
       // Check if global settings exist

@@ -21,9 +21,9 @@
 #   "publish-demo-images" workflow run output.
 #
 # Notes:
-#   * BETTER_AUTH_SECRET below is a hardcoded literal scoped to localhost.
-#     DO NOT reuse this compose file for any deployment past your laptop —
-#     rotate the secret first.
+#   * Credentials below (Postgres, RabbitMQ, admin login) are hardcoded demo
+#     literals scoped to localhost. DO NOT reuse this compose file for any
+#     deployment past your laptop.
 #   * All volumes are namespaced cascadia_demo_* and the project is named
 #     cascadia-demo, so this stack does not conflict with the contributor
 #     compose (docker-compose.demo-with-build.yml) or the dev stack.
@@ -93,8 +93,6 @@ services:
       NODE_ENV: production
       DATABASE_SSL: disable
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cascadia
-      BETTER_AUTH_SECRET: cascadia-demo-secret-replace-for-real-deploys
-      BETTER_AUTH_URL: http://localhost:3000
       BASE_URL: http://localhost:3000
       FILE_STORAGE_PATH: /app/storage/files
       VAULT_TYPE: local

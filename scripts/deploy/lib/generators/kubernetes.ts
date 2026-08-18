@@ -6,7 +6,6 @@
  */
 
 import YAML from 'yaml'
-import { generateSecureSecret } from '../secrets.js'
 import type { GeneratedFile, KubernetesConfig } from '../types.js'
 
 /**
@@ -16,7 +15,6 @@ export function generateKubernetesManifests(
   config: KubernetesConfig,
 ): Array<GeneratedFile> {
   const files: Array<GeneratedFile> = []
-  const sessionSecret = config.sessionSecret || generateSecureSecret(32)
 
   // 1. Namespace
   files.push(generateNamespace(config))
@@ -25,7 +23,7 @@ export function generateKubernetesManifests(
   files.push(generateConfigMap(config))
 
   // 3. Secrets
-  files.push(generateSecrets(config, sessionSecret))
+  files.push(generateSecrets(config))
 
   // 4. Deployment
   files.push(generateDeployment(config))
@@ -102,13 +100,9 @@ function generateConfigMap(config: KubernetesConfig): GeneratedFile {
   }
 }
 
-function generateSecrets(
-  config: KubernetesConfig,
-  sessionSecret: string,
-): GeneratedFile {
+function generateSecrets(config: KubernetesConfig): GeneratedFile {
   const secretData: Record<string, string> = {
     'database-url': config.databaseUrl,
-    'session-secret': sessionSecret,
   }
 
   if (config.vaultType === 's3' && config.s3AccessKey && config.s3SecretKey) {
@@ -174,12 +168,6 @@ function generateDeployment(config: KubernetesConfig): GeneratedFile {
       name: 'DATABASE_URL',
       valueFrom: {
         secretKeyRef: { name: 'cascadia-secrets', key: 'database-url' },
-      },
-    },
-    {
-      name: 'SESSION_SECRET',
-      valueFrom: {
-        secretKeyRef: { name: 'cascadia-secrets', key: 'session-secret' },
       },
     },
   ]

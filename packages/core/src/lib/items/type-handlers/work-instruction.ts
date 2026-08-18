@@ -4,7 +4,9 @@
 import { eq } from 'drizzle-orm'
 import { registerTypeHandler } from './index'
 import { db } from '@/lib/db'
+import { ValidationError } from '@/lib/errors'
 import {
+  items,
   workInstructionOperations,
   workInstructionPartAttachments,
   workInstructionSteps,
@@ -14,7 +16,7 @@ import {
 registerTypeHandler('WorkInstruction', {
   table: workInstructions,
 
-  async insert(itemId, data, tx) {
+  async insert(itemId, data, tx, ctx) {
     const run = tx ?? db
     await run.insert(workInstructions).values({
       itemId,
@@ -24,6 +26,44 @@ registerTypeHandler('WorkInstruction', {
       safetyNotes: data.safetyNotes || null,
       requiredTools: data.requiredTools || null,
     })
+
+    // The output part — the part this procedure builds — is stored as the
+    // attachment flagged isOutput, written here so a work instruction is never
+    // committed without the attachment its designId was derived from.
+    //
+    // Creation always supplies it (workInstructionSchema requires it), but this
+    // same method is reused by createRevision, which passes the stored
+    // work_instructions row — no outputPartId on it — and lets copyChildren
+    // carry the existing attachments, isOutput included. Hence the guard.
+    if (data.outputPartId && ctx?.userId) {
+      // The design a work instruction lives in is the design its output part
+      // lives in. Checked here, inside the creating transaction, so every path
+      // upholds it — createOnBranch and direct service calls included, not just
+      // the HTTP route that derives designId in the first place.
+      const [outputPart] = await run
+        .select({ itemType: items.itemType, designId: items.designId })
+        .from(items)
+        .where(eq(items.id, data.outputPartId))
+        .limit(1)
+
+      if (!outputPart || outputPart.itemType !== 'Part') {
+        throw new ValidationError(
+          "A work instruction's output part must be an existing Part",
+        )
+      }
+      if (!outputPart.designId || outputPart.designId !== data.designId) {
+        throw new ValidationError(
+          "A work instruction must be created in its output part's design",
+        )
+      }
+
+      await run.insert(workInstructionPartAttachments).values({
+        workInstructionId: itemId,
+        partId: data.outputPartId,
+        isOutput: true,
+        createdBy: ctx.userId,
+      })
+    }
   },
 
   async get(itemId, tx) {
@@ -122,6 +162,10 @@ registerTypeHandler('WorkInstruction', {
           sourceAttachments.map((att) => ({
             workInstructionId: targetItemId,
             partId: att.partId,
+            // Carried, not recomputed: the revision builds the same part, and
+            // dropping it would leave the new version with a designId whose
+            // output attachment no longer exists.
+            isOutput: att.isOutput,
             inheritToMBOM: att.inheritToMBOM,
             inheritedFromId: att.inheritedFromId,
             createdBy: att.createdBy,

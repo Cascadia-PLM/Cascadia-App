@@ -520,7 +520,7 @@ function AdminPage() {
         <CardContent>
           <div className="space-y-4">
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              The wizard auto-launches the first time a Global Admin signs in
+              The wizard auto-launches the first time an administrator signs in
               after a fresh database. You can re-enter it anytime from here.
             </p>
             <Link to="/setup">

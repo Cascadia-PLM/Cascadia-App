@@ -29,7 +29,22 @@ WorkInstruction is registered as a standard Cascadia item type via `ItemTypeRegi
 | Lifecycle     | Free (self-controlled, no ECO required)            |
 | Icon          | `ClipboardCheck`                                   |
 
-Because work instructions use the Free lifecycle, they are not subject to branch protection. Authors can edit them directly on `main` without creating an ECO. This is intentional -- manufacturing procedures change more frequently and informally than engineering designs.
+Because work instructions use the Free lifecycle, they are not subject to branch protection. Authors can edit them directly on `main` without creating an ECO. This is intentional -- manufacturing procedures change more frequently and informally than engineering designs, and the frozen manufacturing record comes from the work order traveler snapshot rather than from ECO control of the template.
+
+The exemption is declared in `packages/core/src/lib/items/branch-protection.ts`, alongside `ChangeOrder`, and covers **branch protection only** -- a work instruction another user holds checked out is still locked against you.
+
+### The Output Part
+
+A work instruction is a procedure for building a specific part, and that part necessarily lives in a design. So a work instruction has **no design of its own**: it inherits `items.designId` from its **output part**, chosen when the work instruction is created and required at creation.
+
+This is what puts a work instruction in a design at all, and it matters for more than tidiness -- parametric blocks, MBOM inheritance, and part search all resolve against the design the work instruction belongs to. Before the output part existed, work instructions created through the UI carried no `designId`, which left them outside version history and made the detail page refuse to enter edit mode ("this work instruction cannot be edited in this context") because there was no branch on which to hold the edit lock.
+
+The output part is stored as the attachment row flagged `isOutput`, not as a column -- one fact in one place. A partial unique index (`wi_output_part_unique ... WHERE is_output`) enforces at most one per work instruction. Consequently:
+
+- `designId` and the output attachment always move together. Re-pointing the output part (`PATCH .../parts` with `isOutput: true`) moves the work instruction into the new part's design in the same transaction.
+- The output attachment cannot be detached; detaching it would strand the work instruction in a design nothing justifies. Point the output at another attached part instead.
+- Revision copies carry `isOutput` across (`copyChildren`), so a revised work instruction still has the attachment its design came from.
+- Attachments created by MBOM inheritance are never `isOutput` -- the MBOM twin is another part the procedure applies to, not the one it was authored against.
 
 ### Type-Specific Fields
 
@@ -181,21 +196,24 @@ Capture input from the technician during execution. These blocks define what dat
 
 Work instructions are linked to parts through a many-to-many junction table (`work_instruction_part_attachments`). One work instruction can apply to multiple parts, and one part can have multiple work instructions.
 
-| Field               | Type      | Description                                   |
-| ------------------- | --------- | --------------------------------------------- |
-| `id`                | uuid      | Primary key                                   |
-| `workInstructionId` | uuid      | FK to work instruction                        |
-| `partId`            | uuid      | FK to part item                               |
-| `inheritToMBOM`     | boolean   | If true, auto-copies to derived MBOM parts    |
-| `inheritedFromId`   | uuid      | Tracks provenance from EBOM source attachment |
-| `createdBy`         | uuid      | FK to user                                    |
-| `createdAt`         | timestamp | When attached                                 |
+Exactly one attachment is the **output part** (see above) -- the part the procedure builds, and the source of the work instruction's `designId`. The rest are parts the procedure also applies to.
 
-A unique constraint on `(workInstructionId, partId)` prevents duplicate attachments.
+| Field               | Type      | Description                                        |
+| ------------------- | --------- | -------------------------------------------------- |
+| `id`                | uuid      | Primary key                                        |
+| `workInstructionId` | uuid      | FK to work instruction                             |
+| `partId`            | uuid      | FK to part item                                    |
+| `isOutput`          | boolean   | The part this procedure builds; at most one per WI |
+| `inheritToMBOM`     | boolean   | If true, auto-copies to derived MBOM parts         |
+| `inheritedFromId`   | uuid      | Tracks provenance from EBOM source attachment      |
+| `createdBy`         | uuid      | FK to user                                         |
+| `createdAt`         | timestamp | When attached                                      |
+
+A unique constraint on `(workInstructionId, partId)` prevents duplicate attachments, and a partial unique index on `workInstructionId WHERE is_output` allows only one output part.
 
 Attachments can be created from either direction:
 
-- From a work instruction: attach parts via `POST /api/v1/work-instructions/:id/parts`
+- From a work instruction: attach parts via `POST /api/v1/work-instructions/:id/parts` (newly attached parts are never the output part)
 - From a part: view attached work instructions via `GET /api/v1/parts/:id/work-instructions`
 
 ### MBOM Inheritance
@@ -417,13 +435,17 @@ When creating a step with a specific `orderIndex`, existing steps at or after th
 
 ### Part Attachments
 
-| Method | Path                                  | Permission                 | Description                                        |
-| ------ | ------------------------------------- | -------------------------- | -------------------------------------------------- |
-| GET    | `/api/v1/work-instructions/:id/parts` | `work_instructions:read`   | List attached parts with details                   |
-| POST   | `/api/v1/work-instructions/:id/parts` | `work_instructions:update` | Attach a part (body: `{ partId, inheritToMBOM? }`) |
-| PATCH  | `/api/v1/work-instructions/:id/parts` | `work_instructions:update` | Update attachment flags (e.g., `inheritToMBOM`)    |
-| DELETE | `/api/v1/work-instructions/:id/parts` | `work_instructions:update` | Detach a part (query or body: `partId`)            |
-| GET    | `/api/v1/parts/:id/work-instructions` | `parts:read`               | List WIs attached to a specific part               |
+| Method | Path                                  | Permission                 | Description                                                                                                       |
+| ------ | ------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/work-instructions/:id/parts` | `work_instructions:read`   | List attached parts with details                                                                                  |
+| POST   | `/api/v1/work-instructions/:id/parts` | `work_instructions:update` | Attach a part (body: `{ partId, inheritToMBOM? }`)                                                                |
+| PATCH  | `/api/v1/work-instructions/:id/parts` | `work_instructions:update` | Update attachment flags: `inheritToMBOM`, or `isOutput: true` to re-point the output part (moves the WI's design) |
+| DELETE | `/api/v1/work-instructions/:id/parts` | `work_instructions:update` | Detach a part (query or body: `partId`). Refuses the output part.                                                 |
+| GET    | `/api/v1/parts/:id/work-instructions` | `parts:read`               | List WIs attached to a specific part                                                                              |
+
+Work instructions are created through the standard `POST /api/v1/items` flow with `itemType: 'WorkInstruction'`, which requires an `outputPartId`. The route resolves that part's design onto the new item, and the attachment is written inside the same transaction as the item, so a work instruction never exists without the attachment its design was derived from.
+
+`outputPartId` is required by `workInstructionSchema` itself — the schema `ItemTypeRegistry` registers — which is the same way `partSchema` requires `designId`. Both server creation paths (`ItemService.create` and `ItemVersioningFacade.createOnBranch`) parse it, so the rule binds programmatic callers, not just the HTTP route. Editing validates against `workInstructionEditSchema`, which omits it: an edit changes the procedure's own fields and has no reason to restate an attachment. Neither `ItemService.update` nor `createRevision` parses the type schema at all.
 
 ### Parametric Resolution
 
@@ -488,19 +510,22 @@ Note: running executions requires only `work_instructions:read`, since manufactu
 
 ## Key Source Files
 
-| Area                       | Path                                                                       |
-| -------------------------- | -------------------------------------------------------------------------- |
-| Database schema            | `packages/core/src/lib/db/schema/items.ts` (search for `workInstructions`) |
-| Type definitions           | `packages/core/src/lib/items/types/work-instruction.ts`                    |
-| Item type registration     | `packages/core/src/lib/items/registerItemTypes.server.ts`                  |
-| Numbering scheme           | `packages/core/src/lib/items/numbering/schemes.ts`                         |
-| Inheritance service        | `packages/core/src/lib/services/WorkInstructionInheritanceService.ts`      |
-| Change alert service       | `packages/core/src/lib/services/WorkInstructionChangeAlertService.ts`      |
-| Traveler service           | `packages/core/src/lib/services/WorkOrderInstructionService.ts`            |
-| Execution service          | `packages/core/src/lib/services/InstructionExecutionService.ts`            |
-| Traveler/execution schema  | `packages/core/src/lib/db/schema/work-orders.ts`                           |
-| Parametric resolution      | `packages/core/src/lib/services/ParametricResolutionService.ts`            |
-| Background job definitions | `packages/core/src/lib/jobs/definitions/workinstruction/`                  |
-| API routes                 | `packages/core/src/server/routes/work-instructions.ts`                     |
-| Parts reverse-lookup       | `packages/core/src/server/routes/parts.ts`                                 |
-| UI components              | `packages/core/src/components/work-instructions/`                          |
+| Area                        | Path                                                                       |
+| --------------------------- | -------------------------------------------------------------------------- |
+| Database schema             | `packages/core/src/lib/db/schema/items.ts` (search for `workInstructions`) |
+| Type definitions            | `packages/core/src/lib/items/types/work-instruction.ts`                    |
+| Branch-protection exemption | `packages/core/src/lib/items/branch-protection.ts`                         |
+| Output part picker (UI)     | `packages/core/src/components/work-instructions/OutputPartField.tsx`       |
+| Output part invariants      | `packages/core/src/server/routes/work-instructions.output-part.test.ts`    |
+| Item type registration      | `packages/core/src/lib/items/registerItemTypes.server.ts`                  |
+| Numbering scheme            | `packages/core/src/lib/items/numbering/schemes.ts`                         |
+| Inheritance service         | `packages/core/src/lib/services/WorkInstructionInheritanceService.ts`      |
+| Change alert service        | `packages/core/src/lib/services/WorkInstructionChangeAlertService.ts`      |
+| Traveler service            | `packages/core/src/lib/services/WorkOrderInstructionService.ts`            |
+| Execution service           | `packages/core/src/lib/services/InstructionExecutionService.ts`            |
+| Traveler/execution schema   | `packages/core/src/lib/db/schema/work-orders.ts`                           |
+| Parametric resolution       | `packages/core/src/lib/services/ParametricResolutionService.ts`            |
+| Background job definitions  | `packages/core/src/lib/jobs/definitions/workinstruction/`                  |
+| API routes                  | `packages/core/src/server/routes/work-instructions.ts`                     |
+| Parts reverse-lookup        | `packages/core/src/server/routes/parts.ts`                                 |
+| UI components               | `packages/core/src/components/work-instructions/`                          |

@@ -18,10 +18,25 @@ export type ExtensionTable = PgTable & { itemId: PgColumn }
  * Interface for type-specific database operations.
  * Each item type implements this to handle its own table.
  */
+/**
+ * Who is performing the write. Passed to `insert` so a type whose creation
+ * also writes an attributed child row (work instructions and their output part
+ * attachment) can do it inside the caller's transaction rather than as a
+ * follow-up call that could leave the item half-built.
+ */
+export interface TypeHandlerContext {
+  userId: string
+}
+
 export interface TypeHandler {
   /** The type's extension table, for column-driven operations. */
   table: ExtensionTable
-  insert: (itemId: string, data: any, tx?: TransactionClient) => Promise<void>
+  insert: (
+    itemId: string,
+    data: any,
+    tx?: TransactionClient,
+    ctx?: TypeHandlerContext,
+  ) => Promise<void>
   get: (itemId: string, tx?: TransactionClient) => Promise<any>
   update: (itemId: string, data: any, tx?: TransactionClient) => Promise<void>
   /**

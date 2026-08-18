@@ -4,7 +4,7 @@
 /**
  * Minimal Database Seed Script
  * Creates only the bare essentials needed to start using Cascadia:
- * - Admin User (with Global Admin role)
+ * - Admin User (with the Administrator role)
  * - Default Program
  * - Standard Parts Library
  * - Core Roles
@@ -113,7 +113,7 @@ try {
   console.log(`🌱 Seeding minimal database: ${describeConnection()}\n`)
 
   // ============================================================================
-  // 1. Create Roles (including Global Admin)
+  // 1. Create Roles
   // ============================================================================
   const createdRoles: Record<string, string> = {}
 
@@ -141,15 +141,11 @@ try {
     createdRoles[roleName] = createdRole.id
   }
 
-  console.log(
-    '✓ Roles (Global Admin, Administrator, Power User, Approver, User, View Only)',
-  )
+  console.log('✓ Roles (Administrator, Power User, Approver, User, View Only)')
 
   // ============================================================================
   // 2. Create Admin User
   // ============================================================================
-  const adminPassword = await hashPassword('Cascadia')
-
   const existingUser = await db
     .select()
     .from(users)
@@ -159,16 +155,11 @@ try {
   const existingAdmin = existingUser[0]
   let adminId: string
   if (existingAdmin) {
-    await db
-      .update(users)
-      .set({
-        name: 'System Admin',
-        passwordHash: adminPassword,
-        active: true,
-        provider: 'local',
-      })
-      .where(eq(users.email, 'admin@cascadia.local'))
+    // Never touch an existing admin row. An operator has likely changed the
+    // password (and possibly active/provider), and re-running a seed must not
+    // silently reset credentials to the published default.
     adminId = existingAdmin.id
+    console.log('✓ Admin User already exists — credentials left untouched')
   } else {
     const created = takeFirst(
       await db
@@ -177,28 +168,18 @@ try {
           id: IDS.admin,
           email: 'admin@cascadia.local',
           name: 'System Admin',
-          passwordHash: adminPassword,
+          passwordHash: await hashPassword('Cascadia'),
           active: true,
           provider: 'local',
         })
         .returning(),
     )
     adminId = created.id
-  }
-  console.log('✓ Admin User (admin@cascadia.local / Cascadia)')
-
-  // Assign Global Admin role to admin user
-  if (createdRoles['Global Admin']) {
-    await db
-      .insert(userRoles)
-      .values({
-        userId: adminId,
-        roleId: createdRoles['Global Admin'],
-      })
-      .onConflictDoNothing()
+    console.log('✓ Admin User (admin@cascadia.local / Cascadia)')
   }
 
-  // Also assign Administrator role for backward compatibility
+  // Assign the Administrator role — the top-level role; its programs:manage
+  // grant is what carries cross-program authority.
   const administratorRoleId = createdRoles['Administrator']
   if (administratorRoleId) {
     await db
@@ -249,7 +230,7 @@ try {
       role: 'admin',
       canCreateEco: true,
       canApproveEco: true,
-      canManageProducts: true,
+      canManageDesigns: true,
     })
     .onConflictDoNothing()
 
@@ -1274,10 +1255,10 @@ try {
       config: {
         lifecycleDefinitionId: IDS.partLifecycle,
         permissions: {
-          create: ['Power User', 'Administrator', 'Global Admin'],
+          create: ['Power User', 'Administrator'],
           read: ['*'],
-          update: ['Power User', 'Administrator', 'Global Admin'],
-          delete: ['Administrator', 'Global Admin'],
+          update: ['Power User', 'Administrator'],
+          delete: ['Administrator'],
         },
       },
     },
@@ -1286,10 +1267,10 @@ try {
       config: {
         lifecycleDefinitionId: IDS.documentLifecycle,
         permissions: {
-          create: ['Power User', 'Administrator', 'Global Admin', 'View Only'],
+          create: ['Power User', 'Administrator', 'View Only'],
           read: ['*'],
-          update: ['Power User', 'Administrator', 'Global Admin'],
-          delete: ['Administrator', 'Global Admin'],
+          update: ['Power User', 'Administrator'],
+          delete: ['Administrator'],
         },
       },
     },
@@ -1298,10 +1279,10 @@ try {
       config: {
         lifecycleDefinitionId: IDS.requirementLifecycle,
         permissions: {
-          create: ['Power User', 'Administrator', 'Global Admin'],
+          create: ['Power User', 'Administrator'],
           read: ['*'],
-          update: ['Power User', 'Administrator', 'Global Admin'],
-          delete: ['Administrator', 'Global Admin'],
+          update: ['Power User', 'Administrator'],
+          delete: ['Administrator'],
         },
       },
     },
@@ -1319,10 +1300,10 @@ try {
           XCO: IDS.flexibleChangeOrderWorkflow,
         },
         permissions: {
-          create: ['Power User', 'Administrator', 'Global Admin'],
+          create: ['Power User', 'Administrator'],
           read: ['*'],
-          update: ['Power User', 'Administrator', 'Global Admin'],
-          delete: ['Administrator', 'Global Admin'],
+          update: ['Power User', 'Administrator'],
+          delete: ['Administrator'],
         },
       },
     },
@@ -1331,10 +1312,10 @@ try {
       config: {
         lifecycleDefinitionId: IDS.issueLifecycle,
         permissions: {
-          create: ['Power User', 'Administrator', 'Global Admin', 'User'],
+          create: ['Power User', 'Administrator', 'User'],
           read: ['*'],
-          update: ['Power User', 'Administrator', 'Global Admin', 'User'],
-          delete: ['Administrator', 'Global Admin'],
+          update: ['Power User', 'Administrator', 'User'],
+          delete: ['Administrator'],
         },
       },
     },
@@ -1346,7 +1327,7 @@ try {
           create: ['*'],
           read: ['*'],
           update: ['*'],
-          delete: ['Administrator', 'Global Admin'],
+          delete: ['Administrator'],
         },
       },
     },
@@ -1358,7 +1339,7 @@ try {
           create: ['*'],
           read: ['*'],
           update: ['*'],
-          delete: ['Administrator', 'Global Admin'],
+          delete: ['Administrator'],
         },
       },
     },
@@ -1370,7 +1351,7 @@ try {
           create: ['*'],
           read: ['*'],
           update: ['*'],
-          delete: ['Administrator', 'Global Admin'],
+          delete: ['Administrator'],
         },
       },
     },
@@ -1401,8 +1382,12 @@ try {
   console.log('\n✅ Minimal seed complete!\n')
   console.log('Admin User:')
   console.log('  Email: admin@cascadia.local')
-  console.log('  Password: Cascadia')
-  console.log('  Roles: Global Admin, Administrator')
+  console.log(
+    existingAdmin
+      ? '  Password: unchanged (existing user preserved)'
+      : '  Password: Cascadia',
+  )
+  console.log('  Roles: Administrator')
   console.log('\nProgram:')
   console.log(`  Name: ${program.name}`)
   console.log(`  Code: ${program.code}`)

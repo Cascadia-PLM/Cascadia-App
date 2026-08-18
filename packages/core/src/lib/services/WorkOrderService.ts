@@ -1,7 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNull,
+  or,
+} from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { LifecycleService } from './LifecycleService'
 import { WorkOrderInstructionService } from './WorkOrderInstructionService'
@@ -150,12 +160,32 @@ export class WorkOrderService {
     partId?: string
     search?: string
     programId?: string
+    /**
+     * Programs the caller may read, or `null` for unrestricted (cross-program
+     * authority). A separate axis from `programId`, which is the program the
+     * caller *asked* for — narrowing must never widen.
+     */
+    accessProgramIds?: Array<string> | null
     limit?: number
     offset?: number
     sortBy?: string
     sortDir?: 'asc' | 'desc'
   }) {
     const conditions = [eq(items.itemType, 'WorkOrder')]
+
+    // A work order names its program directly, so the scope is one condition.
+    // Program-less work orders stay visible: they sit outside every program,
+    // so there is no membership that could gate them.
+    if (criteria.accessProgramIds) {
+      conditions.push(
+        (criteria.accessProgramIds.length > 0
+          ? or(
+              inArray(workOrders.programId, criteria.accessProgramIds),
+              isNull(workOrders.programId),
+            )
+          : isNull(workOrders.programId))!,
+      )
+    }
 
     if (criteria.status) {
       conditions.push(eq(items.state, criteria.status))

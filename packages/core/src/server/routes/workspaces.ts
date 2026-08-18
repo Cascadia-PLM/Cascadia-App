@@ -2,15 +2,16 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
-import { and, eq, inArray } from 'drizzle-orm'
+import { z } from 'zod'
+import { eq, sql } from 'drizzle-orm'
 import { tagged } from '../adapter'
 import type { ChangeOrder } from '@/lib/items/types/change-order'
+import { changeOrderTypeSchema } from '@/lib/items/types/change-order'
 import { db } from '@/lib/db'
-import { branchItems, branches, items } from '@/lib/db/schema'
+import { branchItems, designs, items } from '@/lib/db/schema'
 import { BranchService } from '@/lib/services/BranchService'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { WorkflowService } from '@/lib/workflows/WorkflowService'
 import { apiHandler, created } from '@/lib/api/handler'
 import { requireBranchAccess, requireDesignAccess } from '@/lib/auth/access'
 import {
@@ -23,15 +24,80 @@ const adapt = tagged('Workspaces')
 
 const app = new Hono()
 
+const createWorkspaceSchema = z.object({
+  designId: z.string().uuid(),
+  // Branch names are varchar(100) and carry the 'workspace/' prefix
+  workspaceName: z.string().trim().min(1, 'Workspace name is required').max(80),
+})
+
+const convertToEcoSchema = z.object({
+  ecoTitle: z.string().trim().min(1, 'ECO title is required').max(500),
+  ecoDescription: z.string().max(10_000).optional(),
+  changeType: changeOrderTypeSchema.default('ECO'),
+  deleteWorkspace: z.boolean().default(false),
+})
+
+const mergeToEcoSchema = z.object({
+  ecoId: z.string().uuid(),
+  deleteWorkspace: z.boolean().default(false),
+})
+
+const workspaceResponseSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  designId: z.string().uuid(),
+  designName: z.string(),
+  designCode: z.string(),
+  createdAt: z.string(),
+  isLocked: z.boolean().nullable(),
+  isArchived: z.boolean().nullable(),
+  ownerId: z.string().uuid().nullable(),
+  headCommitId: z.string().uuid().nullable(),
+  baseCommitId: z.string().uuid().nullable(),
+  itemCount: z.number(),
+  workspaceOnlyItemCount: z.number(),
+})
+
+/**
+ * The workspace branch behind an id, after verifying it exists, is a
+ * workspace, is not archived (deleted, from the user's point of view), and
+ * that the caller can access its design. Archived and non-workspace branches
+ * 404 rather than 400: the resource this API serves is "a live workspace",
+ * and a branch that is not one simply is not here.
+ */
+async function requireWorkspace(userId: string, branchId: string) {
+  const { branch } = await requireBranchAccess(userId, branchId)
+  if (branch.branchType !== 'workspace' || branch.isArchived) {
+    throw new NotFoundError('Workspace', branchId)
+  }
+  return branch
+}
+
+/** Same, but for mutations: only the owner may change a workspace. */
+async function requireOwnedWorkspace(userId: string, branchId: string) {
+  const branch = await requireWorkspace(userId, branchId)
+  if (branch.ownerId !== userId) {
+    throw new PermissionDeniedError('workspace', 'modify')
+  }
+  return branch
+}
+
 // GET /api/workspaces
 app.get(
   '/',
   adapt(
-    apiHandler({}, async ({ user }) => {
-      const workspaces = await BranchService.listByUser(user.id)
+    apiHandler(
+      {
+        openapi: {
+          summary: 'List the current user’s workspace branches',
+        },
+      },
+      async ({ user }) => {
+        const workspaces = await BranchService.listByUser(user.id)
 
-      return { workspaces }
-    }),
+        return { workspaces }
+      },
+    ),
   ),
 )
 
@@ -39,30 +105,33 @@ app.get(
 app.post(
   '/',
   adapt(
-    apiHandler({}, async ({ request, user }) => {
-      const body = await request.json()
-      const { designId, workspaceName } = body
-
-      if (!designId || !workspaceName) {
-        throw new ValidationError(
-          'Missing required fields: designId and workspaceName',
+    apiHandler(
+      {
+        openapi: {
+          summary: 'Create a workspace branch on a design',
+          request: { body: { schema: createWorkspaceSchema } },
+        },
+      },
+      async ({ request, user }) => {
+        const { designId, workspaceName } = createWorkspaceSchema.parse(
+          await request.json(),
         )
-      }
 
-      // A workspace branch can only be opened on a design the user can access
-      await requireDesignAccess(user.id, designId)
+        // A workspace branch can only be opened on a design the user can access
+        await requireDesignAccess(user.id, designId)
 
-      const branch = await BranchService.createWorkspaceBranch(
-        designId,
-        user.id,
-        workspaceName,
-      )
+        const branch = await BranchService.createWorkspaceBranch(
+          designId,
+          user.id,
+          workspaceName,
+        )
 
-      return created({
-        workspaceId: branch.id,
-        branchName: branch.name,
-      })
-    }),
+        return created({
+          workspaceId: branch.id,
+          branchName: branch.name,
+        })
+      },
+    ),
   ),
 )
 
@@ -70,28 +139,43 @@ app.post(
 app.get(
   '/:id',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params, user }) => {
-      const { id } = params
-      // Validates the branch exists and the user can access its design
-      await requireBranchAccess(user.id, id)
-      const branch = await BranchService.getById(id)
-      if (!branch) {
-        throw new NotFoundError('Workspace', id)
-      }
+    apiHandler<{ id: string }>(
+      {
+        openapi: {
+          summary: 'Get a workspace with its design and item counts',
+          request: { params: z.object({ id: z.string().uuid() }) },
+          responses: { 200: { schema: workspaceResponseSchema } },
+        },
+      },
+      async ({ params, user }) => {
+        const branch = await requireWorkspace(user.id, params.id)
 
-      if (branch.branchType !== 'workspace') {
-        throw new ValidationError('Not a workspace branch')
-      }
+        const design = await db
+          .select({ name: designs.name, code: designs.code })
+          .from(designs)
+          .where(eq(designs.id, branch.designId))
+          .limit(1)
+          .then((r) => r.at(0))
 
-      const itemCount = await BranchService.getWorkspaceOnlyItemCount(id)
+        const counts = await BranchService.getWorkspaceItemCounts(branch.id)
 
-      return {
-        id: branch.id,
-        name: branch.name,
-        designId: branch.designId,
-        itemCount,
-      }
-    }),
+        return {
+          id: branch.id,
+          name: branch.name,
+          designId: branch.designId,
+          designName: design?.name ?? '',
+          designCode: design?.code ?? '',
+          createdAt: branch.createdAt,
+          isLocked: branch.isLocked,
+          isArchived: branch.isArchived,
+          ownerId: branch.ownerId,
+          headCommitId: branch.headCommitId,
+          baseCommitId: branch.baseCommitId,
+          itemCount: counts.total,
+          workspaceOnlyItemCount: counts.workspaceOnly,
+        }
+      },
+    ),
   ),
 )
 
@@ -99,12 +183,95 @@ app.get(
 app.delete(
   '/:id',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params, user }) => {
-      const { id } = params
-      await BranchService.deleteWorkspaceBranch(id, user.id)
+    apiHandler<{ id: string }>(
+      {
+        openapi: {
+          summary:
+            'Delete a workspace, and with it any drafts that exist only there',
+          request: { params: z.object({ id: z.string().uuid() }) },
+        },
+      },
+      async ({ params, user }) => {
+        await requireOwnedWorkspace(user.id, params.id)
+        await BranchService.deleteWorkspaceBranch(params.id, user.id)
 
-      return { success: true }
-    }),
+        return { success: true }
+      },
+    ),
+  ),
+)
+
+// GET /api/workspaces/:id/items
+app.get(
+  '/:id/items',
+  adapt(
+    apiHandler<{ id: string }>(
+      {
+        openapi: {
+          summary: 'List the items on a workspace branch',
+          request: { params: z.object({ id: z.string().uuid() }) },
+        },
+      },
+      async ({ params, user }) => {
+        await requireWorkspace(user.id, params.id)
+
+        // COALESCE so a row staged as deleted (currentItemId cleared) still
+        // resolves the item it deletes instead of joining to nothing
+        const workspaceItems = await db
+          .select({
+            id: branchItems.id,
+            itemId: branchItems.currentItemId,
+            itemMasterId: branchItems.itemMasterId,
+            itemNumber: items.itemNumber,
+            itemName: items.name,
+            itemType: items.itemType,
+            revision: items.revision,
+            state: items.state,
+            changeType: branchItems.changeType,
+            checkedOutBy: branchItems.checkedOutBy,
+            checkedOutAt: branchItems.checkedOutAt,
+          })
+          .from(branchItems)
+          .leftJoin(
+            items,
+            sql`${items.id} = coalesce(${branchItems.currentItemId}, ${branchItems.baseItemId})`,
+          )
+          .where(eq(branchItems.branchId, params.id))
+
+        return { items: workspaceItems }
+      },
+    ),
+  ),
+)
+
+// DELETE /api/workspaces/:id/items/:masterId
+app.delete(
+  '/:id/items/:masterId',
+  adapt(
+    apiHandler<{ id: string; masterId: string }>(
+      {
+        openapi: {
+          summary:
+            'Remove an item from a workspace, discarding the workspace’s changes to it',
+          request: {
+            params: z.object({
+              id: z.string().uuid(),
+              masterId: z.string().uuid(),
+            }),
+          },
+        },
+      },
+      async ({ params, user }) => {
+        await requireOwnedWorkspace(user.id, params.id)
+        await BranchService.removeWorkspaceItem(
+          params.id,
+          params.masterId,
+          user.id,
+        )
+
+        return { success: true }
+      },
+    ),
   ),
 )
 
@@ -113,64 +280,27 @@ app.post(
   '/:id/convert-to-eco',
   adapt(
     apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'create'] },
+      {
+        permission: ['change_orders', 'create'],
+        openapi: {
+          summary: 'Create a new ECO carrying this workspace’s content',
+          request: {
+            params: z.object({ id: z.string().uuid() }),
+            body: { schema: convertToEcoSchema },
+          },
+        },
+      },
       async ({ request, params, user }) => {
-        const { id: workspaceId } = params
-        const body = await request.json()
-        const {
-          ecoTitle,
-          ecoDescription,
-          changeType = 'ECO',
-          deleteWorkspace = false,
-        } = body
+        const workspace = await requireOwnedWorkspace(user.id, params.id)
+        const { ecoTitle, ecoDescription, changeType, deleteWorkspace } =
+          convertToEcoSchema.parse(await request.json())
 
-        if (!ecoTitle) {
-          throw new ValidationError('Missing required field: ecoTitle')
-        }
-
-        // Get workspace info
-        const workspace = await db.query.branches.findFirst({
-          where: and(
-            eq(branches.id, workspaceId),
-            eq(branches.branchType, 'workspace'),
-          ),
-        })
-
-        if (!workspace) {
-          throw new NotFoundError('Workspace', workspaceId)
-        }
-
-        // Verify user owns the workspace
-        if (workspace.ownerId !== user.id) {
-          throw new PermissionDeniedError('workspace', 'update')
-        }
-
-        // Get all branch items in the workspace
-        const workspaceBranchItems = await db.query.branchItems.findMany({
-          where: eq(branchItems.branchId, workspaceId),
-        })
-
-        if (workspaceBranchItems.length === 0) {
+        // Refuse before creating the ECO, not after
+        const counts = await BranchService.getWorkspaceItemCounts(workspace.id)
+        if (counts.total === 0) {
           throw new ValidationError('Workspace has no items to convert')
         }
 
-        // Fetch the actual items for each branch item that has a currentItemId
-        const currentItemIds = workspaceBranchItems
-          .map((bi) => bi.currentItemId)
-          .filter((id): id is string => id !== null)
-
-        const currentItems =
-          currentItemIds.length > 0
-            ? await db
-                .select()
-                .from(items)
-                .where(inArray(items.id, currentItemIds))
-            : []
-
-        // Create a map for quick lookup
-        const itemMap = new Map(currentItems.map((item) => [item.id, item]))
-
-        // Create the ECO
         const eco = await ItemService.create<ChangeOrder>(
           'ChangeOrder',
           {
@@ -190,81 +320,29 @@ app.post(
           throw new Error('Failed to create ECO')
         }
 
-        // For each branch item in workspace, add to ECO
-        for (const branchItem of workspaceBranchItems) {
-          const currentItem = branchItem.currentItemId
-            ? itemMap.get(branchItem.currentItemId)
-            : null
-          if (!currentItem) continue
-
-          // Determine change action based on change type. An item created on
-          // the workspace is a first release: it used to be recorded as 'add',
-          // which did nothing at merge, so the item was silently never
-          // released.
-          let changeAction: 'revise' | 'release' | 'obsolete' = 'revise'
-          if (branchItem.changeType === 'added') {
-            changeAction = 'release'
-          } else if (branchItem.changeType === 'deleted') {
-            changeAction = 'obsolete'
-          } else if (currentItem.state === 'Draft') {
-            changeAction = 'release'
-          }
-
-          // Add item to ECO
-          await ChangeOrderService.addAffectedItem(
+        // Move the workspace's branch content onto the new ECO's branch, so
+        // the merge pipeline releases exactly what the workspace drafted
+        const { itemsAdopted, itemsSkipped } =
+          await ChangeOrderService.adoptWorkspaceItems(
             eco.id,
-            {
-              affectedItemId: currentItem.id,
-              changeAction,
-            },
+            workspace.id,
             user.id,
           )
-        }
 
-        // Optionally delete the workspace
+        // Safe now: adoption moved the content off this branch
         if (deleteWorkspace) {
-          await BranchService.deleteWorkspaceBranch(workspaceId, user.id)
+          await BranchService.deleteWorkspaceBranch(workspace.id, user.id)
         }
 
         return created({
           ecoId: eco.id,
           ecoNumber: eco.itemNumber,
-          itemsConverted: workspaceBranchItems.length,
+          itemsConverted: itemsAdopted,
+          itemsSkipped,
           workspaceDeleted: deleteWorkspace,
         })
       },
     ),
-  ),
-)
-
-// GET /api/workspaces/:id/items
-app.get(
-  '/:id/items',
-  adapt(
-    apiHandler<{ id: string }>({}, async ({ params }) => {
-      const { id: workspaceId } = params
-
-      // Fetch all items on this workspace branch
-      const workspaceItems = await db
-        .select({
-          id: branchItems.id,
-          itemId: branchItems.currentItemId,
-          itemMasterId: branchItems.itemMasterId,
-          itemNumber: items.itemNumber,
-          itemName: items.name,
-          itemType: items.itemType,
-          revision: items.revision,
-          state: items.state,
-          changeType: branchItems.changeType,
-          checkedOutBy: branchItems.checkedOutBy,
-          checkedOutAt: branchItems.checkedOutAt,
-        })
-        .from(branchItems)
-        .leftJoin(items, eq(branchItems.currentItemId, items.id))
-        .where(eq(branchItems.branchId, workspaceId))
-
-      return { items: workspaceItems }
-    }),
   ),
 )
 
@@ -273,102 +351,44 @@ app.post(
   '/:id/merge-to-eco',
   adapt(
     apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'update'] },
+      {
+        permission: ['change_orders', 'update'],
+        openapi: {
+          summary: 'Move this workspace’s content into an existing ECO',
+          request: {
+            params: z.object({ id: z.string().uuid() }),
+            body: { schema: mergeToEcoSchema },
+          },
+        },
+      },
       async ({ request, params, user }) => {
-        const { id: workspaceId } = params
-        const body = await request.json()
-        const { ecoId, deleteWorkspace = false } = body
+        const workspace = await requireOwnedWorkspace(user.id, params.id)
+        const { ecoId, deleteWorkspace } = mergeToEcoSchema.parse(
+          await request.json(),
+        )
 
-        if (!ecoId) {
-          throw new ValidationError('Missing required field: ecoId')
-        }
-
-        // Get workspace info
-        const workspace = await db.query.branches.findFirst({
-          where: and(
-            eq(branches.id, workspaceId),
-            eq(branches.branchType, 'workspace'),
-          ),
-        })
-
-        if (!workspace) {
-          throw new NotFoundError('Workspace', workspaceId)
-        }
-
-        // Verify user owns the workspace
-        if (workspace.ownerId !== user.id) {
-          throw new PermissionDeniedError('workspace', 'update')
-        }
-
-        // Verify ECO exists and is editable
-        const eco = await db.query.items.findFirst({
-          where: eq(items.id, ecoId),
-        })
-
-        if (!eco) {
+        const eco = await ItemService.findById(ecoId)
+        if (!eco || eco.itemType !== 'ChangeOrder') {
           throw new NotFoundError('ECO', ecoId)
         }
 
-        // Verify ECO scope is not locked
-        const workflowInstance =
-          await WorkflowService.getInstanceByItemId(ecoId)
-        if (workflowInstance?.scopeLocked) {
-          throw new ValidationError(
-            'Cannot merge to this ECO: scope is locked. The ECO can no longer accept new items.',
+        // Re-homes the workspace's branch items onto the ECO branch and
+        // registers them in the reviewed scope. Also enforces that the ECO
+        // still accepts items (scope not locked, workflow not completed).
+        const { itemsAdopted, itemsSkipped } =
+          await ChangeOrderService.adoptWorkspaceItems(
+            ecoId,
+            workspace.id,
+            user.id,
           )
-        }
-        if (workflowInstance?.completedAt) {
-          throw new ValidationError(
-            'Cannot merge to this ECO: the workflow has been completed.',
-          )
-        }
 
-        // Get all branch items in the workspace
-        const workspaceBranchItems = await db.query.branchItems.findMany({
-          where: eq(branchItems.branchId, workspaceId),
-        })
-
-        if (workspaceBranchItems.length === 0) {
-          throw new ValidationError('Workspace has no items to merge')
-        }
-
-        // For each branch item in workspace, checkout to ECO
-        // Use checkoutItemToEco which creates branch items, working copies,
-        // design associations, AND affected items records
-        let itemsAdded = 0
-        let itemsSkipped = 0
-
-        for (const branchItem of workspaceBranchItems) {
-          // Resolve to original item (prefer baseItemId for checked-out items)
-          const itemId = branchItem.baseItemId || branchItem.currentItemId
-          if (!itemId) continue
-
-          try {
-            await ChangeOrderService.checkoutItemToEco(ecoId, itemId, user.id)
-            itemsAdded++
-          } catch (error) {
-            // checkoutItemToEco is idempotent for already-checked-out items
-            const errorMsg =
-              error instanceof Error ? error.message : String(error)
-            if (errorMsg.includes('already')) {
-              itemsSkipped++
-            } else {
-              console.log(
-                `Failed to add item ${branchItem.itemMasterId}: ${errorMsg}`,
-              )
-              itemsSkipped++
-            }
-          }
-        }
-
-        // Optionally delete the workspace
         if (deleteWorkspace) {
-          await BranchService.deleteWorkspaceBranch(workspaceId, user.id)
+          await BranchService.deleteWorkspaceBranch(workspace.id, user.id)
         }
 
         return {
           ecoId,
-          itemsAdded,
+          itemsAdded: itemsAdopted,
           itemsSkipped,
           workspaceDeleted: deleteWorkspace,
         }

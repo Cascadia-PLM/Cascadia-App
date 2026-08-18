@@ -49,6 +49,9 @@ ship with. See [docs/features/software-management.md](./docs/features/software-m
 - **Backward transitions supersede approval votes rather than deleting them.** A transition is backward when its target can reach its source through the effective structure; votes on the target and everything reachable from it are marked `supersededAt` after the CAS write wins. Deleting them would contradict the append-only approval record
 - **Approval requirements are real on flexible instances** — `{ requiredCount }` enforced as distinct active approved votes at the source state, composing with named approvers
 - New error code: `PACKAGE_NOT_LICENSED` (403), raised when a request needs a package this instance does not have
+- **`db:generate` writes migration SQL into the app's own `drizzle/` directory**
+  (`apps/cascadia/drizzle`) instead of the repository root, keeping the generated
+  baseline next to the composed schema (`modules.schema.ts`) that produced it
 
 ### Removed
 
@@ -82,6 +85,32 @@ CAD **conversion** is unaffected: `workers/cad-converter/` (STEP/IGES → STL/GL
 the `conversion.cad.step-to-stl` job, `POST /api/v1/files/:fileId/convert`, and
 the in-browser 3D viewer all remain. The bring-your-own-API-key AI chatbot and
 its read/write PLM tools also remain.
+
+### Fixed
+
+- **An item's design can no longer be cleared or reassigned through update.**
+  `ItemService.update()` wrote `designId` straight through whenever the key was
+  present, so a request carrying `"designId": null` detached the item from its
+  design while its branch rows, commits and BOM structure stayed behind, and
+  reassigning it landed the item in a design whose branches had never tracked
+  it. Both now raise `VALIDATION_FAILED` (400). The guard lives in the service,
+  so the type-specific update routes, the batch update, the AI update tool and
+  the import paths share it. An echoed unchanged value is still accepted —
+  whole-object form saves send one — and assigning a design to an item that has
+  none is still allowed, being the one direction that adds history rather than
+  orphaning it
+
+### Security
+
+- **An unset `ENCRYPTION_KEY` stores provider API keys as plaintext, and now
+  says so.** AI provider keys entered in the admin UI are encrypted with
+  AES-256-GCM only when `ENCRYPTION_KEY` is set. Without it they are written to
+  the database in the clear, and nothing surfaced that: a working integration
+  looks identical either way. The storage behaviour is unchanged; what changed
+  is that the plaintext path now logs a warning naming the provider (never the
+  key), and the variable is documented in SECURITY.md, both compose files, and
+  the env examples. Keys saved before `ENCRYPTION_KEY` was configured stay
+  plaintext — re-save them once it is set
 
 ## [0.1.0] - 2026-04-13
 

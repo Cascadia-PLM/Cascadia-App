@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { GitMerge, Loader2 } from 'lucide-react'
 import {
   Badge,
@@ -26,14 +27,7 @@ import {
 } from '@/components/ui/Select'
 import { apiFetch } from '@/lib/api/client'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-
-interface ECO {
-  id: string
-  itemNumber: string
-  name: string
-  state: string
-  changeType: string
-}
+import { editableChangeOrdersQuery } from '@/lib/query'
 
 interface MergeToEcoDialogProps {
   open: boolean
@@ -55,33 +49,15 @@ export function MergeToEcoDialog({
   onSuccess,
 }: MergeToEcoDialogProps) {
   const { handleError, showSuccess } = useErrorHandler()
-  const [ecos, setEcos] = useState<Array<ECO>>([])
   const [selectedEcoId, setSelectedEcoId] = useState<string>('')
   const [deleteWorkspace, setDeleteWorkspace] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Fetch available ECOs for this design
-  useEffect(() => {
-    if (!open || !designId) return
-
-    async function fetchEcos() {
-      setLoading(true)
-      try {
-        // Fetch ECOs that can still accept items (scope not locked)
-        const response = await apiFetch<{
-          data: { changeOrders: Array<ECO> }
-        }>(`/api/v1/change-orders/editable?designId=${designId}`)
-        setEcos(response.data.changeOrders)
-      } catch {
-        setEcos([])
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchEcos()
-  }, [open, designId])
+  // ECOs that can still accept items (scope not locked), for this design
+  const { data: ecos = [], isLoading: loading } = useQuery({
+    ...editableChangeOrdersQuery(designId),
+    enabled: open && !!designId,
+  })
 
   const handleMerge = async () => {
     if (!selectedEcoId) {
@@ -165,7 +141,7 @@ export function MergeToEcoDialog({
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Choose an ECO">
                       {selectedEco
-                        ? `${selectedEco.itemNumber} - ${selectedEco.name}`
+                        ? `${selectedEco.itemNumber}${selectedEco.name ? ` - ${selectedEco.name}` : ''}`
                         : 'Select ECO'}
                     </SelectValue>
                   </SelectTrigger>

@@ -161,7 +161,6 @@ Edit `.env`:
 ```bash
 # REQUIRED
 DATABASE_URL=postgresql://cascadia:PASSWORD@<cloud-db-host>:5432/cascadia?sslmode=require
-SESSION_SECRET=<generate-with-openssl-rand-hex-32>
 
 # APPLICATION
 APP_PORT=3000
@@ -187,7 +186,7 @@ Start the application:
 docker compose up -d
 ```
 
-The compose file runs migrations on startup:
+The compose file pushes the schema on startup (pre-1.0: no committed migration files):
 
 ```yaml
 command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
@@ -211,7 +210,6 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
-      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
       BASE_URL: ${BASE_URL:-http://localhost:3000}
       VAULT_MODE: embedded
       VAULT_TYPE: ${VAULT_TYPE:-local}

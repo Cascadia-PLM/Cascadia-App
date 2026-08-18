@@ -31,7 +31,7 @@ Organization (implicit, single-tenant)
 **Key rules:**
 
 - A user must be a **member** of a program to access its designs and items.
-- **Global Admin** users bypass all program membership checks.
+- Users with **cross-program authority** (the RBAC `programs:manage` permission — the built-in Administrator role) bypass all program membership checks.
 - **Global Libraries** (designType = `Library`, no program) are readable by all authenticated users.
 - **Unassigned designs** (designType = `Engineering`, no program) are accessible to all authenticated users until assigned to a program.
 
@@ -61,13 +61,13 @@ Program codes are **system-wide unique**. The code format is enforced as `^[A-Z0
 
 ### Program CRUD
 
-| Operation                | Endpoint                      | Permission                                                          |
-| ------------------------ | ----------------------------- | ------------------------------------------------------------------- |
-| List accessible programs | `GET /api/v1/programs`        | Authenticated (returns only user's programs; Global Admin sees all) |
-| Create program           | `POST /api/v1/programs`       | `programs:create` permission                                        |
-| Get program              | `GET /api/v1/programs/:id`    | Program member or `programs:read` permission                        |
-| Update program           | `PUT /api/v1/programs/:id`    | Program admin or `programs:update` permission                       |
-| Delete program           | `DELETE /api/v1/programs/:id` | Program admin or `programs:delete` permission                       |
+| Operation                | Endpoint                      | Permission                                                           |
+| ------------------------ | ----------------------------- | -------------------------------------------------------------------- |
+| List accessible programs | `GET /api/v1/programs`        | Authenticated (returns only user's programs; Administrator sees all) |
+| Create program           | `POST /api/v1/programs`       | `programs:create` permission                                         |
+| Get program              | `GET /api/v1/programs/:id`    | Program member, `programs:manage`, or `programs:update`              |
+| Update program           | `PUT /api/v1/programs/:id`    | Program admin or `programs:update` permission                        |
+| Delete program           | `DELETE /api/v1/programs/:id` | Program admin or `programs:delete` permission                        |
 
 When a program is created, the creator is automatically added as an **admin** member with full permissions.
 
@@ -100,22 +100,22 @@ Access to a program's data is controlled through the `program_members` table. Ea
 
 ### Roles
 
-| Role       | Default Permissions                      | Intended Use                                         |
-| ---------- | ---------------------------------------- | ---------------------------------------------------- |
-| `admin`    | Create ECO, Approve ECO, Manage Products | Program managers and leads with full control         |
-| `lead`     | Create ECO, Approve ECO                  | Engineering leads who review and approve changes     |
-| `engineer` | Create ECO                               | Working engineers who create and modify items        |
-| `viewer`   | None (read-only)                         | Stakeholders who need visibility without edit access |
+| Role       | Default Permissions                     | Intended Use                                         |
+| ---------- | --------------------------------------- | ---------------------------------------------------- |
+| `admin`    | Create ECO, Approve ECO, Manage Designs | Program managers and leads with full control         |
+| `lead`     | Create ECO, Approve ECO                 | Engineering leads who review and approve changes     |
+| `engineer` | Create ECO                              | Working engineers who create and modify items        |
+| `viewer`   | None (read-only)                        | Stakeholders who need visibility without edit access |
 
 ### Permission Flags
 
 Each membership has three boolean permission flags that override role defaults when needed:
 
-| Flag                | Description                                               |
-| ------------------- | --------------------------------------------------------- |
-| `canCreateEco`      | Can create Engineering Change Orders in this program      |
-| `canApproveEco`     | Can approve ECOs for release                              |
-| `canManageProducts` | Can create, update, and delete designs within the program |
+| Flag               | Description                                               |
+| ------------------ | --------------------------------------------------------- |
+| `canCreateEco`     | Can create Engineering Change Orders in this program      |
+| `canApproveEco`    | Can approve ECOs for release                              |
+| `canManageDesigns` | Can create, update, and delete designs within the program |
 
 Default values are set based on role (see the table above), but can be overridden per-member for fine-grained control.
 
@@ -134,14 +134,14 @@ Default values are set based on role (see the table above), but can be overridde
 
 Permissions flow downward through the hierarchy:
 
-1. **Global Admin** -- Bypasses all program membership checks. Can access all programs, all designs, all items.
+1. **Cross-program authority** (`programs:manage`, the Administrator role) -- Bypasses all program membership checks. Can access all programs, all designs, all items.
 2. **Program membership** -- Required to access any design in a program. The membership role determines what actions are available.
-3. **Design access** -- Checked via `requireDesignAccess()`. If a design has a `programId`, the user must be a member of that program (or be a Global Admin).
-4. **Design operations** -- Creating/updating/deleting designs within a program requires the `canManageProducts` flag on the membership.
+3. **Design access** -- Checked via `requireDesignAccess()`. If a design has a `programId`, the user must be a member of that program (or hold cross-program authority).
+4. **Design operations** -- Creating/updating/deleting designs within a program requires the `canManageDesigns` flag on the membership.
 5. **ECO operations** -- Creating ECOs requires `canCreateEco`; approving requires `canApproveEco`.
 
 ```
-Global Admin? ──yes──> Full access
+programs:manage? ──yes──> Full access
        |
        no
        |
@@ -210,13 +210,13 @@ Designs are version containers that hold engineering items. Each design has its 
 
 ### Design CRUD
 
-| Operation      | Endpoint                     | Permission                                                          |
-| -------------- | ---------------------------- | ------------------------------------------------------------------- |
-| List designs   | `GET /api/v1/designs`        | Authenticated (filtered by program access)                          |
-| Create design  | `POST /api/v1/designs`       | `canManageProducts` in target program, or `designs:create` globally |
-| Get design     | `GET /api/v1/designs/:id`    | Program member or Global Admin                                      |
-| Update design  | `PUT /api/v1/designs/:id`    | `canManageProducts` or `designs:update`                             |
-| Archive design | `DELETE /api/v1/designs/:id` | `canManageProducts` or `designs:delete` (soft delete)               |
+| Operation      | Endpoint                     | Permission                                                         |
+| -------------- | ---------------------------- | ------------------------------------------------------------------ |
+| List designs   | `GET /api/v1/designs`        | Authenticated (filtered by program access)                         |
+| Create design  | `POST /api/v1/designs`       | `canManageDesigns` in target program, or `designs:create` globally |
+| Get design     | `GET /api/v1/designs/:id`    | Program member or cross-program authority                          |
+| Update design  | `PUT /api/v1/designs/:id`    | `canManageDesigns` or `designs:update`                             |
+| Archive design | `DELETE /api/v1/designs/:id` | `canManageDesigns` or `designs:delete` (soft delete)               |
 
 **On creation**, Engineering, Library, and Manufacturing designs automatically get:
 
@@ -232,7 +232,7 @@ Designs are version containers that hold engineering items. Each design has its 
 
 The `GET /api/v1/designs` endpoint returns designs filtered by the user's access:
 
-- **Global Admin**: Sees all non-archived designs.
+- **Administrator** (cross-program authority): Sees all non-archived designs.
 - **Regular user**: Sees designs from their programs, plus global libraries, plus unassigned designs.
 - **Query parameters**: `programId`, `designType`, `includeArchived`, `includeHierarchy`.
 
@@ -351,7 +351,7 @@ Supports filtering by ECO status (Draft, In Review, Approved, Released, etc.).
 | `milestone`   | Project milestone (e.g., PDR, CDR)            |
 | `eco-release` | Automatically created when an ECO is released |
 
-Creating tags requires program `admin` or `lead` role (or Global Admin).
+Creating tags requires program `admin` or `lead` role (or cross-program authority).
 
 ---
 
@@ -403,7 +403,7 @@ Returns `202 Accepted` with a job ID for tracking progress.
 
 - Only `Engineering` designs can be cloned (not Family or Library).
 - Read access to the source design is required.
-- Create permission (`canManageProducts`) in the target program is required.
+- Create permission (`canManageDesigns`) in the target program is required.
 
 ---
 

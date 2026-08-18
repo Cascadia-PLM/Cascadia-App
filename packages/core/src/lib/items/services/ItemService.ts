@@ -9,6 +9,7 @@ import { designs, items } from '../../db/schema'
 import { NumberingService } from '../numbering'
 import { ItemTypeRegistry } from '../registry'
 import { getTypeHandler } from '../type-handlers'
+import { isBranchProtectionExempt } from '../branch-protection'
 import '../type-handlers/init'
 import {
   BranchProtectionError,
@@ -29,6 +30,7 @@ import { notDeleted } from '../../db/filters'
 import { ItemVersioningFacade } from './ItemVersioningFacade'
 import { ItemSearchService } from './ItemSearchService'
 import { ItemRelationshipService } from './ItemRelationshipService'
+import type { TypeHandlerContext } from '../type-handlers'
 import type { TransactionClient } from '../../db'
 import type { commits, itemRelationships } from '../../db/schema'
 import type {
@@ -149,12 +151,14 @@ export class ItemService {
     // Check branch protection if item is associated with a design
     // Skip this check if:
     // - bypassBranchProtection is true (for ECO operations or tests)
-    // - Item is a ChangeOrder (workflow control objects are exempt from branch protection)
+    // - The type is exempt: ChangeOrders are the workflow control objects that
+    //   create branches, and WorkInstructions borrow their output part's design
+    //   without being ECO-controlled (see lib/items/branch-protection.ts)
     const isChangeOrder = type === 'ChangeOrder'
     if (
       validatedData.designId &&
       !options?.bypassBranchProtection &&
-      !isChangeOrder
+      !isBranchProtectionExempt(type)
     ) {
       const canEdit = await this.canEditDirectly(validatedData.designId)
       if (!canEdit.allowed) {
@@ -210,7 +214,9 @@ export class ItemService {
       )
 
       // Insert type-specific data
-      await this.insertTypeSpecificData(type, item.id, validatedData, tx)
+      await this.insertTypeSpecificData(type, item.id, validatedData, tx, {
+        userId,
+      })
 
       // Create commit for history tracking if item has a designId
       // (items without designId are not tracked in version history)
@@ -339,6 +345,32 @@ export class ItemService {
           delete (data as Record<string, unknown>)[field]
         }
       }
+    }
+
+    // An item's design is not a field it carries — it is what owns the item's
+    // branches, commits and BOM structure, none of which move with the row.
+    // Clearing it (`designId: null`) strands the item outside versioning while
+    // its history stays behind, and reassigning it lands the item in a design
+    // whose branches never tracked it. Neither is recoverable through this
+    // path, and no caller passes designId here, so both are rejected. Echoed
+    // identical values (whole-object form saves) are tolerated and stripped,
+    // as with the lifecycle fields above.
+    //
+    // Assigning a design to an item that has none stays allowed: it is the
+    // only direction that adds history rather than orphaning it, and it is how
+    // a design-less legacy item gets adopted into a design.
+    if (data.designId !== undefined && oldItem.designId) {
+      if (data.designId !== oldItem.designId) {
+        throw new ValidationError(
+          "designId cannot be changed through item update: an item's design " +
+            'owns its version history, branches and BOM structure, which do ' +
+            'not move with it. Create the item in the target design instead.',
+          undefined,
+          { operation: 'update', itemId: id },
+        )
+      }
+      data = { ...data }
+      delete (data as Record<string, unknown>).designId
     }
 
     // Enforce branch protection and the edit-lock (checkout) policy.
@@ -746,6 +778,7 @@ export class ItemService {
       itemTypes?: Array<string>
       currentOnly?: boolean
       designIds?: Array<string>
+      accessDesignIds?: Array<string> | null
     },
   ): Promise<Array<BaseItem>> {
     return ItemSearchService.searchByItemNumber(query, options)
@@ -866,12 +899,13 @@ export class ItemService {
     itemId: string,
     data: any,
     tx?: TransactionClient,
+    ctx?: TypeHandlerContext,
   ): Promise<void> {
     const handler = getTypeHandler(type)
     if (!handler) {
       throw new InternalError(`No type handler registered for "${type}"`)
     }
-    await handler.insert(itemId, data, tx)
+    await handler.insert(itemId, data, tx, ctx)
   }
 
   /** @internal Used by ItemVersioningFacade */

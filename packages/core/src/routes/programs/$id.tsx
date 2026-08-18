@@ -18,6 +18,7 @@ import type { CreateProgramInput, Program } from '@/lib/types/program'
 import type { Design } from '@/lib/types/design'
 import { PageContainer } from '@/components/layout'
 import { ProgramHistoryGraphView } from '@/components/programs/ProgramHistoryGraphView'
+import { ProgramTeamCard } from '@/components/programs/ProgramTeamCard'
 import { ScopeGraphView } from '@/components/graph/ScopeGraphView'
 import {
   Badge,
@@ -30,6 +31,10 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from '@/components/ui'
 import {
   ViewEditBadge,
@@ -243,305 +248,329 @@ function ProgramDetail({
         </div>
       </div>
 
-      {/* Main Layout with Sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content - Left 2 columns */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Overview</CardTitle>
-              <CardDescription>Program details and metadata</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <ViewEditText
-                  label="Program Code"
-                  value={isEditing ? editProgram.code : program.code}
-                  onChange={(v) => updateField('code', v)}
-                  isEditing={isEditing}
-                  required
-                />
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="team">Team</TabsTrigger>
+        </TabsList>
 
-                <ViewEditText
-                  label="Name"
-                  value={isEditing ? editProgram.name : program.name}
-                  onChange={(v) => updateField('name', v)}
-                  isEditing={isEditing}
-                  required
-                />
+        <TabsContent value="team">
+          <ProgramTeamCard program={program} />
+        </TabsContent>
 
-                <ViewEditBadge
-                  label="Status"
-                  value={isEditing ? editProgram.status : program.status}
-                  onChange={(v) => updateField('status', v)}
-                  isEditing={isEditing}
-                  options={statusOptions}
-                  variant={statusVariant}
-                />
-
-                <ViewEditText
-                  label="Customer"
-                  value={isEditing ? editProgram.customer : program.customer}
-                  onChange={(v) => updateField('customer', v)}
-                  isEditing={isEditing}
-                />
-
-                <ViewEditText
-                  label="Contract Number"
-                  value={
-                    isEditing
-                      ? editProgram.contractNumber
-                      : program.contractNumber
-                  }
-                  onChange={(v) => updateField('contractNumber', v)}
-                  isEditing={isEditing}
-                />
-
-                <ViewEditText
-                  label="Start Date"
-                  value={
-                    isEditing
-                      ? toDateInputValue(editProgram.startDate)
-                      : program.startDate
-                        ? new Date(program.startDate).toLocaleDateString()
-                        : null
-                  }
-                  onChange={(v) => updateField('startDate', v)}
-                  isEditing={isEditing}
-                  inputType="date"
-                />
-
-                <ViewEditText
-                  label="Target End Date"
-                  value={
-                    isEditing
-                      ? toDateInputValue(editProgram.targetEndDate)
-                      : program.targetEndDate
-                        ? new Date(program.targetEndDate).toLocaleDateString()
-                        : null
-                  }
-                  onChange={(v) => updateField('targetEndDate', v)}
-                  isEditing={isEditing}
-                  inputType="date"
-                />
-
-                <ViewEditTextarea
-                  label="Description"
-                  value={
-                    isEditing ? editProgram.description : program.description
-                  }
-                  onChange={(v) => updateField('description', v)}
-                  isEditing={isEditing}
-                  className="md:col-span-2"
-                />
-              </dl>
-            </CardContent>
-          </Card>
-
-          {/* Program Graph */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <GitBranch className="h-5 w-5 text-slate-400" />
-                <CardTitle>Program Graph</CardTitle>
-              </div>
-              <CardDescription>
-                Drill down from this program to its designs, their items, and
-                everything connected to them
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScopeGraphView
-                rootType="program"
-                rootId={program.id}
-                inlineHeight="500px"
-              />
-            </CardContent>
-          </Card>
-
-          {/* Change History */}
-          {designs.length > 0 && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <GitBranch className="h-5 w-5 text-slate-400" />
-                  <CardTitle>Change History</CardTitle>
-                </div>
-                <CardDescription>
-                  Timeline of changes across all designs in this program
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ProgramHistoryGraphView programId={program.id} />
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Sidebar - Right column */}
-        <div className="space-y-6">
-          {/* Designs */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Designs</CardTitle>
-                <CardDescription>
-                  {designs.length} {designs.length === 1 ? 'design' : 'designs'}{' '}
-                  in this program
-                </CardDescription>
-              </div>
-              <Link to="/designs" search={{ programId: program.id }}>
-                <Button variant="outline" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Design
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              {designs.length > 0 ? (
-                <div className="space-y-3">
-                  {designs.map((design) => (
-                    <Link
-                      key={design.id}
-                      to="/designs/$id"
-                      params={{ id: design.id }}
-                      className="flex items-center justify-between p-4 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Box className="h-5 w-5 text-slate-400" />
-                        <div>
-                          <p className="font-medium text-slate-900 dark:text-white">
-                            {design.code}
-                          </p>
-                          <p className="text-sm text-slate-500 dark:text-slate-400">
-                            {design.name}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge
-                        variant={
-                          design.designType === 'Library'
-                            ? 'secondary'
-                            : 'default'
-                        }
-                      >
-                        {design.designType}
-                      </Badge>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                  No designs in this program yet. Click "Add Design" to create
-                  one.
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Custom Attributes */}
-          {isEditing ? (
-            <Card>
-              <AttributesEditor
-                value={attributes}
-                onChange={setAttributes}
-                className="border-0 rounded-none"
-              />
-            </Card>
-          ) : (
-            <Card>
-              <Collapsible
-                defaultOpen={Object.keys(program.attributes || {}).length > 0}
-              >
-                <CardHeader className="pb-3">
-                  <CollapsibleTrigger className="flex items-center justify-between w-full hover:opacity-70">
-                    <CardTitle>Custom Attributes</CardTitle>
-                  </CollapsibleTrigger>
+        <TabsContent value="overview">
+          {/* Main Layout with Sidebar */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Content - Left 2 columns */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Overview */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Overview</CardTitle>
+                  <CardDescription>
+                    Program details and metadata
+                  </CardDescription>
                 </CardHeader>
-                <CollapsibleContent>
-                  <CardContent className="pt-0">
-                    {Object.keys(program.attributes || {}).length > 0 ? (
-                      <dl className="space-y-3">
-                        {Object.entries(program.attributes || {}).map(
-                          ([key, value]) => (
-                            <div key={key} className="space-y-1">
-                              <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                                {key}
-                              </dt>
-                              <dd className="text-slate-900 dark:text-white">
-                                {Array.isArray(value)
-                                  ? value.join(', ')
-                                  : String(value)}
-                              </dd>
-                            </div>
-                          ),
-                        )}
-                      </dl>
-                    ) : (
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        No custom attributes defined.
-                      </p>
-                    )}
+                <CardContent>
+                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <ViewEditText
+                      label="Program Code"
+                      value={isEditing ? editProgram.code : program.code}
+                      onChange={(v) => updateField('code', v)}
+                      isEditing={isEditing}
+                      required
+                    />
+
+                    <ViewEditText
+                      label="Name"
+                      value={isEditing ? editProgram.name : program.name}
+                      onChange={(v) => updateField('name', v)}
+                      isEditing={isEditing}
+                      required
+                    />
+
+                    <ViewEditBadge
+                      label="Status"
+                      value={isEditing ? editProgram.status : program.status}
+                      onChange={(v) => updateField('status', v)}
+                      isEditing={isEditing}
+                      options={statusOptions}
+                      variant={statusVariant}
+                    />
+
+                    <ViewEditText
+                      label="Customer"
+                      value={
+                        isEditing ? editProgram.customer : program.customer
+                      }
+                      onChange={(v) => updateField('customer', v)}
+                      isEditing={isEditing}
+                    />
+
+                    <ViewEditText
+                      label="Contract Number"
+                      value={
+                        isEditing
+                          ? editProgram.contractNumber
+                          : program.contractNumber
+                      }
+                      onChange={(v) => updateField('contractNumber', v)}
+                      isEditing={isEditing}
+                    />
+
+                    <ViewEditText
+                      label="Start Date"
+                      value={
+                        isEditing
+                          ? toDateInputValue(editProgram.startDate)
+                          : program.startDate
+                            ? new Date(program.startDate).toLocaleDateString()
+                            : null
+                      }
+                      onChange={(v) => updateField('startDate', v)}
+                      isEditing={isEditing}
+                      inputType="date"
+                    />
+
+                    <ViewEditText
+                      label="Target End Date"
+                      value={
+                        isEditing
+                          ? toDateInputValue(editProgram.targetEndDate)
+                          : program.targetEndDate
+                            ? new Date(
+                                program.targetEndDate,
+                              ).toLocaleDateString()
+                            : null
+                      }
+                      onChange={(v) => updateField('targetEndDate', v)}
+                      isEditing={isEditing}
+                      inputType="date"
+                    />
+
+                    <ViewEditTextarea
+                      label="Description"
+                      value={
+                        isEditing
+                          ? editProgram.description
+                          : program.description
+                      }
+                      onChange={(v) => updateField('description', v)}
+                      isEditing={isEditing}
+                      className="md:col-span-2"
+                    />
+                  </dl>
+                </CardContent>
+              </Card>
+
+              {/* Program Graph */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <GitBranch className="h-5 w-5 text-slate-400" />
+                    <CardTitle>Program Graph</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Drill down from this program to its designs, their items,
+                    and everything connected to them
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScopeGraphView
+                    rootType="program"
+                    rootId={program.id}
+                    inlineHeight="500px"
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Change History */}
+              {designs.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <GitBranch className="h-5 w-5 text-slate-400" />
+                      <CardTitle>Change History</CardTitle>
+                    </div>
+                    <CardDescription>
+                      Timeline of changes across all designs in this program
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ProgramHistoryGraphView programId={program.id} />
                   </CardContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-          )}
+                </Card>
+              )}
+            </div>
 
-          {/* Metadata */}
-          <Collapsible defaultOpen={false}>
-            <Card>
-              <CardHeader>
-                <CollapsibleTrigger className="hover:opacity-70">
-                  <CardTitle>Metadata</CardTitle>
-                </CollapsibleTrigger>
-              </CardHeader>
-              <CollapsibleContent>
-                <CardContent className="space-y-3">
-                  <div className="space-y-1">
-                    <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                      Created
-                    </dt>
-                    <dd className="text-slate-900 dark:text-white">
-                      {new Date(program.createdAt).toLocaleDateString()}
-                    </dd>
+            {/* Sidebar - Right column */}
+            <div className="space-y-6">
+              {/* Designs */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Designs</CardTitle>
+                    <CardDescription>
+                      {designs.length}{' '}
+                      {designs.length === 1 ? 'design' : 'designs'} in this
+                      program
+                    </CardDescription>
                   </div>
-
-                  <div className="space-y-1">
-                    <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                      Last Modified
-                    </dt>
-                    <dd className="text-slate-900 dark:text-white">
-                      {new Date(program.updatedAt).toLocaleDateString()}
-                    </dd>
-                  </div>
-
-                  <div className="space-y-1">
-                    <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                      Program ID
-                    </dt>
-                    <dd className="text-sm font-mono text-slate-600 dark:text-slate-400">
-                      {program.id}
-                    </dd>
-                  </div>
-
-                  {program.userRole && (
-                    <div className="space-y-1">
-                      <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                        Your Role
-                      </dt>
-                      <dd>
-                        <Badge variant="outline">{program.userRole}</Badge>
-                      </dd>
+                  <Link to="/designs" search={{ programId: program.id }}>
+                    <Button variant="outline" size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Design
+                    </Button>
+                  </Link>
+                </CardHeader>
+                <CardContent>
+                  {designs.length > 0 ? (
+                    <div className="space-y-3">
+                      {designs.map((design) => (
+                        <Link
+                          key={design.id}
+                          to="/designs/$id"
+                          params={{ id: design.id }}
+                          className="flex items-center justify-between p-4 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Box className="h-5 w-5 text-slate-400" />
+                            <div>
+                              <p className="font-medium text-slate-900 dark:text-white">
+                                {design.code}
+                              </p>
+                              <p className="text-sm text-slate-500 dark:text-slate-400">
+                                {design.name}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge
+                            variant={
+                              design.designType === 'Library'
+                                ? 'secondary'
+                                : 'default'
+                            }
+                          >
+                            {design.designType}
+                          </Badge>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                      No designs in this program yet. Click "Add Design" to
+                      create one.
                     </div>
                   )}
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-        </div>
-      </div>
+              </Card>
+
+              {/* Custom Attributes */}
+              {isEditing ? (
+                <Card>
+                  <AttributesEditor
+                    value={attributes}
+                    onChange={setAttributes}
+                    className="border-0 rounded-none"
+                  />
+                </Card>
+              ) : (
+                <Card>
+                  <Collapsible
+                    defaultOpen={
+                      Object.keys(program.attributes || {}).length > 0
+                    }
+                  >
+                    <CardHeader className="pb-3">
+                      <CollapsibleTrigger className="flex items-center justify-between w-full hover:opacity-70">
+                        <CardTitle>Custom Attributes</CardTitle>
+                      </CollapsibleTrigger>
+                    </CardHeader>
+                    <CollapsibleContent>
+                      <CardContent className="pt-0">
+                        {Object.keys(program.attributes || {}).length > 0 ? (
+                          <dl className="space-y-3">
+                            {Object.entries(program.attributes || {}).map(
+                              ([key, value]) => (
+                                <div key={key} className="space-y-1">
+                                  <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                                    {key}
+                                  </dt>
+                                  <dd className="text-slate-900 dark:text-white">
+                                    {Array.isArray(value)
+                                      ? value.join(', ')
+                                      : String(value)}
+                                  </dd>
+                                </div>
+                              ),
+                            )}
+                          </dl>
+                        ) : (
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            No custom attributes defined.
+                          </p>
+                        )}
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
+              )}
+
+              {/* Metadata */}
+              <Collapsible defaultOpen={false}>
+                <Card>
+                  <CardHeader>
+                    <CollapsibleTrigger className="hover:opacity-70">
+                      <CardTitle>Metadata</CardTitle>
+                    </CollapsibleTrigger>
+                  </CardHeader>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-1">
+                        <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                          Created
+                        </dt>
+                        <dd className="text-slate-900 dark:text-white">
+                          {new Date(program.createdAt).toLocaleDateString()}
+                        </dd>
+                      </div>
+
+                      <div className="space-y-1">
+                        <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                          Last Modified
+                        </dt>
+                        <dd className="text-slate-900 dark:text-white">
+                          {new Date(program.updatedAt).toLocaleDateString()}
+                        </dd>
+                      </div>
+
+                      <div className="space-y-1">
+                        <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                          Program ID
+                        </dt>
+                        <dd className="text-sm font-mono text-slate-600 dark:text-slate-400">
+                          {program.id}
+                        </dd>
+                      </div>
+
+                      {program.userRole && (
+                        <div className="space-y-1">
+                          <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                            Your Role
+                          </dt>
+                          <dd>
+                            <Badge variant="outline">{program.userRole}</Badge>
+                          </dd>
+                        </div>
+                      )}
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </PageContainer>
   )
 }

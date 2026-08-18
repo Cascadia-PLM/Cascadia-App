@@ -145,7 +145,9 @@ export const searchItemsHandler = withPermissionAndAudit(
     const resolvedDesignId = await resolveDesignId(input.designId)
 
     // Access control: restrict to user's accessible designs
-    const isAdmin = await AccessControlService.isGlobalAdmin(context.userId)
+    const isAdmin = await AccessControlService.hasCrossProgramAccess(
+      context.userId,
+    )
     let accessibleDesignIds: Array<string> | undefined
     if (!isAdmin) {
       const accessibleDesigns = await AccessControlService.getAccessibleDesigns(

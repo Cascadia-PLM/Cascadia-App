@@ -14,7 +14,7 @@ The installer will guide you through selecting a deployment type and configuring
 ## Features
 
 - **Interactive prompts** - Guided wizard with input validation
-- **Secure secret generation** - Auto-generates SESSION_SECRET and passwords
+- **Secure secret generation** - Auto-generates strong passwords
 - **Database validation** - Optional connection testing before generating files
 - **Multiple output formats** - Docker Compose and Kubernetes manifests
 - **Auto-deploy option** - Can run `docker compose up` after generation
@@ -107,7 +107,7 @@ Full Kubernetes manifests with autoscaling.
 
 - `namespace.yaml` - Kubernetes namespace
 - `configmap.yaml` - Non-sensitive configuration
-- `secrets.yaml` - Sensitive data (DATABASE_URL, SESSION_SECRET)
+- `secrets.yaml` - Sensitive data (DATABASE_URL, S3 keys)
 - `app/deployment.yaml` - Application deployment with health probes
 - `app/service.yaml` - ClusterIP service
 - `app/hpa.yaml` - Horizontal Pod Autoscaler
@@ -203,14 +203,12 @@ kubectl apply -f ingress.yaml
 
 The installer automatically generates secure secrets when not provided:
 
-- **SESSION_SECRET** - 64-character hex string (256 bits)
 - **Passwords** - 16-character alphanumeric strings
 
 Generated credentials are displayed once at the end of the installation:
 
 ```
 Auto-generated credentials:
-  SESSION_SECRET: a3f8...d7e9
   POSTGRES_PASSWORD: xK9m...pQ2r
 ```
 

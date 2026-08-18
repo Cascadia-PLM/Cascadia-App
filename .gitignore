@@ -37,3 +37,6 @@ coverage/
 .claude/dev-session.json
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# VS Code Counter extension output
+.VSCodeCounter/

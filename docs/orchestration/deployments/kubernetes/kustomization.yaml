@@ -13,12 +13,6 @@ resources:
   - app/hpa.yaml
   - ingress.yaml
 
-  # Optional: Vault service (standalone file storage)
-  # Uncomment to deploy the vault as a separate service with persistent storage.
-  # Requires cascadia-vault-pvc PersistentVolumeClaim (defined in vault/deployment.yaml).
-  # - vault/deployment.yaml
-  # - vault/service.yaml
-
   # Optional: Jobs worker (background job processing)
   # Uncomment to deploy the jobs worker for RabbitMQ-based background processing.
   # Requires RABBITMQ_URL in cascadia-secrets. HPA scales workers based on CPU load.
@@ -34,7 +28,5 @@ commonLabels:
 images:
   - name: ghcr.io/cascadia-plm/cascadia-app
     newTag: latest
-  # - name: cascadia/vault
-  #   newTag: latest
   # - name: ghcr.io/cascadia-plm/cascadia-jobs-worker
   #   newTag: latest

@@ -25,16 +25,18 @@ The main application providing:
 
 **Can run standalone** with direct database connection and local file storage.
 
-### Vault Service (`cascadia-vault`)
+### File Vault (embedded in Core App)
 
-File storage and management:
+File storage and management runs inside the Core App process:
 
 - File upload/download
 - Check-in/check-out workflow
 - Version management
 - Storage abstraction (local filesystem or S3-compatible)
 
-**Separation benefit**: Scale file I/O independently, use dedicated storage servers, or integrate with enterprise content management.
+**Scaling**: file I/O scales with the Core App — point every instance at shared
+S3-compatible storage for multi-server deployments. A standalone vault service
+is not currently shipped.
 
 ### Jobs Server (`cascadia-jobs`)
 
@@ -135,16 +137,15 @@ Best for:
 │  │                      Ingress Controller                   │  │
 │  └─────────────────────────────┬─────────────────────────────┘  │
 │                                │                                │
-│    ┌───────────────────────────┼───────────────────────────┐    │
-│    │                           │                           │    │
-│    ▼                           ▼                           ▼    │
-│  ┌─────────┐              ┌─────────┐              ┌─────────┐  │
-│  │ Core    │              │ Vault   │              │ Jobs    │  │
-│  │ Deploy  │              │ Deploy  │              │ Deploy  │  │
-│  │ (3 pods)│              │ (2 pods)│              │ (N pods)│  │
-│  └────┬────┘              └────┬────┘              └────┬────┘  │
-│       │                        │                        │       │
-│       └────────────────────────┼────────────────────────┘       │
+│       ┌────────────────────────┴────────────────────────┐       │
+│       ▼                                                 ▼       │
+│  ┌─────────┐                                       ┌─────────┐  │
+│  │ Core    │                                       │ Jobs    │  │
+│  │ Deploy  │                                       │ Deploy  │  │
+│  │ (3 pods)│                                       │ (N pods)│  │
+│  └────┬────┘                                       └────┬────┘  │
+│       │                                                 │       │
+│       └────────────────────────┬────────────────────────┘       │
 │                                │                                │
 │  ┌─────────────────────────────▼─────────────────────────────┐  │
 │  │                    Internal Services                       │  │
@@ -198,13 +199,13 @@ Best for:
 
 ### Horizontal Scaling
 
-| Component     | Scale Strategy                                      |
-| ------------- | --------------------------------------------------- |
-| Core App      | Stateless - add more instances behind load balancer |
-| Vault Service | Stateless with shared storage - scale freely        |
-| Jobs Workers  | Scale based on queue depth                          |
-| PostgreSQL    | Vertical first, then read replicas                  |
-| RabbitMQ      | Cluster mode for HA                                 |
+| Component    | Scale Strategy                                      |
+| ------------ | --------------------------------------------------- |
+| Core App     | Stateless - add more instances behind load balancer |
+| File vault   | Embedded in Core App - use S3 for shared storage    |
+| Jobs Workers | Scale based on queue depth                          |
+| PostgreSQL   | Vertical first, then read replicas                  |
+| RabbitMQ     | Cluster mode for HA                                 |
 
 ### Bottleneck Mitigation
 

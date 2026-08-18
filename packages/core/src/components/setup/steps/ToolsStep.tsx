@@ -204,8 +204,7 @@ export function ToolsStep({ onCompleted }: ToolsStepProps) {
         {tools.length === 0 && (
           <span className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
             <X className="w-4 h-4" />
-            Skipping is fine — the design engine just won't have shop
-            constraints to work with.
+            Skipping is fine — you can add tools later.
           </span>
         )}
       </div>

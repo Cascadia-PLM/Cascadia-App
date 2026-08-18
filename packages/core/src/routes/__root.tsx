@@ -59,7 +59,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       })
     }
 
-    // First-time setup wizard redirect: a Global Admin landing on any
+    // First-time setup wizard redirect: an administrator landing on any
     // authenticated page is bounced to /setup until either the admin
     // finishes/skips the wizard or the SETUP_COMPLETED flag is otherwise
     // set. /setup itself, /login, and /api/* are exempt; E2E tests opt
@@ -75,7 +75,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       !isExempt &&
       !isE2E &&
       setupStatus &&
-      setupStatus.isGlobalAdmin &&
+      setupStatus.isAdmin &&
       !setupStatus.completed
     ) {
       throw redirect({ to: '/setup' })

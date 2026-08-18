@@ -1,0 +1,62 @@
+name: Bug Report
+description: Report something broken or behaving unexpectedly in Cascadia PLM.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. A reproducible bug is a fixable bug — the fields below ask for exactly what we need.
+
+        **Security vulnerabilities do not belong here.** Please do not open a public issue; email **security@cascadiaplm.com** instead (see `SECURITY.md`).
+  - type: checkboxes
+    id: existing-issues
+    attributes:
+      label: Existing issues
+      options:
+        - label: I searched existing issues and found no duplicate.
+          required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps that trigger the bug, starting from a known state (fresh seed, the demo dataset, an existing design).
+      placeholder: |
+        1. Create an ECO on the demo design
+        2. Check out a part to the ECO branch
+        3. Edit the part and release the ECO
+        4. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: What actually happened. Include exact error messages where you have them.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Fill in what applies — server-side bugs need the Node.js and PostgreSQL versions, UI bugs the browser.
+      value: |
+        - OS:
+        - Node.js:
+        - PostgreSQL:
+        - Browser:
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Relevant server output, browser console errors, or screenshots. Wrap logs in triple backticks so they stay readable.
+    validations:
+      required: false

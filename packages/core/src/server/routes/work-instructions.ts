@@ -504,6 +504,7 @@ app.get(
             id: workInstructionPartAttachments.id,
             workInstructionId: workInstructionPartAttachments.workInstructionId,
             partId: workInstructionPartAttachments.partId,
+            isOutput: workInstructionPartAttachments.isOutput,
             inheritToMBOM: workInstructionPartAttachments.inheritToMBOM,
             inheritedFromId: workInstructionPartAttachments.inheritedFromId,
             createdAt: workInstructionPartAttachments.createdAt,
@@ -643,11 +644,63 @@ app.patch(
           updateData.inheritToMBOM = data.inheritToMBOM
         }
 
-        const [updated] = await db
-          .update(workInstructionPartAttachments)
-          .set(updateData)
-          .where(eq(workInstructionPartAttachments.id, existing.id))
-          .returning()
+        // Promoting an attachment to output part moves the work instruction
+        // into that part's design — the designId is derived from the output
+        // part, so the two move together or they disagree. Demoting without
+        // naming a replacement is refused: it would leave the WI with a design
+        // and no output part to justify it.
+        const promoting = data.isOutput === true && !existing.isOutput
+        if (data.isOutput === false && existing.isOutput) {
+          throw new ValidationError(
+            'Cannot unset the output part. Set another attachment as the output part instead.',
+          )
+        }
+
+        if (!promoting) {
+          if (Object.keys(updateData).length === 0) {
+            return { attachment: existing }
+          }
+          const [updated] = await db
+            .update(workInstructionPartAttachments)
+            .set(updateData)
+            .where(eq(workInstructionPartAttachments.id, existing.id))
+            .returning()
+          return { attachment: updated }
+        }
+
+        const newOutputPart = await ItemService.findById(data.partId)
+        if (!newOutputPart?.designId) {
+          throw new ValidationError(
+            'The new output part is not in a design and cannot anchor a work instruction',
+          )
+        }
+
+        const updated = await db.transaction(async (tx) => {
+          // Clear the incumbent first — the partial unique index allows only
+          // one output attachment per work instruction at a time.
+          await tx
+            .update(workInstructionPartAttachments)
+            .set({ isOutput: false })
+            .where(
+              and(
+                eq(workInstructionPartAttachments.workInstructionId, params.id),
+                eq(workInstructionPartAttachments.isOutput, true),
+              ),
+            )
+
+          const [row] = await tx
+            .update(workInstructionPartAttachments)
+            .set({ ...updateData, isOutput: true })
+            .where(eq(workInstructionPartAttachments.id, existing.id))
+            .returning()
+
+          await tx
+            .update(items)
+            .set({ designId: newOutputPart.designId, modifiedBy: user.id })
+            .where(eq(items.id, params.id))
+
+          return row
+        })
 
         return { attachment: updated }
       },
@@ -681,18 +734,39 @@ app.delete(
 
         await requireEditableWorkInstruction(params.id, user.id)
 
-        // Delete the attachment
+        // Delete the attachment. The output part is exempt: it is what the
+        // work instruction's designId was derived from, so detaching it would
+        // strand the WI in a design it no longer has any claim to. Point the
+        // output at a different part instead (PATCH isOutput), which moves the
+        // design with it.
         const result = await db
           .delete(workInstructionPartAttachments)
           .where(
             and(
               eq(workInstructionPartAttachments.workInstructionId, params.id),
               eq(workInstructionPartAttachments.partId, partId),
+              eq(workInstructionPartAttachments.isOutput, false),
             ),
           )
           .returning()
 
         if (result.length === 0) {
+          const [stillThere] = await db
+            .select({ isOutput: workInstructionPartAttachments.isOutput })
+            .from(workInstructionPartAttachments)
+            .where(
+              and(
+                eq(workInstructionPartAttachments.workInstructionId, params.id),
+                eq(workInstructionPartAttachments.partId, partId),
+              ),
+            )
+            .limit(1)
+
+          if (stillThere?.isOutput) {
+            throw new ValidationError(
+              'Cannot detach the output part. Set a different attachment as the output part first.',
+            )
+          }
           throw new NotFoundError('Part attachment', partId)
         }
 

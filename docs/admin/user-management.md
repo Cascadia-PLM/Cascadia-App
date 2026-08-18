@@ -181,9 +181,18 @@ The `users` table supports OAuth providers through the `provider` and `provider_
 - `google` -- Google OAuth
 - `github` -- GitHub OAuth
 
-The `provider` field is stored on the user record and the `userCreateSchema` validates against these values. OAuth callback routes are expected to be implemented using the Arctic library.
+The `provider` field is stored on the user record and the `userCreateSchema` validates against these values.
 
-**Note**: The OAuth callback routes are not yet present in the codebase. Only `local` authentication is fully implemented. See the issues log.
+**Only `local` and `github` can actually be logged in with.** GitHub login is wired end to end using the Arctic library:
+
+| Route                              | Purpose                                                                                                                           |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/auth/github`          | Generates a state token, stores it in an HttpOnly cookie, and redirects to GitHub                                                 |
+| `GET /api/v1/auth/callback/github` | Validates state against the cookie, exchanges the code, reads the profile and primary verified email, and issues a session cookie |
+
+`AuthService.loginWithOAuth()` resolves the account in three steps: match on `provider` + `provider_id`, else link to an existing user with the same email, else create a user with the default "User" role. A GitHub account with no verified email is rejected. The login page renders a "Sign in with GitHub" button, which fails until `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are both set -- see [OAuth providers](../getting-started/configuration.md#oauth-providers-optional).
+
+`azure` and `google` are accepted as column values and appear in the admin user form's provider dropdown, but there is no provider client and no callback route for either, so no one can sign in through them. Both are roadmap items in [cascadia-feature-list.md](../../cascadia-feature-list.md).
 
 ## Session Management
 

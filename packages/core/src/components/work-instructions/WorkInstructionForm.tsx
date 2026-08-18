@@ -2,8 +2,12 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useForm } from '@tanstack/react-form'
+import { OutputPartField } from './OutputPartField'
 import type { WorkInstruction } from '@/lib/items/types/work-instruction'
-import { workInstructionSchema } from '@/lib/items/types/work-instruction'
+import {
+  workInstructionEditSchema,
+  workInstructionSchema,
+} from '@/lib/items/types/work-instruction'
 import {
   Button,
   FormField,
@@ -22,6 +26,13 @@ interface WorkInstructionFormProps {
   onSubmit: (data: WorkInstruction) => void | Promise<void>
   onCancel?: () => void
   isSubmitting?: boolean
+  /**
+   * Whether to ask for the output part. Creation only: the output part anchors
+   * the work instruction's design, and moving an existing one between designs
+   * is a re-point of its attachments, not a form edit — see the Attached Parts
+   * panel on the detail page.
+   */
+  showOutputPart?: boolean
 }
 
 export function WorkInstructionForm({
@@ -29,6 +40,7 @@ export function WorkInstructionForm({
   onSubmit,
   onCancel,
   isSubmitting,
+  showOutputPart = false,
 }: WorkInstructionFormProps) {
   const form = useForm({
     defaultValues: {
@@ -42,6 +54,7 @@ export function WorkInstructionForm({
       difficulty: undefined as 'Easy' | 'Medium' | 'Hard' | undefined,
       safetyNotes: '',
       requiredTools: '',
+      outputPartId: undefined as string | undefined,
       ...workInstruction,
     },
     onSubmit: async ({ value }) => {
@@ -51,8 +64,16 @@ export function WorkInstructionForm({
         revision: value.revision.trim() || 'A',
       } as WorkInstruction
 
+      // Creating requires the output part; editing does not restate it, since
+      // it lives on an attachment rather than on the item.
+      if (showOutputPart && !submissionData.outputPartId) {
+        throw new Error('Select the part this work instruction builds')
+      }
+
       // Validate after transforming empty strings to undefined
-      const result = workInstructionSchema.safeParse(submissionData)
+      const result = (
+        showOutputPart ? workInstructionSchema : workInstructionEditSchema
+      ).safeParse(submissionData)
       if (!result.success) {
         throw result.error
       }
@@ -126,6 +147,20 @@ export function WorkInstructionForm({
             </FormField>
           )}
         </form.Field>
+
+        {/* Output Part — anchors the work instruction to a design */}
+        {showOutputPart && (
+          <form.Field name="outputPartId">
+            {(field) => (
+              <OutputPartField
+                value={field.state.value}
+                onChange={(partId) => field.handleChange(partId)}
+                error={field.state.meta.errors[0]}
+                disabled={isSubmitting}
+              />
+            )}
+          </form.Field>
+        )}
 
         {/* Description */}
         <form.Field name="description">

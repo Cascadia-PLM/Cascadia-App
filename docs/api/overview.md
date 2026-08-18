@@ -205,7 +205,7 @@ await requireDesignAccess(user.id, designId)
 const { branch, designId } = await requireBranchAccess(user.id, branchId)
 ```
 
-These helpers check organizational access (program membership) and handle Global Admin bypass automatically.
+These helpers check organizational access (program membership) and handle the cross-program-authority bypass (`programs:manage`, held by Administrators) automatically.
 
 ## Error Handling
 

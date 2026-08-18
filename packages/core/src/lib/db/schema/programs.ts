@@ -93,7 +93,7 @@ export const programMembers = pgTable(
     // Permissions flags (for fine-grained control)
     canCreateEco: boolean('can_create_eco').default(true),
     canApproveEco: boolean('can_approve_eco').default(false),
-    canManageProducts: boolean('can_manage_products').default(false),
+    canManageDesigns: boolean('can_manage_designs').default(false),
 
     joinedAt: timestamp('joined_at', { withTimezone: true })
       .defaultNow()

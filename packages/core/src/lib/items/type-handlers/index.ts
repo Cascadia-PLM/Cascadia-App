@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { TypeHandler } from './types'
+import type { TypeHandler, TypeHandlerContext } from './types'
 
-export type { TypeHandler }
+export type { TypeHandler, TypeHandlerContext }
 
 const handlers = new Map<string, TypeHandler>()
 

@@ -9,7 +9,7 @@ This document describes how Cascadia services communicate when deployed in a dis
 Used for: Real-time operations that need immediate response.
 
 ```
-Core App ──HTTP──► Vault Service    (file upload/download)
+Core App ──HTTP──► S3 / MinIO       (vault file storage, if configured)
 Core App ──HTTP──► External APIs    (OAuth, integrations)
 ```
 
@@ -40,7 +40,6 @@ services:
   app:
     environment:
       DATABASE_URL: postgresql://postgres:pass@postgres:5432/cascadia
-      VAULT_SERVICE_URL: http://vault:3001
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
 ```
 
@@ -52,8 +51,6 @@ Services discovered via DNS:
 env:
   - name: DATABASE_URL
     value: postgresql://user:pass@postgres-service.cascadia.svc.cluster.local:5432/cascadia
-  - name: VAULT_SERVICE_URL
-    value: http://vault-service.cascadia.svc.cluster.local:3001
   - name: RABBITMQ_URL
     value: amqp://user:pass@rabbitmq-service.cascadia.svc.cluster.local:5672
 ```
@@ -62,125 +59,15 @@ env:
 
 All service URLs are configurable via environment:
 
-| Variable            | Purpose                | Default              |
-| ------------------- | ---------------------- | -------------------- |
-| `DATABASE_URL`      | PostgreSQL connection  | Required             |
-| `VAULT_SERVICE_URL` | External vault service | None (embedded)      |
-| `RABBITMQ_URL`      | Message broker         | None (jobs disabled) |
-| `REDIS_URL`         | Cache layer            | None (no cache)      |
+| Variable       | Purpose               | Default              |
+| -------------- | --------------------- | -------------------- |
+| `DATABASE_URL` | PostgreSQL connection | Required             |
+| `RABBITMQ_URL` | Message broker        | None (jobs disabled) |
+| `REDIS_URL`    | Cache layer           | None (no cache)      |
 
-## Core App ↔ Vault Service
-
-When vault runs as a separate service, Core App delegates file operations.
-
-### Authentication
-
-Services authenticate using a shared secret token:
-
-```bash
-# Vault Service
-SERVICE_TOKEN=your-secret-token-here
-
-# Core App
-VAULT_SERVICE_URL=http://vault:3001
-VAULT_SERVICE_TOKEN=your-secret-token-here
-```
-
-### API Contract
-
-#### Upload File
-
-```http
-POST /files
-Authorization: Bearer ${SERVICE_TOKEN}
-Content-Type: multipart/form-data
-
-file: (binary)
-itemId: uuid
-filename: string
-mimeType: string
-createdBy: uuid
-```
-
-Response:
-
-```json
-{
-  "id": "file-uuid",
-  "filename": "drawing.pdf",
-  "version": 1,
-  "size": 1048576,
-  "checksum": "sha256:abc123..."
-}
-```
-
-#### Download File
-
-```http
-GET /files/:fileId
-Authorization: Bearer ${SERVICE_TOKEN}
-```
-
-Response: Binary file stream with headers:
-
-```
-Content-Type: application/pdf
-Content-Disposition: attachment; filename="drawing.pdf"
-Content-Length: 1048576
-```
-
-#### Check Out
-
-```http
-POST /files/:fileId/checkout
-Authorization: Bearer ${SERVICE_TOKEN}
-Content-Type: application/json
-
-{
-  "userId": "user-uuid"
-}
-```
-
-#### Check In (New Version)
-
-```http
-POST /files/:fileId/checkin
-Authorization: Bearer ${SERVICE_TOKEN}
-Content-Type: multipart/form-data
-
-file: (binary)
-userId: uuid
-comment: string
-```
-
-### Error Handling
-
-Vault service errors are propagated to Core App:
-
-```json
-{
-  "error": "FILE_NOT_FOUND",
-  "message": "File with ID xyz not found",
-  "statusCode": 404
-}
-```
-
-Core App should:
-
-1. Log the error with correlation ID
-2. Return appropriate user-facing message
-3. Not expose internal service details
-
-### Retry Policy
-
-```typescript
-const vaultClient = {
-  maxRetries: 3,
-  retryDelay: [100, 500, 2000], // Exponential backoff
-  timeout: 30000, // 30 seconds for uploads
-  retryOn: [502, 503, 504], // Gateway errors only
-}
-```
+File storage is embedded in the Core App — it talks directly to local disk or
+S3-compatible storage (`VAULT_TYPE`, `S3_*` variables), not to a separate
+vault service.
 
 ## Core App ↔ Jobs Server
 
@@ -311,12 +198,12 @@ Services share state through PostgreSQL. This is the source of truth.
 
 ### Shared Tables
 
-| Table         | Writers       | Readers        |
-| ------------- | ------------- | -------------- |
-| `items`       | Core App      | All            |
-| `vault_files` | Vault Service | All            |
-| `jobs`        | Jobs Server   | Core App       |
-| `sessions`    | Core App      | All (for auth) |
+| Table         | Writers     | Readers        |
+| ------------- | ----------- | -------------- |
+| `items`       | Core App    | All            |
+| `vault_files` | Core App    | All            |
+| `jobs`        | Jobs Server | Core App       |
+| `sessions`    | Core App    | All (for auth) |
 
 ### Consistency Model
 
@@ -325,9 +212,9 @@ Services share state through PostgreSQL. This is the source of truth.
 
 Example: File upload
 
-1. Vault Service stores file, creates `vault_files` record
-2. Core App links file to item via `item_id` in vault record
-3. Both see consistent state after transaction commits
+1. Core App stores the file through the embedded vault, creates a `vault_files` record
+2. Core App links the file to an item via `item_id` in the vault record
+3. Jobs workers see consistent state after the transaction commits
 
 ### Avoiding Conflicts
 
@@ -355,9 +242,6 @@ services:
     networks:
       - internal
       - external # Serves web traffic
-  vault:
-    networks:
-      - internal # Internal only
   postgres:
     networks:
       - internal # Internal only
@@ -368,10 +252,8 @@ services:
 In production, enable TLS between services:
 
 ```bash
-# Vault Service with TLS
-VAULT_SERVICE_URL=https://vault:3001
-VAULT_TLS_CERT=/certs/vault.crt
-VAULT_TLS_KEY=/certs/vault.key
+# PostgreSQL with TLS
+DATABASE_URL=postgresql://user:pass@db-host:5432/cascadia?sslmode=require
 ```
 
 ### Service Mesh (Kubernetes)
@@ -424,12 +306,11 @@ Core App should check downstream services:
 async function healthCheck() {
   const checks = {
     database: await checkDatabase(),
-    vault: vaultMode === 'service' ? await checkVaultService() : 'embedded',
     rabbitmq: jobsMode !== 'disabled' ? await checkRabbitMQ() : 'disabled',
   }
 
   const healthy = Object.values(checks).every(
-    (c) => c === 'ok' || c === 'embedded' || c === 'disabled',
+    (c) => c === 'ok' || c === 'disabled',
   )
 
   return { status: healthy ? 'healthy' : 'degraded', checks }
@@ -446,13 +327,8 @@ Track requests across services:
 // Core App generates correlation ID
 const correlationId = request.headers['x-correlation-id'] || generateId()
 
-// Pass to downstream services
-fetch(VAULT_SERVICE_URL + '/files', {
-  headers: {
-    'X-Correlation-ID': correlationId,
-    Authorization: `Bearer ${SERVICE_TOKEN}`,
-  },
-})
+// Pass to downstream work — e.g. include it in job payloads
+await rabbitmq.publish('jobs.topic', type, { jobId, correlationId })
 ```
 
 ### Structured Logging

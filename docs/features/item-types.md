@@ -782,14 +782,14 @@ A Program is a permission boundary and organizational container. Programs typica
 
 Users are granted access to programs through membership records.
 
-| Column                | Type        | Description                              |
-| --------------------- | ----------- | ---------------------------------------- |
-| `program_id`          | UUID (FK)   | Program                                  |
-| `user_id`             | UUID (FK)   | User                                     |
-| `role`                | varchar(50) | `admin`, `lead`, `engineer`, or `viewer` |
-| `can_create_eco`      | boolean     | Permission flag                          |
-| `can_approve_eco`     | boolean     | Permission flag                          |
-| `can_manage_products` | boolean     | Permission flag                          |
+| Column               | Type        | Description                              |
+| -------------------- | ----------- | ---------------------------------------- |
+| `program_id`         | UUID (FK)   | Program                                  |
+| `user_id`            | UUID (FK)   | User                                     |
+| `role`               | varchar(50) | `admin`, `lead`, `engineer`, or `viewer` |
+| `can_create_eco`     | boolean     | Permission flag                          |
+| `can_approve_eco`    | boolean     | Permission flag                          |
+| `can_manage_designs` | boolean     | Permission flag                          |
 
 #### Program API Endpoints
 

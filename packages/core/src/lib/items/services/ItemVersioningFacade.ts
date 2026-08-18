@@ -18,6 +18,7 @@ import { CheckoutService } from '../../services/CheckoutService'
 import { BranchService } from '../../services/BranchService'
 import { NumberingService } from '../numbering'
 import { ItemTypeRegistry } from '../registry'
+import { isBranchProtectionExempt } from '../branch-protection'
 import type { commits } from '../../db/schema'
 import type {
   ItemFilters,
@@ -279,6 +280,8 @@ export class ItemVersioningFacade {
       type,
       result.item.id,
       validatedData,
+      undefined,
+      { userId },
     )
 
     // Fetch complete item with type-specific data
@@ -484,13 +487,17 @@ export class ItemVersioningFacade {
       })
     }
 
-    // Main context — respects branch protection, then mutual exclusion
-    const canEdit = await this.canEditDirectly(item.designId)
-    if (!canEdit.allowed) {
-      throw new BranchProtectionError(
-        `Cannot modify item directly: ${canEdit.reason}`,
-        { operation: 'requireContentEditable', itemId: item.id },
-      )
+    // Main context — respects branch protection, then mutual exclusion.
+    // Exempt types (work instructions) skip the protection gate but still
+    // honour another user's checkout below.
+    if (!isBranchProtectionExempt(item.itemType)) {
+      const canEdit = await this.canEditDirectly(item.designId)
+      if (!canEdit.allowed) {
+        throw new BranchProtectionError(
+          `Cannot modify item directly: ${canEdit.reason}`,
+          { operation: 'requireContentEditable', itemId: item.id },
+        )
+      }
     }
 
     const mainBranch = await BranchService.getMainBranch(item.designId)

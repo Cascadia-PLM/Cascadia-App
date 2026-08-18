@@ -72,24 +72,6 @@ export function BaselinesTab({
     }
   }
 
-  // Handle compare
-  const handleCompare = () => {
-    if (compareFrom && compareTo) {
-      // TODO: Navigate to comparison view or open modal when API is implemented
-      alert(
-        `Comparing ${compareFrom} to ${compareTo}\n\nThis feature requires the comparison API to be implemented.`,
-      )
-    }
-  }
-
-  // Handle export
-  const handleExport = (tag: TagItem) => {
-    // TODO: Trigger BOM export at this baseline when API is implemented
-    alert(
-      `Exporting BOM at baseline ${tag.name}\n\nThis feature requires the export API to be implemented.`,
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* Toolbar */}
@@ -168,11 +150,12 @@ export function BaselinesTab({
                     >
                       <GitCompare className="h-3 w-3" />
                     </Button>
+                    {/* TODO: Trigger BOM export at this baseline when the export API is implemented */}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleExport(tag)}
-                      title="Export BOM"
+                      disabled
+                      title="Export BOM — coming soon"
                     >
                       <Download className="h-3 w-3" />
                     </Button>
@@ -231,21 +214,15 @@ export function BaselinesTab({
                 </SelectContent>
               </Select>
 
-              <Button
-                onClick={handleCompare}
-                disabled={
-                  !compareFrom || !compareTo || compareFrom === compareTo
-                }
-              >
+              {/* TODO: Navigate to comparison view or open modal when the comparison API is implemented */}
+              <Button disabled title="Baseline comparison — coming soon">
                 Compare
               </Button>
-            </div>
 
-            {compareFrom && compareTo && compareFrom === compareTo && (
-              <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
-                Please select two different baselines to compare.
-              </p>
-            )}
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                Coming soon
+              </span>
+            </div>
           </CardContent>
         </Card>
       )}

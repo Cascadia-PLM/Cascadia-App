@@ -1,24 +1,24 @@
 # Docker Overview
 
-Cascadia PLM ships as a set of Docker images built from a single monorepo. Each service has its own multi-stage Dockerfile under `docker/`, plus the CAD converter service which has its own Dockerfile at `workers/cad-converter/Dockerfile`.
+Cascadia PLM ships as a set of Docker images built from a single monorepo. The app image's Dockerfile lives under `docker/`; the worker images have theirs under `workers/`.
 
 ## Docker Images
 
 | Image                                         | Dockerfile                         | Base Image                                       | Purpose                         | Port |
 | --------------------------------------------- | ---------------------------------- | ------------------------------------------------ | ------------------------------- | ---- |
 | `ghcr.io/cascadia-plm/cascadia-app`           | `docker/app.Dockerfile`            | `node:20-alpine`                                 | Core web application (UI + API) | 3000 |
-| `cascadia/vault`                              | `docker/vault.Dockerfile`          | `node:20-alpine`                                 | Standalone file storage service | 3001 |
 | `ghcr.io/cascadia-plm/cascadia-jobs-worker`   | `workers/node/Dockerfile`          | `node:20-alpine`                                 | Background job workers          | 3002 |
 | `ghcr.io/cascadia-plm/cascadia-cad-converter` | `workers/cad-converter/Dockerfile` | `condaforge/miniforge3` + `debian:bookworm-slim` | STEP/IGES to STL/GLB conversion | 3003 |
+
+File storage (the vault) is part of the core app process — there is no
+standalone vault image. Point the app at local disk or S3 with
+`VAULT_TYPE`/`VAULT_ROOT` instead.
 
 ### Building Images
 
 ```bash
 # Core app
 docker build -t ghcr.io/cascadia-plm/cascadia-app -f docker/app.Dockerfile .
-
-# Vault service
-docker build -t cascadia/vault -f docker/vault.Dockerfile .
 
 # Jobs server
 docker build -t ghcr.io/cascadia-plm/cascadia-jobs-worker -f workers/node/Dockerfile .
@@ -35,28 +35,17 @@ All Node.js images use a three-stage build pattern to minimize image size and se
 
 **Stage 1 -- deps**: Installs all npm dependencies (including devDependencies needed for the build).
 
-**Stage 2 -- builder**: Copies dependencies and source, runs `npm run build`. Uses `NODE_OPTIONS="--max-old-space-size=4096"` because the Vite + Hono builds can be memory-intensive.
+**Stage 2 -- builder**: Copies dependencies and source, runs `npm run build:app -- "$APP"` — the `APP` build arg names the app to build (`cascadia`, the only app in this tree). Uses `NODE_OPTIONS="--max-old-space-size=4096"` because the Vite + Hono builds can be memory-intensive.
 
 **Stage 3 -- production**: Installs `dumb-init` for proper signal handling, copies the built `.output/` directory, Drizzle config, database schema, seed scripts, and auth modules. Creates a non-root `nodejs` user (UID 1001). Runs as that user.
 
 Key details:
 
-- The production stage reinstalls all npm dependencies (including dev) because seed scripts require `tsx`.
-- Drizzle schema files (`packages/core/src/lib/db/`) are copied to support runtime migrations via `npm run db:push`.
+- The production stage installs production dependencies only (`npm ci --omit=dev`) — the server is pre-bundled, so dev dependencies aren't needed at runtime. `tsx` and `drizzle-kit` are then added back as admin tools for running `scripts/*.ts` (seed, schema push, reset) via `docker exec`.
+- The workspace sources (`packages/`, `apps/`, `scripts/`) are copied so those tsx-run admin scripts — including the schema push via `npm run db:push` — work inside the container.
 - Storage directories `/app/storage/files` and `/app/vault` are created with correct ownership.
 - Health check hits `GET /api/v1/health` on port 3000.
-- Entrypoint uses `dumb-init` for signal forwarding; default command is `npm run serve`.
-
-### Vault Service (`docker/vault.Dockerfile`)
-
-Same three-stage pattern. Differences from the app image:
-
-- Production stage installs only production dependencies (`npm ci --only=production`).
-- Copies only vault-specific code (`packages/core/src/lib/vault`, `packages/core/src/lib/db`).
-- Exposes port 3001.
-- Default environment: `STORAGE_TYPE=local`, `STORAGE_PATH=/app/vault`.
-- Health check hits `GET /health` on port 3001.
-- Default command runs `node .output/server/index.mjs`.
+- Entrypoint uses `dumb-init` for signal forwarding; the default command is `node .output/${APP}/server/index.mjs`, where the `APP` env var (baked from the build arg) names the edition's output directory.
 
 ### Jobs Server (`workers/node/Dockerfile`)
 
@@ -154,11 +143,11 @@ Production deployments use the compose files under `docs/orchestration/deploymen
 ```bash
 cd docs/orchestration/deployments/single-server/
 cp .env.example .env
-# Edit .env: set SESSION_SECRET and POSTGRES_PASSWORD
+# Edit .env: set POSTGRES_PASSWORD
 docker compose up -d
 ```
 
-Runs PostgreSQL + the app container on one machine. The app runs migrations on startup:
+Runs PostgreSQL + the app container on one machine. The app pushes the schema on startup — pre-1.0 there are no committed migration files, so every environment applies the schema with a push:
 
 ```yaml
 command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
@@ -218,7 +207,6 @@ All services include Docker health checks:
 | ------------- | ---------------------------------------------- | -------- | ------------ |
 | PostgreSQL    | `pg_isready`                                   | 10s      | 30s          |
 | Core App      | `GET /api/v1/health`                           | 30s      | 40s          |
-| Vault Service | `GET /health`                                  | 30s      | 20s          |
 | Jobs Server   | `GET /health`                                  | 30s      | 20s          |
 | RabbitMQ      | `rabbitmq-diagnostics check_port_connectivity` | 30s      | 30s          |
 | CAD Converter | Python `urllib` to `/health`                   | 30s      | 60s          |
@@ -253,7 +241,7 @@ docker compose logs -f jobs-worker-dev
 # Restart a service
 docker compose restart app
 
-# Run database migrations
+# Push the database schema (pre-1.0: no migration files)
 docker compose exec app npm run db:push
 
 # Run seed scripts

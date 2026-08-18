@@ -42,7 +42,13 @@ export default defineConfig({
   dialect: 'postgresql',
   // This edition's composed schema — core plus every module's tables.
   schema: './src/modules.schema.ts',
-  out: '../../drizzle',
+  // Resolved against the working directory — `scripts/drizzle.mjs` runs
+  // drizzle-kit from this app's directory — so migration SQL lands in this
+  // app's own `drizzle/`. App-relative for the same reason the config lives
+  // in the app: the schema is composed here, so the migration history it
+  // generates belongs here too. Do not point this at a directory shared with
+  // another app.
+  out: './drizzle',
   dbCredentials: parsed.isCloudSql
     ? {
         host: parsed.host!,

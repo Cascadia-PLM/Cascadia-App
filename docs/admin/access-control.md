@@ -27,13 +27,13 @@ All three layers must pass for a request to succeed.
 
 Cascadia ships with five built-in roles. Each role is stored in the `roles` table with a `permissions` JSONB column containing the full permission matrix.
 
-| Role          | Description                                                                                                                        |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Administrator | Top-level administrator. Bypasses all program-based access checks, manages programs, users, roles, and system settings.            |
-| Power User    | Can create, read, update, and delete all item types. Can manage workflows. Read-only access to users, roles, programs, and system. |
-| Approver      | Can read and update items, plus approve items and change orders. Cannot create or delete items.                                    |
-| User          | Can create and update draft items. Read access to released items. Cannot delete items or approve change orders.                    |
-| View Only     | Read-only access to all resources. Cannot create, edit, or delete anything.                                                        |
+| Role          | Description                                                                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Administrator | Top-level administrator. Bypasses all program-based access checks, manages programs, users, roles, and system settings.                          |
+| Power User    | Can create, read, update, and delete all item types. Can manage workflows and lifecycles. Reaches the System section, but not the admin console. |
+| Approver      | Can read and update items, plus approve items and change orders. Cannot create or delete items.                                                  |
+| User          | Can create and update draft items. Read access to released items. Cannot delete items or approve change orders.                                  |
+| View Only     | Read-only access to all resources. Cannot create, edit, or delete anything.                                                                      |
 
 ### Permission Structure
 
@@ -52,23 +52,23 @@ Permissions are defined as resource-action pairs. Each role specifies which acti
 
 **Resource types**:
 
-| Resource            | What it controls                   |
-| ------------------- | ---------------------------------- |
-| `parts`             | Part items                         |
-| `documents`         | Document items                     |
-| `change_orders`     | Engineering Change Orders          |
-| `designs`           | Design containers                  |
-| `requirements`      | Requirement items                  |
-| `tasks`             | Task items                         |
-| `work_instructions` | Work instruction items             |
-| `work_orders`       | Work order items                   |
-| `issues`            | Issue items                        |
-| `workflows`         | Workflow definitions and instances |
-| `users`             | User accounts                      |
-| `roles`             | Role definitions                   |
-| `programs`          | Program management                 |
-| `reports`           | Report generation                  |
-| `system`            | System settings and administration |
+| Resource            | What it controls                                   |
+| ------------------- | -------------------------------------------------- |
+| `parts`             | Part items                                         |
+| `documents`         | Document items                                     |
+| `change_orders`     | Engineering Change Orders                          |
+| `designs`           | Design containers                                  |
+| `requirements`      | Requirement items                                  |
+| `tasks`             | Task items                                         |
+| `work_instructions` | Work instruction items                             |
+| `work_orders`       | Work order items                                   |
+| `issues`            | Issue items                                        |
+| `workflows`         | Workflow definitions and instances                 |
+| `users`             | User accounts                                      |
+| `roles`             | Role definitions                                   |
+| `programs`          | Program management                                 |
+| `reports`           | Report generation                                  |
+| `system`            | The System section of the navigation and its pages |
 
 ### Permission Matrix
 
@@ -90,9 +90,24 @@ The complete permission matrix for each role:
 | roles             | CRUDM         | R          | R        | R    | R         |
 | programs          | CRUDM         | R          | R        | R    | R         |
 | reports           | CRUD          | CRUD       | R        | R    | R         |
-| system            | RM            | R          | R        | R    | R         |
+| system            | RM            | R          | —        | —    | —         |
 
 Legend: C=create, R=read, U=update, D=delete, A=approve, M=manage
+
+`system` is the gate on the **System section** of the navigation — Lifecycles,
+Users and Administration. `read` admits a user to the section at all; `manage`
+additionally admits them to the admin console, which is every route under
+`/admin`. Only Administrator and Power User carry it, which is why the three
+roles below them see no System section and are redirected away from those URLs.
+It was granted as `['read']` to every role until 2026-08-19, which made it no
+gate at all: the sidebar offered those pages to a View Only account and they
+403'd on arrival.
+
+Note the pages behind it are _not_ gated by narrowing `users:read`,
+`roles:read` or `workflows:read`. Those stay readable by every role on purpose
+— approver and assignee pickers, program team management and item state
+resolution all read them from ordinary pages, so tightening them would have
+broken non-System features.
 
 `programs:manage` is special: it is the **cross-program-authority grant**.
 `AccessControlService.hasCrossProgramAccess()` keys the program-membership

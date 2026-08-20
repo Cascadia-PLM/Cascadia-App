@@ -38,6 +38,7 @@ import type {
   ImpactReport,
   Risk,
 } from '../types/change-order'
+import type { BaseItem } from '../types/base'
 import type { TransitionResult } from '../../workflows/types'
 
 // Lazy-cached dynamic imports to avoid circular dependencies
@@ -103,6 +104,74 @@ async function getItemTypeRegistry() {
  * Handles lifecycle management, affected items, and workflow transitions
  */
 export class ChangeOrderService {
+  /**
+   * Create a change order against one or more designs.
+   *
+   * A change order must touch at least one design, and this is where that
+   * becomes true rather than merely intended. It is not a tidiness rule: the
+   * designs are what place an ECO inside a program, so one with none sits
+   * outside every boundary — which is how every ECO in the instance came to
+   * be visible to every user, and how the `canCreateEco` and `canApproveEco`
+   * member flags came to gate nothing.
+   *
+   * The designs are equal and unordered; the first is not special. Nothing is
+   * written to `items.designId`, which stays NULL on change orders precisely
+   * so that no design can read as the primary one.
+   *
+   * Linking is part of the creation, not a follow-up. Both call sites that
+   * used to link afterwards did so best-effort — one logged a warning and
+   * carried on, the other swallowed rejections from `Promise.allSettled` —
+   * so a failure there left exactly the design-less ECO this refuses to make.
+   * If a link fails, the change order is removed and the error raised.
+   */
+  static async create(
+    data: Partial<BaseItem> & Record<string, unknown>,
+    designIds: Array<string>,
+    userId: string,
+    options?: { bypassBranchProtection?: boolean },
+  ): Promise<BaseItem> {
+    const uniqueDesignIds = [...new Set(designIds)]
+    if (uniqueDesignIds.length === 0) {
+      throw new ValidationError(
+        'A change order must be created against at least one design',
+      )
+    }
+
+    // `designId` is dropped rather than honoured, whatever the caller sent. A
+    // change order's designs are the link rows below; a column holding one of
+    // them would be a primary design by another name, and the access checks
+    // that used to read it treated a NULL as "no program" and waved the ECO
+    // through.
+    //
+    // Cast through `unknown`: callers hand this a request body Zod has already
+    // shaped, and `ItemService.create` validates against the type registry.
+    const { designId: _ignored, ...withoutDesign } = data
+    const changeOrder = await ItemService.create(
+      'ChangeOrder',
+      withoutDesign as unknown as BaseItem,
+      userId,
+      options,
+    )
+
+    if (!changeOrder.id) {
+      throw new ValidationError('Failed to create change order')
+    }
+
+    try {
+      for (const designId of uniqueDesignIds) {
+        await this.addDesignToEco(changeOrder.id, designId, userId)
+      }
+    } catch (error) {
+      await ItemService.delete(changeOrder.id, userId).catch(() => {
+        // The link failure is the error worth reporting; a cleanup that also
+        // fails must not mask it.
+      })
+      throw error
+    }
+
+    return changeOrder
+  }
+
   /**
    * The row already recording this item on the change order, if any.
    *
@@ -962,6 +1031,76 @@ export class ChangeOrderService {
     })) as Array<
       AffectedItem & { affectedItemDetails?: typeof items.$inferSelect }
     >
+  }
+
+  /**
+   * The affected items a given caller may see, plus whether any were withheld.
+   *
+   * `getAffectedItems` above is the engine's view and stays complete — the
+   * merge, impact assessment and structure services all have to act on every
+   * item regardless of who triggered them. This is the presentation view, and
+   * it is the only one an API response should ever be built from.
+   *
+   * Withheld items collapse into a single anonymous flag rather than
+   * surviving as redacted rows. One bucket, not N placeholders: the row count
+   * would size the restricted set, and naming the design or program behind it
+   * discloses something the caller may equally not be entitled to know. A
+   * caller who did not expect the boundary asks their manager for access to
+   * whatever else this ECO touches.
+   *
+   * Filtering them out silently is the one thing this must not do. A user who
+   * sees three of seven items and is told nothing will submit or approve
+   * believing they reviewed the change — which is exactly the decision this
+   * flag exists to inform.
+   *
+   * Items belonging to no design stay visible: they sit outside every
+   * program, so there is no boundary to place them on.
+   */
+  static async getAffectedItemsForViewer(
+    changeOrderId: string,
+    accessDesignIds: Array<string> | null,
+  ): Promise<{
+    affectedItems: Array<
+      AffectedItem & { affectedItemDetails?: typeof items.$inferSelect }
+    >
+    hasRestricted: boolean
+  }> {
+    const all = await this.getAffectedItems(changeOrderId)
+    if (accessDesignIds === null) {
+      return { affectedItems: all, hasRestricted: false }
+    }
+
+    const allowed = new Set(accessDesignIds)
+    const affectedItems = all.filter((a) => {
+      const designId = a.affectedItemDetails?.designId
+      return !designId || allowed.has(designId)
+    })
+
+    return {
+      affectedItems,
+      hasRestricted: affectedItems.length < all.length,
+    }
+  }
+
+  /**
+   * The ECO's designs as a given caller may see them.
+   *
+   * Redacting the affected items alone would be pointless while this endpoint
+   * still returned every linked design's name and code — one request would
+   * undo the other.
+   */
+  static async getEcoDesignsForViewer(
+    changeOrderId: string,
+    accessDesignIds: Array<string> | null,
+  ) {
+    const all = await this.getEcoDesigns(changeOrderId)
+    if (accessDesignIds === null) {
+      return { designs: all, hasRestricted: false }
+    }
+
+    const allowed = new Set(accessDesignIds)
+    const visible = all.filter((d) => allowed.has(d.designId))
+    return { designs: visible, hasRestricted: visible.length < all.length }
   }
 
   /**
@@ -1994,14 +2133,17 @@ export class ChangeOrderService {
   /**
    * Get ECO summary across all designs
    */
-  static async getEcoSummary(changeOrderId: string): Promise<EcoSummary> {
+  static async getEcoSummary(
+    changeOrderId: string,
+    accessDesignIds: Array<string> | null,
+  ): Promise<EcoSummary> {
     const changeOrder = await ItemService.findById(changeOrderId)
     if (!changeOrder) {
       throw new Error('Change order not found')
     }
 
     // Get all designs affected by this ECO
-    const ecoDesigns = await db
+    const allEcoDesigns = await db
       .select({
         ecoDesign: changeOrderDesigns,
         design: {
@@ -2014,15 +2156,32 @@ export class ChangeOrderService {
       .leftJoin(designs, eq(changeOrderDesigns.designId, designs.id))
       .where(eq(changeOrderDesigns.changeOrderId, changeOrderId))
 
+    // Designs the caller cannot read drop out entirely rather than appearing
+    // as rows with their names and five counts blanked. What survives is the
+    // single flag below.
+    const allowed = accessDesignIds === null ? null : new Set(accessDesignIds)
+    const ecoDesigns =
+      allowed === null
+        ? allEcoDesigns
+        : allEcoDesigns.filter((d) => allowed.has(d.ecoDesign.designId))
+
     const designSummaries: Array<EcoDesignSummary> = []
     let totalItemsAffected = 0
     let canSubmit = true
 
-    const affectedItems = await this.getAffectedItems(changeOrderId)
+    // Visible items only, and therefore visible totals only. Reporting the
+    // true total next to a shortened list would hand back the size of the
+    // restricted set by subtraction, which is the number `hasRestricted`
+    // exists to withhold.
+    const { affectedItems, hasRestricted: hasRestrictedItems } =
+      await this.getAffectedItemsForViewer(changeOrderId, accessDesignIds)
     const {
       byDesign: affectedCountByDesign,
       withoutDesign: itemsWithNoDesign,
     } = this.countAffectedItemsByDesign(affectedItems)
+
+    const hasRestricted =
+      hasRestrictedItems || ecoDesigns.length < allEcoDesigns.length
 
     // Branches and their contents, read once for every design rather than three
     // queries per design. The change-type tally and the checked-out check are
@@ -2133,8 +2292,11 @@ export class ChangeOrderService {
       changeOrder: changeOrder as unknown as typeof items.$inferSelect,
       designs: designSummaries,
       totalItemsAffected,
-      canSubmit,
-      canRelease,
+      // Nothing this caller may act on can be released by them alone while
+      // part of the ECO is outside their reach — see `canAdvance`.
+      canSubmit: canSubmit && !hasRestricted,
+      canRelease: canRelease && !hasRestricted,
+      hasRestricted,
     }
   }
 
@@ -2293,7 +2455,13 @@ export interface EcoDesignSummary {
 export interface EcoSummary {
   changeOrder: typeof items.$inferSelect
   designs: Array<EcoDesignSummary>
+  /** Visible to this caller, not the ECO's true size — see `hasRestricted`. */
   totalItemsAffected: number
   canSubmit: boolean
   canRelease: boolean
+  /**
+   * Part of this change order lies outside the caller's programs. Deliberately
+   * a boolean: a count would size what it is withholding.
+   */
+  hasRestricted: boolean
 }

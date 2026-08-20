@@ -6,7 +6,7 @@ import { AccessControlService } from './AccessControlService'
 import { BranchService } from '@/lib/services/BranchService'
 import { FileService } from '@/lib/vault/services/FileService'
 import { db } from '@/lib/db'
-import { items } from '@/lib/db/schema/items'
+import { changeOrderDesigns, items } from '@/lib/db/schema/items'
 import {
   NotFoundError,
   PermissionDeniedError,
@@ -25,6 +25,76 @@ export async function requireDesignAccess(
   if (!canAccess) {
     throw new PermissionDeniedError('design', 'read')
   }
+}
+
+/**
+ * The designs a change order touches, split by whether this caller reaches them.
+ *
+ * A change order spans designs and none of them is primary, so "may this user
+ * see this ECO" is not a single yes/no over one design — it is an intersection.
+ * Reaching *any* linked design is enough to have business with the ECO; the
+ * designs the caller does not reach are what the detail views redact.
+ *
+ * `restrictedCount` is deliberately not returned. Callers get a boolean,
+ * because how many items or designs sit behind the boundary is itself a
+ * disclosure — it sizes a program the caller cannot open.
+ */
+export async function resolveEcoDesignScope(
+  userId: string,
+  changeOrderId: string,
+): Promise<{
+  /** Every design linked to the ECO. */
+  linked: Array<string>
+  /** The subset this caller may read. */
+  reachable: Array<string>
+  /** Whether anything was withheld — never how much. */
+  hasRestricted: boolean
+  /** Cross-program authority: bounded by nothing, including "no links at all". */
+  unrestricted: boolean
+}> {
+  const rows = await db
+    .select({ designId: changeOrderDesigns.designId })
+    .from(changeOrderDesigns)
+    .where(eq(changeOrderDesigns.changeOrderId, changeOrderId))
+
+  const linked = [...new Set(rows.map((r) => r.designId))]
+
+  const scope = await AccessControlService.getAccessibleDesignIds(userId)
+  if (scope === null) {
+    return {
+      linked,
+      reachable: linked,
+      hasRestricted: false,
+      unrestricted: true,
+    }
+  }
+
+  const allowed = new Set(scope)
+  const reachable = linked.filter((id) => allowed.has(id))
+  return {
+    linked,
+    reachable,
+    hasRestricted: reachable.length < linked.length,
+    unrestricted: false,
+  }
+}
+
+/**
+ * Assert the caller may open this change order at all, and return its scope.
+ *
+ * Reaching none of its designs means the ECO is not theirs to see. An ECO with
+ * no design links at all is that case for everyone *except* cross-program
+ * authority — which is the point: creation requires a design, so a link-less
+ * row predates the invariant and someone has to be able to open it and repair
+ * it. Testing `reachable` alone would have locked administrators out of
+ * exactly the rows only they can fix.
+ */
+export async function requireEcoAccess(userId: string, changeOrderId: string) {
+  const scope = await resolveEcoDesignScope(userId, changeOrderId)
+  if (!scope.unrestricted && scope.reachable.length === 0) {
+    throw new PermissionDeniedError('change order', 'read')
+  }
+  return scope
 }
 
 /**

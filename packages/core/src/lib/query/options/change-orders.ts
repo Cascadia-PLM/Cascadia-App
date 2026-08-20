@@ -67,9 +67,35 @@ export interface EcoDesign {
   designType: string
 }
 
-/** Designs an ECO touches, one ECO branch each. */
+/**
+ * Designs an ECO touches, one ECO branch each — as far as this caller can see.
+ *
+ * Returns the envelope rather than the bare list because `hasRestricted` is
+ * the other half of the answer: a change order can reach designs in programs
+ * the caller is not in, and those are withheld from `designs`. Dropping the
+ * flag on the floor here would turn a deliberate redaction into a silent one,
+ * which is the failure this whole boundary is built to avoid — a reviewer who
+ * cannot tell the difference between "this ECO affects one design" and "this
+ * ECO affects one design that you can see".
+ *
+ * Anonymous by design: no count, no names. Someone who did not expect the
+ * boundary asks for access to whatever else the ECO touches.
+ */
+export interface EcoDesignScope {
+  designs: Array<EcoDesign>
+  hasRestricted: boolean
+}
+
 export function changeOrderDesignsQuery(id: string) {
-  return entitySubQuery<EcoDesign>('change-orders', id, 'designs', 'designs')
+  return queryOptions({
+    queryKey: qk.sub('change-orders', id, 'designs'),
+    queryFn: async (): Promise<EcoDesignScope> => {
+      const result = await apiFetch<{ data: EcoDesignScope }>(
+        `/api/v1/change-orders/${id}/designs`,
+      )
+      return result.data
+    },
+  })
 }
 
 /** An affected-item row with the item it points at resolved. */

@@ -1391,44 +1391,22 @@ app.post(
       // the branch path above has always had it — so any authenticated user
       // with the type-level create permission could write into any
       // program's designs.
+      // A change order is defined by the designs it touches, and this route
+      // has no way to take them — it creates one item. Creating one here left
+      // an ECO linked to nothing, which is outside every program and so
+      // visible to everyone; the `canCreateEco` check below it hung off
+      // `itemData.designId`, which a real ECO never carries, and never ran.
+      if (itemType === 'ChangeOrder') {
+        throw new ValidationError(
+          'Create change orders via POST /api/v1/change-orders, which takes the designs they affect',
+        )
+      }
+
       if (itemData.designId) {
         await requireDesignAccess(user.id, itemData.designId)
-
-        // ECO creation honors the per-member canCreateEco flag (a program
-        // 'viewer' has it off). Non-members reaching this point hold the
-        // cross-program bypass, which covers the flag as well.
-        if (itemType === 'ChangeOrder') {
-          const design = await DesignService.getById(itemData.designId)
-          if (design?.programId) {
-            const member = await ProgramService.getMember(
-              design.programId,
-              user.id,
-            )
-            if (member && !member.canCreateEco) {
-              throw new PermissionDeniedError('change order', 'create')
-            }
-          }
-        }
       }
 
       const item = await ItemService.create(itemType, itemData, user.id)
-
-      // Auto-start workflow for ChangeOrders
-      if (itemType === 'ChangeOrder' && itemData.changeType) {
-        try {
-          await ChangeOrderService.autoStartWorkflow(
-            item.id,
-            itemData.changeType,
-            user.id,
-          )
-        } catch (workflowError) {
-          // Log but don't fail the creation - workflow can be started manually
-          console.warn(
-            `Failed to auto-start workflow for ChangeOrder ${item.id}:`,
-            workflowError,
-          )
-        }
-      }
 
       return created({ item })
     }),

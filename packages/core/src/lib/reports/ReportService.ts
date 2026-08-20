@@ -21,6 +21,10 @@ import {
 } from 'drizzle-orm'
 import { db } from '../db'
 import { takeFirst } from '../db/take-first'
+import { accessScopeCondition } from '../db/filters'
+import { AccessControlService } from '../auth/AccessControlService'
+import { permissionService } from '../auth/permission-service'
+import { NotFoundError, PermissionDeniedError } from '../errors'
 import {
   changeOrders,
   documents,
@@ -166,48 +170,67 @@ export class ReportService {
 
       await tx.update(reports).set(updateData).where(eq(reports.id, reportId))
 
-      // Replace columns (required in input)
-      await tx.delete(reportColumns).where(eq(reportColumns.reportId, reportId))
-      if (data.columns && data.columns.length > 0) {
-        await tx.insert(reportColumns).values(
-          data.columns.map((col) => ({
-            reportId,
-            fieldPath: col.fieldPath,
-            label: col.label,
-            displayOrder: col.displayOrder,
-            formatType: col.formatType,
-            isVisible: col.isVisible,
-            width: col.width,
-          })),
-        )
+      // Each child collection is replaced wholesale — but only when the caller
+      // actually sent that key.
+      //
+      // `undefined` means "not supplied, leave it alone"; `[]` means "supplied
+      // and empty", which legitimately clears filters and sorts. The delete
+      // used to run unconditionally, so a `PUT` carrying just a name — which
+      // `reportSchema.partial()` accepts, and which the edit form sends —
+      // stripped every column off the report, leaving it in a state its own
+      // schema forbids (`columns` is `min(1)`) and returning rows with no
+      // columns. `.partial()` wraps `ZodOptional` *outside* the `ZodDefault` on
+      // filters and sorts, so an absent key stays `undefined` rather than
+      // falling back to `[]`; the defaults never rescued this.
+      if (data.columns !== undefined) {
+        await tx
+          .delete(reportColumns)
+          .where(eq(reportColumns.reportId, reportId))
+        if (data.columns.length > 0) {
+          await tx.insert(reportColumns).values(
+            data.columns.map((col) => ({
+              reportId,
+              fieldPath: col.fieldPath,
+              label: col.label,
+              displayOrder: col.displayOrder,
+              formatType: col.formatType,
+              isVisible: col.isVisible,
+              width: col.width,
+            })),
+          )
+        }
       }
 
-      // Replace filters (defaults to [])
-      await tx.delete(reportFilters).where(eq(reportFilters.reportId, reportId))
-      if (data.filters && data.filters.length > 0) {
-        await tx.insert(reportFilters).values(
-          data.filters.map((filter) => ({
-            reportId,
-            fieldPath: filter.fieldPath,
-            operator: filter.operator,
-            value: filter.value,
-            value2: filter.value2,
-            displayOrder: filter.displayOrder,
-          })),
-        )
+      if (data.filters !== undefined) {
+        await tx
+          .delete(reportFilters)
+          .where(eq(reportFilters.reportId, reportId))
+        if (data.filters.length > 0) {
+          await tx.insert(reportFilters).values(
+            data.filters.map((filter) => ({
+              reportId,
+              fieldPath: filter.fieldPath,
+              operator: filter.operator,
+              value: filter.value,
+              value2: filter.value2,
+              displayOrder: filter.displayOrder,
+            })),
+          )
+        }
       }
 
-      // Replace sorts (defaults to [])
-      await tx.delete(reportSorts).where(eq(reportSorts.reportId, reportId))
-      if (data.sorts && data.sorts.length > 0) {
-        await tx.insert(reportSorts).values(
-          data.sorts.map((sort) => ({
-            reportId,
-            fieldPath: sort.fieldPath,
-            direction: sort.direction,
-            priority: sort.priority,
-          })),
-        )
+      if (data.sorts !== undefined) {
+        await tx.delete(reportSorts).where(eq(reportSorts.reportId, reportId))
+        if (data.sorts.length > 0) {
+          await tx.insert(reportSorts).values(
+            data.sorts.map((sort) => ({
+              reportId,
+              fieldPath: sort.fieldPath,
+              direction: sort.direction,
+              priority: sort.priority,
+            })),
+          )
+        }
       }
 
       const results = await tx
@@ -232,7 +255,11 @@ export class ReportService {
   }
 
   /**
-   * Find a report by ID with enriched children
+   * Find a report by ID with enriched children.
+   *
+   * Existence only — this does not ask whether the caller may see it. Every
+   * request path should be going through `findByIdForUser` or `requireWritable`
+   * instead; this stays for the two of them to build on.
    */
   static async findById(reportId: string): Promise<Report | null> {
     const result = await db
@@ -274,15 +301,87 @@ export class ReportService {
   }
 
   /**
+   * The "may this caller open this report" predicate, with the caller's roles
+   * resolved rather than taken on trust.
+   *
+   * The roles used to be a parameter, and every route passed `[]` — which
+   * silently disabled the `sharedWithRoles` arm of the rule, so sharing a
+   * report with a role shared it with nobody. A parameter every caller gets
+   * wrong is the wrong shape, so it is derived here instead.
+   */
+  private static async accessConditionFor(userId: string): Promise<SQL> {
+    const userRoles = await permissionService.getUserRoles(userId)
+    return or(...this.buildAccessConditions(userId, userRoles)) as SQL
+  }
+
+  /**
+   * Find a report the caller is allowed to open.
+   *
+   * Returns `null` both when the report does not exist and when it exists but
+   * was never shared with the caller. The two are deliberately
+   * indistinguishable: a 404 either way means walking IDs cannot enumerate
+   * other people's reports.
+   */
+  static async findByIdForUser(
+    reportId: string,
+    userId: string,
+  ): Promise<Report | null> {
+    const result = await db
+      .select()
+      .from(reports)
+      .where(
+        and(eq(reports.id, reportId), await this.accessConditionFor(userId)),
+      )
+      .limit(1)
+
+    const report = result[0]
+    if (!report) {
+      return null
+    }
+    return this.enrichReport(report)
+  }
+
+  /**
+   * Resolve a report the caller is allowed to *change*, or throw.
+   *
+   * Being shown a report is not being handed the pen: sharing distributes the
+   * query, not the right to rewrite or destroy it. Only the creator may do
+   * that — plus `system:manage`, so an instance administrator can still clean
+   * up after somebody who has left.
+   *
+   * That admin arm reads through `findById` rather than the sharing rule,
+   * which is why an administrator can delete a private report they could not
+   * have opened. Deliberate: the alternative is a report nobody can remove
+   * once its author is gone.
+   */
+  static async requireWritable(
+    reportId: string,
+    userId: string,
+    action: 'update' | 'delete',
+  ): Promise<Report> {
+    const isAdmin = await permissionService.canUser(userId, 'manage', 'system')
+
+    const report = isAdmin
+      ? await this.findById(reportId)
+      : await this.findByIdForUser(reportId, userId)
+
+    if (!report) {
+      throw new NotFoundError('Report', reportId)
+    }
+    if (isAdmin || report.createdBy === userId) {
+      return report
+    }
+    throw new PermissionDeniedError('report', action)
+  }
+
+  /**
    * List reports accessible to the user with server-side pagination
    */
   static async list(
     userId: string,
-    userRoles: Array<string> = [],
     options?: { limit?: number; offset?: number },
   ): Promise<{ reports: Array<Report>; total: number }> {
-    const accessConditions = this.buildAccessConditions(userId, userRoles)
-    const whereClause = or(...accessConditions)
+    const whereClause = await this.accessConditionFor(userId)
 
     const { count: total } = takeFirst(
       await db
@@ -313,12 +412,10 @@ export class ReportService {
   static async listByItemType(
     itemType: string,
     userId: string,
-    userRoles: Array<string> = [],
     options?: { limit?: number; offset?: number },
   ): Promise<{ reports: Array<Report>; total: number }> {
-    const accessConditions = this.buildAccessConditions(userId, userRoles)
     const whereClause = and(
-      or(...accessConditions),
+      await this.accessConditionFor(userId),
       eq(reports.itemType, itemType),
     )
 
@@ -355,13 +452,33 @@ export class ReportService {
   ): Promise<ReportExecutionResult> {
     const startTime = Date.now()
 
-    const report = await this.findById(reportId)
+    // A report the caller may not open is a report they may not run. Same
+    // 404-either-way rule as `findByIdForUser`, so an unshared report cannot
+    // be confirmed to exist by executing it.
+    const report = await this.findByIdForUser(reportId, userId)
     if (!report) {
-      throw new Error('Report not found')
+      throw new NotFoundError('Report', reportId)
     }
 
     try {
-      const result = await this.buildAndExecuteQuery(report, options)
+      // Report *definition* access (created-by / shared-with, see
+      // `buildAccessConditions`) says who may open the saved query. It says
+      // nothing about which rows that query is allowed to return, so the
+      // caller's own design reach has to bound the result set as well — the
+      // same bound the item list and search apply.
+      //
+      // Resolved here rather than passed in: `execute` is the only way to run
+      // a report, and both the execute and export routes go through it, so
+      // deriving the scope from `userId` at this one point means no caller can
+      // forget to pass it.
+      const accessDesignIds =
+        await AccessControlService.getAccessibleDesignIds(userId)
+
+      const result = await this.buildAndExecuteQuery(
+        report,
+        options,
+        accessDesignIds,
+      )
       const durationMs = Date.now() - startTime
 
       // Log execution
@@ -409,7 +526,8 @@ export class ReportService {
    */
   private static async buildAndExecuteQuery(
     report: Report,
-    options: ReportExecutionOptions = {},
+    options: ReportExecutionOptions,
+    accessDesignIds: Array<string> | null,
   ): Promise<
     Omit<
       ReportExecutionResult,
@@ -431,6 +549,13 @@ export class ReportService {
       ...(options.runtimeFilters || []),
     ]
     const conditions: Array<SQL> = [eq(items.itemType, report.itemType)]
+
+    // Ahead of the report's own filters, and ANDed with them, so no saved
+    // filter can widen the result past what the caller may read. Bounds the
+    // count as much as the rows: a total of "142 parts" discloses the size of
+    // a program the caller cannot open.
+    const accessScope = accessScopeCondition(accessDesignIds)
+    if (accessScope) conditions.push(accessScope)
 
     for (const filter of allFilters) {
       const condition = this.buildFilterCondition(filter, itemType, typeTable)

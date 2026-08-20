@@ -13,7 +13,10 @@ import type {
 } from '@/lib/workflows/types'
 import type { SessionUser } from '@/lib/auth/session'
 import { ApprovalRegistry } from '@/lib/workflows/approval-registry'
-import { changeActionSchema } from '@/lib/items/types/change-order'
+import {
+  changeActionSchema,
+  changeOrderTypeSchema,
+} from '@/lib/items/types/change-order'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { LifecycleService } from '@/lib/services/LifecycleService'
 import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
@@ -39,7 +42,11 @@ import {
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { ProgramService } from '@/lib/services/ProgramService'
 import { DesignService } from '@/lib/services/DesignService'
-import { requireDesignAccess } from '@/lib/auth/access'
+import {
+  requireDesignAccess,
+  requireEcoAccess,
+  resolveEcoDesignScope,
+} from '@/lib/auth/access'
 import { markConflictReviewedRequestSchema } from '@/lib/services/types/conflict-review'
 import { db } from '@/lib/db'
 import { branchItems } from '@/lib/db/schema'
@@ -74,13 +81,49 @@ async function assertChangeOrderEditable(changeOrderId: string): Promise<void> {
 }
 
 /**
+ * Assert the caller reaches the *whole* change order, not merely part of it.
+ *
+ * For the views that can be redacted — affected items, the design list, the
+ * summary — a partial reader gets their share plus a flag. These are the ones
+ * that cannot: an impact report and a conflict set are generated structures
+ * that name items from every design the ECO touches, in shapes that grow as
+ * the analysis grows. Redacting them field by field would be a guess about
+ * what the next field contains, so they are refused whole instead.
+ *
+ * Not silent: the detail page already knows from `hasRestricted` that part of
+ * this ECO is out of reach, so a refusal here reads as that same boundary
+ * rather than as a malfunction.
+ */
+async function requireWholeEco(
+  userId: string,
+  changeOrderId: string,
+): Promise<void> {
+  const { hasRestricted } = await requireEcoAccess(userId, changeOrderId)
+  if (hasRestricted) {
+    throw new PermissionDeniedError('the whole change order', 'read')
+  }
+}
+
+/**
  * Program-membership gate for approval votes.
  *
  * RBAC (change_orders:update on the route) says the user may vote on change
- * orders in general; this says they may vote on *this* one. The ECO's design
- * resolves to a program; voting requires membership there with the
- * canApproveEco flag on. Cross-program authority bypasses, and an ECO outside
- * any program (no design, or an unassigned design) falls back to RBAC alone.
+ * orders in general; this says they may vote on *this* one. A change order
+ * spans designs, each resolving to a program, and the designs are equal —
+ * so voting requires membership with `canApproveEco` in *every* program the
+ * ECO touches. Approving half a change order is not a thing: the vote carries
+ * the whole ECO towards a release that merges every design's branch.
+ *
+ * Designs outside any program impose no gate — nothing to be a member of.
+ * Cross-program authority bypasses. An ECO with no design links at all is
+ * reachable by cross-program authority alone, matching the list rule in
+ * `accessScopeCondition`.
+ *
+ * This used to read `eco.designId`, a single design, and return early when it
+ * was NULL. Every ECO the application creates leaves that column NULL — the
+ * designs live in `change_order_designs` — so the gate admitted everyone on
+ * every real change order, and the test covering it passed only because it
+ * built an ECO shape the app never produces.
  *
  * Runs before the workflow-instance lookup so a denial is a clean 403
  * regardless of workflow configuration.
@@ -91,16 +134,22 @@ async function requireEcoApprovalAccess(
 ): Promise<void> {
   const eco = await ItemService.findById(changeOrderItemId)
   if (!eco) throw new NotFoundError('ChangeOrder', changeOrderItemId)
-  if (!eco.designId) return
-
-  const design = await DesignService.getById(eco.designId)
-  if (!design?.programId) return
 
   if (await AccessControlService.hasCrossProgramAccess(userId)) return
 
-  const member = await ProgramService.getMember(design.programId, userId)
-  if (!member || !member.canApproveEco) {
+  const { linked } = await resolveEcoDesignScope(userId, changeOrderItemId)
+  if (linked.length === 0) {
     throw new PermissionDeniedError('change order approval', 'submit')
+  }
+
+  for (const designId of linked) {
+    const design = await DesignService.getById(designId)
+    if (!design?.programId) continue
+
+    const member = await ProgramService.getMember(design.programId, userId)
+    if (!member || !member.canApproveEco) {
+      throw new PermissionDeniedError('change order approval', 'submit')
+    }
   }
 }
 
@@ -347,6 +396,84 @@ app.get(
   ),
 )
 
+// POST /api/change-orders - the one door for creating a change order.
+//
+// `POST /api/v1/items` refuses itemType 'ChangeOrder' and points here, because
+// an ECO is not created until its designs are attached, and a two-request
+// create cannot promise that.
+const createChangeOrderSchema = z
+  .object({
+    designIds: z.array(z.string().uuid()).min(1, {
+      message: 'A change order must be created against at least one design',
+    }),
+  })
+  .passthrough()
+
+app.post(
+  '/',
+  adapt(
+    apiHandler(
+      {
+        permission: ['change_orders', 'create'],
+        openapi: {
+          summary: 'Create a change order against one or more designs',
+          request: { body: { schema: createChangeOrderSchema } },
+        },
+      },
+      async ({ request, user }) => {
+        const { designIds, ...data } = createChangeOrderSchema.parse(
+          await request.json(),
+        )
+
+        // Per design, not once for a nominated one: the designs are equal, so
+        // creating an ECO that reaches into a program means being entitled to
+        // create there. The equivalent check on the items route hung off
+        // `itemData.designId` and so never ran for a real ECO.
+        for (const designId of designIds) {
+          await requireDesignAccess(user.id, designId)
+
+          const design = await DesignService.getById(designId)
+          if (!design?.programId) continue
+
+          const member = await ProgramService.getMember(
+            design.programId,
+            user.id,
+          )
+          if (member && !member.canCreateEco) {
+            throw new PermissionDeniedError('change order', 'create')
+          }
+        }
+
+        const changeOrder = await ChangeOrderService.create(
+          data,
+          designIds,
+          user.id,
+        )
+
+        const changeType = changeOrderTypeSchema.safeParse(data.changeType)
+        if (changeType.success && changeOrder.id) {
+          try {
+            await ChangeOrderService.autoStartWorkflow(
+              changeOrder.id,
+              changeType.data,
+              user.id,
+            )
+          } catch (workflowError) {
+            // Matches the items route: a missing workflow definition must not
+            // undo a change order that is otherwise correctly created.
+            console.warn(
+              `Failed to auto-start workflow for ChangeOrder ${changeOrder.id}:`,
+              workflowError,
+            )
+          }
+        }
+
+        return created({ changeOrder })
+      },
+    ),
+  ),
+)
+
 // ============================================
 // Parameterized routes (/:id)
 // ============================================
@@ -357,10 +484,17 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
         const changeOrder = await ItemService.findById(params.id)
         if (!changeOrder) throw new NotFoundError('Change order', params.id)
-        return { changeOrder }
+
+        // The list is bounded by the caller's designs; the point read has to
+        // draw the same boundary or the id is the whole authorization.
+        // `hasRestricted` tells the detail view that this ECO reaches beyond
+        // what the caller may see — see the redaction note on
+        // `getAffectedItemsForViewer`.
+        const { hasRestricted } = await requireEcoAccess(user.id, params.id)
+        return { changeOrder, hasRestricted }
       },
     ),
   ),
@@ -409,12 +543,17 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
         const { id } = params
 
-        const affectedItems = await ChangeOrderService.getAffectedItems(id)
+        await requireEcoAccess(user.id, id)
+        const { affectedItems, hasRestricted } =
+          await ChangeOrderService.getAffectedItemsForViewer(
+            id,
+            await AccessControlService.getAccessibleDesignIds(user.id),
+          )
 
-        return { affectedItems }
+        return { affectedItems, hasRestricted }
       },
     ),
   ),
@@ -1181,7 +1320,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireWholeEco(user.id, params.id)
         const result = await ConflictDetectionService.detectConflictsForEco(
           params.id,
         )
@@ -1226,10 +1366,15 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => {
-        const ecoDesigns = await ChangeOrderService.getEcoDesigns(params.id)
+      async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
+        const { designs: ecoDesigns, hasRestricted } =
+          await ChangeOrderService.getEcoDesignsForViewer(
+            params.id,
+            await AccessControlService.getAccessibleDesignIds(user.id),
+          )
 
-        return { designs: ecoDesigns }
+        return { designs: ecoDesigns, hasRestricted }
       },
     ),
   ),
@@ -1270,7 +1415,12 @@ app.get(
   adapt(
     apiHandler<{ id: string; designId: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ request, params }) => {
+      async ({ request, params, user }) => {
+        // The design comes straight off the URL, so this is the whole gate:
+        // without it a caller who reaches one of the ECO's designs could ask
+        // for any other design's structure and get its full BOM tree back.
+        await requireDesignAccess(user.id, params.designId)
+
         const url = new URL(request.url, 'http://localhost')
         return EcoStructureService.getDesignStructure(
           params.id,
@@ -1294,9 +1444,10 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
         const { id } = params
 
+        await requireWholeEco(user.id, id)
         const impactReport = await ChangeOrderService.getImpactReport(id)
 
         if (!impactReport) {
@@ -1332,8 +1483,9 @@ app.post(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
-      async ({ params, request }) => {
+      async ({ params, request, user }) => {
         const { id } = params
+        await requireWholeEco(user.id, id)
         const body = await request.json().catch(() => ({}))
 
         const options = {
@@ -1680,8 +1832,12 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => {
-        const summary = await ChangeOrderService.getEcoSummary(params.id)
+      async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
+        const summary = await ChangeOrderService.getEcoSummary(
+          params.id,
+          await AccessControlService.getAccessibleDesignIds(user.id),
+        )
 
         return summary
       },

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
-import { and, eq, gte, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, eq, gte, isNull, or, sql } from 'drizzle-orm'
 import { tagged } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -11,6 +11,7 @@ import { ProgramService } from '@/lib/services/ProgramService'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { db } from '@/lib/db'
 import { items, parts, tasks } from '@/lib/db/schema'
+import { accessScopeCondition } from '@/lib/db/filters'
 import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('Dashboard')
@@ -78,14 +79,7 @@ app.get(
       const accessDesignIds = await AccessControlService.getAccessibleDesignIds(
         user.id,
       )
-      const inScope = accessDesignIds
-        ? or(
-            accessDesignIds.length > 0
-              ? inArray(items.designId, accessDesignIds)
-              : undefined,
-            isNull(items.designId),
-          )
-        : undefined
+      const inScope = accessScopeCondition(accessDesignIds) ?? undefined
 
       const [
         changeOrdersByDay,

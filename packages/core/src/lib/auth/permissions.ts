@@ -34,6 +34,11 @@ export type ResourceType =
   | 'roles'
   | 'programs'
   | 'reports'
+  // The System section of the navigation — Lifecycles, Users and
+  // Administration. 'read' is what admits a user to that section at all;
+  // 'manage' is what lets them change instance configuration (everything
+  // under /admin). Deliberately granted to no role below Power User: the
+  // two are not a formality here, they are the whole gate.
   | 'system'
 
 /**
@@ -114,6 +119,12 @@ export interface RoleDefinition {
  * Approver: Can approve items and change states, limited editing
  * User: Can create and edit draft items, view released items
  * View Only: Read-only access to all items
+ *
+ * Only Administrator and Power User carry the `system` resource, and that is
+ * what admits them to the System section of the navigation. It used to sit on
+ * every role as `['read']`, which made it useless as a gate — an Approver or a
+ * View Only account was offered Lifecycles, Users and Administration in the
+ * sidebar and got a 403 on arrival.
  */
 export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
   Administrator: {
@@ -266,7 +277,6 @@ export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
       { resource: 'roles', actions: ['read'] },
       { resource: 'programs', actions: ['read'] },
       { resource: 'reports', actions: ['read'] },
-      { resource: 'system', actions: ['read'] },
     ],
   },
   User: {
@@ -292,7 +302,6 @@ export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
       { resource: 'roles', actions: ['read'] },
       { resource: 'programs', actions: ['read'] },
       { resource: 'reports', actions: ['read'] },
-      { resource: 'system', actions: ['read'] },
     ],
   },
   'View Only': {
@@ -318,7 +327,6 @@ export const ROLE_DEFINITIONS: Record<RoleName, RoleDefinition> = {
       { resource: 'roles', actions: ['read'] },
       { resource: 'programs', actions: ['read'] },
       { resource: 'reports', actions: ['read'] },
-      { resource: 'system', actions: ['read'] },
     ],
   },
 }
@@ -351,4 +359,29 @@ export function hasPermission(
   if (!actions) return false
 
   return actions.includes(action) || actions.includes('manage')
+}
+
+/**
+ * Whether a permission map admits its holder to the System section of the
+ * navigation — Lifecycles, Users and Administration.
+ *
+ * The sidebar, the route guards on those pages and the role tests all ask this
+ * one question, so "what counts as System access" is decided once rather than
+ * re-spelled as a `['system', 'read']` literal at each site.
+ */
+export function canAccessSystem(
+  permissions: Record<string, Array<string>>,
+): boolean {
+  return hasPermission(permissions, 'system', 'read')
+}
+
+/**
+ * Whether the holder may change instance configuration — everything under
+ * `/admin`, which every one of those API routes independently enforces as
+ * `system:manage`.
+ */
+export function canManageSystem(
+  permissions: Record<string, Array<string>>,
+): boolean {
+  return hasPermission(permissions, 'system', 'manage')
 }

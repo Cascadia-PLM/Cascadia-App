@@ -35,6 +35,7 @@ import { SidebarNavItem } from './SidebarNavItem'
 import { SidebarSection } from './SidebarSection'
 import { NavSubItem } from './NavSubItem'
 import type { SidebarNavProps } from './types'
+import { useSystemAccess } from '@/lib/hooks/usePermissions'
 
 function SectionHeader({ label, isOpen }: { label: string; isOpen: boolean }) {
   if (isOpen) {
@@ -53,6 +54,8 @@ export function SidebarNav({
   currentPath,
   iconSize,
 }: SidebarNavProps) {
+  const { canAccess: canAccessSystem, canManage: canManageSystem } =
+    useSystemAccess()
   const [adminExpanded, setAdminExpanded] = useState(false)
   const [designsExpanded, setDesignsExpanded] = useState(false)
 
@@ -286,76 +289,88 @@ export function SidebarNav({
         onClick={onNavClick}
       />
 
-      {/* System Section */}
-      <SectionHeader label="System" isOpen={isOpen} />
+      {/* System Section — hidden entirely from roles without the `system`
+          grant, which is Administrator and Power User only. The pages
+          behind it guard themselves in `beforeLoad` and every API route
+          under them re-checks server-side; this only decides what the
+          navigation offers. */}
+      {canAccessSystem && (
+        <>
+          <SectionHeader label="System" isOpen={isOpen} />
 
-      <SidebarNavItem
-        to="/lifecycles"
-        icon={RotateCcw}
-        label="Lifecycles"
-        isOpen={isOpen}
-        iconSize={iconSize}
-        onClick={onNavClick}
-      />
+          <SidebarNavItem
+            to="/lifecycles"
+            icon={RotateCcw}
+            label="Lifecycles"
+            isOpen={isOpen}
+            iconSize={iconSize}
+            onClick={onNavClick}
+          />
 
-      <SidebarNavItem
-        to="/users"
-        icon={Users}
-        label="Users"
-        isOpen={isOpen}
-        iconSize={iconSize}
-        onClick={onNavClick}
-      />
-
-      <SidebarSection
-        icon={Settings}
-        label="Administration"
-        basePath="/admin"
-        isOpen={isOpen}
-        isExpanded={adminExpanded}
-        onToggle={() => setAdminExpanded(!adminExpanded)}
-        iconSize={iconSize}
-        onNavClick={onNavClick}
-        currentPath={currentPath}
-      >
-        <NavSubItem
-          to="/admin"
-          icon={Settings}
-          label="Settings"
-          onClick={onNavClick}
-          activeOptions={{ exact: true }}
-        />
-        <NavSubItem
-          to="/admin/roles"
-          icon={Shield}
-          label="Roles & Permissions"
-          onClick={onNavClick}
-        />
-        <NavSubItem
-          to="/admin/item-types"
-          icon={Layers}
-          label="Item Types"
-          onClick={onNavClick}
-        />
-        <NavSubItem
-          to="/admin/api-keys"
-          icon={KeyRound}
-          label="API Keys"
-          onClick={onNavClick}
-        />
-        <NavSubItem
-          to="/admin/jobs"
-          icon={Activity}
-          label="Jobs"
-          onClick={onNavClick}
-        />
-        <NavSubItem
-          to="/admin/ai"
-          icon={Bot}
-          label="AI Assistant"
-          onClick={onNavClick}
-        />
-      </SidebarSection>
+          <SidebarNavItem
+            to="/users"
+            icon={Users}
+            label="Users"
+            isOpen={isOpen}
+            iconSize={iconSize}
+            onClick={onNavClick}
+          />
+          {/* Administration is a further step up: every route under
+              /admin enforces `system:manage`, which a Power User does
+              not hold. */}
+          {canManageSystem && (
+            <SidebarSection
+              icon={Settings}
+              label="Administration"
+              basePath="/admin"
+              isOpen={isOpen}
+              isExpanded={adminExpanded}
+              onToggle={() => setAdminExpanded(!adminExpanded)}
+              iconSize={iconSize}
+              onNavClick={onNavClick}
+              currentPath={currentPath}
+            >
+              <NavSubItem
+                to="/admin"
+                icon={Settings}
+                label="Settings"
+                onClick={onNavClick}
+                activeOptions={{ exact: true }}
+              />
+              <NavSubItem
+                to="/admin/roles"
+                icon={Shield}
+                label="Roles & Permissions"
+                onClick={onNavClick}
+              />
+              <NavSubItem
+                to="/admin/item-types"
+                icon={Layers}
+                label="Item Types"
+                onClick={onNavClick}
+              />
+              <NavSubItem
+                to="/admin/api-keys"
+                icon={KeyRound}
+                label="API Keys"
+                onClick={onNavClick}
+              />
+              <NavSubItem
+                to="/admin/jobs"
+                icon={Activity}
+                label="Jobs"
+                onClick={onNavClick}
+              />
+              <NavSubItem
+                to="/admin/ai"
+                icon={Bot}
+                label="AI Assistant"
+                onClick={onNavClick}
+              />
+            </SidebarSection>
+          )}
+        </>
+      )}
     </>
   )
 }

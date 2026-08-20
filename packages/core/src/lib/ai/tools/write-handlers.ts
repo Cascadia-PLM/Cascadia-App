@@ -803,9 +803,14 @@ async function createChangeOrderHandlerImpl(
       impactDescription: input.impactDescription,
     }
 
-    const changeOrder = await ItemService.create(
-      'ChangeOrder',
-      changeOrderData as BaseItem,
+    // The designs are part of the creation, not a step after it. This used to
+    // create the ECO and then attach designs in a loop that logged and
+    // swallowed failures, so a run that could not attach any left a change
+    // order belonging to no design — outside every program, and therefore
+    // readable by every user in the instance.
+    const changeOrder = await ChangeOrderService.create(
+      changeOrderData,
+      resolvedDesignIds,
       context.userId,
     )
 
@@ -827,22 +832,10 @@ async function createChangeOrderHandlerImpl(
       )
     }
 
-    // Step 5: Add designs to ECO (creates branches)
-    const branchIds: Array<string> = []
-    for (const designId of resolvedDesignIds) {
-      try {
-        if (changeOrderId) {
-          const ecoDesign = await ChangeOrderService.addDesignToEco(
-            changeOrderId,
-            designId,
-            context.userId,
-          )
-          if (ecoDesign.branchId) branchIds.push(ecoDesign.branchId)
-        }
-      } catch (e) {
-        aiLogger.warn({ err: e, designId }, 'Failed to add design to ECO')
-      }
-    }
+    // Step 5: Collect the branches `create` made for each design
+    const branchIds = (await ChangeOrderService.getEcoDesigns(changeOrderId))
+      .map((d) => d.branchId)
+      .filter((id): id is string => id !== null)
 
     // Step 6: Add affected items if provided
     let affectedItemsAdded = 0

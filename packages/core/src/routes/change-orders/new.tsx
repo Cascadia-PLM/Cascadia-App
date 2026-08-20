@@ -28,6 +28,11 @@ function NewChangeOrderPage() {
       const payload = {
         ...changeOrder,
         itemType: 'ChangeOrder',
+        // The designs travel with the create. Attaching them afterwards, as
+        // this page used to, meant a failed attach left a change order linked
+        // to no design — which sits outside every program and is therefore
+        // visible to everyone.
+        designIds: designIds ?? [],
         // Convert empty strings to undefined for optional fields
         itemNumber: changeOrder.itemNumber?.trim() || undefined,
         name: changeOrder.name?.trim() || undefined,
@@ -36,42 +41,20 @@ function NewChangeOrderPage() {
         impactDescription: changeOrder.impactDescription?.trim() || undefined,
         baselineName: changeOrder.baselineName?.trim() || undefined,
       }
-      const result = await apiFetch<{ data: { item: ChangeOrder } }>(
-        '/api/v1/items',
+      const result = await apiFetch<{ data: { changeOrder: ChangeOrder } }>(
+        '/api/v1/change-orders',
         {
           method: 'POST',
           body: JSON.stringify(payload),
         },
       )
 
-      const createdId = result.data.item.id!
+      const createdId = result.data.changeOrder.id!
 
-      // Add selected designs to the ECO
-      if (designIds && designIds.length > 0) {
-        const designResults = await Promise.allSettled(
-          designIds.map((designId) =>
-            fetch(`/api/v1/change-orders/${createdId}/designs`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ designId }),
-            }),
-          ),
-        )
-
-        const failedCount = designResults.filter(
-          (r) => r.status === 'rejected',
-        ).length
-        if (failedCount > 0) {
-          console.warn(`Failed to add ${failedCount} design(s) to the ECO`)
-        }
-      }
-
-      const designCount = designIds?.length || 0
-      const designMessage =
-        designCount > 0 ? ` with ${designCount} design(s)` : ''
+      const designCount = designIds?.length ?? 0
       showSuccess(
         'Change order created',
-        `${result.data.item.itemNumber}${designMessage} has been created successfully`,
+        `${result.data.changeOrder.itemNumber} has been created successfully with ${designCount} design(s)`,
       )
       navigate({
         to: '/change-orders/$id',

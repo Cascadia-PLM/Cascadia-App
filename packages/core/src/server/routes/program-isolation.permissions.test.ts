@@ -22,6 +22,11 @@
  *  - the *unfiltered* change-order list, item list, and item search are
  *    bounded by the caller's accessible designs — omitting every filter must
  *    not mean "no scoping at all"
+ *  - running a saved report is bounded the same way: who may open a report
+ *    definition is a separate question from whose rows it may return
+ *  - and that separate question is enforced too: the by-ID report routes honor
+ *    the row's own sharing rule, and editing or deleting one needs ownership
+ *    rather than merely the RBAC verb
  *
  * Run: npx vitest run packages/core/src/server/routes/program-isolation.permissions.test.ts
  */
@@ -41,13 +46,16 @@ import designsRoutes from './designs'
 import changeOrdersRoutes from './change-orders'
 import dashboardRoutes from './dashboard'
 import workOrdersRoutes from './work-orders'
+import reportsRoutes from './reports'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
 import { ItemService } from '@/lib/items/services/ItemService'
+import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
 import { DesignService } from '@/lib/services/DesignService'
 import { ProgramService } from '@/lib/services/ProgramService'
 import { WorkOrderService } from '@/lib/services/WorkOrderService'
+import { ReportService } from '@/lib/reports/ReportService'
 import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
 
@@ -62,6 +70,7 @@ describe('program isolation — items, designs, change orders', () => {
     .route('/api/v1/change-orders', changeOrdersRoutes)
     .route('/api/v1/dashboard', dashboardRoutes)
     .route('/api/v1/work-orders', workOrdersRoutes)
+    .route('/api/v1/reports', reportsRoutes)
 
   let sysAdmin: TestUser
   let progAdmin: TestUser
@@ -169,6 +178,14 @@ describe('program isolation — items, designs, change orders', () => {
           headers: { 'Content-Type': 'application/json', Cookie: cookie },
           body: JSON.stringify(body),
         }),
+      put: (path: string, body: unknown) =>
+        app.request(path, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Cookie: cookie },
+          body: JSON.stringify(body),
+        }),
+      del: (path: string) =>
+        app.request(path, { method: 'DELETE', headers: { Cookie: cookie } }),
     }
   }
 
@@ -182,18 +199,38 @@ describe('program isolation — items, designs, change orders', () => {
     }
   }
 
-  function ecoPayload(name: string) {
+  function ecoPayload(name: string, designIds: Array<string> = [designId]) {
     // The route auto-starts a workflow for a changeType, but an absent
     // workflow definition is caught and logged — the invariant under test
     // is the program gate, not workflow config.
+    //
+    // `designIds`, not `designId`: change orders are created through their own
+    // endpoint because the designs are part of the creation. The generic item
+    // route refuses the type outright.
     return {
-      itemType: 'ChangeOrder',
-      designId,
+      designIds,
       revision: 'A',
       changeType: 'ECO',
       name,
       description: 'isolation test ECO',
     }
+  }
+
+  /**
+   * An ECO shaped the way the application shapes one: no `items.designId`,
+   * designs attached through `change_order_designs`. Anything that scopes a
+   * change order has to survive this shape, not the convenient one.
+   */
+  async function mkEco(designIds: Array<string>, name = 'Scoped ECO') {
+    const eco = (await ItemService.create(
+      'ChangeOrder',
+      { revision: 'A', changeType: 'ECO', name } as never,
+      progAdmin.id,
+    )) as { id: string }
+    for (const d of designIds) {
+      await ChangeOrderService.addDesignToEco(eco.id, d, progAdmin.id)
+    }
+    return eco.id
   }
 
   // ==========================================================================
@@ -309,7 +346,7 @@ describe('program isolation — items, designs, change orders', () => {
   describe('ECO creation honors canCreateEco', () => {
     it('engineer (flag on) can create an ECO', async () => {
       const res = await as(engineer).post(
-        '/api/v1/items',
+        '/api/v1/change-orders',
         ecoPayload('Engineer ECO'),
       )
       expect(res.status).toBe(201)
@@ -317,7 +354,7 @@ describe('program isolation — items, designs, change orders', () => {
 
     it('viewer (flag off) cannot create an ECO', async () => {
       const res = await as(viewer).post(
-        '/api/v1/items',
+        '/api/v1/change-orders',
         ecoPayload('Viewer ECO'),
       )
       expect(res.status).toBe(403)
@@ -328,7 +365,7 @@ describe('program isolation — items, designs, change orders', () => {
         canCreateEco: false,
       })
       const res = await as(engineer).post(
-        '/api/v1/items',
+        '/api/v1/change-orders',
         ecoPayload('Revoked ECO'),
       )
       expect(res.status).toBe(403)
@@ -336,7 +373,7 @@ describe('program isolation — items, designs, change orders', () => {
 
     it('Administrator creates ECOs without a membership row', async () => {
       const res = await as(sysAdmin).post(
-        '/api/v1/items',
+        '/api/v1/change-orders',
         ecoPayload('Admin ECO'),
       )
       expect(res.status).toBe(201)
@@ -351,17 +388,7 @@ describe('program isolation — items, designs, change orders', () => {
     let ecoId: string
 
     beforeEach(async () => {
-      const eco = (await ItemService.create(
-        'ChangeOrder',
-        {
-          designId,
-          revision: 'A',
-          changeType: 'ECO',
-          name: 'Vote Target',
-        } as never,
-        progAdmin.id,
-      )) as { id: string }
-      ecoId = eco.id
+      ecoId = await mkEco([designId], 'Vote Target')
     })
 
     // The personas below all pass RBAC (Approver has change_orders:update).
@@ -418,18 +445,12 @@ describe('program isolation — items, designs, change orders', () => {
   describe('GET /api/v1/change-orders scoping', () => {
     let ecoId: string
 
+    // Built the way the application builds one: `items.designId` left NULL,
+    // the design linked through `change_order_designs`. Setting `designId` on
+    // the ECO row instead — which no code path in the app does — made every
+    // test in this block pass against a boundary that was not being drawn.
     beforeEach(async () => {
-      const eco = (await ItemService.create(
-        'ChangeOrder',
-        {
-          designId,
-          revision: 'A',
-          changeType: 'ECO',
-          name: 'Scoped ECO',
-        } as never,
-        progAdmin.id,
-      )) as { id: string }
-      ecoId = eco.id
+      ecoId = await mkEco([designId])
     })
 
     it('the programId filter requires access to that program', async () => {
@@ -460,9 +481,10 @@ describe('program isolation — items, designs, change orders', () => {
 
     // Was a pinned known gap: omitting the filter used to skip scoping
     // altogether, so an outsider saw every program's ECOs. The list now
-    // carries the caller's accessible designs as its own bound. ECOs with no
-    // design link stay visible to everyone — they sit outside every program,
-    // so there is no boundary to place them on.
+    // carries the caller's accessible designs as its own bound, applied over
+    // `change_order_designs` rather than `items.designId` — the latter is
+    // NULL on every ECO the app creates, which put all of them in the
+    // design-less "visible to everyone" bucket.
     it('the unfiltered list hides other programs’ ECOs', async () => {
       const res = await as(outsider).get('/api/v1/change-orders?limit=200')
       expect(res.status).toBe(200)
@@ -480,6 +502,302 @@ describe('program isolation — items, designs, change orders', () => {
         data: { changeOrders: Array<{ id: string }> }
       }
       expect(body.data.changeOrders.map((c) => c.id)).toContain(ecoId)
+    })
+
+    it('the by-id read draws the same boundary as the list', async () => {
+      expect(
+        (await as(outsider).get(`/api/v1/change-orders/${ecoId}`)).status,
+      ).toBe(403)
+      expect(
+        (await as(engineer).get(`/api/v1/change-orders/${ecoId}`)).status,
+      ).toBe(200)
+    })
+  })
+
+  // ==========================================================================
+  // Change orders spanning two programs
+  //
+  // A change order reaches into every design it lists, and the designs are
+  // equal. A member of one of them has business with the ECO and must be able
+  // to open it — but what it touches elsewhere is not theirs to read.
+  //
+  // The withheld part is neither shown nor silently dropped. It collapses to
+  // one anonymous flag: a caller who is told nothing would submit or approve
+  // believing they had reviewed the whole change, and a caller told how much
+  // or whose is being told the size and identity of a program they cannot
+  // open. `hasRestricted` is the whole disclosure — go ask for access to
+  // whatever else this ECO touches.
+  // ==========================================================================
+
+  describe('an ECO spanning two programs', () => {
+    let otherDesignId: string
+    let sharedEcoId: string
+    let ownPartId: string
+    let otherPartId: string
+
+    beforeEach(async () => {
+      const otherProgram = await ProgramService.create(
+        {
+          name: 'Other Program',
+          code: `OTH-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+        },
+        progAdmin.id,
+      )
+      otherDesignId = (
+        await DesignService.create(
+          {
+            programId: otherProgram.id,
+            name: 'Other Design',
+            code: `OTHD-${Date.now()}`,
+            designType: 'Engineering',
+          },
+          progAdmin.id,
+        )
+      ).id
+
+      // progAdmin created both programs, so they reach both designs; engineer
+      // is a member of the first only.
+      sharedEcoId = await mkEco([designId, otherDesignId], 'Cross-program ECO')
+
+      const mk = async (dId: string, label: string) =>
+        (
+          (await ItemService.create(
+            'Part',
+            {
+              designId: dId,
+              revision: 'A',
+              name: `${label} Part`,
+              itemNumber: `${label}-${Date.now()}`,
+              partType: 'Manufacture',
+            } as never,
+            progAdmin.id,
+          )) as { id: string }
+        ).id
+
+      ownPartId = await mk(designId, 'OWN')
+      otherPartId = await mk(otherDesignId, 'OTHER')
+
+      for (const itemId of [ownPartId, otherPartId]) {
+        await ChangeOrderService.addAffectedItem(
+          sharedEcoId,
+          { affectedItemId: itemId, changeAction: 'release' },
+          progAdmin.id,
+        )
+      }
+    })
+
+    const affectedItemsFor = async (user: TestUser) => {
+      const res = await as(user).get(
+        `/api/v1/change-orders/${sharedEcoId}/affected-items`,
+      )
+      expect(res.status).toBe(200)
+      return (await res.json()) as {
+        data: {
+          affectedItems: Array<{
+            affectedItemId: string | null
+            affectedItemDetails?: { designId: string | null }
+          }>
+          hasRestricted: boolean
+        }
+      }
+    }
+
+    it('a member of one program can open it', async () => {
+      expect(
+        (await as(engineer).get(`/api/v1/change-orders/${sharedEcoId}`)).status,
+      ).toBe(200)
+    })
+
+    it('shows them their own program’s items', async () => {
+      const body = await affectedItemsFor(engineer)
+      expect(body.data.affectedItems.map((a) => a.affectedItemId)).toContain(
+        ownPartId,
+      )
+    })
+
+    it('withholds the other program’s items', async () => {
+      const body = await affectedItemsFor(engineer)
+      expect(
+        body.data.affectedItems.map((a) => a.affectedItemId),
+      ).not.toContain(otherPartId)
+      expect(
+        body.data.affectedItems.some(
+          (a) => a.affectedItemDetails?.designId === otherDesignId,
+        ),
+      ).toBe(false)
+    })
+
+    it('says that something was withheld rather than hiding it silently', async () => {
+      expect((await affectedItemsFor(engineer)).data.hasRestricted).toBe(true)
+    })
+
+    it('says nothing about how much, or whose', async () => {
+      const body = await affectedItemsFor(engineer)
+      // One flag, not a per-item marker and not a count: the number of
+      // withheld rows sizes the other program, and naming its design or
+      // program identifies it. Both are disclosures in their own right.
+      const payload = JSON.stringify(body.data)
+      expect(payload).not.toContain(otherDesignId)
+      expect(payload).not.toContain(otherPartId)
+      expect(Object.keys(body.data).sort()).toEqual([
+        'affectedItems',
+        'hasRestricted',
+      ])
+    })
+
+    it('withholds the other program’s design from the ECO’s design list', async () => {
+      const res = await as(engineer).get(
+        `/api/v1/change-orders/${sharedEcoId}/designs`,
+      )
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as {
+        data: {
+          designs: Array<{ designId: string }>
+          hasRestricted: boolean
+        }
+      }
+      expect(body.data.designs.map((d) => d.designId)).toEqual([designId])
+      expect(body.data.hasRestricted).toBe(true)
+      // Redacting the items while this still named every design would undo
+      // the redaction in one extra request.
+      expect(JSON.stringify(body.data)).not.toContain(otherDesignId)
+    })
+
+    it('reports totals the caller can see, not the ECO’s true size', async () => {
+      const res = await as(engineer).get(
+        `/api/v1/change-orders/${sharedEcoId}/summary`,
+      )
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as {
+        data: {
+          totalItemsAffected: number
+          designs: Array<{ designId: string }>
+          hasRestricted: boolean
+          canSubmit: boolean
+          canRelease: boolean
+        }
+      }
+      // Two affected items exist; this caller may see one. Reporting 2 here
+      // would hand back the withheld count by subtraction.
+      expect(body.data.totalItemsAffected).toBe(1)
+      expect(body.data.designs.map((d) => d.designId)).toEqual([designId])
+      expect(body.data.hasRestricted).toBe(true)
+    })
+
+    it('will not let them advance an ECO that reaches past what they can see', async () => {
+      const res = await as(engineer).get(
+        `/api/v1/change-orders/${sharedEcoId}/summary`,
+      )
+      const body = (await res.json()) as {
+        data: { canSubmit: boolean; canRelease: boolean }
+      }
+      expect(body.data.canSubmit).toBe(false)
+      expect(body.data.canRelease).toBe(false)
+    })
+
+    it('refuses their approval vote — one program’s consent is not the ECO’s', async () => {
+      const res = await as(approverMember).post(
+        `/api/v1/change-orders/${sharedEcoId}/approvals`,
+        { vote: 'approved' },
+      )
+      // approverMember has canApproveEco in the first program and no
+      // membership at all in the second.
+      expect(res.status).toBe(403)
+    })
+
+    it('refuses a structure read for the design they cannot reach', async () => {
+      expect(
+        (
+          await as(engineer).get(
+            `/api/v1/change-orders/${sharedEcoId}/designs/${otherDesignId}/structure`,
+          )
+        ).status,
+      ).toBe(403)
+    })
+
+    it('shows Administrator the whole change order', async () => {
+      const body = await affectedItemsFor(sysAdmin)
+      expect(body.data.hasRestricted).toBe(false)
+      expect(body.data.affectedItems.map((a) => a.affectedItemId)).toEqual(
+        expect.arrayContaining([ownPartId, otherPartId]),
+      )
+    })
+  })
+
+  // ==========================================================================
+  // The at-least-one-design invariant
+  // ==========================================================================
+
+  describe('a change order must be created against a design', () => {
+    it('refuses an empty design list', async () => {
+      const res = await as(engineer).post(
+        '/api/v1/change-orders',
+        ecoPayload('Design-less ECO', []),
+      )
+      expect(res.status).toBe(400)
+    })
+
+    it('refuses the generic item route, which cannot take designs', async () => {
+      const res = await as(engineer).post('/api/v1/items', {
+        itemType: 'ChangeOrder',
+        designId,
+        revision: 'A',
+        changeType: 'ECO',
+        name: 'Back-door ECO',
+      })
+      expect(res.status).toBe(400)
+    })
+
+    // Rows predating the invariant. They cannot be created any more, but a
+    // deployed database may hold them, and the repair is to link a design —
+    // which requires someone able to open them.
+    it('leaves a link-less change order reachable by Administrator alone', async () => {
+      const orphan = (await ItemService.create(
+        'ChangeOrder',
+        { revision: 'A', changeType: 'ECO', name: 'Legacy Orphan' } as never,
+        progAdmin.id,
+      )) as { id: string }
+
+      expect(
+        (await as(sysAdmin).get(`/api/v1/change-orders/${orphan.id}`)).status,
+      ).toBe(200)
+      expect(
+        (await as(engineer).get(`/api/v1/change-orders/${orphan.id}`)).status,
+      ).toBe(403)
+
+      // And it is out of the list for everyone but them, rather than in
+      // everyone's list as it used to be.
+      const listed = async (user: TestUser) => {
+        const res = await as(user).get('/api/v1/change-orders?limit=200')
+        const body = (await res.json()) as {
+          data: { changeOrders: Array<{ id: string }> }
+        }
+        return body.data.changeOrders.map((c) => c.id)
+      }
+      expect(await listed(sysAdmin)).toContain(orphan.id)
+      expect(await listed(engineer)).not.toContain(orphan.id)
+    })
+
+    it('leaves no change order behind when a design cannot be linked', async () => {
+      const before = await as(engineer).get('/api/v1/change-orders?limit=200')
+      const countBefore = (
+        (await before.json()) as { data: { changeOrders: Array<unknown> } }
+      ).data.changeOrders.length
+
+      const res = await as(engineer).post(
+        '/api/v1/change-orders',
+        ecoPayload('Doomed ECO', [
+          designId,
+          '00000000-0000-0000-0000-000000000000',
+        ]),
+      )
+      expect(res.status).not.toBe(201)
+
+      const after = await as(engineer).get('/api/v1/change-orders?limit=200')
+      const countAfter = (
+        (await after.json()) as { data: { changeOrders: Array<unknown> } }
+      ).data.changeOrders.length
+      expect(countAfter).toBe(countBefore)
     })
   })
 
@@ -803,6 +1121,293 @@ describe('program isolation — items, designs, change orders', () => {
       const stats = await statsFor(sysAdmin)
       expect(stats.parts).toBeGreaterThan(0)
       expect(stats.programs).toBeGreaterThan(0)
+    })
+  })
+
+  // ==========================================================================
+  // Report execution
+  //
+  // A report is a saved query somebody else wrote. Sharing it settles who may
+  // *run* it — `reports.isPublic` / `sharedWithRoles` / `sharedWithUsers` —
+  // and says nothing about whose rows come back. Unbounded, a public report is
+  // a general read primitive over every program in the instance, and the CSV
+  // export walks the answer straight out the door.
+  // ==========================================================================
+
+  describe('POST /api/v1/reports/:id/execute', () => {
+    let reportId: string
+    let programPartId: string
+    let libraryPartId: string
+
+    beforeEach(async () => {
+      const library = await DesignService.create(
+        {
+          programId: null,
+          name: 'Report Library',
+          code: `RPTLIB-${Date.now()}`,
+          designType: 'Library',
+        },
+        progAdmin.id,
+      )
+
+      const mkPart = async (dId: string, label: string) =>
+        (
+          (await ItemService.create(
+            'Part',
+            {
+              designId: dId,
+              revision: 'A',
+              name: `${label} Part`,
+              itemNumber: `${label}-${Date.now()}`,
+              partType: 'Manufacture',
+            } as never,
+            progAdmin.id,
+          )) as { id: string }
+        ).id
+
+      programPartId = await mkPart(designId, 'RPTPROG')
+      libraryPartId = await mkPart(library.id, 'RPTLIB')
+
+      // Public on purpose: every caller below is allowed to open this report,
+      // so the only thing that can bound the rows is the caller's own reach.
+      const report = await ReportService.create(
+        {
+          name: 'Every Part',
+          itemType: 'Part',
+          isPublic: true,
+          columns: [
+            { fieldPath: 'id', label: 'ID', displayOrder: 0, isVisible: true },
+          ],
+          filters: [],
+          sorts: [],
+        },
+        progAdmin.id,
+      )
+      reportId = report.id!
+    })
+
+    const runFor = async (user: TestUser) => {
+      const res = await as(user).post(`/api/v1/reports/${reportId}/execute`, {
+        limit: 500,
+      })
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as {
+        data: { result: { totalRows: number; rows: Array<{ id: string }> } }
+      }
+      return body.data.result
+    }
+
+    it('withholds parts from a program the caller is not in', async () => {
+      const ids = (await runFor(outsider)).rows.map((r) => r.id)
+      expect(ids).not.toContain(programPartId)
+    })
+
+    it('still returns program-less parts to that caller', async () => {
+      const ids = (await runFor(outsider)).rows.map((r) => r.id)
+      expect(ids).toContain(libraryPartId)
+    })
+
+    it('returns the program’s parts to a member', async () => {
+      const ids = (await runFor(engineer)).rows.map((r) => r.id)
+      expect(ids).toContain(programPartId)
+      expect(ids).toContain(libraryPartId)
+    })
+
+    it('returns every program’s parts to Administrator', async () => {
+      const ids = (await runFor(sysAdmin)).rows.map((r) => r.id)
+      expect(ids).toContain(programPartId)
+    })
+
+    it('bounds totalRows, not just the page that came back', async () => {
+      // The count is its own disclosure: an outsider must not learn how much
+      // work a program holds by reading the total off a page they cannot see.
+      // Stated as a relation rather than a literal, because this suite runs
+      // against a database that may already hold parts of its own — what has
+      // to hold is that the total agrees with the page, and that membership
+      // adds exactly the one program part.
+      const outside = await runFor(outsider)
+      const inside = await runFor(engineer)
+
+      expect(outside.totalRows).toBe(outside.rows.length)
+      expect(inside.totalRows).toBe(inside.rows.length)
+      expect(inside.totalRows).toBe(outside.totalRows + 1)
+    })
+
+    it('bounds the CSV export the same way', async () => {
+      const res = await as(outsider).post(
+        `/api/v1/reports/${reportId}/export`,
+        {},
+      )
+      expect(res.status).toBe(200)
+      const csv = await res.text()
+      expect(csv).not.toContain(programPartId)
+      expect(csv).toContain(libraryPartId)
+    })
+  })
+
+  // ==========================================================================
+  // Report definitions
+  //
+  // The other half of the report question. Scoping settles whose *rows* come
+  // back; this settles who may open, rewrite, or destroy the saved query
+  // itself. `reports:read` / `:update` / `:delete` are type-level verbs — they
+  // say the caller may work with reports, not that they may work with *this*
+  // one, which is the row's own createdBy / isPublic / sharedWith rule.
+  // ==========================================================================
+
+  describe('report definition access', () => {
+    // Identical RBAC over reports, so the only thing separating these two is
+    // which of them created the row.
+    let reportOwner: TestUser
+    let reportEditor: TestUser
+    let privateReportId: string
+
+    const mkReport = async (
+      name: string,
+      sharing: {
+        isPublic?: boolean
+        sharedWithRoles?: Array<string>
+        sharedWithUsers?: Array<string>
+      } = {},
+    ) => {
+      const report = await ReportService.create(
+        {
+          name,
+          itemType: 'Part',
+          isPublic: sharing.isPublic ?? false,
+          sharedWithRoles: sharing.sharedWithRoles ?? null,
+          sharedWithUsers: sharing.sharedWithUsers ?? null,
+          columns: [
+            { fieldPath: 'id', label: 'ID', displayOrder: 0, isVisible: true },
+          ],
+          filters: [],
+          sorts: [],
+        },
+        reportOwner.id,
+      )
+      return report.id!
+    }
+
+    beforeEach(async () => {
+      reportOwner = (await insertTestUserWithRole(testDb.db, 'Power User')).user
+      reportEditor = (await insertTestUserWithRole(testDb.db, 'Power User'))
+        .user
+      for (const u of [reportOwner, reportEditor]) {
+        const { sessionToken } = await SessionManager.createSession(u.id)
+        cookies.set(u.id, `session=${sessionToken}`)
+      }
+
+      privateReportId = await mkReport('Private Report')
+    })
+
+    it('hides a private report from someone it was never shared with', async () => {
+      // 404 rather than 403: a 403 would confirm the report exists, which is
+      // all an ID probe needs to enumerate other people's saved queries.
+      const res = await as(outsider).get(`/api/v1/reports/${privateReportId}`)
+      expect(res.status).toBe(404)
+    })
+
+    it('shows it to the person who created it', async () => {
+      const res = await as(reportOwner).get(
+        `/api/v1/reports/${privateReportId}`,
+      )
+      expect(res.status).toBe(200)
+    })
+
+    it('refuses to run a report the caller cannot open', async () => {
+      const res = await as(outsider).post(
+        `/api/v1/reports/${privateReportId}/execute`,
+        {},
+      )
+      expect(res.status).toBe(404)
+    })
+
+    it('refuses to export one', async () => {
+      const res = await as(outsider).post(
+        `/api/v1/reports/${privateReportId}/export`,
+        {},
+      )
+      expect(res.status).toBe(404)
+    })
+
+    it('leaves a public report readable by anyone holding reports:read', async () => {
+      const id = await mkReport('Public Report', { isPublic: true })
+      expect((await as(outsider).get(`/api/v1/reports/${id}`)).status).toBe(200)
+    })
+
+    it('honors sharing with a role', async () => {
+      // The arm that was dead while every route passed `[]` for the caller's
+      // roles: sharing with a role used to share with nobody.
+      const id = await mkReport('Approver Report', {
+        sharedWithRoles: ['Approver'],
+      })
+      expect(
+        (await as(approverOutsider).get(`/api/v1/reports/${id}`)).status,
+      ).toBe(200)
+      expect((await as(outsider).get(`/api/v1/reports/${id}`)).status).toBe(404)
+    })
+
+    it('surfaces a role-shared report in the list as well', async () => {
+      const id = await mkReport('Approver List Report', {
+        sharedWithRoles: ['Approver'],
+      })
+      const res = await as(approverOutsider).get('/api/v1/reports?limit=200')
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as {
+        data: { reports: Array<{ id: string }> }
+      }
+      expect(body.data.reports.map((r) => r.id)).toContain(id)
+    })
+
+    it('honors sharing with a named user, and only that user', async () => {
+      const id = await mkReport('Named Report', {
+        sharedWithUsers: [outsider.id],
+      })
+      expect((await as(outsider).get(`/api/v1/reports/${id}`)).status).toBe(200)
+      expect((await as(viewer).get(`/api/v1/reports/${id}`)).status).toBe(404)
+    })
+
+    it('will not let a non-owner edit a report they can see', async () => {
+      const id = await mkReport('Public Report', { isPublic: true })
+      const res = await as(reportEditor).put(`/api/v1/reports/${id}`, {
+        name: 'Hijacked',
+        columns: [
+          { fieldPath: 'id', label: 'ID', displayOrder: 0, isVisible: true },
+        ],
+      })
+      expect(res.status).toBe(403)
+    })
+
+    it('will not let a non-owner delete a report they can see', async () => {
+      const id = await mkReport('Public Report', { isPublic: true })
+      expect((await as(reportEditor).del(`/api/v1/reports/${id}`)).status).toBe(
+        403,
+      )
+    })
+
+    it('lets the creator edit and delete their own', async () => {
+      const edit = await as(reportOwner).put(
+        `/api/v1/reports/${privateReportId}`,
+        {
+          name: 'Renamed',
+          columns: [
+            { fieldPath: 'id', label: 'ID', displayOrder: 0, isVisible: true },
+          ],
+        },
+      )
+      expect(edit.status).toBe(200)
+
+      const removed = await as(reportOwner).del(
+        `/api/v1/reports/${privateReportId}`,
+      )
+      expect(removed.status).toBe(200)
+    })
+
+    it('lets an administrator clean up a report never shared with them', async () => {
+      // The one deliberate asymmetry: `system:manage` reaches past the sharing
+      // rule on write, so a departed author's report is still removable.
+      const res = await as(sysAdmin).del(`/api/v1/reports/${privateReportId}`)
+      expect(res.status).toBe(200)
     })
   })
 })

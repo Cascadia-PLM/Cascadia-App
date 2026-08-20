@@ -34,10 +34,17 @@ test.describe('ECO Workflow @tier2', () => {
       const ecoPage = new ChangeOrdersPage(page)
       await ecoPage.gotoNew()
 
-      // Verify form elements are present (no design selector - ECOs are design-independent)
+      // Verify form elements are present. A change order is *not* design
+      // independent: the designs it affects are what place it inside a
+      // program, so the picker is part of the form and submit stays disabled
+      // until one is chosen.
       await expect(ecoPage.form).toBeVisible()
       await expect(ecoPage.nameInput).toBeVisible()
       await expect(ecoPage.submitButton).toBeVisible()
+      await expect(ecoPage.submitButton).toBeDisabled()
+
+      await ecoPage.selectFirstDesign()
+      await expect(ecoPage.submitButton).toBeEnabled()
     })
 
     test('can create a new ECO', async ({ authenticatedPage: page }) => {

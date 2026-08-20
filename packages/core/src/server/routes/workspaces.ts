@@ -301,6 +301,17 @@ app.post(
           throw new ValidationError('Workspace has no items to convert')
         }
 
+        // TODO: route this through `ChangeOrderService.create`, which is the
+        // one door for change orders — it takes the designs and refuses to
+        // make one without them. This path still writes `items.designId`,
+        // which on a change order is the "primary design" that is not
+        // supposed to exist: an ECO spans designs and none of them leads.
+        // Not a leak — `adoptWorkspaceItems` links the design properly and
+        // access control reads only the link table now — but the column is
+        // still read by `ChangeOrderDetail`'s version-context selector, so
+        // ECOs made here behave differently from ECOs made anywhere else.
+        // Deferred because the switch reorders branch and workflow creation
+        // in this path.
         const eco = await ItemService.create<ChangeOrder>(
           'ChangeOrder',
           {

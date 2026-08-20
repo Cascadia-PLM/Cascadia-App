@@ -28,11 +28,11 @@ app.get(
         const offset = parseInt(url.searchParams.get('offset') || '0', 10)
 
         const result = itemType
-          ? await ReportService.listByItemType(itemType, user.id, [], {
+          ? await ReportService.listByItemType(itemType, user.id, {
               limit,
               offset,
             })
-          : await ReportService.list(user.id, [], { limit, offset })
+          : await ReportService.list(user.id, { limit, offset })
 
         return { reports: result.reports, total: result.total }
       },
@@ -66,9 +66,12 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['reports', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
         const { id } = params
-        const report = await ReportService.findById(id)
+        // `reports:read` says the caller may read reports at all; the sharing
+        // rule on the row says which ones. A miss is a 404 rather than a 403
+        // so an ID probe cannot confirm the report exists.
+        const report = await ReportService.findByIdForUser(id, user.id)
 
         if (!report) {
           throw new NotFoundError('Report', id)
@@ -92,6 +95,8 @@ app.put(
         // Validate input (partial validation for update)
         const validatedData = reportSchema.partial().parse(data)
 
+        await ReportService.requireWritable(params.id, user.id, 'update')
+
         const report = await ReportService.update(
           params.id,
           validatedData,
@@ -110,7 +115,8 @@ app.delete(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['reports', 'delete'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await ReportService.requireWritable(params.id, user.id, 'delete')
         await ReportService.delete(params.id)
 
         return { success: true }

@@ -81,6 +81,11 @@ export class ChangeOrdersPage extends BasePage {
     return this.page.locator('[data-testid="change-order-submit"]')
   }
 
+  /** Selectable designs in the create form's affected-designs picker. */
+  get designOptions(): Locator {
+    return this.page.locator('[data-testid="design-option"]')
+  }
+
   // ===== Detail Page Locators =====
 
   get workflowStatus(): Locator {
@@ -124,11 +129,25 @@ export class ChangeOrdersPage extends BasePage {
   }
 
   /**
-   * Fill in ECO form fields
-   * Note: Change orders don't require a design selector - item number is auto-generated
+   * Fill in ECO form fields.
+   *
+   * The item number is auto-generated, but at least one affected design is
+   * required: a change order is placed inside a program by the designs it
+   * links, so one with none belongs to no program and would be readable by
+   * everyone. Submit stays disabled until one is picked.
    */
   async fillECOForm(name: string): Promise<void> {
     await this.fillField(this.nameInput, name)
+    await this.selectFirstDesign()
+  }
+
+  /**
+   * Pick the first available affected design, which is what enables submit.
+   */
+  async selectFirstDesign(): Promise<void> {
+    const first = this.designOptions.first()
+    await first.waitFor({ state: 'visible', timeout: 10000 })
+    await first.click()
   }
 
   /**

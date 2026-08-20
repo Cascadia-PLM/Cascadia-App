@@ -54,3 +54,41 @@ export function authSessionQuery() {
     staleTime: 10_000,
   })
 }
+
+/** The signed-in user's roles and their union of permissions. */
+export interface CurrentUserPermissions {
+  roles: Array<string>
+  permissions: Record<string, Array<string>>
+}
+
+const NO_PERMISSIONS: CurrentUserPermissions = { roles: [], permissions: {} }
+
+/**
+ * What the signed-in user is allowed to do, as the union of their roles'
+ * grants.
+ *
+ * This drives *presentation and routing only* — which sections the sidebar
+ * offers, and which pages the System route guards admit. Every API route
+ * authorises independently, so a tampered client gains nothing by lying here.
+ *
+ * A failed probe resolves to no permissions rather than rejecting: the callers
+ * are a nav bar and a set of route guards, and both want "deny" from a
+ * transient failure, not an exception to render.
+ */
+export function currentUserPermissionsQuery() {
+  return queryOptions({
+    queryKey: qk.collection('auth', 'permissions'),
+    queryFn: async (): Promise<CurrentUserPermissions> => {
+      try {
+        const result = await apiFetch<{ data?: CurrentUserPermissions }>(
+          '/api/v1/auth/permissions',
+          { retry: false },
+        )
+        return result.data ?? NO_PERMISSIONS
+      } catch {
+        return NO_PERMISSIONS
+      }
+    },
+    staleTime: 10_000,
+  })
+}

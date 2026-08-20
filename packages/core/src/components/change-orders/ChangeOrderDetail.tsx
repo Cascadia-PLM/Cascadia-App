@@ -274,6 +274,12 @@ export function ChangeOrderDetail({
       )
     : availableDesigns
 
+  // A change order has to affect at least one design — the server refuses
+  // otherwise, since a design-less ECO belongs to no program and so would be
+  // readable by everyone. Mirrored here so the refusal is visible before
+  // submit rather than as an error afterwards.
+  const hasRequiredDesigns = !isCreateMode || selectedDesigns.length > 0
+
   const handleSave = async () => {
     const designIds = isCreateMode
       ? selectedDesigns.map((d) => d.id)
@@ -396,7 +402,12 @@ export function ChangeOrderDetail({
                 </Button>
                 <Button
                   onClick={handleSave}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !hasRequiredDesigns}
+                  title={
+                    hasRequiredDesigns
+                      ? undefined
+                      : 'Select at least one affected design'
+                  }
                   data-testid="change-order-submit"
                 >
                   <Save className="h-4 w-4 mr-2" />
@@ -631,6 +642,9 @@ export function ChangeOrderDetail({
                               <button
                                 key={design.id}
                                 type="button"
+                                data-testid="design-option"
+                                data-design-id={design.id}
+                                aria-pressed={isSelected}
                                 onClick={() => toggleDesignSelection(design)}
                                 className={`w-full px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors ${
                                   isSelected

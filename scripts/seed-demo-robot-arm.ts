@@ -51,6 +51,7 @@ import {
 } from '../packages/core/src/lib/db/schema/versioning.ts'
 import {
   changeOrderAffectedItems,
+  changeOrderDesigns,
   changeOrders,
   itemRelationships,
   items,
@@ -562,7 +563,10 @@ if (SKIP_FILES) {
 if (SKIP_ECO) {
   console.log('   DEMO_SKIP_ECO=true → skipping ECO release')
 } else {
-  // Insert ChangeOrder item. ChangeOrders are design-agnostic (no designId).
+  // Insert ChangeOrder item. A change order carries no `designId` of its own —
+  // it spans designs, and the link rows below are what say which. They are not
+  // optional: a change order linked to no design sits outside every program,
+  // which is what places it inside one for access control.
   await db.insert(items).values({
     id: IDS.ecoItem,
     masterId: IDS.ecoItem,
@@ -589,6 +593,14 @@ if (SKIP_ECO) {
     approvedAt: new Date(),
     approvedBy: admin.id,
     impactAssessmentStatus: 'complete',
+  })
+
+  await db.insert(changeOrderDesigns).values({
+    changeOrderId: IDS.ecoItem,
+    designId: IDS.design,
+    branchId: mainBranch.id,
+    mergeStatus: 'merged',
+    mergedAt: new Date(),
   })
 
   // Affected items: every Part. Insert in chunks.

@@ -30,7 +30,7 @@ import {
   testPlans,
   workInstructions,
 } from '../../db/schema'
-import { notDeleted } from '../../db/filters'
+import { accessScopeCondition, notDeleted } from '../../db/filters'
 import type { SQL } from 'drizzle-orm'
 import type { BaseItem } from '../types/base'
 
@@ -113,29 +113,6 @@ export interface GlobalSearchRow extends BaseItem {
   programId: string | null
   programCode: string | null
   programName: string | null
-}
-
-/**
- * Restrict a query to the designs the caller may read.
- *
- * Returns `null` when there is nothing to restrict — `undefined`/`null` scope
- * is cross-program authority, which sees everything.
- *
- * Design-less items (`items.designId IS NULL`) are always admitted. They sit
- * outside every program, so there is no boundary to isolate them across, and
- * `AccessControlService.canAccessDesign` treats a design with no program the
- * same permissive way. Dropping them would make an ECO that never got linked
- * to a design invisible to everyone, including the person who filed it.
- */
-function accessScopeCondition(
-  accessDesignIds: Array<string> | null | undefined,
-): SQL<unknown> | null {
-  if (!accessDesignIds) return null
-  if (accessDesignIds.length === 0) return isNull(items.designId)
-  return or(
-    inArray(items.designId, accessDesignIds),
-    isNull(items.designId),
-  ) as SQL<unknown>
 }
 
 /**

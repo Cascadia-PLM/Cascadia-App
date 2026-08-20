@@ -179,7 +179,7 @@ Keep it at zero. **Do not raise `--max-warnings` in `package.json` to accommodat
 
 `npm run typecheck` is a **plain zero gate** against `tsconfig.json` — the same config your editor and ESLint see, with `noUncheckedIndexedAccess` on. Any error fails CI, exactly like `eslint --max-warnings 0`. Fix the error; there is no ceiling to raise.
 
-CI runs it as `npm run typecheck:strict` in the **Build** job (not standalone: `packages/core/src/routeTree.gen.ts` is gitignored and generated during `vite build`, and it carries the module augmentation typing every `createFileRoute()` site — so a fresh-checkout tsc job would report a number unrelated to the code).
+CI runs it as `npm run typecheck:strict` in the **Build** job (not standalone: `apps/*/src/routeTree.gen.ts` is gitignored and generated during `vite build`, and it carries the module augmentation typing every `createFileRoute()` site — so a fresh-checkout tsc job would report a number unrelated to the code).
 
 **The Build job declares no `needs:`, and must not acquire one.** Gating this
 gate behind a cheaper one makes it hostage to the weakest check in the workflow:

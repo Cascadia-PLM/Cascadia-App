@@ -1412,11 +1412,17 @@ describe('ChangeOrderService', () => {
     })
   })
 
+  // `null` as the access scope is cross-program authority — these cover the
+  // summary's own arithmetic, not the redaction that scope drives. The
+  // scoped behaviour is pinned in program-isolation.permissions.test.ts.
   describe('getEcoSummary', () => {
     it('returns summary for ECO with no designs', async () => {
       const changeOrder = await createChangeOrder()
 
-      const summary = await ChangeOrderService.getEcoSummary(changeOrder.id)
+      const summary = await ChangeOrderService.getEcoSummary(
+        changeOrder.id,
+        null,
+      )
 
       expect(summary.changeOrder).toBeDefined()
       expect(summary.designs).toEqual([])
@@ -1428,6 +1434,7 @@ describe('ChangeOrderService', () => {
       await expect(
         ChangeOrderService.getEcoSummary(
           '00000000-0000-0000-0000-000000000000',
+          null,
         ),
       ).rejects.toThrow('Change order not found')
     })
@@ -1463,7 +1470,10 @@ describe('ChangeOrderService', () => {
           .onConflictDoNothing()
       }
 
-      const summary = await ChangeOrderService.getEcoSummary(changeOrder.id)
+      const summary = await ChangeOrderService.getEcoSummary(
+        changeOrder.id,
+        null,
+      )
 
       expect(summary.designs).toHaveLength(1)
       const [designSummary] = summary.designs
@@ -1489,7 +1499,10 @@ describe('ChangeOrderService', () => {
       const [ecoDesign] = await ChangeOrderService.getEcoDesigns(changeOrder.id)
       const branchId = ecoDesign!.branchId!
 
-      const before = await ChangeOrderService.getEcoSummary(changeOrder.id)
+      const before = await ChangeOrderService.getEcoSummary(
+        changeOrder.id,
+        null,
+      )
       expect(before.canSubmit).toBe(true)
       expect(before.designs[0]?.hasCheckedOutItems).toBe(false)
 
@@ -1504,7 +1517,7 @@ describe('ChangeOrderService', () => {
         checkedOutBy: user.id,
       })
 
-      const after = await ChangeOrderService.getEcoSummary(changeOrder.id)
+      const after = await ChangeOrderService.getEcoSummary(changeOrder.id, null)
       expect(after.canSubmit).toBe(false)
       expect(after.designs[0]?.hasCheckedOutItems).toBe(true)
     })

@@ -9,6 +9,7 @@ import {
   FolderTree,
   GitBranch,
   Loader2,
+  Lock,
   Plus,
   RefreshCw,
   Table as TableIcon,
@@ -138,9 +139,11 @@ export function EcoAffectedItemsPanel({
   const invalidate = useInvalidateResources()
   const [activeTab, setActiveTab] = useState<'tree' | 'table' | 'graph'>('tree')
 
-  const { data: designs = [], isLoading: loadingDesigns } = useQuery(
+  const { data: designScope, isLoading: loadingDesigns } = useQuery(
     changeOrderDesignsQuery(changeOrderId),
   )
+  const designs = designScope?.designs ?? []
+  const hasRestricted = designScope?.hasRestricted ?? false
   const { data: affectedItems = [], isLoading: loadingAffectedItems } =
     useQuery(changeOrderAffectedItemsQuery(changeOrderId))
   const { data: eco } = useQuery(changeOrderDetailQuery(changeOrderId))
@@ -583,6 +586,28 @@ export function EcoAffectedItemsPanel({
 
   return (
     <div className="space-y-4">
+      {/*
+        The one thing this notice must not do is stay quiet. A reviewer who
+        cannot see that the change order reaches further than their own
+        programs will read a short list as the whole change and sign off on
+        it. It says that, and nothing else: no count and no program name —
+        both would describe a program they have no access to.
+      */}
+      {hasRestricted && (
+        <div
+          className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200"
+          data-testid="eco-restricted-notice"
+        >
+          <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            This change order affects designs outside your programs. Those
+            entries are not shown, and it cannot be submitted or released from
+            here. Ask your administrator for access to the other programs this
+            change order touches.
+          </span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

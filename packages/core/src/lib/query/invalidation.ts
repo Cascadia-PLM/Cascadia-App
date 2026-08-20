@@ -80,8 +80,11 @@ const RESOURCE_DEPENDENTS: Partial<Record<Resource, ReadonlyArray<Resource>>> =
     files: ['items', 'thread'],
 
     // ---- Admin & access --------------------------------------------------
-    users: ['admin', 'roles', 'programs', 'designs'],
-    roles: ['admin', 'users'],
+    // Both reach 'auth': the signed-in user's cached permission map (which
+    // decides whether the System section is offered at all) is derived from
+    // their role assignments, so changing either has to restage it.
+    users: ['admin', 'roles', 'programs', 'designs', 'auth'],
+    roles: ['admin', 'users', 'auth'],
     admin: ['items', 'lifecycles', 'workflows'],
     setup: ['auth', 'programs', 'users', 'tools'],
     auth: ['setup'],

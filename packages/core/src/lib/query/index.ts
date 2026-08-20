@@ -94,8 +94,12 @@ export { itemModelVersionsQuery } from './options/model-versions'
 export type { ModelVersionEntry } from './options/model-versions'
 export { designItemsGridQuery } from './options/design-items'
 export type { DesignItem, DesignItemsContext } from './options/design-items'
-export { authSessionQuery } from './options/auth'
-export type { SessionState, SessionSetupStatus } from './options/auth'
+export { authSessionQuery, currentUserPermissionsQuery } from './options/auth'
+export type {
+  CurrentUserPermissions,
+  SessionState,
+  SessionSetupStatus,
+} from './options/auth'
 export {
   programCountsQuery,
   programDetailQuery,

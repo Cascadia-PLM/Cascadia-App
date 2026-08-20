@@ -6,6 +6,8 @@ Cascadia is a modern PLM system designed to replace traditional low-code PLM pla
 
 **Signature Feature**: ECO-as-Branch - Each Engineering Change Order gets its own isolated branch for parallel development, with Git-style versioning for all engineering data.
 
+https://github.com/user-attachments/assets/fce1368e-19af-463f-95a5-926c3f682022
+
 ## Features
 
 ### Core Capabilities

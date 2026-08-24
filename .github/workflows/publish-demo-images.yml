@@ -6,7 +6,7 @@
 # The fourth image, ghcr.io/cascadia-plm/cascadia-demo-data, is built and
 # published by Cascadia-PLM/Demo-Data, which owns the dataset.
 #
-# Images are built SELECTIVELY: the `plan` job diffs the push/PR against its base
+# Images are built SELECTIVELY: the `plan` job diffs the push against its base
 # and emits a matrix containing only the images whose inputs actually changed. A
 # docs-only or test-only commit builds nothing. Tag pushes and manual dispatches
 # always build the full set so a release is coherent.
@@ -16,14 +16,21 @@
 # images; `merge` then unites each image's per-arch digests into one multi-arch
 # manifest and applies the tags. Previously a single amd64 runner cross-built
 # arm64 under QEMU, which made `npm ci` die intermittently with exit 132
-# (SIGILL) - a non-deterministic emulation crash. Because PRs are amd64-only,
-# that failure could only ever surface post-merge, on main.
+# (SIGILL) - a non-deterministic emulation crash. Nothing builds before a merge,
+# so a failure of that kind can only ever surface on main.
 #
 # Triggers:
 #   - push to main           -> multi-arch build of changed images, push :latest, :main, :sha-<short>
 #   - workflow_dispatch      -> full multi-arch rebuild of every image
-#   - pull_request to main   -> amd64-only build of changed images, no push (Dockerfile smoke test)
 #   - tag push v*            -> full rebuild, additionally publish :semver
+#
+# Deliberately NOT on pull_request. These images are published artefacts, and
+# publishing is the only thing that builds them. On a pull request it pushed
+# nothing, so the whole job bought one Dockerfile smoke test - and charged every
+# contributor a long, opaque image build that could not produce an image. It ran
+# on forks too, so the first outside contribution carried a red check its author
+# had no way to act on. A broken Dockerfile now surfaces on the push to main that
+# merges it, where a maintainer sees it.
 #
 # NOTE on :sha-<short> tags. Because images build selectively, a given commit SHA
 # only tags the images that changed in it. `docker-compose.demo.yml` pins :latest,
@@ -43,8 +50,6 @@ on:
   push:
     branches: [main]
     tags: ['v*']
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -73,10 +78,9 @@ jobs:
       - name: Detect changed image sources
         id: filter
         if: >-
-          github.event_name == 'pull_request' ||
-          (github.event_name == 'push'
-           && !startsWith(github.ref, 'refs/tags/')
-           && github.event.before != '0000000000000000000000000000000000000000')
+          github.event_name == 'push'
+          && !startsWith(github.ref, 'refs/tags/')
+          && github.event.before != '0000000000000000000000000000000000000000'
         uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
         with:
           filters: |
@@ -118,7 +122,6 @@ jobs:
           # JSON array of matched filter names, e.g. ["_app_sources","app","jobs_worker"].
           # Empty string when the filter step above was skipped.
           CHANGES: ${{ steps.filter.outputs.changes }}
-          EVENT: ${{ github.event_name }}
         run: |
           set -euo pipefail
 
@@ -149,15 +152,10 @@ jobs:
           # an arch means one row here; never point a row at a foreign-arch runner,
           # which would silently reintroduce QEMU emulation and its SIGILL flake.
           # arm64 hosted runners are free for public repos.
-          if [ "$EVENT" = "pull_request" ]; then
-            # Fast feedback: one arch is enough to smoke-test the Dockerfile.
-            platforms='[{"name":"linux/amd64","runner":"ubuntu-latest","suffix":"amd64"}]'
-          else
-            platforms='[
-              {"name":"linux/amd64","runner":"ubuntu-latest","suffix":"amd64"},
-              {"name":"linux/arm64","runner":"ubuntu-24.04-arm","suffix":"arm64"}
-            ]'
-          fi
+          platforms='[
+            {"name":"linux/amd64","runner":"ubuntu-latest","suffix":"amd64"},
+            {"name":"linux/arm64","runner":"ubuntu-24.04-arm","suffix":"arm64"}
+          ]'
           platforms=$(jq -c . <<<"$platforms")
 
           count=$(jq 'length' <<<"$images")
@@ -174,7 +172,7 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Build each selected image, once per platform, on that platform's native
-  # runner. Off PRs the result is pushed untagged and addressed only by digest;
+  # runner. The result is pushed untagged and addressed only by digest;
   # `merge` below turns each image's digests into a tagged multi-arch manifest.
   # ---------------------------------------------------------------------------
   build:
@@ -219,7 +217,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -243,12 +240,8 @@ jobs:
           target: ${{ matrix.image.target }}
           platforms: ${{ matrix.platform.name }}
           labels: ${{ steps.meta.outputs.labels }}
-          # PRs smoke-test the Dockerfile without publishing anything.
           outputs: >-
-            ${{ github.event_name == 'pull_request'
-            && 'type=cacheonly'
-            || format('type=image,name=ghcr.io/cascadia-plm/{0},push-by-digest=true,name-canonical=true,push=true',
-            matrix.image.name) }}
+            type=image,name=ghcr.io/cascadia-plm/${{ matrix.image.name }},push-by-digest=true,name-canonical=true,push=true
           # Scope is per-arch: one cache per image would have the two arches
           # clobbering each other's layers.
           cache-from: type=gha,scope=${{ matrix.image.name }}-${{ matrix.platform.suffix }}
@@ -257,7 +250,6 @@ jobs:
       # The digest is the only handle on an untagged image. Hand it to `merge`
       # as an empty file named for the digest - the name is the whole payload.
       - name: Export digest
-        if: github.event_name != 'pull_request'
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
@@ -266,7 +258,6 @@ jobs:
           touch "/tmp/digests/${DIGEST#sha256:}"
 
       - name: Upload digest
-        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: digests-${{ matrix.image.name }}-${{ matrix.platform.suffix }}
@@ -280,7 +271,7 @@ jobs:
   # ---------------------------------------------------------------------------
   merge:
     needs: [plan, build]
-    if: github.event_name != 'pull_request' && needs.plan.outputs.any == 'true'
+    if: needs.plan.outputs.any == 'true'
     runs-on: ubuntu-latest
     name: merge ${{ matrix.image.name }}
     strategy:

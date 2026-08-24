@@ -79,19 +79,26 @@ function UserDetailPage() {
   const handleDelete = () => {
     confirm({
       title: 'Delete User',
-      description: `Are you sure you want to delete ${user.email}? This action cannot be undone.`,
+      description: `Delete ${user.email}? If business records reference this account, it will be deactivated instead so its audit history remains intact.`,
       actionLabel: 'Delete',
       cancelLabel: 'Cancel',
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/v1/users/${user.id}`, {
-            method: 'DELETE',
-          })
+          const response = await apiFetch<{
+            data: { outcome: 'deleted' | 'deactivated' }
+          }>(`/api/v1/users/${user.id}`, { method: 'DELETE' })
 
-          showSuccess('User deleted', `${user.email} has been deleted`)
           await invalidate('users')
-          navigate({ to: '/users' })
+          if (response.data.outcome === 'deleted') {
+            showSuccess('User deleted', `${user.email} has been deleted`)
+            navigate({ to: '/users' })
+          } else {
+            showSuccess(
+              'User deactivated',
+              `${user.email} is referenced by business records, so the account was preserved and deactivated. All sessions were revoked.`,
+            )
+          }
         } catch (error) {
           handleError(error, { title: 'Failed to delete user' })
         }

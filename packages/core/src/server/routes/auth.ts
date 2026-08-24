@@ -171,18 +171,21 @@ app.put(
       }
 
       const currentSessionId = await hashSessionToken(sessionToken)
-      await UserService.changePassword(
-        user.id,
-        password,
-        currentPassword,
-        currentSessionId,
-      )
+      await db.transaction(async (tx) => {
+        await UserService.changePassword(
+          user.id,
+          password,
+          currentPassword,
+          currentSessionId,
+          tx,
+        )
 
-      await db.insert(authEvents).values({
-        userId: user.id,
-        eventType: 'password_changed',
-        ipAddress: getClientIp(request),
-        metadata: { method: 'self_service' },
+        await tx.insert(authEvents).values({
+          userId: user.id,
+          eventType: 'password_changed',
+          ipAddress: getClientIp(request),
+          metadata: { method: 'self_service' },
+        })
       })
 
       return { success: true }

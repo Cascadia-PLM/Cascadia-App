@@ -97,8 +97,8 @@ app.delete(
       { permission: ['users', 'delete'] },
       async ({ params }) => {
         const { id } = params
-        await UserService.deleteUser(id)
-        return { success: true }
+        const outcome = await UserService.deleteUser(id)
+        return { success: true, outcome }
       },
     ),
   ),
@@ -146,18 +146,24 @@ app.put(
           ? await hashSessionToken(sessionToken)
           : undefined
 
-        await UserService.changePassword(
-          id,
-          password,
-          currentPassword,
-          currentSessionId,
-        )
+        await db.transaction(async (tx) => {
+          await UserService.changePassword(
+            id,
+            password,
+            currentPassword,
+            currentSessionId,
+            tx,
+          )
 
-        await db.insert(authEvents).values({
-          userId: id,
-          eventType: 'password_changed',
-          ipAddress: getClientIp(request),
-          metadata: { actorUserId: user.id, method: 'verified_admin_change' },
+          await tx.insert(authEvents).values({
+            userId: id,
+            eventType: 'password_changed',
+            ipAddress: getClientIp(request),
+            metadata: {
+              actorUserId: user.id,
+              method: 'verified_admin_change',
+            },
+          })
         })
 
         return { success: true }
@@ -179,13 +185,15 @@ app.post(
           throw new ValidationError('Password is required')
         }
 
-        await UserService.adminResetPassword(id, password)
+        await db.transaction(async (tx) => {
+          await UserService.adminResetPassword(id, password, tx)
 
-        await db.insert(authEvents).values({
-          userId: id,
-          eventType: 'password_reset',
-          ipAddress: getClientIp(request),
-          metadata: { actorUserId: user.id },
+          await tx.insert(authEvents).values({
+            userId: id,
+            eventType: 'password_reset',
+            ipAddress: getClientIp(request),
+            metadata: { actorUserId: user.id },
+          })
         })
 
         return { success: true }

@@ -72,6 +72,32 @@ jobs:
       # historical demo-data blob for no benefit.
       - uses: actions/checkout@v4
 
+      # A filter pattern that matches nothing has stopped protecting anything,
+      # and it fails silently: the image simply stops being rebuilt, and the
+      # only symptom is a `:latest` that is quietly older than main. That is
+      # how `src/**`, `index.html`, `vite.config.ts`, `drizzle.config.ts` and
+      # `test-data/**` survived the workspace split here — all five had moved
+      # under packages/ or apps/, and nothing said so.
+      #
+      # Everything up to the first wildcard has to exist. That is enough to
+      # catch a path that moved, without pretending to verify a glob.
+      - name: Refuse a filter pattern that matches nothing
+        run: |
+          set -euo pipefail
+          workflow=.github/workflows/publish-demo-images.yml
+          stale=0
+          while read -r pattern; do
+            base=${pattern%%\**}
+            base=${base%/}
+            [ -n "$base" ] || continue
+            if [ ! -e "$base" ]; then
+              echo "::error file=$workflow::paths-filter pattern '$pattern' matches nothing in the tree. It moved or was deleted; update the filters block."
+              stale=1
+            fi
+          done < <(sed -n "/filters: |/,/- name: Select images to build/p" "$workflow" |
+                   sed -n "s/^ *- '\(.*\)'\$/\1/p")
+          [ "$stale" -eq 0 ]
+
       # Skipped entirely on tag pushes, workflow_dispatch, and the all-zeros
       # `before` SHA (branch creation / history-rewriting force-push). In those
       # cases `changes` is unset and the next step force-builds everything.
@@ -85,20 +111,33 @@ jobs:
         with:
           filters: |
             # Anchor for the sources shared by cascadia-app and cascadia-jobs-worker.
-            # Both Dockerfiles `COPY . .` and run the identical `npm run build`, so a
-            # change to any of these genuinely invalidates both images. It surfaces as
-            # its own filter key, which the catalog below has no entry for and drops.
+            # Both Dockerfiles `COPY . .` and run the identical `npm run build:app`,
+            # so a change to any of these genuinely invalidates both images. It
+            # surfaces as its own filter key, which the catalog below has no entry
+            # for and drops.
+            #
+            # `packages/**` and `apps/**` are deliberately whole subtrees rather
+            # than a list of the files inside them. This block named `src/**`,
+            # `index.html`, `vite.config.ts`, `drizzle.config.ts` and `test-data/**`
+            # long after the workspace split moved every one of them under
+            # packages/ or apps/, so an ordinary source change matched nothing and
+            # rebuilt nothing — `:latest` went stale silently, which is the worst
+            # way for a selective build to fail. Whole subtrees also pick up a new
+            # package or app for free, instead of waiting to be noticed.
+            #
+            # The rest is what the runtime stage of docker/app.Dockerfile copies:
+            # public/, scripts/, tsconfig.json and tsconfig.base.json. `tests/**`
+            # and `docs/**` are absent on purpose — neither reaches the image, and
+            # a test-only or docs-only commit should build nothing.
             _app_sources: &app_sources
-              - 'src/**'
+              - 'packages/**'
+              - 'apps/**'
               - 'scripts/**'
               - 'public/**'
-              - 'test-data/**'
               - 'package.json'
               - 'package-lock.json'
-              - 'index.html'
-              - 'vite.config.ts'
               - 'tsconfig.json'
-              - 'drizzle.config.ts'
+              - 'tsconfig.base.json'
               - '.dockerignore'
             # Editing the pipeline itself rebuilds everything, so a change to how
             # images are built is always exercised by the commit that makes it.

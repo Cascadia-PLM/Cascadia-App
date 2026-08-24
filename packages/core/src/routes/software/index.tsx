@@ -2,7 +2,6 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
 import type { Software } from '@/lib/items/types/software'
@@ -25,9 +24,11 @@ import {
   itemCountsQuery,
   itemGridQuery,
   itemListQuery,
+  lifecycleByItemTypeQuery,
   useInvalidateResources,
 } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
+import { LifecycleStateCards } from '@/components/items/LifecycleStateCards'
 
 // Search schema for URL validation (drives useServerDataGrid state sync)
 const softwareSearchSchema = z.object({
@@ -41,8 +42,6 @@ const softwareSearchSchema = z.object({
 })
 
 const SOFTWARE_FILTERS: ItemFilters = { itemType: 'Software' }
-const COUNT_STATES = ['Draft', 'InReview', 'Released', 'Obsolete'] as const
-
 export const Route = createFileRoute('/software/')({
   validateSearch: softwareSearchSchema,
   component: SoftwareListPage,
@@ -53,9 +52,17 @@ export const Route = createFileRoute('/software/')({
       queryClient.ensureQueryData(
         itemListQuery<Software>(SOFTWARE_FILTERS, grid),
       ),
-      queryClient.ensureQueryData(
-        itemCountsQuery(SOFTWARE_FILTERS, COUNT_STATES),
-      ),
+      (async () => {
+        const lifecycle = await queryClient.ensureQueryData(
+          lifecycleByItemTypeQuery('Software'),
+        )
+        await queryClient.ensureQueryData(
+          itemCountsQuery(
+            SOFTWARE_FILTERS,
+            lifecycle.states.map((state) => state.id),
+          ),
+        )
+      })(),
     ])
   },
 })
@@ -65,10 +72,6 @@ function SoftwareListPage() {
   const { confirm } = useAlertDialog()
   const { handleError, showSuccess } = useErrorHandler()
   const invalidate = useInvalidateResources()
-
-  const { data: counts } = useQuery(
-    itemCountsQuery(SOFTWARE_FILTERS, COUNT_STATES),
-  )
 
   const {
     items: softwareItems,
@@ -128,39 +131,13 @@ function SoftwareListPage() {
         </Link>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total</CardDescription>
-            <CardTitle className="text-3xl">{total}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Draft</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Draft ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>In Review</CardDescription>
-            <CardTitle className="text-3xl">{counts?.InReview ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Released</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Released ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Obsolete</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Obsolete ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {/* Stats — one card per lifecycle state, from configuration */}
+      <LifecycleStateCards
+        itemType="Software"
+        filters={SOFTWARE_FILTERS}
+        total={total}
+        totalLabel="Total"
+      />
 
       {/* Software Table */}
       <Card>

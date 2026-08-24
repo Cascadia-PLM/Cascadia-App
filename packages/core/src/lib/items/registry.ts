@@ -175,7 +175,6 @@ class ItemTypeRegistry {
       schema: codeConfig.schema,
       table: codeConfig.table,
       components: codeConfig.components,
-      defaultState: codeConfig.defaultState,
       searchableFields: codeConfig.searchableFields,
       displayField: codeConfig.displayField,
       states: codeConfig.states, // Deprecated: states now come from lifecycle definition

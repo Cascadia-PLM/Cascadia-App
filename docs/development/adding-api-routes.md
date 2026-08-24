@@ -368,6 +368,33 @@ app.post(
 )
 ```
 
+## Documenting the Route
+
+Handler options take an `openapi` block. Point `request.body.schema` at the
+same Zod schema the route validates against, and declare the success response;
+the error responses are merged in for you:
+
+```typescript
+apiHandler(
+  {
+    permission: ['programs', 'create'],
+    openapi: {
+      summary: 'Create a program',
+      request: { body: { schema: programCreateSchema } },
+      responses: {
+        201: { schema: z.object({ program: programResponseSchema }) },
+      },
+    },
+  },
+  async ({ request, user }) => { ... },
+)
+```
+
+The committed `docs/api/openapi.v1.json` snapshot is refreshed by the
+maintainers, so leave it out of your PR — `npm run openapi:check` runs on
+`main`, not on pull requests. Full reference, including multipart bodies and
+optional ones: [`docs/api/README.md`](../api/README.md).
+
 ## Important Notes
 
 ### Mounting New Routes

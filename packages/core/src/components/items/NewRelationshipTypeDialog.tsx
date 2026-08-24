@@ -31,6 +31,7 @@ import {
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { apiFetch } from '@/lib/api/client'
 import { useInvalidateResources } from '@/lib/query'
+import { StateBadge } from '@/components/items/StateBadge'
 
 interface NewRelationshipTypeDialogProps {
   open: boolean
@@ -255,14 +256,11 @@ export function NewRelationshipTypeDialog({
                       <Badge variant="outline" className="text-xs">
                         {item.revision}
                       </Badge>
-                      <Badge
-                        variant={
-                          item.state === 'Released' ? 'default' : 'secondary'
-                        }
+                      <StateBadge
+                        itemType={itemType}
+                        state={item.state}
                         className="text-xs"
-                      >
-                        {item.state}
-                      </Badge>
+                      />
                       {/* Marks the library hits apart from this design's own */}
                       {item.isExternal && item.designCode && (
                         <Badge

@@ -88,7 +88,13 @@ export class InstructionExecutionService {
         `"${line.title}" is skipped${line.skipReason ? ` (${line.skipReason})` : ''} — unskip it to record work`,
       )
     }
-    if (woItem.state === 'Complete' || woItem.state === 'Cancelled') {
+    // A flow that has ended (any final state, whatever its name or kind)
+    // records no new work
+    if (
+      (await LifecycleService.getFinalStateIds('WorkOrder')).includes(
+        woItem.state,
+      )
+    ) {
       throw new ValidationError(
         `Work order ${woItem.itemNumber} is ${woItem.state} — it cannot record new executions`,
       )
@@ -116,12 +122,19 @@ export class InstructionExecutionService {
       return { execution: inProgress, resumed: true }
     }
 
-    if (woItem.state === 'Not Started') {
-      await LifecycleService.transitionFreeItem(
-        woItem.id,
-        'In Progress',
-        userId,
-      )
+    // First execution moves the work order out of its initial state — along
+    // the initial state's unique transition to a non-final state. A custom
+    // lifecycle with zero or several such transitions gets no auto-start;
+    // the execution still records and the state moves manually.
+    if (await LifecycleService.isInitialState('WorkOrder', woItem.state)) {
+      const autoStartTarget = await this.resolveAutoStartTarget(woItem.state)
+      if (autoStartTarget) {
+        await LifecycleService.transitionFreeItem(
+          woItem.id,
+          autoStartTarget,
+          userId,
+        )
+      }
     }
 
     const execution = takeFirst(
@@ -476,5 +489,24 @@ export class InstructionExecutionService {
         email: row.reviewerEmail || '',
       },
     }))
+  }
+  /**
+   * The auto-start target: the initial state's single outgoing transition to
+   * a non-final state, or null when the lifecycle offers zero or several —
+   * ambiguity is configuration's call, not this service's.
+   */
+  private static async resolveAutoStartTarget(
+    fromState: string,
+  ): Promise<string | null> {
+    const lifecycle =
+      await LifecycleService.getLifecycleForItemType('WorkOrder')
+    if (!lifecycle) return null
+    const finals = new Set(
+      lifecycle.states.filter((st) => st.isFinal).map((st) => st.id),
+    )
+    const candidates = (lifecycle.transitions ?? []).filter(
+      (t) => t.fromStateId === fromState && !finals.has(t.toStateId),
+    )
+    return candidates.length === 1 ? (candidates[0]?.toStateId ?? null) : null
   }
 }

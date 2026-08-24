@@ -80,6 +80,7 @@ function TaskDetailPage() {
       onSave={handleSave}
       onDelete={handleDelete}
       onCancel={handleCancel}
+      onTransitioned={() => void invalidate('tasks')}
       activeTab={search.tab}
       onTabChange={handleTabChange}
     />

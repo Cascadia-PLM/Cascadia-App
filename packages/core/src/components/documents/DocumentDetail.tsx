@@ -50,7 +50,6 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-  ViewEditBadge,
   ViewEditSelect,
   ViewEditStatic,
   ViewEditText,
@@ -60,30 +59,10 @@ import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { useInvalidateResources } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
 
 // Constants
-const STATE_OPTIONS = [
-  { value: 'Draft', label: 'Draft' },
-  { value: 'InReview', label: 'In Review' },
-  { value: 'Approved', label: 'Approved' },
-  { value: 'Released', label: 'Released' },
-  { value: 'Obsolete', label: 'Obsolete' },
-]
-
-const stateVariant = (state: string) => {
-  const variants: Record<
-    string,
-    'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-  > = {
-    Draft: 'secondary',
-    InReview: 'default',
-    Approved: 'success',
-    Released: 'success',
-    Obsolete: 'destructive',
-  }
-  return variants[state] || 'default'
-}
-
 // Spelled out so Tailwind's scanner sees the class names — the tab count
 // varies with mode and with whether the document has anything to preview or
 // any images to show.
@@ -104,10 +83,9 @@ const createEmptyDocument = (): Document => ({
   masterId: undefined,
   itemType: 'Document',
   itemNumber: '',
-  revision: 'A',
   name: '',
   description: '',
-  state: 'Draft',
+  state: '',
   isCurrent: true,
   fileName: undefined,
   fileSize: undefined,
@@ -304,10 +282,14 @@ export function DocumentDetail({
     setDocument((prev) => ({ ...prev, [field]: value }))
   }
 
+  // Released lineage on main is revised through a change order (the
+  // CheckoutDialog); membership comes from the lifecycle's mappings
+  const { isReleasedFamily: isReleasedLineage } = useReleasedFamily(
+    'Document',
+    currentDocument.state,
+  )
   const needsCheckout =
-    !isCreateMode &&
-    currentDocument.state === 'Released' &&
-    context.type === 'main'
+    !isCreateMode && isReleasedLineage && context.type === 'main'
 
   // The server-side edit lock behind the Edit button. Released-on-main goes
   // through the CheckoutDialog (revise onto a branch) instead of a direct
@@ -435,13 +417,12 @@ export function DocumentDetail({
               {!isCreateMode && isLoadingVersion && (
                 <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
               )}
-              {!isCreateMode && currentDocument.state && (
-                <Badge
+              {!isCreateMode && (
+                <StateBadge
+                  itemType="Document"
+                  state={currentDocument.state}
                   className="text-base"
-                  variant={stateVariant(currentDocument.state)}
-                >
-                  {currentDocument.state}
-                </Badge>
+                />
               )}
               {!isCreateMode && currentDocument.state && (
                 <PhaseBadge itemType="Document" state={currentDocument.state} />
@@ -632,15 +613,6 @@ export function DocumentDetail({
                       placeholder="Document name"
                       required
                       data-testid="document-name"
-                    />
-                    <ViewEditBadge
-                      label="State"
-                      value={isEditing ? document.state : currentDocument.state}
-                      onChange={(v) => updateField('state', v)}
-                      isEditing={isEditing}
-                      options={STATE_OPTIONS}
-                      variant={stateVariant}
-                      readOnly={!isCreateMode}
                     />
                     <ViewEditTextarea
                       label="Description"

@@ -11,6 +11,9 @@
  * geometry in the comparison overlay with no error anywhere.
  *
  * Invariants:
+ * - every entry offers *every* viewable model that context can reach, with
+ *   the default pick first, so the comparison picker can choose a version
+ *   and a file independently
  * - the current entry resolves only main-visible files on the released row;
  *   branch-scoped uploads never leak into it
  * - a branch entry resolves that branch's own upload wherever it hangs
@@ -20,6 +23,10 @@
  * - historical entries resolve only their own row's files; a metadata-only
  *   revision honestly reports no model
  * - archived branches and branch-deleted items produce no entries
+ * - a branch orders its own uploads ahead of the inherited baseline, but
+ *   still offers the baseline
+ * - models on a linked CAD Document are offered too, as the viewer's own
+ *   file list offers them
  * - the pick priority matches the viewer: GLB-with-colors, then primary,
  *   then newest
  *
@@ -43,6 +50,7 @@ import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
   branchItems,
   branches,
+  itemRelationships,
   items,
   programs,
   vaultFiles,
@@ -96,6 +104,7 @@ describe('ModelVersionService', () => {
   async function addItemRow(overrides: {
     masterId?: string
     itemNumber?: string
+    itemType?: string
     revision: string
     state: string
     isCurrent: boolean
@@ -108,7 +117,7 @@ describe('ModelVersionService', () => {
           masterId: overrides.masterId ?? crypto.randomUUID(),
           itemNumber: overrides.itemNumber ?? `PN-${uniquePrefix}`,
           revision: overrides.revision,
-          itemType: 'Part',
+          itemType: overrides.itemType ?? 'Part',
           name: 'Bracket',
           state: overrides.state,
           isCurrent: overrides.isCurrent,
@@ -177,6 +186,16 @@ describe('ModelVersionService', () => {
         })
         .returning(),
     )
+  }
+
+  /** Point an item version at a Document through a `CAD Doc` relationship. */
+  async function linkCadDoc(sourceItemId: string, targetItemId: string) {
+    await testDb.db.insert(itemRelationships).values({
+      sourceId: sourceItemId,
+      targetId: targetItemId,
+      relationshipType: 'CAD Doc',
+      createdBy: user.id,
+    })
   }
 
   it('keeps branch uploads out of the current entry and resolves them on the branch entry', async () => {
@@ -440,5 +459,168 @@ describe('ModelVersionService', () => {
 
     entries = await ModelVersionService.listForItem(second)
     expect(entries.at(0)?.file?.id).toBe(primary.id)
+  })
+
+  it('offers every viewable model of a version, default pick first', async () => {
+    const released = await addItemRow({
+      revision: 'A',
+      state: 'Released',
+      isCurrent: true,
+    })
+    const colored = await addModelFile(released.id, {
+      fileName: 'bracket-colored.glb',
+      hasColors: true,
+      uploadedAt: new Date('2026-01-01T00:00:00Z'),
+    })
+    const simplified = await addModelFile(released.id, {
+      fileName: 'bracket-simplified.stl',
+      uploadedAt: new Date('2026-03-01T00:00:00Z'),
+    })
+    const primary = await addModelFile(released.id, {
+      fileName: 'bracket-primary.stl',
+      isPrimaryModel: true,
+      uploadedAt: new Date('2026-02-01T00:00:00Z'),
+    })
+    // Not a model the viewer can render — must not reach the picker
+    await addModelFile(released.id, { fileName: 'bracket.step' })
+
+    const entries = await ModelVersionService.listForItem(released)
+    const current = entries.find((e) => e.kind === 'current')
+
+    // GLB-with-colors, then the primary designation, then newest-first
+    expect(current?.files.map((f) => f.id)).toEqual([
+      colored.id,
+      primary.id,
+      simplified.id,
+    ])
+    // `file` is exactly the head of that list, for callers wanting one model
+    expect(current?.file?.id).toBe(colored.id)
+    expect(current?.files.every((f) => f.source === 'direct')).toBe(true)
+  })
+
+  it('offers a branch both its own model and the baseline it inherits', async () => {
+    const released = await addItemRow({
+      revision: 'A',
+      state: 'Released',
+      isCurrent: true,
+    })
+    const mainFile = await addModelFile(released.id, {
+      fileName: 'bracket-main.glb',
+      branchId: mainBranchId,
+    })
+
+    const branch = await addBranch({
+      name: `eco/ECO-${uniquePrefix}-both`,
+      branchType: 'eco',
+    })
+    const workingCopy = await addItemRow({
+      masterId: released.masterId,
+      revision: `-${branch.id.substring(0, 8)}`,
+      state: 'Draft',
+      isCurrent: false,
+    })
+    await testDb.db.insert(branchItems).values({
+      branchId: branch.id,
+      itemMasterId: released.masterId,
+      currentItemId: workingCopy.id,
+      baseItemId: released.id,
+      changeType: 'modified',
+    })
+    const branchFile = await addModelFile(workingCopy.id, {
+      fileName: 'bracket-eco.glb',
+      branchId: branch.id,
+    })
+
+    const entries = await ModelVersionService.listForItem(released)
+    const branchEntry = entries.find((e) => e.key === `branch:${branch.id}`)
+
+    // The in-change model leads, but the inherited baseline stays reachable:
+    // comparing a branch against the geometry it started from is the whole
+    // point of the panel.
+    expect(branchEntry?.files.map((f) => f.id)).toEqual([
+      branchFile.id,
+      mainFile.id,
+    ])
+    expect(branchEntry?.file?.id).toBe(branchFile.id)
+  })
+
+  it('offers models on a linked CAD Document, per version', async () => {
+    const masterId = crypto.randomUUID()
+    const revA = await addItemRow({
+      masterId,
+      revision: 'A',
+      state: 'Superseded',
+      isCurrent: false,
+      modifiedAt: new Date('2026-01-01T00:00:00Z'),
+    })
+    const revB = await addItemRow({
+      masterId,
+      revision: 'B',
+      state: 'Released',
+      isCurrent: true,
+      modifiedAt: new Date('2026-02-01T00:00:00Z'),
+    })
+
+    // Each revision links its own Document revision; neither part row
+    // carries geometry of its own.
+    const docA = await addItemRow({
+      itemNumber: `DOC-${uniquePrefix}-A`,
+      itemType: 'Document',
+      revision: 'A',
+      state: 'Released',
+      isCurrent: true,
+    })
+    const docB = await addItemRow({
+      itemNumber: `DOC-${uniquePrefix}-B`,
+      itemType: 'Document',
+      revision: 'A',
+      state: 'Released',
+      isCurrent: true,
+    })
+    const docFileA = await addModelFile(docA.id, { fileName: 'housing-a.glb' })
+    const docFileB = await addModelFile(docB.id, { fileName: 'housing-b.glb' })
+    await linkCadDoc(revA.id, docA.id)
+    await linkCadDoc(revB.id, docB.id)
+
+    const entries = await ModelVersionService.listForItem(revB)
+
+    // A part whose geometry lives only on a linked Document is comparable —
+    // reporting "no 3D model" here is what made the picker look broken while
+    // the viewer was rendering that same file.
+    const current = entries.find((e) => e.kind === 'current')
+    expect(current?.file?.id).toBe(docFileB.id)
+    expect(current?.file?.source).toBe('cad_doc')
+    expect(current?.file?.sourceItemNumber).toBe(docB.itemNumber)
+
+    // Each revision resolves its own linked Document, not the other's
+    const histA = entries.find((e) => e.key === `historical:${revA.id}`)
+    expect(histA?.files.map((f) => f.id)).toEqual([docFileA.id])
+  })
+
+  it('orders direct models ahead of linked document models', async () => {
+    const released = await addItemRow({
+      revision: 'A',
+      state: 'Released',
+      isCurrent: true,
+    })
+    const directFile = await addModelFile(released.id, {
+      fileName: 'bracket-direct.stl',
+    })
+
+    const doc = await addItemRow({
+      itemNumber: `DOC-${uniquePrefix}`,
+      itemType: 'Document',
+      revision: 'A',
+      state: 'Released',
+      isCurrent: true,
+    })
+    const docFile = await addModelFile(doc.id, { fileName: 'bracket-doc.glb' })
+    await linkCadDoc(released.id, doc.id)
+
+    const entries = await ModelVersionService.listForItem(released)
+    const current = entries.find((e) => e.kind === 'current')
+
+    expect(current?.files.map((f) => f.id)).toEqual([directFile.id, docFile.id])
+    expect(current?.file?.id).toBe(directFile.id)
   })
 })

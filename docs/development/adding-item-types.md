@@ -123,8 +123,7 @@ ItemTypeRegistry.register({
   icon: 'Wrench', // Lucide icon name
   table: 'widgets', // Database table name
   schema: widgetSchema,
-  defaultState: 'Draft',
-  states: widgetStates,
+  states: widgetStates, // seed-source palette; the lifecycle is the authority at runtime
   lifecycleDefinitionId: LIFECYCLE_IDS.part, // Use existing lifecycle or create new one
   relationships: widgetRelationships,
   components: {
@@ -165,14 +164,15 @@ ItemTypeRegistry.register({
 
 ### Lifecycle Definition
 
-Each item type links to a lifecycle definition via `lifecycleDefinitionId`. Lifecycles are defined in the `workflow_definitions` table and control which states are valid and how transitions work.
+**Every item type must have a lifecycle** — there is no literal default state anywhere in the services; `ItemService.create` resolves the lifecycle's `isInitial` state, and the type's released family, branch-protection exemption and final states all derive from the lifecycle's flags and mappings. A new type needs:
 
-You can either:
+1. A well-known ID in `packages/core/src/lib/items/lifecycle-ids.ts`.
+2. A default definition in `packages/core/src/lib/items/default-lifecycles.ts` — added to `DEFAULT_ITEM_LIFECYCLES` and linked in `DEFAULT_LIFECYCLE_LINKS` — which the app seed, the test global-setup and the fixtures all seed. Or reuse one: Software links to `LIFECYCLE_IDS.part`.
+3. `lifecycleDefinitionId` in the registration above pointing at it.
 
-- Reuse an existing lifecycle (e.g., `LIFECYCLE_IDS.part` for driven items, `LIFECYCLE_IDS.task` for free items)
-- Create a new lifecycle definition and add its ID to `packages/core/src/lib/items/lifecycle-ids.ts`
+Pick the lifecycle type by how the item changes state: **Driven** (state changes only through ECO release; define `release`/`revise`/`obsolete` mappings — these are what make a state "released"), **Free** (manual transitions through `POST /api/v1/items/:id/transition`), or the degenerate Free lifecycle — one state flagged both `isInitial` and `isFinal`, named something like `Current` — for a type with no meaningful flow. Finals on Free lifecycles may declare `finalKind: 'complete' | 'cancel'` when something (like the work-order traveler gate) needs to tell success from abandonment.
 
-Driven lifecycles require ECOs for state changes. Free lifecycles allow direct transitions.
+Never gate on a state's name in code; ask `LifecycleService` (`isReleasedFamilyState`, `isInitialState`, `getFinalStateIds`, `getFinalKind`) and render with `StateBadge`.
 
 ## Step 5: Update ItemService Type-Specific Methods
 
@@ -228,7 +228,9 @@ Add create and update schemas to `packages/core/src/lib/api/schemas.ts`:
 
 export const widgetCreateSchema = z.object({
   itemNumber: z.string().min(1, 'Item number is required').max(100),
-  revision: z.string().min(1, 'Revision is required').max(10),
+  // Optional: a create never states a revision - the server assigns it from
+  // the type's lifecycle. See docs/features/versioning.md.
+  revision: z.string().min(1).max(10).optional(),
   name: z.string().max(500).optional(),
   designId: z.string().uuid('Design is required'),
   description: z.string().max(5000).optional(),

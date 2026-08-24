@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import type {
+  ChangeActionMappings,
   LifecyclePhaseConfig,
   RevisionScheme,
 } from '@/lib/types/lifecycle'
@@ -12,9 +13,11 @@ import { apiFetch } from '@/lib/api/client'
 interface LifecycleData {
   lifecycleId: string | null
   name: string | null
+  lifecycleType?: 'Free' | 'Driven' | 'Driving' | null
   phases: Array<LifecyclePhaseConfig>
   states: Array<WorkflowState>
   revisionScheme: RevisionScheme | null
+  changeActionMappings?: ChangeActionMappings
 }
 
 export interface PhaseInfo {

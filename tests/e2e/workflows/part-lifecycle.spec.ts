@@ -154,7 +154,7 @@ test.describe('Part Lifecycle Workflow', () => {
         await page.click('[data-testid="part-submit"]')
 
         // 4. Verify update was successful
-        // Use an exact match: the name also appears in the "Revision A • Updated
+        // Use an exact match: the name also appears in the "Revision - • Updated
         // Part Name" subtitle, so a substring match trips Playwright strict mode.
         await expect(
           page.getByText('Updated Part Name', { exact: true }),

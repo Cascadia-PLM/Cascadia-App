@@ -18,7 +18,6 @@ registerTypeHandler('Tool', {
       manufacturer: data.manufacturer || null,
       model: data.model || null,
       capabilities: data.capabilities || null,
-      toolStatus: data.toolStatus || 'available',
       location: data.location || null,
       notes: data.notes || null,
     })
@@ -46,8 +45,6 @@ registerTypeHandler('Tool', {
     if (data.model !== undefined) updateData.model = data.model || null
     if (data.capabilities !== undefined)
       updateData.capabilities = data.capabilities || null
-    if (data.toolStatus !== undefined)
-      updateData.toolStatus = data.toolStatus || null
     if (data.location !== undefined) updateData.location = data.location || null
     if (data.notes !== undefined) updateData.notes = data.notes || null
 

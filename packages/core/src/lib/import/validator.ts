@@ -367,5 +367,23 @@ export function validateBomStructure(
     }
   }
 
+  // Check for a child listed twice under one parent. `item_relationships` is
+  // unique on (source, target, type), so the second line has nowhere to go —
+  // the import would report it as a per-line failure after upload. Say so in
+  // the preview, where the fix is to merge the two lines.
+  const seenEdges = new Set<string>()
+  for (const rel of relationships) {
+    const edgeKey = `${rel.parentItemNumber.toLowerCase()}\u0000${rel.childItemNumber.toLowerCase()}`
+    if (seenEdges.has(edgeKey)) {
+      errors.push({
+        type: 'duplicate_relationship',
+        message: `${rel.parentItemNumber} lists ${rel.childItemNumber} more than once — combine the lines and sum their quantities`,
+        itemNumber: rel.childItemNumber,
+      })
+      continue
+    }
+    seenEdges.add(edgeKey)
+  }
+
   return { errors, warnings }
 }

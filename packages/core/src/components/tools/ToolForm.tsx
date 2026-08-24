@@ -38,13 +38,6 @@ const TOOL_TYPE_OPTIONS = [
   { value: 'utility', label: 'Utility' },
 ]
 
-const TOOL_STATUS_OPTIONS = [
-  { value: 'available', label: 'Available' },
-  { value: 'in_use', label: 'In Use' },
-  { value: 'maintenance', label: 'Maintenance' },
-  { value: 'retired', label: 'Retired' },
-]
-
 export function ToolForm({
   tool,
   onSubmit,
@@ -61,14 +54,10 @@ export function ToolForm({
   const form = useForm({
     defaultValues: {
       itemType: 'Tool' as const,
-      state: 'Draft',
-      revision: 'A',
       toolType: 'manufacturing' as 'manufacturing' | 'quality' | 'utility',
       toolSubtype: '',
       manufacturer: '',
       model: '',
-      toolStatus: 'available' as
-        'available' | 'in_use' | 'maintenance' | 'retired',
       location: '',
       notes: '',
       name: '',
@@ -81,7 +70,6 @@ export function ToolForm({
     onSubmit: async ({ value }) => {
       const submissionData = {
         ...value,
-        revision: value.revision.trim() || 'A',
         attributes,
         capabilities:
           Object.keys(capabilities).length > 0 ? capabilities : undefined,
@@ -194,34 +182,9 @@ export function ToolForm({
         </form.Field>
       </div>
 
-      {/* Status + Location row */}
+      {/* Location row — the flow position is the lifecycle state, moved by
+          transitions, not a form field */}
       <div className="grid grid-cols-2 gap-4">
-        <form.Field name="toolStatus">
-          {(field) => (
-            <FormField label="Status" error={field.state.meta.errors[0]}>
-              <Select
-                value={field.state.value}
-                onValueChange={(v) =>
-                  field.handleChange(
-                    v as 'available' | 'in_use' | 'maintenance' | 'retired',
-                  )
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TOOL_STATUS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
-          )}
-        </form.Field>
-
         <form.Field name="location">
           {(field) => (
             <FormField label="Location" error={field.state.meta.errors[0]}>

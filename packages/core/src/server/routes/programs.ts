@@ -14,7 +14,11 @@ import type {
   ProgramGraphDesign,
 } from '@/lib/versioning/graph-types'
 import type { ScopeGraphEdge, ScopeGraphNode } from '@/lib/api/scope-graph'
-import { ProgramService, memberAddSchema } from '@/lib/services/ProgramService'
+import {
+  ProgramService,
+  memberAddSchema,
+  programCreateSchema,
+} from '@/lib/services/ProgramService'
 import { DesignService } from '@/lib/services/DesignService'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { requirePermission } from '@/lib/auth/server'
@@ -1009,12 +1013,37 @@ app.get(
   ),
 )
 
+/**
+ * A program as returned by the create/read paths. Passthrough: the columns
+ * beyond these are the table's own and are not part of the frozen contract.
+ */
+const programResponseSchema = z
+  .object({
+    id: z.string().uuid(),
+    code: z.string(),
+    name: z.string(),
+  })
+  .passthrough()
+
 // POST /api/programs
 app.post(
   '/',
   adapt(
     apiHandler(
-      { permission: ['programs', 'create'] },
+      {
+        permission: ['programs', 'create'],
+        openapi: {
+          summary: 'Create a program',
+          description:
+            'Programs are the permission boundary: the creator is not made a ' +
+            'member, so add members with POST /api/v1/programs/:id/members. ' +
+            '`code` is unique system-wide.',
+          request: { body: { schema: programCreateSchema } },
+          responses: {
+            201: { schema: z.object({ program: programResponseSchema }) },
+          },
+        },
+      },
       async ({ request, user }) => {
         const data = await request.json()
         const program = await ProgramService.create(data, user.id)

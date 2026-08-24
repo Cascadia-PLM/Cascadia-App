@@ -18,6 +18,7 @@ import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { apiFetch } from '@/lib/api/client'
 import { useInvalidateResources } from '@/lib/query'
 import { itemRelationshipsQuery } from '@/lib/query/options/relationships'
+import { StateBadge } from '@/components/items/StateBadge'
 
 interface Relationship {
   id: string
@@ -254,17 +255,13 @@ export function RelationshipSection({
         filterType: 'multiSelect' as const,
         filterOptions: stateOptions,
         meta: { width: '100px' },
-        cell: ({ getValue }) => {
-          const state = getValue() as string
-          return (
-            <Badge
-              variant={state === 'Released' ? 'default' : 'secondary'}
-              className="text-xs"
-            >
-              {state}
-            </Badge>
-          )
-        },
+        cell: ({ row, getValue }) => (
+          <StateBadge
+            itemType={row.original.targetItem.itemType}
+            state={getValue() as string}
+            className="text-xs"
+          />
+        ),
       },
       {
         id: 'quantity',

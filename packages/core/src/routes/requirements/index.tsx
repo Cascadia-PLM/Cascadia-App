@@ -28,14 +28,14 @@ import {
   itemCountsQuery,
   itemGridQuery,
   itemListQuery,
+  lifecycleByItemTypeQuery,
   useInvalidateResources,
 } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
+import { LifecycleStateCards } from '@/components/items/LifecycleStateCards'
 
 // The states behind the stat cards, counted in one request rather than one
 // probe request each.
-const COUNT_STATES = ['Draft', 'InReview', 'Released']
-
 // Search schema for URL validation
 const requirementsSearchSchema = z.object({
   search: z.coerce.string().optional(),
@@ -80,7 +80,17 @@ export const Route = createFileRoute('/requirements/')({
       queryClient.ensureQueryData(
         itemListQuery<Requirement>(filters, gridParamsFromSearch(deps)),
       ),
-      queryClient.ensureQueryData(itemCountsQuery(filters, COUNT_STATES)),
+      (async () => {
+        const lifecycle = await queryClient.ensureQueryData(
+          lifecycleByItemTypeQuery('Requirement'),
+        )
+        await queryClient.ensureQueryData(
+          itemCountsQuery(
+            filters,
+            lifecycle.states.map((state) => state.id),
+          ),
+        )
+      })(),
       queryClient.ensureQueryData(designListQuery()),
     ])
   },
@@ -96,7 +106,6 @@ function RequirementsListPage() {
   const filters = requirementFilters(searchParams)
 
   const { data: designs = [] } = useQuery(designListQuery())
-  const { data: counts } = useQuery(itemCountsQuery(filters, COUNT_STATES))
 
   const {
     items: requirements,
@@ -197,33 +206,13 @@ function RequirementsListPage() {
         </Link>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Requirements</CardDescription>
-            <CardTitle className="text-3xl">{total}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Draft</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Draft ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>In Review</CardDescription>
-            <CardTitle className="text-3xl">{counts?.InReview ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Released</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Released ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {/* Stats — one card per lifecycle state, from configuration */}
+      <LifecycleStateCards
+        itemType="Requirement"
+        filters={filters}
+        total={total}
+        totalLabel="Total Requirements"
+      />
 
       {/* Requirements Table */}
       <Card>

@@ -146,6 +146,19 @@ curl -X POST /api/v1/items/PARENT_UUID/relationships \
 }
 ```
 
+**Status:** `409 Conflict` — the edge already exists (see
+[Edge identity](#edge-identity)). Change the existing relationship with
+`PUT /api/v1/relationships/:relationshipId` instead.
+
+```json
+{
+  "error": {
+    "code": "RESOURCE_ALREADY_EXISTS",
+    "message": "Relationship 'parent-uuid → child-uuid (BOM)' already exists"
+  }
+}
+```
+
 ## Update Relationship
 
 ```
@@ -279,7 +292,9 @@ Returns `201` (all succeeded), `207` (partial success), or `400` (all failed):
 }
 ```
 
-With partial failures:
+With partial failures — lines that name no `sourceId`, `targetId` or
+`relationshipType`. The rejection says which line and why, and never carries
+the database's query text:
 
 ```json
 {
@@ -290,11 +305,29 @@ With partial failures:
       {
         "relationship": {
           "sourceId": "asm-uuid",
-          "targetId": "invalid-uuid",
+          "targetId": "",
           "relationshipType": "bom"
         },
-        "error": "Failed to create relationship",
-        "details": "Foreign key constraint violation"
+        "error": "Missing required fields (sourceId, targetId, or relationshipType)"
+      }
+    ]
+  }
+}
+```
+
+A batch that repeats an edge is rejected whole, with the standard error
+envelope rather than the per-line shape above:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "A relationship may appear only once per (sourceId, targetId, relationshipType); combine the duplicate lines and sum their quantities",
+    "fieldErrors": [
+      {
+        "field": "relationships[2]",
+        "message": "Duplicates relationships[1]: asm-uuid → screw-uuid (bom)",
+        "code": "DUPLICATE_RELATIONSHIP"
       }
     ]
   }
@@ -303,9 +336,29 @@ With partial failures:
 
 ### Behavior Notes
 
-- **Duplicate detection**: If `replaceExisting` is false (default), existing relationships with the same source/target/type are skipped (counted in `skipped`).
-- **Replace mode**: If `replaceExisting` is true, all existing relationships of the same type for each unique source ID are deleted before creating new ones. This is useful for rebuilding a BOM.
+- **Edge identity**: see [Edge identity](#edge-identity) — a batch listing the
+  same child twice is rejected with `DUPLICATE_RELATIONSHIP` before anything is
+  written.
+- **All or nothing**: validation runs over the whole request before the first
+  write, and replacement shares one transaction with the insert. A rejected
+  batch changes nothing — in particular it does not leave a parent whose BOM
+  was deleted and not rebuilt.
+- **Duplicate detection**: If `replaceExisting` is false (default), relationships already stored with the same source/target/type are skipped (counted in `skipped`) and keep their stored quantity and find number — a skip is not an update.
+- **Replace mode**: If `replaceExisting` is true, existing relationships are deleted for each (source, type) pair the batch actually writes, before creating the new ones. This is useful for rebuilding a BOM. A source whose every line was rejected is left alone.
 - **Cycle detection**: Creating a relationship that would form a circular reference results in a `422` error with code `ITEM_RELATIONSHIP_CYCLE`.
+
+## Edge identity
+
+A relationship is identified by `(sourceId, targetId, relationshipType)`, which
+`item_relationships` enforces with a unique constraint. One parent therefore
+has **one line per child per relationship type**: a BOM that would list the same
+screw under two find numbers ("4 here, 12 there") has to carry a single line
+with the summed quantity, and `referenceDesignator` for where they go.
+
+This is what every consumer of the structure assumes — merge, conflict
+detection, impact analysis and where-used all treat a parent/child pair as one
+edge — so the constraint is deliberate rather than incidental. Splitting a child
+across lines would need those consumers to agree on a line identity first.
 
 ## Relationship Types
 

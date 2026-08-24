@@ -6,6 +6,7 @@ import { Handle, Position } from '@xyflow/react'
 import { Link } from '@tanstack/react-router'
 import type { ExpandDirection } from '@/components/graph/GraphExpandButton'
 import { GraphExpandButton } from '@/components/graph/GraphExpandButton'
+import { useLifecycleState } from '@/components/items/StateBadge'
 
 interface GraphItemNodeProps {
   data: {
@@ -51,43 +52,13 @@ export const GraphItemNode = memo(({ data }: GraphItemNodeProps) => {
     onCollapse,
   } = data
 
+  const stateStyle = useLifecycleState(itemType, state)
+
   // Color coding by level
   const levelColors = {
     0: 'bg-cyan-100 dark:bg-cyan-900 border-cyan-500', // Center item
     1: 'bg-slate-100 dark:bg-slate-800 border-slate-400', // Direct relations
     2: 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700', // Second-level
-  }
-
-  const stateColors: Record<string, string> = {
-    Draft: 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300',
-    InReview:
-      'bg-blue-200 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300',
-    Approved:
-      'bg-green-200 dark:bg-green-900/50 text-green-700 dark:text-green-300',
-    Released:
-      'bg-green-300 dark:bg-green-900/50 text-green-800 dark:text-green-200',
-    Obsolete: 'bg-red-200 dark:bg-red-900/50 text-red-700 dark:text-red-300',
-    Concept:
-      'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300',
-    Planning:
-      'bg-blue-200 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300',
-    Closed:
-      'bg-green-200 dark:bg-green-900/50 text-green-700 dark:text-green-300',
-    Cancelled: 'bg-red-200 dark:bg-red-900/50 text-red-700 dark:text-red-300',
-    // WorkOrder / PhysicalPart lifecycles
-    'Not Started':
-      'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300',
-    'In Progress':
-      'bg-blue-200 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300',
-    Complete:
-      'bg-green-200 dark:bg-green-900/50 text-green-700 dark:text-green-300',
-    Available:
-      'bg-green-200 dark:bg-green-900/50 text-green-700 dark:text-green-300',
-    Consumed:
-      'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300',
-    'In Service':
-      'bg-cyan-200 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300',
-    Scrapped: 'bg-red-200 dark:bg-red-900/50 text-red-700 dark:text-red-300',
   }
 
   const typeColors: Record<string, string> = {
@@ -219,9 +190,9 @@ export const GraphItemNode = memo(({ data }: GraphItemNodeProps) => {
             {itemType}
           </span>
           <span
-            className={`text-xs px-2 py-0.5 rounded ${stateColors[state] || 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+            className={`text-xs px-2 py-0.5 rounded ${stateStyle.className}`}
           >
-            {state}
+            {stateStyle.label}
           </span>
           {/* Cross-design indicator */}
           {isCrossDesign && designCodes && designCodes.length > 0 && (

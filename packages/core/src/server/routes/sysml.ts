@@ -143,7 +143,6 @@ app.post(
             itemNumber: itemData.itemNumber,
             name: itemData.name,
             itemType: itemData.itemType,
-            state: 'Draft',
             revision: '-',
             sysmlType: itemData.sysmlType,
             metamodel: itemData.metamodel,

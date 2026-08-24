@@ -295,6 +295,8 @@ export interface ReleasePreview {
   totalItems: number
   canRelease: boolean
   validationIssues?: Array<string>
+  /** The change order already released; this preview describes nothing to come. */
+  alreadyReleased?: boolean
 }
 
 /**

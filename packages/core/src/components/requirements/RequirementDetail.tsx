@@ -55,16 +55,9 @@ import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'
 import { itemAtContextQuery } from '@/lib/query/options/items'
-
-const STATE_OPTIONS = [
-  { value: 'Draft', label: 'Draft' },
-  { value: 'Proposed', label: 'Proposed' },
-  { value: 'InReview', label: 'In Review' },
-  { value: 'Approved', label: 'Approved' },
-  { value: 'Implemented', label: 'Implemented' },
-  { value: 'Verified', label: 'Verified' },
-  { value: 'Rejected', label: 'Rejected' },
-]
+import { StateBadge } from '@/components/items/StateBadge'
+import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
+import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
 
 const TYPE_OPTIONS = [
   { value: 'Functional', label: 'Functional' },
@@ -82,14 +75,6 @@ const PRIORITY_OPTIONS = [
   { value: 'WontHave', label: "Won't Have" },
 ]
 
-const STATUS_OPTIONS = [
-  { value: 'Proposed', label: 'Proposed' },
-  { value: 'Approved', label: 'Approved' },
-  { value: 'Implemented', label: 'Implemented' },
-  { value: 'Verified', label: 'Verified' },
-  { value: 'Rejected', label: 'Rejected' },
-]
-
 const VERIFICATION_METHOD_OPTIONS = [
   { value: 'Analysis', label: 'Analysis' },
   { value: 'Inspection', label: 'Inspection' },
@@ -105,22 +90,6 @@ const VERIFICATION_STATUS_OPTIONS = [
   { value: 'Failed', label: 'Failed' },
   { value: 'Waived', label: 'Waived' },
 ]
-
-const stateVariant = (state: string) => {
-  const variants: Record<
-    string,
-    'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-  > = {
-    Draft: 'secondary',
-    Proposed: 'default',
-    InReview: 'default',
-    Approved: 'success',
-    Implemented: 'success',
-    Verified: 'success',
-    Rejected: 'destructive',
-  }
-  return variants[state] || 'default'
-}
 
 const priorityVariant = (priority: string) => {
   const variants: Record<
@@ -154,14 +123,12 @@ const createEmptyRequirement = (): Requirement => ({
   masterId: undefined,
   itemType: 'Requirement',
   itemNumber: '',
-  revision: 'A',
   name: '',
   description: '',
-  state: 'Draft',
+  state: '',
   isCurrent: true,
   type: undefined,
   priority: undefined,
-  status: undefined,
   source: undefined,
   category: undefined,
   acceptanceCriteria: undefined,
@@ -175,6 +142,8 @@ const createEmptyRequirement = (): Requirement => ({
 })
 
 interface RequirementDetailProps {
+  /** Called after a lifecycle transition succeeds (refresh the item) */
+  onTransitioned?: () => void
   requirement?: Requirement
   designs?: Array<Design>
   defaultDesignId?: string
@@ -187,6 +156,7 @@ interface RequirementDetailProps {
 }
 
 export function RequirementDetail({
+  onTransitioned,
   requirement: initialRequirement,
   designs = [],
   defaultDesignId,
@@ -263,12 +233,14 @@ export function RequirementDetail({
     setRequirement((prev) => ({ ...prev, [field]: value }))
   }
 
+  // Released lineage on main is revised through a change order (the
+  // CheckoutDialog); membership comes from the lifecycle's mappings
+  const { isReleasedFamily: isReleasedLineage } = useReleasedFamily(
+    'Requirement',
+    currentRequirement.state,
+  )
   const needsCheckout =
-    !isCreateMode &&
-    ['Approved', 'Verified', 'Implemented'].includes(
-      currentRequirement.state ?? '',
-    ) &&
-    context.type === 'main'
+    !isCreateMode && isReleasedLineage && context.type === 'main'
 
   // The server-side edit lock behind the Edit button. Released-on-main goes
   // through the CheckoutDialog (revise onto a branch) instead of a direct
@@ -391,13 +363,21 @@ export function RequirementDetail({
               {!isCreateMode && isLoadingVersion && (
                 <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
               )}
-              {!isCreateMode && currentRequirement.state && (
-                <Badge
-                  className="text-base"
-                  variant={stateVariant(currentRequirement.state)}
-                >
-                  {currentRequirement.state}
-                </Badge>
+              {!isCreateMode && (
+                <>
+                  <StateBadge
+                    itemType="Requirement"
+                    state={currentRequirement.state}
+                    className="text-base"
+                  />
+                  {currentRequirement.id && (
+                    <FreeTransitionControl
+                      itemId={currentRequirement.id}
+                      state={currentRequirement.state}
+                      onTransitioned={onTransitioned}
+                    />
+                  )}
+                </>
               )}
               {!isCreateMode &&
                 currentRequirement.designId &&
@@ -589,15 +569,6 @@ export function RequirementDetail({
                       required
                       data-testid="requirement-name"
                     />
-                    <ViewEditBadge
-                      label="State"
-                      value={currentRequirement.state}
-                      onChange={(v) => updateField('state', v)}
-                      isEditing={isEditing}
-                      options={STATE_OPTIONS}
-                      variant={stateVariant}
-                      readOnly={!isCreateMode}
-                    />
                     <ViewEditTextarea
                       label="Description"
                       value={
@@ -662,18 +633,6 @@ export function RequirementDetail({
                       isEditing={isEditing}
                       options={PRIORITY_OPTIONS}
                       variant={priorityVariant}
-                    />
-                    <ViewEditSelect
-                      label="Status"
-                      value={
-                        isEditing
-                          ? requirement.status
-                          : currentRequirement.status
-                      }
-                      onChange={(v) => updateField('status', v)}
-                      isEditing={isEditing}
-                      options={STATUS_OPTIONS}
-                      placeholder="Select status..."
                     />
                     <ViewEditText
                       label="Source"

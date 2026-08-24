@@ -5,12 +5,14 @@ import { nanoid } from 'nanoid'
 import { ZodError } from 'zod'
 import { createErrorResponse } from './api'
 import { ErrorLogService } from './ErrorLogService'
+import { asPostgresError, constraintOf, tableOf } from './pg'
 import {
   AppError,
   DatabaseQueryError,
   ErrorCode,
   ValidationError,
 } from './index'
+import type { PostgresDriverError } from './pg'
 import { apiLogger } from '@/lib/logging/logger'
 
 /**
@@ -53,72 +55,52 @@ export function handleApiError(
     return createErrorResponse(validationError, requestId)
   }
 
-  // Handle PostgreSQL/Drizzle errors
-  if (isPostgresError(error)) {
-    const dbError = mapPostgresError(error, requestId)
+  // Handle PostgreSQL/Drizzle errors. Drizzle wraps the driver error, so this
+  // looks through the cause chain — matching only the outermost object left
+  // every wrapped constraint violation classified as a 500 below.
+  const pgError = asPostgresError(error)
+  if (pgError) {
+    const dbError = mapPostgresError(pgError, requestId)
     logError(dbError, request, requestId)
     return createErrorResponse(dbError, requestId)
   }
 
-  // Unknown errors - wrap in AppError
-  // Try to extract more details from the error
-  let errorMessage = 'An unexpected error occurred'
-  if (error instanceof Error) {
-    // Check for nested PostgreSQL error details
-    const pgError = error as Error & {
-      cause?: { code?: string; detail?: string; constraint?: string }
-    }
-    if (pgError.cause?.code) {
-      errorMessage = `Database error: ${pgError.cause.detail || pgError.cause.code}`
-    }
-  }
-
-  const unknownError = new AppError(ErrorCode.INTERNAL_ERROR, errorMessage, {
-    cause: error instanceof Error ? error : new Error(String(error)),
-    isOperational: false,
-    context: { requestId },
-  })
+  // Unknown errors - wrap in AppError. A nested driver error no longer lands
+  // here: asPostgresError above follows the cause chain, so this branch is
+  // genuinely "not a database error" and says nothing about the query.
+  const unknownError = new AppError(
+    ErrorCode.INTERNAL_ERROR,
+    'An unexpected error occurred',
+    {
+      cause: error instanceof Error ? error : new Error(String(error)),
+      isOperational: false,
+      context: { requestId },
+    },
+  )
   logError(unknownError, request, requestId)
   return createErrorResponse(unknownError, requestId)
-}
-
-/**
- * Check if an error is a PostgreSQL error.
- */
-function isPostgresError(error: unknown): error is {
-  code: string
-  detail?: string
-  constraint?: string
-  column?: string
-  table?: string
-} {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    typeof (error as Record<string, unknown>).code === 'string'
-  )
 }
 
 /**
  * Map PostgreSQL error codes to AppError instances.
  */
 function mapPostgresError(
-  error: { code: string; detail?: string; constraint?: string },
+  error: PostgresDriverError,
   requestId?: string,
 ): AppError {
+  const constraint = constraintOf(error)
   switch (error.code) {
     case '23505': // unique_violation
       return new AppError(
         ErrorCode.RESOURCE_ALREADY_EXISTS,
         error.detail ?? 'A record with this value already exists',
-        { context: { requestId, constraint: error.constraint } },
+        { context: { requestId, constraint } },
       )
     case '23503': // foreign_key_violation
       return new AppError(
         ErrorCode.DB_CONSTRAINT_VIOLATION,
         'Cannot perform this operation due to related records',
-        { context: { requestId, constraint: error.constraint } },
+        { context: { requestId, constraint } },
       )
     case '23502': // not_null_violation
       return new AppError(
@@ -181,29 +163,31 @@ function logError(
         message: cause.message,
         stack: cause.stack,
       }
-      // Check for PostgreSQL error properties
-      const pgCause = cause as Error & {
-        code?: string
-        detail?: string
-        constraint?: string
-        table?: string
-        column?: string
-        cause?: unknown
+      // PostgreSQL error properties, under whichever spelling the driver
+      // used — these were read as `constraint`/`table`/`column` only, which
+      // postgres.js never sets, so a constraint violation logged none of the
+      // three fields you would want when reading the log.
+      const pgCause = asPostgresError(cause)
+      if (pgCause) {
+        causeDetails.pgCode = pgCause.code
+        if (pgCause.detail) causeDetails.pgDetail = pgCause.detail
+        const constraint = constraintOf(pgCause)
+        if (constraint) causeDetails.pgConstraint = constraint
+        const table = tableOf(pgCause)
+        if (table) causeDetails.pgTable = table
+        const column = pgCause.column ?? pgCause.column_name
+        if (column) causeDetails.pgColumn = column
       }
-      if (pgCause.code) causeDetails.pgCode = pgCause.code
-      if (pgCause.detail) causeDetails.pgDetail = pgCause.detail
-      if (pgCause.constraint) causeDetails.pgConstraint = pgCause.constraint
-      if (pgCause.table) causeDetails.pgTable = pgCause.table
-      if (pgCause.column) causeDetails.pgColumn = pgCause.column
       // Check for nested cause
-      if (pgCause.cause) {
+      const nested = cause as Error & { cause?: unknown }
+      if (nested.cause) {
         causeDetails.nestedCause =
-          pgCause.cause instanceof Error
+          nested.cause instanceof Error
             ? {
-                message: pgCause.cause.message,
-                ...(pgCause.cause as unknown as Record<string, unknown>),
+                message: nested.cause.message,
+                ...(nested.cause as unknown as Record<string, unknown>),
               }
-            : pgCause.cause
+            : nested.cause
       }
       logData.cause = causeDetails
     } else {

@@ -34,7 +34,8 @@ Both are stored in the same `workflow_definitions` table and share a common stru
 
 ### Key Principles
 
-- **Item state changes are lifecycle-enforced by the server.** Driven types (Parts, Documents, Requirements) cannot transition directly — their states change only through ECO release. Free types (Issues, Tools, ...) transition through `POST /api/v1/items/:id/transition`, validated against their lifecycle's transitions. The generic item-update API rejects attempts to change `state`, `revision`, or `isCurrent` outright.
+- **No state name appears in application logic.** A state has exactly three machine-readable properties — `isInitial`, `isFinal` (+ `finalKind`), and the roles it plays in change-action mappings (`release`/`revise`/`obsolete`/`promote`). Everything else about a state, including its name, belongs to whoever configures the lifecycle. Services derive "is this released lineage", "is this the initial state", "has the flow ended" from those flags and mappings through `LifecycleService` (see [Deriving from flags and mappings](#deriving-from-flags-and-mappings)); the UI renders names and colours from the lifecycle definition (`StateBadge`). The shipped defaults in `packages/core/src/lib/items/default-lifecycles.ts` are configuration, not logic.
+- **Item state changes are lifecycle-enforced by the server.** Released lineage (the states the release mappings produce) is entered and left only through ECO release. Everything else moves through `POST /api/v1/items/:id/transition`, validated against the lifecycle's declared transitions: all of a Free lifecycle's edges, and a Driven lifecycle's declared pre-release edges (review progress such as Draft → Proposed → Approved on the default Requirement lifecycle). The generic item-update API rejects attempts to change `state`, `revision`, or `isCurrent` outright.
 - **Workflow definitions are JSON-based.** States, transitions, guards, and actions are stored as JSONB in PostgreSQL. No code changes are required to create new workflows.
 - **Guard evaluation is pluggable.** Two guard types are supported out of the box: `field_value` and `user_role`. (Approval gating is not a guard — the transition path enforces it directly, from state approvers and the transition's `requiredCount`.)
 - **Flexible workflows** allow per-instance customization of states and transitions. The definition serves as a template that users can modify on each change order.
@@ -179,9 +180,10 @@ unanswerable for the fixed ECO workflow most change orders use.
 
 ### Initial and Final States
 
-- Every definition must have exactly **one** initial state. New items start here.
+- Every definition must have exactly **one** initial state. New items start here — `ItemService.create` resolves it from the flag; there is no literal default anywhere.
 - Final states are optional but recommended. When a workflow instance reaches a final state, the instance is marked as completed (`completedAt` is set). Completed instances are terminal — they cannot be transitioned again.
-- On Driving lifecycles every final state must declare `finalKind` (`release` or `cancel`); definitions and flexible-instance edits are rejected without it, and a transition into a final state that somehow lacks it fails closed.
+- `isInitial` and `isFinal` are **not** mutually exclusive. The degenerate Free lifecycle — one state carrying both flags, zero transitions (e.g. `Current`) — is the right default for an item type with no meaningful flow, and the reachability rules (non-initial states need an incoming transition, non-final states an outgoing one) are satisfiable by a zero-transition machine only in that configuration.
+- `finalKind` says what finishing in a final state means. On Driving lifecycles every final state must declare `release` or `cancel`; definitions and flexible-instance edits are rejected without it, and a transition into a final state that somehow lacks it fails closed. On Free lifecycles a final may declare `complete` or `cancel`: work orders gate their traveler on transitions into a `complete` final and stamp `completedAt`, cancel-kind finals abort ungated, and a final declaring neither simply ends the flow.
 - For change-order workflows, transitioning into a final state runs the release orchestration in `ChangeOrderService.executeWorkflowTransition()` — the single entry point shared by the API route, the AI tools, and `submit`/`approve`/`reject`:
   1. An exclusive **release claim** is taken on the instance (compare-and-swap). While held, all other transitions are blocked, so a release cannot double-fire.
   2. The release (`close()` → merge, assign revisions) or cancellation (archive branches) runs **before** any workflow state is written.
@@ -189,9 +191,9 @@ unanswerable for the fixed ECO workflow most change orders use.
 
   If the merge fails, the claim is released and the ECO remains in its pre-final state with the error surfaced — retrying the same transition after fixing the problem just works. The workflow can never be "Approved" without the merge having happened.
 
-### Free Lifecycle Transitions
+### Manual Transitions
 
-Free-lifecycle items (Issues, Tools, ...) transition through a dedicated endpoint — the only sanctioned write path for their state:
+Items transition through a dedicated endpoint — the only sanctioned write path for manual state changes. Free-lifecycle items (Issues, Tools, ...) use it for every edge; Driven-lifecycle items use it for the pre-release edges their lifecycle declares (the default Requirement lifecycle's Draft → Proposed → Approved review progress, with Rejected and Rework edges), never to enter or leave released lineage:
 
 ```
 GET  /api/v1/items/:id/transitions   # transitions valid from the current state
@@ -201,7 +203,7 @@ POST /api/v1/items/:id/transition    # { toState, comments? } — id or display 
 Handled by `LifecycleService.transitionFreeItem()`:
 
 - **Lazy workflow instance.** The item gets a workflow instance on its first transition, so history, guards, approvals, and the hardened transition engine all apply. If the item's stored state predates the endpoint and diverges from the fresh instance, the instance **adopts** it first (recorded in history as `state_adopted`).
-- **ECO-controlled types are refused** with a clear error — Parts and Documents change state at change-order release, never here. Change orders are refused too (they have their own workflow endpoint).
+- **Released lineage is refused in both directions** with a clear error — a Driven item enters its release targets only at change-order release, and once it is released lineage nothing moves it by hand (revise it through a change order). A Driven lifecycle that declares no transitions (the default Part/Document lifecycles) therefore offers nothing here. Change orders are refused too (they have their own workflow endpoint).
 - **Reopening is allowed.** Completed-instance terminality applies to Driving lifecycles only; a Free lifecycle that defines a transition out of a final state (Closed → Open) can reopen, clearing `completedAt`.
 
 The Issue detail page's transition buttons and the AI `transition_item_state` tool both go through this path.
@@ -227,19 +229,47 @@ The engine validates definitions to ensure structural integrity:
 
 Each item type is assigned a lifecycle definition via the `item_type_configs` table. The `RuntimeItemTypeConfig.lifecycleDefinitionId` field links an item type to its lifecycle.
 
+**Every item type must have a lifecycle.** "No lifecycle" was once the reason for every literal fallback in the services (`?? 'Released'`, `|| 'Draft'`, a per-type `defaultState`); all of those are gone, and `ConfigService` refuses to save a registered type's config without a lifecycle or to delete one that carries it. `LifecycleService.getInitialStateId` throws on a type with none — a configuration error, not a runtime state.
+
 ### Default Lifecycle Assignments
 
-| Item Type       | Lifecycle                       | Type    | Lifecycle ID                    |
-| --------------- | ------------------------------- | ------- | ------------------------------- |
-| Part            | Part - Default Lifecycle        | Driven  | `LIFECYCLE_IDS.part`            |
-| Document        | Document - Default Lifecycle    | Driven  | `LIFECYCLE_IDS.document`        |
-| Requirement     | Requirement - Default Lifecycle | Driven  | `LIFECYCLE_IDS.requirement`     |
-| ChangeOrder     | ECO - Default Workflow          | Driving | `LIFECYCLE_IDS.changeOrder`     |
-| Issue           | Issue - Default Lifecycle       | Free    | `LIFECYCLE_IDS.issue`           |
-| Task            | (Free lifecycle)                | Free    | `LIFECYCLE_IDS.task`            |
-| WorkInstruction | (Free lifecycle)                | Free    | `LIFECYCLE_IDS.workInstruction` |
+The shipped defaults live in `packages/core/src/lib/items/default-lifecycles.ts` as data, seeded by `scripts/seed-minimal.ts`, by the test global-setup (once per run) and by the test fixtures, with version-gated upgrade-only upserts: a default that changes shape bumps its `version`, and an existing row is replaced only when its stored version is lower — so admin edits (which bump the version through `WorkflowService`) and suite overrides are left alone.
+
+| Item Type       | Lifecycle                            | Type    | Lifecycle ID                    |
+| --------------- | ------------------------------------ | ------- | ------------------------------- |
+| Part            | Part - Default Lifecycle             | Driven  | `LIFECYCLE_IDS.part`            |
+| Document        | Document - Default Lifecycle         | Driven  | `LIFECYCLE_IDS.document`        |
+| Requirement     | Requirement - Default Lifecycle      | Driven  | `LIFECYCLE_IDS.requirement`     |
+| Software        | Part - Default Lifecycle (shared)    | Driven  | `LIFECYCLE_IDS.part`            |
+| ChangeOrder     | ECO - Default Workflow               | Driving | `LIFECYCLE_IDS.changeOrder`     |
+| Issue           | Issue - Default Lifecycle            | Free    | `LIFECYCLE_IDS.issue`           |
+| Task            | Task - Default Lifecycle             | Free    | `LIFECYCLE_IDS.task`            |
+| TestPlan        | Test Plan - Default Lifecycle        | Free    | `LIFECYCLE_IDS.testPlan`        |
+| TestCase        | Test Case - Default Lifecycle        | Free    | `LIFECYCLE_IDS.testCase`        |
+| WorkInstruction | Work Instruction - Default Lifecycle | Free    | `LIFECYCLE_IDS.workInstruction` |
+| Tool            | Tool - Default Lifecycle             | Free    | `LIFECYCLE_IDS.tool`            |
+| PhysicalPart    | Physical Part - Default Lifecycle    | Free    | `LIFECYCLE_IDS.physicalPart`    |
+| WorkOrder       | Work Order - Default Lifecycle       | Free    | `LIFECYCLE_IDS.workOrder`       |
 
 The `LIFECYCLE_IDS` constants are defined in `packages/core/src/lib/items/lifecycle-ids.ts` as well-known UUIDs to ensure consistent linkage between seed scripts and code.
+
+### Deriving from flags and mappings
+
+Nothing in the services compares a state to a name. The questions code asks, and where they are answered:
+
+| Question                                           | `LifecycleService`                                               | Derived from                                             |
+| -------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------- |
+| Where does a new item start?                       | `getInitialStateId(type)`                                        | `isInitial` (a ChangeOrder reads its Driving definition) |
+| Is this state immutable released lineage?          | `isReleasedFamilyState(type, state)` / `getReleasedFamilyStates` | release target, revise new/old states, obsolete target   |
+| Which states does a release stamp on new versions? | `getReleaseTargetStates(type)`                                   | `release.toState`, `revise.newVersionState`              |
+| Has the flow ended, and what does that mean?       | `getFinalStateIds(type)` / `getFinalKind(type, state)`           | `isFinal`, `finalKind`                                   |
+| Which action does this item's state imply?         | `ChangeOrderService.inferChangeAction(type, state)`              | the revise/release mappings' `fromState`                 |
+| Everything a release needs for one type            | `resolveActionStates(type)`                                      | the mappings; `null` means the action is not defined     |
+| Is this type outside ECO control?                  | `isBranchProtectionExempt(type)`                                 | `lifecycleType !== 'Driven'`                             |
+
+`resolveActionStates` fields are nullable: a Free lifecycle defines no release actions, so its items merge without a lifecycle stamp, never count as released, and never protect main. The released family is closed by construction — when a lifecycle names no superseded state the merge leaves prior versions in their own state — so nothing the machinery writes falls outside it.
+
+On the client, `/api/v1/lifecycles/by-item-type/:type` serves the governing definition (states with names, colours and flags; transitions; mappings), resolving Driving-governed types too. `StateBadge` / `useLifecycleState` render a state by its configured name and colour; `FreeTransitionControl` offers the transitions the lifecycle allows from the current state (finalKind-aware styling); `LifecycleStateCards` draws a list page's summary cards, one per state; `useReleasedFamily` is the presentation twin of `isReleasedFamilyState`; `lifecycleByItemTypeQuery` is the loader-safe query behind them. The Kanban board's columns are the Task lifecycle's states, and dragging between them is a lifecycle transition.
 
 ### Changing a Lifecycle Assignment
 

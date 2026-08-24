@@ -219,10 +219,6 @@ export function ProgramsStep({ onCompleted }: ProgramsStepProps) {
           name: partForm.name.trim(),
           partType: partForm.partType,
           designId: partForm.designId,
-          // Required by baseItemSchema — every create form seeds the first
-          // revision as 'A' (see PartForm). Omitting it fails validation
-          // server-side before the part is ever written.
-          revision: 'A',
         }),
       })
       if (!response.ok) {

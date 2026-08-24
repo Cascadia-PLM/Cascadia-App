@@ -165,3 +165,42 @@ export function itemAtContextQuery<T>(
     enabled: enabled && Boolean(itemId) && search !== null,
   })
 }
+
+/**
+ * One item resolved at a context, with the id the resolution landed on.
+ *
+ * `itemAtContextQuery`'s sibling for pages that navigate rather than display
+ * in place: `PartDetail` swaps routes when the context resolves to a
+ * different row (a branch working copy vs its released counterpart), so it
+ * needs `resolvedItemId` — and `main` is a real request here
+ * (`released=true`) rather than "nothing to ask", because the page may be
+ * holding a branch working copy whose main version is another row entirely.
+ */
+export function itemResolvedAtContextQuery<T>(
+  itemId: string,
+  context: ItemVersionContext,
+  enabled = true,
+) {
+  const search =
+    contextSearchParams(context) ??
+    (context.type === 'main' ? 'released=true' : null)
+
+  return queryOptions({
+    queryKey: qk.sub('items', itemId, 'resolved-at-context', search ?? 'none'),
+    queryFn: async (): Promise<{
+      item: T | null
+      existsAtContext: boolean
+      resolvedItemId?: string
+    }> => {
+      const result = await apiFetch<{
+        data: {
+          item: T | null
+          existsAtContext: boolean
+          resolvedItemId?: string
+        }
+      }>(`/api/v1/items/${itemId}/at-context?${search}`)
+      return result.data
+    },
+    enabled: enabled && Boolean(itemId) && search !== null,
+  })
+}

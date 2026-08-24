@@ -69,10 +69,14 @@ query, not a field):
 - `In Progress` — at least one execution exists
 - `Not Started` — otherwise
 
-Work order completion is **gated on the traveler**: transition to `Complete` is rejected
-while any non-skipped line is incomplete. Skipping (with a reason) is the audited escape
-hatch. Starting an execution on a `Not Started` order auto-transitions it to
-`In Progress`; `Complete`/`Cancelled` orders reject new executions.
+Work order completion is **gated on the traveler**: a transition into a final state the
+lifecycle flags `finalKind: 'complete'` (`Complete` in the default) is rejected while any
+non-skipped line is incomplete. Skipping (with a reason) is the audited escape hatch.
+Cancel-kind finals abort ungated. Starting an execution on an order in its initial state
+auto-transitions it along the initial state's unique transition to a non-final state
+(`Not Started` → `In Progress` in the default; zero or several candidates means no
+auto-start); any final state — however named — rejects new executions and freezes the
+traveler. No state is named in the services; the flags decide.
 
 ### `quantityCompleted` decoupled from sign-off
 
@@ -140,7 +144,7 @@ repeat a procedure at different sequence points. `populate` dedupes; manual adds
   auto-starts the order), `updateStepData`, `updateProgress`, `complete` (sign-off
   routing via the instance's order), `abandon`, `submitSignOff`, `resubmitForApproval`,
   finders by instance / work order / template.
-- **`WorkOrderService.updateStatus`** — gates `Complete` on the traveler.
+- **`WorkOrderService.updateStatus`** — gates `finalKind: 'complete'` transitions on the traveler and stamps `completedAt`; the lifecycle's own transitions validate the target.
 - **`WorkOrderMaterialService.produce`** — syncs `quantityCompleted` from produced units.
 - **`ParametricResolutionService.resolveBlocks`** — resolves parametric blocks from
   snapshot content (shared by the template path).

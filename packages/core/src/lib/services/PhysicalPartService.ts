@@ -145,7 +145,6 @@ export class PhysicalPartService {
         'PhysicalPart',
         {
           itemType: 'PhysicalPart',
-          revision: 'A',
           name: `${part.name ?? part.itemNumber} · ${identityLabel}`,
           instanceKind,
           partMasterId: data.partMasterId,

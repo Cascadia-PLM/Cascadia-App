@@ -40,7 +40,6 @@ export function IssueForm({
     defaultValues: {
       itemType: 'Issue' as const,
       state: 'Open',
-      revision: 'A',
       severity: 'Medium' as const,
       priority: 'Medium' as const,
       itemNumber: '',
@@ -59,7 +58,6 @@ export function IssueForm({
     onSubmit: async ({ value }) => {
       const submissionData = {
         ...value,
-        revision: value.revision.trim() || 'A',
         attributes,
       } as Issue
       await onSubmit(submissionData)
@@ -88,27 +86,6 @@ export function IssueForm({
               onBlur={field.handleBlur}
               error={field.state.meta.errors[0]}
             />
-          )}
-        </form.Field>
-
-        {/* Revision */}
-        <form.Field name="revision">
-          {(field) => (
-            <FormField
-              label="Revision"
-              required
-              error={field.state.meta.errors[0]}
-              helpText="Version identifier (A, B, C, etc.)"
-            >
-              <Input
-                name={field.name}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                placeholder="A"
-                error={!!field.state.meta.errors.length}
-              />
-            </FormField>
           )}
         </form.Field>
 

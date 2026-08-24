@@ -32,7 +32,8 @@ export const items = pgTable(
     revision: varchar('revision', { length: 10 }).notNull(),
     itemType: varchar('item_type', { length: 50 }).notNull(),
     name: varchar('name', { length: 500 }),
-    state: varchar('state', { length: 50 }).notNull().default('Draft'),
+    // No default: the creating service resolves the lifecycle's initial state
+    state: varchar('state', { length: 50 }).notNull(),
     isCurrent: boolean('is_current').default(true),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
@@ -305,7 +306,8 @@ export const requirements = pgTable(
     description: text('description'),
     type: varchar('type', { length: 50 }),
     priority: varchar('priority', { length: 20 }),
-    status: varchar('status', { length: 50 }),
+    // Review progress (Proposed/Approved/Rejected) is the lifecycle state now;
+    // the old parallel `status` column is gone
     acceptanceCriteria: text('acceptance_criteria'),
     source: varchar('source', { length: 200 }),
     category: varchar('category', { length: 100 }),
@@ -371,7 +373,8 @@ export const testPlans = pgTable(
     environment: varchar('environment', { length: 100 }),
     entryCriteria: text('entry_criteria'),
     exitCriteria: text('exit_criteria'),
-    status: varchar('status', { length: 50 }), // 'Draft' | 'Active' | 'Completed' | 'Archived'
+    // The flow position lives on items.state (TestPlan Free lifecycle);
+    // the old duplicate `status` column is gone
   },
   () => [],
 )
@@ -1248,7 +1251,9 @@ export const tools = pgTable('tools', {
   // Structured capabilities — schema varies by toolSubtype
   capabilities: jsonb('capabilities').$type<Record<string, unknown>>(),
   // Current status
-  toolStatus: varchar('tool_status', { length: 20 }).default('available'), // 'available' | 'in_use' | 'maintenance' | 'retired'
+  // The flow position (Draft/Available/In Use/Maintenance/Retired in the
+  // default lifecycle) lives on items.state; the old parallel `toolStatus`
+  // machine is absorbed into it
   // Physical location
   location: varchar('location', { length: 500 }),
   // Free-form notes

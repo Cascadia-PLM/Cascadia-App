@@ -39,8 +39,6 @@ export function TaskForm({
   const form = useForm({
     defaultValues: {
       itemType: 'Task' as const,
-      state: 'Backlog',
-      revision: 'A',
       priority: 'Medium' as const,
       itemNumber: '',
       name: '',
@@ -59,7 +57,6 @@ export function TaskForm({
     onSubmit: async ({ value }) => {
       const submissionData = {
         ...value,
-        revision: value.revision.trim() || 'A',
         attributes,
       } as Task
       await onSubmit(submissionData)
@@ -88,27 +85,6 @@ export function TaskForm({
               onBlur={field.handleBlur}
               error={field.state.meta.errors[0]}
             />
-          )}
-        </form.Field>
-
-        {/* Revision */}
-        <form.Field name="revision">
-          {(field) => (
-            <FormField
-              label="Revision"
-              required
-              error={field.state.meta.errors[0]}
-              helpText="Version identifier (A, B, C, etc.)"
-            >
-              <Input
-                name={field.name}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                placeholder="A"
-                error={!!field.state.meta.errors.length}
-              />
-            </FormField>
           )}
         </form.Field>
 

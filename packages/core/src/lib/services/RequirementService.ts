@@ -6,17 +6,68 @@ import { db } from '../db'
 import { notDeleted } from '../db/filters'
 import { designs } from '../db/schema/designs'
 import { itemRelationships, items, requirements } from '../db/schema/items'
+import { branchItems } from '../db/schema/versioning'
 import { NotFoundError, ValidationError } from '../errors'
 import { ItemService } from '../items/services/ItemService'
+import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
+import {
+  ALLOCATED_TO_RELATIONSHIP,
+  DERIVES_FROM_RELATIONSHIP,
+  SATISFIES_RELATIONSHIP,
+  VERIFIED_BY_RELATIONSHIP,
+} from '../items/traceability-relationships'
+import { BranchService } from './BranchService'
+import type { PersistedItem } from '../items/types/base'
 import type { Requirement } from '../items/types/requirement'
 
 /**
- * Relationship type constants for requirements domain
+ * Relationship type constants for requirements domain.
+ * Defined in `lib/items/traceability-relationships` so the edit-lock policy
+ * can name them without importing this service back; re-exported here because
+ * this is where callers have always found them.
  */
-export const SATISFIES_RELATIONSHIP = 'SATISFIES' // Part/Document → Requirement
-export const DERIVES_FROM_RELATIONSHIP = 'DERIVES_FROM' // ChildReq → ParentReq
-export const ALLOCATED_TO_RELATIONSHIP = 'ALLOCATED_TO' // Requirement → Part
-export const VERIFIED_BY_RELATIONSHIP = 'VERIFIED_BY' // TestCase → Requirement (Phase 3)
+export {
+  ALLOCATED_TO_RELATIONSHIP,
+  DERIVES_FROM_RELATIONSHIP,
+  SATISFIES_RELATIONSHIP,
+  VERIFIED_BY_RELATIONSHIP,
+}
+
+/**
+ * Where a traceability link write lands.
+ *
+ * Every link here is a content edit of one of its two items, so it obeys the
+ * same rule as any other structural edit: a branch row whose checkout the
+ * caller holds, or main before anything in the design has released
+ * (`ItemEditPolicy.requireContentEditable`). `branchId` is how a caller says
+ * "inside this ECO": both ends resolve to the rows that branch is working
+ * from, so the caller can keep naming items by the ids it already has —
+ * usually main's — without knowing any working-copy id. Without it the link
+ * is written against the rows named, which on a released design means main,
+ * and is refused with the ECO hint.
+ *
+ * Deliberately **not** a checkout: naming a branch resolves rows, it does not
+ * take locks or start revisions. Pulling an item into an ECO's scope is
+ * `POST /change-orders/:id/checkout` and stays an explicit act — a link
+ * endpoint that silently added items to the reviewed set would put content in
+ * a release nobody asked for. Same stance as the ECO BOM editor, which
+ * refuses a parent that is not already an affected item.
+ */
+export interface TraceabilityLinkOptions {
+  branchId?: string
+}
+
+/**
+ * The subset of the items asked about that had at least one link, for the
+ * coverage counters that only care whether an item is covered at all.
+ */
+export function idsWithLinks(links: Map<string, Array<unknown>>): Set<string> {
+  const covered = new Set<string>()
+  for (const [id, found] of links) {
+    if (found.length > 0) covered.add(id)
+  }
+  return covered
+}
 
 /**
  * Gap information for requirements coverage
@@ -61,6 +112,89 @@ export interface SatisfyingItem {
  */
 export class RequirementService {
   /**
+   * Resolve one end of a link onto `branchId`: the row that branch is
+   * currently working from for this item's master, or the item itself when
+   * the branch does not track it (it inherits main's row).
+   *
+   * Callers name items by whatever id they hold — usually main's — so
+   * finding the branch's own row is this service's job, not theirs. What the
+   * caller may then do with that row is the edit-lock policy's call, made
+   * where the edge is written.
+   */
+  private static async resolveOnBranch(
+    item: PersistedItem,
+    branchId: string,
+  ): Promise<PersistedItem> {
+    const branch = await BranchService.getById(branchId)
+    if (!branch) {
+      throw new NotFoundError('Branch', branchId, {
+        operation: 'resolveOnBranch',
+      })
+    }
+    if (item.designId && item.designId !== branch.designId) {
+      throw new ValidationError(
+        `Item '${item.itemNumber}' is not in the design that branch '${branch.name}' belongs to`,
+        undefined,
+        { operation: 'resolveOnBranch', itemId: item.id },
+      )
+    }
+
+    const [branchRow] = await db
+      .select({ currentItemId: branchItems.currentItemId })
+      .from(branchItems)
+      .where(
+        and(
+          eq(branchItems.branchId, branchId),
+          eq(branchItems.itemMasterId, item.masterId),
+        ),
+      )
+      .limit(1)
+
+    if (!branchRow?.currentItemId || branchRow.currentItemId === item.id) {
+      return item
+    }
+    return (await ItemService.findById(branchRow.currentItemId)) ?? item
+  }
+
+  /**
+   * Resolve both ends of a link for the branch the caller named. A no-op
+   * without one — the link is then written exactly where the caller pointed.
+   */
+  private static async resolveLinkEnds(
+    source: PersistedItem,
+    target: PersistedItem,
+    branchId: string | undefined,
+  ): Promise<{ source: PersistedItem; target: PersistedItem }> {
+    if (!branchId) return { source, target }
+    return {
+      source: await this.resolveOnBranch(source, branchId),
+      target: await this.resolveOnBranch(target, branchId),
+    }
+  }
+
+  /**
+   * `resolveLinkEnds` for the unlink paths, which work in ids and treat an
+   * item that no longer exists as "no such link" rather than an error — the
+   * behaviour those paths have always had.
+   */
+  private static async resolveLinkEndIds(
+    sourceId: string,
+    targetId: string,
+    branchId: string | undefined,
+  ): Promise<{ sourceId: string; targetId: string }> {
+    if (!branchId) return { sourceId, targetId }
+
+    const [source, target] = await Promise.all([
+      ItemService.findById(sourceId),
+      ItemService.findById(targetId),
+    ])
+    if (!source || !target) return { sourceId, targetId }
+
+    const ends = await this.resolveLinkEnds(source, target, branchId)
+    return { sourceId: ends.source.id, targetId: ends.target.id }
+  }
+
+  /**
    * Create SATISFIES relationships between items and a requirement.
    * Direction: Item (Part/Document) → Requirement (source → target)
    */
@@ -68,6 +202,7 @@ export class RequirementService {
     requirementId: string,
     itemIds: Array<string>,
     userId: string,
+    options?: TraceabilityLinkOptions,
   ): Promise<void> {
     // Verify requirement exists
     const requirement = await ItemService.findById(requirementId)
@@ -86,14 +221,20 @@ export class RequirementService {
         })
       }
 
+      const ends = await this.resolveLinkEnds(
+        item,
+        requirement,
+        options?.branchId,
+      )
+
       // Check if relationship already exists
       const existing = await db
         .select()
         .from(itemRelationships)
         .where(
           and(
-            eq(itemRelationships.sourceId, itemId),
-            eq(itemRelationships.targetId, requirementId),
+            eq(itemRelationships.sourceId, ends.source.id),
+            eq(itemRelationships.targetId, ends.target.id),
             eq(itemRelationships.relationshipType, SATISFIES_RELATIONSHIP),
           ),
         )
@@ -101,8 +242,8 @@ export class RequirementService {
 
       if (existing.length === 0) {
         await ItemService.addRelationship(
-          itemId,
-          requirementId,
+          ends.source.id,
+          ends.target.id,
           SATISFIES_RELATIONSHIP,
           userId,
         )
@@ -117,15 +258,22 @@ export class RequirementService {
     requirementId: string,
     itemId: string,
     userId: string,
+    options?: TraceabilityLinkOptions,
   ): Promise<void> {
+    const ends = await this.resolveLinkEndIds(
+      itemId,
+      requirementId,
+      options?.branchId,
+    )
+
     // Find the relationship
     const [relationship] = await db
       .select()
       .from(itemRelationships)
       .where(
         and(
-          eq(itemRelationships.sourceId, itemId),
-          eq(itemRelationships.targetId, requirementId),
+          eq(itemRelationships.sourceId, ends.sourceId),
+          eq(itemRelationships.targetId, ends.targetId),
           eq(itemRelationships.relationshipType, SATISFIES_RELATIONSHIP),
         ),
       )
@@ -142,19 +290,15 @@ export class RequirementService {
   static async getSatisfyingItems(
     requirementId: string,
   ): Promise<Array<SatisfyingItem>> {
-    // Find all SATISFIES relationships where this requirement is the target
-    const relationships = await db
-      .select({
-        relationshipId: itemRelationships.id,
-        sourceId: itemRelationships.sourceId,
-      })
-      .from(itemRelationships)
-      .where(
-        and(
-          eq(itemRelationships.targetId, requirementId),
-          eq(itemRelationships.relationshipType, SATISFIES_RELATIONSHIP),
-        ),
-      )
+    // Everything that satisfies this requirement now: links it inherited from
+    // the revision it replaced, minus links a revision left behind.
+    const relationships =
+      (
+        await ItemRelationshipService.findIncomingLinks(
+          [requirementId],
+          SATISFIES_RELATIONSHIP,
+        )
+      ).get(requirementId) ?? []
 
     if (relationships.length === 0) {
       return []
@@ -179,7 +323,7 @@ export class RequirementService {
       const rel = relationships.find((r) => r.sourceId === item.id)
       return {
         ...item,
-        relationshipId: rel!.relationshipId,
+        relationshipId: rel!.id,
       }
     })
   }
@@ -197,19 +341,15 @@ export class RequirementService {
       relationshipId: string
     }>
   > {
-    // Find all SATISFIES relationships where this item is the source
-    const relationships = await db
-      .select({
-        relationshipId: itemRelationships.id,
-        targetId: itemRelationships.targetId,
-      })
-      .from(itemRelationships)
-      .where(
-        and(
-          eq(itemRelationships.sourceId, itemId),
-          eq(itemRelationships.relationshipType, SATISFIES_RELATIONSHIP),
-        ),
-      )
+    // A requirement revised since this link was made is named by the row the
+    // release superseded, so targets resolve forward.
+    const relationships =
+      (
+        await ItemRelationshipService.findOutgoingLinks(
+          [itemId],
+          SATISFIES_RELATIONSHIP,
+        )
+      ).get(itemId) ?? []
 
     if (relationships.length === 0) {
       return []
@@ -252,7 +392,7 @@ export class RequirementService {
         name: req.name,
         priority: reqData?.priority ?? null,
         verificationStatus: reqData?.verificationStatus ?? null,
-        relationshipId: rel!.relationshipId,
+        relationshipId: rel!.id,
       }
     })
   }
@@ -265,6 +405,7 @@ export class RequirementService {
     requirementId: string,
     targetItemId: string,
     userId: string,
+    options?: TraceabilityLinkOptions,
   ): Promise<void> {
     // Verify requirement exists
     const requirement = await ItemService.findById(requirementId)
@@ -282,14 +423,20 @@ export class RequirementService {
       })
     }
 
+    const ends = await this.resolveLinkEnds(
+      requirement,
+      targetItem,
+      options?.branchId,
+    )
+
     // Check if relationship already exists
     const existing = await db
       .select()
       .from(itemRelationships)
       .where(
         and(
-          eq(itemRelationships.sourceId, requirementId),
-          eq(itemRelationships.targetId, targetItemId),
+          eq(itemRelationships.sourceId, ends.source.id),
+          eq(itemRelationships.targetId, ends.target.id),
           eq(itemRelationships.relationshipType, ALLOCATED_TO_RELATIONSHIP),
         ),
       )
@@ -297,8 +444,8 @@ export class RequirementService {
 
     if (existing.length === 0) {
       await ItemService.addRelationship(
-        requirementId,
-        targetItemId,
+        ends.source.id,
+        ends.target.id,
         ALLOCATED_TO_RELATIONSHIP,
         userId,
       )
@@ -312,15 +459,22 @@ export class RequirementService {
     requirementId: string,
     targetItemId: string,
     userId: string,
+    options?: TraceabilityLinkOptions,
   ): Promise<void> {
+    const ends = await this.resolveLinkEndIds(
+      requirementId,
+      targetItemId,
+      options?.branchId,
+    )
+
     // Find the relationship
     const [relationship] = await db
       .select()
       .from(itemRelationships)
       .where(
         and(
-          eq(itemRelationships.sourceId, requirementId),
-          eq(itemRelationships.targetId, targetItemId),
+          eq(itemRelationships.sourceId, ends.sourceId),
+          eq(itemRelationships.targetId, ends.targetId),
           eq(itemRelationships.relationshipType, ALLOCATED_TO_RELATIONSHIP),
         ),
       )
@@ -332,13 +486,71 @@ export class RequirementService {
   }
 
   /**
+   * Get the items a requirement is allocated to (ALLOCATED_TO relationships).
+   *
+   * The mirror of `getSatisfyingItems`: allocation runs requirement → item,
+   * so this reads the requirement's outgoing edges. Gap analysis reports
+   * `unallocated_requirement` against exactly this set.
+   */
+  static async getAllocatedItems(
+    requirementId: string,
+  ): Promise<Array<SatisfyingItem>> {
+    const relationships =
+      (
+        await ItemRelationshipService.findOutgoingLinks(
+          [requirementId],
+          ALLOCATED_TO_RELATIONSHIP,
+        )
+      ).get(requirementId) ?? []
+
+    if (relationships.length === 0) {
+      return []
+    }
+
+    const targetIds = relationships.map((r) => r.targetId)
+    const targetItems = await db
+      .select({
+        id: items.id,
+        itemNumber: items.itemNumber,
+        name: items.name,
+        itemType: items.itemType,
+        revision: items.revision,
+        state: items.state,
+      })
+      .from(items)
+      .where(and(inArray(items.id, targetIds), notDeleted()))
+
+    return targetItems.map((item) => {
+      const rel = relationships.find((r) => r.targetId === item.id)
+      return {
+        ...item,
+        relationshipId: rel!.id,
+      }
+    })
+  }
+
+  /**
    * Create a derived requirement from a parent requirement.
    * Sets up the parentRequirementId field for the derived requirement.
+   *
+   * Where the child lands, in order:
+   *
+   * 1. `options.branchId`, when the caller names one.
+   * 2. The parent's own branch, when the parent row is the working copy on an
+   *    ECO or workspace branch — a refinement of a requirement being edited
+   *    under a change order belongs in that change order.
+   * 3. Main, which only succeeds while the design is pre-release.
+   *
+   * Requirements are ECO-driven, so once anything in the design has been
+   * released main is protected and a branch is the only place a child can go.
+   * That is exactly when requirements get decomposed, so a derive with no way
+   * to name a branch was unusable for the whole post-release life of a design.
    */
   static async deriveRequirement(
     parentRequirementId: string,
     childData: Partial<Requirement>,
     userId: string,
+    options?: { branchId?: string; commitMessage?: string },
   ): Promise<Requirement> {
     // Verify parent requirement exists
     const parentRequirement = await ItemService.findById(parentRequirementId)
@@ -346,6 +558,15 @@ export class RequirementService {
       throw new NotFoundError('Requirement', parentRequirementId, {
         operation: 'deriveRequirement',
       })
+    }
+
+    // findById merges the type-specific row into the item, so the requirement
+    // columns are there at runtime; `PersistedItem` types only the base ones,
+    // and they come back nullable because that is what the columns are.
+    const parentFields = parentRequirement as typeof parentRequirement & {
+      verificationMethod?: Requirement['verificationMethod'] | null
+      category?: string | null
+      source?: string | null
     }
 
     // Generate itemNumber for derived requirement if not provided
@@ -359,13 +580,26 @@ export class RequirementService {
       itemNumber = `${parentRequirement.itemNumber}-D${suffix}`
     }
 
-    // Ensure child has designId from parent if not specified
+    // Ensure child has designId from parent if not specified. No revision:
+    // requirements are ECO-driven, so the release that assigns one is what
+    // names it — inventing 'A' here made the first release read it as a real
+    // revision A and revise the child straight to B.
+    //
+    // A derived requirement refines its parent, so it also inherits the
+    // parent's verification method and its classification/provenance unless
+    // the caller overrides them. Without this the child came back with no
+    // verification method at all and had to be PUT immediately afterwards.
     const derivedData: Partial<Requirement> = {
       ...childData,
       itemNumber,
-      revision: childData.revision || 'A',
       parentRequirementId,
       designId: childData.designId || parentRequirement.designId,
+      verificationMethod:
+        childData.verificationMethod ??
+        parentFields.verificationMethod ??
+        undefined,
+      category: childData.category ?? parentFields.category ?? undefined,
+      source: childData.source ?? parentFields.source ?? undefined,
     }
 
     // Defensive runtime check: callers may pass a wrongly-typed itemType via
@@ -382,14 +616,46 @@ export class RequirementService {
       )
     }
 
-    // Create the derived requirement
-    const childRequirement = await ItemService.create(
+    const branchId =
+      options?.branchId ??
+      (await ItemService.getItemBranchInfo(parentRequirementId))?.branchId
+
+    // No branch in play: create on main. ItemService.create is what rejects
+    // this once the design has released something.
+    if (!branchId) {
+      return ItemService.create(
+        'Requirement',
+        derivedData as Requirement,
+        userId,
+      )
+    }
+
+    const branch = await BranchService.getById(branchId)
+    if (!branch) {
+      throw new NotFoundError('Branch', branchId, {
+        operation: 'deriveRequirement',
+      })
+    }
+    // createOnBranch takes the item's design from the branch, so a branch in
+    // some other design would silently file the child away from its parent.
+    if (branch.designId !== derivedData.designId) {
+      throw new ValidationError(
+        'Target branch belongs to a different design than the parent requirement',
+        undefined,
+        { operation: 'deriveRequirement' },
+      )
+    }
+
+    const { item } = await ItemService.createOnBranch(
       'Requirement',
       derivedData as Requirement,
+      branchId,
+      options?.commitMessage ??
+        `Derived ${itemNumber} from ${parentRequirement.itemNumber}`,
       userId,
     )
 
-    return childRequirement
+    return item as Requirement
   }
 
   /**
@@ -533,41 +799,29 @@ export class RequirementService {
 
     const requirementIds = allRequirements.map((r) => r.id)
 
-    // Count allocated requirements (have ALLOCATED_TO relationship)
-    const allocatedReqs = await db
-      .select({ reqId: itemRelationships.sourceId })
-      .from(itemRelationships)
-      .where(
-        and(
-          inArray(itemRelationships.sourceId, requirementIds),
-          eq(itemRelationships.relationshipType, ALLOCATED_TO_RELATIONSHIP),
-        ),
-      )
-    const allocatedIds = new Set(allocatedReqs.map((r) => r.reqId))
+    // Allocation runs requirement → item, so it rides the requirement's own
+    // outgoing edges and a revision carries it. Satisfaction and verification
+    // point the other way and need the version-aware read.
+    const allocatedLinks = await ItemRelationshipService.findOutgoingLinks(
+      requirementIds,
+      ALLOCATED_TO_RELATIONSHIP,
+    )
+    const allocatedIds = idsWithLinks(allocatedLinks)
 
-    // Count satisfied requirements (have SATISFIES relationship)
-    const satisfiedReqs = await db
-      .select({ reqId: itemRelationships.targetId })
-      .from(itemRelationships)
-      .where(
-        and(
-          inArray(itemRelationships.targetId, requirementIds),
-          eq(itemRelationships.relationshipType, SATISFIES_RELATIONSHIP),
-        ),
-      )
-    const satisfiedIds = new Set(satisfiedReqs.map((r) => r.reqId))
+    const satisfiedIds = idsWithLinks(
+      await ItemRelationshipService.findIncomingLinks(
+        requirementIds,
+        SATISFIES_RELATIONSHIP,
+      ),
+    )
 
-    // Count verified requirements (have VERIFIED_BY relationship OR verificationStatus === 'Passed')
-    const verifiedByTestReqs = await db
-      .select({ reqId: itemRelationships.targetId })
-      .from(itemRelationships)
-      .where(
-        and(
-          inArray(itemRelationships.targetId, requirementIds),
-          eq(itemRelationships.relationshipType, VERIFIED_BY_RELATIONSHIP),
-        ),
-      )
-    const verifiedByTestIds = new Set(verifiedByTestReqs.map((r) => r.reqId))
+    // A requirement counts as verified with a test case OR verificationStatus 'Passed'
+    const verifiedByTestIds = idsWithLinks(
+      await ItemRelationshipService.findIncomingLinks(
+        requirementIds,
+        VERIFIED_BY_RELATIONSHIP,
+      ),
+    )
 
     // A requirement is considered verified if it has a test case OR if its status is 'Passed'
     const verifiedCount = allRequirements.filter(
@@ -676,6 +930,7 @@ export class RequirementService {
     requirementId: string,
     testCaseIds: Array<string>,
     userId: string,
+    options?: TraceabilityLinkOptions,
   ): Promise<void> {
     // Verify requirement exists
     const requirement = await ItemService.findById(requirementId)
@@ -702,14 +957,20 @@ export class RequirementService {
         )
       }
 
+      const ends = await this.resolveLinkEnds(
+        testCase,
+        requirement,
+        options?.branchId,
+      )
+
       // Check if relationship already exists
       const existing = await db
         .select()
         .from(itemRelationships)
         .where(
           and(
-            eq(itemRelationships.sourceId, testCaseId),
-            eq(itemRelationships.targetId, requirementId),
+            eq(itemRelationships.sourceId, ends.source.id),
+            eq(itemRelationships.targetId, ends.target.id),
             eq(itemRelationships.relationshipType, VERIFIED_BY_RELATIONSHIP),
           ),
         )
@@ -717,8 +978,8 @@ export class RequirementService {
 
       if (existing.length === 0) {
         await ItemService.addRelationship(
-          testCaseId,
-          requirementId,
+          ends.source.id,
+          ends.target.id,
           VERIFIED_BY_RELATIONSHIP,
           userId,
         )
@@ -733,15 +994,22 @@ export class RequirementService {
     requirementId: string,
     testCaseId: string,
     userId: string,
+    options?: TraceabilityLinkOptions,
   ): Promise<void> {
+    const ends = await this.resolveLinkEndIds(
+      testCaseId,
+      requirementId,
+      options?.branchId,
+    )
+
     // Find the relationship
     const [relationship] = await db
       .select()
       .from(itemRelationships)
       .where(
         and(
-          eq(itemRelationships.sourceId, testCaseId),
-          eq(itemRelationships.targetId, requirementId),
+          eq(itemRelationships.sourceId, ends.sourceId),
+          eq(itemRelationships.targetId, ends.targetId),
           eq(itemRelationships.relationshipType, VERIFIED_BY_RELATIONSHIP),
         ),
       )
@@ -766,19 +1034,15 @@ export class RequirementService {
       relationshipId: string
     }>
   > {
-    // Find all VERIFIED_BY relationships where this requirement is the target
-    const relationships = await db
-      .select({
-        relationshipId: itemRelationships.id,
-        sourceId: itemRelationships.sourceId,
-      })
-      .from(itemRelationships)
-      .where(
-        and(
-          eq(itemRelationships.targetId, requirementId),
-          eq(itemRelationships.relationshipType, VERIFIED_BY_RELATIONSHIP),
-        ),
-      )
+    // Inherited across revisions, and without the rows a revision left
+    // behind — see ItemRelationshipService.findIncomingLinks.
+    const relationships =
+      (
+        await ItemRelationshipService.findIncomingLinks(
+          [requirementId],
+          VERIFIED_BY_RELATIONSHIP,
+        )
+      ).get(requirementId) ?? []
 
     if (relationships.length === 0) {
       return []
@@ -826,7 +1090,7 @@ export class RequirementService {
         testType: tcData?.testType ?? null,
         executionStatus: tcData?.executionStatus ?? null,
         lastExecutedAt: tcData?.lastExecutedAt ?? null,
-        relationshipId: rel!.relationshipId,
+        relationshipId: rel!.id,
       }
     })
   }
@@ -844,19 +1108,15 @@ export class RequirementService {
       relationshipId: string
     }>
   > {
-    // Find all VERIFIED_BY relationships where this test case is the source
-    const relationships = await db
-      .select({
-        relationshipId: itemRelationships.id,
-        targetId: itemRelationships.targetId,
-      })
-      .from(itemRelationships)
-      .where(
-        and(
-          eq(itemRelationships.sourceId, testCaseId),
-          eq(itemRelationships.relationshipType, VERIFIED_BY_RELATIONSHIP),
-        ),
-      )
+    // Targets resolve forward: a requirement revised since the link was made
+    // is named by the row the release superseded.
+    const relationships =
+      (
+        await ItemRelationshipService.findOutgoingLinks(
+          [testCaseId],
+          VERIFIED_BY_RELATIONSHIP,
+        )
+      ).get(testCaseId) ?? []
 
     if (relationships.length === 0) {
       return []
@@ -899,7 +1159,7 @@ export class RequirementService {
         name: req.name,
         priority: reqData?.priority ?? null,
         verificationStatus: reqData?.verificationStatus ?? null,
-        relationshipId: rel!.relationshipId,
+        relationshipId: rel!.id,
       }
     })
   }

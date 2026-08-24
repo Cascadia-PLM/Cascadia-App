@@ -53,9 +53,44 @@ app.get(
 
 The shared error envelope (400/401/403/404/500) is added automatically by `metadataToSpec` in `packages/core/src/lib/api/openapi-helpers.ts`. Success payloads are wrapped in the standard `{ data: ... }` envelope.
 
+## Documenting a request body
+
+Point `request.body.schema` at the Zod schema the route already validates
+against — the service's own `xCreateSchema`, not a hand-written copy, or the
+two drift and the document becomes fiction:
+
+```typescript
+openapi: {
+  summary: 'Create a program',
+  request: { body: { schema: programCreateSchema } },
+  responses: {
+    201: { schema: z.object({ program: programResponseSchema }) },
+  },
+}
+```
+
+Three options on the body, all optional:
+
+| Field         | Use                                                                                                              |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `mediaType`   | Anything that is not `application/json`. `multipart/form-data` for uploads; describe file parts with `z.file()`. |
+| `required`    | `false` for a route that runs on defaults when the body is absent. Defaults to `true`.                           |
+| `description` | Long-form notes. Prefer the operation's own `description` — Scalar gives it more room.                           |
+
+Bodies, path params and query params are all described from the **input** side
+of the schema, so a field with `.default()` shows as optional with its default
+listed rather than as required. `.describe()` on a field carries through to the
+document, and is the cheapest way to explain a field an integrator cannot guess.
+
+Note that the schemas are converted here rather than handed to hono-openapi's
+`resolver()`: that returns a proxy the generator only awaits for _responses_, so
+a resolver in a body position serialises as the literal `{ "vendor": "zod" }`.
+`packages/core/src/lib/api/openapi-helpers.test.ts` guards against that
+regressing — it is invisible in every other check.
+
 ## CI gate
 
-`npm run openapi:check` regenerates the spec and diffs it against `docs/api/openapi.v1.json`. The CI workflow runs this on every PR — if you change a route's signature or add a new endpoint, you must run `npm run openapi:snapshot` and commit the updated JSON.
+`npm run openapi:check` regenerates the spec and diffs it against `docs/api/openapi.v1.json`. It runs on pushes to `main`, **not on pull requests** — the committed snapshot is refreshed by the maintainers, so adding or changing a route without touching `docs/api/openapi.v1.json` is expected, and nothing in a contributor's PR turns red because of it.
 
 ## Generating a typed client
 

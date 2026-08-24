@@ -3,7 +3,7 @@
 
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
-import { db } from '../db'
+import { db, withTx } from '../db'
 import { notDeleted } from '../db/filters'
 import {
   branchItems,
@@ -46,8 +46,8 @@ export class BranchService {
   /**
    * Get branch by ID
    */
-  static async getById(id: string) {
-    const result = await db
+  static async getById(id: string, tx?: TransactionClient) {
+    const result = await (tx ?? db)
       .select()
       .from(branches)
       .where(eq(branches.id, id))
@@ -59,8 +59,12 @@ export class BranchService {
   /**
    * Get branch by name within a design
    */
-  static async getByName(designId: string, name: string) {
-    const result = await db
+  static async getByName(
+    designId: string,
+    name: string,
+    tx?: TransactionClient,
+  ) {
+    const result = await (tx ?? db)
       .select()
       .from(branches)
       .where(and(eq(branches.designId, designId), eq(branches.name, name)))
@@ -77,9 +81,10 @@ export class BranchService {
     designId: string,
     changeOrderItemId: string,
     userId: string,
+    tx?: TransactionClient,
   ) {
     // Get the change order item to get its item number
-    const changeOrderItem = await db
+    const changeOrderItem = await (tx ?? db)
       .select({ itemNumber: items.itemNumber })
       .from(items)
       .where(and(eq(items.id, changeOrderItemId), notDeleted()))
@@ -95,7 +100,7 @@ export class BranchService {
     const branchName = `eco/${changeOrder.itemNumber}`
 
     // Check if branch already exists
-    const existing = await this.getByName(designId, branchName)
+    const existing = await this.getByName(designId, branchName, tx)
     if (existing) {
       throw new ValidationError(
         'ECO branch already exists for this change order on this design',
@@ -108,13 +113,16 @@ export class BranchService {
       )
     }
 
-    return this.createBranch({
-      designId,
-      name: branchName,
-      branchType: 'eco',
-      changeOrderItemId,
-      userId,
-    })
+    return this.createBranch(
+      {
+        designId,
+        name: branchName,
+        branchType: 'eco',
+        changeOrderItemId,
+        userId,
+      },
+      tx,
+    )
   }
 
   /**
@@ -234,9 +242,10 @@ export class BranchService {
     designId: string,
     changeOrderItemId: string,
     userId: string,
+    tx?: TransactionClient,
   ): Promise<{ branch: typeof branches.$inferSelect; created: boolean }> {
     // Get the change order item to get its item number
-    const changeOrderItem = await db
+    const changeOrderItem = await (tx ?? db)
       .select({ itemNumber: items.itemNumber })
       .from(items)
       .where(and(eq(items.id, changeOrderItemId), notDeleted()))
@@ -252,7 +261,7 @@ export class BranchService {
     const branchName = `eco/${changeOrder.itemNumber}`
 
     // Check if branch already exists
-    const existing = await this.getByName(designId, branchName)
+    const existing = await this.getByName(designId, branchName, tx)
     if (existing) {
       return { branch: existing, created: false }
     }
@@ -262,6 +271,7 @@ export class BranchService {
       designId,
       changeOrderItemId,
       userId,
+      tx,
     )
     return { branch, created: true }
   }
@@ -625,17 +635,22 @@ export class BranchService {
   /**
    * Internal: Create a branch with all options
    */
-  private static async createBranch(data: {
-    designId: string
-    name: string
-    branchType: 'eco' | 'workspace' | 'release'
-    changeOrderItemId?: string
-    sourceTagId?: string
-    ownerId?: string
-    baseCommitId?: string
-    userId: string
-  }) {
-    // Get the design to verify it exists and get default branch
+  private static async createBranch(
+    data: {
+      designId: string
+      name: string
+      branchType: 'eco' | 'workspace' | 'release'
+      changeOrderItemId?: string
+      sourceTagId?: string
+      ownerId?: string
+      baseCommitId?: string
+      userId: string
+    },
+    outerTx?: TransactionClient,
+  ) {
+    // Get the design to verify it exists and get default branch. These stay on
+    // the pool even when a caller's transaction is threaded through: the design
+    // and its main branch necessarily predate anything created inside it.
     const design = await DesignService.getById(data.designId)
     if (!design) {
       throw new NotFoundError('Design', data.designId, {
@@ -651,8 +666,11 @@ export class BranchService {
 
     const baseCommitId = data.baseCommitId || mainBranch.headCommitId
 
-    // Use a transaction for branch creation (repeatable read to prevent phantom reads)
-    return db.transaction(
+    // Repeatable read applies only when this opens the transaction itself;
+    // inside a caller's transaction it becomes a savepoint at the caller's
+    // isolation level, which is the best a nested write can get.
+    return withTx(
+      outerTx,
       async (tx) => {
         // 1. Create the branch
         const branch = takeFirst(
@@ -749,8 +767,10 @@ export class BranchService {
    * design: whatever each type's lifecycle produces for `release` and for a
    * `revise`'s new version.
    *
-   * Falls back to the literal 'Released' when a type has no lifecycle
-   * configured, which is what the seeds use and what pre-lifecycle data has.
+   * A type whose lifecycle defines neither action (Free lifecycles)
+   * contributes nothing: its items never count as released, so they never
+   * protect main. Every item type has a lifecycle, so there is no literal
+   * fallback left.
    */
   private static async getReleasedStateIds(
     designId: string,
@@ -762,15 +782,17 @@ export class BranchService {
       .from(items)
       .where(and(eq(items.designId, designId), notDeleted()))
 
+    // The whole released FAMILY, not just the release targets: a design whose
+    // released items have all been obsoleted or superseded has released
+    // history to protect, but no current row left in a release-target state —
+    // keying on the targets alone silently unprotected main for it.
     const states = new Set<string>()
     for (const { itemType } of presentTypes) {
-      const [releaseState, reviseState] = await Promise.all([
-        LifecycleService.getTargetState(itemType, 'release'),
-        LifecycleService.getTargetState(itemType, 'revise'),
-      ])
-      if (releaseState) states.add(releaseState)
-      if (reviseState) states.add(reviseState)
-      if (!releaseState && !reviseState) states.add('Released')
+      for (const state of await LifecycleService.getReleasedFamilyStates(
+        itemType,
+      )) {
+        states.add(state)
+      }
     }
 
     return [...states]

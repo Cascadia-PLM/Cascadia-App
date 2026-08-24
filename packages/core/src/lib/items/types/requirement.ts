@@ -26,7 +26,6 @@ export interface Requirement extends BaseItem {
     | 'Usability'
     | 'Business'
   priority?: 'MustHave' | 'ShouldHave' | 'CouldHave' | 'WontHave'
-  status?: 'Proposed' | 'Approved' | 'Implemented' | 'Verified' | 'Rejected'
   acceptanceCriteria?: string
   source?: string
   category?: string
@@ -55,9 +54,6 @@ export const requirementSchema = baseItemSchema.extend({
   priority: z
     .enum(['MustHave', 'ShouldHave', 'CouldHave', 'WontHave'])
     .optional(),
-  status: z
-    .enum(['Proposed', 'Approved', 'Implemented', 'Verified', 'Rejected'])
-    .optional(),
   acceptanceCriteria: z.string().max(5000).optional(),
   source: z.string().max(200).optional(),
   category: z.string().max(100).optional(),
@@ -72,9 +68,11 @@ export const requirementSchema = baseItemSchema.extend({
   parentRequirementId: z.string().uuid().optional(),
 })
 
-// Requirements are versioned, ECO-driven items like Parts and Documents:
-// lifecycle state (Draft/Released/...) comes from the shared Driven set,
-// while review progress lives in the type-specific `status` field
+// Requirements are versioned, ECO-driven items like Parts and Documents.
+// Review progress (Proposed/Approved/Rejected in the default lifecycle) is
+// part of the lifecycle itself — manual pre-release transitions — and release
+// maps Approved → Released; the old `status` field is gone. Verification
+// outcome stays the measured `verificationStatus`.
 export const requirementStates = commonStates
 
 // Requirement relationships

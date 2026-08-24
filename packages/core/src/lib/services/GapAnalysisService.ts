@@ -6,11 +6,14 @@ import { z } from 'zod'
 import { db } from '../db'
 import { designs, itemRelationships, items, requirements } from '../db/schema'
 import { NotFoundError } from '../errors'
+import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
+import { LifecycleService } from './LifecycleService'
 import { EBOM_SOURCE_RELATIONSHIP } from './MbomService'
 import {
   ALLOCATED_TO_RELATIONSHIP,
   SATISFIES_RELATIONSHIP,
   VERIFIED_BY_RELATIONSHIP,
+  idsWithLinks,
 } from './RequirementService'
 import { VALIDATES_RELATIONSHIP } from './VerificationService'
 import type { ThreadDomain } from './ThreadService'
@@ -231,41 +234,29 @@ export class GapAnalysisService {
 
     const requirementIds = allRequirements.map((r) => r.id)
 
-    // Find allocated requirements (have ALLOCATED_TO relationship)
-    const allocatedReqs = await db
-      .select({ reqId: itemRelationships.sourceId })
-      .from(itemRelationships)
-      .where(
-        and(
-          inArray(itemRelationships.sourceId, requirementIds),
-          eq(itemRelationships.relationshipType, ALLOCATED_TO_RELATIONSHIP),
-        ),
-      )
-    const allocatedIds = new Set(allocatedReqs.map((r) => r.reqId))
-
-    // Find satisfied requirements (have SATISFIES relationship)
-    const satisfiedReqs = await db
-      .select({ reqId: itemRelationships.targetId })
-      .from(itemRelationships)
-      .where(
-        and(
-          inArray(itemRelationships.targetId, requirementIds),
-          eq(itemRelationships.relationshipType, SATISFIES_RELATIONSHIP),
-        ),
-      )
-    const satisfiedIds = new Set(satisfiedReqs.map((r) => r.reqId))
-
-    // Find verified requirements (have VERIFIED_BY relationship OR status is Passed)
-    const verifiedReqs = await db
-      .select({ reqId: itemRelationships.targetId })
-      .from(itemRelationships)
-      .where(
-        and(
-          inArray(itemRelationships.targetId, requirementIds),
-          eq(itemRelationships.relationshipType, VERIFIED_BY_RELATIONSHIP),
-        ),
-      )
-    const verifiedByTestIds = new Set(verifiedReqs.map((r) => r.reqId))
+    // Read version-aware, or every revision reads back as a fresh gap:
+    // SATISFIES and VERIFIED_BY point AT a requirement and belong to the item
+    // at the other end, so a release leaves them naming the row it superseded.
+    // Allocation is the requirement's own outgoing edge and rides the
+    // revision. See ItemRelationshipService.find{Incoming,Outgoing}Links.
+    const allocatedIds = idsWithLinks(
+      await ItemRelationshipService.findOutgoingLinks(
+        requirementIds,
+        ALLOCATED_TO_RELATIONSHIP,
+      ),
+    )
+    const satisfiedIds = idsWithLinks(
+      await ItemRelationshipService.findIncomingLinks(
+        requirementIds,
+        SATISFIES_RELATIONSHIP,
+      ),
+    )
+    const verifiedByTestIds = idsWithLinks(
+      await ItemRelationshipService.findIncomingLinks(
+        requirementIds,
+        VERIFIED_BY_RELATIONSHIP,
+      ),
+    )
 
     // Process each requirement
     for (const req of allRequirements) {
@@ -432,7 +423,7 @@ export class GapAnalysisService {
           revision: part.revision,
           state: part.state,
           domain: 'engineering',
-          severity: this.calculatePartSeverity(part.state),
+          severity: await this.calculatePartSeverity(part.itemType, part.state),
           suggestion: 'Create test cases to validate this part',
         })
       }
@@ -574,38 +565,26 @@ export class GapAnalysisService {
     let verified = 0
 
     if (requirementIds.length > 0) {
-      const allocatedReqs = await db
-        .select({ reqId: itemRelationships.sourceId })
-        .from(itemRelationships)
-        .where(
-          and(
-            inArray(itemRelationships.sourceId, requirementIds),
-            eq(itemRelationships.relationshipType, ALLOCATED_TO_RELATIONSHIP),
-          ),
-        )
-      allocated = new Set(allocatedReqs.map((r) => r.reqId)).size
-
-      const satisfiedReqs = await db
-        .select({ reqId: itemRelationships.targetId })
-        .from(itemRelationships)
-        .where(
-          and(
-            inArray(itemRelationships.targetId, requirementIds),
-            eq(itemRelationships.relationshipType, SATISFIES_RELATIONSHIP),
-          ),
-        )
-      satisfied = new Set(satisfiedReqs.map((r) => r.reqId)).size
-
-      const verifiedReqs = await db
-        .select({ reqId: itemRelationships.targetId })
-        .from(itemRelationships)
-        .where(
-          and(
-            inArray(itemRelationships.targetId, requirementIds),
-            eq(itemRelationships.relationshipType, VERIFIED_BY_RELATIONSHIP),
-          ),
-        )
-      verified = new Set(verifiedReqs.map((r) => r.reqId)).size
+      // Same reads as findRequirementGaps, so the summary and the gap list
+      // cannot disagree about what a revised requirement still covers.
+      allocated = idsWithLinks(
+        await ItemRelationshipService.findOutgoingLinks(
+          requirementIds,
+          ALLOCATED_TO_RELATIONSHIP,
+        ),
+      ).size
+      satisfied = idsWithLinks(
+        await ItemRelationshipService.findIncomingLinks(
+          requirementIds,
+          SATISFIES_RELATIONSHIP,
+        ),
+      ).size
+      verified = idsWithLinks(
+        await ItemRelationshipService.findIncomingLinks(
+          requirementIds,
+          VERIFIED_BY_RELATIONSHIP,
+        ),
+      ).size
     }
 
     // Engineering coverage
@@ -723,19 +702,18 @@ export class GapAnalysisService {
   }
 
   /**
-   * Calculate severity for a part gap based on state.
+   * Calculate severity for a part gap based on state: a gap on released
+   * lineage or on an item already moving through its flow is major; one on
+   * an item still in its initial state is minor.
    */
-  private static calculatePartSeverity(state: string): GapSeverity {
-    switch (state) {
-      case 'Released':
-        return 'major'
-      case 'In Review':
-        return 'major'
-      case 'Draft':
-        return 'minor'
-      default:
-        return 'minor'
+  private static async calculatePartSeverity(
+    itemType: string,
+    state: string,
+  ): Promise<GapSeverity> {
+    if (await LifecycleService.isInitialState(itemType, state)) {
+      return 'minor'
     }
+    return 'major'
   }
 
   /**

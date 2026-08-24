@@ -22,10 +22,12 @@ import {
 import type { Part } from '@/lib/items/types/part'
 import type { Design } from '@/lib/types/design'
 import type {
-  CADComparisonDisplay,
+  CADCompareLayer,
+  CADCompareSlot,
   CADModelStats,
   CADViewerHandle,
 } from '@/components/parts/CADViewer'
+import type { CompareSlotSelection } from '@/components/parts/CADComparePanel'
 import type { DesignStatus } from '@/components/versioning/DesignPhaseIndicator'
 import type {
   BackgroundPreset,
@@ -33,6 +35,7 @@ import type {
   StandardView,
 } from '@/components/parts/CADViewerTypes'
 import type { UrlEnrichmentResult } from '@/components/items/useUrlDropEnrichment'
+import type { ModelVersionEntry } from '@/lib/query'
 import { PageContainer } from '@/components/layout'
 import { DigitalThreadNavigator } from '@/components/thread'
 import { PartRelationshipsPanel } from '@/components/items/PartRelationshipsPanel'
@@ -54,9 +57,14 @@ import { BranchSelector } from '@/components/versioning/BranchSelector'
 import { CheckoutDialog } from '@/components/items/CheckoutDialog'
 import {
   CADViewer,
-  DEFAULT_COMPARISON_DISPLAY,
+  COMPARE_SLOT_COLORS,
+  DEFAULT_COMPARE_OPACITY,
 } from '@/components/parts/CADViewer'
-import { CADComparePanel } from '@/components/parts/CADComparePanel'
+import {
+  CADComparePanel,
+  modelVersionLabel,
+  resolveSlot,
+} from '@/components/parts/CADComparePanel'
 import { CADViewerToolbar } from '@/components/parts/CADViewerToolbar'
 import { useCADViewerKeyboard } from '@/components/parts/useCADViewerKeyboard'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
@@ -104,7 +112,10 @@ import { PartAmlSection } from '@/components/parts/PartAmlSection'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { itemModelVersionsQuery, useInvalidateResources } from '@/lib/query'
+import { itemResolvedAtContextQuery } from '@/lib/query/options/items'
 import { apiFetch } from '@/lib/api/client'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
 
 // Constants
 const PART_TYPE_OPTIONS = [
@@ -134,28 +145,6 @@ const CURRENCY_OPTIONS = [
   { value: 'JPY', label: 'JPY' },
 ]
 
-const STATE_OPTIONS = [
-  { value: 'Draft', label: 'Draft' },
-  { value: 'InReview', label: 'In Review' },
-  { value: 'Approved', label: 'Approved' },
-  { value: 'Released', label: 'Released' },
-  { value: 'Obsolete', label: 'Obsolete' },
-]
-
-const stateVariant = (state: string) => {
-  const variants: Record<
-    string,
-    'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-  > = {
-    Draft: 'secondary',
-    InReview: 'default',
-    Approved: 'success',
-    Released: 'success',
-    Obsolete: 'destructive',
-  }
-  return variants[state] || 'default'
-}
-
 // Spelled out so Tailwind's scanner sees the class names — the tab count
 // varies with mode and with whether the part has images to show.
 const tabGridCols = (isCreateMode: boolean, hasGallery: boolean): string => {
@@ -169,10 +158,9 @@ const createEmptyPart = (): Part => ({
   masterId: undefined,
   itemType: 'Part',
   itemNumber: '',
-  revision: 'A',
   name: '',
   description: '',
-  state: 'Draft',
+  state: '',
   isCurrent: true,
   partType: undefined,
   material: undefined,
@@ -312,10 +300,6 @@ export function PartDetail({
     onEnriched: applyEnrichment,
   })
 
-  // Version context state (only for existing parts)
-  const [displayedPart, setDisplayedPart] = useState<Part>(part)
-  const [isLoadingVersion, setIsLoadingVersion] = useState(false)
-
   // CAD viewer state
   const [cadFiles, setCADFiles] = useState<Array<CADFileEntry>>([])
   const [selectedCADFile, setSelectedCADFile] = useState<CADFileEntry | null>(
@@ -331,11 +315,15 @@ export function PartDetail({
   const cadViewerRef = useRef<CADViewerHandle>(null)
   const viewerContainerRef = useRef<HTMLDivElement>(null)
 
-  // Version comparison overlay state
+  // Version comparison state — one selection per side, each naming its own
+  // version, file, color and translucency.
   const [cadCompareOpen, setCADCompareOpen] = useState(false)
-  const [cadCompareKey, setCADCompareKey] = useState<string | null>(null)
-  const [cadCompareDisplay, setCADCompareDisplay] =
-    useState<CADComparisonDisplay>(DEFAULT_COMPARISON_DISPLAY)
+  const [cadCompareA, setCADCompareA] = useState<CompareSlotSelection>(() =>
+    emptyCompareSlot('A'),
+  )
+  const [cadCompareB, setCADCompareB] = useState<CompareSlotSelection>(() =>
+    emptyCompareSlot('B'),
+  )
 
   // Bumped whenever the item's thumbnail may have changed, to bust the img cache
   const [thumbnailVersion, setThumbnailVersion] = useState(0)
@@ -356,11 +344,27 @@ export function PartDetail({
     isCreateMode ? undefined : part.designId,
   )
 
-  // Update part state when initialPart changes
+  // The part as it stood at the selected version context. Unlike the other
+  // detail pages, `main` is a real request here (released=true): the route
+  // may have loaded a branch working copy whose main counterpart is a
+  // different row. `resolvedItemId` drives the navigation effect below.
+  const versionAtContext = useQuery(
+    itemResolvedAtContextQuery<Part>(
+      part.id ?? '',
+      context,
+      !isCreateMode && Boolean(part.designId),
+    ),
+  )
+  const displayedPart = isCreateMode
+    ? part
+    : (versionAtContext.data?.item ?? part)
+  const isLoadingVersion = versionAtContext.isFetching
+
+  // Update part state when initialPart changes. displayedPart is derived
+  // from the version query (falling back to `part`), so it follows.
   useEffect(() => {
     if (initialPart) {
       setPart(initialPart)
-      setDisplayedPart(initialPart)
       setAttributes(initialPart.attributes ?? {})
     }
   }, [initialPart])
@@ -414,82 +418,28 @@ export function PartDetail({
     fetchDesignStatus()
   }, [part.designId, isCreateMode])
 
-  // Fetch the correct item version when context changes (only for existing parts)
-  // If the resolved version has a different ID, navigate to it so the route loader
-  // fetches the correct version directly (BOM, relationships load against right item)
+  // For branch/main contexts a different resolved id means the route is
+  // showing the wrong row — navigate so the route loader fetches the correct
+  // version directly (BOM, relationships load against the right item). Tag
+  // and commit contexts are read-only snapshots, displayed in place.
   useEffect(() => {
-    async function fetchVersionAtContext() {
-      if (isCreateMode || !part.designId) {
-        setDisplayedPart(part)
-        return
+    const resolvedItemId = versionAtContext.data?.resolvedItemId
+    if (
+      (context.type === 'branch' || context.type === 'main') &&
+      resolvedItemId &&
+      resolvedItemId !== part.id
+    ) {
+      const search: Record<string, string | undefined> = {}
+      if (context.type === 'branch' && context.branchId) {
+        search.branch = context.branchId
       }
-
-      setIsLoadingVersion(true)
-      try {
-        const params = new URLSearchParams()
-        if (context.type === 'commit' && context.commitId) {
-          params.set('commitId', context.commitId)
-        } else if (context.type === 'tag' && context.tagId) {
-          params.set('tagId', context.tagId)
-        } else if (context.type === 'branch' && context.branchId) {
-          params.set('branchId', context.branchId)
-        } else if (context.type === 'main') {
-          // For main context, use released=true to find the main/released version
-          params.set('released', 'true')
-        }
-
-        const queryString = params.toString()
-        if (!queryString) {
-          setDisplayedPart(part)
-          return
-        }
-
-        const response = await apiFetch<{
-          data: {
-            item: Part | null
-            existsAtContext: boolean
-            resolvedItemId?: string
-          }
-        }>(`/api/v1/items/${part.id}/at-context?${queryString}`)
-
-        // For branch/main contexts: if the resolved item has a different ID,
-        // navigate to it so the route loader fetches the correct version.
-        // For tag/commit contexts (historical views): just update displayedPart
-        // in-place since these are read-only snapshots.
-        const shouldNavigate =
-          (context.type === 'branch' || context.type === 'main') &&
-          response.data.resolvedItemId &&
-          response.data.resolvedItemId !== part.id
-
-        if (shouldNavigate) {
-          const search: Record<string, string | undefined> = {}
-          if (context.type === 'branch' && context.branchId) {
-            search.branch = context.branchId
-          }
-          navigate({
-            to: '/parts/$id',
-            params: { id: response.data.resolvedItemId! },
-            search,
-          } as any)
-          return
-        }
-
-        // Same item or historical view — update displayed part
-        if (response.data.item) {
-          setDisplayedPart(response.data.item)
-        } else {
-          setDisplayedPart(part)
-        }
-      } catch (err) {
-        console.error('Failed to fetch item at context:', err)
-        setDisplayedPart(part)
-      } finally {
-        setIsLoadingVersion(false)
-      }
+      navigate({
+        to: '/parts/$id',
+        params: { id: resolvedItemId },
+        search,
+      } as any)
     }
-
-    fetchVersionAtContext()
-  }, [part, context, isCreateMode, navigate])
+  }, [versionAtContext.data, context, part.id, navigate])
 
   // Check if current context is a workspace branch
   useEffect(() => {
@@ -587,22 +537,105 @@ export function PartDetail({
       ),
     )
 
-  // A different version row means the comparison baseline changed
+  const contextBranchId =
+    context.type === 'branch' ? (context.branchId ?? null) : null
+  const selectedCADFileId = selectedCADFile?.id ?? null
+
+  // Landing on a different version row re-seeds the comparison from scratch
   useEffect(() => {
-    setCADCompareKey(null)
+    setCADCompareA(emptyCompareSlot('A'))
+    setCADCompareB(emptyCompareSlot('B'))
   }, [displayedPart.id])
 
-  const cadCompareEntry = cadCompareOpen
-    ? modelVersions.find((v) => v.key === cadCompareKey)
-    : undefined
+  // Seed side A from what the page is already showing and side B from the
+  // most useful other version, so opening the panel is a comparison right
+  // away rather than two empty pickers. Only ever fills a side the user has
+  // not chosen, so re-renders never fight their selection.
+  useEffect(() => {
+    if (!cadCompareOpen || cadCompareA.versionKey !== null) return
+
+    const entryA = versionEntryForContext(
+      modelVersions,
+      displayedPart.id,
+      contextBranchId,
+    )
+    const fileA =
+      entryA?.files.find((f) => f.id === selectedCADFileId) ??
+      entryA?.files.at(0)
+    if (!entryA || !fileA) return
+
+    setCADCompareA({
+      ...emptyCompareSlot('A'),
+      versionKey: entryA.key,
+      fileId: fileA.id,
+    })
+
+    const entryB = defaultCounterpart(modelVersions, entryA)
+    const fileB = entryB?.files.at(0)
+    if (entryB && fileB) {
+      setCADCompareB({
+        ...emptyCompareSlot('B'),
+        versionKey: entryB.key,
+        fileId: fileB.id,
+      })
+    }
+  }, [
+    cadCompareOpen,
+    cadCompareA.versionKey,
+    modelVersions,
+    displayedPart.id,
+    contextBranchId,
+    selectedCADFileId,
+  ])
+
+  const compareLayer = (
+    selection: CompareSlotSelection,
+  ): CADCompareLayer | null => {
+    const { entry, file } = resolveSlot(modelVersions, selection)
+    if (!entry || !file) return null
+    return {
+      fileId: file.id,
+      fileUrl: `/api/v1/files/${file.id}/download`,
+      fileType: file.fileType,
+      fileName: file.fileName,
+      versionLabel: modelVersionLabel(entry),
+      color: selection.color,
+      opacity: selection.opacity,
+      visible: selection.visible,
+    }
+  }
+
+  const compareLayerA = cadCompareOpen ? compareLayer(cadCompareA) : null
+  const compareLayerB = cadCompareOpen ? compareLayer(cadCompareB) : null
+  // Comparison mode starts only once a side resolves to a real model, so
+  // opening the panel never blanks the canvas while the versions load.
   const cadComparison =
-    cadCompareEntry?.file && cadCompareEntry.file.id !== selectedCADFile?.id
-      ? {
-          fileUrl: `/api/v1/files/${cadCompareEntry.file.id}/download`,
-          fileType: cadCompareEntry.file.fileType,
-          fileName: cadCompareEntry.file.fileName,
-        }
+    (compareLayerA ?? compareLayerB)
+      ? { a: compareLayerA, b: compareLayerB }
       : null
+
+  const handleCompareChange = (
+    slot: CADCompareSlot,
+    next: CompareSlotSelection,
+  ) => {
+    if (slot === 'A') setCADCompareA(next)
+    else setCADCompareB(next)
+  }
+
+  const handleCompareSwap = () => {
+    // Colors belong to the side, not to the model: swapping moves the
+    // versions and leaves A and B their own tints, so the legend holds still.
+    const previousA = cadCompareA
+    const previousB = cadCompareB
+    setCADCompareA({ ...previousB, color: previousA.color })
+    setCADCompareB({ ...previousA, color: previousB.color })
+  }
+
+  const closeCompare = () => {
+    setCADCompareOpen(false)
+    setCADCompareA(emptyCompareSlot('A'))
+    setCADCompareB(emptyCompareSlot('B'))
+  }
 
   // Attached images drive the Gallery tab. Shares FileList's query — same
   // item, same version context — so this costs no extra request.
@@ -626,8 +659,14 @@ export function PartDetail({
   }
 
   // Action handlers
+  // Released lineage on main is revised through a change order (the
+  // CheckoutDialog); membership comes from the lifecycle's mappings
+  const { isReleasedFamily: isReleasedLineage } = useReleasedFamily(
+    'Part',
+    currentPart.state,
+  )
   const needsCheckout =
-    !isCreateMode && currentPart.state === 'Released' && context.type === 'main'
+    !isCreateMode && isReleasedLineage && context.type === 'main'
 
   // The server-side edit lock behind the Edit button. Released-on-main goes
   // through the CheckoutDialog (revise onto a branch) instead of a direct
@@ -838,13 +877,12 @@ export function PartDetail({
                 {!isCreateMode && isLoadingVersion && (
                   <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
                 )}
-                {!isCreateMode && currentPart.state && (
-                  <Badge
+                {!isCreateMode && (
+                  <StateBadge
+                    itemType="Part"
+                    state={currentPart.state}
                     className="text-base"
-                    variant={stateVariant(currentPart.state)}
-                  >
-                    {currentPart.state}
-                  </Badge>
+                  />
                 )}
                 {!isCreateMode && currentPart.state && (
                   <PhaseBadge itemType="Part" state={currentPart.state} />
@@ -1060,15 +1098,6 @@ export function PartDetail({
                         required
                         data-testid="part-name"
                       />
-                      <ViewEditBadge
-                        label="State"
-                        value={isEditing ? part.state : currentPart.state}
-                        onChange={(v) => updateField('state', v)}
-                        isEditing={isEditing}
-                        options={STATE_OPTIONS}
-                        variant={stateVariant}
-                        readOnly={!isCreateMode} // State is managed by lifecycle
-                      />
                       <ViewEditTextarea
                         label="Description"
                         value={
@@ -1277,15 +1306,21 @@ export function PartDetail({
                         <div>
                           <CardTitle>3D CAD Model</CardTitle>
                           <CardDescription>
-                            Interactive 3D visualization •{' '}
-                            {selectedCADFile.fileName}
-                            {selectedCADFile.source === 'cad_doc' &&
-                              selectedCADFile.sourceItemNumber &&
-                              ` (from ${selectedCADFile.sourceItemNumber})`}
+                            {cadCompareOpen ? (
+                              'Comparing two versions — pick each side in the panel'
+                            ) : (
+                              <>
+                                Interactive 3D visualization •{' '}
+                                {selectedCADFile.fileName}
+                                {selectedCADFile.source === 'cad_doc' &&
+                                  selectedCADFile.sourceItemNumber &&
+                                  ` (from ${selectedCADFile.sourceItemNumber})`}
+                              </>
+                            )}
                           </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                          {cadFiles.length > 1 && (
+                          {cadFiles.length > 1 && !cadCompareOpen && (
                             <Select
                               value={selectedCADFile.id}
                               onValueChange={(fileId) => {
@@ -1347,10 +1382,10 @@ export function PartDetail({
                             variant={cadCompareOpen ? 'secondary' : 'ghost'}
                             size="sm"
                             onClick={() => {
-                              if (cadCompareOpen) setCADCompareKey(null)
-                              setCADCompareOpen(!cadCompareOpen)
+                              if (cadCompareOpen) closeCompare()
+                              else setCADCompareOpen(true)
                             }}
-                            title="Overlay another version of this part"
+                            title="Compare two versions of this part"
                           >
                             <GitCompare className="h-4 w-4 mr-2" />
                             Compare
@@ -1408,7 +1443,6 @@ export function PartDetail({
                             selectedCADFile.fileType === 'glb'
                           }
                           comparison={cadComparison}
-                          comparisonDisplay={cadCompareDisplay}
                           onLoad={handleCADModelLoad}
                           onError={(error) =>
                             handleError(error, {
@@ -1417,7 +1451,7 @@ export function PartDetail({
                           }
                           onComparisonError={(error) =>
                             handleError(error, {
-                              title: 'Failed to load comparison model',
+                              title: 'Failed to load a model being compared',
                             })
                           }
                         />
@@ -1425,15 +1459,11 @@ export function PartDetail({
                           <CADComparePanel
                             versions={modelVersions}
                             isLoading={modelVersionsLoading}
-                            selectedKey={cadCompareKey}
-                            onSelect={setCADCompareKey}
-                            display={cadCompareDisplay}
-                            onDisplayChange={setCADCompareDisplay}
-                            currentFileId={selectedCADFile.id}
-                            onClose={() => {
-                              setCADCompareOpen(false)
-                              setCADCompareKey(null)
-                            }}
+                            a={cadCompareA}
+                            b={cadCompareB}
+                            onChange={handleCompareChange}
+                            onSwap={handleCompareSwap}
+                            onClose={closeCompare}
                           />
                         )}
                       </div>
@@ -1751,4 +1781,70 @@ export function PartDetail({
       <UrlDropOverlay isDragging={isDragging} isEnriching={isEnriching} />
     </div>
   )
+}
+
+/** A side of the comparison with nothing picked yet, in its own tint. */
+function emptyCompareSlot(slot: CADCompareSlot): CompareSlotSelection {
+  return {
+    versionKey: null,
+    fileId: null,
+    color: COMPARE_SLOT_COLORS[slot],
+    opacity: DEFAULT_COMPARE_OPACITY,
+    visible: true,
+  }
+}
+
+/**
+ * The version entry matching the context the page is displaying.
+ *
+ * Matching on the item row is what makes this exact: a branch working copy
+ * and its released counterpart are different rows, so the row the page
+ * resolved to names the entry unambiguously. The branch fallback covers the
+ * case where a branch has not minted a working copy yet, and both entries
+ * therefore point at the released row.
+ */
+function versionEntryForContext(
+  versions: Array<ModelVersionEntry>,
+  itemId: string | undefined,
+  branchId: string | null,
+): ModelVersionEntry | null {
+  const withModels = versions.filter((v) => v.files.length > 0)
+  const onBranch = branchId
+    ? withModels.find((v) => v.branch?.id === branchId)
+    : undefined
+  return (
+    onBranch ??
+    withModels.find((v) => v.itemId === itemId) ??
+    withModels.find((v) => v.kind === 'current') ??
+    withModels.at(0) ??
+    null
+  )
+}
+
+/**
+ * The version worth showing opposite `against` by default: what a change is
+ * normally measured against. From an in-work branch that is the released
+ * revision it will supersede; from a released one it is whatever work is in
+ * flight, then the revision before it.
+ */
+function defaultCounterpart(
+  versions: Array<ModelVersionEntry>,
+  against: ModelVersionEntry,
+): ModelVersionEntry | null {
+  const candidates = versions.filter(
+    (v) =>
+      v.key !== against.key &&
+      v.files.length > 0 &&
+      v.files.at(0)?.id !== against.files.at(0)?.id,
+  )
+  const order: Array<ModelVersionEntry['kind']> =
+    against.kind === 'branch'
+      ? ['current', 'historical', 'branch']
+      : ['branch', 'historical', 'current']
+
+  for (const kind of order) {
+    const match = candidates.find((v) => v.kind === kind)
+    if (match) return match
+  }
+  return null
 }

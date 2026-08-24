@@ -104,13 +104,26 @@ Creates a new item. Auth required; permission check based on item type.
 | ---------------------- | ------ | -------- | -------------------------------------------------------- |
 | `itemType`             | string | Yes      | `Part`, `Document`, `Requirement`, `Task`, `ChangeOrder` |
 | `itemNumber`           | string | Yes      | Unique item number                                       |
-| `revision`             | string | Yes      | Revision letter (max 10 chars)                           |
+| `revision`             | string | No       | Server-assigned when omitted -- see below (max 10 chars) |
 | `name`                 | string | No       | Display name (max 500 chars)                             |
 | `designId`             | UUID   | Yes\*    | Design context (\*optional for Tasks)                    |
 | `description`          | string | No       | Description (max 5000-10000 chars)                       |
 | `branchId`             | UUID   | No       | Branch to create on (for ECO workflow)                   |
 | `commitMessage`        | string | No       | Commit message if creating on branch                     |
 | _type-specific fields_ | varies | No       | See type-specific fields below                           |
+
+**Do not invent a revision.** A brand-new item has none: an ECO-controlled type
+(Part, Document, Requirement, Software) is given one by the change order that
+releases it, and every other type is never assigned one at all. Omit the field
+and the server writes the value the item's lifecycle implies -- the unreleased
+marker `-` for the first group, the scheme's initial revision (`A`) for the
+second. Sending `"A"` for an ECO-controlled type claims a released revision A
+that does not exist, and the first release then revises the item to B.
+
+A revision you do send is honoured on a direct create -- an import carrying a
+source system's revisions needs that. A create with `branchId` ignores it and
+takes the branch's working revision instead: branch content has no revision
+until the change order releasing it assigns one.
 
 ### Response
 
@@ -122,7 +135,7 @@ Without `branchId` (direct creation on main):
     "item": {
       "id": "new-uuid",
       "itemNumber": "PRT-001",
-      "revision": "A",
+      "revision": "-",
       "itemType": "Part",
       "state": "In Work",
       ...

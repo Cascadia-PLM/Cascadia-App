@@ -27,6 +27,7 @@ import {
 import type { Node, NodeProps } from '@xyflow/react'
 import type { LucideIcon } from 'lucide-react'
 import type { ThreadNode as ThreadNodeData } from '@/lib/services/ThreadService'
+import { useLifecycleState } from '@/components/items/StateBadge'
 
 /** Opposite side of a handle position (Top↔Bottom, Left↔Right). */
 export function flipPosition(position: Position): Position {
@@ -182,27 +183,6 @@ const domainColors: Record<string, DomainColors> = {
   },
 }
 
-const stateColors: Record<string, string> = {
-  Draft: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-  'In Review':
-    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-  Approved: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  Released: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300',
-  Obsolete: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-  // Physical domain states (PhysicalPart + WorkOrder lifecycles)
-  'Not Started':
-    'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-  Available:
-    'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  Consumed: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-  'In Service': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300',
-  Scrapped: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-  'In Progress':
-    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-  Complete: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  Cancelled: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-}
-
 const domainLabels: Record<string, string> = {
   requirements: 'REQ',
   engineering: 'EBOM',
@@ -240,6 +220,7 @@ function ThreadNodeComponent({
     ThreadNodeExpandData & { onClick?: () => void }
   const colors = domainColors[data.domain] ?? engineeringColors
   const Icon = itemTypeIcons[data.itemType] || Box
+  const stateStyle = useLifecycleState(data.itemType, data.state)
   const DomainIcon = domainIcons[data.domain] || Wrench
   const route = itemTypeRoutes[data.itemType]
   const { expandState, onToggleExpand } = data
@@ -331,9 +312,9 @@ function ThreadNodeComponent({
               {data.itemType}
             </span>
             <span
-              className={`px-1.5 py-0.5 rounded text-xs ${stateColors[data.state] || stateColors.Draft}`}
+              className={`px-1.5 py-0.5 rounded text-xs ${stateStyle.className}`}
             >
-              {data.state}
+              {stateStyle.label}
             </span>
           </div>
         </div>

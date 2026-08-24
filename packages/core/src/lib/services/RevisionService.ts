@@ -56,6 +56,26 @@ export class RevisionService {
   }
 
   /**
+   * The revision an item carries before it has ever been released, when it
+   * lives on main rather than a branch.
+   *
+   * Not a revision at all, and deliberately so: `isWorkingRevision` reads it as
+   * unreleased and `getNextRevision` turns it into the scheme's first revision,
+   * so the first release assigns A. The alternative every client used to reach
+   * for - creating the item at 'A' - claims a released revision A that never
+   * existed, and the first release then revised it to B.
+   *
+   * The branch counterpart is `getWorkingRevision`, which has a branch id to
+   * scope with; on main there is nothing to scope against and nothing to
+   * collide with, since (item_number, revision, design_id, item_type) is unique
+   * and two unreleased versions of one item number in one design cannot coexist
+   * there anyway.
+   */
+  static getUnreleasedRevision(): string {
+    return '-'
+  }
+
+  /**
    * The revision an unreleased working copy carries on a branch.
    *
    * Branch-scoped by construction: the items unique constraint is

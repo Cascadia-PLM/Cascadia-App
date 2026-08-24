@@ -31,7 +31,9 @@ const statusConfig: Record<
 }
 
 export function WorkOrderStatusBadge({ status }: { status: WorkOrderStatus }) {
-  const config = statusConfig[status]
+  // Custom lifecycles can name states this palette has never heard of —
+  // render them plainly rather than crashing on the lookup
+  const config = statusConfig[status] ?? { className: '', label: status }
   return (
     <Badge variant="secondary" className={cn('font-medium', config.className)}>
       {config.label}

@@ -25,8 +25,13 @@ import { ItemService } from '../items/services/ItemService'
 import { ChangeOrderService } from '../items/services/ChangeOrderService'
 import { ChangeOrderMergeService } from './ChangeOrderMergeService'
 import { BranchService } from './BranchService'
+import { CheckoutService } from './CheckoutService'
 import { DesignService } from './DesignService'
+import { RequirementService } from './RequirementService'
+import { LifecycleService } from './LifecycleService'
+import { RevisionService } from './RevisionService'
 import type { TestUser } from '@/__tests__/fixtures/users'
+import type { PersistedItem } from '@/lib/items/types/base'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
@@ -47,7 +52,10 @@ import {
 } from '@/lib/db/schema'
 import { ItemTypeRegistry } from '@/lib/items/registry'
 import { LIFECYCLE_IDS } from '@/lib/items/lifecycle-ids'
-import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
+import {
+  seedRequirementLifecycle,
+  seedStandardPartLifecycle,
+} from '@/__tests__/fixtures/lifecycles'
 import { takeFirst } from '@/lib/db/take-first'
 import {
   MergeConflictError,
@@ -74,6 +82,9 @@ describe('ChangeOrderMergeService', () => {
 
     // System user + Part lifecycle + Part item-type link via shared fixture
     await seedStandardPartLifecycle(testDb.db)
+    // Requirements release from a state they are not created in — the shape
+    // the "authored on the ECO branch" scenarios turn on
+    await seedRequirementLifecycle(testDb.db)
 
     // ECO workflow is specific to these merge tests — unique ID avoids races
     // with other test files that define their own ECO workflows.
@@ -828,6 +839,55 @@ describe('ChangeOrderMergeService', () => {
       expect(result.revisionsAssigned[part.itemNumber!]).toBe('B')
     })
 
+    it('releases a never-released part as A, not B', async () => {
+      const eco = await createChangeOrder()
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+
+      // Created the way a client creates one now: naming no revision, so the
+      // server marks it unreleased. Created at the conventional-looking 'A'
+      // instead, the merge below reads it as a released A and this part
+      // reaches main as B - a revision it never had (issue #109).
+      const part = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-first-release`,
+          name: 'Never released',
+          designId,
+          state: 'Draft',
+        } as any,
+        user.id,
+      )
+      expect(part.revision).toBe(RevisionService.getUnreleasedRevision())
+
+      const mainBranch = await BranchService.getMainBranch(designId)
+      await testDb.db.insert(branchItems).values({
+        branchId: mainBranch!.id,
+        itemMasterId: part.masterId!,
+        currentItemId: part.id,
+        baseItemId: part.id,
+        changeType: null,
+      })
+      await testDb.db.insert(branchItems).values({
+        branchId: branch.id,
+        itemMasterId: part.masterId!,
+        currentItemId: part.id,
+        baseItemId: part.id,
+        changeType: 'modified',
+      })
+
+      const result = await ChangeOrderMergeService.mergeBranchToMain(
+        branch.id,
+        eco.id,
+        user.id,
+      )
+
+      expect(result.revisionsAssigned[part.itemNumber!]).toBe('A')
+    })
+
     it('marks deleted items as obsolete', async () => {
       const eco = await createChangeOrder()
       const { branch } = await BranchService.getOrCreateEcoBranch(
@@ -1330,6 +1390,120 @@ describe('ChangeOrderMergeService', () => {
         currentRevision: 'C',
         newRevision: 'D',
       })
+    })
+
+    /**
+     * The shape behind both regressions in #106: a released part tracked on
+     * main, checked out to the ECO branch and edited, so the change order
+     * holds two rows of one item - the branch working copy (carrying the
+     * branch's placeholder revision) and the affected-item row checkout
+     * registered against main's released row.
+     */
+    async function ecoWithCheckedOutPart(suffix: string) {
+      const eco = await createChangeOrder()
+      const part = await createPart(suffix, 'Draft')
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+      await testDb.db.insert(changeOrderDesigns).values({
+        changeOrderId: eco.id,
+        designId,
+        branchId: branch.id,
+        mergeStatus: 'pending',
+      })
+
+      // Main tracks the released row, the way a design's main branch does
+      const mainBranch = await BranchService.getMainBranch(designId)
+      await testDb.db.insert(branchItems).values({
+        branchId: mainBranch!.id,
+        itemMasterId: part.masterId!,
+        currentItemId: part.id,
+        baseItemId: part.id,
+        changeType: null,
+      })
+
+      await CheckoutService.checkout(
+        { itemMasterId: part.masterId!, branchId: branch.id },
+        user.id,
+      )
+      await CheckoutService.saveChanges(
+        {
+          branchId: branch.id,
+          itemId: part.id,
+          changes: { name: 'Edited on the ECO branch' },
+          commitMessage: 'edit',
+        },
+        user.id,
+      )
+
+      return { eco, part, branch }
+    }
+
+    it('lists a checked-out item once, at the revision the release will assign', async () => {
+      // Regression (#106): the preview deduplicated by item id, and the
+      // branch working copy and the affected-item row are different rows of
+      // the same item - so one checked-out item was listed twice. Neither
+      // figure was right either: the branch row reported its placeholder
+      // revision bumped to "A", main's row reported "A" -> "A", and the
+      // release then assigned "B".
+      const { eco, part } = await ecoWithCheckedOutPart('preview-dedupe')
+
+      const preview = await ChangeOrderMergeService.previewMerge(eco.id)
+
+      const rows = preview.designs
+        .flatMap((d) => d.items)
+        .filter((i) => i.itemNumber === part.itemNumber)
+      expect(rows).toHaveLength(1)
+      expect(rows[0]).toMatchObject({
+        currentRevision: 'A',
+        newRevision: 'B',
+        changeType: 'modified',
+      })
+      expect(preview.totalItems).toBe(1)
+
+      // What a preview is for: the letter it promises is the letter assigned
+      await approveEco(eco.id)
+      const merged = await ChangeOrderMergeService.merge(eco.id, user.id)
+      expect(
+        merged.designs[0]!.mergeResult.revisionsAssigned[part.itemNumber],
+      ).toBe(rows[0]!.newRevision)
+    })
+
+    it('previews nothing once the change order has released', async () => {
+      // Regression (#106): the ECO branch's rows survive the merge, and their
+      // current item IS the row now released on main - so previewing a
+      // released change order bumped that revision a second time (B -> C) and
+      // validateMerge read the row the merge had just promoted onto main as
+      // someone else's concurrent modification of it.
+      const { eco, part } = await ecoWithCheckedOutPart('preview-released')
+      await approveEco(eco.id)
+
+      const outcome = await ChangeOrderService.executeWorkflowTransition(
+        eco.id,
+        'Released',
+        user.id,
+      )
+      expect(outcome.result.success).toBe(true)
+      expect(
+        outcome.mergeResult?.designs[0]?.mergeResult.revisionsAssigned[
+          part.itemNumber
+        ],
+      ).toBe('B')
+
+      const preview = await ChangeOrderMergeService.previewMerge(eco.id)
+
+      expect(preview.alreadyReleased).toBe(true)
+      expect(preview.designs).toHaveLength(0)
+      expect(preview.totalItems).toBe(0)
+      expect(preview.canRelease).toBe(false)
+      expect(preview.allConflicts).toHaveLength(0)
+      expect(
+        preview.validationIssues.some((i) =>
+          i.includes('already been released'),
+        ),
+      ).toBe(true)
     })
   })
 
@@ -1925,6 +2099,116 @@ describe('ChangeOrderMergeService', () => {
 
       await approveEco(eco.id)
 
+      await expect(
+        ChangeOrderMergeService.merge(eco.id, user.id),
+      ).rejects.toThrow(ValidationError)
+    })
+  })
+
+  describe('items authored on the ECO branch', () => {
+    // Requirements release from 'Approved', not from the state they are
+    // created in — the shape that made this fail. Creating one on the branch
+    // is the author's whole interaction: no checkout, no affected-items call.
+    async function authorRequirementOnEco() {
+      const eco = await createChangeOrder()
+      const ecoDesign = await ChangeOrderService.addDesignToEco(
+        eco.id,
+        designId,
+        user.id,
+      )
+      const { item } = await ItemService.createOnBranch(
+        'Requirement',
+        {
+          itemNumber: `REQ-${uniquePrefix}-${Math.random().toString(36).slice(2, 6)}`,
+          revision: '-',
+          name: 'Authored under this ECO',
+          designId,
+        } as any,
+        ecoDesign.branchId!,
+        'Authored on the ECO',
+        user.id,
+      )
+      // Read the row back so the assertions get the stored item, not the
+      // partial shape `BaseItem` allows
+      const created = takeFirst(
+        await testDb.db.select().from(items).where(eq(items.id, item.id!)),
+      )
+      return { eco, item: created }
+    }
+
+    it('lists them in scope, even though release does not map from their state', async () => {
+      const { eco, item } = await authorRequirementOnEco()
+
+      // The state it was created in is not the one `release` maps from
+      expect(item.state).toBe('Draft')
+      expect(
+        await LifecycleService.canApplyAction(
+          'Requirement',
+          item.state,
+          'release',
+        ),
+      ).toMatchObject({ valid: false })
+
+      const affected = await ChangeOrderService.getAffectedItems(eco.id)
+      const listed = affected.find(
+        (a) => a.affectedItemMasterId === item.masterId,
+      )
+      expect(listed).toBeDefined()
+      expect(listed?.changeAction).toBe('release')
+    })
+
+    it('releases them without any manual scope work', async () => {
+      const { eco, item } = await authorRequirementOnEco()
+
+      // Deliberately not approveEco(): its registration loop is what this
+      // path must no longer need.
+      await testDb.db
+        .update(items)
+        .set({ state: 'Approved' })
+        .where(eq(items.id, eco.id))
+      await testDb.db
+        .update(workflowInstances)
+        .set({ currentState: 'Approved' })
+        .where(eq(workflowInstances.itemId, eco.id))
+
+      await ChangeOrderMergeService.merge(eco.id, user.id)
+
+      const versions = await testDb.db
+        .select()
+        .from(items)
+        .where(eq(items.masterId, item.masterId))
+      const released = versions.find((v) => v.isCurrent)
+      expect(released?.state).toBe('Released')
+      expect(released?.revision).toBe('A')
+    })
+
+    it('previews as releasable rather than reporting a lifecycle violation', async () => {
+      const { eco } = await authorRequirementOnEco()
+
+      const preview = await ChangeOrderMergeService.previewMerge(eco.id)
+
+      expect(preview.validationIssues).toEqual([])
+      expect(preview.totalItems).toBe(1)
+    })
+
+    it('reports branch content the change order does not list, before release', async () => {
+      const { eco, item } = await authorRequirementOnEco()
+
+      // Scope removed behind the merge's back — legacy rows, or content that
+      // arrived by some path that never registered it
+      await testDb.db
+        .delete(changeOrderAffectedItems)
+        .where(eq(changeOrderAffectedItems.changeOrderId, eco.id))
+
+      const preview = await ChangeOrderMergeService.previewMerge(eco.id)
+
+      expect(preview.canRelease).toBe(false)
+      expect(
+        preview.validationIssues.some((issue) =>
+          issue.includes(item.itemNumber),
+        ),
+      ).toBe(true)
+      // …and the release itself still refuses, for the same reason
       await expect(
         ChangeOrderMergeService.merge(eco.id, user.id),
       ).rejects.toThrow(ValidationError)
@@ -3186,6 +3470,223 @@ describe('ChangeOrderMergeService', () => {
         .then((r) => r.at(0))
 
       expect(released?.revision).toBe('B')
+    })
+  })
+
+  // ================================================================
+  // Traceability across a revision
+  //
+  // A relationship names one item version, and the merge rebuilds only the
+  // OUTGOING edges of the items the change order touched. Links that point AT
+  // a revised item belong to whatever sits on the other end - a test case, a
+  // satisfying part - and nothing in the release moves them, so they keep
+  // naming the row the release superseded. Invariant: releasing a revision
+  // never costs the item the coverage its predecessor had.
+  // ================================================================
+
+  describe('incoming traceability survives a revision', () => {
+    async function createRequirement(suffix: string): Promise<PersistedItem> {
+      return ItemService.create<PersistedItem>(
+        'Requirement',
+        {
+          itemNumber: `REQ-${uniquePrefix}-${suffix}`,
+          revision: 'A',
+          name: `Test Requirement ${suffix}`,
+          designId,
+        } as PersistedItem,
+        user.id,
+      )
+    }
+
+    async function createTestCase(suffix: string): Promise<PersistedItem> {
+      return ItemService.create<PersistedItem>(
+        'TestCase',
+        {
+          itemNumber: `TC-${uniquePrefix}-${suffix}`,
+          revision: 'A',
+          name: `Test Case ${suffix}`,
+          designId,
+        } as PersistedItem,
+        user.id,
+      )
+    }
+
+    /** The row of `masterId` the design is currently working from. */
+    async function currentRevision(masterId: string) {
+      const rows = await testDb.db
+        .select()
+        .from(items)
+        .where(and(eq(items.masterId, masterId), eq(items.isCurrent, true)))
+      return takeFirst(rows, 'current revision')
+    }
+
+    it('carries verification and satisfaction onto the new revision', async () => {
+      const requirement = await createRequirement('trace')
+      const testCase = await createTestCase('trace')
+      const part = await createPart('trace-sat')
+
+      // Linked while the design is still open, then released: this is the
+      // state a design is in before its first change order.
+      await RequirementService.linkVerification(
+        requirement.id,
+        [testCase.id],
+        user.id,
+      )
+      await RequirementService.linkSatisfaction(
+        requirement.id,
+        [part.id!],
+        user.id,
+      )
+      await testDb.db
+        .update(items)
+        .set({ state: 'Released' })
+        .where(eq(items.id, requirement.id))
+
+      // An ECO that revises the requirement and nothing else.
+      const eco = await createChangeOrder()
+      await testDb.db.insert(changeOrderAffectedItems).values({
+        changeOrderId: eco.id,
+        affectedItemId: requirement.id,
+        affectedItemMasterId: requirement.masterId,
+        changeAction: 'revise',
+        currentState: 'Released',
+        currentRevision: 'A',
+        targetRevision: 'B',
+        createdBy: user.id,
+      })
+      await approveEco(eco.id)
+      await ChangeOrderMergeService.merge(eco.id, user.id)
+
+      const revised = await currentRevision(requirement.masterId)
+      expect(revised.id).not.toBe(requirement.id)
+
+      const verifying = await RequirementService.getVerifyingTests(revised.id)
+      expect(verifying.map((t) => t.id)).toEqual([testCase.id])
+
+      const satisfying = await RequirementService.getSatisfyingItems(revised.id)
+      expect(satisfying.map((i) => i.id)).toEqual([part.id])
+
+      // ...and read from the other end, the link names the new revision
+      // rather than the row the release superseded.
+      expect(
+        (await RequirementService.getRequirementsSatisfiedBy(part.id)).map(
+          (r) => r.id,
+        ),
+      ).toEqual([revised.id])
+      expect(
+        (await RequirementService.getRequirementsVerifiedBy(testCase.id)).map(
+          (r) => r.id,
+        ),
+      ).toEqual([revised.id])
+
+      // ...and the coverage report agrees, rather than raising the revision
+      // as a fresh gap.
+      const coverage = await RequirementService.getCoverage(designId)
+      expect(coverage.verified).toBe(1)
+      expect(coverage.satisfied).toBe(1)
+      expect(coverage.gaps.map((g) => g.gapType)).not.toContain('not_verified')
+    })
+
+    /**
+     * The other end of the same link. A revision copies the item's OUTGOING
+     * edges onto its working copy, so after PN-001 rev B is released both rev
+     * A and rev B claim to satisfy the requirement and the reader listed the
+     * part twice, once Released and once Superseded.
+     */
+    async function reviseTheSatisfyingPart(
+      beforeRelease?: (ctx: {
+        workingCopyId: string
+        requirementId: string
+        otherId: string
+      }) => Promise<void>,
+    ) {
+      // Two requirements, because the merge treats a working copy with no
+      // relationships at all as a legacy copy and restores the previous
+      // revision's — so a test that removed the item's only edge would be
+      // measuring that fallback instead of this read.
+      const requirement = await createRequirement('src')
+      const other = await createRequirement('src-other')
+      const part = await createPart('src-sat')
+      await RequirementService.linkSatisfaction(
+        requirement.id,
+        [part.id!],
+        user.id,
+      )
+      await RequirementService.linkSatisfaction(other.id, [part.id!], user.id)
+      await testDb.db
+        .update(items)
+        .set({ state: 'Released' })
+        .where(eq(items.id, part.id))
+
+      const eco = await createChangeOrder()
+      const { branchItem } = await ChangeOrderService.checkoutItemToEco(
+        eco.id,
+        part.id,
+        user.id,
+      )
+      await beforeRelease?.({
+        workingCopyId: branchItem.currentItemId!,
+        requirementId: requirement.id,
+        otherId: other.id,
+      })
+      await approveEco(eco.id)
+      await ChangeOrderMergeService.merge(eco.id, user.id)
+
+      return { requirement, other, part }
+    }
+
+    it('lists a revised satisfying item once, at its new revision', async () => {
+      const { requirement, part } = await reviseTheSatisfyingPart()
+
+      const satisfying = await RequirementService.getSatisfyingItems(
+        requirement.id,
+      )
+      expect(satisfying).toHaveLength(1)
+      expect(satisfying[0]!.state).toBe('Released')
+      expect(satisfying[0]!.id).not.toBe(part.id)
+    })
+
+    it('counts a revised satisfying item once in coverage', async () => {
+      await reviseTheSatisfyingPart()
+
+      const coverage = await RequirementService.getCoverage(designId)
+      expect(coverage.satisfied).toBe(2)
+      expect(coverage.totalRequirements).toBe(2)
+    })
+
+    it('does not resurrect a link the revision dropped', async () => {
+      // Why the superseded source is dropped rather than followed forward: the
+      // new revision carries its own copy of the edge whenever it still means
+      // it, so redirecting the old row's edge would re-assert a link this
+      // change order deleted on purpose.
+      const { requirement, other } = await reviseTheSatisfyingPart(
+        async ({ workingCopyId, requirementId }) => {
+          const [edge] = await testDb.db
+            .select()
+            .from(itemRelationships)
+            .where(
+              and(
+                eq(itemRelationships.sourceId, workingCopyId),
+                eq(itemRelationships.targetId, requirementId),
+                eq(itemRelationships.relationshipType, 'SATISFIES'),
+              ),
+            )
+          await ItemService.removeRelationship(edge!.id, user.id)
+        },
+      )
+
+      // The link this ECO removed is gone...
+      expect(
+        await RequirementService.getSatisfyingItems(requirement.id),
+      ).toHaveLength(0)
+      // ...and the one it kept still reads, so this is not just "everything
+      // disappeared".
+      expect(
+        await RequirementService.getSatisfyingItems(other.id),
+      ).toHaveLength(1)
+
+      const coverage = await RequirementService.getCoverage(designId)
+      expect(coverage.satisfied).toBe(1)
     })
   })
 })

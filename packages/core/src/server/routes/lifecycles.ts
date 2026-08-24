@@ -11,30 +11,41 @@ const adapt = tagged('Lifecycles')
 const app = new Hono()
 
 // GET /api/lifecycles/by-item-type/:itemType
+//
+// The definition governing an item type, for rendering: state names, colours
+// and flags, phases, and the change-action mappings the client needs to
+// derive the released family. Resolves Driving-governed types (ChangeOrder)
+// too, since their items mirror the Driving definition's states.
 app.get(
   '/by-item-type/:itemType',
   adapt(
     apiHandler<{ itemType: string }>({}, async ({ params }) => {
-      const lifecycle = await LifecycleService.getLifecycleForItemType(
+      const definition = await LifecycleService.getGoverningDefinition(
         params.itemType,
       )
 
-      if (!lifecycle) {
+      if (!definition) {
         return {
           lifecycleId: null,
           name: null,
+          lifecycleType: null,
           phases: [],
           states: [],
+          transitions: [],
           revisionScheme: null,
+          changeActionMappings: {},
         }
       }
 
       return {
-        lifecycleId: lifecycle.id,
-        name: lifecycle.name,
-        phases: lifecycle.phases ?? [],
-        states: lifecycle.states,
-        revisionScheme: lifecycle.revisionScheme ?? null,
+        lifecycleId: definition.id,
+        name: definition.name,
+        lifecycleType: definition.lifecycleType,
+        phases: definition.phases,
+        states: definition.states,
+        transitions: definition.transitions,
+        revisionScheme: definition.revisionScheme,
+        changeActionMappings: definition.changeActionMappings,
       }
     }),
   ),

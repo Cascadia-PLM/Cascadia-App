@@ -66,14 +66,9 @@ import {
 } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
 import { itemAtContextQuery } from '@/lib/query/options/items'
-
-const STATE_OPTIONS = [
-  { value: 'Draft', label: 'Draft' },
-  { value: 'Proposed', label: 'Proposed' },
-  { value: 'InReview', label: 'In Review' },
-  { value: 'Approved', label: 'Approved' },
-  { value: 'Released', label: 'Released' },
-]
+import { StateBadge } from '@/components/items/StateBadge'
+import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
+import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
 
 const TEST_TYPE_OPTIONS = [
   { value: 'Unit', label: 'Unit' },
@@ -88,20 +83,6 @@ const EXECUTION_STATUS_OPTIONS = [
   { value: 'Failed', label: 'Failed' },
   { value: 'Blocked', label: 'Blocked' },
 ]
-
-const stateVariant = (state: string) => {
-  const variants: Record<
-    string,
-    'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-  > = {
-    Draft: 'secondary',
-    Proposed: 'default',
-    InReview: 'default',
-    Approved: 'success',
-    Released: 'success',
-  }
-  return variants[state] || 'default'
-}
 
 const executionStatusVariant = (status: string) => {
   const variants: Record<
@@ -121,9 +102,8 @@ const createEmptyTestCase = (): TestCase => ({
   masterId: undefined,
   itemType: 'TestCase',
   itemNumber: '',
-  revision: 'A',
   name: '',
-  state: 'Draft',
+  state: '',
   isCurrent: true,
   designId: '',
   testPlanId: undefined,
@@ -139,6 +119,8 @@ const createEmptyTestCase = (): TestCase => ({
 })
 
 interface TestCaseDetailProps {
+  /** Called after a lifecycle transition succeeds (refresh the item) */
+  onTransitioned?: () => void
   testCase?: TestCase
   designs?: Array<Design>
   defaultDesignId?: string
@@ -152,6 +134,7 @@ interface TestCaseDetailProps {
 }
 
 export function TestCaseDetail({
+  onTransitioned,
   testCase: initialTestCase,
   designs = [],
   defaultDesignId,
@@ -272,10 +255,14 @@ export function TestCaseDetail({
     setTestCase((prev) => ({ ...prev, [field]: value }))
   }
 
+  // Only released lineage is revised through a change order; a Free
+  // lifecycle defines no release mappings, so this stays false for it
+  const { isReleasedFamily: isReleasedLineage } = useReleasedFamily(
+    'TestCase',
+    currentTestCase.state,
+  )
   const needsCheckout =
-    !isCreateMode &&
-    ['Approved', 'Released'].includes(currentTestCase.state ?? '') &&
-    context.type === 'main'
+    !isCreateMode && isReleasedLineage && context.type === 'main'
 
   // The server-side edit lock behind the Edit button. Released-on-main goes
   // through the CheckoutDialog (revise onto a branch) instead of a direct
@@ -460,13 +447,21 @@ export function TestCaseDetail({
               {!isCreateMode && isLoadingVersion && (
                 <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
               )}
-              {!isCreateMode && currentTestCase.state && (
-                <Badge
-                  className="text-base"
-                  variant={stateVariant(currentTestCase.state)}
-                >
-                  {currentTestCase.state}
-                </Badge>
+              {!isCreateMode && (
+                <>
+                  <StateBadge
+                    itemType="TestCase"
+                    state={currentTestCase.state}
+                    className="text-base"
+                  />
+                  {currentTestCase.id && (
+                    <FreeTransitionControl
+                      itemId={currentTestCase.id}
+                      state={currentTestCase.state}
+                      onTransitioned={onTransitioned}
+                    />
+                  )}
+                </>
               )}
               {!isCreateMode && currentTestCase.executionStatus && (
                 <Badge
@@ -748,15 +743,6 @@ export function TestCaseDetail({
                   placeholder="Test case name"
                   required
                   data-testid="test-case-name"
-                />
-                <ViewEditBadge
-                  label="State"
-                  value={currentTestCase.state}
-                  onChange={(v) => updateField('state', v)}
-                  isEditing={isEditing}
-                  options={STATE_OPTIONS}
-                  variant={stateVariant}
-                  readOnly={!isCreateMode}
                 />
                 {(isCreateMode || !currentTestCase.designId) &&
                   designs.length > 0 && (

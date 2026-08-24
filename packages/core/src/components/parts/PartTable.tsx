@@ -26,6 +26,8 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface PartTableProps {
   items: Array<Part>
@@ -52,17 +54,6 @@ interface PartTableProps {
   onPaginationChange?: (pagination: PaginationState) => void
 }
 
-const stateColors: Record<
-  string,
-  'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-> = {
-  Draft: 'secondary',
-  InReview: 'default',
-  Approved: 'success',
-  Released: 'success',
-  Obsolete: 'destructive',
-}
-
 export function PartTable({
   items,
   onEdit,
@@ -84,6 +75,14 @@ export function PartTable({
   pagination,
   onPaginationChange,
 }: PartTableProps) {
+  // State filter options and badges come from the Part lifecycle's
+  // configuration, not from a list in code
+  const { data: lifecycle } = useLifecyclePhases('Part')
+  const stateFilterOptions = (lifecycle?.states ?? []).map((state) => ({
+    label: state.name,
+    value: state.id,
+  }))
+
   const columns: Array<DataGridColumn<Part>> = [
     {
       id: 'thumbnail',
@@ -179,17 +178,10 @@ export function PartTable({
       accessorKey: 'state',
       enableFiltering: true,
       filterType: 'multiSelect',
-      filterOptions: [
-        { label: 'Draft', value: 'Draft' },
-        { label: 'In Review', value: 'InReview' },
-        { label: 'Approved', value: 'Approved' },
-        { label: 'Released', value: 'Released' },
-        { label: 'Obsolete', value: 'Obsolete' },
-      ],
-      cell: ({ getValue }) => {
-        const value = getValue() as string
-        return <Badge variant={stateColors[value]}>{value}</Badge>
-      },
+      filterOptions: stateFilterOptions,
+      cell: ({ getValue }) => (
+        <StateBadge itemType="Part" state={getValue() as string} />
+      ),
     },
     {
       id: 'phase',

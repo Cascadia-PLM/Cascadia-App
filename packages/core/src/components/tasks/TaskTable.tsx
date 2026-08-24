@@ -18,23 +18,13 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface TaskTableProps {
   items: Array<Task>
   onEdit?: (task: Task) => void
   onDelete?: (task: Task) => void
-}
-
-const stateColors: Record<
-  string,
-  'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-> = {
-  Backlog: 'secondary',
-  ToDo: 'default',
-  InProgress: 'warning',
-  InReview: 'default',
-  Done: 'success',
-  Cancelled: 'destructive',
 }
 
 const priorityColors: Record<
@@ -57,6 +47,14 @@ const formatDate = (date?: string | Date) => {
 }
 
 export function TaskTable({ items, onEdit, onDelete }: TaskTableProps) {
+  // State filter options and badges come from the Task lifecycle's
+  // configuration, not from a list in code
+  const { data: lifecycle } = useLifecyclePhases('Task')
+  const stateFilterOptions = (lifecycle?.states ?? []).map((state) => ({
+    label: state.name,
+    value: state.id,
+  }))
+
   const columns: Array<DataGridColumn<Task>> = [
     {
       id: 'itemNumber',
@@ -124,20 +122,10 @@ export function TaskTable({ items, onEdit, onDelete }: TaskTableProps) {
       accessorKey: 'state',
       enableFiltering: true,
       filterType: 'multiSelect',
-      filterOptions: [
-        { label: 'Backlog', value: 'Backlog' },
-        { label: 'To Do', value: 'ToDo' },
-        { label: 'In Progress', value: 'InProgress' },
-        { label: 'In Review', value: 'InReview' },
-        { label: 'Done', value: 'Done' },
-        { label: 'Cancelled', value: 'Cancelled' },
-      ],
-      cell: ({ getValue }) => {
-        const value = getValue() as string
-        return (
-          <Badge variant={stateColors[value] ?? 'secondary'}>{value}</Badge>
-        )
-      },
+      filterOptions: stateFilterOptions,
+      cell: ({ getValue }) => (
+        <StateBadge itemType="Task" state={getValue() as string} />
+      ),
     },
     {
       id: 'dueDate',

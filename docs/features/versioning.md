@@ -80,12 +80,16 @@ Cascadia supports multiple revision schemes, configured per lifecycle:
 
 ### First Release
 
-Items created for the first time on an ECO branch have no previous revision. On their first release, they receive revision `A` (or `1`, or the initial value for whatever scheme is configured):
+Items created for the first time have no previous revision. On their first release, they receive revision `A` (or `1`, or the initial value for whatever scheme is configured):
 
 ```
 On ECO branch:    PN-NEW Rev - (Draft)
 After release:    PN-NEW Rev A (Released)
 ```
+
+This holds for an item created directly on main during the pre-release phase as well, and for the same reason: **a create never states a revision.** `revision` is optional on every create schema, and `ItemService.create` writes the value the item's lifecycle implies -- the placeholder `-` for an ECO-controlled (`Driven`) type, whose revision is the release's to assign, and the scheme's initial revision for anything else, which no release ever revises.
+
+A client that supplies the conventional-looking `"A"` instead breaks this: nothing distinguishes it from a real released revision A, so the first release calculates `A -> B` and the item reaches main as `Rev B` having never been released as `Rev A`. The marker is what makes the first release land on `A` -- `getNextRevision('-')` returns the scheme's first value.
 
 ### Concurrent ECO Handling
 
@@ -125,6 +129,76 @@ The `isCurrent` flag marks the latest released version. When a new revision is c
 ### Relationship Stability
 
 BOM relationships and cross-references store specific `items.id` values (version-specific). When viewing items at a branch or commit context, the `VersionResolver` translates these to the correct version for that context. This means relationships always point to a concrete version, and the system resolves context-appropriate versions at query time.
+
+### Reading relationships across a revision
+
+A relationship names one item **version**, not a master, and a revision moves
+only the source's side of it:
+
+- `createRevisionWorkingCopy` copies the item's **outgoing** edges onto the
+  working copy, so the branch can re-quantify or delete a line and have that be
+  what ships.
+- The merge rebuilds those outgoing edges on the released row, re-pointing a
+  target that was revised in the same change order.
+
+Everything else is left exactly where it was pointing, which breaks a naive
+read from either direction:
+
+| Read                                | What goes wrong after a revision                                                                                                                                               |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Incoming** -- who points at me?   | Links the item inherited are missed: a test case still names the requirement revision the release superseded, so the new revision reports zero verifying tests and 0% coverage |
+| **Incoming** -- who points at me?   | Links a revision left behind are counted twice: rev A and rev B both claim to satisfy the requirement, so the same part is listed twice, once Released and once Superseded     |
+| **Outgoing** -- what do I point at? | The reference is a revision behind: the part still names the requirement row the release superseded, and reads back with its `Superseded` badge                                |
+
+`ItemRelationshipService` owns all three corrections, keyed on one predicate --
+`findSupersededRows`, meaning _not the master's current row, and not a working
+copy_:
+
+| Helper              | Direction | Rule                                                                                        |
+| ------------------- | --------- | ------------------------------------------------------------------------------------------- |
+| `findIncomingLinks` | Incoming  | Walk the lineage backwards for inherited links; **drop** sources that name a superseded row |
+| `findOutgoingLinks` | Outgoing  | **Follow** a superseded target forward to the revision that replaced it                     |
+
+Incoming and outgoing are deliberately not symmetric. A stale **target** is
+only a stale _reference_ -- the link is the source's own content and still
+means what it says, so it is followed forward. A stale **source** is a stale
+_claim_: the new revision carries its own copy of the edge whenever it still
+means it, so following rev A's edge forward would re-assert a link the change
+order may have deleted on purpose.
+
+The lineage walk runs backwards only. A current row inherits the superseded
+rows behind it; a working copy inherits the released lineage it was cut from,
+so a requirement opened inside an ECO still shows the coverage it arrived with;
+a superseded row names only itself, so an old revision still reports what it
+actually had. **Nothing ever inherits from a working revision** -- that is what
+keeps a link recorded inside one ECO invisible to main and to every other
+branch until the merge promotes it.
+
+Thread caches invalidate by lineage for the same reason: a cached thread lists
+the rows it resolved to, but the edges behind it can hang off a different
+revision of the same item, so a write anywhere in a lineage invalidates the
+whole lineage.
+
+`followSupersededTargets` applies the outgoing rule to the generic BOM /
+reference reader (`getRelationshipsWithDetails`); the traceability readers go
+through the two helpers above.
+
+--------- | ---------------------------------------------------- | ---------------------------------------------------------------- |
+| Outgoing | `ItemRelationshipService.followSupersededTargets` | A line naming a superseded row reads as the row that replaced it |
+| Incoming | `ItemRelationshipService.resolveIncomingLinkLineage` | A row is read together with the rows it superseded |
+
+The incoming walk runs backwards only. A current row inherits the superseded
+rows behind it; a working copy inherits the released lineage it was cut from,
+so a requirement opened inside an ECO still shows the coverage it arrived with;
+a superseded row names only itself, so an old revision still reports what it
+actually had. **Nothing ever inherits from a working revision** -- that is what
+keeps a link recorded inside one ECO invisible to main and to every other
+branch until the merge promotes it.
+
+Thread caches invalidate by lineage for the same reason: a cached thread lists
+the rows it resolved to, but the edges behind it can hang off a different
+revision of the same item, so a write anywhere in a lineage invalidates the
+whole lineage.
 
 ---
 

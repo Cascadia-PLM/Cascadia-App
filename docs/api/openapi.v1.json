@@ -171,7 +171,27 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "apiKey": {
+                    "type": "string"
+                  },
+                  "baseURL": {
+                    "type": "string"
+                  },
+                  "provider": {
+                    "enum": [
+                      "openai",
+                      "anthropic",
+                      "gemini",
+                      "ollama"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "provider"
+                ],
+                "type": "object"
               }
             }
           },
@@ -2199,7 +2219,22 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "additionalProperties": {},
+                "properties": {
+                  "designIds": {
+                    "items": {
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "designIds"
+                ],
+                "type": "object"
               }
             }
           },
@@ -2437,7 +2472,237 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "anyOf": [
+                  {
+                    "properties": {
+                      "affectedItemId": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "affectedItemMasterId": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "changeAction": {
+                        "enum": [
+                          "release",
+                          "revise",
+                          "obsolete",
+                          "promote"
+                        ],
+                        "type": "string"
+                      },
+                      "changeDescription": {
+                        "anyOf": [
+                          {
+                            "maxLength": 10000,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "currentRevision": {
+                        "anyOf": [
+                          {
+                            "maxLength": 50,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "currentState": {
+                        "anyOf": [
+                          {
+                            "maxLength": 100,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "newItemData": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": {},
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "newItemType": {
+                        "anyOf": [
+                          {
+                            "maxLength": 50,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "replacementItemId": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "changeAction"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "items": {
+                        "items": {
+                          "properties": {
+                            "affectedItemId": {
+                              "anyOf": [
+                                {
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "affectedItemMasterId": {
+                              "anyOf": [
+                                {
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "changeAction": {
+                              "enum": [
+                                "release",
+                                "revise",
+                                "obsolete",
+                                "promote"
+                              ],
+                              "type": "string"
+                            },
+                            "changeDescription": {
+                              "anyOf": [
+                                {
+                                  "maxLength": 10000,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "currentRevision": {
+                              "anyOf": [
+                                {
+                                  "maxLength": 50,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "currentState": {
+                              "anyOf": [
+                                {
+                                  "maxLength": 100,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "newItemData": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": {},
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "newItemType": {
+                              "anyOf": [
+                                {
+                                  "maxLength": 50,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "replacementItemId": {
+                              "anyOf": [
+                                {
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "changeAction"
+                          ],
+                          "type": "object"
+                        },
+                        "maxItems": 500,
+                        "minItems": 1,
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "items"
+                    ],
+                    "type": "object"
+                  }
+                ]
               }
             }
           },
@@ -2483,7 +2748,22 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "itemIds": {
+                    "items": {
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "maxItems": 500,
+                    "minItems": 1,
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "itemIds"
+                ],
+                "type": "object"
               }
             }
           },
@@ -3941,8 +4221,165 @@
         ]
       },
       "post": {
+        "description": "With `programId`, the caller needs the `canManageDesigns` flag on their membership of that program (or cross-program authority). Without one, the global `designs:create` permission. Creating a design also creates its `main` branch and initial commit.",
         "operationId": "postApiV1Designs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "attributes": {
+                    "additionalProperties": {},
+                    "type": "object"
+                  },
+                  "cloneSourceDesignId": {
+                    "anyOf": [
+                      {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "code": {
+                    "maxLength": 50,
+                    "minLength": 1,
+                    "pattern": "^[A-Z0-9-]+$",
+                    "type": "string"
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "designType": {
+                    "default": "Engineering",
+                    "enum": [
+                      "Engineering",
+                      "Library",
+                      "Family"
+                    ],
+                    "type": "string"
+                  },
+                  "name": {
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "parentDesignId": {
+                    "anyOf": [
+                      {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "plannedQuantity": {
+                    "anyOf": [
+                      {
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "programId": {
+                    "anyOf": [
+                      {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "code"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "design": {
+                          "additionalProperties": {},
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "programId": {
+                              "anyOf": [
+                                {
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "code",
+                            "name",
+                            "programId"
+                          ],
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "design"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -3959,6 +4396,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Create a design",
         "tags": [
           "Designs"
         ]
@@ -5713,7 +6151,242 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "color": {
+                    "pattern": "^#[0-9a-fA-F]{6}$",
+                    "type": "string"
+                  },
+                  "contents": {
+                    "anyOf": [
+                      {
+                        "maxLength": 4000,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "geometry": {
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "kind": {
+                            "const": "highlight",
+                            "type": "string"
+                          },
+                          "rect": {
+                            "properties": {
+                              "height": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "width": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "x": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "y": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y",
+                              "width",
+                              "height"
+                            ],
+                            "type": "object"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "rect"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "kind": {
+                            "const": "rect",
+                            "type": "string"
+                          },
+                          "rect": {
+                            "properties": {
+                              "height": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "width": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "x": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "y": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y",
+                              "width",
+                              "height"
+                            ],
+                            "type": "object"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "rect"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "kind": {
+                            "const": "ink",
+                            "type": "string"
+                          },
+                          "strokes": {
+                            "items": {
+                              "items": {
+                                "properties": {
+                                  "x": {
+                                    "maximum": 1,
+                                    "minimum": 0,
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "maximum": 1,
+                                    "minimum": 0,
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "type": "object"
+                              },
+                              "minItems": 2,
+                              "type": "array"
+                            },
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "width": {
+                            "maximum": 0.05,
+                            "minimum": 0,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "strokes",
+                          "width"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "anchor": {
+                            "properties": {
+                              "x": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "y": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y"
+                            ],
+                            "type": "object"
+                          },
+                          "kind": {
+                            "const": "note",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "anchor"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "anchor": {
+                            "properties": {
+                              "x": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "y": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y"
+                            ],
+                            "type": "object"
+                          },
+                          "fontSize": {
+                            "maximum": 0.2,
+                            "minimum": 0.005,
+                            "type": "number"
+                          },
+                          "kind": {
+                            "const": "text",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "anchor",
+                          "fontSize"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "pageNumber": {
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "pageNumber",
+                  "geometry",
+                  "color"
+                ],
+                "type": "object"
               }
             }
           },
@@ -5817,7 +6490,232 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "color": {
+                    "pattern": "^#[0-9a-fA-F]{6}$",
+                    "type": "string"
+                  },
+                  "contents": {
+                    "anyOf": [
+                      {
+                        "maxLength": 4000,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "geometry": {
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "kind": {
+                            "const": "highlight",
+                            "type": "string"
+                          },
+                          "rect": {
+                            "properties": {
+                              "height": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "width": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "x": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "y": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y",
+                              "width",
+                              "height"
+                            ],
+                            "type": "object"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "rect"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "kind": {
+                            "const": "rect",
+                            "type": "string"
+                          },
+                          "rect": {
+                            "properties": {
+                              "height": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "width": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "x": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "y": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y",
+                              "width",
+                              "height"
+                            ],
+                            "type": "object"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "rect"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "kind": {
+                            "const": "ink",
+                            "type": "string"
+                          },
+                          "strokes": {
+                            "items": {
+                              "items": {
+                                "properties": {
+                                  "x": {
+                                    "maximum": 1,
+                                    "minimum": 0,
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "maximum": 1,
+                                    "minimum": 0,
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "type": "object"
+                              },
+                              "minItems": 2,
+                              "type": "array"
+                            },
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "width": {
+                            "maximum": 0.05,
+                            "minimum": 0,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "strokes",
+                          "width"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "anchor": {
+                            "properties": {
+                              "x": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "y": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y"
+                            ],
+                            "type": "object"
+                          },
+                          "kind": {
+                            "const": "note",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "anchor"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "anchor": {
+                            "properties": {
+                              "x": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "y": {
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y"
+                            ],
+                            "type": "object"
+                          },
+                          "fontSize": {
+                            "maximum": 0.2,
+                            "minimum": 0.005,
+                            "type": "number"
+                          },
+                          "kind": {
+                            "const": "text",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "anchor",
+                          "fontSize"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  }
+                },
+                "type": "object"
               }
             }
           },
@@ -5866,7 +6764,30 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "category": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "cad_model",
+                          "drawing",
+                          "specification",
+                          "analysis",
+                          "reference",
+                          "other"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "category"
+                ],
+                "type": "object"
               }
             }
           },
@@ -6071,6 +6992,7 @@
     },
     "/api/v1/files/{fileId}/convert": {
       "post": {
+        "description": "STEP (.step/.stp) and IGES (.iges/.igs) only. Returns 202 with the id of a background job — poll GET /api/v1/jobs/:id for its result; the STL and GLB appear as new files on the target item when it completes. The body is optional: an absent or unparseable one runs on the defaults below.",
         "operationId": "postApiV1FilesByFileIdConvert",
         "parameters": [
           {
@@ -6078,11 +7000,73 @@
             "name": "fileId",
             "required": true,
             "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "decompose": {
+                    "default": false,
+                    "description": "Split a multi-solid assembly into one mesh per solid instead of one mesh for the whole file.",
+                    "type": "boolean"
+                  },
+                  "meshQuality": {
+                    "default": "standard",
+                    "enum": [
+                      "preview",
+                      "standard",
+                      "high"
+                    ],
+                    "type": "string"
+                  },
+                  "targetItemId": {
+                    "description": "Attach the converted mesh to this item instead of the source file’s own — e.g. a STEP held on a Document producing an STL on the Part.",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
         "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "jobId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "jobId"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Conversion queued"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -6099,6 +7083,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Queue a CAD file for mesh conversion",
         "tags": [
           "Files"
         ]
@@ -6376,7 +7361,52 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "color": {
+                    "default": "#dc2626",
+                    "pattern": "^#[0-9a-fA-F]{6}$",
+                    "type": "string"
+                  },
+                  "opacity": {
+                    "default": 0.25,
+                    "maximum": 1,
+                    "minimum": 0.05,
+                    "type": "number"
+                  },
+                  "position": {
+                    "default": "diagonal",
+                    "enum": [
+                      "diagonal",
+                      "top-banner",
+                      "bottom-banner"
+                    ],
+                    "type": "string"
+                  },
+                  "reason": {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "subtext": {
+                    "anyOf": [
+                      {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "text": {
+                    "maxLength": 120,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "type": "object"
               }
             }
           },
@@ -6706,8 +7736,1441 @@
         ]
       },
       "post": {
+        "description": "The body is the item type’s own schema plus an envelope of `branchId` and `commitMessage`; `itemType` selects which. Permission is checked against the resource that type maps to (`parts:create` for a Part, and so on).\n\nThe server-assigned fields — `id`, `masterId`, `isCurrent`, `createdAt`/`createdBy`, `modifiedAt`/`modifiedBy`, `lockedBy`/`lockedAt` — are absent from the schema below because sending them has no effect. A blank `itemNumber` is auto-generated, and an omitted `revision` is assigned from the type’s lifecycle — send one only to carry a source system’s.\n\n`ChangeOrder` is not creatable here — an ECO is defined by the designs it affects, so it goes through `POST /api/v1/change-orders`. A `WorkInstruction` must name its `outputPartId` and takes that part’s design; any `designId` sent with it must agree.",
         "operationId": "postApiV1Items",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "type": "string"
+                      },
+                      "cost": {
+                        "type": "string"
+                      },
+                      "costCurrency": {
+                        "default": "USD",
+                        "maxLength": 3,
+                        "minLength": 3,
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Part",
+                        "type": "string"
+                      },
+                      "leadTimeDays": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "material": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "partType": {
+                        "enum": [
+                          "Manufacture",
+                          "Purchase",
+                          "Software",
+                          "Phantom"
+                        ],
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "trackingMode": {
+                        "enum": [
+                          "none",
+                          "lot",
+                          "serial"
+                        ],
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "weight": {
+                        "type": "string"
+                      },
+                      "weightUnit": {
+                        "default": "kg",
+                        "maxLength": 10,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "designId",
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "fileId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "fileName": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "fileSize": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Document",
+                        "type": "string"
+                      },
+                      "mimeType": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "storagePath": {
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "designId",
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "acceptanceCriteria": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "allocatedDesignId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "category": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Requirement",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "parentRequirementId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "priority": {
+                        "enum": [
+                          "MustHave",
+                          "ShouldHave",
+                          "CouldHave",
+                          "WontHave"
+                        ],
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "source": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "type": {
+                        "enum": [
+                          "Functional",
+                          "Non-Functional",
+                          "Performance",
+                          "Security",
+                          "Usability",
+                          "Business"
+                        ],
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "verificationMethod": {
+                        "enum": [
+                          "Analysis",
+                          "Inspection",
+                          "Demonstration",
+                          "Test",
+                          "Documentation"
+                        ],
+                        "type": "string"
+                      },
+                      "verificationStatus": {
+                        "enum": [
+                          "NotStarted",
+                          "InProgress",
+                          "Passed",
+                          "Failed",
+                          "Waived"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "designId",
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "actualHours": {
+                        "type": "string"
+                      },
+                      "assignee": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "dueDate": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "format": "date-time",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "estimatedHours": {
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Task",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "parentTaskId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "priority": {
+                        "default": "Medium",
+                        "enum": [
+                          "Low",
+                          "Medium",
+                          "High",
+                          "Critical"
+                        ],
+                        "type": "string"
+                      },
+                      "programId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "tags": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "entryCriteria": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "environment": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "exitCriteria": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "TestPlan",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "scope": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "designId",
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "environment": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "executionStatus": {
+                        "enum": [
+                          "NotRun",
+                          "Passed",
+                          "Failed",
+                          "Blocked"
+                        ],
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "TestCase",
+                        "type": "string"
+                      },
+                      "lastExecutedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "lastExecutedBy": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "preconditions": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "steps": {
+                        "items": {
+                          "properties": {
+                            "action": {
+                              "maxLength": 2000,
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            "expectedResult": {
+                              "maxLength": 2000,
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            "stepNumber": {
+                              "maximum": 9007199254740991,
+                              "minimum": 1,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "stepNumber",
+                            "action",
+                            "expectedResult"
+                          ],
+                          "type": "object"
+                        },
+                        "type": "array"
+                      },
+                      "testPlanId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "testType": {
+                        "enum": [
+                          "Unit",
+                          "Integration",
+                          "System",
+                          "Acceptance"
+                        ],
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "designId",
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "affectedItemIds": {
+                        "items": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "assignedTo": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "category": {
+                        "enum": [
+                          "Design",
+                          "Manufacturing",
+                          "Quality",
+                          "Customer",
+                          "Safety",
+                          "Other"
+                        ],
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 10000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "designIds": {
+                        "items": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Issue",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "priority": {
+                        "default": "Medium",
+                        "enum": [
+                          "Critical",
+                          "High",
+                          "Medium",
+                          "Low"
+                        ],
+                        "type": "string"
+                      },
+                      "programId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "reportedBy": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "reportedDate": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "format": "date-time",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "resolution": {
+                        "maxLength": 10000,
+                        "type": "string"
+                      },
+                      "resolvedDate": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "format": "date-time",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "rootCause": {
+                        "maxLength": 10000,
+                        "type": "string"
+                      },
+                      "severity": {
+                        "default": "Medium",
+                        "enum": [
+                          "Critical",
+                          "High",
+                          "Medium",
+                          "Low"
+                        ],
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "difficulty": {
+                        "enum": [
+                          "Easy",
+                          "Medium",
+                          "Hard"
+                        ],
+                        "type": "string"
+                      },
+                      "estimatedTime": {
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "type": "integer"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "WorkInstruction",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "outputPartId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "requiredTools": {
+                        "maxLength": 2000,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "safetyNotes": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "itemType",
+                      "outputPartId"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "buildArtifactFileId": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "draftManifestId": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Software",
+                        "type": "string"
+                      },
+                      "manifestId": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "softwareType": {
+                        "enum": [
+                          "firmware",
+                          "application",
+                          "library",
+                          "configuration",
+                          "fpga"
+                        ],
+                        "type": "string"
+                      },
+                      "sourceMode": {
+                        "default": "internal",
+                        "enum": [
+                          "internal",
+                          "external"
+                        ],
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "targetHardware": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "toolchain": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "version": {
+                        "maxLength": 50,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "designId",
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "capabilities": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Tool",
+                        "type": "string"
+                      },
+                      "location": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "manufacturer": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "model": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "notes": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "toolSubtype": {
+                        "maxLength": 50,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "toolType": {
+                        "enum": [
+                          "manufacturing",
+                          "quality",
+                          "utility"
+                        ],
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "itemType",
+                      "toolType",
+                      "toolSubtype"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "asBuiltItemId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "erpRef": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "instanceKind": {
+                        "enum": [
+                          "unit",
+                          "lot"
+                        ],
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "PhysicalPart",
+                        "type": "string"
+                      },
+                      "lotNumber": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "manufacturerPartId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "notes": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "partMasterId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "producingWorkOrderId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "serialNumber": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "itemType",
+                      "instanceKind",
+                      "partMasterId"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "assignedTo": {
+                        "default": [],
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "type": "string"
+                      },
+                      "completedAt": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "format": "date-time",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "customerOrder": {
+                        "anyOf": [
+                          {
+                            "maxLength": 200,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "dueDate": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "format": "date-time",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "WorkOrder",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "notes": {
+                        "anyOf": [
+                          {
+                            "maxLength": 5000,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "partId": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "priority": {
+                        "default": "Normal",
+                        "enum": [
+                          "Low",
+                          "Normal",
+                          "High",
+                          "Urgent"
+                        ],
+                        "type": "string"
+                      },
+                      "programId": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "quantity": {
+                        "default": 1,
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "type": "integer"
+                      },
+                      "quantityCompleted": {
+                        "default": 0,
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "requiresSignOff": {
+                        "default": false,
+                        "type": "boolean"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "itemType"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "commit": {
+                          "additionalProperties": {},
+                          "properties": {
+                            "id": {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "message"
+                          ],
+                          "type": "object"
+                        },
+                        "item": {
+                          "additionalProperties": {},
+                          "properties": {
+                            "id": {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            "itemNumber": {
+                              "type": "string"
+                            },
+                            "itemType": {
+                              "type": "string"
+                            },
+                            "masterId": {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            "revision": {
+                              "type": "string"
+                            },
+                            "state": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "masterId",
+                            "itemNumber",
+                            "itemType",
+                            "revision",
+                            "state"
+                          ],
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "item"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The created item. `commit` is present only for a branch write."
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -6724,6 +9187,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Create an item of any type",
         "tags": [
           "Items"
         ]
@@ -6896,7 +9360,24 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "itemType": {
+                    "enum": [
+                      "Part",
+                      "Tool"
+                    ],
+                    "type": "string"
+                  },
+                  "url": {
+                    "format": "uri",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url",
+                  "itemType"
+                ],
+                "type": "object"
               }
             }
           },
@@ -7637,6 +10118,7 @@
         ]
       },
       "post": {
+        "description": "The path item is the edge source. `(sourceId, targetId, relationshipType)` is unique, so re-adding an existing edge fails rather than duplicating it.",
         "operationId": "postApiV1ItemsByIdRelationships",
         "parameters": [
           {
@@ -7644,11 +10126,81 @@
             "name": "id",
             "required": true,
             "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "findNumber": {
+                    "type": "number"
+                  },
+                  "quantity": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ],
+                    "description": "Stored as text, so a string arrives verbatim — BOM quantities are not all integers."
+                  },
+                  "referenceDesignator": {
+                    "type": "string"
+                  },
+                  "relationshipType": {
+                    "description": "e.g. `BOM`, `Document`, `Satisfies`, `Consumes`",
+                    "type": "string"
+                  },
+                  "targetId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "targetId",
+                  "relationshipType"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "success"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -7665,6 +10217,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Add a relationship from this item",
         "tags": [
           "Items"
         ]
@@ -8020,6 +10573,7 @@
         ]
       },
       "put": {
+        "description": "The primary model is the one the 3D viewer opens by default. Designates an already-uploaded file — upload with POST /api/v1/items/:itemId/files/upload first.",
         "operationId": "putApiV1ItemsByItemIdFilesPrimary",
         "parameters": [
           {
@@ -8027,11 +10581,70 @@
             "name": "itemId",
             "required": true,
             "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "fileId": {
+                    "description": "A file already uploaded to this item. Must belong to it.",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "fileId"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "fileId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "success": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "success",
+                        "message",
+                        "fileId"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -8048,6 +10661,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Designate an item's primary 3D model",
         "tags": [
           "Items"
         ]
@@ -8121,6 +10735,7 @@
         ]
       },
       "put": {
+        "description": "Overrides the thumbnail generated from the CAD model. DELETE the same path to revert to the generated one.",
         "operationId": "putApiV1ItemsByItemIdFilesThumbnail",
         "parameters": [
           {
@@ -8128,11 +10743,70 @@
             "name": "itemId",
             "required": true,
             "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "fileId": {
+                    "description": "A file already uploaded to this item. Must belong to it.",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "fileId"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "fileId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "success": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "success",
+                        "message",
+                        "fileId"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -8149,6 +10823,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Designate an uploaded image as the item's thumbnail",
         "tags": [
           "Items"
         ]
@@ -8156,6 +10831,7 @@
     },
     "/api/v1/items/{itemId}/files/upload": {
       "post": {
+        "description": "`multipart/form-data`. Every part carrying a file is uploaded; the part name is free, and the client uses `file0`, `file1`, and so on. Two optional parts hang off each file part by name: `<name>_description` and `<name>_isThumbnail` (the string `true`). A single `branchId` part applies to the whole request. Uploading a STEP or IGES file does not convert it — call POST /api/v1/files/:fileId/convert with the returned id.",
         "operationId": "postApiV1ItemsByItemIdFilesUpload",
         "parameters": [
           {
@@ -8163,11 +10839,168 @@
             "name": "itemId",
             "required": true,
             "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "contentEncoding": "binary",
+                      "format": "binary",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "properties": {
+                  "branchId": {
+                    "description": "Attach the files in this ECO branch’s version context. Omitted, they attach on main.",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "file0": {
+                    "contentEncoding": "binary",
+                    "description": "First file. Repeat as file1, file2, …",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "file0_description": {
+                    "description": "Description stored against `file0`.",
+                    "type": "string"
+                  },
+                  "file0_isThumbnail": {
+                    "description": "`true` designates `file0` as the item thumbnail.",
+                    "enum": [
+                      "true",
+                      "false"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "count": {
+                          "maximum": 9007199254740991,
+                          "minimum": -9007199254740991,
+                          "type": "integer"
+                        },
+                        "files": {
+                          "items": {
+                            "additionalProperties": {},
+                            "properties": {
+                              "branchId": {
+                                "anyOf": [
+                                  {
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "fileHash": {
+                                "description": "SHA-256 of the stored bytes",
+                                "type": "string"
+                              },
+                              "fileName": {
+                                "type": "string"
+                              },
+                              "fileSize": {
+                                "type": "number"
+                              },
+                              "fileVersion": {
+                                "maximum": 9007199254740991,
+                                "minimum": -9007199254740991,
+                                "type": "integer"
+                              },
+                              "id": {
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "type": "string"
+                              },
+                              "isItemThumbnail": {
+                                "type": "boolean"
+                              },
+                              "isPrimaryModel": {
+                                "anyOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "itemId": {
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "type": "string"
+                              },
+                              "mimeType": {
+                                "type": "string"
+                              },
+                              "originalFileName": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "itemId",
+                              "branchId",
+                              "fileName",
+                              "originalFileName",
+                              "fileSize",
+                              "mimeType",
+                              "fileHash",
+                              "fileVersion",
+                              "isPrimaryModel",
+                              "isItemThumbnail"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "required": [
+                        "files",
+                        "count"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -8184,6 +11017,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Upload one or more files to an item",
         "tags": [
           "Items"
         ]
@@ -8191,7 +11025,7 @@
     },
     "/api/v1/items/{itemId}/model-versions": {
       "get": {
-        "description": "Enumerates the released version, active branch working versions, and historical revisions of the item's master, each resolved to the viewable CAD model file that version context would display. Powers the 3D comparison overlay on the part detail page.",
+        "description": "Enumerates the released version, active branch working versions, and historical revisions of the item's master, each resolved to every viewable CAD model that version context offers — from the version row itself and from the Documents it links as CAD Docs. `files` is ordered so the first entry is the model that context displays by default, which `file` repeats. Powers the 3D comparison overlay on the part detail page.",
         "operationId": "getApiV1ItemsByItemIdModelVersions",
         "parameters": [
           {
@@ -8289,6 +11123,31 @@
                                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
                                         "type": "string"
                                       },
+                                      "isPrimaryModel": {
+                                        "type": "boolean"
+                                      },
+                                      "source": {
+                                        "enum": [
+                                          "direct",
+                                          "cad_doc"
+                                        ],
+                                        "type": "string"
+                                      },
+                                      "sourceItemId": {
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                        "type": "string"
+                                      },
+                                      "sourceItemNumber": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
                                       "uploadedAt": {
                                         "type": "string"
                                       }
@@ -8298,8 +11157,12 @@
                                       "fileName",
                                       "fileType",
                                       "hasColors",
+                                      "isPrimaryModel",
                                       "fileSize",
-                                      "uploadedAt"
+                                      "uploadedAt",
+                                      "source",
+                                      "sourceItemId",
+                                      "sourceItemNumber"
                                     ],
                                     "type": "object"
                                   },
@@ -8307,6 +11170,71 @@
                                     "type": "null"
                                   }
                                 ]
+                              },
+                              "files": {
+                                "items": {
+                                  "properties": {
+                                    "fileName": {
+                                      "type": "string"
+                                    },
+                                    "fileSize": {
+                                      "type": "number"
+                                    },
+                                    "fileType": {
+                                      "type": "string"
+                                    },
+                                    "hasColors": {
+                                      "type": "boolean"
+                                    },
+                                    "id": {
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                      "type": "string"
+                                    },
+                                    "isPrimaryModel": {
+                                      "type": "boolean"
+                                    },
+                                    "source": {
+                                      "enum": [
+                                        "direct",
+                                        "cad_doc"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    "sourceItemId": {
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                      "type": "string"
+                                    },
+                                    "sourceItemNumber": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "uploadedAt": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "fileName",
+                                    "fileType",
+                                    "hasColors",
+                                    "isPrimaryModel",
+                                    "fileSize",
+                                    "uploadedAt",
+                                    "source",
+                                    "sourceItemId",
+                                    "sourceItemNumber"
+                                  ],
+                                  "type": "object"
+                                },
+                                "type": "array"
                               },
                               "itemId": {
                                 "format": "uuid",
@@ -8342,6 +11270,7 @@
                               "state",
                               "modifiedAt",
                               "branch",
+                              "files",
                               "file"
                             ],
                             "type": "object"
@@ -8487,7 +11416,74 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "datasheetUrl": {
+                    "format": "uri",
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  "description": {
+                    "maxLength": 5000,
+                    "type": "string"
+                  },
+                  "manufacturer": {
+                    "maxLength": 500,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "mpn": {
+                    "maxLength": 500,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "notes": {
+                    "maxLength": 5000,
+                    "type": "string"
+                  },
+                  "specs": {
+                    "additionalProperties": {},
+                    "type": "object"
+                  },
+                  "supplierLinks": {
+                    "items": {
+                      "properties": {
+                        "leadTimeDays": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "price": {
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "sku": {
+                          "maxLength": 200,
+                          "type": "string"
+                        },
+                        "supplier": {
+                          "maxLength": 200,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "url": {
+                          "format": "uri",
+                          "maxLength": 2000,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "supplier"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "manufacturer",
+                  "mpn"
+                ],
+                "type": "object"
               }
             }
           },
@@ -8571,7 +11567,31 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "isPreferred": {
+                    "type": "boolean"
+                  },
+                  "notes": {
+                    "anyOf": [
+                      {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "qualificationStatus": {
+                    "enum": [
+                      "proposed",
+                      "approved",
+                      "obsolete"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "type": "object"
               }
             }
           },
@@ -8655,7 +11675,99 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "isPreferred": {
+                    "type": "boolean"
+                  },
+                  "manufacturerPart": {
+                    "properties": {
+                      "datasheetUrl": {
+                        "format": "uri",
+                        "maxLength": 2000,
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "manufacturer": {
+                        "maxLength": 500,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "mpn": {
+                        "maxLength": 500,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "notes": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "specs": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "supplierLinks": {
+                        "items": {
+                          "properties": {
+                            "leadTimeDays": {
+                              "maximum": 9007199254740991,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "price": {
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "sku": {
+                              "maxLength": 200,
+                              "type": "string"
+                            },
+                            "supplier": {
+                              "maxLength": 200,
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            "url": {
+                              "format": "uri",
+                              "maxLength": 2000,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "supplier"
+                          ],
+                          "type": "object"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "manufacturer",
+                      "mpn"
+                    ],
+                    "type": "object"
+                  },
+                  "manufacturerPartId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "notes": {
+                    "maxLength": 5000,
+                    "type": "string"
+                  },
+                  "qualificationStatus": {
+                    "enum": [
+                      "proposed",
+                      "approved",
+                      "obsolete"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "type": "object"
               }
             }
           },
@@ -8775,7 +11887,70 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "datasheetUrl": {
+                    "format": "uri",
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  "description": {
+                    "maxLength": 5000,
+                    "type": "string"
+                  },
+                  "manufacturer": {
+                    "maxLength": 500,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "mpn": {
+                    "maxLength": 500,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "notes": {
+                    "maxLength": 5000,
+                    "type": "string"
+                  },
+                  "specs": {
+                    "additionalProperties": {},
+                    "type": "object"
+                  },
+                  "supplierLinks": {
+                    "items": {
+                      "properties": {
+                        "leadTimeDays": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "price": {
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "sku": {
+                          "maxLength": 200,
+                          "type": "string"
+                        },
+                        "supplier": {
+                          "maxLength": 200,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "url": {
+                          "format": "uri",
+                          "maxLength": 2000,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "supplier"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
               }
             }
           },
@@ -9165,7 +12340,66 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "commitMessage": {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  "cost": {
+                    "type": "string"
+                  },
+                  "costCurrency": {
+                    "maxLength": 3,
+                    "minLength": 3,
+                    "type": "string"
+                  },
+                  "description": {
+                    "maxLength": 5000,
+                    "type": "string"
+                  },
+                  "leadTimeDays": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "material": {
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "name": {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  "partType": {
+                    "enum": [
+                      "Manufacture",
+                      "Purchase",
+                      "Software",
+                      "Phantom"
+                    ],
+                    "type": "string"
+                  },
+                  "state": {
+                    "maxLength": 50,
+                    "type": "string"
+                  },
+                  "trackingMode": {
+                    "enum": [
+                      "none",
+                      "lot",
+                      "serial"
+                    ],
+                    "type": "string"
+                  },
+                  "weight": {
+                    "type": "string"
+                  },
+                  "weightUnit": {
+                    "maxLength": 10,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
               }
             }
           },
@@ -9485,7 +12719,40 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "erpRef": {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "lotNumber": {
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "manufacturerPartId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "notes": {
+                    "maxLength": 5000,
+                    "type": "string"
+                  },
+                  "partMasterId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "serialNumber": {
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "partMasterId"
+                ],
+                "type": "object"
               }
             }
           },
@@ -9569,7 +12836,51 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "erpRef": {
+                    "anyOf": [
+                      {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "manufacturerPartId": {
+                    "anyOf": [
+                      {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "name": {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  "notes": {
+                    "anyOf": [
+                      {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "state": {
+                    "maxLength": 50,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
               }
             }
           },
@@ -9686,7 +12997,21 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "note": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  "requirementId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "requirementId"
+                ],
+                "type": "object"
               }
             }
           },
@@ -9821,8 +13146,113 @@
         ]
       },
       "post": {
+        "description": "Programs are the permission boundary: the creator is not made a member, so add members with POST /api/v1/programs/:id/members. `code` is unique system-wide.",
         "operationId": "postApiV1Programs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "attributes": {
+                    "additionalProperties": {},
+                    "type": "object"
+                  },
+                  "code": {
+                    "maxLength": 50,
+                    "minLength": 1,
+                    "pattern": "^[A-Z0-9-]+$",
+                    "type": "string"
+                  },
+                  "contractNumber": {
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "customer": {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "startDate": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "status": {
+                    "enum": [
+                      "Active",
+                      "On Hold",
+                      "Completed",
+                      "Cancelled"
+                    ],
+                    "type": "string"
+                  },
+                  "targetEndDate": {
+                    "format": "date-time",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "code"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "program": {
+                          "additionalProperties": {},
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "code",
+                            "name"
+                          ],
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "program"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -9839,6 +13269,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Create a program",
         "tags": [
           "Programs"
         ]
@@ -10317,8 +13748,271 @@
     },
     "/api/v1/relationships/batch-create": {
       "post": {
+        "description": "Up to 500 edges in one request — this is how a BOM is loaded. A line naming the same `(sourceId, targetId, relationshipType)` twice rejects the whole request with 400: the caller has to merge those lines and sum their quantities. Otherwise nothing is written until the batch is known to be insertable, and the status reports the outcome: 201 when every line was created, 207 when some lines were created and others rejected, 400 when none were.",
         "operationId": "postApiV1RelationshipsBatchCreate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "relationships": {
+                    "items": {
+                      "properties": {
+                        "findNumber": {
+                          "type": "number"
+                        },
+                        "metadata": {
+                          "additionalProperties": {},
+                          "type": "object"
+                        },
+                        "quantity": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "referenceDesignator": {
+                          "type": "string"
+                        },
+                        "relationshipType": {
+                          "description": "e.g. `BOM`, `Document`, `Satisfies`, `Consumes`",
+                          "type": "string"
+                        },
+                        "sourceId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "targetId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "sourceId",
+                        "targetId",
+                        "relationshipType"
+                      ],
+                      "type": "object"
+                    },
+                    "maxItems": 500,
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "replaceExisting": {
+                    "description": "Clear the existing edges of every source that has a line in this batch before inserting. Without it, an edge already stored is counted in `skipped` and left alone.",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "relationships"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "created": {
+                          "maximum": 9007199254740991,
+                          "minimum": -9007199254740991,
+                          "type": "integer"
+                        },
+                        "errors": {
+                          "items": {
+                            "properties": {
+                              "error": {
+                                "type": "string"
+                              },
+                              "relationship": {
+                                "properties": {
+                                  "findNumber": {
+                                    "type": "number"
+                                  },
+                                  "metadata": {
+                                    "additionalProperties": {},
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "type": "object"
+                                  },
+                                  "quantity": {
+                                    "anyOf": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "referenceDesignator": {
+                                    "type": "string"
+                                  },
+                                  "relationshipType": {
+                                    "description": "e.g. `BOM`, `Document`, `Satisfies`, `Consumes`",
+                                    "type": "string"
+                                  },
+                                  "sourceId": {
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "type": "string"
+                                  },
+                                  "targetId": {
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "sourceId",
+                                  "targetId",
+                                  "relationshipType"
+                                ],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "relationship",
+                              "error"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "skipped": {
+                          "maximum": 9007199254740991,
+                          "minimum": -9007199254740991,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "created",
+                        "skipped",
+                        "errors"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "207": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "created": {
+                          "maximum": 9007199254740991,
+                          "minimum": -9007199254740991,
+                          "type": "integer"
+                        },
+                        "errors": {
+                          "items": {
+                            "properties": {
+                              "error": {
+                                "type": "string"
+                              },
+                              "relationship": {
+                                "properties": {
+                                  "findNumber": {
+                                    "type": "number"
+                                  },
+                                  "metadata": {
+                                    "additionalProperties": {},
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "type": "object"
+                                  },
+                                  "quantity": {
+                                    "anyOf": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "referenceDesignator": {
+                                    "type": "string"
+                                  },
+                                  "relationshipType": {
+                                    "description": "e.g. `BOM`, `Document`, `Satisfies`, `Consumes`",
+                                    "type": "string"
+                                  },
+                                  "sourceId": {
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "type": "string"
+                                  },
+                                  "targetId": {
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "sourceId",
+                                  "targetId",
+                                  "relationshipType"
+                                ],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "relationship",
+                              "error"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "skipped": {
+                          "maximum": 9007199254740991,
+                          "minimum": -9007199254740991,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "created",
+                        "skipped",
+                        "errors"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Some lines created, others rejected"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -10335,6 +14029,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Create relationships in bulk",
         "tags": [
           "Relationships"
         ]
@@ -10728,6 +14423,294 @@
         ]
       }
     },
+    "/api/v1/requirements/{id}/allocate": {
+      "delete": {
+        "operationId": "deleteApiV1RequirementsByIdAllocate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "branchId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "itemId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "itemId"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "success"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Remove a requirement allocation",
+        "tags": [
+          "Requirements"
+        ]
+      },
+      "get": {
+        "operationId": "getApiV1RequirementsByIdAllocate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "type": "string"
+                              },
+                              "itemNumber": {
+                                "type": "string"
+                              },
+                              "itemType": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "relationshipId": {
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "type": "string"
+                              },
+                              "revision": {
+                                "type": "string"
+                              },
+                              "state": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "itemNumber",
+                              "name",
+                              "itemType",
+                              "revision",
+                              "state",
+                              "relationshipId"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "required": [
+                        "items"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "List the items a requirement is allocated to",
+        "tags": [
+          "Requirements"
+        ]
+      },
+      "post": {
+        "description": "Creates ALLOCATED_TO links from the requirement to each item, closing the unallocated_requirement gap. Pass branchId to write them inside an ECO; without it the write lands on the rows named and is refused once the design has released items.",
+        "operationId": "postApiV1RequirementsByIdAllocate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "branchId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "itemIds": {
+                    "items": {
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "itemIds"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "success"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Allocate a requirement to design items",
+        "tags": [
+          "Requirements"
+        ]
+      }
+    },
     "/api/v1/requirements/{id}/derive": {
       "get": {
         "operationId": "getApiV1RequirementsByIdDerive",
@@ -10774,6 +14757,75 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "acceptanceCriteria": {
+                    "type": "string"
+                  },
+                  "branchId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "commitMessage": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "priority": {
+                    "enum": [
+                      "MustHave",
+                      "ShouldHave",
+                      "CouldHave",
+                      "WontHave"
+                    ],
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "enum": [
+                      "Functional",
+                      "Non-Functional",
+                      "Performance",
+                      "Security",
+                      "Usability",
+                      "Business"
+                    ],
+                    "type": "string"
+                  },
+                  "verificationMethod": {
+                    "enum": [
+                      "Analysis",
+                      "Inspection",
+                      "Demonstration",
+                      "Test",
+                      "Documentation"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "400": {
             "$ref": "#/components/responses/ValidationError"
@@ -10791,6 +14843,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Derive a child requirement from a requirement",
         "tags": [
           "Requirements"
         ]
@@ -11361,7 +15414,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "message": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message"
+                ],
+                "type": "object"
               }
             }
           },
@@ -11615,7 +15677,27 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "encoding": {
+                    "enum": [
+                      "utf8",
+                      "base64"
+                    ],
+                    "type": "string"
+                  },
+                  "path": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "content"
+                ],
+                "type": "object"
               }
             }
           },
@@ -11663,7 +15745,21 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "fromPath": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "toPath": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "fromPath",
+                  "toPath"
+                ],
+                "type": "object"
               }
             }
           },
@@ -12304,7 +16400,35 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "actualResults": {
+                    "type": "string"
+                  },
+                  "duration": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "environment": {
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "enum": [
+                      "Passed",
+                      "Failed",
+                      "Blocked"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "status"
+                ],
+                "type": "object"
               }
             }
           },
@@ -14659,7 +18783,37 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "partId": {
+                    "anyOf": [
+                      {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "perUnit": {
+                    "type": "boolean"
+                  },
+                  "requiredCount": {
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "type": "integer"
+                  },
+                  "workInstructionId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "workInstructionId"
+                ],
+                "type": "object"
               }
             }
           },
@@ -14703,7 +18857,35 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "instructions": {
+                    "items": {
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "orderIndex": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "orderIndex"
+                      ],
+                      "type": "object"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "instructions"
+                ],
+                "type": "object"
               }
             }
           },
@@ -14875,7 +19057,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "requiredCount": {
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "requiredCount"
+                ],
+                "type": "object"
               }
             }
           },
@@ -14970,7 +19162,13 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "unitLabel": {
+                    "maxLength": 200,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
               }
             }
           },
@@ -15112,7 +19310,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "reason": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "type": "object"
               }
             }
           },
@@ -15234,7 +19441,35 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "lotNumber": {
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "notes": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  "partMasterId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "quantity": {
+                    "exclusiveMinimum": 0,
+                    "type": "number"
+                  },
+                  "serialNumber": {
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "partMasterId"
+                ],
+                "type": "object"
               }
             }
           },
@@ -15323,7 +19558,22 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "serialNumbers": {
+                    "items": {
+                      "maxLength": 200,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "maxItems": 500,
+                    "minItems": 1,
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "serialNumbers"
+                ],
+                "type": "object"
               }
             }
           },
@@ -15933,7 +20183,23 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "designId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "workspaceName": {
+                    "maxLength": 80,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "designId",
+                  "workspaceName"
+                ],
+                "type": "object"
               }
             }
           },
@@ -16174,7 +20440,36 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "changeType": {
+                    "default": "ECO",
+                    "enum": [
+                      "ECO",
+                      "ECN",
+                      "Deviation",
+                      "MCO",
+                      "XCO"
+                    ],
+                    "type": "string"
+                  },
+                  "deleteWorkspace": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "ecoDescription": {
+                    "maxLength": 10000,
+                    "type": "string"
+                  },
+                  "ecoTitle": {
+                    "maxLength": 500,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "ecoTitle"
+                ],
+                "type": "object"
               }
             }
           },
@@ -16308,7 +20603,21 @@
           "content": {
             "application/json": {
               "schema": {
-                "vendor": "zod"
+                "properties": {
+                  "deleteWorkspace": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "ecoId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "ecoId"
+                ],
+                "type": "object"
               }
             }
           },

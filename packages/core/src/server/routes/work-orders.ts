@@ -847,13 +847,10 @@ app.put(
         const body = await request.json()
         const { status } = body as Partial<{ status: WorkOrderStatus }>
 
-        if (
-          !status ||
-          !['Not Started', 'In Progress', 'Complete', 'Cancelled'].includes(
-            status,
-          )
-        ) {
-          throw new ValidationError('Invalid status value')
+        // The target is validated by the lifecycle's own transitions in
+        // WorkOrderService.updateStatus; no state list is named here.
+        if (!status || typeof status !== 'string') {
+          throw new ValidationError('status is required')
         }
 
         const workOrder = await WorkOrderService.updateStatus(

@@ -20,6 +20,7 @@ import { useTreeSelection } from '@/components/bom/useTreeSelection'
 import { Badge, Button, Card, CardContent } from '@/components/ui'
 import { ecoDesignStructureQuery, useInvalidateResources } from '@/lib/query'
 import { StateBadge } from '@/components/items/StateBadge'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface EcoBranch {
   id: string
@@ -110,10 +111,19 @@ export function EcoDesignStructureTree({
 
   const hasActiveFilters = Object.keys(columnFilters).length > 0
 
-  // Selection hook — only eligible items can be selected
+  // Selection hook — only eligible items can be selected. An item whose flow
+  // has ended (a final state of its lifecycle — obsolete, superseded, however
+  // named) is not added to an ECO. Parts dominate the tree; the Part
+  // lifecycle's flags decide.
+  const { data: partLifecycle } = useLifecyclePhases('Part')
   const isEligible = useCallback(
-    (node: BOMTreeNode) => !node.isInEco && node.state !== 'Obsolete',
-    [],
+    (node: BOMTreeNode) => {
+      const final =
+        partLifecycle?.states.find((st) => st.id === node.state)?.isFinal ??
+        false
+      return !node.isInEco && !final
+    },
+    [partLifecycle],
   )
   const selection = useTreeSelection({ isEligible })
 

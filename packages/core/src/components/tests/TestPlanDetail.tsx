@@ -43,7 +43,6 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-  ViewEditBadge,
   ViewEditSelect,
   ViewEditStatic,
   ViewEditText,
@@ -54,69 +53,30 @@ import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { testPlanTestCasesQuery } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
 import { itemAtContextQuery } from '@/lib/query/options/items'
-
-const STATE_OPTIONS = [
-  { value: 'Draft', label: 'Draft' },
-  { value: 'Proposed', label: 'Proposed' },
-  { value: 'InReview', label: 'In Review' },
-  { value: 'Approved', label: 'Approved' },
-  { value: 'Released', label: 'Released' },
-]
-
-const STATUS_OPTIONS = [
-  { value: 'Draft', label: 'Draft' },
-  { value: 'Active', label: 'Active' },
-  { value: 'Completed', label: 'Completed' },
-  { value: 'Archived', label: 'Archived' },
-]
-
-const stateVariant = (state: string) => {
-  const variants: Record<
-    string,
-    'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-  > = {
-    Draft: 'secondary',
-    Proposed: 'default',
-    InReview: 'default',
-    Approved: 'success',
-    Released: 'success',
-  }
-  return variants[state] || 'default'
-}
-
-const statusVariant = (status: string) => {
-  const variants: Record<
-    string,
-    'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-  > = {
-    Draft: 'secondary',
-    Active: 'default',
-    Completed: 'success',
-    Archived: 'secondary',
-  }
-  return variants[status] || 'default'
-}
+import { StateBadge } from '@/components/items/StateBadge'
+import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
+import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
 
 const createEmptyTestPlan = (): TestPlan => ({
   id: undefined,
   masterId: undefined,
   itemType: 'TestPlan',
   itemNumber: '',
-  revision: 'A',
   name: '',
-  state: 'Draft',
+  state: '',
   isCurrent: true,
   designId: '',
   scope: undefined,
   environment: undefined,
   entryCriteria: undefined,
   exitCriteria: undefined,
-  status: undefined,
   createdAt: undefined,
   modifiedAt: undefined,
 })
 
 interface TestPlanDetailProps {
+  /** Called after a lifecycle transition succeeds (refresh the item) */
+  onTransitioned?: () => void
   testPlan?: TestPlan
   designs?: Array<Design>
   defaultDesignId?: string
@@ -129,6 +89,7 @@ interface TestPlanDetailProps {
 }
 
 export function TestPlanDetail({
+  onTransitioned,
   testPlan: initialTestPlan,
   designs = [],
   defaultDesignId,
@@ -210,10 +171,14 @@ export function TestPlanDetail({
     setTestPlan((prev) => ({ ...prev, [field]: value }))
   }
 
+  // Only released lineage is revised through a change order; a Free
+  // lifecycle defines no release mappings, so this stays false for it
+  const { isReleasedFamily: isReleasedLineage } = useReleasedFamily(
+    'TestPlan',
+    currentTestPlan.state,
+  )
   const needsCheckout =
-    !isCreateMode &&
-    ['Approved', 'Released'].includes(currentTestPlan.state ?? '') &&
-    context.type === 'main'
+    !isCreateMode && isReleasedLineage && context.type === 'main'
 
   // The server-side edit lock behind the Edit button. Released-on-main goes
   // through the CheckoutDialog (revise onto a branch) instead of a direct
@@ -355,13 +320,21 @@ export function TestPlanDetail({
               {!isCreateMode && isLoadingVersion && (
                 <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
               )}
-              {!isCreateMode && currentTestPlan.state && (
-                <Badge
-                  className="text-base"
-                  variant={stateVariant(currentTestPlan.state)}
-                >
-                  {currentTestPlan.state}
-                </Badge>
+              {!isCreateMode && (
+                <>
+                  <StateBadge
+                    itemType="TestPlan"
+                    state={currentTestPlan.state}
+                    className="text-base"
+                  />
+                  {currentTestPlan.id && (
+                    <FreeTransitionControl
+                      itemId={currentTestPlan.id}
+                      state={currentTestPlan.state}
+                      onTransitioned={onTransitioned}
+                    />
+                  )}
+                </>
               )}
               {!isCreateMode &&
                 currentTestPlan.designId &&
@@ -536,15 +509,6 @@ export function TestPlanDetail({
                   required
                   data-testid="test-plan-name"
                 />
-                <ViewEditBadge
-                  label="State"
-                  value={currentTestPlan.state}
-                  onChange={(v) => updateField('state', v)}
-                  isEditing={isEditing}
-                  options={STATE_OPTIONS}
-                  variant={stateVariant}
-                  readOnly={!isCreateMode}
-                />
                 {(isCreateMode || !currentTestPlan.designId) &&
                   designs.length > 0 && (
                     <ViewEditSelect
@@ -593,14 +557,6 @@ export function TestPlanDetail({
                   onChange={(v) => updateField('environment', v)}
                   isEditing={isEditing}
                   placeholder="Lab, Staging, Production, etc."
-                />
-                <ViewEditBadge
-                  label="Status"
-                  value={isEditing ? testPlan.status : currentTestPlan.status}
-                  onChange={(v) => updateField('status', v)}
-                  isEditing={isEditing}
-                  options={STATUS_OPTIONS}
-                  variant={statusVariant}
                 />
                 <ViewEditTextarea
                   label="Entry Criteria"

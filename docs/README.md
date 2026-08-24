@@ -16,14 +16,13 @@ This documentation covers the Cascadia PLM application architecture, features, A
 
 ## Architecture
 
-| Document                                                                                                | Description                                                         |
-| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| [Overview](./architecture/overview.md)                                                                  | System architecture, tech stack, design philosophy                  |
-| [Two-Table Pattern](./architecture/two-table-pattern.md)                                                | Item type architecture (base + type-specific tables)                |
-| [ECO-as-Branch](./architecture/eco-as-branch.md)                                                        | The signature Git-style branching model for engineering changes     |
-| [Service Layer](./architecture/service-layer.md)                                                        | Three-layer service architecture, dependency graph, error handling  |
-| [Security](./architecture/security.md)                                                                  | Authentication, CSRF, CORS, RBAC, input validation                  |
-| [Change Order / Versioning / Lifecycle](./architecture/change-order-versioning-lifecycle-assessment.md) | As-built record of that domain: ten findings, how each was resolved |
+| Document                                                 | Description                                                        |
+| -------------------------------------------------------- | ------------------------------------------------------------------ |
+| [Overview](./architecture/overview.md)                   | System architecture, tech stack, design philosophy                 |
+| [Two-Table Pattern](./architecture/two-table-pattern.md) | Item type architecture (base + type-specific tables)               |
+| [ECO-as-Branch](./architecture/eco-as-branch.md)         | The signature Git-style branching model for engineering changes    |
+| [Service Layer](./architecture/service-layer.md)         | Three-layer service architecture, dependency graph, error handling |
+| [Security](./architecture/security.md)                   | Authentication, CSRF, CORS, RBAC, input validation                 |
 
 ## Features
 
@@ -145,10 +144,8 @@ here is genuinely open.
 
 Each doc's own header carries the authoritative status; the summary below is a pointer.
 
-| Document                                                                                                                | Status                                                                                         |
-| ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| [Aras Migration Tool](./proposals/aras-migration-tool-scope.md)                                                         | Not started (scope + [implementation plan](./proposals/aras-migration-implementation-plan.md)) |
-| [Change Order / Versioning / Lifecycle Simplification](./proposals/change-order-versioning-lifecycle-simplification.md) | §2 (deletions) done; §§3–7 open. Companion to the as-built record under Architecture           |
+| Document | Status |
+| -------- | ------ |
 
 ## Other Resources
 

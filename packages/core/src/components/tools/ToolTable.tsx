@@ -166,24 +166,17 @@ export function ToolTable({
       cell: ({ getValue }) => (getValue() as string) || '-',
     },
     {
-      id: 'toolStatus',
-      header: 'Status',
-      accessorKey: 'toolStatus',
+      id: 'state',
+      header: 'State',
+      accessorKey: 'state',
       enableFiltering: true,
-      filterType: 'multiSelect',
-      filterOptions: [
-        { label: 'Available', value: 'available' },
-        { label: 'In Use', value: 'in_use' },
-        { label: 'Maintenance', value: 'maintenance' },
-        { label: 'Retired', value: 'retired' },
-      ],
+      filterType: 'text',
+      filterPlaceholder: 'Filter state...',
       cell: ({ getValue }) => {
         const value = getValue() as string | undefined
         if (!value) return '-'
         return (
-          <Badge variant={statusVariant[value] ?? 'secondary'}>
-            {value.replace('_', ' ')}
-          </Badge>
+          <Badge variant={statusVariant[value] ?? 'secondary'}>{value}</Badge>
         )
       },
     },

@@ -199,21 +199,31 @@ export class VersionResolver {
       .limit(1)
 
     if (!result.at(0)) {
-      // Fallback: get the Released version if no current version exists
-      result = await db
+      // Fallback: the most recent released-lineage version, when no current
+      // version exists. Released-family membership is per the item's own
+      // lifecycle (every row of one master shares a type), never a name.
+      const candidates = await db
         .select()
         .from(items)
         .where(
           and(
             eq(items.masterId, itemMasterId),
             eq(items.designId, designId),
-            eq(items.state, 'Released'),
             isReleasedRevision,
             notDeleted(),
           ),
         )
         .orderBy(desc(items.modifiedAt))
-        .limit(1)
+        .limit(10)
+      const first = candidates.at(0)
+      if (first) {
+        const { LifecycleService } = await import('./LifecycleService')
+        const family = await LifecycleService.getReleasedFamilyStates(
+          first.itemType,
+        )
+        const released = candidates.find((c) => family.includes(c.state))
+        result = released ? [released] : []
+      }
     }
 
     // Final fallback: any version of this master in this design. Scoped to

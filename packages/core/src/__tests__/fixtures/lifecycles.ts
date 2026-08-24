@@ -20,6 +20,11 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type * as schema from '@/lib/db/schema'
 import { itemTypeConfigs, users, workflowDefinitions } from '@/lib/db/schema'
 import { LIFECYCLE_IDS } from '@/lib/items/lifecycle-ids'
+import {
+  PART_LIFECYCLE_DEFINITION,
+  REQUIREMENT_LIFECYCLE_DEFINITION,
+  WORK_ORDER_LIFECYCLE_DEFINITION,
+} from '@/lib/items/default-lifecycles'
 import { ItemTypeRegistry } from '@/lib/items/registry'
 
 type DbSchema = typeof schema
@@ -31,63 +36,13 @@ type TestDbInstance = PostgresJsDatabase<DbSchema>
  */
 export const SYSTEM_USER_ID = '00000000-0000-4000-8000-000000000000'
 
-/**
- * Canonical Part lifecycle definition with changeActionMappings for ECO actions
- * (release / revise / obsolete). Use for tests that exercise the
- * Draft → Released → Superseded / Obsolete flow.
- */
-export const PART_LIFECYCLE_DEFINITION = {
-  states: [
-    {
-      id: 'Draft',
-      name: 'Draft',
-      color: 'gray',
-      isInitial: true,
-      isFinal: false,
-    },
-    {
-      id: 'Released',
-      name: 'Released',
-      color: 'green',
-      isInitial: false,
-      isFinal: false,
-    },
-    {
-      id: 'Superseded',
-      name: 'Superseded',
-      color: 'slate',
-      isInitial: false,
-      isFinal: true,
-    },
-    {
-      id: 'Obsolete',
-      name: 'Obsolete',
-      color: 'red',
-      isInitial: false,
-      isFinal: true,
-    },
-  ],
-  transitions: [],
-  changeActionMappings: {
-    release: {
-      fromState: 'Draft',
-      toState: 'Released',
-      assignsRevision: true,
-    },
-    revise: {
-      fromState: 'Released',
-      newVersionState: 'Released',
-      oldVersionState: 'Superseded',
-      assignsRevision: true,
-    },
-    obsolete: {
-      fromState: 'Released',
-      toState: 'Obsolete',
-      assignsRevision: false,
-    },
-  },
-  lifecycleType: 'Driven' as const,
-  applicableItemTypes: ['Part'],
+// The canonical definitions live in `@/lib/items/default-lifecycles` — the
+// same data the app seed and the test global-setup use. Re-exported here so
+// suites keep their historical import path.
+export {
+  PART_LIFECYCLE_DEFINITION,
+  REQUIREMENT_LIFECYCLE_DEFINITION,
+  WORK_ORDER_LIFECYCLE_DEFINITION,
 }
 
 /**
@@ -181,71 +136,56 @@ export async function seedStandardPartLifecycle(
 }
 
 /**
- * Canonical Work Order lifecycle (Free): Not Started → In Progress →
- * Complete / Cancelled. Matches scripts/seed-minimal.ts so tests that
- * transition WO status via LifecycleService.transitionFreeItem work on a
- * fresh database (dev databases get this row from the app seed; CI's
- * db:push-built scratch database does not).
+ * Seed the Requirement lifecycle + item-type link.
+ *
+ * The Part lifecycle releases from its initial state, so it cannot show what
+ * happens to a type whose release starts later: Requirement runs
+ * Draft → Proposed → Approved and maps `release` from **Approved**. Suites
+ * that care about the difference between "the state an item is created in"
+ * and "the state an action maps from" want this one.
+ *
+ * beforeAll-safe, and normalizes `drivers` for the same reason
+ * `seedPartLifecycle` does — a seeded database restricts it to the seeded
+ * change-order workflows, which would reject every test-local ECO workflow.
  */
-export const WORK_ORDER_LIFECYCLE_DEFINITION = {
-  states: [
-    {
-      id: 'Not Started',
-      name: 'Not Started',
-      color: 'gray',
-      isInitial: true,
-      isFinal: false,
-    },
-    {
-      id: 'In Progress',
-      name: 'In Progress',
-      color: 'blue',
-      isInitial: false,
-      isFinal: false,
-    },
-    {
-      id: 'Complete',
-      name: 'Complete',
-      color: 'green',
-      isInitial: false,
-      isFinal: true,
-    },
-    {
-      id: 'Cancelled',
-      name: 'Cancelled',
-      color: 'red',
-      isInitial: false,
-      isFinal: true,
-    },
-  ],
-  transitions: [
-    {
-      id: 'wo-t1',
-      name: 'Start',
-      fromStateId: 'Not Started',
-      toStateId: 'In Progress',
-    },
-    {
-      id: 'wo-t2',
-      name: 'Cancel',
-      fromStateId: 'Not Started',
-      toStateId: 'Cancelled',
-    },
-    {
-      id: 'wo-t3',
-      name: 'Complete',
-      fromStateId: 'In Progress',
-      toStateId: 'Complete',
-    },
-    {
-      id: 'wo-t4',
-      name: 'Cancel In Progress',
-      fromStateId: 'In Progress',
-      toStateId: 'Cancelled',
-    },
-  ],
-  lifecycleType: 'Free' as const,
-  applicableItemTypes: ['WorkOrder'],
+export async function seedRequirementLifecycle(
+  db: TestDbInstance,
+  systemUserId: string = SYSTEM_USER_ID,
+): Promise<void> {
+  await seedSystemUser(db)
+  await db
+    .insert(workflowDefinitions)
+    .values({
+      id: LIFECYCLE_IDS.requirement,
+      name: 'Requirement - Test Lifecycle',
+      version: 2,
+      workflowType: 'strict',
+      definition: REQUIREMENT_LIFECYCLE_DEFINITION,
+      isActive: true,
+      lifecycleType: 'Driven',
+    })
+    .onConflictDoNothing()
+
+  await db
+    .update(workflowDefinitions)
+    .set({ drivers: [] })
+    .where(eq(workflowDefinitions.id, LIFECYCLE_IDS.requirement))
+
+  const config = { lifecycleDefinitionId: LIFECYCLE_IDS.requirement }
+  await db
+    .insert(itemTypeConfigs)
+    .values({
+      itemType: 'Requirement',
+      config,
+      modifiedBy: systemUserId,
+    })
+    .onConflictDoUpdate({
+      target: itemTypeConfigs.itemType,
+      set: { config, modifiedBy: systemUserId },
+    })
+  // Definitions written straight to the table bypass WorkflowService, which is
+  // where the lifecycle memo is normally dropped
+  ItemTypeRegistry.invalidateLifecycleCache()
 }
 
 /**

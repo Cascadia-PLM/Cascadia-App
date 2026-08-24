@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { apiFetch } from '@/lib/api/client'
+import { StateBadge } from '@/components/items/StateBadge'
 
 interface Item {
   id: string
@@ -122,22 +123,6 @@ export function AllItemsTab({
     const states = new Set(items.map((i) => i.state))
     return Array.from(states).sort()
   }, [items])
-
-  // Get state badge variant
-  const getStateBadgeVariant = (state: string) => {
-    switch (state) {
-      case 'Released':
-        return 'success' as const
-      case 'Draft':
-        return 'secondary' as const
-      case 'InReview':
-        return 'warning' as const
-      case 'Obsolete':
-        return 'outline' as const
-      default:
-        return 'default' as const
-    }
-  }
 
   // Get item type badge variant
   const getTypeBadgeVariant = (itemType: string) => {
@@ -284,12 +269,11 @@ export function AllItemsTab({
                     {item.revision}
                   </div>
                   <div className="w-24 text-center">
-                    <Badge
-                      variant={getStateBadgeVariant(item.state)}
+                    <StateBadge
+                      itemType={item.itemType}
+                      state={item.state}
                       className="text-xs"
-                    >
-                      {item.state}
-                    </Badge>
+                    />
                   </div>
                   <div className="w-32 text-sm text-slate-500">
                     {item.modifiedAt

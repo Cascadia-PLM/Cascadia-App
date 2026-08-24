@@ -41,7 +41,6 @@ export interface ItemTypeConfig {
   label: string
   pluralLabel: string
   icon: string
-  defaultState?: string
   states: Array<ItemTypeState>
   lifecycleDefinitionId?: string
   permissions: ItemTypePermissions

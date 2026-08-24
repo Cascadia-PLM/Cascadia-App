@@ -17,8 +17,13 @@ export type { InstructionSnapshot }
  * preserved by WorkOrderService, which maps item fields back onto it.
  */
 
-export type WorkOrderStatus =
-  'Not Started' | 'In Progress' | 'Complete' | 'Cancelled'
+/**
+ * A work order's lifecycle state. The universe of states is the assigned
+ * lifecycle's configuration ('Not Started' → 'In Progress' → 'Complete' /
+ * 'Cancelled' in the shipped default), so this cannot be a compile-time
+ * union; transitions are validated at runtime by the lifecycle.
+ */
+export type WorkOrderStatus = string
 
 export type WorkOrderPriority = 'Low' | 'Normal' | 'High' | 'Urgent'
 

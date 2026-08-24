@@ -13,6 +13,7 @@ import {
 } from '@/components/ui'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'
+import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
 
 interface FileMetadata {
   id: string
@@ -36,8 +37,12 @@ export function BuildArtifactCard({ software }: { software: Software }) {
   const [artifactName, setArtifactName] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 
-  const isReleased = ['Released', 'Obsolete', 'Superseded'].includes(
-    software.state ?? '',
+  // Released lineage is immutable - no uploads or deletes; derived from the
+  // Software lifecycle's mappings, never from a state's name (the server's
+  // ItemEditPolicy is what actually refuses)
+  const { isReleasedFamily: isReleased } = useReleasedFamily(
+    'Software',
+    software.state,
   )
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

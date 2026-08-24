@@ -11,10 +11,9 @@ import {
   Plus,
   RefreshCw,
   Search,
-  X,
 } from 'lucide-react'
 import type { VersionContext } from '@/lib/hooks/useVersionContext'
-import { Badge, Button, Card, CardContent } from '@/components/ui'
+import { Button, Card, CardContent } from '@/components/ui'
 import {
   Select,
   SelectContent,
@@ -23,6 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { apiFetch } from '@/lib/api/client'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface ECOSummary {
   id: string
@@ -89,66 +90,25 @@ export function ECOsTab({
     return ecos.filter((eco) => eco.state === statusFilter)
   }, [ecos, statusFilter])
 
-  // Get status icon
+  // Every change-order state renders from the CO workflow's own definition:
+  // the badge takes the configured name and colour (StateBadge), and the
+  // icon keys on the state's flags — never on what it is called.
+  const { data: coLifecycle } = useLifecyclePhases('ChangeOrder')
+  const stateFlags = (state: string) =>
+    coLifecycle?.states.find((st) => st.id === state || st.name === state)
+
   const getStatusIcon = (state: string) => {
-    switch (state) {
-      case 'Draft':
-      case 'Pending':
-        return <RefreshCw className="h-4 w-4 text-slate-400" />
-      case 'InReview':
-        return <Search className="h-4 w-4 text-amber-500" />
-      case 'Approved':
-      case 'Released':
+    const flags = stateFlags(state)
+    if (flags?.isFinal) {
+      if (flags.finalKind === 'release') {
         return <Check className="h-4 w-4 text-green-500" />
-      case 'Rejected':
-        return <X className="h-4 w-4 text-red-500" />
-      case 'Cancelled':
-        return <Ban className="h-4 w-4 text-slate-400" />
-      default:
-        return <RefreshCw className="h-4 w-4 text-slate-400" />
+      }
+      return <Ban className="h-4 w-4 text-slate-400" />
     }
-  }
-
-  // Get status badge variant
-  const getStatusBadgeVariant = (state: string) => {
-    switch (state) {
-      case 'Draft':
-      case 'Pending':
-        return 'secondary' as const
-      case 'InReview':
-        return 'warning' as const
-      case 'Approved':
-      case 'Released':
-        return 'success' as const
-      case 'Rejected':
-        return 'destructive' as const
-      case 'Cancelled':
-        return 'outline' as const
-      default:
-        return 'default' as const
+    if (flags?.isInitial) {
+      return <RefreshCw className="h-4 w-4 text-slate-400" />
     }
-  }
-
-  // Get status label
-  const getStatusLabel = (state: string) => {
-    switch (state) {
-      case 'Draft':
-        return 'In Work'
-      case 'Pending':
-        return 'In Work'
-      case 'InReview':
-        return 'In Review'
-      case 'Approved':
-        return 'Approved'
-      case 'Released':
-        return 'Released'
-      case 'Rejected':
-        return 'Rejected'
-      case 'Cancelled':
-        return 'Cancelled'
-      default:
-        return state
-    }
+    return <Search className="h-4 w-4 text-amber-500" />
   }
 
   // Get time since
@@ -185,11 +145,11 @@ export function ECOsTab({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              <SelectItem value="Draft">In Work</SelectItem>
-              <SelectItem value="InReview">In Review</SelectItem>
-              <SelectItem value="Released">Released</SelectItem>
-              <SelectItem value="Rejected">Rejected</SelectItem>
-              <SelectItem value="Cancelled">Cancelled</SelectItem>
+              {(coLifecycle?.states ?? []).map((state) => (
+                <SelectItem key={state.id} value={state.id}>
+                  {state.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -235,9 +195,7 @@ export function ECOsTab({
                         <span className="font-semibold text-lg text-slate-900 dark:text-white">
                           {eco.itemNumber}
                         </span>
-                        <Badge variant={getStatusBadgeVariant(eco.state)}>
-                          {getStatusLabel(eco.state)}
-                        </Badge>
+                        <StateBadge itemType="ChangeOrder" state={eco.state} />
                       </div>
                       <p className="text-slate-600 dark:text-slate-400 mt-1">
                         {eco.reasonForChange || eco.name || 'No description'}
@@ -246,7 +204,7 @@ export function ECOsTab({
                         <span>{eco.itemCount} items</span>
                         <span>{eco.owner.name}</span>
                         <span>
-                          {eco.state === 'Released' && eco.releasedAt
+                          {eco.releasedAt
                             ? `Released ${getTimeSince(eco.releasedAt)}`
                             : `Started ${getTimeSince(eco.createdAt)}`}
                         </span>

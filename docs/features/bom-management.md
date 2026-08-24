@@ -51,7 +51,7 @@ item_relationships
 ├── modifiedBy      UUID → users.id
 ```
 
-**Unique constraint**: `(sourceId, targetId, relationshipType)` -- a parent can only have one BOM link to a given child.
+**Unique constraint**: `(sourceId, targetId, relationshipType)` -- a parent can only have one BOM link to a given child. A BOM that would list the same child on two lines (the same screw under two find numbers) carries **one** line with the summed quantity instead; `POST /api/v1/relationships/batch-create` rejects the second line with `DUPLICATE_RELATIONSHIP` rather than writing a partial structure. See [Edge identity](../api/relationships.md#edge-identity).
 
 **Indexes**: `sourceId`, `targetId`, `relationshipType`, and a composite index on `(sourceDesignId, targetDesignId)` for cross-design queries.
 

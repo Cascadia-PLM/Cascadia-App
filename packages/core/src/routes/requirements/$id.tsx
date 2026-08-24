@@ -90,6 +90,7 @@ function RequirementDetailPage() {
       onSave={handleSave}
       onDelete={handleDelete}
       onCancel={handleCancel}
+      onTransitioned={() => void invalidate('requirements')}
       activeTab={search.tab}
       onTabChange={handleTabChange}
     />

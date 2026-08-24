@@ -37,3 +37,23 @@ In `CommitService.compareTags()`, the method determines which tag is "older" by 
 This is an unlikely scenario in normal usage (tags are typically on the main branch), but could occur with tags on different branches.
 
 **Recommendation**: Add a guard or documentation noting that tag comparison assumes both tags are on the same branch lineage.
+
+---
+
+## 5. Items Released Under the `none` Revision Scheme Are Invisible to Released-Query Fallbacks
+
+**Severity**: Minor / latent (no shipped lifecycle uses `none`)
+
+`RevisionService.getInitialRevision({ type: 'none' })` returns `''`, and `notWorkingRevision()` (`packages/core/src/lib/db/filters.ts`) excludes `revision = ''` alongside the branch working markers. An item released under the `none` scheme therefore carries an empty revision and is filtered out of every released-query fallback built on that predicate (`VersionResolver`), so the scheme is offered in the lifecycle editor but does not work end to end.
+
+**Recommendation**: decide before anything ships on the scheme — either give `none` a non-empty initial value (the scheme table in `docs/features/workflow-engine.md` says "stays unchanged", so a fixed marker would do), or stop treating `''` as an unreleased marker in `notWorkingRevision()` once nothing else relies on it. Carried forward from the retired change-order assessment (`docs/architecture/change-order-versioning-lifecycle-assessment.md` in git history, §3-I).
+
+---
+
+## 6. `getItemCommits` Filters Deleted Versions Out of History
+
+**Severity**: Minor / known limitation
+
+`CommitService.getItemCommits()` (`packages/core/src/lib/services/CommitService.ts`) selects the master's versions with `notDeleted()`, so the history of a deleted item — or of a deleted version — loses those rows. The commit-graph mechanism already handles deletions correctly; it is the row-level filter that erases them from history reads. Removing it needs care about every caller that expects the current-only view.
+
+**Recommendation**: drop the filter from the history read path specifically, with a test that a deleted item's history still lists its commits. Carried forward from the change-action-routing remediation (C5) and the change-order assessment, both retired to git history.

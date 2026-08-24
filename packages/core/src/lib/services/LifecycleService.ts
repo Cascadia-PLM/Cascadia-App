@@ -17,7 +17,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../db'
 import { workflowDefinitions } from '../db/schema/workflows'
 import { ItemTypeRegistry } from '../items/registry'
-import { NotFoundError, ValidationError } from '../errors'
+import { InternalError, NotFoundError, ValidationError } from '../errors'
 import {
   resolveLifecycleType,
   resolveStoredLifecycleType,
@@ -34,22 +34,24 @@ import type {
   StateChangeActionMapping,
 } from '../types/lifecycle'
 import type {
+  FinalKind,
   LifecycleType,
   WorkflowDefinition,
   WorkflowState,
+  WorkflowTransition,
 } from '../workflows/types'
 import { serviceLogger } from '@/lib/logging/logger'
 
 /**
  * The states and revision scheme a release needs for one item type.
- * Every value is resolved from the lifecycle, with the historical fallbacks
- * applied for types that have none configured.
+ * Every value comes from the lifecycle's change-action mappings; `null`
+ * means the lifecycle defines no such action (Free lifecycles define none).
  */
 export interface ResolvedActionStates {
-  releaseState: string
-  obsoleteState: string
+  releaseState: string | null
+  obsoleteState: string | null
   /** `revise.newVersionState` — what a NEW revision enters */
-  reviseState: string
+  reviseState: string | null
   /** `revise.oldVersionState` — what the version it replaces becomes */
   supersededState: string | null
   revisionScheme?: RevisionScheme
@@ -62,6 +64,7 @@ export interface ResolvedLifecycle {
   id: string
   name: string
   states: Array<WorkflowState>
+  transitions?: Array<WorkflowTransition>
   changeActionMappings: ChangeActionMappings
   revisionScheme?: RevisionScheme
   phases?: Array<LifecyclePhaseConfig>
@@ -69,8 +72,15 @@ export interface ResolvedLifecycle {
 
 export class LifecycleService {
   /**
-   * Get lifecycle definition for an item type with resolved changeActionMappings.
-   * Returns null if no lifecycle is assigned or changeActionMappings are not configured.
+   * Get the lifecycle definition for an item type. Returns null only when no
+   * lifecycle is assigned.
+   *
+   * Missing changeActionMappings are NOT a reason to return null: Free
+   * lifecycles legitimately define none — their items are not
+   * ECO-controlled — and the flag predicates (isInitialState, getFinalKind,
+   * getFinalStateIds) and transition machinery must still see their states.
+   * This used to null-out on missing mappings, which silently blinded every
+   * consumer to Free lifecycles.
    */
   static async getLifecycleForItemType(
     itemType: string,
@@ -81,20 +91,24 @@ export class LifecycleService {
       return null
     }
 
-    // Ensure changeActionMappings exist
-    if (!lifecycle.changeActionMappings) {
+    if (
+      !lifecycle.changeActionMappings &&
+      lifecycle.lifecycleType === 'Driven'
+    ) {
+      // A Driven lifecycle without mappings IS misconfigured — the merge
+      // would have nothing to apply. Surface it, but still resolve.
       serviceLogger.warn(
         { lifecycle: lifecycle.name, itemType },
-        'Lifecycle has no changeActionMappings configured',
+        'Driven lifecycle has no changeActionMappings configured',
       )
-      return null
     }
 
     return {
       id: lifecycle.id,
       name: lifecycle.name,
       states: lifecycle.states,
-      changeActionMappings: lifecycle.changeActionMappings,
+      transitions: lifecycle.transitions,
+      changeActionMappings: lifecycle.changeActionMappings ?? {},
       revisionScheme: (lifecycle as any).revisionScheme,
       phases: (lifecycle as any).phases,
     }
@@ -369,19 +383,19 @@ export class LifecycleService {
    * was an opportunity for the paths to drift apart; two of them had already
    * done so, which is what the supersession and revise-state fixes were about.
    *
-   * The fallbacks are what an item type with no configured lifecycle gets. They
-   * live here now, once.
+   * A `null` means the lifecycle defines no such action: the type does not
+   * release (Free lifecycles), does not obsolete, or names no superseded
+   * state. There are no literal fallbacks left — every item type has a
+   * lifecycle, and what its actions produce is entirely the lifecycle's say.
    */
   static async resolveActionStates(
     itemType: string,
   ): Promise<ResolvedActionStates> {
-    const releaseState =
-      (await this.getTargetState(itemType, 'release')) ?? 'Released'
+    const releaseState = await this.getTargetState(itemType, 'release')
 
     return {
       releaseState,
-      obsoleteState:
-        (await this.getTargetState(itemType, 'obsolete')) ?? 'Obsolete',
+      obsoleteState: await this.getTargetState(itemType, 'obsolete'),
       // A branch merge of a modified item IS a revise, so it follows the revise
       // mapping: the new version enters newVersionState and the version it
       // replaces becomes oldVersionState. Stamping the release state here
@@ -392,6 +406,90 @@ export class LifecycleService {
       supersededState: await this.getOldVersionState(itemType),
       revisionScheme: await this.getRevisionScheme(itemType),
     }
+  }
+
+  /**
+   * The states a release stamps onto NEW versions: `release.toState` and
+   * `revise.newVersionState`. "Has this design released anything" questions
+   * key off these; Free lifecycles contribute nothing.
+   */
+  static async getReleaseTargetStates(
+    itemType: string,
+  ): Promise<Array<string>> {
+    const states = await this.resolveActionStates(itemType)
+    return [
+      ...new Set(
+        [states.releaseState, states.reviseState].filter(
+          (s): s is string => s !== null,
+        ),
+      ),
+    ]
+  }
+
+  /**
+   * Every state the release machinery can leave a version in: the release
+   * targets plus what obsolescence and supersession stamp. A version in one
+   * of these states is immutable released lineage — never edited in place.
+   *
+   * Closed by construction: when a lifecycle names no superseded state the
+   * merge leaves prior versions in their own (release) state, so nothing the
+   * machinery writes falls outside this set. Empty for Free lifecycles,
+   * whose items are not release-controlled at all.
+   */
+  static async getReleasedFamilyStates(
+    itemType: string,
+  ): Promise<Array<string>> {
+    const states = await this.resolveActionStates(itemType)
+    return [
+      ...new Set(
+        [
+          states.releaseState,
+          states.reviseState,
+          states.obsoleteState,
+          states.supersededState,
+        ].filter((s): s is string => s !== null),
+      ),
+    ]
+  }
+
+  /** Whether `state` is immutable released lineage for this type. */
+  static async isReleasedFamilyState(
+    itemType: string,
+    state: string | null | undefined,
+  ): Promise<boolean> {
+    if (state == null) return false
+    return (await this.getReleasedFamilyStates(itemType)).includes(state)
+  }
+
+  /** Whether `state` is the lifecycle's initial state (the isInitial flag). */
+  static async isInitialState(
+    itemType: string,
+    state: string | null | undefined,
+  ): Promise<boolean> {
+    if (state == null) return false
+    const lifecycle = await this.getLifecycleForItemType(itemType)
+    return lifecycle?.states.some((s) => s.isInitial && s.id === state) ?? false
+  }
+
+  /**
+   * What finishing in `state` means for this type, from the state's
+   * `finalKind` flag: 'complete', 'cancel', 'release' — or null when the
+   * state is not final or declares no kind.
+   */
+  static async getFinalKind(
+    itemType: string,
+    state: string,
+  ): Promise<'release' | 'cancel' | 'complete' | null> {
+    const lifecycle = await this.getLifecycleForItemType(itemType)
+    const found = lifecycle?.states.find((s) => s.id === state)
+    if (!found?.isFinal) return null
+    return found.finalKind ?? null
+  }
+
+  /** The state IDs flagged isFinal — where the flow ends, whatever it is named. */
+  static async getFinalStateIds(itemType: string): Promise<Array<string>> {
+    const lifecycle = await this.getLifecycleForItemType(itemType)
+    return lifecycle?.states.filter((s) => s.isFinal).map((s) => s.id) ?? []
   }
 
   /**
@@ -435,21 +533,125 @@ export class LifecycleService {
    * definition. State identity is IDs everywhere (WI-5.1) — names exist
    * for display only.
    *
-   * @param itemType - The type of item
-   * @returns The initial state ID, or 'Draft' as fallback
+   * Throws when the type has no lifecycle or the lifecycle marks no initial
+   * state. Both are configuration errors: every item type ships with a
+   * default lifecycle, and definition validation enforces exactly one
+   * initial state — there is deliberately no literal fallback.
    */
-  static async getInitialStateId(itemType: string): Promise<string> {
+  /**
+   * The state list governing items of this type: the item lifecycle's states,
+   * or — for Driving-governed types (ChangeOrder), which
+   * `getLifecycleForType` deliberately never resolves as an item lifecycle —
+   * the raw assigned Driving definition's states, since a ChangeOrder item's
+   * state mirrors its workflow instance.
+   */
+  private static async getGoverningStates(
+    itemType: string,
+  ): Promise<Array<{ id: string; isInitial?: boolean }> | undefined> {
     const lifecycle = await ItemTypeRegistry.getLifecycleForType(itemType)
+    if (lifecycle?.states) return lifecycle.states
 
+    const definitionId = ItemTypeRegistry.getLifecycleDefinitionId(itemType)
+    if (!definitionId) return undefined
+    const [row] = await db
+      .select({ definition: workflowDefinitions.definition })
+      .from(workflowDefinitions)
+      .where(eq(workflowDefinitions.id, definitionId))
+      .limit(1)
+    return (
+      row?.definition as
+        { states?: Array<{ id: string; isInitial?: boolean }> } | undefined
+    )?.states
+  }
+
+  /**
+   * The definition that governs items of this type, for presentation: the
+   * item lifecycle, or — for Driving-governed types (ChangeOrder) — the raw
+   * assigned Driving definition, whose states the item mirrors. Returns what
+   * a client needs to render states by configuration (names, colours, flags,
+   * phases) and to derive the released family (the change-action mappings).
+   * Null only when the type has no assigned definition.
+   *
+   * Presentation-only: lifecycle *logic* must keep using
+   * `getLifecycleForItemType`, which correctly never treats a Driving
+   * workflow as an item lifecycle.
+   */
+  static async getGoverningDefinition(itemType: string): Promise<{
+    id: string
+    name: string
+    lifecycleType: LifecycleType
+    states: Array<WorkflowState>
+    transitions: Array<WorkflowTransition>
+    phases: Array<LifecyclePhaseConfig>
+    revisionScheme: RevisionScheme | null
+    changeActionMappings: ChangeActionMappings
+  } | null> {
+    const lifecycle = await this.getLifecycleForItemType(itemType)
     if (lifecycle) {
-      const initialState = lifecycle.states.find((s) => s.isInitial)
-      if (initialState) {
-        return initialState.id
+      return {
+        id: lifecycle.id,
+        name: lifecycle.name,
+        lifecycleType: await this.getLifecycleType(itemType),
+        states: lifecycle.states,
+        transitions: lifecycle.transitions ?? [],
+        phases: lifecycle.phases ?? [],
+        revisionScheme: lifecycle.revisionScheme ?? null,
+        changeActionMappings: lifecycle.changeActionMappings,
       }
     }
 
-    // Fallback
-    return 'Draft'
+    const definitionId = ItemTypeRegistry.getLifecycleDefinitionId(itemType)
+    if (!definitionId) return null
+    const { WorkflowService } = await import('../workflows/WorkflowService')
+    const definition = await WorkflowService.getById(definitionId)
+    if (!definition) return null
+    return {
+      id: definition.id,
+      name: definition.name,
+      lifecycleType: resolveLifecycleType(definition),
+      states: definition.states,
+      transitions: definition.transitions ?? [],
+      phases:
+        (definition as { phases?: Array<LifecyclePhaseConfig> }).phases ?? [],
+      revisionScheme:
+        (definition as { revisionScheme?: RevisionScheme }).revisionScheme ??
+        null,
+      changeActionMappings: definition.changeActionMappings ?? {},
+    }
+  }
+
+  /**
+   * Reject a state the type's lifecycle does not define. The schema layer
+   * deliberately types `state` as a plain string — the state universe is
+   * runtime configuration, so it cannot be a compile-time enum; this is the
+   * boundary check in its place.
+   */
+  static async validateStateForType(
+    itemType: string,
+    state: string,
+  ): Promise<void> {
+    const states = await this.getGoverningStates(itemType)
+    if (!states) return // no governing definition to validate against
+    if (!states.some((s) => s.id === state)) {
+      throw new ValidationError(
+        `'${state}' is not a state of the ${itemType} lifecycle. Valid states: ${states
+          .map((s) => s.id)
+          .join(', ')}`,
+      )
+    }
+  }
+
+  static async getInitialStateId(itemType: string): Promise<string> {
+    const states = await this.getGoverningStates(itemType)
+    const initialState = states?.find((s) => s.isInitial)
+    if (!initialState) {
+      throw new InternalError(
+        states
+          ? `The lifecycle for ${itemType} marks no initial state`
+          : `Item type ${itemType} has no lifecycle assigned. Every item type requires one — run the seed (npm run db:seed) or assign a lifecycle in the admin item-type config.`,
+      )
+    }
+    return initialState.id
   }
 
   // ============================================
@@ -666,12 +868,6 @@ export class LifecycleService {
       )
     }
 
-    if (resolveLifecycleType(lifecycle) !== 'Free') {
-      throw new ValidationError(
-        `${item.itemType} states are ECO-controlled: add the item to a change order instead of transitioning it directly`,
-      )
-    }
-
     // Input tolerance at the API boundary only: callers may name the target
     // by ID or display name, and it resolves to the ID immediately — every
     // comparison and write below uses targetState.id
@@ -683,6 +879,25 @@ export class LifecycleService {
       throw new ValidationError(
         `Unknown state "${toState}" for ${item.itemType}`,
       )
+    }
+
+    // A Driven lifecycle may declare manual transitions among its
+    // pre-release states (review progress: Draft → Proposed → Approved). What
+    // it may never do manually is enter or leave released lineage — those
+    // states are entered only by a change-order release, and once there the
+    // version is immutable. Derived from the mappings, never from a name.
+    if (resolveLifecycleType(lifecycle) === 'Driven') {
+      const family = await this.getReleasedFamilyStates(item.itemType)
+      if (family.includes(targetState.id)) {
+        throw new ValidationError(
+          `${item.itemType} enters "${targetState.name}" only through a change-order release: add the item to a change order instead of transitioning it directly`,
+        )
+      }
+      if (item.state && family.includes(item.state)) {
+        throw new ValidationError(
+          `${item.itemType} is released lineage in "${item.state}" and cannot be transitioned directly; revise it through a change order`,
+        )
+      }
     }
 
     // Lazily create the instance: Free-lifecycle items get the workflow
@@ -725,11 +940,14 @@ export class LifecycleService {
   }
 
   /**
-   * List the transitions available to a Free-lifecycle item from its current
-   * state. Read-only — does not create a workflow instance, and guards are
+   * List the manual transitions available to an item from its current state:
+   * every transition its Free lifecycle declares, or — for a Driven
+   * lifecycle — the declared pre-release edges (review progress), never one
+   * into released lineage, and nothing at all once the item is released
+   * lineage. Read-only — does not create a workflow instance, and guards are
    * evaluated on the actual transition, so this is a UI hint, not a promise.
-   * Returns an empty list (with the lifecycleType) for non-Free items so the
-   * UI can hide the control.
+   * Empty (with the lifecycleType) when there is nothing to offer, so the UI
+   * can hide the control.
    */
   static async getAvailableFreeTransitions(itemId: string): Promise<{
     lifecycleType: LifecycleType | null
@@ -740,6 +958,9 @@ export class LifecycleService {
       toStateId: string
       toStateName: string
       toStateColor?: string
+      /** Whether the target ends the flow, and what that means there */
+      toStateIsFinal: boolean
+      toStateFinalKind: FinalKind | null
     }>
   }> {
     const { ItemService } = await import('../items/services/ItemService')
@@ -755,7 +976,7 @@ export class LifecycleService {
     }
 
     const lifecycleType = resolveLifecycleType(lifecycle)
-    if (lifecycleType !== 'Free') {
+    if (lifecycleType === 'Driving') {
       return { lifecycleType, currentStateId: null, transitions: [] }
     }
 
@@ -766,8 +987,20 @@ export class LifecycleService {
       return { lifecycleType, currentStateId: null, transitions: [] }
     }
 
+    // Released lineage is entered and left only by change-order release
+    const family =
+      lifecycleType === 'Driven'
+        ? await this.getReleasedFamilyStates(item.itemType)
+        : []
+    if (family.includes(currentState.id)) {
+      return { lifecycleType, currentStateId: currentState.id, transitions: [] }
+    }
+
     const transitions = (lifecycle.transitions ?? [])
-      .filter((t) => t.fromStateId === currentState.id)
+      .filter(
+        (t) =>
+          t.fromStateId === currentState.id && !family.includes(t.toStateId),
+      )
       .map((t) => {
         const target = states.find((s) => s.id === t.toStateId)
         return {
@@ -776,6 +1009,8 @@ export class LifecycleService {
           toStateId: t.toStateId,
           toStateName: target?.name ?? t.toStateId,
           toStateColor: target?.color,
+          toStateIsFinal: target?.isFinal ?? false,
+          toStateFinalKind: target?.isFinal ? (target.finalKind ?? null) : null,
         }
       })
 

@@ -24,6 +24,8 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface SoftwareTableProps {
   items: Array<Software>
@@ -50,17 +52,6 @@ interface SoftwareTableProps {
   onPaginationChange?: (pagination: PaginationState) => void
 }
 
-const stateVariant: Record<
-  string,
-  'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-> = {
-  Draft: 'secondary',
-  InReview: 'default',
-  Approved: 'success',
-  Released: 'success',
-  Obsolete: 'destructive',
-}
-
 export function SoftwareTable({
   items,
   onEdit,
@@ -82,6 +73,14 @@ export function SoftwareTable({
   pagination,
   onPaginationChange,
 }: SoftwareTableProps) {
+  // State filter options and badges come from the Software lifecycle's
+  // configuration, not from a list in code
+  const { data: lifecycle } = useLifecyclePhases('Software')
+  const stateFilterOptions = (lifecycle?.states ?? []).map((state) => ({
+    label: state.name,
+    value: state.id,
+  }))
+
   const columns: Array<DataGridColumn<Software>> = [
     {
       id: 'itemNumber',
@@ -187,19 +186,11 @@ export function SoftwareTable({
       accessorKey: 'state',
       enableFiltering: true,
       filterType: 'multiSelect',
-      filterOptions: [
-        { label: 'Draft', value: 'Draft' },
-        { label: 'In Review', value: 'InReview' },
-        { label: 'Approved', value: 'Approved' },
-        { label: 'Released', value: 'Released' },
-        { label: 'Obsolete', value: 'Obsolete' },
-      ],
+      filterOptions: stateFilterOptions,
       cell: ({ getValue }) => {
         const value = getValue() as string | undefined
         if (!value) return '-'
-        return (
-          <Badge variant={stateVariant[value] ?? 'secondary'}>{value}</Badge>
-        )
+        return <StateBadge itemType="Software" state={value} />
       },
     },
   ]

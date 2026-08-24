@@ -57,8 +57,6 @@ export function PartForm({
   const form = useForm({
     defaultValues: {
       itemType: 'Part' as const,
-      state: 'Draft',
-      revision: 'A',
       weightUnit: 'kg',
       costCurrency: 'USD',
       designId: part?.designId || defaultDesignId || '',
@@ -78,10 +76,8 @@ export function PartForm({
       onSubmit: zodValidator(partSchema),
     },
     onSubmit: async ({ value }) => {
-      // Ensure revision defaults to "A" if empty
       const submissionData = {
         ...value,
-        revision: value.revision.trim() || 'A',
         attributes,
       } as Part
       // Pass branchId if product is in post-release phase
@@ -223,27 +219,6 @@ export function PartForm({
               error={field.state.meta.errors[0]}
               data-testid="part-item-number"
             />
-          )}
-        </form.Field>
-
-        {/* Revision */}
-        <form.Field name="revision">
-          {(field) => (
-            <FormField
-              label="Revision"
-              required
-              error={field.state.meta.errors[0]}
-              helpText="Version identifier (A, B, C, etc.)"
-            >
-              <Input
-                name={field.name}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                placeholder="A"
-                error={!!field.state.meta.errors.length}
-              />
-            </FormField>
           )}
         </form.Field>
 

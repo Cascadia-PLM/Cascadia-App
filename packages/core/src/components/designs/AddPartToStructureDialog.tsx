@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/Badge'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { apiFetch } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
+import { StateBadge } from '@/components/items/StateBadge'
 
 type DesignScope = 'current' | 'all' | 'library'
 
@@ -252,14 +253,11 @@ export function AddPartToStructureDialog({
                         <Badge variant="outline" className="text-xs">
                           {item.revision}
                         </Badge>
-                        <Badge
-                          variant={
-                            item.state === 'Released' ? 'default' : 'secondary'
-                          }
+                        <StateBadge
+                          itemType={item.itemType}
+                          state={item.state}
                           className="text-xs"
-                        >
-                          {item.state}
-                        </Badge>
+                        />
                         {/* External design badge */}
                         {item.isExternal && item.designCode && (
                           <Badge

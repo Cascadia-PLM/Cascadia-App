@@ -4,13 +4,38 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../../db'
 import { branchItems, itemRelationships, items } from '../../db/schema'
-import { NotFoundError } from '../../errors'
+import {
+  AlreadyExistsError,
+  NotFoundError,
+  ValidationError,
+} from '../../errors'
+import { isUniqueViolation } from '../../errors/pg'
+import { notDeleted } from '../../db/filters'
+import { resolveEdgeGuardEnd } from '../traceability-relationships'
 import { BranchService } from '../../services/BranchService'
+import { RevisionService } from '../../services/RevisionService'
 import { CommitService } from '../../services/CommitService'
 import { ThreadCacheService } from '../../services/ThreadCacheService'
 import type { PersistedItem } from '../types/base'
 import { itemLogger } from '@/lib/logging/logger'
 import { takeFirst } from '@/lib/db/take-first'
+
+/**
+ * The 409 for an edge that is already there. One shape for every path that can
+ * hit `unique(source_id, target_id, relationship_type)`, so a caller sees the
+ * same error whether we caught it first or the database did.
+ */
+function relationshipExistsError(
+  sourceId: string,
+  targetId: string,
+  relationshipType: string,
+): AlreadyExistsError {
+  return new AlreadyExistsError(
+    'Relationship',
+    `${sourceId} → ${targetId} (${relationshipType})`,
+    { sourceId, targetId, relationshipType },
+  )
+}
 
 /**
  * Service layer for item relationship operations
@@ -62,9 +87,15 @@ export class ItemRelationshipService {
 
     const relationships = await db.select().from(itemRelationships).where(query)
 
+    const currentByStaleTarget = await this.followSupersededTargets(
+      relationships.map((rel) => rel.targetId),
+    )
+
     const enrichedRelationships = await Promise.all(
       relationships.map(async (rel) => {
-        const targetItem = await ItemService.findById(rel.targetId)
+        const targetItem = await ItemService.findById(
+          currentByStaleTarget.get(rel.targetId) ?? rel.targetId,
+        )
         return {
           ...rel,
           targetItem,
@@ -73,6 +104,288 @@ export class ItemRelationshipService {
     )
 
     return enrichedRelationships.filter((rel) => rel.targetItem !== null)
+  }
+
+  /**
+   * Which of `ids` name a row a release left behind.
+   *
+   * The one predicate behind every version-aware relationship read here:
+   * not its master's current row, and not a working copy. Working revisions
+   * are excluded rather than "everything that is not current" because a line
+   * pointing at a working copy is a branch's own edit and must be left
+   * exactly where it points.
+   */
+  private static async findSupersededRows(
+    ids: Array<string>,
+  ): Promise<Array<{ id: string; masterId: string }>> {
+    const unique = [...new Set(ids)]
+    if (unique.length === 0) return []
+
+    const rows = await db
+      .select({
+        id: items.id,
+        masterId: items.masterId,
+        isCurrent: items.isCurrent,
+        revision: items.revision,
+      })
+      .from(items)
+      .where(inArray(items.id, unique))
+
+    return rows
+      .filter(
+        (row) =>
+          !row.isCurrent && !RevisionService.isWorkingRevision(row.revision),
+      )
+      .map((row) => ({ id: row.id, masterId: row.masterId }))
+  }
+
+  /**
+   * Relationships of one type pointing AT each of `itemIds`, keyed by the item
+   * that answers for them.
+   *
+   * Reading incoming links by exact `items.id` is wrong in both directions
+   * once anything has been revised, and this is the one place that fixes it:
+   *
+   * - **Links the item inherited.** A relationship names one item version, and
+   *   a merge rebuilds only the OUTGOING edges of the items the change order
+   *   touched. A test case that verifies a requirement therefore goes on
+   *   naming the revision the release superseded, so the lineage is walked
+   *   backwards (`resolveIncomingLinkLineage`) to find it.
+   * - **Links a revision left behind.** An item's outgoing edges are copied
+   *   onto its working copy, so after PN-001 is revised BOTH rev A and rev B
+   *   claim to satisfy the requirement, and the reader listed the same part
+   *   twice — once Released, once Superseded. Sources that name a superseded
+   *   row are dropped.
+   *
+   * Dropped, deliberately, rather than followed forward the way a stale
+   * *target* is: the new revision carries its own copy of the edge whenever it
+   * still means it, so redirecting rev A's edge onto rev B would re-assert a
+   * link the change order may have deleted on purpose.
+   *
+   * Every id in `itemIds` is present in the result, with an empty array when
+   * nothing points at it.
+   */
+  static async findIncomingLinks(
+    itemIds: Array<string>,
+    relationshipType: string,
+  ): Promise<Map<string, Array<typeof itemRelationships.$inferSelect>>> {
+    const byOwner = new Map<
+      string,
+      Array<typeof itemRelationships.$inferSelect>
+    >()
+    const named = [...new Set(itemIds)]
+    for (const id of named) byOwner.set(id, [])
+    if (named.length === 0) return byOwner
+
+    const lineage = await this.resolveIncomingLinkLineage(named)
+
+    const rows = await db
+      .select()
+      .from(itemRelationships)
+      .where(
+        and(
+          inArray(itemRelationships.targetId, [...lineage.keys()]),
+          eq(itemRelationships.relationshipType, relationshipType),
+        ),
+      )
+    if (rows.length === 0) return byOwner
+
+    const leftBehind = new Set(
+      (await this.findSupersededRows(rows.map((rel) => rel.sourceId))).map(
+        (row) => row.id,
+      ),
+    )
+
+    for (const rel of rows) {
+      if (leftBehind.has(rel.sourceId)) continue
+      const owner = lineage.get(rel.targetId)
+      if (owner) byOwner.get(owner)?.push(rel)
+    }
+
+    return byOwner
+  }
+
+  /**
+   * Relationships of one type running FROM each of `sourceIds`, keyed by
+   * source, with any target that names a superseded row resolved forward to
+   * the revision that replaced it.
+   *
+   * The mirror of `findIncomingLinks`, and the same fact seen from the other
+   * end: a merge re-points only the lines owned by items the change order
+   * touched, so a part that satisfies a requirement keeps naming the
+   * requirement revision the release superseded, and the reader reported the
+   * link a revision behind — with the stale row's `Superseded` badge on it.
+   *
+   * Here the stale row IS followed rather than dropped, because only the
+   * reference is stale: the link itself is this source's own content and
+   * still means what it says. Returned rows carry the resolved `targetId`.
+   */
+  static async findOutgoingLinks(
+    sourceIds: Array<string>,
+    relationshipType: string,
+  ): Promise<Map<string, Array<typeof itemRelationships.$inferSelect>>> {
+    const bySource = new Map<
+      string,
+      Array<typeof itemRelationships.$inferSelect>
+    >()
+    const named = [...new Set(sourceIds)]
+    for (const id of named) bySource.set(id, [])
+    if (named.length === 0) return bySource
+
+    const rows = await db
+      .select()
+      .from(itemRelationships)
+      .where(
+        and(
+          inArray(itemRelationships.sourceId, named),
+          eq(itemRelationships.relationshipType, relationshipType),
+        ),
+      )
+    if (rows.length === 0) return bySource
+
+    const redirects = await this.followSupersededTargets(
+      rows.map((rel) => rel.targetId),
+    )
+
+    for (const rel of rows) {
+      const targetId = redirects.get(rel.targetId)
+      bySource.get(rel.sourceId)?.push(targetId ? { ...rel, targetId } : rel)
+    }
+
+    return bySource
+  }
+
+  /**
+   * Map any target id that names a *superseded* revision onto the revision
+   * that replaced it.
+   *
+   * A relationship names one item version, and a merge re-points only the
+   * lines owned by the items the change order touched. An assembly the change
+   * order never touched therefore keeps naming the row the release
+   * superseded, and its BOM reads back a revision behind — showing the child
+   * as `Superseded` and linking to the row nobody should be working from.
+   *
+   * Only superseded rows are followed. A line pointing at a *working* copy is
+   * a branch's own edit and must be left exactly where it points, which is
+   * why the working revision is excluded rather than every non-current row.
+   */
+  private static async followSupersededTargets(
+    targetIds: Array<string>,
+  ): Promise<Map<string, string>> {
+    const redirects = new Map<string, string>()
+    const uniqueTargetIds = [...new Set(targetIds)]
+    if (uniqueTargetIds.length === 0) return redirects
+
+    const stale = await this.findSupersededRows(uniqueTargetIds)
+    if (stale.length === 0) return redirects
+
+    const currentRows = await db
+      .select({ id: items.id, masterId: items.masterId })
+      .from(items)
+      .where(
+        and(
+          inArray(
+            items.masterId,
+            stale.map((row) => row.masterId),
+          ),
+          eq(items.isCurrent, true),
+          notDeleted(),
+        ),
+      )
+
+    const currentByMaster = new Map(
+      currentRows.map((row) => [row.masterId, row.id] as const),
+    )
+    for (const row of stale) {
+      const current = currentByMaster.get(row.masterId)
+      if (current && current !== row.id) {
+        redirects.set(row.id, current)
+      }
+    }
+
+    return redirects
+  }
+
+  /**
+   * The rows whose *incoming* relationships belong to each of `itemIds`,
+   * mapped back to the item that answers for them.
+   *
+   * `followSupersededTargets` is the same fact read forwards. An edge names
+   * one item version, and a merge re-points only the lines owned by the items
+   * the change order touched — so when an ECO revises a requirement, the test
+   * cases and parts that pointed at it keep naming the revision it
+   * superseded. Reading incoming links by exact id therefore loses them: the
+   * new revision reports zero verifying tests and coverage reads 0%, for a
+   * requirement whose V&V never changed.
+   *
+   * Expansion runs one way only, which is what keeps it safe:
+   *
+   * - a **current** row inherits the superseded rows behind it;
+   * - a **working copy** inherits the released lineage it was cut from, so a
+   *   requirement opened inside an ECO still shows the coverage it arrived
+   *   with;
+   * - a **superseded** row names only itself, so reading an old revision
+   *   still reports what that revision actually had.
+   *
+   * Nothing ever inherits from a working revision. That is the branch
+   * isolation guarantee: a link recorded inside one ECO stays invisible to
+   * main and to every other branch until the merge promotes it.
+   *
+   * An id passed in always answers for itself, so a caller that names two
+   * revisions of one master gets each one's own edges rather than one
+   * swallowing the other.
+   */
+  private static async resolveIncomingLinkLineage(
+    itemIds: Array<string>,
+  ): Promise<Map<string, string>> {
+    const lineage = new Map<string, string>()
+    const named = [...new Set(itemIds)]
+    if (named.length === 0) return lineage
+    for (const id of named) lineage.set(id, id)
+
+    const namedRows = await db
+      .select({
+        id: items.id,
+        masterId: items.masterId,
+        isCurrent: items.isCurrent,
+        revision: items.revision,
+      })
+      .from(items)
+      .where(inArray(items.id, named))
+
+    // The complement of `findSupersededRows`: a row a release left behind
+    // inherits nothing, so an old revision still reports what it had.
+    const inheritors = namedRows.filter(
+      (row) => row.isCurrent || RevisionService.isWorkingRevision(row.revision),
+    )
+    if (inheritors.length === 0) return lineage
+
+    const inheritorByMaster = new Map(
+      inheritors.map((row) => [row.masterId, row.id] as const),
+    )
+
+    const lineageRows = await db
+      .select({
+        id: items.id,
+        masterId: items.masterId,
+        revision: items.revision,
+      })
+      .from(items)
+      .where(
+        and(
+          inArray(items.masterId, [...inheritorByMaster.keys()]),
+          notDeleted(),
+        ),
+      )
+
+    for (const row of lineageRows) {
+      if (lineage.has(row.id)) continue
+      if (RevisionService.isWorkingRevision(row.revision)) continue
+      const inheritor = inheritorByMaster.get(row.masterId)
+      if (inheritor) lineage.set(row.id, inheritor)
+    }
+
+    return lineage
   }
 
   /**
@@ -198,6 +511,83 @@ export class ItemRelationshipService {
   }
 
   /**
+   * An edge is identified by (sourceId, targetId, relationshipType) — the
+   * unique constraint on `item_relationships`. Two BOM lines naming the same
+   * child under different find numbers are therefore the *same* edge, and the
+   * quantity has to be aggregated onto one line. Callers use this to say so
+   * before the database does, because the driver's answer is a wall of SQL.
+   */
+  static edgeKey(edge: {
+    sourceId: string
+    targetId: string
+    relationshipType: string
+  }): string {
+    // NUL separates: it cannot occur in a uuid or a relationship type, so no
+    // pair of distinct triples can collide on the joined string.
+    return [edge.sourceId, edge.targetId, edge.relationshipType].join('\u0000')
+  }
+
+  /**
+   * Report every edge in `edges` that repeats an earlier one, as
+   * `{ index, firstIndex }` into the array as given. Index-preserving on
+   * purpose: the caller reports which *request line* is at fault, and the
+   * original bug was blaming the first line of the batch for a collision on a
+   * later one.
+   */
+  static findDuplicateEdges<
+    T extends { sourceId: string; targetId: string; relationshipType: string },
+  >(edges: Array<T>): Array<{ index: number; firstIndex: number; edge: T }> {
+    const firstSeenAt = new Map<string, number>()
+    const duplicates: Array<{ index: number; firstIndex: number; edge: T }> = []
+
+    edges.forEach((edge, index) => {
+      const key = this.edgeKey(edge)
+      const firstIndex = firstSeenAt.get(key)
+      if (firstIndex === undefined) {
+        firstSeenAt.set(key, index)
+        return
+      }
+      duplicates.push({ index, firstIndex, edge })
+    })
+
+    return duplicates
+  }
+
+  /**
+   * Enforce the edit-lock policy for one edge, on whichever end answers for it.
+   *
+   * The source always goes through `requireContentEditable` — an edge is that
+   * item's structure, and even an item exempt from branch protection is still
+   * locked while another user holds its checkout. On top of that, a
+   * traceability edge whose source is exempt sends the rule to its other end
+   * as well; see `resolveEdgeGuardEnd` for why `VERIFIED_BY` needs it and
+   * `Affects` must not have it.
+   */
+  private static async requireEdgeEditable(
+    sourceItem: PersistedItem | null,
+    targetId: string,
+    relationshipType: string,
+    userId: string,
+  ): Promise<void> {
+    const { ItemService } = await import('./ItemService')
+
+    if (sourceItem) {
+      await ItemService.requireContentEditable(sourceItem, userId)
+    }
+
+    const guardEnd = await resolveEdgeGuardEnd(
+      sourceItem?.itemType ?? '',
+      relationshipType,
+    )
+    if (guardEnd === 'source') return
+
+    const targetItem = await ItemService.findById(targetId)
+    if (targetItem) {
+      await ItemService.requireContentEditable(targetItem, userId)
+    }
+  }
+
+  /**
    * Add a relationship between items
    *
    * Relationship changes are content edits of the SOURCE item (its BOM /
@@ -222,24 +612,56 @@ export class ItemRelationshipService {
     const { ItemService } = await import('./ItemService')
 
     const sourceItem = await ItemService.findById(sourceId)
-    if (!options?.bypassEditGuard && sourceItem) {
-      await ItemService.requireContentEditable(sourceItem, userId)
+    if (!options?.bypassEditGuard) {
+      await this.requireEdgeEditable(
+        sourceItem,
+        targetId,
+        relationshipType,
+        userId,
+      )
     }
 
-    const relationship = takeFirst(
-      await db
-        .insert(itemRelationships)
-        .values({
-          sourceId,
-          targetId,
-          relationshipType,
-          quantity: data?.quantity,
-          referenceDesignator: data?.referenceDesignator,
-          findNumber: data?.findNumber,
-          createdBy: userId,
-        })
-        .returning(),
-    )
+    // Answer "this edge already exists" ourselves. Left to the database it
+    // surfaces as a wrapped 23505 whose message is the whole INSERT statement.
+    const existing = await db
+      .select({ id: itemRelationships.id })
+      .from(itemRelationships)
+      .where(
+        and(
+          eq(itemRelationships.sourceId, sourceId),
+          eq(itemRelationships.targetId, targetId),
+          eq(itemRelationships.relationshipType, relationshipType),
+        ),
+      )
+      .limit(1)
+
+    if (existing.length > 0) {
+      throw relationshipExistsError(sourceId, targetId, relationshipType)
+    }
+
+    let relationship: typeof itemRelationships.$inferSelect
+    try {
+      relationship = takeFirst(
+        await db
+          .insert(itemRelationships)
+          .values({
+            sourceId,
+            targetId,
+            relationshipType,
+            quantity: data?.quantity,
+            referenceDesignator: data?.referenceDesignator,
+            findNumber: data?.findNumber,
+            createdBy: userId,
+          })
+          .returning(),
+      )
+    } catch (error) {
+      // The check above is not a lock; a concurrent insert still lands here.
+      if (isUniqueViolation(error, { table: 'item_relationships' })) {
+        throw relationshipExistsError(sourceId, targetId, relationshipType)
+      }
+      throw error
+    }
 
     // Track relationship change in history
     const targetItem = await ItemService.findById(targetId)
@@ -309,6 +731,12 @@ export class ItemRelationshipService {
   /**
    * Batch add relationships with optional history tracking.
    * Creates one commit per design/branch group instead of one per relationship.
+   *
+   * With `replaceExisting`, the existing edges of every (sourceId,
+   * relationshipType) pair in the batch are cleared first — rebuilding a BOM
+   * from a CAD export, say. The clear and the insert share one transaction, so
+   * a rejected batch leaves the old structure standing; when they did not, a
+   * single duplicated child left the parent with no BOM at all.
    */
   static async addRelationshipBatch(
     relationships: Array<{
@@ -323,43 +751,126 @@ export class ItemRelationshipService {
         metadata?: Record<string, unknown> | null
       }
     }>,
-    options?: { skipHistory?: boolean; bypassEditGuard?: boolean },
+    options?: {
+      skipHistory?: boolean
+      bypassEditGuard?: boolean
+      replaceExisting?: boolean
+    },
   ): Promise<Array<typeof itemRelationships.$inferSelect>> {
     if (relationships.length === 0) return []
 
     const { ItemService } = await import('./ItemService')
 
+    // Duplicates inside the batch collide with each other, not with anything
+    // stored, so no amount of replacing saves them. Reject before writing.
+    const duplicates = this.findDuplicateEdges(relationships)
+    if (duplicates.length > 0) {
+      throw new ValidationError(
+        'A relationship may appear only once per (source, target, type)',
+        duplicates.map(({ index, firstIndex, edge }) => ({
+          field: `relationships[${index}]`,
+          message:
+            `Duplicates relationships[${firstIndex}]: ` +
+            `${edge.sourceId} → ${edge.targetId} (${edge.relationshipType})`,
+          code: 'DUPLICATE_RELATIONSHIP',
+        })),
+      )
+    }
+
     // Edit-lock policy: every distinct source item must be editable by the
-    // user adding relationships to it (see addRelationship).
+    // user adding relationships to it, plus the requirement end of any
+    // traceability line whose source is exempt (see requireEdgeEditable).
+    // Each end is checked once per user however many lines name it: a
+    // 500-line BOM shares one parent, and re-checking it per line would put
+    // back the round trips the batching removed.
     if (!options?.bypassEditGuard) {
-      const checked = new Set<string>()
+      const sourceItems = new Map<string, PersistedItem | null>()
+      const guardedSources = new Set<string>()
+      const guardedTargets = new Set<string>()
+
       for (const rel of relationships) {
-        const key = `${rel.sourceId}:${rel.userId}`
-        if (checked.has(key)) continue
-        checked.add(key)
-        const sourceItem = await ItemService.findById(rel.sourceId)
-        if (sourceItem) {
+        let sourceItem = sourceItems.get(rel.sourceId)
+        if (sourceItem === undefined) {
+          sourceItem = await ItemService.findById(rel.sourceId)
+          sourceItems.set(rel.sourceId, sourceItem)
+        }
+
+        const sourceKey = `${rel.sourceId}:${rel.userId}`
+        if (sourceItem && !guardedSources.has(sourceKey)) {
+          guardedSources.add(sourceKey)
           await ItemService.requireContentEditable(sourceItem, rel.userId)
+        }
+
+        const guardEnd = await resolveEdgeGuardEnd(
+          sourceItem?.itemType ?? '',
+          rel.relationshipType,
+        )
+        if (guardEnd === 'source') continue
+
+        const targetKey = `${rel.targetId}:${rel.userId}`
+        if (guardedTargets.has(targetKey)) continue
+        guardedTargets.add(targetKey)
+        const targetItem = await ItemService.findById(rel.targetId)
+        if (targetItem) {
+          await ItemService.requireContentEditable(targetItem, rel.userId)
         }
       }
     }
 
-    // Insert all relationships
-    const inserted = await db
-      .insert(itemRelationships)
-      .values(
-        relationships.map((r) => ({
-          sourceId: r.sourceId,
-          targetId: r.targetId,
-          relationshipType: r.relationshipType,
-          quantity: r.data?.quantity ?? null,
-          referenceDesignator: r.data?.referenceDesignator ?? null,
-          findNumber: r.data?.findNumber ?? null,
-          metadata: r.data?.metadata ?? null,
-          createdBy: r.userId,
-        })),
-      )
-      .returning()
+    // Replace + insert as one unit: either the new structure is in place or
+    // the old one never moved.
+    let inserted: Array<typeof itemRelationships.$inferSelect>
+    try {
+      inserted = await db.transaction(async (tx) => {
+        if (options?.replaceExisting) {
+          const typesBySource = new Map<string, Set<string>>()
+          for (const rel of relationships) {
+            const types = typesBySource.get(rel.sourceId) ?? new Set<string>()
+            types.add(rel.relationshipType)
+            typesBySource.set(rel.sourceId, types)
+          }
+
+          for (const [sourceId, types] of typesBySource) {
+            await tx
+              .delete(itemRelationships)
+              .where(
+                and(
+                  eq(itemRelationships.sourceId, sourceId),
+                  inArray(itemRelationships.relationshipType, [...types]),
+                ),
+              )
+          }
+        }
+
+        return tx
+          .insert(itemRelationships)
+          .values(
+            relationships.map((r) => ({
+              sourceId: r.sourceId,
+              targetId: r.targetId,
+              relationshipType: r.relationshipType,
+              quantity: r.data?.quantity ?? null,
+              referenceDesignator: r.data?.referenceDesignator ?? null,
+              findNumber: r.data?.findNumber ?? null,
+              metadata: r.data?.metadata ?? null,
+              createdBy: r.userId,
+            })),
+          )
+          .returning()
+      })
+    } catch (error) {
+      // Which edge collided is in the driver's `detail`, but its `message` is
+      // the whole INSERT with every bound parameter. Report neither.
+      if (isUniqueViolation(error, { table: 'item_relationships' })) {
+        throw new ValidationError(
+          'One or more relationships already exist (source, target and type ' +
+            'must be unique)',
+          undefined,
+          { relationshipCount: relationships.length },
+        )
+      }
+      throw error
+    }
 
     if (!options?.skipHistory) {
       // Group by source item's design/branch for consolidated commits
@@ -513,8 +1024,13 @@ export class ItemRelationshipService {
     }
 
     const sourceItem = await ItemService.findById(relationship.sourceId)
-    if (!options?.bypassEditGuard && sourceItem) {
-      await ItemService.requireContentEditable(sourceItem, userId)
+    if (!options?.bypassEditGuard) {
+      await this.requireEdgeEditable(
+        sourceItem,
+        relationship.targetId,
+        relationship.relationshipType,
+        userId,
+      )
     }
 
     await db
@@ -617,10 +1133,12 @@ export class ItemRelationshipService {
 
     // Edit-lock policy: relationship properties are source-item content
     if (!options?.bypassEditGuard) {
-      const guardSource = await ItemService.findById(existing.sourceId)
-      if (guardSource) {
-        await ItemService.requireContentEditable(guardSource, userId)
-      }
+      await this.requireEdgeEditable(
+        await ItemService.findById(existing.sourceId),
+        existing.targetId,
+        existing.relationshipType,
+        userId,
+      )
     }
 
     // Build update object with only provided fields

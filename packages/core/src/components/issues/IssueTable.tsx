@@ -18,6 +18,8 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface IssueTableProps {
   items: Array<Issue>
@@ -60,37 +62,6 @@ const priorityVariant = (
   return variants[priority] || 'default'
 }
 
-const stateVariant = (
-  state: string,
-): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' => {
-  const variants: Record<
-    string,
-    'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-  > = {
-    Open: 'default',
-    InProgress: 'warning',
-    Pending: 'secondary',
-    Resolved: 'success',
-    Verified: 'success',
-    Closed: 'secondary',
-    Cancelled: 'destructive',
-  }
-  return variants[state] || 'default'
-}
-
-const stateLabel = (state: string): string => {
-  const labels: Record<string, string> = {
-    Open: 'Open',
-    InProgress: 'In Progress',
-    Pending: 'Pending',
-    Resolved: 'Resolved',
-    Verified: 'Verified',
-    Closed: 'Closed',
-    Cancelled: 'Cancelled',
-  }
-  return labels[state] || state
-}
-
 const formatDate = (date?: string | Date) => {
   if (!date) return '-'
   try {
@@ -109,6 +80,14 @@ export function IssueTable({
   onPageChange,
   isLoading,
 }: IssueTableProps) {
+  // State filter options and badges come from the Issue lifecycle's
+  // configuration, not from a list in code
+  const { data: lifecycle } = useLifecyclePhases('Issue')
+  const stateFilterOptions = (lifecycle?.states ?? []).map((state) => ({
+    label: state.name,
+    value: state.id,
+  }))
+
   const columns: Array<DataGridColumn<Issue>> = [
     {
       id: 'itemNumber',
@@ -152,23 +131,10 @@ export function IssueTable({
       accessorKey: 'state',
       enableFiltering: true,
       filterType: 'multiSelect',
-      filterOptions: [
-        { label: 'Open', value: 'Open' },
-        { label: 'In Progress', value: 'InProgress' },
-        { label: 'Pending', value: 'Pending' },
-        { label: 'Resolved', value: 'Resolved' },
-        { label: 'Verified', value: 'Verified' },
-        { label: 'Closed', value: 'Closed' },
-        { label: 'Cancelled', value: 'Cancelled' },
-      ],
-      cell: ({ getValue }) => {
-        const value = getValue() as string
-        return (
-          <Badge variant={stateVariant(value || 'Open')}>
-            {stateLabel(value || 'Open')}
-          </Badge>
-        )
-      },
+      filterOptions: stateFilterOptions,
+      cell: ({ getValue }) => (
+        <StateBadge itemType="Issue" state={getValue() as string} />
+      ),
     },
     {
       id: 'severity',

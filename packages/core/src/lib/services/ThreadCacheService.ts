@@ -2,9 +2,19 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { createHash } from 'node:crypto'
-import { and, eq, gt, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
+import {
+  and,
+  eq,
+  gt,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  or,
+  sql,
+} from 'drizzle-orm'
 import { db } from '../db'
-import { threadPathCache } from '../db/schema'
+import { items, threadPathCache } from '../db/schema'
 import type { ThreadPathCacheSelect } from '../db/schema'
 import type { ThreadRequest, ThreadResponse } from './ThreadService'
 import type { VersionContext } from './VersionResolver'
@@ -202,6 +212,8 @@ export class ThreadCacheService {
   static async invalidateForItems(itemIds: Array<string>): Promise<number> {
     if (itemIds.length === 0) return 0
 
+    const affected = await this.expandToLineage(itemIds)
+
     const result = await db
       .update(threadPathCache)
       .set({ invalidatedAt: new Date() })
@@ -216,13 +228,49 @@ export class ThreadCacheService {
           ),
           // Array overlap: entries containing any of the affected items
           // Use PostgreSQL array literal format {id1,id2} for proper casting
-          sql`${threadPathCache.includedItemIds} && ${`{${itemIds.join(',')}}`}::uuid[]`,
+          sql`${threadPathCache.includedItemIds} && ${`{${affected.join(',')}}`}::uuid[]`,
         ),
       )
 
     // Drizzle doesn't return row count directly, we need to count affected
     // This is a workaround since PostgreSQL UPDATE doesn't return count in Drizzle
     return result.count
+  }
+
+  /**
+   * Every row sharing a master with one of `itemIds`.
+   *
+   * A cached thread lists the rows it resolved to, but the edges behind it can
+   * hang off a different revision of the same item: a test case that still
+   * names the requirement revision an ECO superseded is read into the current
+   * revision's thread (`ItemRelationshipService.resolveIncomingLinkLineage`).
+   * Invalidating only the row that was written would leave that thread cached
+   * and wrong. Being too broad here costs a recomputation; being too narrow
+   * serves a thread missing a link, so the lineage is invalidated whole.
+   */
+  private static async expandToLineage(
+    itemIds: Array<string>,
+  ): Promise<Array<string>> {
+    const expanded = new Set(itemIds)
+
+    const masters = await db
+      .selectDistinct({ masterId: items.masterId })
+      .from(items)
+      .where(inArray(items.id, [...expanded]))
+    if (masters.length === 0) return [...expanded]
+
+    const lineageRows = await db
+      .select({ id: items.id })
+      .from(items)
+      .where(
+        inArray(
+          items.masterId,
+          masters.map((row) => row.masterId),
+        ),
+      )
+    for (const row of lineageRows) expanded.add(row.id)
+
+    return [...expanded]
   }
 
   /**

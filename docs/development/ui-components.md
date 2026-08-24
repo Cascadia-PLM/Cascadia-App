@@ -385,15 +385,17 @@ import {
 </AlertDialog>
 ```
 
-### Status Badges
+### Lifecycle State Badges
+
+State names and colours are lifecycle configuration, so components never map them in code:
 
 ```typescript
-import { Badge } from '@/components/ui/Badge'
+import { StateBadge } from '@/components/items/StateBadge'
 
-<Badge variant={state === 'Released' ? 'success' : 'default'}>
-  {state}
-</Badge>
+<StateBadge itemType="Part" state={part.state} />
 ```
+
+`StateBadge` resolves the configured display name and colour through the per-item-type lifecycle cache. For raw spans (graph nodes), `useLifecycleState(itemType, state)` returns `{ label, className }`. `FreeTransitionControl` renders the transitions a Free-lifecycle item may take from its current state; `LifecycleStateCards` draws a list page's per-state summary cards; `useReleasedFamily(itemType, state)` answers "is this released lineage" for presentation gates (the server's `ItemEditPolicy` remains the authority); `lifecycleByItemTypeQuery` is the loader-safe query behind all of them.
 
 ## Common Pitfalls
 

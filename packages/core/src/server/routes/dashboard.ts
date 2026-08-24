@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
-import { and, eq, gte, isNull, or, sql } from 'drizzle-orm'
+import { and, eq, gte, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { tagged } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -12,6 +12,7 @@ import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { db } from '@/lib/db'
 import { items, parts, tasks } from '@/lib/db/schema'
 import { accessScopeCondition } from '@/lib/db/filters'
+import { LifecycleService } from '@/lib/services/LifecycleService'
 import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('Dashboard')
@@ -81,6 +82,13 @@ app.get(
       )
       const inScope = accessScopeCondition(accessDesignIds) ?? undefined
 
+      // Derived per-lifecycle state sets: what a Part release stamps, and
+      // where the Task flow ends. Names come from configuration, not code.
+      const [releaseTargetStates, taskFinalStates] = await Promise.all([
+        LifecycleService.getReleaseTargetStates('Part'),
+        LifecycleService.getFinalStateIds('Task'),
+      ])
+
       const [
         changeOrdersByDay,
         partsReleasedByDay,
@@ -115,7 +123,8 @@ app.get(
           .where(
             and(
               eq(items.itemType, 'Part'),
-              eq(items.state, 'Released'),
+              // States a release stamps on new versions, per the Part lifecycle
+              inArray(items.state, releaseTargetStates),
               gte(items.modifiedAt, sevenDaysAgo),
               or(isNull(items.isDeleted), eq(items.isDeleted, false)),
               inScope,
@@ -151,7 +160,10 @@ app.get(
           .where(
             and(
               or(isNull(items.isDeleted), eq(items.isDeleted, false)),
-              or(eq(items.state, 'Draft'), eq(items.state, 'InReview')),
+              // Open work = anything not in a final state of the Task flow
+              taskFinalStates.length > 0
+                ? notInArray(items.state, taskFinalStates)
+                : sql`true`,
               inScope,
             ),
           )

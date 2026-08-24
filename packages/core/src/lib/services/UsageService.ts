@@ -15,6 +15,7 @@ import {
   testPlans,
 } from '../db/schema/items'
 import { NotFoundError } from '../errors'
+import { LifecycleService } from './LifecycleService'
 import type { BaseItem } from '../items/types/base'
 import type { TestStep } from '../items/types/testcase'
 import { takeFirst } from '@/lib/db/take-first'
@@ -173,7 +174,6 @@ export class UsageService {
       { fieldName: 'category', mode: 'inherit' },
       { fieldName: 'verificationMethod', mode: 'inherit' },
       { fieldName: 'priority', mode: 'copy' },
-      { fieldName: 'status', mode: 'usage-only' },
       { fieldName: 'verificationStatus', mode: 'usage-only' },
       { fieldName: 'allocatedDesignId', mode: 'usage-only' },
       { fieldName: 'parentRequirementId', mode: 'usage-only' },
@@ -243,7 +243,7 @@ export class UsageService {
       revision: '-', // Fresh start for usage
       itemType: definition.itemType,
       name: input.overrides?.name ?? definition.name,
-      state: 'Draft',
+      state: await LifecycleService.getInitialStateId(definition.itemType),
       sysmlType: sysmlType,
       metamodel: definition.metamodel ?? 'cascadia',
       isCurrent: true,
@@ -707,7 +707,6 @@ export class UsageService {
           description: (data.description as string | undefined) ?? null,
           type: (data.type as string | undefined) ?? null,
           priority: (data.priority as string | undefined) ?? null,
-          status: (data.status as string | undefined) ?? null,
           acceptanceCriteria:
             (data.acceptanceCriteria as string | undefined) ?? null,
           source: (data.source as string | undefined) ?? null,
@@ -743,7 +742,6 @@ export class UsageService {
           environment: (data.environment as string | undefined) ?? null,
           entryCriteria: (data.entryCriteria as string | undefined) ?? null,
           exitCriteria: (data.exitCriteria as string | undefined) ?? null,
-          status: (data.status as string | undefined) ?? null,
         })
         break
       case 'TestCase':

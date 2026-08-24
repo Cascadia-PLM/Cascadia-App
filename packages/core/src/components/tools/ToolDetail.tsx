@@ -17,7 +17,6 @@ import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { ITEM_NUMBER_PLACEHOLDER } from '@/lib/items/numbering/format'
 import {
-  Badge,
   Button,
   Card,
   CardContent,
@@ -37,53 +36,15 @@ import {
   ViewEditTextarea,
 } from '@/components/ui'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
+import { StateBadge } from '@/components/items/StateBadge'
+import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
 
 // Tool state options match lifecycle: Draft -> Active -> Maintenance -> Retired
-const STATE_OPTIONS = [
-  { value: 'Draft', label: 'Draft' },
-  { value: 'Active', label: 'Active' },
-  { value: 'Maintenance', label: 'Maintenance' },
-  { value: 'Retired', label: 'Retired' },
-]
-
 const TOOL_TYPE_OPTIONS = [
   { value: 'manufacturing', label: 'Manufacturing' },
   { value: 'quality', label: 'Quality' },
   { value: 'utility', label: 'Utility' },
 ]
-
-const TOOL_STATUS_OPTIONS = [
-  { value: 'available', label: 'Available' },
-  { value: 'in_use', label: 'In Use' },
-  { value: 'maintenance', label: 'Maintenance' },
-  { value: 'retired', label: 'Retired' },
-]
-
-const stateVariant = (state: string) => {
-  const variants: Record<
-    string,
-    'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-  > = {
-    Draft: 'secondary',
-    Active: 'success',
-    Maintenance: 'warning',
-    Retired: 'destructive',
-  }
-  return variants[state] || 'default'
-}
-
-const statusVariant = (status: string) => {
-  const variants: Record<
-    string,
-    'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-  > = {
-    available: 'success',
-    in_use: 'default',
-    maintenance: 'warning',
-    retired: 'destructive',
-  }
-  return variants[status] || 'default'
-}
 
 function subtypeLabel(subtype?: string): string {
   if (!subtype) return '-'
@@ -97,21 +58,21 @@ const createEmptyTool = (): Tool => ({
   masterId: undefined,
   itemType: 'Tool',
   itemNumber: '',
-  revision: 'A',
   name: '',
-  state: 'Draft',
+  state: '',
   isCurrent: true,
   toolType: 'manufacturing',
   toolSubtype: '',
   manufacturer: '',
   model: '',
   capabilities: {},
-  toolStatus: 'available',
   location: '',
   notes: '',
 })
 
 interface ToolDetailProps {
+  /** Called after a lifecycle transition succeeds (refresh the item) */
+  onTransitioned?: () => void
   tool?: Tool
   onSave: (tool: Tool) => Promise<void>
   onDelete?: () => Promise<void>
@@ -122,6 +83,7 @@ interface ToolDetailProps {
 }
 
 export function ToolDetail({
+  onTransitioned,
   tool: initialTool,
   onSave,
   onDelete,
@@ -338,19 +300,17 @@ export function ToolDetail({
 
         {!isCreateMode && (
           <div className="flex gap-2">
-            <Badge
-              variant={stateVariant(currentTool.state ?? 'Draft')}
+            <StateBadge
+              itemType="Tool"
+              state={currentTool.state}
               className="text-sm"
-            >
-              {currentTool.state ?? 'Draft'}
-            </Badge>
-            {currentTool.toolStatus && (
-              <Badge
-                variant={statusVariant(currentTool.toolStatus)}
-                className="text-sm"
-              >
-                {currentTool.toolStatus}
-              </Badge>
+            />
+            {currentTool.id && (
+              <FreeTransitionControl
+                itemId={currentTool.id}
+                state={currentTool.state}
+                onTransitioned={onTransitioned}
+              />
             )}
           </div>
         )}
@@ -486,22 +446,6 @@ export function ToolDetail({
                     <CardTitle>Status & Location</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <ViewEditSelect
-                      label="State"
-                      value={isEditing ? tool.state : currentTool.state}
-                      onChange={(v) => updateField('state', v)}
-                      isEditing={isEditing}
-                      options={STATE_OPTIONS}
-                    />
-                    <ViewEditSelect
-                      label="Tool Status"
-                      value={
-                        isEditing ? tool.toolStatus : currentTool.toolStatus
-                      }
-                      onChange={(v) => updateField('toolStatus', v)}
-                      isEditing={isEditing}
-                      options={TOOL_STATUS_OPTIONS}
-                    />
                     <ViewEditText
                       label="Location"
                       value={isEditing ? tool.location : currentTool.location}

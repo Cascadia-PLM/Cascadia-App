@@ -358,7 +358,6 @@ describe('UsageService', () => {
       const usageOnlyFields = config.fields.filter(
         (f) => f.mode === 'usage-only',
       )
-      expect(usageOnlyFields.map((f) => f.fieldName)).toContain('status')
       expect(usageOnlyFields.map((f) => f.fieldName)).toContain(
         'verificationStatus',
       )

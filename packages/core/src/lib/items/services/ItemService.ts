@@ -12,11 +12,13 @@ import { getTypeHandler } from '../type-handlers'
 import { isBranchProtectionExempt } from '../branch-protection'
 import '../type-handlers/init'
 import {
+  AlreadyExistsError,
   BranchProtectionError,
   InternalError,
   NotFoundError,
   ValidationError,
 } from '../../errors'
+import { isUniqueViolation } from '../../errors/pg'
 import { CommitService } from '../../services/CommitService'
 import { expandSourceFieldChanges } from '../../services/software-source-changes'
 import {
@@ -25,9 +27,11 @@ import {
   computeInitialFieldValues,
 } from '../../services/CheckoutService'
 import { BranchService } from '../../services/BranchService'
+import { RevisionService } from '../../services/RevisionService'
 import { UsageService } from '../../services/UsageService'
 import { notDeleted } from '../../db/filters'
 import { ItemVersioningFacade } from './ItemVersioningFacade'
+import { ItemEditPolicy } from './ItemEditPolicy'
 import { ItemSearchService } from './ItemSearchService'
 import { ItemRelationshipService } from './ItemRelationshipService'
 import type { TypeHandlerContext } from '../type-handlers'
@@ -68,11 +72,36 @@ export class ItemService {
    */
   private static async resolveInitialStateId(
     itemType: string,
-    fallback: string,
   ): Promise<string> {
-    const lifecycle = await ItemTypeRegistry.getLifecycleForType(itemType)
-    const initial = lifecycle?.states.find((s) => s.isInitial)
-    return initial?.id ?? fallback
+    const { LifecycleService } = await import('../../services/LifecycleService')
+    return LifecycleService.getInitialStateId(itemType)
+  }
+
+  /**
+   * The revision a brand-new item starts at when the caller names none.
+   *
+   * An ECO-controlled (Driven) type is given its revision by the change order
+   * that releases it, so it starts at the unreleased marker and is released as
+   * A. Anything else - a Free or Driving lifecycle - has no release that would
+   * ever assign one, so the marker would be permanent; those start at the
+   * scheme's initial revision, which is what every such create site already
+   * wrote by hand.
+   *
+   * The distinction is the lifecycle's, not a type list's, so a custom type
+   * follows its assigned lifecycle with no change here - the same reasoning as
+   * `isBranchProtectionExempt`, which asks the same question of the same
+   * configuration.
+   */
+  private static async resolveInitialRevision(
+    itemType: string,
+  ): Promise<string> {
+    const { LifecycleService } = await import('../../services/LifecycleService')
+    if ((await LifecycleService.getLifecycleType(itemType)) === 'Driven') {
+      return RevisionService.getUnreleasedRevision()
+    }
+    return RevisionService.getInitialRevision(
+      await LifecycleService.getRevisionScheme(itemType),
+    )
   }
 
   /**
@@ -148,17 +177,25 @@ export class ItemService {
       }
     }
 
+    // The revision is the lifecycle's to assign, not the caller's. A client
+    // that names one is honoured (imports carry the revision the source system
+    // recorded); one that omits it gets the value its lifecycle implies. Bound
+    // as a const as well as written back, because the insert below runs inside
+    // a closure where the narrowing on a mutable field does not survive.
+    const revision =
+      validatedData.revision ?? (await this.resolveInitialRevision(type))
+    validatedData.revision = revision
+
     // Check branch protection if item is associated with a design
     // Skip this check if:
     // - bypassBranchProtection is true (for ECO operations or tests)
-    // - The type is exempt: ChangeOrders are the workflow control objects that
-    //   create branches, and WorkInstructions borrow their output part's design
-    //   without being ECO-controlled (see lib/items/branch-protection.ts)
+    // - The type is exempt, which its lifecycle decides: only Driven
+    //   lifecycles are ECO-controlled (see lib/items/branch-protection.ts)
     const isChangeOrder = type === 'ChangeOrder'
     if (
       validatedData.designId &&
       !options?.bypassBranchProtection &&
-      !isBranchProtectionExempt(type)
+      !(await isBranchProtectionExempt(type))
     ) {
       const canEdit = await this.canEditDirectly(validatedData.designId)
       if (!canEdit.allowed) {
@@ -173,12 +210,16 @@ export class ItemService {
     const masterId = randomUUID()
 
     // Initial state comes from the assigned lifecycle (its initial state
-    // ID — state identity is IDs everywhere, WI-5.1); the static per-type
-    // defaultState applies only when no lifecycle is assigned
-    const initialState = await this.resolveInitialStateId(
-      type,
-      typeConfig.defaultState,
-    )
+    // ID — state identity is IDs everywhere, WI-5.1). A caller-supplied
+    // state must be one the lifecycle defines: the schema types `state` as a
+    // plain string because the state universe is runtime configuration, so
+    // this is where the boundary holds.
+    if (validatedData.state) {
+      const { LifecycleService } =
+        await import('../../services/LifecycleService')
+      await LifecycleService.validateStateForType(type, validatedData.state)
+    }
+    const initialState = await this.resolveInitialStateId(type)
 
     // Auto-assign sysmlType based on whether this is a usage or definition
     // If usageOf is set, this is a usage; otherwise it's a definition
@@ -186,97 +227,119 @@ export class ItemService {
     const sysmlType = UsageService.getSysmlType(type, isUsage)
 
     // Wrap all database operations in a transaction for atomicity
-    return db.transaction(async (tx) => {
-      // Insert base item
-      const item = takeFirst(
-        await tx
-          .insert(items)
-          .values({
-            masterId,
-            designId: validatedData.designId,
-            itemNumber: validatedData.itemNumber!,
-            revision: validatedData.revision,
-            itemType: type,
-            name: validatedData.name,
-            state: validatedData.state || initialState,
-            attributes: (
-              validatedData as unknown as {
-                attributes?: Record<string, unknown>
-              }
-            ).attributes,
-            isCurrent: true,
-            sysmlType: sysmlType,
-            usageOf: (validatedData as unknown as { usageOf?: string }).usageOf,
-            createdBy: userId,
-            modifiedBy: userId,
-          })
-          .returning(),
-      )
+    try {
+      return await db.transaction(async (tx) => {
+        // Insert base item
+        const item = takeFirst(
+          await tx
+            .insert(items)
+            .values({
+              masterId,
+              designId: validatedData.designId,
+              itemNumber: validatedData.itemNumber!,
+              revision,
+              itemType: type,
+              name: validatedData.name,
+              state: validatedData.state || initialState,
+              attributes: (
+                validatedData as unknown as {
+                  attributes?: Record<string, unknown>
+                }
+              ).attributes,
+              isCurrent: true,
+              sysmlType: sysmlType,
+              usageOf: (validatedData as unknown as { usageOf?: string })
+                .usageOf,
+              createdBy: userId,
+              modifiedBy: userId,
+            })
+            .returning(),
+        )
 
-      // Insert type-specific data
-      await this.insertTypeSpecificData(type, item.id, validatedData, tx, {
-        userId,
-      })
+        // Insert type-specific data
+        await this.insertTypeSpecificData(type, item.id, validatedData, tx, {
+          userId,
+        })
 
-      // Create commit for history tracking if item has a designId
-      // (items without designId are not tracked in version history)
-      // Note: ChangeOrders are created WITHOUT designId - they're design-agnostic.
-      if (item.designId && !isChangeOrder) {
-        try {
-          const fieldChanges = computeInitialFieldValues(
-            { ...validatedData, state: item.state } as unknown as Record<
-              string,
-              unknown
-            >,
-            type,
-          )
-
-          const mainBranch = await BranchService.getMainBranch(item.designId)
-          const targetBranchId = mainBranch?.id ?? null
-
-          if (targetBranchId) {
-            const commit = await CommitService.create(
-              {
-                branchId: targetBranchId,
-                message: `${type} ${validatedData.itemNumber || 'item'} created`,
-                itemChanges: [
-                  {
-                    itemId: item.id,
-                    changeType: 'added',
-                    fieldChanges,
-                  },
-                ],
-              },
-              userId,
-              tx,
+        // Create commit for history tracking if item has a designId
+        // (items without designId are not tracked in version history)
+        // Note: ChangeOrders are created WITHOUT designId - they're design-agnostic.
+        if (item.designId && !isChangeOrder) {
+          try {
+            const fieldChanges = computeInitialFieldValues(
+              { ...validatedData, state: item.state } as unknown as Record<
+                string,
+                unknown
+              >,
+              type,
             )
 
-            await tx
-              .update(items)
-              .set({ commitId: commit.id })
-              .where(eq(items.id, item.id))
-          }
-        } catch (error) {
-          // Log but don't fail - commit tracking is optional during pre-release
-          itemLogger.warn(
-            { err: error, itemId: item.id },
-            'Failed to create commit for item',
-          )
-        }
-      }
+            const mainBranch = await BranchService.getMainBranch(item.designId)
+            const targetBranchId = mainBranch?.id ?? null
 
-      return {
-        ...validatedData,
-        id: item.id,
-        masterId: item.masterId,
-        designId: item.designId,
-        state: item.state,
-        createdAt: item.createdAt,
-        createdBy: item.createdBy,
-        modifiedAt: item.modifiedAt,
-        modifiedBy: item.modifiedBy,
+            if (targetBranchId) {
+              const commit = await CommitService.create(
+                {
+                  branchId: targetBranchId,
+                  message: `${type} ${validatedData.itemNumber || 'item'} created`,
+                  itemChanges: [
+                    {
+                      itemId: item.id,
+                      changeType: 'added',
+                      fieldChanges,
+                    },
+                  ],
+                },
+                userId,
+                tx,
+              )
+
+              await tx
+                .update(items)
+                .set({ commitId: commit.id })
+                .where(eq(items.id, item.id))
+            }
+          } catch (error) {
+            // Log but don't fail - commit tracking is optional during pre-release
+            itemLogger.warn(
+              { err: error, itemId: item.id },
+              'Failed to create commit for item',
+            )
+          }
+        }
+
+        return {
+          ...validatedData,
+          id: item.id,
+          masterId: item.masterId,
+          designId: item.designId,
+          state: item.state,
+          createdAt: item.createdAt,
+          createdBy: item.createdBy,
+          modifiedAt: item.modifiedAt,
+          modifiedBy: item.modifiedBy,
+        }
+      })
+    } catch (error) {
+      // (itemNumber, revision, designId, itemType) is unique. Nothing checks
+      // it before the insert, so the commonest mistake in a spreadsheet import
+      // — the same item number on two rows — arrived as a driver exception
+      // whose message is the INSERT statement and every bound parameter, and
+      // bulk importers copy that message straight into their per-row result.
+      if (isUniqueViolation(error, { table: 'items' })) {
+        throw new AlreadyExistsError(
+          `${type} number`,
+          validatedData.itemNumber,
+          {
+            operation: 'create',
+            resource: type,
+            revision: validatedData.revision,
+            designId: validatedData.designId,
+          },
+        )
       }
-    })
+      throw error
+    }
   }
 
   /**
@@ -393,7 +456,7 @@ export class ItemService {
       !options?.bypassBranchProtection &&
       !isChangeOrder
     ) {
-      branchInfo = await ItemVersioningFacade.requireContentEditable(
+      branchInfo = await ItemEditPolicy.requireContentEditable(
         oldItem,
         userId,
         // A shared base row is fine here: the changeType-null delegation
@@ -553,10 +616,7 @@ export class ItemService {
       return // preserve idempotent delete semantics
     }
 
-    const branchInfo = await ItemVersioningFacade.requireContentEditable(
-      item,
-      userId,
-    )
+    const branchInfo = await ItemEditPolicy.requireContentEditable(item, userId)
     if (branchInfo) {
       throw new ValidationError(
         `Item '${item.itemNumber || id}' is tracked on branch "${branchInfo.branchName}". Use the branch delete operation (deleteOnBranch) so the change is recorded on the branch.`,
@@ -605,7 +665,6 @@ export class ItemService {
       // Create new revision, starting at the lifecycle's initial state
       const revisionInitialState = await this.resolveInitialStateId(
         currentItem.itemType,
-        'Draft',
       )
       const newItem = takeFirst(
         await tx
@@ -936,6 +995,11 @@ export class ItemService {
   // These one-line delegates are the reason `ItemVersioningFacade` can stay a
   // private split of this class rather than a second service callers must know
   // about. Deleting them would push a facade import into every calling file.
+  //
+  // Only operations with logic of their own are delegated. `getHistory` and
+  // `deleteOnBranch` forward straight to `CommitService`/`CheckoutService`
+  // instead — routing a pure forward through the facade bought nothing but a
+  // second hop.
   // ============================================================================
 
   /** @see ItemVersioningFacade.getAtContext */
@@ -956,7 +1020,14 @@ export class ItemService {
     return ItemVersioningFacade.listAtContext(designId, context, filters)
   }
 
-  /** @see ItemVersioningFacade.getHistory */
+  /**
+   * Get version history for an item.
+   *
+   * @param itemMasterId - The master ID of the item
+   * @param designId - The design ID
+   * @param options.untilCommitId - Optional commit ID to limit history to (for viewing at a specific version)
+   * @param options.branchId - Optional branch ID to filter commits by (only show commits on this branch)
+   */
   static async getHistory(
     itemMasterId: string,
     designId: string,
@@ -965,7 +1036,7 @@ export class ItemService {
       branchId?: string
     },
   ): Promise<Array<ItemHistoryEntry>> {
-    return ItemVersioningFacade.getHistory(itemMasterId, designId, options)
+    return CommitService.getItemCommits(itemMasterId, designId, options)
   }
 
   /** @see ItemVersioningFacade.diff */
@@ -999,14 +1070,14 @@ export class ItemService {
     )
   }
 
-  /** @see ItemVersioningFacade.deleteOnBranch */
+  /** Delete an item on a branch (soft delete, recorded as a commit). */
   static async deleteOnBranch(
     itemMasterId: string,
     branchId: string,
     commitMessage: string,
     userId: string,
   ): Promise<typeof commits.$inferSelect> {
-    return ItemVersioningFacade.deleteOnBranch(
+    return CheckoutService.deleteOnBranch(
       itemMasterId,
       branchId,
       commitMessage,
@@ -1015,19 +1086,22 @@ export class ItemService {
   }
 
   // ============================================================================
-  // Branch Protection Methods — delegated to ItemVersioningFacade
+  // Edit-lock policy — delegated to ItemEditPolicy
+  //
+  // Same reasoning as the versioning delegates above: `ItemEditPolicy` is a
+  // private split of this class, and these keep it that way.
   // ============================================================================
 
-  /** @see ItemVersioningFacade.canEditDirectly */
+  /** @see ItemEditPolicy.canEditDirectly */
   static async canEditDirectly(designId: string): Promise<{
     allowed: boolean
     reason?: string
     requiresCheckout: boolean
   }> {
-    return ItemVersioningFacade.canEditDirectly(designId)
+    return ItemEditPolicy.canEditDirectly(designId)
   }
 
-  /** @see ItemVersioningFacade.getItemBranchInfo */
+  /** @see ItemEditPolicy.getItemBranchInfo */
   static async getItemBranchInfo(itemId: string): Promise<{
     branchId: string
     branchName: string
@@ -1036,10 +1110,10 @@ export class ItemService {
     checkedOutBy: string | null
     changeType: string | null
   } | null> {
-    return ItemVersioningFacade.getItemBranchInfo(itemId)
+    return ItemEditPolicy.getItemBranchInfo(itemId)
   }
 
-  /** @see ItemVersioningFacade.requireContentEditable */
+  /** @see ItemEditPolicy.requireContentEditable */
   static async requireContentEditable(
     item: {
       id: string
@@ -1052,6 +1126,6 @@ export class ItemService {
     userId: string,
     options?: { allowSharedBase?: boolean },
   ) {
-    return ItemVersioningFacade.requireContentEditable(item, userId, options)
+    return ItemEditPolicy.requireContentEditable(item, userId, options)
   }
 }

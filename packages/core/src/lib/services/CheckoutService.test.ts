@@ -42,6 +42,7 @@ import {
 } from '@/lib/errors'
 import {
   branchItems,
+  changeOrderAffectedItems,
   itemVersions,
   items,
   programs,
@@ -50,7 +51,14 @@ import {
   workInstructionSteps,
   workInstructions,
 } from '@/lib/db/schema'
-import { workflowInstances } from '@/lib/db/schema/workflows'
+import {
+  workflowDefinitions,
+  workflowInstances,
+} from '@/lib/db/schema/workflows'
+import { itemTypeConfigs } from '@/lib/db/schema/config'
+import { ItemTypeRegistry } from '@/lib/items/registry'
+import { LIFECYCLE_IDS } from '@/lib/items/lifecycle-ids'
+import { SYSTEM_USER_ID } from '@/__tests__/fixtures/lifecycles'
 import { takeFirst } from '@/lib/db/take-first'
 
 // Import to register item types
@@ -65,6 +73,7 @@ describe('CheckoutService', () => {
   let mainBranchId: string
   let initialCommitId: string
   let ecoBranchId: string
+  let changeOrderId: string
 
   beforeAll(async () => {
     await testDb.setup()
@@ -132,6 +141,8 @@ describe('CheckoutService', () => {
       } as any,
       user.id,
     )
+
+    changeOrderId = changeOrder.id
 
     const { branch } = await BranchService.getOrCreateEcoBranch(
       designId,
@@ -789,6 +800,33 @@ describe('CheckoutService', () => {
         ),
       ).rejects.toThrow(NotFoundError)
     })
+
+    // The merge releases branch content and refuses to release what the
+    // change order does not list, so authoring an item on an ECO branch has
+    // to put it in scope there and then - not leave it to be discovered at
+    // release, after review.
+    it('lists the new item on the change order that owns the branch', async () => {
+      const { item } = await CheckoutService.createOnBranch(
+        {
+          designId,
+          itemNumber: `PN-SCOPE-${uniquePrefix}`,
+          itemType: 'Part',
+          name: 'Authored on the ECO',
+        },
+        ecoBranchId,
+        'Added new part',
+        user.id,
+      )
+
+      const affected = await ChangeOrderService.getAffectedItems(changeOrderId)
+      const listed = affected.find(
+        (a) => a.affectedItemMasterId === item.masterId,
+      )
+      expect(listed).toBeDefined()
+      // A first release, and it will carry the scheme's initial revision
+      expect(listed?.changeAction).toBe('release')
+      expect(listed?.targetRevision).toBe('A')
+    })
   })
 
   describe('deleteOnBranch', () => {
@@ -872,6 +910,46 @@ describe('CheckoutService', () => {
       )
 
       expect(commit).toBeDefined()
+    })
+
+    // The item existed only on the branch, so nothing is left for the change
+    // order to release. A scope row left behind would be applied by the
+    // branchless merge path, releasing a draft the user had deleted.
+    it('drops the item from the change order when deleting what the branch added', async () => {
+      const { item } = await CheckoutService.createOnBranch(
+        {
+          designId,
+          itemNumber: `PN-ADD-SCOPE-${uniquePrefix}`,
+          itemType: 'Part',
+          name: 'Add then Delete Part',
+        },
+        ecoBranchId,
+        'Added new part',
+        user.id,
+      )
+      expect(
+        (await ChangeOrderService.getAffectedItems(changeOrderId)).some(
+          (a) => a.affectedItemMasterId === item.masterId,
+        ),
+      ).toBe(true)
+
+      await CheckoutService.deleteOnBranch(
+        item.masterId,
+        ecoBranchId,
+        'Deleted added part',
+        user.id,
+      )
+
+      const stillListed = await testDb.db
+        .select()
+        .from(changeOrderAffectedItems)
+        .where(
+          and(
+            eq(changeOrderAffectedItems.changeOrderId, changeOrderId),
+            eq(changeOrderAffectedItems.affectedItemMasterId, item.masterId),
+          ),
+        )
+      expect(stillListed).toHaveLength(0)
     })
 
     it('creates branchItem when deleting item not on branch', async () => {
@@ -1469,6 +1547,144 @@ describe('CheckoutService', () => {
       const wcExtra = wcAttachments.find((a) => !a.isOutput)
       expect(wcExtra!.partId).toBe(attachedPart.id)
       expect(wcExtra!.inheritToMBOM).toBe(true)
+    })
+  })
+  // The edit-lock policy must work on lifecycles whose states are named
+  // nothing the code has ever heard of — membership in the released family
+  // derives from the change-action mappings, never from names. Documents get
+  // a fully renamed lifecycle here (this file's other tests only use Parts);
+  // everything runs inside the gate transaction and the config is restored
+  // before rollback so the per-process registry cache never diverges from
+  // the database.
+  describe('edit-lock with a fully renamed lifecycle', () => {
+    const RENAMED_LIFECYCLE_ID = '00000000-0000-4000-8000-000000000517'
+
+    const RENAMED_DEFINITION = {
+      states: [
+        { id: 'Intake', name: 'Intake', isInitial: true, isFinal: false },
+        { id: 'Frozen', name: 'Frozen', isInitial: false, isFinal: false },
+        { id: 'Retired', name: 'Retired', isInitial: false, isFinal: true },
+        { id: 'Withdrawn', name: 'Withdrawn', isInitial: false, isFinal: true },
+      ],
+      transitions: [],
+      changeActionMappings: {
+        release: {
+          fromState: 'Intake',
+          toState: 'Frozen',
+          assignsRevision: true,
+        },
+        revise: {
+          fromState: 'Frozen',
+          newVersionState: 'Frozen',
+          oldVersionState: 'Retired',
+          assignsRevision: true,
+        },
+        obsolete: {
+          fromState: 'Frozen',
+          toState: 'Withdrawn',
+          assignsRevision: false,
+        },
+      },
+      lifecycleType: 'Driven',
+      applicableItemTypes: ['Document'],
+    }
+
+    async function linkDocumentLifecycle(definitionId: string) {
+      const config = { lifecycleDefinitionId: definitionId }
+      await testDb.db
+        .insert(itemTypeConfigs)
+        .values({ itemType: 'Document', config, modifiedBy: SYSTEM_USER_ID })
+        .onConflictDoUpdate({
+          target: itemTypeConfigs.itemType,
+          set: { config, modifiedBy: SYSTEM_USER_ID },
+        })
+      await ItemTypeRegistry.reload()
+    }
+
+    beforeEach(async () => {
+      await testDb.db
+        .insert(workflowDefinitions)
+        .values({
+          id: RENAMED_LIFECYCLE_ID,
+          name: 'Document - Renamed Lifecycle',
+          version: 1,
+          workflowType: 'strict',
+          definition: RENAMED_DEFINITION,
+          isActive: true,
+          lifecycleType: 'Driven',
+          drivers: [],
+        })
+        .onConflictDoNothing()
+      await linkDocumentLifecycle(RENAMED_LIFECYCLE_ID)
+    })
+
+    afterEach(async () => {
+      // Point Document back at its default before the outer rollback removes
+      // the renamed rows, so the registry's per-process cache stays truthful
+      await linkDocumentLifecycle(LIFECYCLE_IDS.document)
+    })
+
+    it('creation starts at the renamed initial state', async () => {
+      const doc = await ItemService.create(
+        'Document',
+        {
+          itemNumber: `DOC-${uniquePrefix}-RN1`,
+          revision: '-',
+          name: 'Renamed Lifecycle Doc',
+          designId,
+        } as any,
+        user.id,
+        { bypassBranchProtection: true },
+      )
+      expect(doc.state).toBe('Intake')
+    })
+
+    it('blocks structural edits on a shared base in a renamed released state', async () => {
+      // A released document under the renamed lifecycle: state 'Frozen' is in
+      // the released family purely via the release mapping
+      const doc = await ItemService.create(
+        'Document',
+        {
+          itemNumber: `DOC-${uniquePrefix}-RN2`,
+          revision: 'A',
+          name: 'Frozen Doc',
+          state: 'Frozen',
+          designId,
+        } as any,
+        user.id,
+        { bypassBranchProtection: true },
+      )
+      const other = await ItemService.create(
+        'Document',
+        {
+          itemNumber: `DOC-${uniquePrefix}-RN3`,
+          revision: 'A',
+          name: 'Other Doc',
+          state: 'Frozen',
+          designId,
+        } as any,
+        user.id,
+        { bypassBranchProtection: true },
+      )
+      await testDb.db.insert(itemVersions).values({
+        commitId: initialCommitId,
+        itemId: doc.id,
+        changeType: 'added',
+      })
+
+      // Checkout onto the ECO branch: the branch row still points at the
+      // shared Frozen version (changeType null) until a working copy exists
+      await CheckoutService.checkout(
+        { itemMasterId: doc.masterId, branchId: ecoBranchId },
+        user.id,
+      )
+
+      // Structural edits cannot reroute through saveChanges, so they must be
+      // rejected — under the literal-list check this slipped through, because
+      // 'Frozen' is not named 'Released'
+      await expect(
+        ItemService.addRelationship(doc.id, other.id, 'Reference', user.id),
+      ).rejects.toThrow(ValidationError)
     })
   })
 })

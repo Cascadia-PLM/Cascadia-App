@@ -29,6 +29,7 @@ import {
 } from '../packages/core/src/lib/db/schema/versioning.ts'
 import { itemTypeConfigs } from '../packages/core/src/lib/db/schema/config.ts'
 import { workflowDefinitions } from '../packages/core/src/lib/db/schema/workflows.ts'
+import { seedDefaultLifecycles } from '../packages/core/src/lib/items/default-lifecycles.ts'
 import { hashPassword } from '../packages/core/src/lib/auth/password.ts'
 import {
   ROLE_DEFINITIONS,
@@ -457,38 +458,9 @@ try {
       },
     })
 
-  // Create Requirement Lifecycle (Driven - controlled by ECOs)
-  // Requirements are versioned items like Parts and Documents: they live on
-  // Designs, are checked out to ECO branches, and get revision letters at merge
-  await db
-    .insert(workflowDefinitions)
-    .values({
-      id: IDS.requirementLifecycle,
-      name: 'Requirement - Default Lifecycle',
-      version: 1,
-      workflowType: 'strict',
-      definition: {
-        ...itemLifecycleDefinition,
-        applicableItemTypes: ['Requirement'],
-      },
-      isActive: true,
-      lifecycleType: 'Driven',
-      drivers: [IDS.changeOrderWorkflow, IDS.flexibleChangeOrderWorkflow],
-    })
-    .onConflictDoUpdate({
-      target: workflowDefinitions.id,
-      set: {
-        name: 'Requirement - Default Lifecycle',
-        version: 1,
-        definition: {
-          ...itemLifecycleDefinition,
-          applicableItemTypes: ['Requirement'],
-        },
-        isActive: true,
-        lifecycleType: 'Driven',
-        drivers: [IDS.changeOrderWorkflow, IDS.flexibleChangeOrderWorkflow],
-      },
-    })
+  // Requirement lifecycle: seeded from the default-lifecycles module below
+  // (review progress is part of it now, so it is no longer the shared
+  // Part/Document shape)
 
   // Change Order Workflow - Simple approval workflow (Driving lifecycle)
   // Note: This is a "Driving" lifecycle — completing it with a release
@@ -1168,6 +1140,7 @@ try {
         description: 'All quantities completed',
         isInitial: false,
         isFinal: true,
+        finalKind: 'complete',
       },
       {
         id: 'Cancelled',
@@ -1176,6 +1149,7 @@ try {
         description: 'Work order cancelled before completion',
         isInitial: false,
         isFinal: true,
+        finalKind: 'cancel',
       },
     ],
     workOrderTransitions,
@@ -1245,6 +1219,13 @@ try {
     })
 
   console.log('✓ Work Order Lifecycle (Free)')
+
+  // Default lifecycles for every remaining item type (Task, TestPlan,
+  // TestCase, WorkInstruction — and the module's copies of the ones above,
+  // which no-op here since the richer versions were just written). Every item
+  // type must have a lifecycle: the services carry no name-literal fallbacks.
+  await seedDefaultLifecycles(db)
+  console.log('✓ Default lifecycles for remaining item types')
 
   // ============================================================================
   // 6. Create Item Type Configs with Lifecycle Assignments
@@ -1327,6 +1308,67 @@ try {
           create: ['*'],
           read: ['*'],
           update: ['*'],
+          delete: ['Administrator'],
+        },
+      },
+    },
+    {
+      itemType: 'Task',
+      config: {
+        lifecycleDefinitionId: LIFECYCLE_IDS.task,
+        permissions: {
+          create: ['*'],
+          read: ['*'],
+          update: ['*'],
+          delete: ['Administrator'],
+        },
+      },
+    },
+    {
+      itemType: 'TestPlan',
+      config: {
+        lifecycleDefinitionId: LIFECYCLE_IDS.testPlan,
+        permissions: {
+          create: ['Power User', 'Administrator'],
+          read: ['*'],
+          update: ['Power User', 'Administrator'],
+          delete: ['Administrator'],
+        },
+      },
+    },
+    {
+      itemType: 'TestCase',
+      config: {
+        lifecycleDefinitionId: LIFECYCLE_IDS.testCase,
+        permissions: {
+          create: ['Power User', 'Administrator'],
+          read: ['*'],
+          update: ['Power User', 'Administrator'],
+          delete: ['Administrator'],
+        },
+      },
+    },
+    {
+      itemType: 'WorkInstruction',
+      config: {
+        lifecycleDefinitionId: LIFECYCLE_IDS.workInstruction,
+        permissions: {
+          create: ['Power User', 'Administrator'],
+          read: ['*'],
+          update: ['Power User', 'Administrator'],
+          delete: ['Administrator'],
+        },
+      },
+    },
+    {
+      // Software shares the Part lifecycle: driven, ECO-controlled release
+      itemType: 'Software',
+      config: {
+        lifecycleDefinitionId: LIFECYCLE_IDS.part,
+        permissions: {
+          create: ['Power User', 'Administrator'],
+          read: ['*'],
+          update: ['Power User', 'Administrator'],
           delete: ['Administrator'],
         },
       },

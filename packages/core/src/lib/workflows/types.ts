@@ -100,11 +100,18 @@ export interface WorkflowDefinition {
 }
 
 /**
- * What completing a Driving workflow in this final state means.
- * 'release' merges ECO branches to main and assigns revisions;
- * 'cancel' archives branches without merging.
+ * What finishing in this final state means.
+ *
+ * Driving workflows: 'release' merges ECO branches to main and assigns
+ * revisions; 'cancel' archives branches without merging. Required on every
+ * Driving final state.
+ *
+ * Free lifecycles: 'complete' marks successful completion (work orders gate
+ * their traveler on transitions into such a state and stamp completedAt);
+ * 'cancel' marks abandonment. Optional — a Free final that declares neither
+ * simply ends the flow with no completion semantics attached.
  */
-export type FinalKind = 'release' | 'cancel'
+export type FinalKind = 'release' | 'cancel' | 'complete'
 
 /**
  * State in a workflow/lifecycle

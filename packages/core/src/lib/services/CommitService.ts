@@ -169,19 +169,6 @@ export class CommitService {
   ) {
     const validated = commitCreateSchema.parse(data)
 
-    // Get the branch
-    const branch = await BranchService.getById(validated.branchId)
-    if (!branch) {
-      throw new NotFoundError('Branch', validated.branchId, {
-        operation: 'createCommit',
-      })
-    }
-
-    // Check if branch is locked
-    if (branch.isLocked) {
-      throw new ValidationError('Cannot commit to a locked branch')
-    }
-
     // Calculate stats
     const stats = validated.itemChanges.reduce(
       (acc, change) => {
@@ -197,6 +184,24 @@ export class CommitService {
     // Otherwise, create a new transaction.
     const run = outerTx ?? db
     return run.transaction(async (tx) => {
+      // Get the branch inside the transaction. Two things depend on this read
+      // seeing the transaction's own state: a branch created by the caller's
+      // still-uncommitted transaction (a pool read would NotFound it), and
+      // `headCommitId` when this is the second commit the caller has put on
+      // one branch — a pool read would return the pre-transaction head, mis-
+      // parenting the commit and clobbering the head update.
+      const branch = await BranchService.getById(validated.branchId, tx)
+      if (!branch) {
+        throw new NotFoundError('Branch', validated.branchId, {
+          operation: 'createCommit',
+        })
+      }
+
+      // Check if branch is locked
+      if (branch.isLocked) {
+        throw new ValidationError('Cannot commit to a locked branch')
+      }
+
       // 1. Create the commit
       const commitRows = await tx
         .insert(commits)

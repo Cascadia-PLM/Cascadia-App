@@ -9,7 +9,12 @@ import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { apiHandler, jsonResponse } from '@/lib/api/handler'
-import { PermissionDeniedError, ValidationError } from '@/lib/errors'
+import {
+  AlreadyExistsError,
+  AppError,
+  PermissionDeniedError,
+  ValidationError,
+} from '@/lib/errors'
 import {
   DOCUMENT_FIELDS,
   ISSUE_FIELDS,
@@ -22,6 +27,20 @@ import {
 import { requireBranchAccess, requireDesignAccess } from '@/lib/auth/access'
 import { requireRole } from '@/lib/auth/server'
 import '@/lib/items/registerItemTypes.server'
+
+/**
+ * The message a failed row or relationship may carry back to the caller.
+ *
+ * These handlers passed `error.message` through verbatim, which for anything
+ * the service layer did not classify is the driver's exception — the full
+ * INSERT with its column list and every bound parameter, once per failed row,
+ * inside a 207 that a human is meant to read. An AppError's message is ours
+ * and is written to be read; anything else gets the generic fallback and stays
+ * in the log, where the query text belongs.
+ */
+function importErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof AppError ? error.message : fallback
+}
 
 const adapt = tagged('Import')
 
@@ -116,7 +135,6 @@ app.post(
               designId,
               name: row.name,
               revision: row.revision || '-',
-              state: 'Draft',
               itemNumber: row.itemNumber,
               description: row.description,
               docType: row.docType,
@@ -158,11 +176,7 @@ app.post(
             result.errorCount++
             result.failedRows.push({
               rowNumber,
-              errors: [
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to create document',
-              ],
+              errors: [importErrorMessage(error, 'Failed to create document')],
             })
           }
         }
@@ -282,11 +296,7 @@ app.post(
             result.errorCount++
             result.failedRows.push({
               rowNumber,
-              errors: [
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to create issue',
-              ],
+              errors: [importErrorMessage(error, 'Failed to create issue')],
             })
           }
         }
@@ -385,7 +395,6 @@ app.post(
               designId,
               name: row.name,
               revision: row.revision || '-',
-              state: 'Draft',
               itemNumber: row.itemNumber,
               description: row.description,
               partType: row.partType,
@@ -428,11 +437,7 @@ app.post(
             result.errorCount++
             result.failedRows.push({
               rowNumber,
-              errors: [
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to create part',
-              ],
+              errors: [importErrorMessage(error, 'Failed to create part')],
             })
           }
         }
@@ -479,8 +484,29 @@ app.post(
             }
           }
 
+          // A parent lists a child once: `item_relationships` is unique on
+          // (source, target, type), so a file naming the same child on two
+          // lines has one edge to give. Caught here rather than at the insert,
+          // where the collision is reported in item ids the caller never saw
+          // and the second line's quantity is simply lost.
+          const seenEdges = new Set<string>()
+
           // Process each relationship
           for (const rel of bomRelationships) {
+            const edgeKey = `${rel.parentItemNumber.toLowerCase()}\u0000${rel.childItemNumber.toLowerCase()}`
+            if (seenEdges.has(edgeKey)) {
+              result.relationshipsFailed++
+              result.failedRelationships.push({
+                parentItemNumber: rel.parentItemNumber,
+                childItemNumber: rel.childItemNumber,
+                error:
+                  `${rel.parentItemNumber} already lists ${rel.childItemNumber} ` +
+                  'on an earlier line; combine the lines and sum their quantities',
+              })
+              continue
+            }
+            seenEdges.add(edgeKey)
+
             const parentId = itemNumberToId.get(
               rel.parentItemNumber.toLowerCase(),
             )
@@ -529,10 +555,15 @@ app.post(
               result.failedRelationships.push({
                 parentItemNumber: rel.parentItemNumber,
                 childItemNumber: rel.childItemNumber,
+                // The service names the edge by item id, which is meaningless
+                // to someone looking at the spreadsheet they uploaded.
                 error:
-                  error instanceof Error
-                    ? error.message
-                    : 'Failed to create relationship',
+                  error instanceof AlreadyExistsError
+                    ? `${rel.parentItemNumber} already lists ${rel.childItemNumber}`
+                    : importErrorMessage(
+                        error,
+                        'Failed to create relationship',
+                      ),
               })
             }
           }

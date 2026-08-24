@@ -109,10 +109,9 @@ const createEmptyChangeOrder = (): ChangeOrder => ({
   masterId: undefined,
   itemType: 'ChangeOrder',
   itemNumber: '',
-  revision: 'A',
   name: '',
   description: '',
-  state: 'Draft',
+  state: '',
   isCurrent: true,
   changeType: 'ECO',
   priority: 'medium',
@@ -880,7 +879,7 @@ export function ChangeOrderDetail({
             {currentChangeOrder.id && (
               <EcoAffectedItemsPanel
                 changeOrderId={currentChangeOrder.id}
-                changeOrderState={currentChangeOrder.state ?? 'Draft'}
+                changeOrderState={currentChangeOrder.state ?? ''}
                 readOnly={isHistoricalView}
               />
             )}

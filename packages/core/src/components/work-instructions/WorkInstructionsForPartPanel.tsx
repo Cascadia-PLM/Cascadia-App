@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
+import { StateBadge } from '@/components/items/StateBadge'
 
 interface WorkInstructionForPart {
   attachmentId: string
@@ -31,17 +32,6 @@ interface WorkInstructionForPart {
 interface WorkInstructionsForPartPanelProps {
   partId: string
   onError?: (error: Error) => void
-}
-
-const stateColors: Record<
-  string,
-  'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-> = {
-  Draft: 'secondary',
-  InReview: 'warning',
-  Approved: 'default',
-  Released: 'success',
-  Obsolete: 'destructive',
 }
 
 const difficultyColors: Record<
@@ -135,9 +125,7 @@ export function WorkInstructionsForPartPanel({
                     <Badge variant="secondary" className="text-xs">
                       Rev {wi.revision}
                     </Badge>
-                    <Badge variant={stateColors[wi.state] || 'default'}>
-                      {wi.state === 'InReview' ? 'In Review' : wi.state}
-                    </Badge>
+                    <StateBadge itemType="WorkInstruction" state={wi.state} />
                     {wi.difficulty && (
                       <Badge
                         variant={difficultyColors[wi.difficulty] || 'default'}

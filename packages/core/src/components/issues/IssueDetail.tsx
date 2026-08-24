@@ -13,7 +13,6 @@ import { StateBadge } from '@/components/items/StateBadge'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { DesignMultiSelector } from '@/components/versioning/DesignMultiSelector'
 import { useVersionContext } from '@/lib/hooks/useVersionContext'
-import { apiFetch } from '@/lib/api/client'
 import { itemAtContextQuery } from '@/lib/query/options/items'
 import {
   Badge,
@@ -35,6 +34,7 @@ import {
   ViewEditTextarea,
 } from '@/components/ui'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
+import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
 
 const SEVERITY_OPTIONS = [
   { value: 'Critical', label: 'Critical' },
@@ -106,7 +106,6 @@ const createEmptyIssue = (): Issue => ({
   masterId: undefined,
   itemType: 'Issue',
   itemNumber: '',
-  revision: 'A',
   name: '',
   description: '',
   state: 'Open',
@@ -143,90 +142,6 @@ interface IssueDetailProps {
   isSubmitting?: boolean
   activeTab?: 'details' | 'history'
   onTabChange?: (tab: string) => void
-}
-
-interface IssueTransitionOption {
-  id: string
-  name: string
-  toStateId: string
-  toStateName: string
-}
-
-/**
- * Free-lifecycle transition control: lists the transitions valid from the
- * issue's current state and executes them through the transition endpoint —
- * the only sanctioned write path for issue state (the edit form cannot
- * change it).
- */
-function IssueTransitionControl({
-  issueId,
-  state,
-  onTransitioned,
-}: {
-  issueId: string
-  state?: string
-  onTransitioned?: () => void
-}) {
-  const [transitions, setTransitions] = useState<Array<IssueTransitionOption>>(
-    [],
-  )
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    apiFetch<{ data: { transitions: Array<IssueTransitionOption> } }>(
-      `/api/v1/items/${issueId}/transitions`,
-    )
-      .then((res) => {
-        if (!cancelled) setTransitions(res.data.transitions)
-      })
-      .catch(() => {
-        // Non-fatal: without the list the control simply doesn't render
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [issueId, state])
-
-  const runTransition = async (transition: IssueTransitionOption) => {
-    setBusy(true)
-    setError(null)
-    try {
-      await apiFetch(`/api/v1/items/${issueId}/transition`, {
-        method: 'POST',
-        body: JSON.stringify({ toState: transition.toStateId }),
-      })
-      onTransitioned?.()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Transition failed')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  if (transitions.length === 0) return null
-
-  return (
-    <div className="flex gap-1.5 flex-wrap items-center">
-      {transitions.map((t) => (
-        <Button
-          key={t.id}
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={busy}
-          onClick={() => runTransition(t)}
-          title={`Transition to ${t.toStateName}`}
-        >
-          {t.name}
-        </Button>
-      ))}
-      {error && (
-        <span className="text-xs text-red-600 dark:text-red-400">{error}</span>
-      )}
-    </div>
-  )
 }
 
 export function IssueDetail({
@@ -421,8 +336,8 @@ export function IssueDetail({
             className="text-sm"
           />
           {currentIssue.id && (
-            <IssueTransitionControl
-              issueId={currentIssue.id}
+            <FreeTransitionControl
+              itemId={currentIssue.id}
               state={currentIssue.state}
               onTransitioned={onTransitioned}
             />

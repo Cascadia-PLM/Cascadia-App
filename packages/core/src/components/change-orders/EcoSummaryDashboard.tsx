@@ -23,6 +23,7 @@ import {
   CardTitle,
 } from '@/components/ui'
 import { changeOrderSummaryQuery, useInvalidateResources } from '@/lib/query'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface EcoSummaryDashboardProps {
   changeOrderId: string
@@ -43,10 +44,13 @@ export function EcoSummaryDashboard({
     await invalidate('change-orders')
   }
 
-  // Check if ECO is in an editable state
+  // Editable while the change order's flow has not ended (non-final state
+  // of its Driving workflow)
+  const { data: coLifecycle } = useLifecyclePhases('ChangeOrder')
+  const coState = summary?.changeOrder.state
   const isEditable =
-    summary?.changeOrder.state === 'Draft' ||
-    summary?.changeOrder.state === 'InReview'
+    Boolean(coState) &&
+    !(coLifecycle?.states.find((st) => st.id === coState)?.isFinal ?? false)
 
   if (isLoading) {
     return (

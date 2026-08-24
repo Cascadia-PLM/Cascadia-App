@@ -29,14 +29,14 @@ import {
   itemCountsQuery,
   itemGridQuery,
   itemListQuery,
+  lifecycleByItemTypeQuery,
   useInvalidateResources,
 } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
+import { LifecycleStateCards } from '@/components/items/LifecycleStateCards'
 
 // The states behind the stat cards, counted in one request rather than one
 // probe request each.
-const COUNT_STATES = ['Open', 'InProgress', 'Resolved', 'Closed']
-
 // Search schema for URL validation
 const issuesSearchSchema = z.object({
   search: z.coerce.string().optional(),
@@ -81,7 +81,17 @@ export const Route = createFileRoute('/issues/')({
       queryClient.ensureQueryData(
         itemListQuery<Issue>(filters, gridParamsFromSearch(deps)),
       ),
-      queryClient.ensureQueryData(itemCountsQuery(filters, COUNT_STATES)),
+      (async () => {
+        const lifecycle = await queryClient.ensureQueryData(
+          lifecycleByItemTypeQuery('Issue'),
+        )
+        await queryClient.ensureQueryData(
+          itemCountsQuery(
+            filters,
+            lifecycle.states.map((state) => state.id),
+          ),
+        )
+      })(),
       queryClient.ensureQueryData(designListQuery()),
     ])
   },
@@ -97,7 +107,6 @@ function IssuesListPage() {
   const filters = issueFilters(searchParams)
 
   const { data: designs = [] } = useQuery(designListQuery())
-  const { data: counts } = useQuery(itemCountsQuery(filters, COUNT_STATES))
 
   const {
     items: issues,
@@ -203,41 +212,13 @@ function IssuesListPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Issues</CardDescription>
-            <CardTitle className="text-3xl">{total}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Open</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Open ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>In Progress</CardDescription>
-            <CardTitle className="text-3xl">
-              {counts?.InProgress ?? 0}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Resolved</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Resolved ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Closed</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Closed ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {/* Stats — one card per lifecycle state, from configuration */}
+      <LifecycleStateCards
+        itemType="Issue"
+        filters={filters}
+        total={total}
+        totalLabel="Total Issues"
+      />
 
       {/* Issues Table */}
       <Card>

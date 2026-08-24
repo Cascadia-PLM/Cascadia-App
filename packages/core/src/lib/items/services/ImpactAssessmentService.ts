@@ -249,10 +249,15 @@ export class ImpactAssessmentService {
       }
     })
 
-    // Set recommendation for released parents
+    // Recommend the change action the item's lifecycle actually offers -
+    // 'revise' for released lineage, nothing for anything else
     const allWhereUsed = Array.from(whereUsedDedup.values())
     for (const node of allWhereUsed) {
-      node.recommendation = node.state === 'Released' ? 'revise' : null
+      const action = await ChangeOrderService.inferChangeAction(
+        node.itemType,
+        node.state,
+      )
+      node.recommendation = action === 'revise' ? 'revise' : null
     }
 
     // Flatten documents
@@ -401,6 +406,16 @@ export class ImpactAssessmentService {
   /**
    * Find where an item is used (recursive where-used query)
    * Includes design context for cross-design impact analysis
+   *
+   * BOM lines name one item *version*, and a merge re-points only the lines
+   * owned by the items the change order touched. Matching a line's target by
+   * its raw id therefore reported nothing for a freshly released revision:
+   * every parent still named the row that revision superseded. Lines are
+   * matched by the target's `masterId` instead, so a usage survives the
+   * revision that answers it — which is what "where is this item used" means.
+   *
+   * `path` carries masterIds for the same reason: cycle detection has to
+   * recognise an assembly it already walked even across a revision boundary.
    */
   static async findWhereUsed(
     itemId: string,
@@ -414,7 +429,8 @@ export class ImpactAssessmentService {
         ${resolved}
       ),
       where_used AS (
-        -- Base case: direct parents
+        -- Base case: direct parents — any line pointing at any version of
+        -- the item asked about.
         SELECT
           r.source_id as item_id,
           i.master_id,
@@ -425,13 +441,14 @@ export class ImpactAssessmentService {
           i.state,
           i.design_id,
           1 as depth,
-          ARRAY[r.target_id, r.source_id] as path,
+          ARRAY[t.master_id, i.master_id] as path,
           r.quantity,
           r.find_number,
           r.reference_designator
-        FROM item_relationships r
+        FROM items t
+        JOIN item_relationships r ON r.target_id = t.id
         JOIN resolved_items i ON i.id = r.source_id
-        WHERE r.target_id = ${itemId}
+        WHERE t.master_id = (SELECT master_id FROM items WHERE id = ${itemId})
           AND r.relationship_type = 'BOM'
 
         UNION ALL
@@ -447,16 +464,17 @@ export class ImpactAssessmentService {
           i.state,
           i.design_id,
           wu.depth + 1,
-          wu.path || r.source_id,
+          wu.path || i.master_id,
           r.quantity,
           r.find_number,
           r.reference_designator
-        FROM item_relationships r
+        FROM where_used wu
+        JOIN items t ON t.master_id = wu.master_id
+        JOIN item_relationships r ON r.target_id = t.id
         JOIN resolved_items i ON i.id = r.source_id
-        JOIN where_used wu ON wu.item_id = r.target_id
         WHERE wu.depth < ${maxDepth}
           AND r.relationship_type = 'BOM'
-          AND NOT r.source_id = ANY(wu.path)  -- Prevent circular references
+          AND NOT i.master_id = ANY(wu.path)  -- Prevent circular references
       )
       SELECT
         wu.*,
@@ -490,6 +508,13 @@ export class ImpactAssessmentService {
    * Find ancestor chain for an item within a specific design
    * Returns the path from the item to the root(s), ordered by depth (closest parent first)
    * Unlike findWhereUsed which finds ALL usages, this returns ancestors within the same design only
+   *
+   * Lines are matched by the target's `masterId`, for the reason given on
+   * `findWhereUsed`. It matters more here than anywhere: this drives the
+   * prompt asking which parent assemblies to bring into a change order, so a
+   * released revision whose parents still named the row it superseded
+   * reported no parents at all — and the assemblies were silently left
+   * behind pointing at the old revision.
    */
   static async findAncestorChain(
     itemId: string,
@@ -507,6 +532,7 @@ export class ImpactAssessmentService {
         -- Base case: direct parents within the same design
         SELECT
           r.source_id as item_id,
+          i.master_id,
           i.item_number,
           i.revision,
           i.name,
@@ -514,10 +540,11 @@ export class ImpactAssessmentService {
           i.state,
           i.design_id,
           1 as depth,
-          ARRAY[r.target_id, r.source_id] as path
-        FROM item_relationships r
+          ARRAY[t.master_id, i.master_id] as path
+        FROM items t
+        JOIN item_relationships r ON r.target_id = t.id
         JOIN resolved_items i ON i.id = r.source_id
-        WHERE r.target_id = ${itemId}
+        WHERE t.master_id = (SELECT master_id FROM items WHERE id = ${itemId})
           AND r.relationship_type = 'BOM'
           AND i.design_id = ${designId}
 
@@ -526,6 +553,7 @@ export class ImpactAssessmentService {
         -- Recursive case: parents of parents, still within design
         SELECT
           r.source_id,
+          i.master_id,
           i.item_number,
           i.revision,
           i.name,
@@ -533,14 +561,15 @@ export class ImpactAssessmentService {
           i.state,
           i.design_id,
           a.depth + 1,
-          a.path || r.source_id
-        FROM item_relationships r
+          a.path || i.master_id
+        FROM ancestors a
+        JOIN items t ON t.master_id = a.master_id
+        JOIN item_relationships r ON r.target_id = t.id
         JOIN resolved_items i ON i.id = r.source_id
-        JOIN ancestors a ON a.item_id = r.target_id
         WHERE a.depth < ${maxDepth}
           AND r.relationship_type = 'BOM'
           AND i.design_id = ${designId}
-          AND NOT r.source_id = ANY(a.path)  -- Prevent circular references
+          AND NOT i.master_id = ANY(a.path)  -- Prevent circular references
       )
       SELECT DISTINCT ON (item_id) * FROM ancestors
       ORDER BY item_id, depth

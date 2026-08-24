@@ -193,7 +193,6 @@ async function listItemTypes(): Promise<Record<string, unknown>> {
     label: t.label,
     pluralLabel: t.pluralLabel,
     table: t.table,
-    defaultState: t.defaultState,
     lifecycleDefinitionId: t.lifecycleDefinitionId ?? null,
     relationshipCount: t.relationships.length,
   }))

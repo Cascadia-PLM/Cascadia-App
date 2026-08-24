@@ -6,6 +6,7 @@ import { Handle, Position } from '@xyflow/react'
 import { Link } from '@tanstack/react-router'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
+import { useLifecycleState } from '@/components/items/StateBadge'
 
 interface EcoGraphItemNodeProps {
   data: {
@@ -51,26 +52,10 @@ export const EcoGraphItemNode = memo(({ data }: EcoGraphItemNodeProps) => {
     branchId,
   } = data
 
+  const stateStyle = useLifecycleState(itemType, state)
+
   // Determine if this node should be greyed out (not in ECO)
   const isGreyedOut = !isEco && !isInEco
-
-  const stateColors: Record<string, string> = {
-    Draft: 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300',
-    InReview:
-      'bg-blue-200 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300',
-    Approved:
-      'bg-green-200 dark:bg-green-900/50 text-green-700 dark:text-green-300',
-    Released:
-      'bg-green-300 dark:bg-green-900/50 text-green-800 dark:text-green-200',
-    Obsolete: 'bg-red-200 dark:bg-red-900/50 text-red-700 dark:text-red-300',
-    Concept:
-      'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300',
-    Planning:
-      'bg-blue-200 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300',
-    Closed:
-      'bg-green-200 dark:bg-green-900/50 text-green-700 dark:text-green-300',
-    Cancelled: 'bg-red-200 dark:bg-red-900/50 text-red-700 dark:text-red-300',
-  }
 
   const typeColors: Record<string, string> = {
     Part: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
@@ -226,9 +211,9 @@ export const EcoGraphItemNode = memo(({ data }: EcoGraphItemNodeProps) => {
         </span>
         {!isGreyedOut && (
           <span
-            className={`text-[10px] px-1.5 py-0.5 rounded ${stateColors[state] || 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+            className={`text-[10px] px-1.5 py-0.5 rounded ${stateStyle.className}`}
           >
-            {state}
+            {stateStyle.label}
           </span>
         )}
       </div>

@@ -151,12 +151,12 @@ export function ToolsStep({ onCompleted }: ToolsStepProps) {
                   <span className="text-sm text-slate-500 dark:text-slate-400 truncate">
                     {makeAndModel(tool)}
                   </span>
-                  {tool.toolStatus && (
+                  {tool.state && (
                     <Badge
-                      variant={STATUS_VARIANTS[tool.toolStatus] ?? 'default'}
+                      variant={STATUS_VARIANTS[tool.state] ?? 'default'}
                       className="ml-auto shrink-0"
                     >
-                      {tool.toolStatus.replace('_', ' ')}
+                      {tool.state}
                     </Badge>
                   )}
                 </div>

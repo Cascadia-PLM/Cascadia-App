@@ -9,6 +9,7 @@ import { useServerDataGrid } from '@/lib/hooks/useServerDataGrid'
 import { designItemsGridQuery } from '@/lib/query'
 import { Badge } from '@/components/ui'
 import { DataGrid } from '@/components/ui/DataGrid'
+import { StateBadge } from '@/components/items/StateBadge'
 
 interface LibraryItemsTabProps {
   designId: string
@@ -26,21 +27,6 @@ const getItemRoute = (itemType: string, itemId: string) => {
       return `/requirements/${itemId}` as const
     default:
       return `/parts/${itemId}` as const
-  }
-}
-
-const getStateBadgeVariant = (state: string) => {
-  switch (state) {
-    case 'Released':
-      return 'success' as const
-    case 'Draft':
-      return 'secondary' as const
-    case 'InReview':
-      return 'warning' as const
-    case 'Obsolete':
-      return 'outline' as const
-    default:
-      return 'default' as const
   }
 }
 
@@ -113,20 +99,16 @@ const columns: Array<DataGridColumn<DesignItem>> = [
     header: 'State',
     accessorKey: 'state',
     enableFiltering: true,
-    filterType: 'multiSelect',
-    filterOptions: [
-      { label: 'Draft', value: 'Draft' },
-      { label: 'InReview', value: 'InReview' },
-      { label: 'Released', value: 'Released' },
-      { label: 'Obsolete', value: 'Obsolete' },
-    ],
-    cell: ({ getValue }) => (
-      <Badge
-        variant={getStateBadgeVariant(getValue() as string)}
+    // Library items span item types, each with its own lifecycle — a free
+    // text filter rather than one type's state list
+    filterType: 'text',
+    filterPlaceholder: 'Filter state...',
+    cell: ({ row, getValue }) => (
+      <StateBadge
+        itemType={row.original.itemType}
+        state={getValue() as string}
         className="text-xs"
-      >
-        {getValue() as string}
-      </Badge>
+      />
     ),
   },
   {

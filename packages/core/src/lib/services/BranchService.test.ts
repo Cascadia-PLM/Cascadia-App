@@ -607,6 +607,29 @@ describe('BranchService', () => {
 
         expect(isProtected).toBe(true)
       })
+
+      // Protection keys on the whole released FAMILY. A design whose released
+      // items were all later obsoleted has no current row in a release-target
+      // state — but its history is exactly what protection exists to guard,
+      // and editing those Obsolete rows in place would rewrite it.
+      it('stays protected when every released item has been obsoleted', async () => {
+        await ItemService.create(
+          'Part',
+          {
+            itemNumber: `PN-OBS-${Date.now()}`,
+            revision: 'A',
+            name: 'Obsoleted Part',
+            state: 'Obsolete',
+            designId,
+          } as any,
+          user.id,
+          { bypassBranchProtection: true },
+        )
+
+        const isProtected = await BranchService.isMainBranchProtected(designId)
+
+        expect(isProtected).toBe(true)
+      })
     })
 
     describe('getBranchStatus', () => {

@@ -21,9 +21,11 @@ import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import {
   itemCountsQuery,
   itemListQuery,
+  lifecycleByItemTypeQuery,
   useInvalidateResources,
 } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
+import { LifecycleStateCards } from '@/components/items/LifecycleStateCards'
 
 const WORK_INSTRUCTION_FILTERS: ItemFilters = { itemType: 'WorkInstruction' }
 
@@ -33,8 +35,6 @@ const WORK_INSTRUCTION_GRID: GridParams = { page: 1, pageSize: 50 }
 
 // The states behind the stat cards, counted in one request rather than one
 // probe request each.
-const COUNT_STATES = ['Draft', 'InReview', 'Released']
-
 export const Route = createFileRoute('/work-instructions/')({
   component: WorkInstructionsListPage,
   loader: async ({ context: { queryClient } }) => {
@@ -45,9 +45,17 @@ export const Route = createFileRoute('/work-instructions/')({
           WORK_INSTRUCTION_GRID,
         ),
       ),
-      queryClient.ensureQueryData(
-        itemCountsQuery(WORK_INSTRUCTION_FILTERS, COUNT_STATES),
-      ),
+      (async () => {
+        const lifecycle = await queryClient.ensureQueryData(
+          lifecycleByItemTypeQuery('WorkInstruction'),
+        )
+        await queryClient.ensureQueryData(
+          itemCountsQuery(
+            WORK_INSTRUCTION_FILTERS,
+            lifecycle.states.map((state) => state.id),
+          ),
+        )
+      })(),
     ])
   },
 })
@@ -63,9 +71,6 @@ function WorkInstructionsListPage() {
       WORK_INSTRUCTION_FILTERS,
       WORK_INSTRUCTION_GRID,
     ),
-  )
-  const { data: counts } = useQuery(
-    itemCountsQuery(WORK_INSTRUCTION_FILTERS, COUNT_STATES),
   )
 
   const workInstructions = page?.items ?? []
@@ -141,33 +146,13 @@ function WorkInstructionsListPage() {
         </Link>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total</CardDescription>
-            <CardTitle className="text-3xl">{total}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Draft</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Draft ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>In Review</CardDescription>
-            <CardTitle className="text-3xl">{counts?.InReview ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Released</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Released ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {/* Stats — one card per lifecycle state, from configuration */}
+      <LifecycleStateCards
+        itemType="WorkInstruction"
+        filters={WORK_INSTRUCTION_FILTERS}
+        total={total}
+        totalLabel="Total"
+      />
 
       {/* Work Instructions Table */}
       <Card>

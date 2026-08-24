@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm'
-import { db } from '../../db'
+import { db, withTx } from '../../db'
 import {
   branchItems,
   branches,
@@ -39,7 +39,7 @@ import type {
   Risk,
 } from '../types/change-order'
 import type { BaseItem } from '../types/base'
-import type { TransitionResult } from '../../workflows/types'
+import type { FinalKind, TransitionResult } from '../../workflows/types'
 
 // Lazy-cached dynamic imports to avoid circular dependencies
 // (same pattern as src/lib/items/registry.ts)
@@ -196,8 +196,9 @@ export class ChangeOrderService {
   private static async findExistingAffectedItem(
     changeOrderId: string,
     itemMasterId: string,
+    tx?: TransactionClient,
   ): Promise<AffectedItem | null> {
-    const existing = await db
+    const existing = await (tx ?? db)
       .select()
       .from(changeOrderAffectedItems)
       .where(
@@ -223,6 +224,7 @@ export class ChangeOrderService {
     changeOrderId: string,
     item: AffectedItemInput,
     userId: string,
+    outerTx?: TransactionClient,
   ): Promise<AffectedItem> {
     // Check if scope is locked (ECO has left initial state)
     const WorkflowService = await getWorkflowService()
@@ -234,154 +236,166 @@ export class ChangeOrderService {
       )
     }
 
-    let workingCopyId: string | null = null
-    let ecoDesign: typeof changeOrderDesigns.$inferSelect | null = null
-    let affectedItem: Awaited<ReturnType<typeof ItemService.findById>> = null
-    // Target state and revision are resolved from the item's lifecycle below,
-    // never taken from the caller. They used to be accepted from the request
-    // body, which is how a browser-side revision guess ('[' for an item at
-    // revision Z) reached the database and, on the revise-without-a-working-
-    // copy release path, became the released revision.
-    let targetState: string | null = null
-    let targetRevision: string | null = null
+    // Everything from here writes (design association, ECO branch, working
+    // copy, the affected-item row itself) — one transaction, so a failure
+    // part-way leaves nothing behind. Reads of pre-existing state
+    // (ItemService.findById, lifecycle config) stay on the pool; reads that
+    // must see this transaction's own writes take `tx`.
+    return withTx(outerTx, async (tx) => {
+      let workingCopyId: string | null = null
+      let ecoDesign: typeof changeOrderDesigns.$inferSelect | null = null
+      let affectedItem: Awaited<ReturnType<typeof ItemService.findById>> = null
+      // Target state and revision are resolved from the item's lifecycle below,
+      // never taken from the caller. They used to be accepted from the request
+      // body, which is how a browser-side revision guess ('[' for an item at
+      // revision Z) reached the database and, on the revise-without-a-working-
+      // copy release path, became the released revision.
+      let targetState: string | null = null
+      let targetRevision: string | null = null
 
-    // If we have an affectedItemId, check if the item belongs to a design
-    // and auto-create the changeOrderDesigns record
-    if (item.affectedItemId) {
-      affectedItem = await ItemService.findById(item.affectedItemId)
+      // If we have an affectedItemId, check if the item belongs to a design
+      // and auto-create the changeOrderDesigns record
+      if (item.affectedItemId) {
+        affectedItem = await ItemService.findById(item.affectedItemId)
 
-      if (affectedItem?.masterId) {
-        const duplicate = await this.findExistingAffectedItem(
-          changeOrderId,
-          affectedItem.masterId,
-        )
-        if (duplicate) {
-          throw new ValidationError(
-            `${affectedItem.itemNumber} is already an affected item of this change order. Remove it first to change its action.`,
-          )
-        }
-      }
-
-      // Validate that the change action is valid for this item's current
-      // state, and that this ECO's Driving lifecycle is an authorized driver
-      // of the item's lifecycle (WI-4.4)
-      if (affectedItem) {
-        const validation = await LifecycleService.canApplyAction(
-          affectedItem.itemType,
-          affectedItem.state || 'Draft',
-          item.changeAction,
-          {
-            drivingLifecycleId:
-              workflowInstance?.workflowDefinitionId ?? undefined,
-          },
-        )
-        if (!validation.valid) {
-          throw new ValidationError(
-            `Cannot apply "${item.changeAction}" action to ${affectedItem.itemNumber}: ${validation.error}`,
-          )
-        }
-      }
-
-      if (affectedItem?.designId) {
-        ecoDesign = await this.ensureDesignAssociation(
-          changeOrderId,
-          affectedItem.designId,
-          userId,
-        )
-        // Auto-associate all other designs containing usage copies of this
-        // part — but NOT for a `release`. Releasing a definition must not pull
-        // designs that merely hold usage copies of it into the release ECO:
-        // they would be associated (an ECO branch created on each) and the
-        // ECO's baseline stamped onto them, even though they have no affected
-        // items in this ECO. Revise/obsolete/promote still propagate.
-        if (affectedItem.id && item.changeAction !== 'release') {
-          await this.associateRelatedDesigns(
+        if (affectedItem?.masterId) {
+          const duplicate = await this.findExistingAffectedItem(
             changeOrderId,
-            {
-              id: affectedItem.id,
-              designId: affectedItem.designId ?? null,
-              usageOf: affectedItem.usageOf ?? null,
-            },
-            userId,
+            affectedItem.masterId,
+            tx,
           )
+          if (duplicate) {
+            throw new ValidationError(
+              `${affectedItem.itemNumber} is already an affected item of this change order. Remove it first to change its action.`,
+            )
+          }
+        }
+
+        // Validate that the change action is valid for this item's current
+        // state, and that this ECO's Driving lifecycle is an authorized driver
+        // of the item's lifecycle (WI-4.4)
+        if (affectedItem) {
+          const validation = await LifecycleService.canApplyAction(
+            affectedItem.itemType,
+            affectedItem.state,
+            item.changeAction,
+            {
+              drivingLifecycleId:
+                workflowInstance?.workflowDefinitionId ?? undefined,
+            },
+          )
+          if (!validation.valid) {
+            throw new ValidationError(
+              `Cannot apply "${item.changeAction}" action to ${affectedItem.itemNumber}: ${validation.error}`,
+            )
+          }
+        }
+
+        if (affectedItem?.designId) {
+          ecoDesign = await this.ensureDesignAssociation(
+            changeOrderId,
+            affectedItem.designId,
+            userId,
+            tx,
+          )
+          // Auto-associate all other designs containing usage copies of this
+          // part — but NOT for a `release`. Releasing a definition must not pull
+          // designs that merely hold usage copies of it into the release ECO:
+          // they would be associated (an ECO branch created on each) and the
+          // ECO's baseline stamped onto them, even though they have no affected
+          // items in this ECO. Revise/obsolete/promote still propagate.
+          if (affectedItem.id && item.changeAction !== 'release') {
+            await this.associateRelatedDesigns(
+              changeOrderId,
+              {
+                id: affectedItem.id,
+                designId: affectedItem.designId ?? null,
+                usageOf: affectedItem.usageOf ?? null,
+              },
+              userId,
+              tx,
+            )
+          }
         }
       }
-    }
 
-    // One resolver for every action's target state and revision, so the
-    // Affected Items list predicts what the merge will do rather than what a
-    // dialog guessed.
-    if (affectedItem) {
-      const target = await LifecycleService.resolveActionTarget(
-        affectedItem.itemType,
-        item.changeAction,
-        affectedItem.revision,
-      )
-      if (target) {
-        targetState = target.toState
-        targetRevision = target.assignsRevision ? target.revision : null
-      }
-    }
-
-    // For 'revise', create the working copy the engineer will edit. Gated on
-    // the lifecycle's own revise mapping rather than the literal 'Released',
-    // so a lifecycle whose released state is named differently still gets one
-    // (without it the change order silently fell through to the merge's
-    // legacy no-working-copy path).
-    if (
-      item.changeAction === 'revise' &&
-      affectedItem &&
-      ecoDesign?.branchId &&
-      !RevisionService.isWorkingRevision(affectedItem.revision)
-    ) {
-      // Check if working copy already exists on this branch (idempotency)
-      const existingWorkingCopy = await this.findExistingWorkingCopy(
-        affectedItem.masterId,
-        ecoDesign.branchId,
-      )
-
-      if (existingWorkingCopy) {
-        // Reuse existing working copy
-        workingCopyId = existingWorkingCopy.id
-      } else {
-        // Create new working copy
-        // Cast to items.$inferSelect since we know the item exists with required fields
-        const { workingCopy } = await this.createRevisionWorkingCopy(
-          affectedItem as typeof items.$inferSelect,
-          ecoDesign.branchId,
-          userId,
+      // One resolver for every action's target state and revision, so the
+      // Affected Items list predicts what the merge will do rather than what a
+      // dialog guessed.
+      if (affectedItem) {
+        const target = await LifecycleService.resolveActionTarget(
+          affectedItem.itemType,
+          item.changeAction,
+          affectedItem.revision,
         )
-        workingCopyId = workingCopy.id
+        if (target) {
+          targetState = target.toState
+          targetRevision = target.assignsRevision ? target.revision : null
+        }
       }
-    }
 
-    const affectedItemRecord = takeFirst(
-      await db
-        .insert(changeOrderAffectedItems)
-        .values({
-          changeOrderId,
-          affectedItemId: item.affectedItemId || null,
-          affectedItemMasterId:
-            item.affectedItemMasterId || (affectedItem?.masterId ?? null),
-          changeAction: item.changeAction,
-          // Snapshot the item's real state at add-time rather than trusting
-          // the caller's copy of it
-          currentState: affectedItem?.state ?? item.currentState ?? null,
-          currentRevision:
-            affectedItem?.revision ?? item.currentRevision ?? null,
-          targetState,
-          targetRevision,
-          replacementItemId: item.replacementItemId || null,
-          newItemData: item.newItemData || null,
-          newItemType: item.newItemType || null,
-          changeDescription: item.changeDescription || null,
-          workingCopyId,
-          createdBy: userId,
-        })
-        .returning(),
-    )
+      // For 'revise', create the working copy the engineer will edit. Gated on
+      // the lifecycle's own revise mapping rather than the literal 'Released',
+      // so a lifecycle whose released state is named differently still gets one
+      // (without it the change order silently fell through to the merge's
+      // legacy no-working-copy path).
+      if (
+        item.changeAction === 'revise' &&
+        affectedItem &&
+        ecoDesign?.branchId &&
+        !RevisionService.isWorkingRevision(affectedItem.revision)
+      ) {
+        // Check if working copy already exists on this branch (idempotency)
+        const existingWorkingCopy = await this.findExistingWorkingCopy(
+          affectedItem.masterId,
+          ecoDesign.branchId,
+          tx,
+        )
 
-    return affectedItemRecord as AffectedItem
+        if (existingWorkingCopy) {
+          // Reuse existing working copy
+          workingCopyId = existingWorkingCopy.id
+        } else {
+          // Create new working copy
+          // Cast to items.$inferSelect since we know the item exists with required fields
+          const { workingCopy } = await this.createRevisionWorkingCopy(
+            affectedItem as typeof items.$inferSelect,
+            ecoDesign.branchId,
+            userId,
+            tx,
+          )
+          workingCopyId = workingCopy.id
+        }
+      }
+
+      const affectedItemRecord = takeFirst(
+        await tx
+          .insert(changeOrderAffectedItems)
+          .values({
+            changeOrderId,
+            affectedItemId: item.affectedItemId || null,
+            affectedItemMasterId:
+              item.affectedItemMasterId || (affectedItem?.masterId ?? null),
+            changeAction: item.changeAction,
+            // Snapshot the item's real state at add-time rather than trusting
+            // the caller's copy of it
+            currentState: affectedItem?.state ?? item.currentState ?? null,
+            currentRevision:
+              affectedItem?.revision ?? item.currentRevision ?? null,
+            targetState,
+            targetRevision,
+            replacementItemId: item.replacementItemId || null,
+            newItemData: item.newItemData || null,
+            newItemType: item.newItemType || null,
+            changeDescription: item.changeDescription || null,
+            workingCopyId,
+            createdBy: userId,
+          })
+          .returning(),
+      )
+
+      return affectedItemRecord as AffectedItem
+    })
   }
 
   /**
@@ -391,49 +405,55 @@ export class ChangeOrderService {
    * alongside it and some are routinely already present — hence skip-and-return
    * rather than the error `addAffectedItem` raises for the same condition.
    *
-   * **Not atomic, and no longer pretending to be.** This used to open
-   * `db.transaction(async () => …)` and ignore the transaction handle it was
-   * given, so every call inside ran on the global `db` — a different pooled
-   * connection — and the transaction wrapped nothing but its own BEGIN and
-   * COMMIT. Under test it looked atomic, because the harness points `db` at the
-   * test's transaction, which is the worst version of the situation: the
-   * guarantee held everywhere except production. Making it real means threading
-   * a transaction through `BranchService.getOrCreateEcoBranch`,
-   * `CommitService.create` and `createRevisionWorkingCopy`, which is its own
-   * change; until then a failure part-way leaves the earlier items added.
+   * **Atomic.** One transaction wraps the whole batch, threaded through every
+   * write on the way down — `ensureDesignAssociation`,
+   * `BranchService.getOrCreateEcoBranch`, `CommitService.create`,
+   * `createRevisionWorkingCopy` — so a failure part-way leaves nothing added.
+   * (An earlier version opened `db.transaction` and ignored the handle, which
+   * wrapped nothing in production while looking atomic under test; the harness
+   * cannot tell those apart, so atomicity here is reviewed by reading the call
+   * chain — see `withTx`.) In-transaction reads matter as much as the writes:
+   * the duplicate check and the association/branch existence checks run on the
+   * transaction so later items see what earlier items created a moment ago.
    */
   static async addAffectedItemsBatch(
     changeOrderId: string,
     itemsToAdd: Array<AffectedItemInput>,
     userId: string,
+    outerTx?: TransactionClient,
   ): Promise<Array<AffectedItem>> {
-    const results: Array<AffectedItem> = []
+    return withTx(outerTx, async (tx) => {
+      const results: Array<AffectedItem> = []
 
-    for (const item of itemsToAdd) {
-      // Resolve the master the same way `addAffectedItem` does, so both agree
-      // on what "already present" means.
-      const itemMasterId =
-        item.affectedItemMasterId ??
-        (item.affectedItemId
-          ? ((await ItemService.findById(item.affectedItemId))?.masterId ??
-            null)
-          : null)
+      for (const item of itemsToAdd) {
+        // Resolve the master the same way `addAffectedItem` does, so both agree
+        // on what "already present" means.
+        const itemMasterId =
+          item.affectedItemMasterId ??
+          (item.affectedItemId
+            ? ((await ItemService.findById(item.affectedItemId))?.masterId ??
+              null)
+            : null)
 
-      if (itemMasterId) {
-        const existing = await this.findExistingAffectedItem(
-          changeOrderId,
-          itemMasterId,
-        )
-        if (existing) {
-          results.push(existing)
-          continue
+        if (itemMasterId) {
+          const existing = await this.findExistingAffectedItem(
+            changeOrderId,
+            itemMasterId,
+            tx,
+          )
+          if (existing) {
+            results.push(existing)
+            continue
+          }
         }
+
+        results.push(
+          await this.addAffectedItem(changeOrderId, item, userId, tx),
+        )
       }
 
-      results.push(await this.addAffectedItem(changeOrderId, item, userId))
-    }
-
-    return results
+      return results
+    })
   }
 
   /**
@@ -445,9 +465,12 @@ export class ChangeOrderService {
     changeOrderId: string,
     designId: string,
     userId: string,
+    tx?: TransactionClient,
   ): Promise<typeof changeOrderDesigns.$inferSelect> {
-    // Check if association already exists
-    const existing = await db
+    // Check if association already exists. On a caller's transaction the read
+    // must go through it, so an association inserted earlier in the same batch
+    // is seen rather than re-created.
+    const existing = await (tx ?? db)
       .select()
       .from(changeOrderDesigns)
       .where(
@@ -468,6 +491,7 @@ export class ChangeOrderService {
       designId,
       changeOrderId,
       userId,
+      tx,
     )
 
     // Create "ChangeOrder created" commit when design is first linked
@@ -482,13 +506,14 @@ export class ChangeOrderService {
             itemChanges: [], // No item changes, just branch/ECO registration
           },
           userId,
+          tx,
         )
       }
     }
 
     // Create the changeOrderDesigns record
     const ecoDesign = takeFirst(
-      await db
+      await (tx ?? db)
         .insert(changeOrderDesigns)
         .values({
           changeOrderId,
@@ -514,6 +539,7 @@ export class ChangeOrderService {
       usageOf: string | null
     },
     userId: string,
+    tx?: TransactionClient,
   ): Promise<void> {
     // Determine the definition item ID:
     // Usage copy (has usageOf) → definition is usageOf
@@ -521,7 +547,7 @@ export class ChangeOrderService {
     const definitionId = affectedItem.usageOf ?? affectedItem.id
 
     // Find all distinct designs containing items linked to this definition
-    const relatedDesigns = await db
+    const relatedDesigns = await (tx ?? db)
       .selectDistinct({ designId: items.designId })
       .from(items)
       .where(
@@ -538,7 +564,12 @@ export class ChangeOrderService {
 
     for (const row of relatedDesigns) {
       if (row.designId) {
-        await this.ensureDesignAssociation(changeOrderId, row.designId, userId)
+        await this.ensureDesignAssociation(
+          changeOrderId,
+          row.designId,
+          userId,
+          tx,
+        )
       }
     }
   }
@@ -555,11 +586,12 @@ export class ChangeOrderService {
     sourceItem: typeof items.$inferSelect,
     branchId: string,
     userId: string,
+    outerTx?: TransactionClient,
   ): Promise<{
     workingCopy: typeof items.$inferSelect
     branchItem: typeof branchItems.$inferSelect
   }> {
-    // Get initial state ID from lifecycle config, fallback to 'Draft'
+    // Initial state comes from the lifecycle (no fallback: every type has one)
     const initialState = await LifecycleService.getInitialStateId(
       sourceItem.itemType,
     )
@@ -569,11 +601,13 @@ export class ChangeOrderService {
     // Format: "-{first8CharsOfBranchId}" e.g., "-abc12345"
     const placeholderRevision = `-${branchId.substring(0, 8)}`
 
-    // Note: Not using db.transaction() for the whole operation because CommitService.create()
-    // has its own transaction, and nested transactions cause issues with test isolation.
-    // We use a transaction for item creation only.
-
-    const { workingCopy, branchItem } = await db.transaction(async (tx) => {
+    // One transaction for the whole operation: the working copy, its
+    // type-specific rows, relationships, files, branch tracking and commit
+    // either all exist or none do. CommitService.create accepts the
+    // transaction and nests as a savepoint, so the historical reason this was
+    // split into a transaction for item creation plus a free-standing commit
+    // no longer holds.
+    return withTx(outerTx, async (tx) => {
       // 1. Create the working copy with initial state and placeholder revision
       const workingCopyData = {
         masterId: sourceItem.masterId, // Same master - it's a new revision of the same logical item
@@ -666,32 +700,31 @@ export class ChangeOrderService {
           .returning(),
       )
 
+      // 5. Create commit for history tracking, in the same transaction
+      const commit = await CommitService.create(
+        {
+          branchId,
+          message: `Started revision of ${sourceItem.itemType} ${sourceItem.itemNumber} (from ${sourceItem.revision})`,
+          itemChanges: [
+            {
+              itemId: wc.id,
+              changeType: 'modified',
+              previousItemId: sourceItem.id,
+            },
+          ],
+        },
+        userId,
+        tx,
+      )
+
+      // 6. Update item with commitId
+      await tx
+        .update(items)
+        .set({ commitId: commit.id })
+        .where(eq(items.id, wc.id))
+
       return { workingCopy: wc, branchItem: bi }
     })
-
-    // 4. Create commit for history tracking (has its own transaction)
-    const commit = await CommitService.create(
-      {
-        branchId,
-        message: `Started revision of ${sourceItem.itemType} ${sourceItem.itemNumber} (from ${sourceItem.revision})`,
-        itemChanges: [
-          {
-            itemId: workingCopy.id,
-            changeType: 'modified',
-            previousItemId: sourceItem.id,
-          },
-        ],
-      },
-      userId,
-    )
-
-    // 5. Update item with commitId
-    await db
-      .update(items)
-      .set({ commitId: commit.id })
-      .where(eq(items.id, workingCopy.id))
-
-    return { workingCopy, branchItem }
   }
 
   /**
@@ -700,8 +733,9 @@ export class ChangeOrderService {
   private static async findExistingWorkingCopy(
     itemMasterId: string,
     branchId: string,
+    tx?: TransactionClient,
   ): Promise<typeof items.$inferSelect | null> {
-    const result = await db
+    const result = await (tx ?? db)
       .select({ item: items })
       .from(branchItems)
       .innerJoin(items, eq(branchItems.currentItemId, items.id))
@@ -733,10 +767,9 @@ export class ChangeOrderService {
     itemType: string,
     state: string | null | undefined,
   ): Promise<'revise' | 'release' | null> {
-    const validActions = await LifecycleService.getValidActions(
-      itemType,
-      state || 'Draft',
-    )
+    // A stateless item can take no action; there is no assumed default state
+    if (state == null) return null
+    const validActions = await LifecycleService.getValidActions(itemType, state)
     if (validActions.includes('revise')) return 'revise'
     if (validActions.includes('release')) return 'release'
     return null
@@ -888,8 +921,43 @@ export class ChangeOrderService {
     const item = itemId ? await ItemService.findById(itemId, tx) : null
     if (!item) return
 
-    const changeAction = await this.inferChangeAction(item.itemType, item.state)
+    // What the branch says about this master decides how the change order
+    // records it, because the branch is what merges. Content the branch
+    // created is a first release whatever state it is in: `mergeBranchToMain`
+    // gives every 'added' row the scheme's initial revision and the
+    // lifecycle's release state without consulting the release mapping's
+    // `fromState`. Reading the action from the item's state instead recorded
+    // nothing at all for every type whose release starts somewhere other than
+    // the initial state — Requirement releases from Approved, and 34 newly
+    // authored requirements silently stayed out of scope until the merge
+    // refused to release, naming items it had never been given the chance to
+    // list. Existing items brought onto the branch keep the state-based
+    // inference: a checkout of a Released item is a revision.
+    const branchChangeType = await client
+      .select({ changeType: branchItems.changeType })
+      .from(branchItems)
+      .where(
+        and(
+          eq(branchItems.branchId, branchId),
+          eq(branchItems.itemMasterId, itemMasterId),
+        ),
+      )
+      .limit(1)
+      .then((r) => r.at(0)?.changeType)
+
+    const isNewOnBranch = branchChangeType === 'added'
+    const changeAction = isNewOnBranch
+      ? 'release'
+      : await this.inferChangeAction(item.itemType, item.state)
     if (!changeAction) return
+
+    // The revision the merge will assign, so the affected-items list predicts
+    // what release does rather than leaving it blank.
+    const targetRevision = isNewOnBranch
+      ? RevisionService.getInitialRevision(
+          await LifecycleService.getRevisionScheme(item.itemType),
+        )
+      : undefined
 
     await client.insert(changeOrderAffectedItems).values({
       changeOrderId,
@@ -898,9 +966,65 @@ export class ChangeOrderService {
       changeAction,
       currentState: item.state,
       currentRevision: item.revision,
+      targetRevision,
       isDirectlyAffected: true,
       createdBy: userId,
     })
+  }
+
+  /**
+   * Drop a master from the change order's scope when the branch stops
+   * carrying it.
+   *
+   * The mirror of `registerBranchChange`, and it exists for the same reason:
+   * the affected-items list and the branch content have to say the same
+   * thing. Deleting an item that was *created* on the branch removes the
+   * branch row outright — the item exists nowhere else — so a scope row left
+   * behind describes a release of something that no longer exists, and the
+   * branchless merge path would go on to apply it.
+   *
+   * Deliberately narrow: the row goes only when *no* branch of this change
+   * order carries the master any more. An item still present on a second
+   * design's branch is still in scope, and one with released content behind
+   * it was never this path's to remove — `removeAffectedItem` is the
+   * deliberate, guarded way to shrink a change order.
+   */
+  static async unregisterBranchChange(
+    branchId: string,
+    itemMasterId: string,
+    tx?: TransactionClient,
+  ): Promise<void> {
+    const client = tx ?? db
+    const branch = await BranchService.getById(branchId)
+    if (!branch || branch.branchType !== 'eco' || !branch.changeOrderItemId) {
+      return
+    }
+    const changeOrderId = branch.changeOrderItemId
+
+    const stillOnABranch = await client
+      .select({ id: branchItems.id })
+      .from(branchItems)
+      .innerJoin(branches, eq(branchItems.branchId, branches.id))
+      .where(
+        and(
+          eq(branches.changeOrderItemId, changeOrderId),
+          eq(branches.branchType, 'eco'),
+          eq(branchItems.itemMasterId, itemMasterId),
+        ),
+      )
+      .limit(1)
+      .then((r) => r.at(0))
+
+    if (stillOnABranch) return
+
+    await client
+      .delete(changeOrderAffectedItems)
+      .where(
+        and(
+          eq(changeOrderAffectedItems.changeOrderId, changeOrderId),
+          eq(changeOrderAffectedItems.affectedItemMasterId, itemMasterId),
+        ),
+      )
   }
 
   /**
@@ -1390,6 +1514,36 @@ export class ChangeOrderService {
   }
 
   /**
+   * Whether the change order's workflow has finished, and what finishing
+   * meant — from the state's `finalKind`, never from its name.
+   *
+   * The counterpart to `canReachRelease`, read from the same place: the
+   * instance's effective structure. Asking the item type's lifecycle instead
+   * would answer about a different workflow, since a flexible instance may
+   * carry states the type-level definition never declared — the same reason
+   * `executeWorkflowTransition` decides release-vs-cancel from the structure.
+   *
+   * A change order with no workflow instance is not closed: nothing has
+   * finished because nothing was ever running.
+   */
+  static async getClosure(changeOrderId: string): Promise<{
+    closed: boolean
+    finalKind: FinalKind | null
+  }> {
+    const WorkflowService = await getWorkflowService()
+    const instance = await WorkflowService.getInstanceByItemId(changeOrderId)
+    if (!instance) return { closed: false, finalKind: null }
+
+    const structure = await WorkflowService.getEffectiveStructure(instance.id)
+    const current = structure.states.find((s) => s.id === instance.currentState)
+
+    return {
+      closed: current?.isFinal === true || Boolean(instance.completedAt),
+      finalKind: current?.isFinal === true ? (current.finalKind ?? null) : null,
+    }
+  }
+
+  /**
    * Get workflow instance for a change order
    */
   static async getWorkflowInstance(changeOrderId: string) {
@@ -1778,7 +1932,7 @@ export class ChangeOrderService {
     }
     const actionValidation = await LifecycleService.canApplyAction(
       item.itemType,
-      item.state || 'Draft',
+      item.state,
       inferredAction,
       { drivingLifecycleId: workflowInstance?.workflowDefinitionId },
     )
@@ -2323,6 +2477,38 @@ export class ChangeOrderService {
   }
 
   /**
+   * The masters whose release this change order's branches own.
+   *
+   * The merge has two ways to change an item: merging a branch, which
+   * releases whatever content the branch carries, and applying the affected
+   * item's change action directly, for scope with no branch content behind
+   * it. Only the second consults the lifecycle's `fromState` — so anything
+   * predicting a release has to know which set an item is in, or it reports
+   * a mapping violation for an item the mapping will never be asked about
+   * (a requirement authored on the branch in Draft, say).
+   */
+  static async getMastersWithBranchContent(
+    changeOrderId: string,
+  ): Promise<Set<string>> {
+    const branchIds = (await this.getEcoDesigns(changeOrderId))
+      .map((d) => d.branchId)
+      .filter((id): id is string => id !== null)
+    if (branchIds.length === 0) return new Set()
+
+    const rows = await db
+      .select({ itemMasterId: branchItems.itemMasterId })
+      .from(branchItems)
+      .where(
+        and(
+          inArray(branchItems.branchId, branchIds),
+          isNotNull(branchItems.changeType),
+        ),
+      )
+
+    return new Set(rows.map((r) => r.itemMasterId))
+  }
+
+  /**
    * Add a design to an ECO and create the ECO branch immediately
    */
   static async addDesignToEco(
@@ -2429,10 +2615,7 @@ export class ChangeOrderService {
       return []
     }
 
-    return LifecycleService.getValidActions(
-      item.itemType,
-      item.state || 'Draft',
-    )
+    return LifecycleService.getValidActions(item.itemType, item.state)
   }
 }
 

@@ -2,7 +2,6 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
 import type { Tool } from '@/lib/items/types/tool'
@@ -25,9 +24,11 @@ import {
   itemCountsQuery,
   itemGridQuery,
   itemListQuery,
+  lifecycleByItemTypeQuery,
   useInvalidateResources,
 } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
+import { LifecycleStateCards } from '@/components/items/LifecycleStateCards'
 
 // Search schema for URL validation (drives useServerDataGrid state sync)
 const toolsSearchSchema = z.object({
@@ -37,12 +38,10 @@ const toolsSearchSchema = z.object({
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().optional(),
   filter_toolType: z.coerce.string().optional(),
-  filter_toolStatus: z.coerce.string().optional(),
+  filter_state: z.coerce.string().optional(),
 })
 
 const TOOL_FILTERS: ItemFilters = { itemType: 'Tool' }
-const COUNT_STATES = ['Draft', 'Active', 'Maintenance', 'Retired'] as const
-
 export const Route = createFileRoute('/tools/')({
   validateSearch: toolsSearchSchema,
   component: ToolsListPage,
@@ -51,7 +50,17 @@ export const Route = createFileRoute('/tools/')({
     const grid = gridParamsFromSearch(deps)
     await Promise.all([
       queryClient.ensureQueryData(itemListQuery<Tool>(TOOL_FILTERS, grid)),
-      queryClient.ensureQueryData(itemCountsQuery(TOOL_FILTERS, COUNT_STATES)),
+      (async () => {
+        const lifecycle = await queryClient.ensureQueryData(
+          lifecycleByItemTypeQuery('Tool'),
+        )
+        await queryClient.ensureQueryData(
+          itemCountsQuery(
+            TOOL_FILTERS,
+            lifecycle.states.map((state) => state.id),
+          ),
+        )
+      })(),
     ])
   },
 })
@@ -61,8 +70,6 @@ function ToolsListPage() {
   const { confirm } = useAlertDialog()
   const { handleError, showSuccess } = useErrorHandler()
   const invalidate = useInvalidateResources()
-
-  const { data: counts } = useQuery(itemCountsQuery(TOOL_FILTERS, COUNT_STATES))
 
   // Server-side DataGrid with URL state sync
   const {
@@ -123,41 +130,13 @@ function ToolsListPage() {
         </Link>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Tools</CardDescription>
-            <CardTitle className="text-3xl">{total}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Draft</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Draft ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Active</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Active ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Maintenance</CardDescription>
-            <CardTitle className="text-3xl">
-              {counts?.Maintenance ?? 0}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Retired</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Retired ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {/* Stats — one card per lifecycle state, from configuration */}
+      <LifecycleStateCards
+        itemType="Tool"
+        filters={TOOL_FILTERS}
+        total={total}
+        totalLabel="Total Tools"
+      />
 
       {/* Tools Table */}
       <Card>

@@ -60,40 +60,55 @@ interface ModelBounds {
   center: THREE.Vector3
 }
 
-/** A second model rendered as an overlay for version comparison. */
-export interface CADComparisonModel {
-  /** URL to the comparison CAD file */
+/** Which side of a comparison a model occupies. */
+export type CADCompareSlot = 'A' | 'B'
+
+/**
+ * One model in a comparison, with the tint it is drawn in.
+ *
+ * A comparison is symmetric: neither side is "the model" and the other "the
+ * overlay". Both name a file explicitly, so each side can come from any
+ * version of the part — released revision, historical revision, or an
+ * in-work ECO/workspace branch — and each carries its own color, opacity and
+ * visibility.
+ */
+export interface CADCompareLayer {
+  /** Vault file id of the model this layer draws. */
+  fileId: string
+  /** URL to fetch it from */
   fileUrl: string
   /** File type/extension (stl, obj, glb, gltf) */
   fileType: string
-  /** Optional file name for the legend */
-  fileName?: string
+  /** File name, for the legend */
+  fileName: string
+  /** Which version this file came from, for the legend */
+  versionLabel: string
+  /** Tint applied to every surface of this layer */
+  color: string
+  /** Layer opacity, 0..1 */
+  opacity: number
+  /** Whether this layer is rendered at all */
+  visible: boolean
 }
 
-/** Visual settings for the comparison overlay. */
-export interface CADComparisonDisplay {
-  /** Tint applied to the primary model while comparing */
-  baseColor: string
-  /** Tint applied to the comparison model */
-  compareColor: string
-  /** Primary model opacity, 0..1 */
-  baseOpacity: number
-  /** Comparison model opacity, 0..1 */
-  compareOpacity: number
-  /** Whether the primary model is rendered */
-  baseVisible: boolean
-  /** Whether the comparison model is rendered */
-  compareVisible: boolean
+/** The two sides of a comparison; either may be unset while being picked. */
+export interface CADComparison {
+  a: CADCompareLayer | null
+  b: CADCompareLayer | null
 }
 
-export const DEFAULT_COMPARISON_DISPLAY: CADComparisonDisplay = {
-  baseColor: '#3b82f6',
-  compareColor: '#f97316',
-  baseOpacity: 0.6,
-  compareOpacity: 0.6,
-  baseVisible: true,
-  compareVisible: true,
+/**
+ * Default tints for the two sides. Distinct in hue and in lightness, so the
+ * pair still reads apart for the ~8% of men with red-green color vision
+ * deficiency, and against both viewer backgrounds.
+ */
+export const COMPARE_SLOT_COLORS: Record<CADCompareSlot, string> = {
+  A: '#3b82f6',
+  B: '#f97316',
 }
+
+/** Opacity a comparison layer starts at — translucent enough to see through. */
+export const DEFAULT_COMPARE_OPACITY = 0.6
 
 interface CADViewerProps {
   /** URL to the CAD file to display */
@@ -113,20 +128,46 @@ interface CADViewerProps {
   /** Whether the file has embedded colors (e.g. glTF with per-material colors) */
   hasEmbeddedColors?: boolean
   /**
-   * A second model overlaid on the first for version comparison. Both models
-   * render in their native part coordinates, so two versions of the same
-   * part align without any registration step. While set, both models are
-   * tinted per `comparisonDisplay` so differences read as distinct colors.
+   * Two models overlaid for version comparison, replacing the single model
+   * named by `fileUrl` while set. Both render in their native part
+   * coordinates, so two versions of the same part align without any
+   * registration step, and each is tinted per its own layer so differences
+   * read as distinct colors.
    */
-  comparison?: CADComparisonModel | null
-  /** Overlay colors/opacity/visibility; defaults to DEFAULT_COMPARISON_DISPLAY */
-  comparisonDisplay?: CADComparisonDisplay
-  /** Loading callback */
+  comparison?: CADComparison | null
+  /** Loading callback — fires for the model on side A */
   onLoad?: (stats: CADModelStats) => void
-  /** Error callback */
+  /** Error callback — fires for the model on side A */
   onError?: (error: Error) => void
-  /** Comparison model failed to load (viewer keeps rendering the primary) */
+  /** A comparison layer failed to load (the other side keeps rendering) */
   onComparisonError?: (error: Error) => void
+}
+
+/** What one side of the viewer is doing right now. */
+interface SlotState {
+  status: 'idle' | 'loading' | 'loaded' | 'failed'
+  bounds: ModelBounds | null
+  message: string | null
+}
+
+const IDLE_SLOT: SlotState = { status: 'idle', bounds: null, message: null }
+const LOADING_SLOT: SlotState = {
+  status: 'loading',
+  bounds: null,
+  message: null,
+}
+
+/** A model to draw, resolved from either the single-model or compare props. */
+interface RenderLayer {
+  slot: CADCompareSlot
+  fileUrl: string
+  fileType: string
+  fileName: string
+  /** Legend caption naming the version, empty outside comparison */
+  versionLabel: string
+  hasEmbeddedColors: boolean
+  tint: { color: string; opacity: number } | null
+  visible: boolean
 }
 
 /**
@@ -146,37 +187,78 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
       materialPreset = 'default',
       hasEmbeddedColors = false,
       comparison = null,
-      comparisonDisplay = DEFAULT_COMPARISON_DISPLAY,
       onLoad,
       onError,
       onComparisonError,
     },
     ref,
   ) {
-    const [error, setError] = useState<string | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
-    const [baseBounds, setBaseBounds] = useState<ModelBounds | null>(null)
-    const [comparisonBounds, setComparisonBounds] =
-      useState<ModelBounds | null>(null)
-    const [comparisonLoading, setComparisonLoading] = useState(false)
-    const [comparisonFailed, setComparisonFailed] = useState(false)
+    const [slotA, setSlotA] = useState<SlotState>(LOADING_SLOT)
+    const [slotB, setSlotB] = useState<SlotState>(IDLE_SLOT)
     const controlsRef = useRef<any>(null)
     const cameraRef = useRef<THREE.PerspectiveCamera>(null)
 
-    // A new comparison target starts its own load cycle
-    const comparisonUrl = comparison?.fileUrl ?? null
-    useEffect(() => {
-      setComparisonLoading(Boolean(comparisonUrl))
-      setComparisonFailed(false)
-      setComparisonBounds(null)
-    }, [comparisonUrl])
+    const isComparing = comparison !== null
 
-    // What the camera frames: both versions at once while comparing, so
-    // neither overlaid model can sit outside the view. Memoized because its
-    // identity is what re-triggers the auto-fit.
+    // Both sides of a comparison are ordinary layers; outside one, the single
+    // model occupies side A. Keeping it on the same slot is what lets the
+    // loaded geometry survive opening the compare panel: the <Model> keeps
+    // its key and its file URL, so nothing reloads.
+    const layers: Array<RenderLayer> = []
+    if (comparison) {
+      const sides: Array<[CADCompareSlot, CADCompareLayer | null]> = [
+        ['A', comparison.a],
+        ['B', comparison.b],
+      ]
+      for (const [slot, layer] of sides) {
+        if (!layer) continue
+        layers.push({
+          slot,
+          fileUrl: layer.fileUrl,
+          fileType: layer.fileType,
+          fileName: layer.fileName,
+          versionLabel: layer.versionLabel,
+          // The tint replaces every material anyway, embedded colors included
+          hasEmbeddedColors: false,
+          tint: { color: layer.color, opacity: layer.opacity },
+          visible: layer.visible,
+        })
+      }
+    } else {
+      layers.push({
+        slot: 'A',
+        fileUrl,
+        fileType,
+        fileName: fileName ?? '',
+        versionLabel: '',
+        hasEmbeddedColors,
+        tint: null,
+        visible: true,
+      })
+    }
+
+    const layerA = layers.find((l) => l.slot === 'A') ?? null
+    const layerB = layers.find((l) => l.slot === 'B') ?? null
+    const urlA = layerA?.fileUrl ?? null
+    const urlB = layerB?.fileUrl ?? null
+
+    // A new file on a side starts that side's own load cycle
+    useEffect(() => {
+      setSlotA(urlA === null ? IDLE_SLOT : LOADING_SLOT)
+    }, [urlA])
+    useEffect(() => {
+      setSlotB(urlB === null ? IDLE_SLOT : LOADING_SLOT)
+    }, [urlB])
+
+    // What the camera frames: every loaded layer at once, so no model can sit
+    // outside the view. Memoized because its identity re-triggers the
+    // auto-fit — and deliberately independent of visibility, so hiding a side
+    // does not yank the camera.
+    const boundsA = slotA.bounds
+    const boundsB = slotB.bounds
     const modelBounds = useMemo(
-      () => (baseBounds ? unionBounds(baseBounds, comparisonBounds) : null),
-      [baseBounds, comparisonBounds],
+      () => unionBounds(boundsA, boundsB),
+      [boundsA, boundsB],
     )
 
     // Set camera to a standard view
@@ -205,32 +287,42 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
       [modelBounds],
     )
 
-    const handleError = (err: Error) => {
-      const message = `Failed to load ${fileType.toUpperCase()} file: ${err.message}`
-      setError(message)
-      setIsLoading(false)
-      onError?.(err)
+    const setSlot = (slot: CADCompareSlot, state: SlotState) => {
+      if (slot === 'A') setSlotA(state)
+      else setSlotB(state)
     }
 
-    const handleModelLoad = (stats: CADModelStats) => {
-      setBaseBounds(boundsFromStats(stats))
-      setIsLoading(false)
-      onLoad?.(stats)
+    const handleLayerLoad = (slot: CADCompareSlot, stats: CADModelStats) => {
+      setSlot(slot, {
+        status: 'loaded',
+        bounds: boundsFromStats(stats),
+        message: null,
+      })
+      // Side A is the model the toolbar reports on, comparing or not
+      if (slot === 'A') onLoad?.(stats)
     }
 
-    // Comparison failures degrade to a badge; the primary model keeps rendering
-    const handleComparisonLoad = (stats: CADModelStats) => {
-      setComparisonBounds(boundsFromStats(stats))
-      setComparisonLoading(false)
+    const handleLayerError = (
+      slot: CADCompareSlot,
+      layer: RenderLayer,
+      err: Error,
+    ) => {
+      setSlot(slot, {
+        status: 'failed',
+        bounds: null,
+        message: `Failed to load ${layer.fileType.toUpperCase()} file: ${err.message}`,
+      })
+      // One callback per failure: a comparison layer failing is a comparison
+      // problem even when it is side A, and reporting it as both produces two
+      // toasts for one dead model.
+      if (isComparing) onComparisonError?.(err)
+      else onError?.(err)
     }
 
-    const handleComparisonError = (err: Error) => {
-      setComparisonLoading(false)
-      setComparisonFailed(true)
-      onComparisonError?.(err)
-    }
-
-    if (error) {
+    // Outside a comparison there is nothing else on screen, so a failed load
+    // takes the whole viewer. While comparing it must not: one side failing
+    // leaves the other side worth looking at, and the legend says which died.
+    if (!isComparing && slotA.status === 'failed') {
       return (
         <div className="flex items-center justify-center h-full bg-slate-100 dark:bg-slate-800 rounded-lg">
           <div className="text-center p-8">
@@ -238,7 +330,7 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
               Error Loading Model
             </p>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              {error}
+              {slotA.message}
             </p>
           </div>
         </div>
@@ -251,6 +343,20 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
     const minZoomDistance = Math.max(0.1, maxDim * 0.01)
     const maxZoomDistance = Math.max(1000, maxDim * 10)
     const initialCameraDistance = size ? getOptimalCameraDistance(size) : 5
+
+    // Depth-buffer precision. A perspective depth buffer resolves surfaces
+    // only down to distance^2 / (near * 2^24), so a fixed tiny near plane is
+    // what makes near-coincident CAD faces z-fight: at near = 0.01 a 1200 mm
+    // assembly viewed from its fit distance could not separate two surfaces
+    // less than ~22 mm apart, and every plate sitting on a frame speckled.
+    // The error grows as the square of model size, which is why small parts
+    // always looked clean and assemblies did not. Scaling near with the model
+    // brings that same case to ~0.2 mm. Nothing reachable is clipped:
+    // TrackballControls already stops zooming in at maxDim * 0.01 below.
+    // The second term only binds for sub-millimetre models, where the 1000
+    // floor under maxZoomDistance would otherwise stretch the ratio again.
+    const cameraFar = maxZoomDistance + maxDim
+    const cameraNear = Math.max(maxDim / 1000, cameraFar / 1e6)
 
     const bgConfig = BACKGROUND_PRESETS[backgroundPreset]
 
@@ -266,9 +372,21 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
       ? modelBounds.center.y - modelBounds.size.y / 2 - 0.01
       : 0
 
+    const slotState = (slot: CADCompareSlot) => (slot === 'A' ? slotA : slotB)
+    // The blocking spinner belongs to the first paint only. While comparing,
+    // a side still loading gets a pill instead, so the side that is ready
+    // stays on screen.
+    const showBlockingSpinner = !isComparing && slotA.status === 'loading'
+    const pendingLayers = layers.filter(
+      (l) => slotState(l.slot).status === 'loading',
+    )
+    const failedLayers = layers.filter(
+      (l) => slotState(l.slot).status === 'failed',
+    )
+
     return (
       <div className="relative w-full h-full rounded-lg overflow-hidden">
-        {isLoading && (
+        {showBlockingSpinner && (
           <div className="absolute inset-0 flex items-center justify-center z-10 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-sm">
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-2" />
@@ -285,8 +403,8 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
             makeDefault
             position={[0, 0, initialCameraDistance]}
             fov={50}
-            near={0.01}
-            far={maxZoomDistance * 2}
+            near={cameraNear}
+            far={cameraFar}
           />
 
           {/* Scene Background */}
@@ -297,13 +415,7 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
 
           {/* Lighting */}
           <ambientLight intensity={0.5} />
-          <directionalLight
-            position={[10, 10, 5]}
-            intensity={1}
-            castShadow
-            shadow-mapSize-width={2048}
-            shadow-mapSize-height={2048}
-          />
+          <ModelShadowLight bounds={modelBounds} />
           <directionalLight position={[-10, -10, -5]} intensity={0.3} />
 
           {/* Environment for reflections */}
@@ -311,49 +423,28 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
             <Environment preset={bgConfig.environmentPreset as any} />
           </Suspense>
 
-          {/* Models. Geometry is deliberately never recentered: both render
-              in the part's native coordinates, which is exactly what lets two
-              versions overlay and align without a registration step. The
-              camera aims at the union of their bounding boxes instead — see
-              CameraAutoFit. */}
+          {/* Models. Geometry is deliberately never recentered: every layer
+              renders in the part's native coordinates, which is exactly what
+              lets two versions overlay and align without a registration step.
+              The camera aims at the union of their bounding boxes instead —
+              see CameraAutoFit. Keyed by slot, not by URL, so changing which
+              file a side shows reloads that side in place. */}
           <Suspense fallback={null}>
-            <Model
-              fileUrl={fileUrl}
-              fileType={fileType}
-              wireframe={wireframe}
-              materialPreset={materialPreset}
-              hasEmbeddedColors={hasEmbeddedColors}
-              tint={
-                comparison
-                  ? {
-                      color: comparisonDisplay.baseColor,
-                      opacity: comparisonDisplay.baseOpacity,
-                    }
-                  : null
-              }
-              visible={!comparison || comparisonDisplay.baseVisible}
-              renderOrder={0}
-              onLoad={handleModelLoad}
-              onError={handleError}
-            />
-            {comparison && (
+            {layers.map((layer) => (
               <Model
-                key={comparison.fileUrl}
-                fileUrl={comparison.fileUrl}
-                fileType={comparison.fileType}
+                key={layer.slot}
+                fileUrl={layer.fileUrl}
+                fileType={layer.fileType}
                 wireframe={wireframe}
                 materialPreset={materialPreset}
-                hasEmbeddedColors={false}
-                tint={{
-                  color: comparisonDisplay.compareColor,
-                  opacity: comparisonDisplay.compareOpacity,
-                }}
-                visible={comparisonDisplay.compareVisible}
-                renderOrder={1}
-                onLoad={handleComparisonLoad}
-                onError={handleComparisonError}
+                hasEmbeddedColors={layer.hasEmbeddedColors}
+                tint={layer.tint}
+                visible={layer.visible}
+                renderOrder={layer.slot === 'A' ? 0 : 1}
+                onLoad={(stats) => handleLayerLoad(layer.slot, stats)}
+                onError={(err) => handleLayerError(layer.slot, layer, err)}
               />
-            )}
+            ))}
           </Suspense>
 
           {/* Grid */}
@@ -416,51 +507,69 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
           )}
         </Canvas>
 
-        {/* File name overlay; becomes a color legend while comparing */}
-        {fileName && !isLoading && (
-          <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg">
-            {comparison ? (
-              <div className="space-y-1">
-                <p className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                  <span
-                    className="inline-block h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: comparisonDisplay.baseColor }}
-                  />
-                  {fileName}
-                </p>
-                <p className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                  <span
-                    className="inline-block h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: comparisonDisplay.compareColor }}
-                  />
-                  {comparison.fileName ?? 'Comparison model'}
-                </p>
+        {/* File name overlay; a color legend while comparing */}
+        {isComparing ? (
+          <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg space-y-1 max-w-[min(20rem,calc(100%-2rem))]">
+            {layers.map((layer) => (
+              <div key={layer.slot} className="flex items-start gap-2">
+                <span
+                  className="mt-1 inline-block h-2.5 w-2.5 rounded-full shrink-0"
+                  style={{
+                    backgroundColor: layer.tint?.color,
+                    opacity: layer.visible ? 1 : 0.3,
+                  }}
+                />
+                <div className="min-w-0">
+                  <p
+                    className={`text-xs font-medium truncate ${
+                      layer.visible
+                        ? 'text-slate-700 dark:text-slate-300'
+                        : 'text-slate-400 dark:text-slate-500 line-through'
+                    }`}
+                  >
+                    {layer.versionLabel}
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    {slotState(layer.slot).status === 'failed'
+                      ? 'Failed to load'
+                      : layer.fileName}
+                  </p>
+                </div>
               </div>
-            ) : (
+            ))}
+          </div>
+        ) : (
+          fileName &&
+          !showBlockingSpinner && (
+            <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg">
               <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
                 {fileName}
               </p>
-            )}
-          </div>
+            </div>
+          )
         )}
 
-        {/* Comparison load status — bottom center, clear of the legend
+        {/* Per-layer load status — bottom center, clear of the legend
             (bottom-left) and the compare panel (bottom-right) */}
-        {comparison && comparisonLoading && (
+        {isComparing && pendingLayers.length > 0 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg">
             <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              Loading comparison…
+              Loading {pendingLayers.map((l) => l.slot).join(' and ')}…
             </p>
           </div>
         )}
-        {comparison && comparisonFailed && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg">
-            <p className="text-xs font-medium text-red-500 dark:text-red-400">
-              Comparison model failed to load
-            </p>
-          </div>
-        )}
+        {isComparing &&
+          pendingLayers.length === 0 &&
+          failedLayers.length > 0 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg">
+              <p className="text-xs font-medium text-red-500 dark:text-red-400">
+                {failedLayers.length === 1
+                  ? `Side ${failedLayers[0]?.slot} failed to load`
+                  : 'Both models failed to load'}
+              </p>
+            </div>
+          )}
       </div>
     )
   },
@@ -510,18 +619,20 @@ function boundsFromStats(stats: CADModelStats): ModelBounds {
 }
 
 /**
- * Smallest volume containing both models, for framing a comparison overlay.
- * Two versions of a part share native coordinates but not extents — a boss
- * added in the newer revision pushes one box past the other.
+ * Smallest volume containing both models, for framing a comparison. Two
+ * versions of a part share native coordinates but not extents — a boss added
+ * in the newer revision pushes one box past the other. Null until at least
+ * one side has loaded; a single loaded side frames itself.
  */
 function unionBounds(
-  base: ModelBounds,
-  other: ModelBounds | null,
-): ModelBounds {
-  if (!other) return base
+  first: ModelBounds | null,
+  second: ModelBounds | null,
+): ModelBounds | null {
+  if (!first) return second
+  if (!second) return first
 
-  const box = new THREE.Box3().setFromCenterAndSize(base.center, base.size)
-  box.union(new THREE.Box3().setFromCenterAndSize(other.center, other.size))
+  const box = new THREE.Box3().setFromCenterAndSize(first.center, first.size)
+  box.union(new THREE.Box3().setFromCenterAndSize(second.center, second.size))
 
   const size = new THREE.Vector3()
   const center = new THREE.Vector3()
@@ -598,6 +709,77 @@ function applyStandardView(
     controls.target.copy(bounds.center)
     controls.update()
   }
+}
+
+/** Unit direction the key light shines from, kept off the model's scale. */
+const KEY_LIGHT_DIRECTION = new THREE.Vector3(10, 10, 5).normalize()
+
+/**
+ * Key light, with its shadow camera fitted to the model.
+ *
+ * three.js defaults a DirectionalLight's shadow camera to an orthographic box
+ * of +/-5 units at near 0.5 / far 500, aimed at a `target` that starts at the
+ * world origin and is not in the scene graph. Models here are millimetre-scale
+ * and render in native part coordinates, so that frustum both was far too
+ * small and pointed at empty space: every mesh sets castShadow/receiveShadow,
+ * yet the 2048^2 shadow pass ran each frame over geometry it never covered.
+ * Anything that did land inside it acned, because the default bias is zero.
+ *
+ * Only the light's direction affects shading, so moving it onto the model
+ * changes nothing but the shadow frustum.
+ */
+function ModelShadowLight({ bounds }: { bounds: ModelBounds | null }) {
+  const lightRef = useRef<THREE.DirectionalLight>(null)
+  const { scene } = useThree()
+
+  useEffect(() => {
+    const light = lightRef.current
+    if (!light || !bounds) return
+
+    // Bounding-sphere radius: half the box diagonal, so the frustum covers
+    // the model from whatever angle the light ends up on.
+    const radius = bounds.size.length() / 2 || 1
+    const distance = radius * 4
+
+    light.position
+      .copy(bounds.center)
+      .addScaledVector(KEY_LIGHT_DIRECTION, distance)
+
+    // The target is a bare Object3D that no one adds to the scene, so its
+    // matrixWorld never updates and the shadow camera keeps looking at the
+    // origin. Parent it so the renderer maintains it.
+    light.target.position.copy(bounds.center)
+    scene.add(light.target)
+
+    const cam = light.shadow.camera
+    cam.left = -radius
+    cam.right = radius
+    cam.top = radius
+    cam.bottom = -radius
+    cam.near = distance - radius
+    cam.far = distance + radius
+    cam.updateProjectionMatrix()
+
+    // normalBias is in world units, so it has to scale with the model too:
+    // a fixed value either does nothing at metre scale or opens visible gaps
+    // where parts touch.
+    light.shadow.normalBias = radius * 0.01
+
+    return () => {
+      scene.remove(light.target)
+    }
+  }, [bounds, scene])
+
+  return (
+    <directionalLight
+      ref={lightRef}
+      position={[10, 10, 5]}
+      intensity={1}
+      castShadow
+      shadow-mapSize-width={2048}
+      shadow-mapSize-height={2048}
+    />
+  )
 }
 
 /**
@@ -877,11 +1059,20 @@ function Model({
     const tinted = tintColor !== undefined && tintOpacity !== undefined
     const useOriginal =
       !tinted && hasEmbeddedColors && materialPreset === 'default' && !wireframe
+    // Translucent comparison shells stay out of the shadow pass: they must
+    // blend rather than occlude or double-shadow.
+    const castsShadow = !tinted || tintOpacity >= 0.99
 
     gltfScene.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return
 
       child.renderOrder = renderOrder
+
+      // These flags do not inherit down the graph. Setting them on the
+      // <primitive> group below did nothing, so glTF meshes — everything the
+      // CAD converter produces — were absent from the shadow pass entirely.
+      child.castShadow = castsShadow
+      child.receiveShadow = true
 
       if (tinted) {
         // Comparison tint replaces everything, embedded colors included
@@ -931,13 +1122,9 @@ function Model({
   // Render glTF scene
   if (gltfScene) {
     return (
-      <primitive
-        ref={groupRef}
-        object={gltfScene}
-        visible={visible}
-        castShadow={tintIsSolid}
-        receiveShadow
-      />
+      // Shadow flags are set per-mesh in the traversal above, not here: a
+      // group does not pass them to its children.
+      <primitive ref={groupRef} object={gltfScene} visible={visible} />
     )
   }
 

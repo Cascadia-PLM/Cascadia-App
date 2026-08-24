@@ -25,7 +25,7 @@ Cascadia's business logic lives in a layered service architecture with strict de
  │                                                                   │
  │  CheckoutService, VersionResolver, CommitService,                │
  │  BranchService, DesignService, LifecycleService,                 │
- │  ItemVersioningFacade                                            │
+ │  ItemVersioningFacade, ItemEditPolicy                             │
  └──────────────────────────────┬───────────────────────────────────┘
                                 │ calls down
                                 ▼
@@ -56,14 +56,14 @@ These services coordinate multiple lower-layer services to implement complex bus
 
 The central CRUD service for all item types. Handles creation, updates, deletion, search, and version-aware operations.
 
-**Dependencies**: CommitService, CheckoutService, VersionResolver, BranchService, UsageService, ItemRelationshipService, ItemSearchService, ItemVersioningFacade, NumberingService, ItemTypeRegistry
+**Dependencies**: CommitService, CheckoutService, VersionResolver, BranchService, UsageService, ItemRelationshipService, ItemSearchService, ItemVersioningFacade, ItemEditPolicy, NumberingService, ItemTypeRegistry
 
 Key responsibilities:
 
 - Create items with automatic numbering, type validation, and commit tracking
 - Enforce branch protection (post-release designs require ECO branches)
 - Split data between `items` table and type-specific extension table
-- Delegate versioning operations to `ItemVersioningFacade`
+- Delegate versioning operations to `ItemVersioningFacade` and edit-lock checks to `ItemEditPolicy`
 
 ### ChangeOrderService
 
@@ -206,9 +206,25 @@ Key methods:
 
 **File**: `packages/core/src/lib/items/services/ItemVersioningFacade.ts`
 
-Facade that simplifies versioning operations for ItemService consumers.
+Reads and writes items at a point in version history: `getAtContext`, `listAtContext`,
+`diff`, `createOnBranch`. Private to `ItemService`, which re-exports the same API.
 
-**Dependencies**: VersionResolver, CommitService, CheckoutService, BranchService, NumberingService, ItemTypeRegistry, ItemService
+**Dependencies**: VersionResolver, CheckoutService, BranchService, NumberingService, ItemTypeRegistry, ItemService
+
+### ItemEditPolicy
+
+**File**: `packages/core/src/lib/items/services/ItemEditPolicy.ts`
+
+Whether a caller may mutate an item's content right now — branch protection, branch
+lock state, and the checkout in `branch_items.checkedOutBy`. `requireContentEditable`
+is the server-side counterpart of the UI's Edit button. Split out of
+`ItemVersioningFacade`, which had grown to hold two unrelated concerns; also private
+to `ItemService`.
+
+**Dependencies**: BranchService
+
+Invariants are covered in `CheckoutService.test.ts` ("edit-lock enforcement"), driven
+through `ItemService.update` / `.addRelationship` rather than against the class.
 
 ---
 
@@ -338,6 +354,8 @@ This retries on PostgreSQL serialization failures (`40001`) and deadlocks (`40P0
 ### Transaction Boundaries
 
 - **ItemService.create()** -- single transaction for `items` + extension table + auto-commit
+- **ChangeOrderService.addAffectedItem() / addAffectedItemsBatch()** -- one transaction per call (`withTx`, threaded through BranchService, CommitService, and the working-copy creation); a mid-batch failure leaves nothing added
+- **ChangeOrderService.createRevisionWorkingCopy()** -- single transaction for the working copy + type rows + relationships + files + branch tracking + commit
 - **DesignService.create()** -- single transaction for design + initial commit + main branch + reference patching
 - **ChangeOrderMergeService.mergeBranchToMain()** -- serializable transaction for the entire merge
 - **FileService.uploadFile()** -- transaction for file record + version history
@@ -348,7 +366,7 @@ This retries on PostgreSQL serialization failures (`40001`) and deadlocks (`40P0
 
 The graph is acyclic. Key design decisions that prevent cycles:
 
-1. **Facade pattern**: `ItemVersioningFacade` calls `ItemService`, but `ItemService` only delegates to the facade (no reverse logic).
+1. **Cycle broken by dynamic import**: `ItemVersioningFacade` and `ItemService` genuinely reference each other — the facade needs `getTypeSpecificData`/`findById`/`insertTypeSpecificData`. `ItemService` imports the facade statically; the facade reaches back through `await import()`, so nothing resolves at module-evaluation time. `ItemEditPolicy` has no such cycle: it never calls `ItemService`.
 2. **Dynamic imports**: `ChangeOrderService` uses `import()` for `WorkflowService` to avoid static circular references.
 3. **Leaf services**: `DesignService` and `ProgramService` have zero service dependencies -- they only talk to the database.
 

@@ -18,6 +18,7 @@ import { DesignService } from './DesignService'
 import { BranchService } from './BranchService'
 import { UsageService } from './UsageService'
 import { VersionResolver } from './VersionResolver'
+import { LifecycleService } from './LifecycleService'
 import type { UpstreamChangeItem } from '../db/schema'
 import { takeFirst } from '@/lib/db/take-first'
 
@@ -375,7 +376,10 @@ export class MbomService {
             revision: '-', // Fresh start for MBOM usage
             itemType: sourceItem.itemType,
             name: sourceItem.name,
-            state: 'Draft', // Start as Draft in MBOM
+            // MBOM usages start at the lifecycle's initial state
+            state: await LifecycleService.getInitialStateId(
+              sourceItem.itemType,
+            ),
             isCurrent: true,
             inDesignStructure: sourceItem.inDesignStructure,
             attributes: sourceItem.attributes,

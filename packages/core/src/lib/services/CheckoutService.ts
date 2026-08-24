@@ -753,15 +753,14 @@ export class CheckoutService {
       validated.branchId,
     )
     // A working copy of an already-released version starts over at the
-    // lifecycle's initial state. Resolved from the revise mapping's `fromState`
-    // rather than the literal 'Released', so a lifecycle whose released state is
-    // named differently still resets (it previously kept the released state on
-    // the draft, which then read as released everywhere).
+    // lifecycle's initial state. Resolved from the revise mapping's `fromState`;
+    // a lifecycle with no revise mapping (Free) has no released state to reset
+    // from, so the working copy keeps the item's state.
     const reviseFromState = (
       await LifecycleService.getActionMapping(item.itemType, 'revise')
     )?.fromState
     const workingState =
-      item.state === (reviseFromState ?? 'Released')
+      reviseFromState != null && item.state === reviseFromState
         ? await LifecycleService.getInitialStateId(item.itemType)
         : item.state
 
@@ -1048,8 +1047,18 @@ export class CheckoutService {
 
     // If item was added on this branch, we can actually remove the branchItem
     if (existing?.changeType === 'added') {
+      const ChangeOrderService = await getChangeOrderService()
       return db.transaction(async (tx) => {
         await tx.delete(branchItems).where(eq(branchItems.id, existing.id))
+
+        // The item existed only on this branch, so the change order has
+        // nothing left to release for it — leave the scope row behind and the
+        // branchless merge path would release a draft the user just deleted.
+        await ChangeOrderService.unregisterBranchChange(
+          branchId,
+          itemMasterId,
+          tx,
+        )
 
         // Create commit for the removal
         return CommitService.create(

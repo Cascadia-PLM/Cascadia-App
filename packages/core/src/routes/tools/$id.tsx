@@ -80,6 +80,7 @@ function ToolDetailPage() {
       onSave={handleSave}
       onDelete={handleDelete}
       onCancel={handleCancel}
+      onTransitioned={() => void invalidate('tools')}
       activeTab={search.tab}
       onTabChange={handleTabChange}
     />

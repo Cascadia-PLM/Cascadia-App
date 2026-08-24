@@ -512,6 +512,40 @@ describe('WorkflowService', () => {
         true,
       )
     })
+
+    // The degenerate Free lifecycle: one state carrying both isInitial and
+    // isFinal, zero transitions. This is the shipped default for item types
+    // with no meaningful flow ("Current"), so the validator must accept it —
+    // the flags are deliberately NOT mutually exclusive, and the reachability
+    // rules (non-initial needs incoming, non-final needs outgoing) are
+    // satisfiable by a zero-transition machine only in this configuration.
+    it('accepts a single-state Free lifecycle whose state is initial and final', () => {
+      const input = createWorkflowInput({
+        lifecycleType: 'Free',
+        states: [
+          {
+            id: 'current',
+            name: 'Current',
+            color: 'green',
+            isInitial: true,
+            isFinal: true,
+          },
+        ],
+        transitions: [],
+      })
+
+      const result = WorkflowService.validateDefinition(input)
+
+      expect(result.valid).toBe(true)
+      expect(result.errors).toHaveLength(0)
+      // No reachability warnings either: the single state is both entry and
+      // terminus, so nothing is unreachable and nothing is a dead end.
+      expect(
+        result.warnings.filter(
+          (w) => w.code === 'UNREACHABLE_STATE' || w.code === 'DEAD_END_STATE',
+        ),
+      ).toHaveLength(0)
+    })
   })
 
   describe('startInstance', () => {

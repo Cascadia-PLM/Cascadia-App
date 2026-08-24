@@ -14,7 +14,8 @@ import {
 import { users } from '../db/schema/users'
 import { NotFoundError, ValidationError } from '../errors'
 import { ItemService } from '../items/services/ItemService'
-import { VERIFIED_BY_RELATIONSHIP } from './RequirementService'
+import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
+import { VERIFIED_BY_RELATIONSHIP, idsWithLinks } from './RequirementService'
 import type { ExecutionStatus } from '../items/types/testcase'
 import { takeFirst } from '@/lib/db/take-first'
 
@@ -304,17 +305,15 @@ export class VerificationService {
 
     const requirementIds = allRequirements.map((r) => r.id)
 
-    // Count requirements with VERIFIED_BY relationships
-    const verifiedReqs = await db
-      .select({ reqId: itemRelationships.targetId })
-      .from(itemRelationships)
-      .where(
-        and(
-          inArray(itemRelationships.targetId, requirementIds),
-          eq(itemRelationships.relationshipType, VERIFIED_BY_RELATIONSHIP),
-        ),
-      )
-    const requirementsWithTests = new Set(verifiedReqs.map((r) => r.reqId)).size
+    // Count requirements with VERIFIED_BY relationships. Version-aware: the
+    // edge belongs to the test case, so a release leaves it naming the
+    // requirement row it superseded.
+    const requirementsWithTests = idsWithLinks(
+      await ItemRelationshipService.findIncomingLinks(
+        requirementIds,
+        VERIFIED_BY_RELATIONSHIP,
+      ),
+    ).size
 
     // Get all test cases for this design
     const allTestCases = await db
@@ -407,17 +406,13 @@ export class VerificationService {
 
     const requirementIds = allRequirements.map((r) => r.id)
 
-    // Find requirements with VERIFIED_BY relationships
-    const verifiedReqs = await db
-      .select({ reqId: itemRelationships.targetId })
-      .from(itemRelationships)
-      .where(
-        and(
-          inArray(itemRelationships.targetId, requirementIds),
-          eq(itemRelationships.relationshipType, VERIFIED_BY_RELATIONSHIP),
-        ),
-      )
-    const verifiedIds = new Set(verifiedReqs.map((r) => r.reqId))
+    // Version-aware, so a revision does not read back as a fresh gap.
+    const verifiedIds = idsWithLinks(
+      await ItemRelationshipService.findIncomingLinks(
+        requirementIds,
+        VERIFIED_BY_RELATIONSHIP,
+      ),
+    )
 
     // Return requirements without tests
     const gaps = allRequirements
@@ -567,19 +562,15 @@ export class VerificationService {
   static async getValidatingTests(
     partId: string,
   ): Promise<Array<ValidatingTest>> {
-    // Find all VALIDATES relationships where this part is the target
-    const relationships = await db
-      .select({
-        relationshipId: itemRelationships.id,
-        sourceId: itemRelationships.sourceId,
-      })
-      .from(itemRelationships)
-      .where(
-        and(
-          eq(itemRelationships.targetId, partId),
-          eq(itemRelationships.relationshipType, VALIDATES_RELATIONSHIP),
-        ),
-      )
+    // VALIDATES belongs to the test case, so revising the part does not carry
+    // it — read version-aware, like every other incoming link.
+    const relationships =
+      (
+        await ItemRelationshipService.findIncomingLinks(
+          [partId],
+          VALIDATES_RELATIONSHIP,
+        )
+      ).get(partId) ?? []
 
     if (relationships.length === 0) {
       return []
@@ -618,7 +609,7 @@ export class VerificationService {
         testType: tcData?.testType ?? null,
         executionStatus: tcData?.executionStatus ?? null,
         lastExecutedAt: tcData?.lastExecutedAt ?? null,
-        relationshipId: rel!.relationshipId,
+        relationshipId: rel!.id,
       }
     })
   }
@@ -629,19 +620,15 @@ export class VerificationService {
   static async getPartsValidatedBy(
     testCaseId: string,
   ): Promise<Array<ValidatedPart>> {
-    // Find all VALIDATES relationships where this test case is the source
-    const relationships = await db
-      .select({
-        relationshipId: itemRelationships.id,
-        targetId: itemRelationships.targetId,
-      })
-      .from(itemRelationships)
-      .where(
-        and(
-          eq(itemRelationships.sourceId, testCaseId),
-          eq(itemRelationships.relationshipType, VALIDATES_RELATIONSHIP),
-        ),
-      )
+    // Targets resolve forward: a part revised since the link was made is
+    // named by the row the release superseded.
+    const relationships =
+      (
+        await ItemRelationshipService.findOutgoingLinks(
+          [testCaseId],
+          VALIDATES_RELATIONSHIP,
+        )
+      ).get(testCaseId) ?? []
 
     if (relationships.length === 0) {
       return []
@@ -667,7 +654,7 @@ export class VerificationService {
         itemNumber: part.itemNumber,
         name: part.name,
         state: part.state,
-        relationshipId: rel!.relationshipId,
+        relationshipId: rel!.id,
       }
     })
   }

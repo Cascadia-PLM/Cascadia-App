@@ -11,6 +11,7 @@
  * Run: npm run test -- src/lib/services/RequirementService.test.ts
  */
 
+import { and, eq } from 'drizzle-orm'
 import {
   afterAll,
   afterEach,
@@ -21,16 +22,34 @@ import {
   it,
 } from 'vitest'
 import { RequirementService } from './RequirementService'
+import { BranchService } from './BranchService'
 import { DesignService } from './DesignService'
+import { CheckoutService } from './CheckoutService'
+import { RevisionService } from './RevisionService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import type { Requirement } from '@/lib/items/types/requirement'
 import type { Part } from '@/lib/items/types/part'
 import type { TestCase } from '@/lib/items/types/testcase'
+import type { PersistedItem } from '@/lib/items/types/base'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { programs } from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+import {
+  branchItems,
+  itemRelationships,
+  items,
+  programs,
+} from '@/lib/db/schema'
+import { itemVersions } from '@/lib/db/schema/versioning'
+import {
+  BranchProtectionError,
+  ItemCheckoutRequiredError,
+  NotFoundError,
+  ValidationError,
+} from '@/lib/errors'
 import { ItemService } from '@/lib/items/services/ItemService'
+import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
+import { resolveEdgeGuardEnd } from '@/lib/items/traceability-relationships'
+import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
 import { takeFirst } from '@/lib/db/take-first'
 import '@/lib/items/registerItemTypes.server'
 
@@ -38,6 +57,7 @@ describe('RequirementService', () => {
   const testDb = new TestDatabase()
   let user: TestUser
   let designId: string
+  let initialCommitId: string
 
   beforeAll(async () => {
     await testDb.setup()
@@ -73,6 +93,7 @@ describe('RequirementService', () => {
       user.id,
     )
     designId = design.id
+    initialCommitId = design.initialCommit!.id
   })
 
   afterEach(async () => {
@@ -369,6 +390,198 @@ describe('RequirementService', () => {
           user.id,
         ),
       ).rejects.toThrow(ValidationError)
+    })
+
+    it('should inherit verification method, category and source from the parent', async () => {
+      const parent = await createRequirement({
+        verificationMethod: 'Test',
+        category: 'Safety',
+        source: 'Customer spec 4.2',
+      })
+
+      const child = await RequirementService.deriveRequirement(
+        parent.id!,
+        { name: 'Inheriting Child' },
+        user.id,
+      )
+
+      expect(child.verificationMethod).toBe('Test')
+      expect(child.category).toBe('Safety')
+      expect(child.source).toBe('Customer spec 4.2')
+    })
+
+    it('should let the caller override inherited fields', async () => {
+      const parent = await createRequirement({
+        verificationMethod: 'Test',
+        category: 'Safety',
+      })
+
+      const child = await RequirementService.deriveRequirement(
+        parent.id!,
+        { name: 'Overriding Child', verificationMethod: 'Inspection' },
+        user.id,
+      )
+
+      expect(child.verificationMethod).toBe('Inspection')
+      expect(child.category).toBe('Safety')
+    })
+
+    it('should create the child on an explicitly named branch', async () => {
+      const parent = await createRequirement()
+      const branch = await BranchService.createWorkspaceBranch(
+        designId,
+        user.id,
+        `derive-${Date.now()}`,
+      )
+
+      const child = await RequirementService.deriveRequirement(
+        parent.id!,
+        { name: 'Branch Child' },
+        user.id,
+        { branchId: branch.id, commitMessage: 'Decompose parent' },
+      )
+
+      // A branch row, not a main row: branch-scoped working revision plus a
+      // branchItems entry tracking it as new scope on that branch.
+      expect(child.revision).toBe(RevisionService.getWorkingRevision(branch.id))
+      const tracked = await testDb.db
+        .select()
+        .from(branchItems)
+        .where(
+          and(
+            eq(branchItems.branchId, branch.id),
+            eq(branchItems.currentItemId, child.id!),
+          ),
+        )
+      expect(tracked).toHaveLength(1)
+      expect(tracked[0]!.changeType).toBe('added')
+      expect(child.parentRequirementId).toBe(parent.id)
+    })
+
+    it('should derive onto a branch after the design has released items', async () => {
+      // What made this unusable: requirements get decomposed after the first
+      // release, and main is protected from then on.
+      const parent = await createRequirement()
+      const branch = await BranchService.createWorkspaceBranch(
+        designId,
+        user.id,
+        `post-release-${Date.now()}`,
+      )
+      await testDb.db.insert(items).values({
+        masterId: crypto.randomUUID(),
+        itemNumber: `PRT-REL-${Date.now()}`,
+        revision: 'A',
+        itemType: 'Part',
+        name: 'Released Part',
+        state: 'Released',
+        designId,
+        createdBy: user.id,
+        modifiedBy: user.id,
+      })
+
+      await expect(
+        RequirementService.deriveRequirement(
+          parent.id!,
+          { name: 'Blocked Child' },
+          user.id,
+        ),
+      ).rejects.toThrow(BranchProtectionError)
+
+      const child = await RequirementService.deriveRequirement(
+        parent.id!,
+        { name: 'Allowed Child' },
+        user.id,
+        { branchId: branch.id },
+      )
+      expect(child.id).toBeDefined()
+      expect(child.designId).toBe(designId)
+    })
+
+    it("should default to the parent's own branch when the parent is a branch row", async () => {
+      const branch = await BranchService.createWorkspaceBranch(
+        designId,
+        user.id,
+        `parent-branch-${Date.now()}`,
+      )
+      const { item: parent } = await ItemService.createOnBranch(
+        'Requirement',
+        {
+          itemNumber: `REQ-ONBRANCH-${Date.now()}`,
+          itemType: 'Requirement',
+          designId,
+          name: 'Parent on branch',
+        },
+        branch.id,
+        'Add parent requirement',
+        user.id,
+      )
+
+      const child = await RequirementService.deriveRequirement(
+        parent.id!,
+        { name: 'Follows Parent' },
+        user.id,
+      )
+
+      const tracked = await testDb.db
+        .select()
+        .from(branchItems)
+        .where(
+          and(
+            eq(branchItems.branchId, branch.id),
+            eq(branchItems.currentItemId, child.id!),
+          ),
+        )
+      expect(tracked).toHaveLength(1)
+    })
+
+    it('should reject a branch belonging to a different design', async () => {
+      const parent = await createRequirement()
+      const otherProgram = takeFirst(
+        await testDb.db
+          .insert(programs)
+          .values({
+            name: 'Other Program',
+            code: `PROG-OTHER-${Date.now()}`,
+            createdBy: user.id,
+          })
+          .returning(),
+      )
+      const otherDesign = await DesignService.create(
+        {
+          programId: otherProgram.id,
+          name: 'Other Design',
+          code: `DESIGN-OTHER-${Date.now()}`,
+          designType: 'Engineering',
+        },
+        user.id,
+      )
+      const foreignBranch = await BranchService.createWorkspaceBranch(
+        otherDesign.id,
+        user.id,
+        `foreign-${Date.now()}`,
+      )
+
+      await expect(
+        RequirementService.deriveRequirement(
+          parent.id!,
+          { name: 'Misfiled Child' },
+          user.id,
+          { branchId: foreignBranch.id },
+        ),
+      ).rejects.toThrow(ValidationError)
+    })
+
+    it('should throw NotFoundError for a non-existent branch', async () => {
+      const parent = await createRequirement()
+
+      await expect(
+        RequirementService.deriveRequirement(
+          parent.id!,
+          { name: 'Nowhere Child' },
+          user.id,
+          { branchId: '00000000-0000-0000-0000-000000000000' },
+        ),
+      ).rejects.toThrow(NotFoundError)
     })
   })
 
@@ -817,6 +1030,420 @@ describe('RequirementService', () => {
 
       const result = await RequirementService.getRequirementsVerifiedBy(tc.id!)
       expect(result).toEqual([])
+    })
+  })
+
+  // ================================================================
+  // Branch protection on traceability links
+  //
+  // An access gate, not bookkeeping: these links are what a released baseline
+  // claims about its own coverage, and each one used to answer to a different
+  // rule. `SATISFIES` (a Part source) went through the edit-lock policy;
+  // `VERIFIED_BY` did not, because its source is a TestCase and TestCase
+  // carries a Free lifecycle, so a V&V link could be written straight onto a
+  // Released requirement on protected main with no change order anywhere.
+  //
+  // Invariant: every traceability link write answers to some end's edit rule
+  // - a branch row whose checkout the caller holds, or main before anything
+  // in the design has released - and is never ungated. See issue #114.
+  // ================================================================
+
+  describe('branch protection on traceability links', () => {
+    let changeOrderId: string
+    let ecoBranchId: string
+
+    async function createReleased(
+      itemType: 'Requirement' | 'Part',
+    ): Promise<PersistedItem> {
+      const ts = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+      const item = await ItemService.create<PersistedItem>(
+        itemType,
+        {
+          itemNumber: `${itemType.slice(0, 3).toUpperCase()}-${ts}`,
+          revision: 'A',
+          state: 'Released',
+          designId,
+          name: `Released ${itemType}`,
+        } as PersistedItem,
+        user.id,
+        { bypassBranchProtection: true },
+      )
+
+      // Link to the initial commit so VersionResolver can find the released
+      // version, the same way the checkout fixtures do.
+      await testDb.db.insert(itemVersions).values({
+        commitId: initialCommitId,
+        itemId: item.id,
+        changeType: 'added',
+      })
+
+      return item
+    }
+
+    /**
+     * A test case authored on the ECO branch, with this caller holding its
+     * checkout.
+     *
+     * Deliberately not a test case on main. Whether the *source* of a
+     * `VERIFIED_BY` edge is exempt from branch protection depends on the
+     * TestCase lifecycle, a global row other suites legitimately repoint
+     * (`LifecycleService.test.ts` swaps it for a Driven one), so a source on
+     * main is sometimes editable here and sometimes not. Putting it somewhere
+     * this caller may certainly edit removes that variable, leaving the
+     * requirement end as the only thing that can decide the outcome.
+     */
+    async function createBranchTestCase(): Promise<PersistedItem> {
+      const ts = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+      const { item } = await ItemService.createOnBranch(
+        'TestCase',
+        {
+          itemNumber: `TC-${ts}`,
+          revision: 'A',
+          itemType: 'TestCase',
+          designId,
+          name: 'Branch Test Case',
+        },
+        ecoBranchId,
+        'Added test case',
+        user.id,
+      )
+      const testCase = item as PersistedItem
+
+      await CheckoutService.checkout(
+        { itemMasterId: testCase.masterId, branchId: ecoBranchId },
+        user.id,
+      )
+      return testCase
+    }
+
+    /** The row the ECO branch is currently working from for a master. */
+    async function branchRowId(masterId: string): Promise<string | null> {
+      const [row] = await testDb.db
+        .select({ currentItemId: branchItems.currentItemId })
+        .from(branchItems)
+        .where(
+          and(
+            eq(branchItems.branchId, ecoBranchId),
+            eq(branchItems.itemMasterId, masterId),
+          ),
+        )
+        .limit(1)
+      return row?.currentItemId ?? null
+    }
+
+    beforeEach(async () => {
+      const changeOrder = await ItemService.create<PersistedItem>(
+        'ChangeOrder',
+        {
+          revision: 'A',
+          name: 'Traceability ECO',
+          changeType: 'ECO',
+          priority: 'medium',
+          reasonForChange: 'Record traceability',
+          designId,
+        } as unknown as PersistedItem,
+        user.id,
+      )
+      changeOrderId = changeOrder.id
+
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        changeOrderId,
+        user.id,
+      )
+      ecoBranchId = branch.id
+    })
+
+    it('refuses a verification link on a released requirement', async () => {
+      // Authored before the release: main closes to new items of every type
+      // once the design has released one, test cases included.
+      const testCase = await createTestCase()
+      const requirement = await createReleased('Requirement')
+
+      await expect(
+        RequirementService.linkVerification(
+          requirement.id,
+          [testCase.id!],
+          user.id,
+        ),
+      ).rejects.toThrow(BranchProtectionError)
+
+      expect(
+        await RequirementService.getVerifyingTests(requirement.id),
+      ).toHaveLength(0)
+    })
+
+    it('refuses the same link through the batch relationship path', async () => {
+      const testCase = await createTestCase()
+      const requirement = await createReleased('Requirement')
+
+      await expect(
+        ItemRelationshipService.addRelationshipBatch([
+          {
+            sourceId: testCase.id!,
+            targetId: requirement.id,
+            relationshipType: 'VERIFIED_BY',
+            userId: user.id,
+          },
+        ]),
+      ).rejects.toThrow(BranchProtectionError)
+    })
+
+    it('records a verification link on the ECO row once the requirement is checked out', async () => {
+      const testCase = await createBranchTestCase()
+      const requirement = await createReleased('Requirement')
+
+      await ChangeOrderService.checkoutItemToEco(
+        changeOrderId,
+        requirement.id,
+        user.id,
+      )
+      const workingCopyId = await branchRowId(requirement.masterId)
+      expect(workingCopyId).not.toBe(requirement.id)
+
+      await RequirementService.linkVerification(
+        requirement.id,
+        [testCase.id],
+        user.id,
+        { branchId: ecoBranchId },
+      )
+
+      // The link lives on the branch, not on the released baseline.
+      expect(
+        await RequirementService.getVerifyingTests(workingCopyId!),
+      ).toHaveLength(1)
+      expect(
+        await RequirementService.getVerifyingTests(requirement.id),
+      ).toHaveLength(0)
+    })
+
+    it('refuses a link on a branch row nobody has checked out', async () => {
+      const requirement = await createReleased('Requirement')
+      const part = await createReleased('Part')
+
+      // A working copy on the branch, but no checkout: the branch has the
+      // item, this caller does not hold the right to edit it.
+      await ChangeOrderService.createRevisionWorkingCopy(
+        part as unknown as Parameters<
+          typeof ChangeOrderService.createRevisionWorkingCopy
+        >[0],
+        ecoBranchId,
+        user.id,
+      )
+
+      await expect(
+        RequirementService.linkSatisfaction(
+          requirement.id,
+          [part.id],
+          user.id,
+          { branchId: ecoBranchId },
+        ),
+      ).rejects.toThrow(ItemCheckoutRequiredError)
+    })
+
+    it('sends the rule to the requirement end only for an exempt source', async () => {
+      // An item type with no lifecycle assigned resolves Free, so this says
+      // "exempt source" without depending on any configured lifecycle row.
+      const exempt = 'UnmappedType'
+
+      expect(await resolveEdgeGuardEnd(exempt, 'VERIFIED_BY')).toBe('target')
+      expect(await resolveEdgeGuardEnd('Part', 'SATISFIES')).toBe('source')
+
+      // Scope management runs ChangeOrder -> Part and must keep answering to
+      // its source: requiring the affected item to be checked out before it
+      // could be added to the ECO would never terminate.
+      expect(await resolveEdgeGuardEnd('ChangeOrder', 'Affects')).toBe('source')
+      expect(await resolveEdgeGuardEnd(exempt, 'BOM')).toBe('source')
+    })
+
+    it('records satisfaction against the ECO part row, never the released one', async () => {
+      const requirement = await createReleased('Requirement')
+      const part = await createReleased('Part')
+
+      await expect(
+        RequirementService.linkSatisfaction(requirement.id, [part.id], user.id),
+      ).rejects.toThrow(BranchProtectionError)
+
+      await ChangeOrderService.checkoutItemToEco(
+        changeOrderId,
+        part.id,
+        user.id,
+      )
+      const partWorkingCopyId = await branchRowId(part.masterId)
+
+      await RequirementService.linkSatisfaction(
+        requirement.id,
+        [part.id],
+        user.id,
+        { branchId: ecoBranchId },
+      )
+
+      const edges = await testDb.db
+        .select()
+        .from(itemRelationships)
+        .where(eq(itemRelationships.targetId, requirement.id))
+      expect(edges).toHaveLength(1)
+      expect(edges[0]!.sourceId).toBe(partWorkingCopyId)
+    })
+
+    it('holds allocation to the same rule', async () => {
+      const requirement = await createReleased('Requirement')
+      const part = await createReleased('Part')
+
+      await expect(
+        RequirementService.allocateToDesign(requirement.id, part.id, user.id),
+      ).rejects.toThrow(BranchProtectionError)
+
+      await ChangeOrderService.checkoutItemToEco(
+        changeOrderId,
+        requirement.id,
+        user.id,
+      )
+      const requirementWorkingCopyId = await branchRowId(requirement.masterId)
+
+      await RequirementService.allocateToDesign(
+        requirement.id,
+        part.id,
+        user.id,
+        { branchId: ecoBranchId },
+      )
+
+      const allocated = await RequirementService.getAllocatedItems(
+        requirementWorkingCopyId!,
+      )
+      expect(allocated.map((i) => i.id)).toEqual([part.id])
+      expect(
+        await RequirementService.getAllocatedItems(requirement.id),
+      ).toHaveLength(0)
+    })
+  })
+
+  // ================================================================
+  // Incoming links across revisions
+  //
+  // `SATISFIES` and `VERIFIED_BY` point AT a requirement and belong to the
+  // item at the other end, so nothing in a revision moves them: they keep
+  // naming the row the new revision superseded. Readers therefore walk the
+  // lineage backwards. The walk runs one way only, and these are the two ends
+  // of that: a working copy inherits what it was cut from, and nothing ever
+  // inherits from a working copy, which is what keeps one ECO's links out of
+  // main. (The post-merge half of the invariant is exercised against a real
+  // release in ChangeOrderMergeService.test.ts.)
+  // ================================================================
+
+  describe('incoming links across revisions', () => {
+    let workspaceBranchId: string
+
+    beforeEach(async () => {
+      const branch = await BranchService.createWorkspaceBranch(
+        designId,
+        user.id,
+        `ws-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      )
+      workspaceBranchId = branch.id
+    })
+
+    /** A released requirement that one test case already verifies. */
+    async function releasedRequirementWithTest() {
+      const requirement = await createRequirement()
+      const testCase = await createTestCase()
+
+      // Linked before the release: this is the state a design is in before
+      // its first change order.
+      await RequirementService.linkVerification(
+        requirement.id!,
+        [testCase.id!],
+        user.id,
+      )
+      await testDb.db
+        .update(items)
+        .set({ state: 'Released' })
+        .where(eq(items.id, requirement.id!))
+
+      return { requirement, testCase }
+    }
+
+    /** A test case authored on the workspace branch, checked out to us. */
+    async function branchTestCase(): Promise<PersistedItem> {
+      const ts = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+      const { item } = await ItemService.createOnBranch(
+        'TestCase',
+        {
+          itemNumber: `TC-${ts}`,
+          revision: 'A',
+          itemType: 'TestCase',
+          designId,
+          name: 'Branch Test Case',
+        },
+        workspaceBranchId,
+        'Added test case',
+        user.id,
+      )
+      const testCase = item as PersistedItem
+      await CheckoutService.checkout(
+        { itemMasterId: testCase.masterId, branchId: workspaceBranchId },
+        user.id,
+      )
+      return testCase
+    }
+
+    it('shows a working copy the coverage it was cut from', async () => {
+      const { requirement, testCase } = await releasedRequirementWithTest()
+
+      const { workingCopy } =
+        await ChangeOrderService.createRevisionWorkingCopy(
+          (await ItemService.findById(
+            requirement.id!,
+          )) as unknown as Parameters<
+            typeof ChangeOrderService.createRevisionWorkingCopy
+          >[0],
+          workspaceBranchId,
+          user.id,
+        )
+
+      const verifying = await RequirementService.getVerifyingTests(
+        workingCopy.id,
+      )
+      expect(verifying.map((t) => t.id)).toEqual([testCase.id])
+    })
+
+    it('keeps a link recorded on a working copy off the released row', async () => {
+      const { requirement, testCase } = await releasedRequirementWithTest()
+      const branchOnly = await branchTestCase()
+
+      const { workingCopy } =
+        await ChangeOrderService.createRevisionWorkingCopy(
+          (await ItemService.findById(
+            requirement.id!,
+          )) as unknown as Parameters<
+            typeof ChangeOrderService.createRevisionWorkingCopy
+          >[0],
+          workspaceBranchId,
+          user.id,
+        )
+      await CheckoutService.checkout(
+        { itemMasterId: requirement.masterId!, branchId: workspaceBranchId },
+        user.id,
+      )
+
+      await RequirementService.linkVerification(
+        requirement.id!,
+        [branchOnly.id],
+        user.id,
+        { branchId: workspaceBranchId },
+      )
+
+      // The branch sees both: what it inherited and what it added.
+      const onBranch = await RequirementService.getVerifyingTests(
+        workingCopy.id,
+      )
+      expect(onBranch.map((t) => t.id).sort()).toEqual(
+        [testCase.id, branchOnly.id].sort(),
+      )
+
+      // Main sees only what was released.
+      const onMain = await RequirementService.getVerifyingTests(requirement.id!)
+      expect(onMain.map((t) => t.id)).toEqual([testCase.id])
     })
   })
 })

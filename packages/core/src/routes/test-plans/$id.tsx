@@ -88,6 +88,7 @@ function TestPlanDetailPage() {
       onSave={handleSave}
       onDelete={handleDelete}
       onCancel={handleCancel}
+      onTransitioned={() => void invalidate('test-plans')}
       activeTab={search.tab}
       onTabChange={handleTabChange}
     />

@@ -47,7 +47,6 @@ interface ToolSeedRow {
   toolSubtype: string
   manufacturer?: string
   model?: string
-  toolStatus?: 'available' | 'in_use' | 'maintenance' | 'retired'
   location?: string
   notes?: string
   attributes?: Record<string, string>
@@ -123,7 +122,6 @@ await db.transaction(async (tx) => {
       manufacturer: row.manufacturer ?? null,
       model: row.model ?? null,
       capabilities: row.capabilities ?? null,
-      toolStatus: row.toolStatus ?? 'available',
       location: row.location ?? null,
       notes: row.notes ?? null,
     })

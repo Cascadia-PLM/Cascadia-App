@@ -47,8 +47,6 @@ export function DocumentForm({
   const form = useForm({
     defaultValues: {
       itemType: 'Document' as const,
-      state: 'Draft',
-      revision: 'A',
       designId: document?.designId || defaultDesignId || '',
       itemNumber: '',
       name: '',
@@ -65,7 +63,6 @@ export function DocumentForm({
     onSubmit: async ({ value }) => {
       const submissionData = {
         ...value,
-        revision: value.revision.trim() || 'A',
         attributes,
       } as Document
       // Pass branchId if product is in post-release phase
@@ -208,27 +205,6 @@ export function DocumentForm({
               error={field.state.meta.errors[0]}
               data-testid="document-item-number"
             />
-          )}
-        </form.Field>
-
-        {/* Revision */}
-        <form.Field name="revision">
-          {(field) => (
-            <FormField
-              label="Revision"
-              required
-              error={field.state.meta.errors[0]}
-              helpText="Version identifier (A, B, C, etc.)"
-            >
-              <Input
-                name={field.name}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                placeholder="A"
-                error={!!field.state.meta.errors.length}
-              />
-            </FormField>
           )}
         </form.Field>
 

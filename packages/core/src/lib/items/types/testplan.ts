@@ -5,10 +5,9 @@ import { z } from 'zod'
 import { baseItemSchema } from './base'
 import type { BaseItem, StateConfig } from './base'
 
-// Test plan status types
-export type TestPlanStatus = 'Draft' | 'Active' | 'Completed' | 'Archived'
-
-// TestPlan-specific interface
+// TestPlan-specific interface. The flow position (Draft/Active/Completed/
+// Archived in the default lifecycle) is the item's lifecycle `state`; the
+// old duplicate `status` field is gone.
 export interface TestPlan extends BaseItem {
   itemType: 'TestPlan'
   designId: string // Required for TestPlans - links to versioning system
@@ -16,7 +15,6 @@ export interface TestPlan extends BaseItem {
   environment?: string
   entryCriteria?: string
   exitCriteria?: string
-  status?: TestPlanStatus
 }
 
 // TestPlan validation schema
@@ -27,7 +25,6 @@ export const testPlanSchema = baseItemSchema.extend({
   environment: z.string().max(100).optional(),
   entryCriteria: z.string().max(5000).optional(),
   exitCriteria: z.string().max(5000).optional(),
-  status: z.enum(['Draft', 'Active', 'Completed', 'Archived']).optional(),
 })
 
 // TestPlan-specific states (defined explicitly rather than spreading commonStates)

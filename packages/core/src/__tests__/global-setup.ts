@@ -8,7 +8,12 @@
  * Use for one-time setup like database connections or environment validation.
  */
 
-export default function globalSetup() {
+import postgres from 'postgres'
+import { drizzle } from 'drizzle-orm/postgres-js'
+import * as schema from '../lib/db/schema'
+import { seedDefaultLifecycles } from '../lib/items/default-lifecycles'
+
+export default async function globalSetup() {
   // vitest.config.ts loads .env before this runs, so an absent DATABASE_URL
   // means there is no .env entry and nothing exported in the shell. Never
   // fall back to an implicit database: on a machine with more than one
@@ -25,6 +30,18 @@ export default function globalSetup() {
 
   // Set test-specific environment variables
   process.env.NODE_ENV = 'test'
+
+  // Every item type has a lifecycle — services have no name-literal
+  // fallbacks left, so the rows must exist before any worker runs. Seeded
+  // once here (main process, before workers fork), first-writer-wins, so a
+  // suite's deliberate overrides and an app-seeded database's richer rows
+  // both survive.
+  const client = postgres(databaseUrl, { max: 1, onnotice: () => {} })
+  try {
+    await seedDefaultLifecycles(drizzle(client, { schema }))
+  } finally {
+    await client.end()
+  }
 
   // Log test configuration
   console.log('\n🧪 Test Environment Configuration:')

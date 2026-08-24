@@ -320,7 +320,6 @@ app.post(
             name: ecoTitle,
             designId: workspace.designId,
             changeType,
-            state: 'Draft',
             reasonForChange: ecoDescription || '',
           } as ChangeOrder,
           user.id,

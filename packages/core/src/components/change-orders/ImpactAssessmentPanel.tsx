@@ -746,7 +746,7 @@ export function ImpactAssessmentPanel({
                               )}
                               <Badge
                                 variant={
-                                  node.state === 'Released'
+                                  node.recommendation === 'revise'
                                     ? 'success'
                                     : 'secondary'
                                 }
@@ -774,8 +774,7 @@ export function ImpactAssessmentPanel({
                                 </div>
                               )}
                             {/* Recommendation line for released assemblies */}
-                            {(node.recommendation === 'revise' ||
-                              node.state === 'Released') && (
+                            {node.recommendation === 'revise' && (
                               <div className="flex items-center gap-2 ml-1">
                                 <span className="text-xs text-amber-600 dark:text-amber-400">
                                   Released assembly — consider revising to

@@ -388,6 +388,10 @@ workflow, `.github/workflows/ci.yml`, running on every PR to `main` and every pu
 to `main`. Its jobs: Lint, OpenAPI Snapshot, Unit Tests, E2E Tests, Build (which
 also runs `typecheck:strict`), Compose Config Validation, and Large File Guard.
 
+OpenAPI Snapshot is the one job that runs on pushes to `main` only. The
+committed `docs/api/openapi.v1.json` is refreshed by the maintainers, so a
+contributor's pull request is never gated on regenerating it.
+
 Unit tests run `npm run test`, not `test:coverage` — no coverage thresholds are
 enforced.
 

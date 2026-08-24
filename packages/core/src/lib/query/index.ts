@@ -91,7 +91,11 @@ export {
 } from './options/tests'
 export type { TestExecution, TestPlanTestCase } from './options/tests'
 export { itemModelVersionsQuery } from './options/model-versions'
-export type { ModelVersionEntry } from './options/model-versions'
+export type {
+  ModelVersionEntry,
+  ModelVersionFile,
+  ModelVersionFileSource,
+} from './options/model-versions'
 export { designItemsGridQuery } from './options/design-items'
 export type { DesignItem, DesignItemsContext } from './options/design-items'
 export { authSessionQuery, currentUserPermissionsQuery } from './options/auth'
@@ -180,7 +184,12 @@ export type {
   DashboardSeriesPoint,
   DashboardStats,
 } from './options/dashboard'
-export { lifecycleListQuery } from './options/lifecycles'
+export {
+  lifecycleListQuery,
+  lifecycleByItemTypeQuery,
+  releasedFamilyStateIds,
+} from './options/lifecycles'
+export type { ItemTypeLifecycle } from './options/lifecycles'
 export { aiSettingsQuery, vaultConfigQuery } from './options/admin'
 export type {
   AiProviderSettings,

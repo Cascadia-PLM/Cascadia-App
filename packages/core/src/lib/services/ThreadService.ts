@@ -22,6 +22,7 @@ import {
   workOrders,
 } from '../db/schema'
 import { NotFoundError } from '../errors'
+import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
 import { EBOM_SOURCE_RELATIONSHIP } from './MbomService'
 import { RELATIONSHIP_EVIDENCES } from './QualificationService'
 import {
@@ -866,6 +867,28 @@ export class ThreadService {
   }
 
   /**
+   * Edges of one type pointing at `itemId`, read version-aware.
+   *
+   * Thin wrapper over `ItemRelationshipService.findIncomingLinks` so the walk
+   * and the summary counts cannot disagree. Every edge found this way is
+   * recorded against `itemId`, so a predecessor revision never becomes a
+   * second node in the graph.
+   */
+  private static async incomingLinks(
+    itemId: string,
+    relationshipType: string,
+  ): Promise<Array<typeof itemRelationships.$inferSelect>> {
+    return (
+      (
+        await ItemRelationshipService.findIncomingLinks(
+          [itemId],
+          relationshipType,
+        )
+      ).get(itemId) ?? []
+    )
+  }
+
+  /**
    * Traverse requirements (SATISFIES relationships)
    * Finds requirements that the item satisfies (item is source, requirement is target)
    * Also finds items that satisfy requirements if starting from a requirement
@@ -927,16 +950,14 @@ export class ThreadService {
       )
     }
 
-    // Find SATISFIES relationships where this item is the target (is a requirement being satisfied)
-    const satisfiedByRels = await db
-      .select()
-      .from(itemRelationships)
-      .where(
-        and(
-          eq(itemRelationships.targetId, itemId),
-          eq(itemRelationships.relationshipType, SATISFIES_RELATIONSHIP),
-        ),
-      )
+    // Find SATISFIES relationships where this item is the target (is a
+    // requirement being satisfied), read version-aware — the edge belongs to
+    // the satisfying item, so neither end's revision history is visible from
+    // the raw target id alone.
+    const satisfiedByRels = await this.incomingLinks(
+      itemId,
+      SATISFIES_RELATIONSHIP,
+    )
 
     for (const rel of satisfiedByRels) {
       if (visitedIds.has(rel.sourceId)) continue
@@ -1045,16 +1066,12 @@ export class ThreadService {
   ): Promise<void> {
     if (depth <= 0) return
 
-    // Find VERIFIED_BY relationships where this item is the target (requirement being verified)
-    const verifiedByRels = await db
-      .select()
-      .from(itemRelationships)
-      .where(
-        and(
-          eq(itemRelationships.targetId, itemId),
-          eq(itemRelationships.relationshipType, VERIFIED_BY_RELATIONSHIP),
-        ),
-      )
+    // Find VERIFIED_BY relationships where this item is the target
+    // (requirement being verified) — see the SATISFIES walk above.
+    const verifiedByRels = await this.incomingLinks(
+      itemId,
+      VERIFIED_BY_RELATIONSHIP,
+    )
 
     for (const rel of verifiedByRels) {
       await this.addVerifyingTestCase(
@@ -1133,16 +1150,12 @@ export class ThreadService {
       })
     }
 
-    // Find VALIDATES relationships where this part is the target
-    const validatedByRels = await db
-      .select()
-      .from(itemRelationships)
-      .where(
-        and(
-          eq(itemRelationships.targetId, itemId),
-          eq(itemRelationships.relationshipType, VALIDATES_RELATIONSHIP),
-        ),
-      )
+    // Find VALIDATES relationships where this part is the target — the edge
+    // belongs to the test case, so revising the part does not carry it.
+    const validatedByRels = await this.incomingLinks(
+      itemId,
+      VALIDATES_RELATIONSHIP,
+    )
 
     for (const rel of validatedByRels) {
       await this.addVerifyingTestCase(
@@ -1741,28 +1754,17 @@ export class ThreadService {
       )
       .then((r) => r.length)
 
-    // Count validation relationships (VERIFIED_BY where item is target OR VALIDATES where item is target)
-    const verifiedByCount = await db
-      .select()
-      .from(itemRelationships)
-      .where(
-        and(
-          eq(itemRelationships.targetId, itemId),
-          eq(itemRelationships.relationshipType, VERIFIED_BY_RELATIONSHIP),
-        ),
-      )
-      .then((r) => r.length)
+    // Count validation relationships (VERIFIED_BY where item is target OR
+    // VALIDATES where item is target). Both are incoming, and both read the
+    // same way the walk does — the summary badge has to agree with the thread
+    // the user opens from it.
+    const verifiedByCount = (
+      await this.incomingLinks(itemId, VERIFIED_BY_RELATIONSHIP)
+    ).length
 
-    const validatesCount = await db
-      .select()
-      .from(itemRelationships)
-      .where(
-        and(
-          eq(itemRelationships.targetId, itemId),
-          eq(itemRelationships.relationshipType, VALIDATES_RELATIONSHIP),
-        ),
-      )
-      .then((r) => r.length)
+    const validatesCount = (
+      await this.incomingLinks(itemId, VALIDATES_RELATIONSHIP)
+    ).length
 
     const validationCount = verifiedByCount + validatesCount
 

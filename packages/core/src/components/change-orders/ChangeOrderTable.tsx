@@ -18,6 +18,8 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface ChangeOrderTableProps {
   items: Array<ChangeOrder>
@@ -28,21 +30,6 @@ interface ChangeOrderTableProps {
   totalRows?: number
   onPageChange?: (page: number, pageSize: number) => void
   isLoading?: boolean
-}
-
-const stateColors: Record<
-  string,
-  'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-> = {
-  Draft: 'secondary',
-  Submitted: 'default',
-  ImpactAssessment: 'default',
-  Review: 'warning',
-  Approved: 'success',
-  Rejected: 'destructive',
-  Implementation: 'warning',
-  Implemented: 'success',
-  Closed: 'secondary',
 }
 
 const priorityColors: Record<
@@ -81,6 +68,14 @@ export function ChangeOrderTable({
   onPageChange,
   isLoading,
 }: ChangeOrderTableProps) {
+  // State filter options and badges come from the ChangeOrder lifecycle's
+  // configuration, not from a list in code
+  const { data: lifecycle } = useLifecyclePhases('ChangeOrder')
+  const stateFilterOptions = (lifecycle?.states ?? []).map((state) => ({
+    label: state.name,
+    value: state.id,
+  }))
+
   const columns: Array<DataGridColumn<ChangeOrder>> = [
     {
       id: 'itemNumber',
@@ -167,23 +162,10 @@ export function ChangeOrderTable({
       accessorKey: 'state',
       enableFiltering: true,
       filterType: 'multiSelect',
-      filterOptions: [
-        { label: 'Draft', value: 'Draft' },
-        { label: 'Submitted', value: 'Submitted' },
-        { label: 'Impact Assessment', value: 'ImpactAssessment' },
-        { label: 'Review', value: 'Review' },
-        { label: 'Approved', value: 'Approved' },
-        { label: 'Rejected', value: 'Rejected' },
-        { label: 'Implementation', value: 'Implementation' },
-        { label: 'Implemented', value: 'Implemented' },
-        { label: 'Closed', value: 'Closed' },
-      ],
-      cell: ({ getValue }) => {
-        const value = getValue() as string
-        return (
-          <Badge variant={stateColors[value] ?? 'secondary'}>{value}</Badge>
-        )
-      },
+      filterOptions: stateFilterOptions,
+      cell: ({ getValue }) => (
+        <StateBadge itemType="ChangeOrder" state={getValue() as string} />
+      ),
     },
     {
       id: 'riskLevel',

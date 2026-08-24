@@ -29,6 +29,7 @@ import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
   branchItems as branchItemsTable,
   branches,
+  changeOrderDesigns,
   changeOrderRisks,
   changeOrders,
   commits,
@@ -1226,6 +1227,60 @@ describe('ChangeOrderService', () => {
       expect(results).toHaveLength(1) // Returns the existing one
       const items = await ChangeOrderService.getAffectedItems(changeOrder.id)
       expect(items).toHaveLength(1) // Still only one
+    })
+
+    // Invariant: the batch is all-or-nothing. A failure part-way must not
+    // leave earlier items added, nor the design association and ECO branch
+    // their processing created.
+    //
+    // Honest limit: under TestDatabase everything runs on one connection, so
+    // a service that ignored the threaded transaction would still roll back
+    // here — this test pins error propagation and the rollback shape, but
+    // cannot distinguish a threaded transaction from an unthreaded one. That
+    // guarantee is reviewed by reading the call chain (see `withTx`).
+    it('rolls the whole batch back when a later item fails', async () => {
+      const changeOrder = await createChangeOrder()
+      const good = await createPart({ name: 'Batch Atomic Good' })
+      // Draft part: 'revise' requires the lifecycle's Released state, so this
+      // fails validation deterministically — after `good` has been processed.
+      const bad = await createPart({ name: 'Batch Atomic Bad' })
+
+      await expect(
+        ChangeOrderService.addAffectedItemsBatch(
+          changeOrder.id,
+          [
+            { affectedItemId: good.id, changeAction: 'release' },
+            { affectedItemId: bad.id, changeAction: 'revise' },
+          ],
+          user.id,
+        ),
+      ).rejects.toThrow(ValidationError)
+
+      // The valid first item did not survive its sibling's failure
+      const stored = await ChangeOrderService.getAffectedItems(changeOrder.id)
+      expect(stored).toHaveLength(0)
+
+      // Neither did the side effects of processing it: no design association,
+      // no ECO branch
+      const associations = await testDb.db
+        .select()
+        .from(changeOrderDesigns)
+        .where(eq(changeOrderDesigns.changeOrderId, changeOrder.id))
+      expect(associations).toHaveLength(0)
+
+      const ecoBranches = await testDb.db
+        .select()
+        .from(branches)
+        .where(eq(branches.changeOrderItemId, changeOrder.id))
+      expect(ecoBranches).toHaveLength(0)
+
+      // And the change order is still usable: the same valid item adds cleanly
+      const retry = await ChangeOrderService.addAffectedItemsBatch(
+        changeOrder.id,
+        [{ affectedItemId: good.id, changeAction: 'release' }],
+        user.id,
+      )
+      expect(retry).toHaveLength(1)
     })
   })
 

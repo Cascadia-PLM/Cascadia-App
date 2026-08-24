@@ -13,7 +13,7 @@ import type {
 } from '@/lib/versioning/graph-types'
 import type { ScopeGraphEdge, ScopeGraphNode } from '@/lib/api/scope-graph'
 import type { BOMTreeNode, OrphanItem } from '@/lib/types/bom'
-import { DesignService } from '@/lib/services/DesignService'
+import { DesignService, designCreateSchema } from '@/lib/services/DesignService'
 import { ProgramService } from '@/lib/services/ProgramService'
 import { BranchService } from '@/lib/services/BranchService'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -67,7 +67,7 @@ import {
 } from '@/lib/db/schema/versioning'
 import { users } from '@/lib/db/schema/users'
 import { designs } from '@/lib/db/schema/designs'
-import { notDeleted } from '@/lib/db/filters'
+import { notDeleted, notWorkingRevision } from '@/lib/db/filters'
 import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('Designs')
@@ -932,35 +932,67 @@ app.get(
   ),
 )
 
+/**
+ * A design as returned by the create/read paths. Passthrough for the same
+ * reason as `programResponseSchema` — the extra columns are not contract.
+ */
+const designResponseSchema = z
+  .object({
+    id: z.string().uuid(),
+    code: z.string(),
+    name: z.string(),
+    programId: z.string().uuid().nullable(),
+  })
+  .passthrough()
+
 // POST /api/designs
 app.post(
   '/',
   adapt(
-    apiHandler({}, async ({ request, user }) => {
-      const data = await request.json()
+    apiHandler(
+      {
+        openapi: {
+          summary: 'Create a design',
+          description:
+            'With `programId`, the caller needs the `canManageDesigns` flag on ' +
+            'their membership of that program (or cross-program authority). ' +
+            'Without one, the global `designs:create` permission. Creating a ' +
+            'design also creates its `main` branch and initial commit.',
+          request: { body: { schema: designCreateSchema } },
+          responses: {
+            201: { schema: z.object({ design: designResponseSchema }) },
+          },
+        },
+      },
+      async ({ request, user }) => {
+        const data = await request.json()
 
-      // If programId is provided, check user has permission in that program
-      // (canManageDesigns member flag, or the cross-program bypass — this
-      // endpoint used to lack the bypass its sibling create endpoint has).
-      if (data.programId) {
-        const hasBypass = await AccessControlService.hasCrossProgramAccess(
-          user.id,
-        )
-        if (!hasBypass) {
-          const member = await ProgramService.getMember(data.programId, user.id)
-          if (!member || !member.canManageDesigns) {
-            throw new PermissionDeniedError('designs', 'create')
+        // If programId is provided, check user has permission in that program
+        // (canManageDesigns member flag, or the cross-program bypass — this
+        // endpoint used to lack the bypass its sibling create endpoint has).
+        if (data.programId) {
+          const hasBypass = await AccessControlService.hasCrossProgramAccess(
+            user.id,
+          )
+          if (!hasBypass) {
+            const member = await ProgramService.getMember(
+              data.programId,
+              user.id,
+            )
+            if (!member || !member.canManageDesigns) {
+              throw new PermissionDeniedError('designs', 'create')
+            }
           }
+        } else {
+          // Creating design without program requires global permission
+          await requirePermission(request, 'designs', 'create')
         }
-      } else {
-        // Creating design without program requires global permission
-        await requirePermission(request, 'designs', 'create')
-      }
 
-      const design = await DesignService.create(data, user.id)
+        const design = await DesignService.create(data, user.id)
 
-      return created({ design })
-    }),
+        return created({ design })
+      },
+    ),
   ),
 )
 
@@ -1057,6 +1089,7 @@ app.get(
               itemType: items.itemType,
               name: items.name,
               state: items.state,
+              masterId: items.masterId,
             })
             .from(items)
             .where(
@@ -1072,20 +1105,39 @@ app.get(
             .orderBy(asc(items.itemNumber))
 
           // Top-level only: drop candidates that another candidate points at.
+          //
+          // A BOM line names one item *version*, and a merge does not re-point
+          // the lines of parents it did not touch. Matching raw target ids
+          // therefore stopped recognising a released child as nested — it
+          // surfaced as a second root beside its own assembly — so targets are
+          // compared by masterId, which survives the revision.
           const candidateIds = candidates.map((c) => c.id)
+          const candidateIdByMaster = new Map(
+            candidates.map((c) => [c.masterId, c.id] as const),
+          )
           const nestedIds = new Set<string>()
           if (candidateIds.length > 0) {
             const internalRels = await db
               .select({ targetId: itemRelationships.targetId })
               .from(itemRelationships)
-              .where(
-                and(
-                  inArray(itemRelationships.sourceId, candidateIds),
-                  inArray(itemRelationships.targetId, candidateIds),
-                ),
-              )
-            for (const rel of internalRels) {
-              nestedIds.add(rel.targetId)
+              .where(inArray(itemRelationships.sourceId, candidateIds))
+
+            const targetIds = [
+              ...new Set(internalRels.map((rel) => rel.targetId)),
+            ]
+            const targetMasters =
+              targetIds.length > 0
+                ? await db
+                    .select({ id: items.id, masterId: items.masterId })
+                    .from(items)
+                    .where(inArray(items.id, targetIds))
+                : []
+
+            for (const target of targetMasters) {
+              const nested = candidateIdByMaster.get(target.masterId)
+              if (nested) {
+                nestedIds.add(nested)
+              }
             }
           }
 
@@ -2688,7 +2740,14 @@ app.get(
                 .where(inArray(items.id, resolvedItemIds))
             }
           } else {
-            // For main branch or non-ECO branches: get branch items and build mappings
+            // For main: the item set is the *union* of two sources keyed by
+            // masterId — branch_items overlaid on the design's current items —
+            // not whichever one happens to be non-empty first.
+            //
+            // Items created directly on main never get a branch_items row, so
+            // "branch_items, else fall back to isCurrent" showed all of them
+            // right up until the first ECO merge inserted a row, and from then
+            // on showed only the single item that merge released.
             const branchItemsResult = await db
               .select({
                 currentItemId: branchItems.currentItemId,
@@ -2697,61 +2756,69 @@ app.get(
               .from(branchItems)
               .where(eq(branchItems.branchId, targetBranchId))
 
-            const currentItemIds = branchItemsResult
+            const trackedItemIds = branchItemsResult
               .map((bi) => bi.currentItemId)
               .filter((id): id is string => id !== null)
 
-            // Build masterId mappings for relationship resolution
-            mainBranchItemIds = currentItemIds
-            for (const bi of branchItemsResult) {
-              if (bi.currentItemId && bi.itemMasterId) {
-                masterIdToResolvedItemId.set(bi.itemMasterId, bi.currentItemId)
-                mainItemIdToMasterId.set(bi.currentItemId, bi.itemMasterId)
-              }
+            const itemColumns = {
+              id: items.id,
+              itemNumber: items.itemNumber,
+              name: items.name,
+              revision: items.revision,
+              state: items.state,
+              itemType: items.itemType,
+              inDesignStructure: items.inDesignStructure,
+              designId: items.designId,
+              masterId: items.masterId,
             }
 
-            if (currentItemIds.length > 0) {
-              allItems = await db
-                .select({
-                  id: items.id,
-                  itemNumber: items.itemNumber,
-                  name: items.name,
-                  revision: items.revision,
-                  state: items.state,
-                  itemType: items.itemType,
-                  inDesignStructure: items.inDesignStructure,
-                  designId: items.designId,
-                  masterId: items.masterId,
-                })
-                .from(items)
-                .where(inArray(items.id, currentItemIds))
-            } else {
-              // Fallback: branchItems is empty, use isCurrent items for the design
-              // This handles legacy data or items not yet tracked in branchItems
-              allItems = await db
-                .select({
-                  id: items.id,
-                  itemNumber: items.itemNumber,
-                  name: items.name,
-                  revision: items.revision,
-                  state: items.state,
-                  itemType: items.itemType,
-                  inDesignStructure: items.inDesignStructure,
-                  designId: items.designId,
-                  masterId: items.masterId,
-                })
-                .from(items)
-                .where(
-                  and(eq(items.designId, designId), eq(items.isCurrent, true)),
-                )
+            // Baseline: the design's current items. Working copies are excluded
+            // so a branch's unreleased drafts cannot be served as main's
+            // contents (the same guard VersionResolver.getReleasedItems uses).
+            const baselineItems = await db
+              .select(itemColumns)
+              .from(items)
+              .where(
+                and(
+                  eq(items.designId, designId),
+                  eq(items.isCurrent, true),
+                  notDeleted(),
+                  notWorkingRevision(),
+                ),
+              )
 
-              // Build masterId mappings for these items
-              for (const item of allItems) {
-                masterIdToResolvedItemId.set(item.masterId, item.id)
-                mainItemIdToMasterId.set(item.id, item.masterId)
-              }
-              mainBranchItemIds = allItems.map((i) => i.id)
+            const trackedItems =
+              trackedItemIds.length > 0
+                ? await db
+                    .select(itemColumns)
+                    .from(items)
+                    .where(inArray(items.id, trackedItemIds))
+                : []
+
+            // branch_items wins per masterId — it is the explicit record of
+            // what this branch points at, where isCurrent is only a global flag.
+            const resolvedByMaster = new Map<
+              string,
+              (typeof baselineItems)[0]
+            >()
+            for (const item of baselineItems) {
+              resolvedByMaster.set(item.masterId, item)
             }
+            for (const item of trackedItems) {
+              resolvedByMaster.set(item.masterId, item)
+            }
+
+            allItems = Array.from(resolvedByMaster.values())
+
+            // Build masterId mappings for relationship resolution. Every item
+            // in the set needs one: resolveItemId() re-points a BOM line that
+            // still names a superseded revision onto the current one, and it
+            // can only do that for masters it knows about.
+            for (const item of allItems) {
+              masterIdToResolvedItemId.set(item.masterId, item.id)
+              mainItemIdToMasterId.set(item.id, item.masterId)
+            }
+            mainBranchItemIds = allItems.map((i) => i.id)
           }
         } else {
           // Fallback: get isCurrent items for the design (legacy behavior)
@@ -2973,25 +3040,50 @@ app.get(
       // (same relationship can exist across multiple item versions)
       const addedRelationships = new Set<string>()
 
+      // A BOM line belongs to the item version that owns it, but the query
+      // above deliberately reaches across every version sharing a masterId:
+      // checkout creates a working copy *without* copying its lines, so on an
+      // ECO branch they are still owned by the version it was checked out
+      // from. A version's BOM is therefore its own rows when it has any, and
+      // its master's other versions' rows only when it has none. Without that
+      // first half a released revision that dropped a line would show it
+      // again, resurrected from the row its superseded version still owns.
+      const relationshipsBySource = new Map<string, typeof relationships>()
       for (const rel of relationships) {
         const resolvedSourceId = resolveItemId(rel.sourceId)
-        const resolvedTargetId = resolveItemId(rel.targetId)
-
-        // Deduplicate by resolved source-target pair
-        const relKey = `${resolvedSourceId}:${resolvedTargetId}`
-        if (addedRelationships.has(relKey)) continue
-        addedRelationships.add(relKey)
-
-        if (!childrenMap.has(resolvedSourceId)) {
-          childrenMap.set(resolvedSourceId, [])
+        const owned = relationshipsBySource.get(resolvedSourceId)
+        if (owned) {
+          owned.push(rel)
+        } else {
+          relationshipsBySource.set(resolvedSourceId, [rel])
         }
-        childrenMap.get(resolvedSourceId)!.push({
-          childId: resolvedTargetId,
-          relationshipId: rel.id,
-          quantity: rel.quantity ? Number(rel.quantity) : undefined,
-          findNumber: rel.findNumber ?? undefined,
-        })
-        hasParent.add(resolvedTargetId)
+      }
+
+      for (const [resolvedSourceId, sourceRels] of relationshipsBySource) {
+        const ownRels = sourceRels.filter(
+          (r) => r.sourceId === resolvedSourceId,
+        )
+        const effectiveRels = ownRels.length > 0 ? ownRels : sourceRels
+
+        for (const rel of effectiveRels) {
+          const resolvedTargetId = resolveItemId(rel.targetId)
+
+          // Deduplicate by resolved source-target pair
+          const relKey = `${resolvedSourceId}:${resolvedTargetId}`
+          if (addedRelationships.has(relKey)) continue
+          addedRelationships.add(relKey)
+
+          if (!childrenMap.has(resolvedSourceId)) {
+            childrenMap.set(resolvedSourceId, [])
+          }
+          childrenMap.get(resolvedSourceId)!.push({
+            childId: resolvedTargetId,
+            relationshipId: rel.id,
+            quantity: rel.quantity ? Number(rel.quantity) : undefined,
+            findNumber: rel.findNumber ?? undefined,
+          })
+          hasParent.add(resolvedTargetId)
+        }
       }
 
       // Create item lookup map (includes both local and external items)

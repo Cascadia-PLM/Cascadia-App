@@ -16,7 +16,6 @@ export interface Tool extends BaseItem {
   manufacturer?: string
   model?: string
   capabilities?: Record<string, unknown>
-  toolStatus?: 'available' | 'in_use' | 'maintenance' | 'retired'
   location?: string
   notes?: string
   // Free-form key/value metadata (inherited from BaseItem; declared for clarity)
@@ -452,9 +451,6 @@ export const toolSchema = baseItemSchema
     manufacturer: z.string().max(200).optional(),
     model: z.string().max(200).optional(),
     capabilities: z.record(z.string(), z.unknown()).optional(),
-    toolStatus: z
-      .enum(['available', 'in_use', 'maintenance', 'retired'])
-      .optional(),
     location: z.string().max(500).optional(),
     notes: z.string().max(5000).optional(),
   })

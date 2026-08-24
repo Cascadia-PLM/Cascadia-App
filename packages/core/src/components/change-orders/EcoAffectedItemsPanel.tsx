@@ -63,6 +63,7 @@ import {
   TabsTrigger,
 } from '@/components/ui'
 import { DataGrid } from '@/components/ui/DataGrid'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface EcoAffectedItemsPanelProps {
   changeOrderId: string
@@ -169,9 +170,14 @@ export function EcoAffectedItemsPanel({
 
   const nodeTypes = useMemo(() => ({ ecoItemNode: EcoGraphItemNode }), [])
 
-  // Determine if editing is allowed
-  const isEditable =
-    !readOnly && ['Draft', 'InReview'].includes(changeOrderState)
+  // Editing stops when the change order's flow has ended - a final state of
+  // its Driving workflow, whatever it is called. (The server additionally
+  // locks scope once the order leaves its initial state.)
+  const { data: coLifecycle } = useLifecyclePhases('ChangeOrder')
+  const coStateIsFinal =
+    coLifecycle?.states.find((st) => st.id === changeOrderState)?.isFinal ??
+    false
+  const isEditable = !readOnly && !coStateIsFinal
 
   // Build graph from design structures (hierarchical BOM view)
   const buildGraph = useCallback(async () => {

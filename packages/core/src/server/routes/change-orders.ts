@@ -202,7 +202,7 @@ const addAffectedItemsRequestSchema = z.union([
 // ============================================
 
 // GET /api/change-orders - List change orders with optional design/program
-// filtering. Query params: designId, programId, limit, offset, includeCounts.
+// filtering. Query params: designId, programId, limit, offset.
 app.get(
   '/',
   adapt(
@@ -232,49 +232,12 @@ app.get(
         }
         const limit = parseInt(url.searchParams.get('limit') || '50', 10)
         const offset = parseInt(url.searchParams.get('offset') || '0', 10)
-        const includeCounts = url.searchParams.get('includeCounts') === 'true'
 
         // The unfiltered list below is bounded by nothing else, so the
         // caller's own reach is what bounds it. Resolved once and shared with
         // the counts, which must agree with the rows they sit above.
         const accessDesignIds =
           await AccessControlService.getAccessibleDesignIds(user.id)
-
-        const getStateCounts = async (changeOrderIds?: Array<string>) => {
-          if (changeOrderIds && changeOrderIds.length > 0) {
-            const allItems = await db
-              .select()
-              .from(items)
-              .where(inArray(items.id, changeOrderIds))
-            return {
-              Draft: allItems.filter((c) => c.state === 'Draft').length,
-              InReview: allItems.filter((c) => c.state === 'InReview').length,
-              Released: allItems.filter((c) => c.state === 'Released').length,
-            }
-          }
-          const [draft, inReview, released] = await Promise.all([
-            ItemService.search('ChangeOrder', {
-              limit: 1,
-              state: 'Draft',
-              accessDesignIds,
-            }),
-            ItemService.search('ChangeOrder', {
-              limit: 1,
-              state: 'InReview',
-              accessDesignIds,
-            }),
-            ItemService.search('ChangeOrder', {
-              limit: 1,
-              state: 'Released',
-              accessDesignIds,
-            }),
-          ])
-          return {
-            Draft: draft.total,
-            InReview: inReview.total,
-            Released: released.total,
-          }
-        }
 
         if (designId) {
           const ecoDesignRecords = await db
@@ -288,9 +251,6 @@ app.get(
             return {
               changeOrders: [],
               total: 0,
-              ...(includeCounts
-                ? { counts: { Draft: 0, InReview: 0, Released: 0 } }
-                : {}),
             }
           }
 
@@ -303,8 +263,6 @@ app.get(
             changeOrders: records.filter(Boolean),
             total: changeOrderIds.length,
           }
-          if (includeCounts)
-            response.counts = await getStateCounts(changeOrderIds)
           return response
         }
 
@@ -320,9 +278,6 @@ app.get(
             return {
               changeOrders: [],
               total: 0,
-              ...(includeCounts
-                ? { counts: { Draft: 0, InReview: 0, Released: 0 } }
-                : {}),
             }
           }
 
@@ -339,9 +294,6 @@ app.get(
             return {
               changeOrders: [],
               total: 0,
-              ...(includeCounts
-                ? { counts: { Draft: 0, InReview: 0, Released: 0 } }
-                : {}),
             }
           }
 
@@ -354,8 +306,6 @@ app.get(
             changeOrders: records.filter(Boolean),
             total: changeOrderIds.length,
           }
-          if (includeCounts)
-            response.counts = await getStateCounts(changeOrderIds)
           return response
         }
 
@@ -369,7 +319,6 @@ app.get(
           changeOrders: result.items,
           total: result.total,
         }
-        if (includeCounts) response.counts = await getStateCounts()
         return response
       },
     ),
@@ -1557,11 +1506,19 @@ app.get(
           (a) => !affectedItemIds.has(a.itemId),
         )
 
-        // Count released vs draft ancestors (only those not already in ECO)
-        const releasedCount = ancestors.filter(
-          (a) => a.state === 'Released',
-        ).length
-        const draftCount = ancestors.filter((a) => a.state === 'Draft').length
+        // Count released-lineage vs initial-state ancestors (only those not
+        // already in the ECO), per each ancestor's own lifecycle
+        const ancestorFlags = await Promise.all(
+          ancestors.map(async (a) => ({
+            released: await LifecycleService.isReleasedFamilyState(
+              a.itemType,
+              a.state,
+            ),
+            initial: await LifecycleService.isInitialState(a.itemType, a.state),
+          })),
+        )
+        const releasedCount = ancestorFlags.filter((f) => f.released).length
+        const draftCount = ancestorFlags.filter((f) => f.initial).length
 
         return {
           item: {
@@ -2201,6 +2158,13 @@ app.post(
         const affectedItems = await ChangeOrderService.getAffectedItems(
           params.id,
         )
+        // Masters the branch merge releases outright. The change-action
+        // mappings are never consulted for these, so predicting from them
+        // reports a violation for a release that will happen anyway — an
+        // item authored on the ECO branch sits in its lifecycle's initial
+        // state, which is not where `release` maps from for every type.
+        const mastersOnBranches =
+          await ChangeOrderService.getMastersWithBranchContent(params.id)
         // Kept under its historical name for API/UI compatibility; now
         // sourced from the mappings the merge will actually apply
         const lifecycleEffectErrors: Array<string> = []
@@ -2223,7 +2187,11 @@ app.post(
               lifecycleName: string
             }> = []
 
-            if (isReleaseTarget) {
+            const releasedByBranchMerge =
+              affected.affectedItemMasterId != null &&
+              mastersOnBranches.has(affected.affectedItemMasterId)
+
+            if (isReleaseTarget && !releasedByBranchMerge) {
               const validation = await LifecycleService.canApplyAction(
                 item.itemType,
                 item.state || '',

@@ -29,9 +29,11 @@ import {
   itemCountsQuery,
   itemGridQuery,
   itemListQuery,
+  lifecycleByItemTypeQuery,
   useInvalidateResources,
 } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
+import { LifecycleStateCards } from '@/components/items/LifecycleStateCards'
 
 // Search schema for URL validation
 const partsSearchSchema = z.object({
@@ -51,8 +53,6 @@ const partsSearchSchema = z.object({
 })
 
 type PartsSearch = z.infer<typeof partsSearchSchema>
-
-const COUNT_STATES = ['Draft', 'InReview', 'Released'] as const
 
 // Built from the URL by both the loader and the page, so the two derive the
 // same query key and share one fetch.
@@ -76,7 +76,17 @@ export const Route = createFileRoute('/parts/')({
     const grid = gridParamsFromSearch(deps)
     await Promise.all([
       queryClient.ensureQueryData(itemListQuery<Part>(filters, grid)),
-      queryClient.ensureQueryData(itemCountsQuery(filters, COUNT_STATES)),
+      (async () => {
+        const lifecycle = await queryClient.ensureQueryData(
+          lifecycleByItemTypeQuery('Part'),
+        )
+        await queryClient.ensureQueryData(
+          itemCountsQuery(
+            filters,
+            lifecycle.states.map((state) => state.id),
+          ),
+        )
+      })(),
       queryClient.ensureQueryData(designListQuery()),
     ])
   },
@@ -92,7 +102,6 @@ function PartsListPage() {
   const filters = partFilters(searchParams)
 
   const { data: designs = [] } = useQuery(designListQuery())
-  const { data: counts } = useQuery(itemCountsQuery(filters, COUNT_STATES))
 
   // Get selected design from URL
   const selectedDesignId = searchParams.designId
@@ -197,33 +206,13 @@ function PartsListPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Parts</CardDescription>
-            <CardTitle className="text-3xl">{total}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Draft</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Draft ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>In Review</CardDescription>
-            <CardTitle className="text-3xl">{counts?.InReview ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Released</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Released ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {/* Stats — one card per lifecycle state, from configuration */}
+      <LifecycleStateCards
+        itemType="Part"
+        filters={filters}
+        total={total}
+        totalLabel="Total Parts"
+      />
 
       {/* Parts Table */}
       <Card>

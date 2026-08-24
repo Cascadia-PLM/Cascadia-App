@@ -36,6 +36,7 @@ import { RevisionService } from './RevisionService'
 import { bomStructureOf } from './item-structure'
 import type { TransactionClient } from '../db'
 import type { ResolvedActionStates } from './LifecycleService'
+import type { RevisionScheme } from '../types/lifecycle'
 import type { UpstreamChangeItem, commits } from '../db/schema'
 import type { ChangeAction, ChangeOrder } from '../items/types/change-order'
 import { serviceLogger } from '@/lib/logging/logger'
@@ -103,6 +104,14 @@ export interface ReleasePreview {
   validationIssues: Array<string>
   /** All conflicts across all designs */
   allConflicts: Array<MergeConflict>
+  /**
+   * The release already ran: the change order's workflow finished in a
+   * releasing final state, or one of its designs is recorded merged. Whatever
+   * is still to merge — nothing, unless a release failed part way through —
+   * is in `designs` as usual, so a closed change order previews empty rather
+   * than predicting its own release a second time.
+   */
+  alreadyReleased: boolean
 }
 
 /**
@@ -139,6 +148,25 @@ interface ReleasedItemsForDesign {
 // ============================================
 // ChangeOrderMergeService
 // ============================================
+
+/**
+ * Narrow a nullable action-target state at a site that already validated the
+ * action via `canApplyAction`. A null here means the lifecycle stopped
+ * defining the action between intake and merge — surface that as the
+ * validation failure it is rather than writing a null state.
+ */
+function requireActionState(
+  value: string | null,
+  itemType: string,
+  action: string,
+): string {
+  if (value === null) {
+    throw new ValidationError(
+      `The ${itemType} lifecycle no longer defines a "${action}" action; remove the affected item or restore the mapping`,
+    )
+  }
+  return value
+}
 
 /**
  * Service for change order merge/release workflow.
@@ -237,11 +265,34 @@ export class ChangeOrderMergeService {
   private static async assertScopeMatchesBranchContent(
     changeOrderId: string,
   ): Promise<void> {
+    const unlisted = await this.findUnlistedBranchContent(changeOrderId)
+    if (unlisted.length === 0) return
+
+    throw new ValidationError(
+      `Cannot release: ${this.describeUnlistedBranchContent(unlisted)} ` +
+        'Releasing would apply changes that were never reviewed. Add them to ' +
+        'the change order, or discard the branch changes.',
+      undefined,
+      { operation: 'merge', resource: 'ChangeOrder' },
+    )
+  }
+
+  /**
+   * Branch content this change order does not list as an affected item.
+   *
+   * Shared by the release-time assertion above and the release preview, so
+   * the panel a reviewer reads before approving reports exactly what the
+   * merge will refuse. Discovering this only at release meant an ECO had
+   * already been through review before anyone learned its scope was short.
+   */
+  private static async findUnlistedBranchContent(
+    changeOrderId: string,
+  ): Promise<Array<{ itemMasterId: string; identifier: string }>> {
     const ecoDesigns = await ChangeOrderService.getEcoDesigns(changeOrderId)
     const branchIds = ecoDesigns
       .map((d) => d.branchId)
       .filter((id): id is string => id !== null)
-    if (branchIds.length === 0) return
+    if (branchIds.length === 0) return []
 
     const changedOnBranches = await db
       .select({
@@ -255,7 +306,7 @@ export class ChangeOrderMergeService {
           isNotNull(branchItems.changeType),
         ),
       )
-    if (changedOnBranches.length === 0) return
+    if (changedOnBranches.length === 0) return []
 
     const affectedItems =
       await ChangeOrderService.getAffectedItems(changeOrderId)
@@ -268,37 +319,41 @@ export class ChangeOrderMergeService {
     const unlisted = changedOnBranches.filter(
       (c) => !listedMasterIds.has(c.itemMasterId),
     )
-    if (unlisted.length === 0) return
+    if (unlisted.length === 0) return []
 
-    // Name at most ten of them; one read for the lot rather than one each.
-    const named = unlisted.slice(0, 10)
-    const namedItemIds = named
+    // One read for the lot rather than one each.
+    const itemIds = unlisted
       .map((row) => row.currentItemId)
       .filter((id): id is string => Boolean(id))
     const numbersById = new Map(
-      namedItemIds.length > 0
+      itemIds.length > 0
         ? (
             await db
               .select({ id: items.id, itemNumber: items.itemNumber })
               .from(items)
-              .where(inArray(items.id, namedItemIds))
+              .where(inArray(items.id, itemIds))
           ).map((row) => [row.id, row.itemNumber])
         : [],
     )
-    const identifiers = named.map(
-      (row) =>
+
+    return unlisted.map((row) => ({
+      itemMasterId: row.itemMasterId,
+      identifier:
         (row.currentItemId ? numbersById.get(row.currentItemId) : null) ||
         row.itemMasterId,
-    )
+    }))
+  }
 
-    throw new ValidationError(
-      `Cannot release: ${unlisted.length} item(s) changed on this change order's ` +
-        `branches are not in its affected items list (${identifiers.join(', ')}` +
-        `${unlisted.length > identifiers.length ? ', …' : ''}). ` +
-        'Releasing would apply changes that were never reviewed. Add them to ' +
-        'the change order, or discard the branch changes.',
-      undefined,
-      { operation: 'merge', resource: 'ChangeOrder' },
+  /** One sentence naming at most ten of them, for an error or a preview. */
+  private static describeUnlistedBranchContent(
+    unlisted: Array<{ identifier: string }>,
+  ): string {
+    const named = unlisted.slice(0, 10)
+    return (
+      `${unlisted.length} item(s) changed on this change order's branches ` +
+      `are not in its affected items list ` +
+      `(${named.map((u) => u.identifier).join(', ')}` +
+      `${unlisted.length > named.length ? ', …' : ''}).`
     )
   }
 
@@ -331,6 +386,70 @@ export class ChangeOrderMergeService {
       toState: target.toState,
       revision: target.revision,
       assignedRevision: target.assignsRevision,
+    }
+  }
+
+  /**
+   * The released revision a `modified` branch item is based on, and the one
+   * releasing it will assign.
+   *
+   * The merge and `previewMerge` both have to answer this and answered it
+   * separately, so the preview was free to be wrong — and was. It bumped
+   * whatever revision the branch row happened to carry, which for a
+   * checked-out working copy is the branch placeholder (`-d370051d`): the
+   * preview promised "A" for an item main already held at A and the release
+   * then took to B. Main's current revision is the only correct base, because
+   * another change order may have released a newer one since this branch was
+   * cut.
+   *
+   * `baseRevision` is null when the master has no released row on main at
+   * all — the caller decides what to show for "current"; `newRevision` still
+   * mirrors what the merge would mint.
+   */
+  private static async resolveModifiedRevision(
+    itemMasterId: string,
+    branchRevision: string,
+    mainBranchId: string,
+    scheme: RevisionScheme | undefined,
+    tx?: TransactionClient,
+  ): Promise<{ baseRevision: string | null; newRevision: string }> {
+    // Not a working copy: the legacy path releases the branch row itself, so
+    // its own revision is what gets bumped.
+    if (!RevisionService.isWorkingRevision(branchRevision)) {
+      return {
+        baseRevision: branchRevision,
+        newRevision: RevisionService.getNextRevision(branchRevision, scheme),
+      }
+    }
+
+    const run = tx ?? db
+    const mainCurrentItem = await run
+      .select({ item: items })
+      .from(branchItems)
+      .innerJoin(items, eq(branchItems.currentItemId, items.id))
+      .where(
+        and(
+          eq(branchItems.branchId, mainBranchId),
+          eq(branchItems.itemMasterId, itemMasterId),
+        ),
+      )
+      .limit(1)
+      .then((r) => r.at(0)?.item)
+
+    const mainRevision = mainCurrentItem?.revision
+    if (!mainRevision) {
+      return {
+        baseRevision: null,
+        newRevision: RevisionService.getNextRevision(
+          RevisionService.getInitialRevision(scheme),
+          scheme,
+        ),
+      }
+    }
+
+    return {
+      baseRevision: mainRevision,
+      newRevision: RevisionService.getNextRevision(mainRevision, scheme),
     }
   }
 
@@ -626,7 +745,7 @@ export class ChangeOrderMergeService {
         if (!skippedStateChange) {
           const validation = await LifecycleService.canApplyAction(
             item.itemType,
-            item.state || 'Draft',
+            item.state,
             action,
           )
           if (!validation.valid) {
@@ -637,7 +756,11 @@ export class ChangeOrderMergeService {
 
           switch (action) {
             case 'release': {
-              const targetState = states.releaseState
+              const targetState = requireActionState(
+                states.releaseState,
+                item.itemType,
+                'release',
+              )
               const releaseScheme = states.revisionScheme
               // Assign initial revision if item has no real revision yet
               const needsRevision = RevisionService.isWorkingRevision(
@@ -675,7 +798,11 @@ export class ChangeOrderMergeService {
             }
 
             case 'revise': {
-              const newVersionState = states.reviseState
+              const newVersionState = requireActionState(
+                states.reviseState,
+                item.itemType,
+                'revise',
+              )
               const oldVersionState = states.supersededState
 
               // Check for existing working copy (created when affected item was added)
@@ -795,7 +922,13 @@ export class ChangeOrderMergeService {
             case 'obsolete': {
               await ItemService.update(
                 affected.affectedItemId,
-                { state: states.obsoleteState },
+                {
+                  state: requireActionState(
+                    states.obsoleteState,
+                    item.itemType,
+                    'obsolete',
+                  ),
+                },
                 userId,
                 { ...bypassOptions, tx },
               )
@@ -1012,7 +1145,7 @@ export class ChangeOrderMergeService {
         // intake) was applied here unchecked.
         const validation = await LifecycleService.canApplyAction(
           item.itemType,
-          item.state || 'Draft',
+          item.state,
           action,
         )
         if (!validation.valid) {
@@ -1068,7 +1201,13 @@ export class ChangeOrderMergeService {
           if (newRev.id) {
             await ItemService.update(
               newRev.id,
-              { state: states.reviseState },
+              {
+                state: requireActionState(
+                  states.reviseState,
+                  item.itemType,
+                  'revise',
+                ),
+              },
               userId,
               {
                 bypassBranchProtection: true,
@@ -1094,8 +1233,11 @@ export class ChangeOrderMergeService {
         }
 
         // release | obsolete - state-only
-        const resolvedState =
-          action === 'obsolete' ? states.obsoleteState : states.releaseState
+        const resolvedState = requireActionState(
+          action === 'obsolete' ? states.obsoleteState : states.releaseState,
+          item.itemType,
+          action,
+        )
 
         if (item.state === resolvedState) continue
 
@@ -1407,7 +1549,9 @@ export class ChangeOrderMergeService {
                     ...currentItem,
                     id: undefined,
                     revision: newRevision,
-                    state: lifecycleStates.releaseState,
+                    // Free lifecycles define no release action: their items
+                    // merge without a lifecycle stamp and keep their state
+                    state: lifecycleStates.releaseState ?? currentItem.state,
                     isCurrent: true,
                     modifiedAt: new Date(),
                     modifiedBy: userId,
@@ -1493,40 +1637,27 @@ export class ChangeOrderMergeService {
               let finalRevision: string
 
               if (isWorkingCopy) {
-                // Working copy exists - transition it to Released
-                // If revision is a placeholder, calculate next revision from main's CURRENT item
-                // (not the base item, since another ECO may have released a newer revision)
-                {
-                  // Get main's current item for this master to get the latest revision
-                  const mainCurrentItem = await tx
-                    .select({ item: items })
-                    .from(branchItems)
-                    .innerJoin(items, eq(branchItems.currentItemId, items.id))
-                    .where(
-                      and(
-                        eq(branchItems.branchId, mainBranch.id),
-                        eq(branchItems.itemMasterId, bi.itemMasterId),
-                      ),
-                    )
-                    .limit(1)
-                    .then((r) => r.at(0)?.item)
-
-                  // Calculate next revision from main's current (which may be ahead of our base)
-                  finalRevision = RevisionService.getNextRevision(
-                    mainCurrentItem?.revision ||
-                      RevisionService.getInitialRevision(
-                        lifecycleStates.revisionScheme,
-                      ),
+                // Working copy exists - transition it to Released.
+                // The revision comes from main's CURRENT item, not the base
+                // item, since another ECO may have released a newer revision
+                // since this branch was cut. `previewMerge` calls the same
+                // helper, so what it predicts is what this assigns.
+                finalRevision = (
+                  await this.resolveModifiedRevision(
+                    bi.itemMasterId,
+                    currentItem.revision,
+                    mainBranch.id,
                     lifecycleStates.revisionScheme,
+                    tx,
                   )
-                }
+                ).newRevision
 
                 // Update working copy with final revision and revise state
                 await tx
                   .update(items)
                   .set({
                     revision: finalRevision,
-                    state: lifecycleStates.reviseState,
+                    state: lifecycleStates.reviseState ?? currentItem.state,
                     isCurrent: true,
                     modifiedAt: new Date(),
                     modifiedBy: userId,
@@ -1556,7 +1687,7 @@ export class ChangeOrderMergeService {
                       ...currentItem,
                       id: undefined,
                       revision: newRevision,
-                      state: lifecycleStates.reviseState,
+                      state: lifecycleStates.reviseState ?? currentItem.state,
                       isCurrent: true,
                       modifiedAt: new Date(),
                       modifiedBy: userId,
@@ -1640,7 +1771,11 @@ export class ChangeOrderMergeService {
                 await tx
                   .update(items)
                   .set({
-                    state: lifecycleStates.obsoleteState,
+                    // No obsolete mapping (Free lifecycles): the deleted
+                    // item keeps its state and is marked deleted only
+                    ...(lifecycleStates.obsoleteState
+                      ? { state: lifecycleStates.obsoleteState }
+                      : {}),
                     isDeleted: true,
                     deletedAt: new Date(),
                     deletedBy: userId,
@@ -2299,10 +2434,51 @@ export class ChangeOrderMergeService {
     }
 
     const ecoDesigns = await ChangeOrderService.getEcoDesigns(changeOrderId)
+
+    // A change order that has finished has nothing left to preview, and
+    // walking its branches anyway described the release it already did as a
+    // release still to come. The branch rows survive the merge and their
+    // current item IS the row now released on main, so the preview bumped
+    // that revision a second time (B -> C) and `validateMerge` compared main
+    // against the very row the merge had promoted onto it - reporting the
+    // release as a concurrent modification of itself.
+    //
+    // Closed-ness and its reason come from the workflow instance, the same
+    // source `canReachRelease` and `executeWorkflowTransition` read: isFinal
+    // and finalKind, never a state name. 'Approved' is one workflow's label.
+    const closure = await ChangeOrderService.getClosure(changeOrderId)
+    const alreadyReleased =
+      closure.finalKind === 'release' ||
+      ecoDesigns.some((d) => d.mergeStatus === 'merged')
+
+    if (closure.closed) {
+      return {
+        designs: [],
+        totalItems: 0,
+        canRelease: false,
+        validationIssues: [
+          alreadyReleased
+            ? `${changeOrder.itemNumber} has already been released; nothing further will merge`
+            : `${changeOrder.itemNumber} is closed in state "${changeOrder.state}"; nothing further will merge`,
+        ],
+        allConflicts: [],
+        alreadyReleased,
+      }
+    }
+
     const designs: ReleasePreview['designs'] = []
     let totalItems = 0
     const validationIssues: Array<string> = []
     const allConflicts: Array<MergeConflict> = []
+    // Masters a branch will release. The affected-items pass below skips
+    // them, exactly as `applyRemainingActions` does - the two enumerate the
+    // same item from opposite ends, and deduplicating by item id instead of
+    // by master listed a checked-out item twice: once as the branch working
+    // copy and once as the released row it is based on.
+    const seenMasterIds = new Set<string>()
+    // A design already merged still counts as a branch carrying changes, the
+    // way `mergeBranches` counts one it skips.
+    let mergedDesignCount = 0
 
     for (const ecoDesign of ecoDesigns) {
       if (!ecoDesign.branchId) {
@@ -2326,6 +2502,19 @@ export class ChangeOrderMergeService {
           ),
         )
 
+      for (const { branchItem } of changedItems) {
+        seenMasterIds.add(branchItem.itemMasterId)
+      }
+
+      // Mirrors the retry guard in `mergeBranches`: a design recorded merged
+      // is not merged again, so a release that failed part way through must
+      // not preview the designs it already released as another revision bump.
+      if (ecoDesign.mergeStatus === 'merged') {
+        mergedDesignCount++
+        continue
+      }
+
+      const mainBranch = await BranchService.getMainBranch(ecoDesign.designId)
       const previewItems: Array<ReleasePreviewItem> = []
 
       for (const { branchItem, item } of changedItems) {
@@ -2334,9 +2523,22 @@ export class ChangeOrderMergeService {
         const previewScheme = await LifecycleService.getRevisionScheme(
           item.itemType,
         )
+        let currentRevision = item.revision
         let newRevision: string
         if (branchItem.changeType === 'added') {
           newRevision = RevisionService.getInitialRevision(previewScheme)
+        } else if (branchItem.changeType === 'modified' && mainBranch) {
+          // The helper the merge itself uses, so the letter shown here is the
+          // letter assigned: a checked-out working copy carries a branch
+          // placeholder revision, not the released one it is based on.
+          const resolved = await this.resolveModifiedRevision(
+            branchItem.itemMasterId,
+            item.revision,
+            mainBranch.id,
+            previewScheme,
+          )
+          currentRevision = resolved.baseRevision ?? item.revision
+          newRevision = resolved.newRevision
         } else if (branchItem.changeType === 'modified') {
           newRevision = RevisionService.getNextRevision(
             item.revision,
@@ -2349,7 +2551,7 @@ export class ChangeOrderMergeService {
         previewItems.push({
           itemId: item.id,
           itemNumber: item.itemNumber,
-          currentRevision: item.revision,
+          currentRevision,
           newRevision,
           changeType: branchItem.changeType as 'added' | 'modified' | 'deleted',
         })
@@ -2396,10 +2598,8 @@ export class ChangeOrderMergeService {
     //   applied directly (release/revise/obsolete/promote)
     // - when branches do merge, 'release' and 'obsolete' affected items are
     //   still applied afterward (the state-only pass)
-    const branchesWithChanges = designs.filter((d) => d.items.length > 0).length
-    const seenItemIds = new Set(
-      designs.flatMap((d) => d.items.map((i) => i.itemId)),
-    )
+    const branchesWithChanges =
+      designs.filter((d) => d.items.length > 0).length + mergedDesignCount
     const affectedItems =
       await ChangeOrderService.getAffectedItems(changeOrderId)
     const designEntryById = new Map(designs.map((d) => [d.designId, d]))
@@ -2417,11 +2617,14 @@ export class ChangeOrderMergeService {
       ) {
         continue
       }
-      if (seenItemIds.has(item.id)) continue
+      // By master, not by item id: the branch holds a different row of the
+      // same item, and matching on ids reported both.
+      const masterId = affected.affectedItemMasterId ?? item.masterId
+      if (seenMasterIds.has(masterId)) continue
 
       const validation = await LifecycleService.canApplyAction(
         item.itemType,
-        item.state || 'Draft',
+        item.state,
         action,
       )
       const targetState = await LifecycleService.getTargetState(
@@ -2454,7 +2657,7 @@ export class ChangeOrderMergeService {
       // Nothing observable would change — mirrors the merge's idempotent skip
       if (alreadyInTarget && newRevision === item.revision) continue
 
-      seenItemIds.add(item.id)
+      seenMasterIds.add(masterId)
       const previewItem: ReleasePreviewItem = {
         itemId: item.id,
         itemNumber: item.itemNumber,
@@ -2483,6 +2686,17 @@ export class ChangeOrderMergeService {
       totalItems++
     }
 
+    // The same check `merge()` makes, reported instead of thrown. It is the
+    // one blocker a reviewer could otherwise not see until the release button
+    // failed, after the ECO had been approved.
+    const unlisted = await this.findUnlistedBranchContent(changeOrderId)
+    if (unlisted.length > 0) {
+      validationIssues.push(
+        `${this.describeUnlistedBranchContent(unlisted)} Add them to the ` +
+          'change order, or discard the branch changes.',
+      )
+    }
+
     // Can release if a releasing transition is reachable AND there are no
     // blocking conflicts. Reachability comes from the workflow structure rather
     // than from comparing the item's state to the literal 'Approved' — that is
@@ -2494,7 +2708,8 @@ export class ChangeOrderMergeService {
     )
     const canRelease =
       (await ChangeOrderService.canReachRelease(changeOrderId)) &&
-      blockingConflicts.length === 0
+      blockingConflicts.length === 0 &&
+      unlisted.length === 0
 
     return {
       designs,
@@ -2502,6 +2717,7 @@ export class ChangeOrderMergeService {
       canRelease,
       validationIssues,
       allConflicts,
+      alreadyReleased,
     }
   }
 }

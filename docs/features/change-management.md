@@ -389,12 +389,28 @@ Each save is a commit. The branch accumulates a linear commit history, just like
   working revision and the lifecycle's initial state.
 - Creates a `branch_items` record with `changeType = 'added'` and `baseItemId = null`.
 - Creates a commit recording the addition.
+- Lists the item on the change order that owns the branch
+  (`ChangeOrderService.registerBranchChange()`), as a `release` carrying the
+  scheme's initial revision.
+
+**A first release is recorded whatever state the new item is in.** The branch
+merge gives every `'added'` row the release state and the initial revision
+without consulting the `release` mapping's `fromState`, so the scope row has to
+say the same thing. Inferring the action from the item's state instead recorded
+nothing for any type whose release starts later than its initial state —
+Requirement releases from `Approved` — and the change order then refused to
+release, naming items it had never been given the chance to list.
 
 ### Deleting Items on a Branch
 
 `CheckoutService.deleteOnBranch()`:
 
-- If the item was added on this branch (`changeType = 'added'`), removes the `branch_items` record.
+- If the item was added on this branch (`changeType = 'added'`), removes the
+  `branch_items` record, and drops the item from the change order's scope
+  (`ChangeOrderService.unregisterBranchChange()`) when no branch of that change
+  order carries the master any more — the item existed only on the branch, so
+  leaving the scope row would have the branchless merge path release a draft
+  that no longer exists.
 - Otherwise, sets `branch_items.changeType = 'deleted'`.
 - Creates a commit recording the deletion.
 
@@ -496,6 +512,11 @@ its conflicts must not be trapped by them.
 The merge then applies its own checks — the driver allow-list, scope reconciliation, and
 per-branch `validateMerge`, which compares extension-table fields and BOM structure as well as
 the base item row.
+
+Scope reconciliation (`assertScopeMatchesBranchContent`) refuses to release branch content the
+change order does not list. `previewMerge()` reports the same finding as a `validationIssue`
+with `canRelease: false`, so `GET /api/v1/change-orders/:id/release` — and the release preview
+in the transition dialog — show it before anyone approves, rather than at the release itself.
 
 ### Release Flow
 

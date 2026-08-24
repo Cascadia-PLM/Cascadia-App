@@ -41,8 +41,6 @@ export function ChangeOrderForm({
   const form = useForm({
     defaultValues: {
       itemType: 'ChangeOrder' as const,
-      state: 'Draft',
-      revision: 'A',
       changeType: 'ECO' as const,
       priority: 'medium' as const,
       itemNumber: '',
@@ -62,7 +60,6 @@ export function ChangeOrderForm({
       // Zod's .optional() allows undefined but not empty strings
       const submissionData = {
         ...value,
-        revision: value.revision.trim() || 'A',
         itemNumber: value.itemNumber.trim() || undefined,
         name: value.name.trim() || undefined,
         reasonForChange: value.reasonForChange.trim() || undefined,
@@ -95,27 +92,6 @@ export function ChangeOrderForm({
             Auto-generated on creation
           </div>
         </FormField>
-
-        {/* Revision */}
-        <form.Field name="revision">
-          {(field) => (
-            <FormField
-              label="Revision"
-              required
-              error={field.state.meta.errors[0]}
-              helpText="Version identifier (A, B, C, etc.)"
-            >
-              <Input
-                name={field.name}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                placeholder="A"
-                error={!!field.state.meta.errors.length}
-              />
-            </FormField>
-          )}
-        </form.Field>
 
         {/* Name */}
         <form.Field name="name">

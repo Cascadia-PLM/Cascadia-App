@@ -18,6 +18,8 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface RequirementTableProps {
   requirements: Array<Requirement>
@@ -28,19 +30,6 @@ interface RequirementTableProps {
   totalRows?: number
   onPageChange?: (page: number, pageSize: number) => void
   isLoading?: boolean
-}
-
-const stateColors: Record<
-  string,
-  'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-> = {
-  Draft: 'secondary',
-  Proposed: 'default',
-  InReview: 'default',
-  Approved: 'success',
-  Implemented: 'success',
-  Verified: 'success',
-  Rejected: 'destructive',
 }
 
 const priorityColors: Record<
@@ -69,6 +58,14 @@ export function RequirementTable({
   onPageChange,
   isLoading,
 }: RequirementTableProps) {
+  // State filter options and badges come from the Requirement lifecycle's
+  // configuration, not from a list in code
+  const { data: lifecycle } = useLifecyclePhases('Requirement')
+  const stateFilterOptions = (lifecycle?.states ?? []).map((state) => ({
+    label: state.name,
+    value: state.id,
+  }))
+
   const columns: Array<DataGridColumn<Requirement>> = [
     {
       id: 'itemNumber',
@@ -137,35 +134,15 @@ export function RequirementTable({
       },
     },
     {
-      id: 'status',
-      header: 'Status',
-      accessorKey: 'status',
-      enableFiltering: true,
-      filterType: 'text',
-      filterPlaceholder: 'Filter status...',
-      cell: ({ getValue }) => (getValue() as string) || '-',
-    },
-    {
       id: 'state',
       header: 'State',
       accessorKey: 'state',
       enableFiltering: true,
       filterType: 'multiSelect',
-      filterOptions: [
-        { label: 'Draft', value: 'Draft' },
-        { label: 'Proposed', value: 'Proposed' },
-        { label: 'In Review', value: 'InReview' },
-        { label: 'Approved', value: 'Approved' },
-        { label: 'Implemented', value: 'Implemented' },
-        { label: 'Verified', value: 'Verified' },
-        { label: 'Rejected', value: 'Rejected' },
-      ],
-      cell: ({ getValue }) => {
-        const value = getValue() as string
-        return (
-          <Badge variant={stateColors[value] ?? 'secondary'}>{value}</Badge>
-        )
-      },
+      filterOptions: stateFilterOptions,
+      cell: ({ getValue }) => (
+        <StateBadge itemType="Requirement" state={getValue() as string} />
+      ),
     },
   ]
 

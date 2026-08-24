@@ -396,7 +396,6 @@ The Change Order has several supporting tables beyond the main `change_orders` t
 | `description`           | text                   | Requirement description                                                               |
 | `type`                  | varchar(50)            | `Functional`, `Non-Functional`, `Performance`, `Security`, `Usability`, or `Business` |
 | `priority`              | varchar(20)            | `MustHave`, `ShouldHave`, `CouldHave`, or `WontHave` (MoSCoW)                         |
-| `status`                | varchar(50)            | `Proposed`, `Approved`, `Implemented`, `Verified`, or `Rejected`                      |
 | `acceptance_criteria`   | text                   | Conditions for requirement satisfaction                                               |
 | `source`                | varchar(200)           | Origin of the requirement (e.g., customer, standard, regulation)                      |
 | `category`              | varchar(100)           | Grouping category                                                                     |
@@ -407,7 +406,7 @@ The Change Order has several supporting tables beyond the main `change_orders` t
 
 ### Lifecycle States
 
-Draft -> Proposed -> In Review -> Approved -> Implemented -> Verified -> Rejected
+Review progress is part of the lifecycle (default definition in `default-lifecycles.ts`; names are configuration): Draft -> Proposed -> Approved by manual transition, Rejected with Rework back to Draft, and release maps Approved -> Released (then Superseded/Obsolete through change orders). Verification outcome stays the measured `verification_status`.
 
 ### Relationships
 
@@ -428,23 +427,53 @@ Requirements support formal verification tracking (common in aerospace and defen
 | **Demonstration** | Verified by operational demonstration            |
 | **Test**          | Verified by formal test procedure                |
 
+### Deriving Child Requirements
+
+`POST /api/v1/requirements/{id}/derive` decomposes a requirement into a child,
+numbered `PARENT-D1`, `PARENT-D2`, ... and linked back through
+`parent_requirement_id`. The child inherits the parent's `verification_method`,
+`category` and `source` unless the request overrides them.
+
+Requirements are ECO-driven, so where the child lands follows the same branch
+rules as any other versioned item:
+
+| Request            | Child is created on                                                        |
+| ------------------ | -------------------------------------------------------------------------- |
+| `branchId` given   | that ECO or workspace branch, as a commit (`commitMessage` optional)       |
+| `branchId` omitted | the parent's own branch, when the parent row is a working copy on a branch |
+| neither applies    | main -- which only succeeds while the design is pre-release                |
+
+Decomposition usually happens _after_ the first release, when main is protected,
+so a post-release derive needs a `branchId` unless the parent is already checked
+out on one.
+
 ### API Endpoints
 
-| Method | Path                                               | Description                                 |
-| ------ | -------------------------------------------------- | ------------------------------------------- |
-| GET    | `/api/v1/items/search?itemType=Requirement`        | Search/list requirements                    |
-| GET    | `/api/v1/items/{id}`                               | Get requirement by ID                       |
-| POST   | `/api/v1/items`                                    | Create requirement                          |
-| PUT    | `/api/v1/items/{id}`                               | Update requirement                          |
-| GET    | `/api/v1/requirements/{id}`                        | Requirement-specific detail                 |
-| POST   | `/api/v1/requirements/{id}/derive`                 | Create derived (child) requirement          |
-| GET    | `/api/v1/requirements/{id}/parent`                 | Get parent requirement                      |
-| POST   | `/api/v1/requirements/{id}/satisfy`                | Mark requirement as satisfied by a part     |
-| GET    | `/api/v1/requirements/{id}/verifying-tests`        | Get test cases that verify this requirement |
-| GET    | `/api/v1/items/{id}/satisfied-requirements`        | Get requirements satisfied by an item       |
-| GET    | `/api/v1/designs/{designId}/requirements-coverage` | Requirements coverage report                |
-| GET    | `/api/v1/designs/{designId}/verification-gaps`     | Find unverified requirements                |
-| GET    | `/api/v1/designs/{designId}/gap-analysis`          | Full gap analysis                           |
+| Method | Path                                               | Description                                  |
+| ------ | -------------------------------------------------- | -------------------------------------------- |
+| GET    | `/api/v1/items/search?itemType=Requirement`        | Search/list requirements                     |
+| GET    | `/api/v1/items/{id}`                               | Get requirement by ID                        |
+| POST   | `/api/v1/items`                                    | Create requirement                           |
+| PUT    | `/api/v1/items/{id}`                               | Update requirement                           |
+| GET    | `/api/v1/requirements/{id}`                        | Requirement-specific detail                  |
+| POST   | `/api/v1/requirements/{id}/derive`                 | Create derived (child) requirement           |
+| GET    | `/api/v1/requirements/{id}/parent`                 | Get parent requirement                       |
+| GET    | `/api/v1/requirements/{id}/satisfy`                | Get items that satisfy this requirement      |
+| POST   | `/api/v1/requirements/{id}/satisfy`                | Mark requirement as satisfied by a part      |
+| DELETE | `/api/v1/requirements/{id}/satisfy`                | Remove a satisfaction link                   |
+| GET    | `/api/v1/requirements/{id}/allocate`               | Get items this requirement is allocated to   |
+| POST   | `/api/v1/requirements/{id}/allocate`               | Allocate requirement to design items         |
+| DELETE | `/api/v1/requirements/{id}/allocate`               | Remove an allocation                         |
+| POST   | `/api/v1/requirements/{id}/verify`                 | Link test cases that verify this requirement |
+| DELETE | `/api/v1/requirements/{id}/verify`                 | Remove a verification link                   |
+| GET    | `/api/v1/requirements/{id}/verifying-tests`        | Get test cases that verify this requirement  |
+| GET    | `/api/v1/items/{id}/satisfied-requirements`        | Get requirements satisfied by an item        |
+| GET    | `/api/v1/designs/{designId}/requirements-coverage` | Requirements coverage report                 |
+| GET    | `/api/v1/designs/{designId}/verification-gaps`     | Find unverified requirements                 |
+| GET    | `/api/v1/designs/{designId}/gap-analysis`          | Full gap analysis                            |
+
+Every write in that table records a traceability link and obeys one rule --
+see [Traceability links and branch protection](#traceability-links-and-branch-protection).
 
 ### UI Pages
 
@@ -1070,6 +1099,9 @@ The `item_relationships` table stores typed, directed relationships between any 
 | `BOM`             | Part (parent)    | Part (child)       | Bill of Materials hierarchy |
 | `Document`        | Part             | Document           | Attached documentation      |
 | `Affects`         | ChangeOrder      | Part, Document     | ECO affected items          |
+| `SATISFIES`       | Part, Document   | Requirement        | Item satisfies requirement  |
+| `ALLOCATED_TO`    | Requirement      | Part, Document     | Requirement allocated to it |
+| `DERIVES_FROM`    | Requirement      | Requirement        | Child derived from parent   |
 | `VERIFIED_BY`     | TestCase         | Requirement        | Test verifies requirement   |
 | `VALIDATES`       | TestCase         | Part               | Test validates part         |
 | `Dependency`      | Requirement/Task | Requirement/Task   | Depends-on relationship     |
@@ -1081,6 +1113,42 @@ The `item_relationships` table stores typed, directed relationships between any 
 Relationship records include optional fields for quantity, reference designator, find number, SysML composition/multiplicity, and cross-design traceability (source/target design, derivation method).
 
 **API:** `GET /api/v1/relationships`, `POST /api/v1/relationships/batch-create`, `PUT`/`DELETE /api/v1/relationships/{relationshipId}`
+
+### Traceability links and branch protection
+
+A relationship is content of the item it hangs off, so writing one runs through
+the same edit-lock policy as a field change: allowed on a branch row whose
+checkout the caller holds, or on main only while the design has released
+nothing. Once anything in the design is released, main is closed and the write
+is refused with `403 BRANCH_PROTECTED` and the ECO hint; a branch row nobody
+has checked out gives `409 ITEM_CHECKOUT_REQUIRED`.
+
+The four requirements-traceability types (`SATISFIES`, `ALLOCATED_TO`,
+`DERIVES_FROM`, `VERIFIED_BY`) carry one wrinkle. The rule normally falls on
+the **source**, but `VERIFIED_BY` runs TestCase -> Requirement and TestCase has
+a `Free` lifecycle, so the source guard was a no-op for branch protection: a
+V&V link could be written straight onto a Released requirement with no change
+order anywhere, while `SATISFIES` -- the same statement with a Part source --
+was refused. For these types the rule moves to the **requirement end** when the
+source is exempt. Every other relationship, `Affects` included, still answers
+to its source (see `lib/items/traceability-relationships.ts`).
+
+Reading these links is the mirror problem. A relationship names one item
+version, so once anything has been revised, matching a single `items.id` both
+misses links the revision inherited and double-counts the ones its predecessor
+left behind. Every reader here -- `getVerifyingTests`, `getSatisfyingItems`,
+`getRequirementsSatisfiedBy`, allocation, coverage, gap analysis, the digital
+thread -- goes through `ItemRelationshipService.findIncomingLinks` /
+`findOutgoingLinks` instead. See
+[Reading relationships across a revision](./versioning.md#reading-relationships-across-a-revision).
+
+To record a link inside an ECO, check the governed item out
+(`POST /api/v1/change-orders/{id}/checkout`) and pass `branchId` on the link
+call. Both ends then resolve to the rows that branch is working from, so
+callers keep naming items by the ids they already hold and never need a
+working-copy id. `branchId` resolves rows only -- it never takes a checkout or
+starts a revision, so a link endpoint cannot quietly widen an ECO's reviewed
+scope.
 
 ---
 

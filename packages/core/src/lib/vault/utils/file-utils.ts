@@ -159,6 +159,8 @@ const ALLOWED_EXTENSIONS = new Set([
   // Fusion 360
   '.f3d',
   '.f3z',
+  // FreeCAD
+  '.fcstd',
   // Documents
   '.pdf',
   '.doc',
@@ -260,6 +262,7 @@ export function isCADFile(filename: string): boolean {
     '.catproduct', // CATIA Product
     '.f3d', // Fusion 360
     '.f3z', // Fusion 360 archive
+    '.fcstd', // FreeCAD document
     '.3dm', // Rhino 3D
     '.ply', // Polygon File Format
     '.glb', // glTF Binary
@@ -337,6 +340,7 @@ export function detectFileCategory(
     '.catpart',
     '.f3d',
     '.f3z',
+    '.fcstd',
     '.3dm',
     '.ply',
     '.glb',
@@ -426,6 +430,7 @@ export function getCADFormat(filename: string): string | null {
     '.catdrawing': 'CATIA',
     '.f3d': 'Fusion 360',
     '.f3z': 'Fusion 360',
+    '.fcstd': 'FreeCAD',
     '.3dm': 'Rhino',
     '.ply': 'PLY',
     '.glb': 'glTF',

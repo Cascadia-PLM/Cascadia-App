@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/Select'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { apiFetch } from '@/lib/api/client'
+import { StateBadge } from '@/components/items/StateBadge'
 
 interface Item {
   id: string
@@ -437,16 +438,11 @@ export function AddPartToDesignDialog({
                           <Badge variant="outline" className="text-xs">
                             {item.revision}
                           </Badge>
-                          <Badge
-                            variant={
-                              item.state === 'Released'
-                                ? 'default'
-                                : 'secondary'
-                            }
+                          <StateBadge
+                            itemType={item.itemType}
+                            state={item.state}
                             className="text-xs"
-                          >
-                            {item.state}
-                          </Badge>
+                          />
                           {item.designCode && (
                             <Badge
                               variant="outline"

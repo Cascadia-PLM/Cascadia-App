@@ -57,8 +57,6 @@ export function RequirementForm({
   const form = useForm({
     defaultValues: {
       itemType: 'Requirement' as const,
-      state: 'Draft',
-      revision: 'A',
       designId: requirement?.designId || defaultDesignId || '',
       itemNumber: '',
       name: '',
@@ -73,13 +71,6 @@ export function RequirementForm({
         | undefined,
       priority: undefined as
         'MustHave' | 'ShouldHave' | 'CouldHave' | 'WontHave' | undefined,
-      status: undefined as
-        | 'Proposed'
-        | 'Approved'
-        | 'Implemented'
-        | 'Verified'
-        | 'Rejected'
-        | undefined,
       source: '',
       category: '',
       acceptanceCriteria: '',
@@ -105,7 +96,6 @@ export function RequirementForm({
     onSubmit: async ({ value }) => {
       const submissionData = {
         ...value,
-        revision: value.revision.trim() || 'A',
         attributes,
       } as Requirement
       // Pass branchId if product is in post-release phase
@@ -231,27 +221,6 @@ export function RequirementForm({
           )}
         </form.Field>
 
-        {/* Revision */}
-        <form.Field name="revision">
-          {(field) => (
-            <FormField
-              label="Revision"
-              required
-              error={field.state.meta.errors[0]}
-              helpText="Version identifier (A, B, C, etc.)"
-            >
-              <Input
-                name={field.name}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                placeholder="A"
-                error={!!field.state.meta.errors.length}
-              />
-            </FormField>
-          )}
-        </form.Field>
-
         {/* Name */}
         <form.Field name="name">
           {(field) => (
@@ -338,31 +307,6 @@ export function RequirementForm({
                   <SelectItem value="ShouldHave">Should Have</SelectItem>
                   <SelectItem value="CouldHave">Could Have</SelectItem>
                   <SelectItem value="WontHave">Won't Have</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
-          )}
-        </form.Field>
-
-        {/* Status */}
-        <form.Field name="status">
-          {(field) => (
-            <FormField label="Status" error={field.state.meta.errors[0]}>
-              <Select
-                value={field.state.value}
-                onValueChange={(value) =>
-                  field.handleChange(value as typeof field.state.value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Proposed">Proposed</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Implemented">Implemented</SelectItem>
-                  <SelectItem value="Verified">Verified</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </FormField>

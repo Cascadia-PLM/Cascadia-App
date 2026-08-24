@@ -21,6 +21,7 @@ import {
 } from '@/lib/items/item-type-resources'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { isBranchProtectionExempt } from '@/lib/items/branch-protection'
+import { itemCreateRequestSchema } from '@/lib/items/item-create-request'
 import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
 import { enrichItemFromUrl } from '@/lib/items/enrichment/enrich-from-url'
 import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
@@ -378,6 +379,51 @@ interface BatchUpdateResult {
     details?: string
   }>
 }
+
+/**
+ * An item row as the write paths return it. Passthrough because the
+ * type-specific columns differ per item type and are merged in — the ones
+ * named here are on every item, whatever its type, and a caller can rely on
+ * them.
+ */
+const itemResponseSchema = z
+  .object({
+    id: z.string().uuid(),
+    masterId: z.string().uuid(),
+    itemNumber: z.string(),
+    itemType: z.string(),
+    revision: z.string(),
+    state: z.string(),
+  })
+  .passthrough()
+
+/**
+ * A vault file row as the upload path returns it. Passthrough — the row
+ * carries storage and CAD-metadata columns beyond the ones a caller needs.
+ */
+const vaultFileResponseSchema = z
+  .object({
+    id: z.string().uuid(),
+    itemId: z.string().uuid(),
+    branchId: z.string().uuid().nullable(),
+    fileName: z.string(),
+    originalFileName: z.string(),
+    fileSize: z.number(),
+    mimeType: z.string(),
+    fileHash: z.string().describe('SHA-256 of the stored bytes'),
+    fileVersion: z.number().int(),
+    isPrimaryModel: z.boolean().nullable(),
+    isItemThumbnail: z.boolean(),
+  })
+  .passthrough()
+
+/** The commit a branch write produces, as returned alongside the item. */
+const commitSummarySchema = z
+  .object({
+    id: z.string().uuid(),
+    message: z.string(),
+  })
+  .passthrough()
 
 const app = new Hono()
 
@@ -1315,101 +1361,136 @@ app.get(
 app.post(
   '/',
   adapt(
-    apiHandler({}, async ({ request, user }) => {
-      const data = await request.json()
-      const { branchId, itemType, commitMessage, ...itemData } = data
+    apiHandler(
+      {
+        openapi: {
+          summary: 'Create an item of any type',
+          description:
+            'The body is the item type’s own schema plus an envelope of ' +
+            '`branchId` and `commitMessage`; `itemType` selects which. ' +
+            'Permission is checked against the resource that type maps to ' +
+            '(`parts:create` for a Part, and so on).\n\n' +
+            'The server-assigned fields — `id`, `masterId`, `isCurrent`, ' +
+            '`createdAt`/`createdBy`, `modifiedAt`/`modifiedBy`, ' +
+            '`lockedBy`/`lockedAt` — are absent from the schema below ' +
+            'because sending them has no effect. A blank `itemNumber` is ' +
+            'auto-generated, and an omitted `revision` is assigned from ' +
+            'the type’s lifecycle — send one only to carry a source ' +
+            'system’s.\n\n' +
+            '`ChangeOrder` is not creatable here — an ECO is defined by the ' +
+            'designs it affects, so it goes through ' +
+            '`POST /api/v1/change-orders`. A `WorkInstruction` must name its ' +
+            '`outputPartId` and takes that part’s design; any `designId` ' +
+            'sent with it must agree.',
+          request: { body: { schema: itemCreateRequestSchema } },
+          responses: {
+            201: {
+              schema: z.object({
+                item: itemResponseSchema,
+                commit: commitSummarySchema.optional(),
+              }),
+              description:
+                'The created item. `commit` is present only for a branch write.',
+            },
+          },
+        },
+      },
+      async ({ request, user }) => {
+        const data = await request.json()
+        const { branchId, itemType, commitMessage, ...itemData } = data
 
-      if (!itemType) {
-        throw new ValidationError('itemType is required')
-      }
+        if (!itemType) {
+          throw new ValidationError('itemType is required')
+        }
 
-      // Check permission based on item type
-      const resourceType = getResourceType(itemType)
-      await requirePermission(request, resourceType, 'create')
+        // Check permission based on item type
+        const resourceType = getResourceType(itemType)
+        await requirePermission(request, resourceType, 'create')
 
-      // A work instruction has no design of its own — it borrows the one its
-      // output part lives in, so parametric blocks, MBOM inheritance, and part
-      // lookups all resolve in the right design. Resolved before the access
-      // checks below so permission is evaluated against the design the work
-      // instruction will actually land in, not one the caller supplied.
-      if (itemType === 'WorkInstruction') {
-        if (!itemData.outputPartId) {
+        // A work instruction has no design of its own — it borrows the one its
+        // output part lives in, so parametric blocks, MBOM inheritance, and part
+        // lookups all resolve in the right design. Resolved before the access
+        // checks below so permission is evaluated against the design the work
+        // instruction will actually land in, not one the caller supplied.
+        if (itemType === 'WorkInstruction') {
+          if (!itemData.outputPartId) {
+            throw new ValidationError(
+              'outputPartId is required: a work instruction must name the part it builds',
+            )
+          }
+          const outputPart = await ItemService.findById(itemData.outputPartId)
+          if (!outputPart || outputPart.itemType !== 'Part') {
+            throw new NotFoundError('Part', itemData.outputPartId)
+          }
+          if (!outputPart.designId) {
+            throw new ValidationError(
+              `Part ${outputPart.itemNumber} is not in a design and cannot be a work instruction's output part`,
+            )
+          }
+          itemData.designId = outputPart.designId
+        }
+
+        // If branchId provided, create on that branch
+        if (branchId) {
+          // Get branch to check access
+          const branch = await BranchService.getById(branchId)
+          if (!branch) {
+            throw new NotFoundError('Branch', branchId)
+          }
+
+          const design = await DesignService.getById(branch.designId)
+          if (!design) {
+            throw new NotFoundError('Design', branch.designId)
+          }
+
+          // Check user has access to this design
+          await requireDesignAccess(user.id, design.id)
+
+          // createOnBranch takes the item's design from the branch, so an output
+          // part living somewhere else would silently produce a work instruction
+          // whose design and output part disagree.
+          if (itemData.designId && itemData.designId !== branch.designId) {
+            throw new ValidationError(
+              'Output part belongs to a different design than the target branch',
+            )
+          }
+
+          const result = await ItemService.createOnBranch(
+            itemType,
+            itemData,
+            branchId,
+            commitMessage || `Created ${itemType} ${itemData.itemNumber}`,
+            user.id,
+          )
+
+          return created({ item: result.item, commit: result.commit })
+        }
+
+        // No branchId: create directly on main (pre-release phase).
+        // This path historically skipped the design/program check entirely —
+        // the branch path above has always had it — so any authenticated user
+        // with the type-level create permission could write into any
+        // program's designs.
+        // A change order is defined by the designs it touches, and this route
+        // has no way to take them — it creates one item. Creating one here left
+        // an ECO linked to nothing, which is outside every program and so
+        // visible to everyone; the `canCreateEco` check below it hung off
+        // `itemData.designId`, which a real ECO never carries, and never ran.
+        if (itemType === 'ChangeOrder') {
           throw new ValidationError(
-            'outputPartId is required: a work instruction must name the part it builds',
+            'Create change orders via POST /api/v1/change-orders, which takes the designs they affect',
           )
         }
-        const outputPart = await ItemService.findById(itemData.outputPartId)
-        if (!outputPart || outputPart.itemType !== 'Part') {
-          throw new NotFoundError('Part', itemData.outputPartId)
-        }
-        if (!outputPart.designId) {
-          throw new ValidationError(
-            `Part ${outputPart.itemNumber} is not in a design and cannot be a work instruction's output part`,
-          )
-        }
-        itemData.designId = outputPart.designId
-      }
 
-      // If branchId provided, create on that branch
-      if (branchId) {
-        // Get branch to check access
-        const branch = await BranchService.getById(branchId)
-        if (!branch) {
-          throw new NotFoundError('Branch', branchId)
+        if (itemData.designId) {
+          await requireDesignAccess(user.id, itemData.designId)
         }
 
-        const design = await DesignService.getById(branch.designId)
-        if (!design) {
-          throw new NotFoundError('Design', branch.designId)
-        }
+        const item = await ItemService.create(itemType, itemData, user.id)
 
-        // Check user has access to this design
-        await requireDesignAccess(user.id, design.id)
-
-        // createOnBranch takes the item's design from the branch, so an output
-        // part living somewhere else would silently produce a work instruction
-        // whose design and output part disagree.
-        if (itemData.designId && itemData.designId !== branch.designId) {
-          throw new ValidationError(
-            'Output part belongs to a different design than the target branch',
-          )
-        }
-
-        const result = await ItemService.createOnBranch(
-          itemType,
-          itemData,
-          branchId,
-          commitMessage || `Created ${itemType} ${itemData.itemNumber}`,
-          user.id,
-        )
-
-        return created({ item: result.item, commit: result.commit })
-      }
-
-      // No branchId: create directly on main (pre-release phase).
-      // This path historically skipped the design/program check entirely —
-      // the branch path above has always had it — so any authenticated user
-      // with the type-level create permission could write into any
-      // program's designs.
-      // A change order is defined by the designs it touches, and this route
-      // has no way to take them — it creates one item. Creating one here left
-      // an ECO linked to nothing, which is outside every program and so
-      // visible to everyone; the `canCreateEco` check below it hung off
-      // `itemData.designId`, which a real ECO never carries, and never ran.
-      if (itemType === 'ChangeOrder') {
-        throw new ValidationError(
-          'Create change orders via POST /api/v1/change-orders, which takes the designs they affect',
-        )
-      }
-
-      if (itemData.designId) {
-        await requireDesignAccess(user.id, itemData.designId)
-      }
-
-      const item = await ItemService.create(itemType, itemData, user.id)
-
-      return created({ item })
-    }),
+        return created({ item })
+      },
+    ),
   ),
 )
 
@@ -1636,9 +1717,11 @@ app.get(
 )
 
 // POST /api/items/:id/transition
-// The only write path for Free-lifecycle item state (Issues, Tools, ...).
-// The generic item update rejects state changes; ECO-controlled types are
-// refused here and change state at change-order release instead.
+// The only write path for manual item state changes: every transition a Free
+// lifecycle declares, and the declared pre-release edges of a Driven lifecycle
+// (review progress). The generic item update rejects state changes; released
+// lineage is entered and left only at change-order release, and this endpoint
+// refuses to cross that line.
 app.post(
   '/:id/transition',
   adapt(
@@ -2085,7 +2168,7 @@ app.get(
         // protection — they are editable there by design, so reporting main as
         // protected would push the client into a revise-through-an-ECO dialog
         // for an item that needs no ECO.
-        isMainProtected = isBranchProtectionExempt(item.itemType)
+        isMainProtected = (await isBranchProtectionExempt(item.itemType))
           ? false
           : await BranchService.isMainBranchProtected(item.designId)
         if (!isMainProtected) {
@@ -2298,6 +2381,20 @@ app.get(
           })
         }
 
+        // Every row of this item's lineage. A stored edge names one item
+        // *version*, and the row rendered here is often not the one it names,
+        // so both the relationship walk below and the physical bridge further
+        // down need to know which other rows stand for the same item.
+        const lineageVersionIds = item.masterId
+          ? (
+              await db
+                .select({ id: items.id })
+                .from(items)
+                .where(and(eq(items.masterId, item.masterId), notDeleted()))
+            ).map((row) => row.id)
+          : []
+        const otherVersionIds = lineageVersionIds.filter((id) => id !== itemId)
+
         // Get relationships based on direction filter
         let relationshipsQuery = db.select().from(itemRelationships)
 
@@ -2354,6 +2451,50 @@ app.get(
               itemId: relatedItemId,
               level: level + 1,
             })
+          }
+        }
+
+        // Incoming edges pinned to another row of this lineage.
+        //
+        // A merge re-points only the lines owned by the items the change
+        // order touched, so an assembly it never touched keeps naming the row
+        // the release superseded. Matching the rendered row alone, expanding a
+        // released revision upstream therefore found nothing that used it —
+        // the revision looked unused the moment it was released. The lines are
+        // read off the lineage's other rows and rendered against this one,
+        // exactly as the physical bridge below already does for its own types.
+        if (direction !== 'outgoing' && otherVersionIds.length > 0) {
+          const pinnedIncoming = await db
+            .select()
+            .from(itemRelationships)
+            .where(inArray(itemRelationships.targetId, otherVersionIds))
+
+          for (const rel of pinnedIncoming) {
+            // The physical bridge owns its own types, with its own flagging.
+            if (PHYSICAL_STORED_TYPES.includes(rel.relationshipType)) continue
+            if (
+              relationshipTypes.length > 0 &&
+              !relationshipTypes.includes(rel.relationshipType)
+            ) {
+              continue
+            }
+
+            collectedRelationships.push({
+              sourceId: rel.sourceId,
+              targetId: itemId,
+              relationshipType: rel.relationshipType,
+              quantity: rel.quantity,
+              referenceDesignator: rel.referenceDesignator,
+              findNumber: rel.findNumber,
+              isUsageRelationship: false,
+            })
+
+            if (!processedItemIds.has(rel.sourceId)) {
+              itemsToProcess.push({
+                itemId: rel.sourceId,
+                level: level + 1,
+              })
+            }
           }
         }
 
@@ -2498,13 +2639,6 @@ app.get(
           // Versioned design item: pick up stored physical edges pinned to
           // any OTHER version row of its lineage, re-pointed onto this
           // rendered row (matches ThreadService's lineage handling).
-          const versionRows = await db
-            .select({ id: items.id })
-            .from(items)
-            .where(and(eq(items.masterId, item.masterId), notDeleted()))
-          const versionIds = versionRows.map((row) => row.id)
-          const otherVersionIds = versionIds.filter((id) => id !== itemId)
-
           if (direction !== 'outgoing' && otherVersionIds.length > 0) {
             const pinnedEdges = await db
               .select()
@@ -2548,13 +2682,16 @@ app.get(
             }
 
             // Work orders building any version of this lineage.
-            if (typeAllowed(GRAPH_BUILDS) && versionIds.length > 0) {
+            if (typeAllowed(GRAPH_BUILDS) && lineageVersionIds.length > 0) {
               const buildingWos = await db
                 .select({ itemId: workOrders.itemId })
                 .from(workOrders)
                 .innerJoin(items, eq(items.id, workOrders.itemId))
                 .where(
-                  and(inArray(workOrders.partId, versionIds), notDeleted()),
+                  and(
+                    inArray(workOrders.partId, lineageVersionIds),
+                    notDeleted(),
+                  ),
                 )
               for (const wo of buildingWos) {
                 collectPhysical(itemId, wo.itemId, GRAPH_BUILDS)
@@ -2968,27 +3105,65 @@ app.get(
   ),
 )
 
+/**
+ * One edge, added to the item named in the path. The batch equivalent is
+ * `POST /api/v1/relationships/batch-create`.
+ */
+const addRelationshipSchema = z.object({
+  targetId: z.string().uuid(),
+  relationshipType: z
+    .string()
+    .describe('e.g. `BOM`, `Document`, `Satisfies`, `Consumes`'),
+  quantity: z
+    .union([z.number(), z.string()])
+    .optional()
+    .describe(
+      'Stored as text, so a string arrives verbatim — BOM quantities are ' +
+        'not all integers.',
+    ),
+  referenceDesignator: z.string().optional(),
+  findNumber: z.number().optional(),
+})
+
 // POST /api/items/:id/relationships
 app.post(
   '/:id/relationships',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
-      const data = await request.json()
-
-      await ItemService.addRelationship(
-        params.id,
-        data.targetId,
-        data.relationshipType,
-        user.id,
-        {
-          quantity: data.quantity,
-          referenceDesignator: data.referenceDesignator,
-          findNumber: data.findNumber,
+    apiHandler<{ id: string }>(
+      {
+        openapi: {
+          summary: 'Add a relationship from this item',
+          description:
+            'The path item is the edge source. `(sourceId, targetId, ' +
+            'relationshipType)` is unique, so re-adding an existing edge ' +
+            'fails rather than duplicating it.',
+          request: {
+            params: z.object({ id: z.string().uuid() }),
+            body: { schema: addRelationshipSchema },
+          },
+          responses: {
+            201: { schema: z.object({ success: z.boolean() }) },
+          },
         },
-      )
+      },
+      async ({ params, request, user }) => {
+        const data = await request.json()
 
-      return created({ success: true })
-    }),
+        await ItemService.addRelationship(
+          params.id,
+          data.targetId,
+          data.relationshipType,
+          user.id,
+          {
+            quantity: data.quantity,
+            referenceDesignator: data.referenceDesignator,
+            findNumber: data.findNumber,
+          },
+        )
+
+        return created({ success: true })
+      },
+    ),
   ),
 )
 
@@ -3361,8 +3536,12 @@ const modelVersionFileSchema = z.object({
   fileName: z.string(),
   fileType: z.string(),
   hasColors: z.boolean(),
+  isPrimaryModel: z.boolean(),
   fileSize: z.number(),
   uploadedAt: z.string(),
+  source: z.enum(['direct', 'cad_doc']),
+  sourceItemId: z.string().uuid(),
+  sourceItemNumber: z.string().nullable(),
 })
 
 const modelVersionEntrySchema = z.object({
@@ -3381,6 +3560,7 @@ const modelVersionEntrySchema = z.object({
       changeOrderNumber: z.string().nullable(),
     })
     .nullable(),
+  files: z.array(modelVersionFileSchema),
   file: modelVersionFileSchema.nullable(),
 })
 
@@ -3393,7 +3573,7 @@ app.get(
         openapi: {
           summary: "List an item's versions with their viewable 3D models",
           description:
-            "Enumerates the released version, active branch working versions, and historical revisions of the item's master, each resolved to the viewable CAD model file that version context would display. Powers the 3D comparison overlay on the part detail page.",
+            "Enumerates the released version, active branch working versions, and historical revisions of the item's master, each resolved to every viewable CAD model that version context offers — from the version row itself and from the Documents it links as CAD Docs. `files` is ordered so the first entry is the model that context displays by default, which `file` repeats. Powers the 3D comparison overlay on the part detail page.",
           request: { params: z.object({ itemId: z.string().uuid() }) },
           responses: {
             200: {
@@ -3475,40 +3655,71 @@ app.get(
   ),
 )
 
+/** Body of the two designation endpoints below. */
+const designateFileSchema = z.object({
+  fileId: z
+    .string()
+    .uuid()
+    .describe('A file already uploaded to this item. Must belong to it.'),
+})
+
+/** What both designation endpoints return. */
+const designateFileResponseSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  fileId: z.string().uuid(),
+})
+
 // PUT /api/items/:itemId/files/primary
 app.put(
   '/:itemId/files/primary',
   adapt(
-    apiHandler<{ itemId: string }>({}, async ({ request, params, user }) => {
-      const userId = user.id
-      const { itemId } = params
+    apiHandler<{ itemId: string }>(
+      {
+        openapi: {
+          summary: "Designate an item's primary 3D model",
+          description:
+            'The primary model is the one the 3D viewer opens by default. ' +
+            'Designates an already-uploaded file — upload with ' +
+            'POST /api/v1/items/:itemId/files/upload first.',
+          request: {
+            params: z.object({ itemId: z.string().uuid() }),
+            body: { schema: designateFileSchema },
+          },
+          responses: { 200: { schema: designateFileResponseSchema } },
+        },
+      },
+      async ({ request, params, user }) => {
+        const userId = user.id
+        const { itemId } = params
 
-      // Parse request body for fileId
-      const body = await request.json()
-      const { fileId } = body
+        // Parse request body for fileId
+        const body = await request.json()
+        const { fileId } = body
 
-      if (!fileId) {
-        throw new ValidationError('fileId is required')
-      }
+        if (!fileId) {
+          throw new ValidationError('fileId is required')
+        }
 
-      // Verify the file belongs to this item
-      const file = await FileService.getFileMetadata(fileId)
-      if (!file) {
-        throw new NotFoundError('File', fileId)
-      }
+        // Verify the file belongs to this item
+        const file = await FileService.getFileMetadata(fileId)
+        if (!file) {
+          throw new NotFoundError('File', fileId)
+        }
 
-      if (file.itemId !== itemId) {
-        throw new ValidationError('File does not belong to this item')
-      }
+        if (file.itemId !== itemId) {
+          throw new ValidationError('File does not belong to this item')
+        }
 
-      await FileService.setPrimaryModel(fileId, userId)
+        await FileService.setPrimaryModel(fileId, userId)
 
-      return {
-        success: true,
-        message: 'Primary model set successfully',
-        fileId,
-      }
-    }),
+        return {
+          success: true,
+          message: 'Primary model set successfully',
+          fileId,
+        }
+      },
+    ),
   ),
 )
 
@@ -3532,7 +3743,20 @@ app.put(
   '/:itemId/files/thumbnail',
   adapt(
     apiHandler<{ itemId: string }>(
-      { permission: ['documents', 'update'] },
+      {
+        permission: ['documents', 'update'],
+        openapi: {
+          summary: "Designate an uploaded image as the item's thumbnail",
+          description:
+            'Overrides the thumbnail generated from the CAD model. ' +
+            'DELETE the same path to revert to the generated one.',
+          request: {
+            params: z.object({ itemId: z.string().uuid() }),
+            body: { schema: designateFileSchema },
+          },
+          responses: { 200: { schema: designateFileResponseSchema } },
+        },
+      },
       async ({ request, params, user }) => {
         const { itemId } = params
 
@@ -3580,12 +3804,74 @@ app.delete(
   ),
 )
 
+/**
+ * The multipart contract, as a schema.
+ *
+ * The handler takes every part whose value is a file, whatever it is named,
+ * and reads two sibling parts per file by convention. The client sends
+ * `file0`, `file1`, … so that is what is named here; `catchall` is what
+ * carries the rest, and is the honest description of "any name works".
+ */
+const fileUploadFormSchema = z
+  .object({
+    file0: z
+      .file()
+      .optional()
+      .describe('First file. Repeat as file1, file2, …'),
+    file0_description: z
+      .string()
+      .optional()
+      .describe('Description stored against `file0`.'),
+    file0_isThumbnail: z
+      .enum(['true', 'false'])
+      .optional()
+      .describe('`true` designates `file0` as the item thumbnail.'),
+    branchId: z
+      .string()
+      .uuid()
+      .optional()
+      .describe(
+        'Attach the files in this ECO branch’s version context. Omitted, ' +
+          'they attach on main.',
+      ),
+  })
+  .catchall(z.union([z.string(), z.file()]))
+
 // POST /api/items/:itemId/files/upload
 app.post(
   '/:itemId/files/upload',
   adapt(
     apiHandler<{ itemId: string }>(
-      { permission: ['documents', 'update'], rateLimit: 'upload' },
+      {
+        permission: ['documents', 'update'],
+        rateLimit: 'upload',
+        openapi: {
+          summary: 'Upload one or more files to an item',
+          description:
+            '`multipart/form-data`. Every part carrying a file is uploaded; ' +
+            'the part name is free, and the client uses `file0`, `file1`, ' +
+            'and so on. Two optional parts hang off each file part by name: ' +
+            '`<name>_description` and `<name>_isThumbnail` (the string `true`). ' +
+            'A single `branchId` part applies to the whole request. ' +
+            'Uploading a STEP or IGES file does not convert it — call ' +
+            'POST /api/v1/files/:fileId/convert with the returned id.',
+          request: {
+            params: z.object({ itemId: z.string().uuid() }),
+            body: {
+              schema: fileUploadFormSchema,
+              mediaType: 'multipart/form-data',
+            },
+          },
+          responses: {
+            201: {
+              schema: z.object({
+                files: z.array(vaultFileResponseSchema),
+                count: z.number().int(),
+              }),
+            },
+          },
+        },
+      },
       async ({ request, params, user }) => {
         const { itemId } = params
         const userId = user.id

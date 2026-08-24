@@ -5,7 +5,8 @@ import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
 import { itemTypeConfigs, items } from '../db/schema'
-import { NotFoundError, ValidationError } from '../errors'
+import { ConflictError, NotFoundError, ValidationError } from '../errors'
+import { ItemTypeRegistry } from '../items/registry'
 import { WorkflowService } from '../workflows/WorkflowService'
 import { resolveLifecycleType } from '../workflows/normalize'
 import type { RuntimeItemTypeConfig } from '../db/schema'
@@ -126,6 +127,21 @@ export class ConfigService {
       })
     }
 
+    // Every registered item type must keep a lifecycle: initial state,
+    // released-family membership, and branch-protection scope all derive
+    // from it, with no name-literal fallbacks anywhere. A config write is
+    // the only way to unassign one, so this is where the floor is.
+    if (
+      ItemTypeRegistry.getType(itemType) &&
+      !parseResult.data.lifecycleDefinitionId
+    ) {
+      throw new ValidationError(
+        `Item type ${itemType} must have a lifecycle assigned; saving a config without lifecycleDefinitionId would leave it with none`,
+        undefined,
+        { operation: 'saveConfig', resource: `ItemTypeConfig:${itemType}` },
+      )
+    }
+
     const existing = await this.getConfig(itemType)
 
     let result
@@ -164,6 +180,13 @@ export class ConfigService {
    * Delete runtime configuration for an item type (reverts to code defaults)
    */
   static async deleteConfig(itemType: string): Promise<boolean> {
+    // Deleting a registered type's config would drop its lifecycle
+    // assignment; assign a different lifecycle instead.
+    if (ItemTypeRegistry.getType(itemType)) {
+      throw new ConflictError(
+        `Cannot delete the config for registered item type ${itemType}: it carries the lifecycle assignment, which every item type requires`,
+      )
+    }
     const result = await db
       .delete(itemTypeConfigs)
       .where(eq(itemTypeConfigs.itemType, itemType))

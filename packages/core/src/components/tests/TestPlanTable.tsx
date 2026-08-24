@@ -6,7 +6,7 @@ import { useCallback } from 'react'
 import { Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
 import type { TestPlan } from '@/lib/items/types/testplan'
 import type { DataGridColumn, Row } from '@/components/ui'
-import { Badge, Button, DataGrid } from '@/components/ui'
+import { Button, DataGrid } from '@/components/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,8 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface TestPlanTableProps {
   testPlans: Array<TestPlan>
@@ -30,28 +32,6 @@ interface TestPlanTableProps {
   isLoading?: boolean
 }
 
-const stateColors: Record<
-  string,
-  'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-> = {
-  Draft: 'secondary',
-  Proposed: 'default',
-  InReview: 'default',
-  Approved: 'success',
-  Released: 'success',
-  Obsolete: 'destructive',
-}
-
-const statusColors: Record<
-  string,
-  'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-> = {
-  Draft: 'secondary',
-  Active: 'default',
-  Completed: 'success',
-  Archived: 'secondary',
-}
-
 export function TestPlanTable({
   testPlans,
   onEdit,
@@ -61,6 +41,14 @@ export function TestPlanTable({
   onPageChange,
   isLoading,
 }: TestPlanTableProps) {
+  // State filter options and badges come from the TestPlan lifecycle's
+  // configuration, not from a list in code
+  const { data: lifecycle } = useLifecyclePhases('TestPlan')
+  const stateFilterOptions = (lifecycle?.states ?? []).map((state) => ({
+    label: state.name,
+    value: state.id,
+  }))
+
   const columns: Array<DataGridColumn<TestPlan>> = [
     {
       id: 'itemNumber',
@@ -107,45 +95,15 @@ export function TestPlanTable({
       cell: ({ getValue }) => (getValue() as string) || '-',
     },
     {
-      id: 'status',
-      header: 'Status',
-      accessorKey: 'status',
-      enableFiltering: true,
-      filterType: 'multiSelect',
-      filterOptions: [
-        { label: 'Draft', value: 'Draft' },
-        { label: 'Active', value: 'Active' },
-        { label: 'Completed', value: 'Completed' },
-        { label: 'Archived', value: 'Archived' },
-      ],
-      cell: ({ getValue }) => {
-        const value = getValue() as string | undefined
-        if (!value) return '-'
-        return (
-          <Badge variant={statusColors[value] ?? 'secondary'}>{value}</Badge>
-        )
-      },
-    },
-    {
       id: 'state',
       header: 'State',
       accessorKey: 'state',
       enableFiltering: true,
       filterType: 'multiSelect',
-      filterOptions: [
-        { label: 'Draft', value: 'Draft' },
-        { label: 'Proposed', value: 'Proposed' },
-        { label: 'In Review', value: 'InReview' },
-        { label: 'Approved', value: 'Approved' },
-        { label: 'Released', value: 'Released' },
-        { label: 'Obsolete', value: 'Obsolete' },
-      ],
-      cell: ({ getValue }) => {
-        const value = getValue() as string
-        return (
-          <Badge variant={stateColors[value] ?? 'secondary'}>{value}</Badge>
-        )
-      },
+      filterOptions: stateFilterOptions,
+      cell: ({ getValue }) => (
+        <StateBadge itemType="TestPlan" state={getValue() as string} />
+      ),
     },
   ]
 

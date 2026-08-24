@@ -2,29 +2,22 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * Item types that carry a `designId` but are not gated on that design's branch
- * protection.
+ * Whether an item type is outside the ECO/branch-protection machinery.
  *
- * `ChangeOrder` is the workflow control object that creates branches in the
- * first place — gating it on branch state would be circular.
- *
- * `WorkInstruction` is a manufacturing procedure on the Free lifecycle. It
- * inherits a `designId` from its output part so parametric blocks, MBOM
- * inheritance, and part lookups resolve in the right design — but shop-floor
- * procedures are revised far more often, and far more informally, than the
- * engineering they describe. The frozen manufacturing record comes from the
- * work order traveler snapshot, not from ECO control of the template, so
- * requiring an ECO to fix a typo in a torque spec would buy no traceability.
- * See `docs/features/work-instructions.md`.
+ * Derived from configuration, not a type list: only `Driven` lifecycles are
+ * ECO-controlled, so anything else is exempt. That covers WorkInstruction
+ * (Free — shop-floor procedures are revised informally; the frozen record is
+ * the work-order traveler snapshot) and ChangeOrder (Driving — the control
+ * object that creates branches; gating it on branch state would be circular),
+ * and it means a custom type's exemption follows its assigned lifecycle with
+ * no code change here.
  *
  * Exemption covers **branch protection only**. Checkout locks still apply: an
  * exempt item checked out by another user is still locked against you.
  */
-const BRANCH_PROTECTION_EXEMPT: ReadonlySet<string> = new Set([
-  'ChangeOrder',
-  'WorkInstruction',
-])
-
-export function isBranchProtectionExempt(itemType: string): boolean {
-  return BRANCH_PROTECTION_EXEMPT.has(itemType)
+export async function isBranchProtectionExempt(
+  itemType: string,
+): Promise<boolean> {
+  const { LifecycleService } = await import('../services/LifecycleService')
+  return (await LifecycleService.getLifecycleType(itemType)) !== 'Driven'
 }

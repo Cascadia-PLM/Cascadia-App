@@ -29,7 +29,10 @@ import { LifecycleService } from './LifecycleService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { insertTestPart } from '@/__tests__/fixtures/items'
+import {
+  insertTestPart,
+  insertTestRequirement,
+} from '@/__tests__/fixtures/items'
 import { workflowDefinitions } from '@/lib/db/schema/workflows'
 import { itemTypeConfigs } from '@/lib/db/schema/config'
 import { items } from '@/lib/db/schema'
@@ -189,14 +192,73 @@ describe('LifecycleService Free-lifecycle transitions', () => {
     expect(untouched?.state).toBe('Open')
   })
 
-  it('refuses ECO-controlled (Driven) item types', async () => {
+  it('refuses to move a Driven item into released lineage by hand', async () => {
     const { item: part } = await insertTestPart(testDb.db, null, user.id, {
       itemNumber: `PN-${uniquePrefix}`,
     })
 
+    // 'Released' is in the Part lifecycle's released family: entered only by
+    // a change-order release, never by a manual transition
     await expect(
       LifecycleService.transitionFreeItem(part.id, 'Released', user.id),
     ).rejects.toThrow(ValidationError)
+  })
+
+  // A Driven lifecycle may declare manual edges among its pre-release states
+  // (review progress); the released family stays change-order-only in both
+  // directions. The default Requirement lifecycle is the shipped example.
+  describe('Driven lifecycles with declared pre-release transitions', () => {
+    // Inserted directly (the fixture bypasses the create schema, which wants a
+    // design); state is set straight on the row for the released case
+    async function createRequirement(state?: string) {
+      const { item } = await insertTestRequirement(testDb.db, null, user.id, {
+        itemNumber: `REQ-${uniquePrefix}-${Math.random().toString(36).slice(2, 7)}`,
+      })
+      if (state) {
+        await testDb.db
+          .update(items)
+          .set({ state })
+          .where(eq(items.id, item.id))
+      }
+      return { ...item, state: state ?? item.state }
+    }
+
+    it('walks the declared review edges and offers only those', async () => {
+      const req = await createRequirement()
+      expect(req.state).toBe('Draft')
+
+      const offered = await LifecycleService.getAvailableFreeTransitions(req.id)
+      expect(offered.lifecycleType).toBe('Driven')
+      expect(offered.transitions.map((t) => t.toStateId)).toEqual(['Proposed'])
+
+      await LifecycleService.transitionFreeItem(req.id, 'Proposed', user.id)
+      await LifecycleService.transitionFreeItem(req.id, 'Approved', user.id)
+      expect((await ItemService.findById(req.id))?.state).toBe('Approved')
+
+      // From Approved the only manual edge is Rework; Released is a release
+      // target and is never offered
+      const fromApproved = await LifecycleService.getAvailableFreeTransitions(
+        req.id,
+      )
+      expect(fromApproved.transitions.map((t) => t.toStateId)).toEqual([
+        'Draft',
+      ])
+      await expect(
+        LifecycleService.transitionFreeItem(req.id, 'Released', user.id),
+      ).rejects.toThrow(ValidationError)
+    })
+
+    it('cannot transition released lineage by hand', async () => {
+      const released = await createRequirement('Released')
+
+      const offered = await LifecycleService.getAvailableFreeTransitions(
+        released.id,
+      )
+      expect(offered.transitions).toEqual([])
+      await expect(
+        LifecycleService.transitionFreeItem(released.id, 'Draft', user.id),
+      ).rejects.toThrow(ValidationError)
+    })
   })
 
   it('reopens a completed Free workflow (terminality is Driving-only)', async () => {

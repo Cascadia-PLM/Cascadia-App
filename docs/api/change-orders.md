@@ -760,6 +760,15 @@ GET /api/v1/change-orders/:id/release
 
 Preview what would happen when the ECO is released (merged to main). Actual release is triggered by transitioning to a final workflow state. Requires `change_orders.read` permission.
 
+Each item appears once, keyed by its master — a checked-out item is one row, not
+one for the branch working copy and another for the row on main. `currentRevision`
+is the revision main holds, never the branch placeholder (`-d370051d`) a working
+copy carries, and `newRevision` is the letter the release will actually assign.
+
+A change order whose workflow has finished previews nothing: `designs` is empty,
+`canRelease` is `false`, and `validationIssues` says why. `alreadyReleased` is
+`true` when it finished by releasing, as opposed to being cancelled.
+
 ### Response
 
 ```json
@@ -769,12 +778,23 @@ Preview what would happen when the ECO is released (merged to main). Actual rele
       {
         "designId": "design-uuid",
         "designName": "Widget Assembly",
-        "itemCount": 5
+        "items": [
+          {
+            "itemId": "item-uuid",
+            "itemNumber": "PN-1000",
+            "currentRevision": "A",
+            "newRevision": "B",
+            "changeType": "modified"
+          }
+        ],
+        "conflicts": []
       }
     ],
-    "totalItems": 5,
+    "totalItems": 1,
     "canRelease": true,
-    "validationIssues": []
+    "validationIssues": [],
+    "allConflicts": [],
+    "alreadyReleased": false
   }
 }
 ```

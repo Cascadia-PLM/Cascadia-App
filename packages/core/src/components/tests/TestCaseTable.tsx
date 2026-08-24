@@ -18,6 +18,8 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface TestCaseTableProps {
   testCases: Array<TestCase>
@@ -28,18 +30,6 @@ interface TestCaseTableProps {
   totalRows?: number
   onPageChange?: (page: number, pageSize: number) => void
   isLoading?: boolean
-}
-
-const stateColors: Record<
-  string,
-  'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-> = {
-  Draft: 'secondary',
-  Proposed: 'default',
-  InReview: 'default',
-  Approved: 'success',
-  Released: 'success',
-  Obsolete: 'destructive',
 }
 
 const executionColors: Record<
@@ -61,6 +51,14 @@ export function TestCaseTable({
   onPageChange,
   isLoading,
 }: TestCaseTableProps) {
+  // State filter options and badges come from the TestCase lifecycle's
+  // configuration, not from a list in code
+  const { data: lifecycle } = useLifecyclePhases('TestCase')
+  const stateFilterOptions = (lifecycle?.states ?? []).map((state) => ({
+    label: state.name,
+    value: state.id,
+  }))
+
   const columns: Array<DataGridColumn<TestCase>> = [
     {
       id: 'itemNumber',
@@ -138,20 +136,10 @@ export function TestCaseTable({
       accessorKey: 'state',
       enableFiltering: true,
       filterType: 'multiSelect',
-      filterOptions: [
-        { label: 'Draft', value: 'Draft' },
-        { label: 'Proposed', value: 'Proposed' },
-        { label: 'In Review', value: 'InReview' },
-        { label: 'Approved', value: 'Approved' },
-        { label: 'Released', value: 'Released' },
-        { label: 'Obsolete', value: 'Obsolete' },
-      ],
-      cell: ({ getValue }) => {
-        const value = getValue() as string
-        return (
-          <Badge variant={stateColors[value] ?? 'secondary'}>{value}</Badge>
-        )
-      },
+      filterOptions: stateFilterOptions,
+      cell: ({ getValue }) => (
+        <StateBadge itemType="TestCase" state={getValue() as string} />
+      ),
     },
   ]
 

@@ -70,7 +70,9 @@ export type UserUpdate = z.infer<typeof userUpdateSchema>
  */
 export const partCreateSchema = z.object({
   itemNumber: z.string().min(1, 'Item number is required').max(100),
-  revision: z.string().min(1, 'Revision is required').max(10),
+  // Server-assigned when omitted: an item has no revision until a release
+  // assigns one. See `baseItemSchema.revision`.
+  revision: z.string().min(1).max(10).optional(),
   name: z.string().max(500).optional(),
   designId: z.string().uuid('Design is required'),
   description: z.string().max(5000).optional(),
@@ -120,7 +122,9 @@ export type PartUpdate = z.infer<typeof partUpdateSchema>
  */
 export const documentCreateSchema = z.object({
   itemNumber: z.string().min(1, 'Item number is required').max(100),
-  revision: z.string().min(1, 'Revision is required').max(10),
+  // Server-assigned when omitted: an item has no revision until a release
+  // assigns one. See `baseItemSchema.revision`.
+  revision: z.string().min(1).max(10).optional(),
   name: z.string().max(500).optional(),
   designId: z.string().uuid('Design is required'),
   description: z.string().max(5000).optional(),
@@ -169,7 +173,9 @@ export const verificationMethodSchema = z.enum([
  */
 export const requirementCreateSchema = z.object({
   itemNumber: z.string().min(1, 'Item number is required').max(100),
-  revision: z.string().min(1, 'Revision is required').max(10),
+  // Server-assigned when omitted: an item has no revision until a release
+  // assigns one. See `baseItemSchema.revision`.
+  revision: z.string().min(1).max(10).optional(),
   name: z.string().max(500).optional(),
   designId: z.string().uuid('Design is required'),
   requirementType: z.string().max(50).optional(),
@@ -210,7 +216,9 @@ export const taskPrioritySchema = z.enum(['low', 'medium', 'high', 'critical'])
  */
 export const taskCreateSchema = z.object({
   itemNumber: z.string().min(1, 'Item number is required').max(100),
-  revision: z.string().min(1, 'Revision is required').max(10),
+  // Server-assigned when omitted: an item has no revision until a release
+  // assigns one. See `baseItemSchema.revision`.
+  revision: z.string().min(1).max(10).optional(),
   name: z.string().max(500).optional(),
   designId: z.string().uuid().optional(), // Optional for tasks
   taskType: z.string().max(50).optional(),
@@ -256,7 +264,9 @@ export const riskLevelSchema = z.enum(['low', 'medium', 'high', 'critical'])
  */
 export const changeOrderCreateSchema = z.object({
   itemNumber: z.string().min(1, 'Item number is required').max(100),
-  revision: z.string().min(1, 'Revision is required').max(10),
+  // Server-assigned when omitted: an item has no revision until a release
+  // assigns one. See `baseItemSchema.revision`.
+  revision: z.string().min(1).max(10).optional(),
   name: z.string().max(500).optional(),
   changeType: changeOrderTypeSchema,
   priority: changeOrderPrioritySchema.optional(),

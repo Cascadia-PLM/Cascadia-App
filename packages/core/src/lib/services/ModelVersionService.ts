@@ -7,11 +7,12 @@ import { branchItems, branches, items, vaultFiles } from '../db/schema'
 import { RevisionService } from './RevisionService'
 import { VersionResolver } from './VersionResolver'
 import { DesignService } from './DesignService'
+import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
 
 /**
  * Enumerates every version of an item's master that the 3D comparison view
- * can offer as an overlay target, each resolved to the viewable CAD model
- * that version context would show.
+ * can offer, each resolved to the viewable CAD models that version context
+ * would show.
  *
  * Three kinds of entries:
  * - `current`    — the released version on main (one entry, when it exists)
@@ -21,15 +22,19 @@ import { DesignService } from './DesignService'
  *
  * File resolution mirrors the viewer's own rules (`/items/:id/cad-files` +
  * the client's pick priority): viewable extensions only, category
- * `cad_model`, GLB-with-colors preferred, then the primary model, then the
- * newest upload. Files attach to a specific item *version* row and carry a
- * branch-visibility column, so:
+ * `cad_model`, from the version row itself and from the Documents it links
+ * with a `CAD Doc` relationship. Files attach to a specific item *version*
+ * row and carry a branch-visibility column, so:
  * - current/historical entries only see files attached to their own row that
  *   are visible outside a work branch (branchId null or main),
  * - branch entries additionally see that branch's own uploads — which may
  *   hang off the working copy row *or* the base row, depending on whether
  *   the upload happened before or after the working copy was minted — and
- *   prefer them over the inherited baseline model.
+ *   order them ahead of the inherited baseline model.
+ *
+ * Each entry carries the whole candidate list in `files`, ordered so the
+ * first is the one that context would display by default; `file` repeats
+ * that first entry for callers that only want the default pick.
  */
 export class ModelVersionService {
   /**
@@ -116,7 +121,7 @@ export class ModelVersionService {
         : [],
     )
 
-    // All candidate files in one query: every row any entry can draw from.
+    // All candidate rows in one query: every row any entry can draw from.
     const candidateRowIds = new Set<string>()
     if (currentRow) candidateRowIds.add(currentRow.id)
     for (const row of historicalRows) candidateRowIds.add(row.id)
@@ -124,6 +129,16 @@ export class ModelVersionService {
       if (branchItem.currentItemId)
         candidateRowIds.add(branchItem.currentItemId)
       if (branchItem.baseItemId) candidateRowIds.add(branchItem.baseItemId)
+    }
+
+    // The Documents each candidate row links as CAD Docs, and their files.
+    // The viewer's own file list includes them, so the comparison picker has
+    // to as well — for many parts the geometry lives only on a linked
+    // Document, and a picker that ignored them would report "no 3D model"
+    // for versions the viewer is happily rendering.
+    const cadDocsByRow = await this.cadDocsForRows([...candidateRowIds])
+    for (const docs of cadDocsByRow.values()) {
+      for (const doc of docs) candidateRowIds.add(doc.itemId)
     }
 
     const files =
@@ -151,9 +166,57 @@ export class ModelVersionService {
     const mainVisible = (f: VaultFileRow) =>
       f.branchId === null || f.branchId === mainBranchId
 
+    /** Files this entry can draw on, in the order the picker should show. */
+    const resolveFiles = (opts: {
+      /** Rows whose files this entry inherits or owns, most-specific first. */
+      rowIds: Array<string>
+      /** The work branch this entry reads on, or null for main-only. */
+      branchId: string | null
+      /** The row whose CAD Doc links apply. */
+      linkRowId: string
+    }): Array<ModelVersionFile> => {
+      const rowIdSet = new Set(opts.rowIds)
+      const visible = (f: VaultFileRow) =>
+        mainVisible(f) ||
+        (opts.branchId !== null && f.branchId === opts.branchId)
+
+      const direct = viewableFiles.filter(
+        (f) => rowIdSet.has(f.itemId) && visible(f),
+      )
+      // A branch's own uploads are its in-change model; the inherited
+      // baseline is only the answer when the branch hasn't touched geometry.
+      const own =
+        opts.branchId !== null
+          ? direct.filter((f) => f.branchId === opts.branchId)
+          : []
+      const inherited = direct.filter((f) => !own.includes(f))
+
+      const docs = cadDocsByRow.get(opts.linkRowId) ?? []
+      const fromDocs = docs.flatMap((doc) =>
+        this.orderByPickPriority(
+          viewableFiles.filter((f) => f.itemId === doc.itemId && visible(f)),
+        ).map((f) => this.toDto(f, 'cad_doc', doc.itemId, doc.itemNumber)),
+      )
+
+      return [
+        ...this.orderByPickPriority(own).map((f) =>
+          this.toDto(f, 'direct', f.itemId, null),
+        ),
+        ...this.orderByPickPriority(inherited).map((f) =>
+          this.toDto(f, 'direct', f.itemId, null),
+        ),
+        ...fromDocs,
+      ]
+    }
+
     const entries: Array<ModelVersionEntry> = []
 
     if (currentRow) {
+      const entryFiles = resolveFiles({
+        rowIds: [currentRow.id],
+        branchId: null,
+        linkRowId: currentRow.id,
+      })
       entries.push({
         key: 'current',
         kind: 'current',
@@ -162,11 +225,8 @@ export class ModelVersionService {
         state: currentRow.state,
         modifiedAt: currentRow.modifiedAt,
         branch: null,
-        file: this.pickModel(
-          viewableFiles.filter(
-            (f) => f.itemId === currentRow.id && mainVisible(f),
-          ),
-        ),
+        files: entryFiles,
+        file: entryFiles.at(0) ?? null,
       })
     }
 
@@ -177,21 +237,15 @@ export class ModelVersionService {
       const versionRow = workingRow ?? currentRow
       if (!versionRow) continue
 
-      const rowIds = new Set(
-        [
+      const entryFiles = resolveFiles({
+        rowIds: [
           branchItem.currentItemId,
           branchItem.baseItemId,
           currentRow?.id,
         ].filter((id): id is string => Boolean(id)),
-      )
-      const visible = viewableFiles.filter(
-        (f) =>
-          rowIds.has(f.itemId) && (mainVisible(f) || f.branchId === branch.id),
-      )
-      // The branch's own uploads are its in-change model; the baseline is
-      // only the answer when the branch hasn't touched the geometry.
-      const branchOwn = visible.filter((f) => f.branchId === branch.id)
-      const inherited = visible.filter((f) => f.branchId !== branch.id)
+        branchId: branch.id,
+        linkRowId: versionRow.id,
+      })
 
       entries.push({
         key: `branch:${branch.id}`,
@@ -209,11 +263,17 @@ export class ModelVersionService {
             ? (changeOrderNumbers.get(branch.changeOrderItemId) ?? null)
             : null,
         },
-        file: this.pickModel(branchOwn) ?? this.pickModel(inherited),
+        files: entryFiles,
+        file: entryFiles.at(0) ?? null,
       })
     }
 
     for (const row of historicalRows) {
+      const entryFiles = resolveFiles({
+        rowIds: [row.id],
+        branchId: null,
+        linkRowId: row.id,
+      })
       entries.push({
         key: `historical:${row.id}`,
         kind: 'historical',
@@ -222,13 +282,42 @@ export class ModelVersionService {
         state: row.state,
         modifiedAt: row.modifiedAt,
         branch: null,
-        file: this.pickModel(
-          viewableFiles.filter((f) => f.itemId === row.id && mainVisible(f)),
-        ),
+        files: entryFiles,
+        file: entryFiles.at(0) ?? null,
       })
     }
 
     return entries
+  }
+
+  /**
+   * The Documents each of these item rows links with a `CAD Doc`
+   * relationship. Delegates per row so stale links follow their superseding
+   * revision exactly as the viewer's own `/cad-files` listing does.
+   */
+  private static async cadDocsForRows(
+    rowIds: Array<string>,
+  ): Promise<Map<string, Array<{ itemId: string; itemNumber: string }>>> {
+    const pairs = await Promise.all(
+      rowIds.map(async (rowId) => {
+        const relationships =
+          await ItemRelationshipService.getRelationshipsWithDetails(
+            rowId,
+            'CAD Doc',
+          )
+        const docs = relationships
+          .map((rel) => rel.targetItem)
+          .filter((target): target is NonNullable<typeof target> =>
+            Boolean(target),
+          )
+          .map((target) => ({
+            itemId: target.id,
+            itemNumber: target.itemNumber,
+          }))
+        return [rowId, docs] as const
+      }),
+    )
+    return new Map(pairs)
   }
 
   private static isViewable(fileName: string): boolean {
@@ -238,26 +327,37 @@ export class ModelVersionService {
 
   /**
    * The client's model pick priority: GLB with embedded colors, then the
-   * designated primary model, then the newest upload (input is ordered
-   * uploadedAt desc).
+   * designated primary model, then the newest upload. Input arrives ordered
+   * uploadedAt desc and the sort is stable, so the third tier stays newest
+   * first.
    */
-  private static pickModel(
+  private static orderByPickPriority(
     files: Array<VaultFileRow>,
-  ): ModelVersionFile | null {
-    const glbWithColors = files.find(
-      (f) => this.extension(f) === 'glb' && this.hasColors(f),
-    )
-    const primary = files.find((f) => f.isPrimaryModel)
-    const chosen = glbWithColors ?? primary ?? files.at(0)
-    if (!chosen) return null
+  ): Array<VaultFileRow> {
+    const rank = (f: VaultFileRow) => {
+      if (this.extension(f) === 'glb' && this.hasColors(f)) return 0
+      return f.isPrimaryModel === true ? 1 : 2
+    }
+    return [...files].sort((a, b) => rank(a) - rank(b))
+  }
 
+  private static toDto(
+    file: VaultFileRow,
+    source: ModelVersionFileSource,
+    sourceItemId: string,
+    sourceItemNumber: string | null,
+  ): ModelVersionFile {
     return {
-      id: chosen.id,
-      fileName: chosen.originalFileName,
-      fileType: this.extension(chosen),
-      hasColors: this.hasColors(chosen),
-      fileSize: Number(chosen.fileSize),
-      uploadedAt: chosen.uploadedAt,
+      id: file.id,
+      fileName: file.originalFileName,
+      fileType: this.extension(file),
+      hasColors: this.hasColors(file),
+      isPrimaryModel: file.isPrimaryModel === true,
+      fileSize: Number(file.fileSize),
+      uploadedAt: file.uploadedAt,
+      source,
+      sourceItemId,
+      sourceItemNumber,
     }
   }
 
@@ -272,13 +372,22 @@ export class ModelVersionService {
 
 type VaultFileRow = typeof vaultFiles.$inferSelect
 
+/** Whether the model hangs off the item itself or a Document it links. */
+export type ModelVersionFileSource = 'direct' | 'cad_doc'
+
 export interface ModelVersionFile {
   id: string
   fileName: string
   fileType: string
   hasColors: boolean
+  isPrimaryModel: boolean
   fileSize: number
   uploadedAt: Date
+  source: ModelVersionFileSource
+  /** The item row the file hangs off — this version, or a linked Document. */
+  sourceItemId: string
+  /** Item number of the linked Document, for `cad_doc` files only. */
+  sourceItemNumber: string | null
 }
 
 export interface ModelVersionEntry {
@@ -297,6 +406,8 @@ export interface ModelVersionEntry {
     changeOrderItemId: string | null
     changeOrderNumber: string | null
   } | null
+  /** Every viewable model this version context offers, default pick first. */
+  files: Array<ModelVersionFile>
   /** The model this version context would show, or null when it has none. */
   file: ModelVersionFile | null
 }

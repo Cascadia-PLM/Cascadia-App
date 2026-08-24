@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Calendar, Clock, Edit, Trash2, User } from 'lucide-react'
 import type { Task } from '@/lib/items/types/task'
 import { Badge, Button, Card, CardContent, CardHeader } from '@/components/ui'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface KanbanBoardProps {
   tasks: Array<Task>
@@ -13,21 +14,20 @@ interface KanbanBoardProps {
   onTaskDelete?: (task: Task) => void
 }
 
-const COLUMNS = [
-  { id: 'Backlog', name: 'Backlog', color: 'bg-slate-100 dark:bg-slate-800' },
-  { id: 'ToDo', name: 'To Do', color: 'bg-blue-100 dark:bg-blue-900/30' },
-  {
-    id: 'InProgress',
-    name: 'In Progress',
-    color: 'bg-yellow-100 dark:bg-yellow-900/30',
-  },
-  {
-    id: 'InReview',
-    name: 'In Review',
-    color: 'bg-purple-100 dark:bg-purple-900/30',
-  },
-  { id: 'Done', name: 'Done', color: 'bg-green-100 dark:bg-green-900/30' },
-]
+/** Column header tint for a lifecycle colour name; neutral when none declared */
+const COLUMN_TINT_BY_COLOR: Record<string, string> = {
+  green: 'bg-green-100 dark:bg-green-900/30',
+  emerald: 'bg-emerald-100 dark:bg-emerald-900/30',
+  red: 'bg-red-100 dark:bg-red-900/30',
+  yellow: 'bg-yellow-100 dark:bg-yellow-900/30',
+  orange: 'bg-orange-100 dark:bg-orange-900/30',
+  blue: 'bg-blue-100 dark:bg-blue-900/30',
+  cyan: 'bg-cyan-100 dark:bg-cyan-900/30',
+  indigo: 'bg-indigo-100 dark:bg-indigo-900/30',
+  purple: 'bg-purple-100 dark:bg-purple-900/30',
+  gray: 'bg-slate-100 dark:bg-slate-800',
+  slate: 'bg-slate-100 dark:bg-slate-800',
+}
 
 const priorityColors: Record<string, string> = {
   Low: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
@@ -43,6 +43,17 @@ export function KanbanBoard({
   onTaskDelete,
 }: KanbanBoardProps) {
   const [draggedTask, setDraggedTask] = useState<Task | null>(null)
+
+  // One column per state of the Task lifecycle, in its configured order and
+  // under its configured names - the board is the lifecycle, drawn sideways
+  const { data: taskLifecycle } = useLifecyclePhases('Task')
+  const COLUMNS = (taskLifecycle?.states ?? []).map((state) => ({
+    id: state.id,
+    name: state.name,
+    color: state.color
+      ? (COLUMN_TINT_BY_COLOR[state.color] ?? COLUMN_TINT_BY_COLOR.slate)
+      : COLUMN_TINT_BY_COLOR.slate,
+  }))
 
   const handleDragStart = (task: Task) => {
     setDraggedTask(task)

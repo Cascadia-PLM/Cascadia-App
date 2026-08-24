@@ -3,6 +3,7 @@
 
 import { Hono } from 'hono'
 import { and, eq, inArray } from 'drizzle-orm'
+import { z } from 'zod'
 import { tagged } from '../adapter'
 import { db } from '@/lib/db'
 import { itemRelationships, items } from '@/lib/db/schema'
@@ -15,30 +16,61 @@ import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('Relationships')
 
-interface RelationshipData {
-  sourceId: string
-  targetId: string
-  relationshipType: string
+/**
+ * One line of a batch. Written as a schema rather than an interface so the
+ * OpenAPI document can carry it; `RelationshipData` is inferred from it, so
+ * the two cannot drift.
+ *
+ * Documentation only — the handler below still validates line by line and
+ * collects the rejections into `errors[]`, which is the point of a batch
+ * endpoint. Parsing the whole body against this would turn one malformed line
+ * into a rejection of all 500.
+ */
+const relationshipDataSchema = z.object({
+  sourceId: z.string().uuid(),
+  targetId: z.string().uuid(),
+  relationshipType: z
+    .string()
+    .describe('e.g. `BOM`, `Document`, `Satisfies`, `Consumes`'),
   /**
    * Stored as text, so a string arrives verbatim. BOM quantities are not all
    * integers — "2.5", or a unit-carrying "0.5 m" — and the column has always
    * held whatever was typed.
    */
-  quantity?: number | string
-  referenceDesignator?: string
-  findNumber?: number
-  metadata?: Record<string, any>
-}
+  quantity: z.union([z.number(), z.string()]).optional(),
+  referenceDesignator: z.string().optional(),
+  findNumber: z.number().optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
+})
 
-interface BatchCreateResponse {
-  created: number
-  skipped: number
-  errors: Array<{
-    relationship: RelationshipData
-    error: string
-    details?: string
-  }>
-}
+type RelationshipData = z.infer<typeof relationshipDataSchema>
+
+const batchCreateRequestSchema = z.object({
+  relationships: z.array(relationshipDataSchema).min(1).max(500),
+  replaceExisting: z
+    .boolean()
+    .optional()
+    .describe(
+      'Clear the existing edges of every source that has a line in this ' +
+        'batch before inserting. Without it, an edge already stored is ' +
+        'counted in `skipped` and left alone.',
+    ),
+})
+
+const batchCreateResponseSchema = z.object({
+  created: z.number().int(),
+  skipped: z.number().int(),
+  /**
+   * Per-line rejections. Deliberately carries no `details`: the field existed
+   * to pass the driver's exception text through, which meant a 400 body with
+   * the full INSERT statement and its bound parameters in it.
+   */
+  errors: z.array(
+    z.object({ relationship: relationshipDataSchema, error: z.string() }),
+  ),
+})
+
+type BatchCreateResponse = z.infer<typeof batchCreateResponseSchema>
 
 const app = new Hono()
 
@@ -101,7 +133,29 @@ app.post(
   '/batch-create',
   adapt(
     apiHandler(
-      { permission: ['parts', 'update'] },
+      {
+        permission: ['parts', 'update'],
+        openapi: {
+          summary: 'Create relationships in bulk',
+          description:
+            'Up to 500 edges in one request — this is how a BOM is loaded. ' +
+            'A line naming the same `(sourceId, targetId, relationshipType)` ' +
+            'twice rejects the whole request with 400: the caller has to ' +
+            'merge those lines and sum their quantities. Otherwise nothing ' +
+            'is written until the batch is known to be insertable, and the ' +
+            'status reports the outcome: 201 when every line was created, ' +
+            '207 when some lines were created and others rejected, 400 when ' +
+            'none were.',
+          request: { body: { schema: batchCreateRequestSchema } },
+          responses: {
+            201: { schema: batchCreateResponseSchema },
+            207: {
+              schema: batchCreateResponseSchema,
+              description: 'Some lines created, others rejected',
+            },
+          },
+        },
+      },
       async ({ request, user }) => {
         const userId = user.id
 
@@ -124,52 +178,76 @@ app.post(
           throw new ValidationError('Batch size limited to 500 relationships')
         }
 
-        // If replaceExisting, delete old relationships for the source items
-        if (body.replaceExisting) {
-          // Get unique source IDs
-          const sourceIds = [
-            ...new Set(body.relationships.map((r) => r.sourceId)),
-          ]
+        // Everything below is validation of the request as given — no write
+        // happens until the batch is known to be insertable. The route used to
+        // delete the parents' existing edges first and discover the problem
+        // during the insert, which left a rejected batch with its BOM deleted
+        // and nothing to put back.
+        const errors: BatchCreateResponse['errors'] = []
+        // Kept alongside each candidate so a message can name the line the
+        // caller sent, not the position that survived filtering.
+        const candidates: Array<{ index: number; relData: RelationshipData }> =
+          []
 
-          // The raw delete below bypasses ItemRelationshipService, so enforce
-          // the edit-lock policy on every source item first.
-          for (const sourceId of sourceIds) {
-            const sourceItem = await ItemService.findById(sourceId)
-            if (sourceItem) {
-              await ItemService.requireContentEditable(sourceItem, userId)
-            }
+        body.relationships.forEach((relData, index) => {
+          const { sourceId, targetId, relationshipType } = relData
+          if (!sourceId || !targetId || !relationshipType) {
+            errors.push({
+              relationship: relData,
+              error:
+                'Missing required fields (sourceId, targetId, or relationshipType)',
+            })
+            return
           }
+          candidates.push({ index, relData })
+        })
 
-          for (const sourceId of sourceIds) {
-            // Delete existing relationships of the same type
-            const relationshipTypes = [
-              ...new Set(
-                body.relationships
-                  .filter((r) => r.sourceId === sourceId)
-                  .map((r) => r.relationshipType),
-              ),
-            ]
-
-            for (const relType of relationshipTypes) {
-              await db
-                .delete(itemRelationships)
-                .where(
-                  and(
-                    eq(itemRelationships.sourceId, sourceId),
-                    eq(itemRelationships.relationshipType, relType),
-                  ),
-                )
-            }
-          }
+        // A BOM that lists the same child twice — "4 M4 screws here, 12 there"
+        // — is two lines for one edge, and `unique(source_id, target_id,
+        // relationship_type)` allows only one. Reject the whole request rather
+        // than let the driver reject the second insert: the caller has to merge
+        // those lines, and needs to be told which ones.
+        const duplicates = ItemRelationshipService.findDuplicateEdges(
+          candidates.map((c) => c.relData),
+        )
+        if (duplicates.length > 0) {
+          throw new ValidationError(
+            'A relationship may appear only once per (sourceId, targetId, ' +
+              'relationshipType); combine the duplicate lines and sum their ' +
+              'quantities',
+            duplicates.map(({ index, firstIndex, edge }) => ({
+              field: `relationships[${candidates[index]!.index}]`,
+              message:
+                `Duplicates relationships[${candidates[firstIndex]!.index}]: ` +
+                `${edge.sourceId} → ${edge.targetId} (${edge.relationshipType})`,
+              code: 'DUPLICATE_RELATIONSHIP',
+            })),
+          )
         }
 
-        let created = 0
+        // Edges already stored are skipped rather than replaced. One query for
+        // the whole batch — this was a SELECT per line, 500 round trips for a
+        // 500-line BOM.
+        let storedEdgeKeys = new Set<string>()
+        if (!body.replaceExisting && candidates.length > 0) {
+          const sourceIds = [
+            ...new Set(candidates.map((c) => c.relData.sourceId)),
+          ]
+          const stored = await db
+            .select({
+              sourceId: itemRelationships.sourceId,
+              targetId: itemRelationships.targetId,
+              relationshipType: itemRelationships.relationshipType,
+            })
+            .from(itemRelationships)
+            .where(inArray(itemRelationships.sourceId, sourceIds))
+
+          storedEdgeKeys = new Set(
+            stored.map((edge) => ItemRelationshipService.edgeKey(edge)),
+          )
+        }
+
         let skipped = 0
-        const errors: Array<{
-          relationship: RelationshipData
-          error: string
-          details?: string
-        }> = []
         const validRelationships: Array<{
           sourceId: string
           targetId: string
@@ -183,95 +261,56 @@ app.post(
           }
         }> = []
 
-        // Validate each relationship
-        for (const relData of body.relationships) {
-          try {
-            const {
-              sourceId,
-              targetId,
-              relationshipType,
-              quantity,
-              referenceDesignator,
-              findNumber,
-              metadata,
-            } = relData
+        for (const { relData } of candidates) {
+          const {
+            sourceId,
+            targetId,
+            relationshipType,
+            quantity,
+            referenceDesignator,
+            findNumber,
+            metadata,
+          } = relData
 
-            // Validate required fields
-            if (!sourceId || !targetId || !relationshipType) {
-              errors.push({
-                relationship: relData,
-                error:
-                  'Missing required fields (sourceId, targetId, or relationshipType)',
-              })
-              continue
-            }
-
-            // Check if relationship already exists (if not replacing)
-            if (!body.replaceExisting) {
-              const existing = await db
-                .select()
-                .from(itemRelationships)
-                .where(
-                  and(
-                    eq(itemRelationships.sourceId, sourceId),
-                    eq(itemRelationships.targetId, targetId),
-                    eq(itemRelationships.relationshipType, relationshipType),
-                  ),
-                )
-                .limit(1)
-
-              if (existing.length > 0) {
-                skipped++
-                continue
-              }
-            }
-
-            // Collect valid relationships for batch insert
-            validRelationships.push({
-              sourceId,
-              targetId,
-              relationshipType,
-              userId,
-              data: {
-                quantity: quantity ? quantity.toString() : undefined,
-                referenceDesignator: referenceDesignator || undefined,
-                findNumber: findNumber || undefined,
-                metadata: metadata || undefined,
-              },
-            })
-
-            created++
-          } catch (error) {
-            errors.push({
-              relationship: relData,
-              error: 'Failed to validate relationship',
-              details: (error as Error).message,
-            })
-          }
-        }
-
-        // Batch insert with history tracking
-        if (validRelationships.length > 0) {
-          try {
-            await ItemRelationshipService.addRelationshipBatch(
-              validRelationships,
+          if (
+            storedEdgeKeys.has(
+              ItemRelationshipService.edgeKey({
+                sourceId,
+                targetId,
+                relationshipType,
+              }),
             )
-          } catch (error) {
-            // If batch insert fails, report all as errors
-            created = 0
-            for (const rel of validRelationships) {
-              errors.push({
-                relationship: {
-                  sourceId: rel.sourceId,
-                  targetId: rel.targetId,
-                  relationshipType: rel.relationshipType,
-                },
-                error: 'Batch insert failed',
-                details: (error as Error).message,
-              })
-            }
+          ) {
+            skipped++
+            continue
           }
+
+          validRelationships.push({
+            sourceId,
+            targetId,
+            relationshipType,
+            userId,
+            data: {
+              quantity: quantity ? quantity.toString() : undefined,
+              referenceDesignator: referenceDesignator || undefined,
+              findNumber: findNumber || undefined,
+              metadata: metadata || undefined,
+            },
+          })
         }
+
+        // Replacement runs inside the service's transaction with the insert.
+        // Only the sources that actually have lines to write get cleared, so a
+        // request whose every line for one parent was malformed no longer wipes
+        // that parent's structure as a side effect.
+        const inserted =
+          validRelationships.length > 0
+            ? await ItemRelationshipService.addRelationshipBatch(
+                validRelationships,
+                { replaceExisting: body.replaceExisting },
+              )
+            : []
+        const created = inserted.length
 
         const response: BatchCreateResponse = {
           created,

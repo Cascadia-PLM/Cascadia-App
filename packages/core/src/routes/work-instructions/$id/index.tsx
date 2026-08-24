@@ -67,6 +67,7 @@ import {
 } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
+import { StateBadge } from '@/components/items/StateBadge'
 
 const searchSchema = z.object({
   tab: z.enum(['details', 'steps', 'parts', 'alerts', 'usage']).optional(),
@@ -83,17 +84,6 @@ export const Route = createFileRoute('/work-instructions/$id/')({
     ])
   },
 })
-
-const stateColors: Record<
-  string,
-  'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-> = {
-  Draft: 'secondary',
-  InReview: 'warning',
-  Approved: 'default',
-  Released: 'success',
-  Obsolete: 'destructive',
-}
 
 interface WiEditContext {
   lockBranchId: string | null
@@ -481,11 +471,10 @@ function WorkInstructionDetailView({
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
                   {workInstruction.itemNumber}
                 </h1>
-                <Badge variant={stateColors[workInstruction.state || 'Draft']}>
-                  {workInstruction.state === 'InReview'
-                    ? 'In Review'
-                    : workInstruction.state}
-                </Badge>
+                <StateBadge
+                  itemType="WorkInstruction"
+                  state={workInstruction.state}
+                />
                 {editContext?.branchType &&
                   editContext.branchType !== 'main' && (
                     <Badge variant="secondary" className="text-xs">
@@ -711,13 +700,10 @@ function WorkInstructionDetailView({
                       State
                     </dt>
                     <dd className="mt-1">
-                      <Badge
-                        variant={stateColors[workInstruction.state || 'Draft']}
-                      >
-                        {workInstruction.state === 'InReview'
-                          ? 'In Review'
-                          : workInstruction.state}
-                      </Badge>
+                      <StateBadge
+                        itemType="WorkInstruction"
+                        state={workInstruction.state}
+                      />
                     </dd>
                   </div>
                 </CardContent>

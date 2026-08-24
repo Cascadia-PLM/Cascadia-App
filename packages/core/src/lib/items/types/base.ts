@@ -10,7 +10,7 @@ export interface BaseItem {
   masterId?: string
   designId?: string // Required for Part, Document, Requirement; optional for Task
   itemNumber?: string // Optional - auto-generated if not provided
-  revision: string
+  revision?: string // Optional - server-assigned if not provided
   itemType: string
   name?: string
   state?: string
@@ -32,13 +32,14 @@ export interface BaseItem {
  * to create(), where they are not known yet. Every field overridden here is a
  * NOT NULL column on the `items` table, so a row that came back from the
  * database always has it - read paths return this instead and callers stop
- * guarding against states that cannot occur. (revision and itemType are already
- * required on BaseItem, so they don't need repeating.)
+ * guarding against states that cannot occur. (itemType is already required on
+ * BaseItem, so it doesn't need repeating.)
  */
 export type PersistedItem = BaseItem & {
   id: string
   masterId: string
   itemNumber: string
+  revision: string
   state: string
   createdAt: Date
   createdBy: string
@@ -60,7 +61,18 @@ export const baseItemSchema = z.object({
     (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
     z.string().min(1).max(100).optional(),
   ),
-  revision: z.string().min(1).max(10),
+  // Optional - server-assigned if not provided. A brand-new item has no
+  // revision to state: an ECO-controlled type is given one by the release that
+  // assigns it, and nothing else is ever assigned one at all. Requiring the
+  // field made every client invent a value, and the conventional guess ('A')
+  // is indistinguishable from a real released revision A - so the first
+  // release read it as one and revised the item to B. `ItemService.create`
+  // resolves the value instead; see its `resolveInitialRevision`. Blank input
+  // is coerced to `undefined` for the same reason as `itemNumber` above.
+  revision: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().min(1).max(10).optional(),
+  ),
   itemType: z.string().min(1).max(50),
   name: z.string().max(500).optional(),
   state: z.string().max(50).optional(),
@@ -122,7 +134,6 @@ export interface ItemTypeConfig<T = any> {
   icon: string
   table: string
   schema: z.ZodSchema<T>
-  defaultState: string
   /**
    * @deprecated Use lifecycleDefinitionId instead.
    * States are now managed through lifecycle definitions in workflow_definitions table.

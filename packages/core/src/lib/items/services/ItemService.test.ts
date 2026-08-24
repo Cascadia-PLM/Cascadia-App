@@ -26,6 +26,8 @@ import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { NotFoundError, ValidationError } from '@/lib/errors'
+import { RevisionService } from '@/lib/services/RevisionService'
+import { seedWorkOrderLifecycle } from '@/__tests__/fixtures/lifecycles'
 import { branches, commits, designs } from '@/lib/db/schema'
 import { takeFirst } from '@/lib/db/take-first'
 
@@ -39,6 +41,11 @@ describe('ItemService', () => {
 
   beforeAll(async () => {
     await testDb.setup()
+    // The revision a create assigns follows the type's lifecycle kind, so the
+    // Free-lifecycle case below needs a type whose kind this suite owns:
+    // `LifecycleService.test.ts` re-links Task to a Driven lifecycle in the
+    // same shared database, and the global default seed is first-writer-wins.
+    await seedWorkOrderLifecycle(testDb.db)
   })
 
   afterAll(async () => {
@@ -263,15 +270,65 @@ describe('ItemService', () => {
 
     it('throws ValidationError for invalid data', async () => {
       const invalidData = {
-        // Missing required revision
+        // Missing the design a Part requires
         itemNumber: `PN-${uniquePrefix}-INVALID`,
         name: 'Test Part',
-        designId,
       }
 
       await expect(
         ItemService.create('Part', invalidData as any, user.id),
       ).rejects.toThrow(ValidationError)
+    })
+
+    // The revision is the lifecycle's to assign, not the caller's. An
+    // ECO-controlled type created at a real-looking 'A' is indistinguishable
+    // from one released as A, and the first release then revises it to B.
+    it('starts an ECO-controlled type at the unreleased marker', async () => {
+      const created = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-NOREV`,
+          name: 'No revision supplied',
+          designId,
+        } as any,
+        user.id,
+      )
+
+      expect(created.revision).toBe(RevisionService.getUnreleasedRevision())
+      expect(RevisionService.isWorkingRevision(created.revision)).toBe(true)
+      // The marker is what makes the first release assign A rather than B.
+      expect(RevisionService.getNextRevision(created.revision)).toBe('A')
+    })
+
+    // A Free lifecycle has no release to assign a revision later, so the
+    // marker would be permanent: those start at the scheme's first value,
+    // which is what every such create site used to write by hand.
+    it('starts a type no release ever revises at the first revision', async () => {
+      const created = await ItemService.create(
+        'WorkOrder',
+        {
+          // WO numbers are auto-generated; manual entry is refused
+          name: 'No revision supplied',
+        } as any,
+        user.id,
+      )
+
+      expect(created.revision).toBe('A')
+    })
+
+    it('keeps a revision the caller does name', async () => {
+      const created = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-IMPORTED`,
+          name: 'Imported at C',
+          designId,
+          revision: 'C',
+        } as any,
+        user.id,
+      )
+
+      expect(created.revision).toBe('C')
     })
 
     it('assigns default state when not provided', async () => {
@@ -798,16 +855,20 @@ describe('ItemService', () => {
         user.id,
       )
 
+      // A real released-family state (the boundary now rejects states the
+      // lifecycle does not define, which is how 'InReview' used to sneak in
+      // here); creating it protects main, so the sibling below bypasses
       await ItemService.create(
         'Part',
         {
           itemNumber: `PN-${uniquePrefix}-SEARCH-002`,
           revision: 'A',
           name: 'Search Part Two',
-          state: 'InReview', // Changed from 'Released' to avoid branch protection
+          state: 'Released',
           designId,
         } as any,
         user.id,
+        { bypassBranchProtection: true },
       )
 
       await ItemService.create(
@@ -820,6 +881,7 @@ describe('ItemService', () => {
           designId,
         } as any,
         user.id,
+        { bypassBranchProtection: true },
       )
     })
 
@@ -1154,7 +1216,6 @@ describe('ItemService', () => {
         description: 'A functional requirement',
         type: 'Functional',
         priority: 'MustHave',
-        status: 'Proposed',
         designId,
       }
 
@@ -1177,7 +1238,6 @@ describe('ItemService', () => {
         description: 'Complete requirement',
         type: 'Performance',
         priority: 'ShouldHave',
-        status: 'Approved',
         acceptanceCriteria: 'Must pass all tests',
         source: 'Customer',
         category: 'Safety',
@@ -1205,7 +1265,6 @@ describe('ItemService', () => {
           revision: 'A',
           name: 'Update Requirement',
           type: 'Functional',
-          status: 'Proposed',
           designId,
         } as any,
         user.id,
@@ -1214,13 +1273,13 @@ describe('ItemService', () => {
       const updated = await ItemService.update(
         created.id,
         {
-          status: 'Rejected',
+          description: 'Reworded after review',
           priority: 'MustHave',
         } as any,
         user.id,
       )
 
-      expect((updated as any).status).toBe('Rejected')
+      expect((updated as any).description).toBe('Reworded after review')
       expect((updated as any).priority).toBe('MustHave')
     })
   })
@@ -1242,6 +1301,26 @@ describe('ItemService', () => {
       expect(result).toBeDefined()
       expect(result.id).toBeDefined()
       expect(result.itemNumber).toBe(`TSK-${uniquePrefix}-001`)
+    })
+
+    // The schema types `state` as a plain string because the state universe
+    // is runtime lifecycle configuration — this boundary check is what
+    // rejects states the lifecycle does not define.
+    it('rejects a state the lifecycle does not define', async () => {
+      await expect(
+        ItemService.create(
+          'Part',
+          {
+            itemNumber: `PN-${uniquePrefix}-BOGUS`,
+            revision: 'A',
+            name: 'Bogus State Part',
+            state: 'NotARealState',
+            designId,
+          } as any,
+          user.id,
+          { bypassBranchProtection: true },
+        ),
+      ).rejects.toThrow(ValidationError)
     })
 
     it('retrieves Task with type-specific data', async () => {

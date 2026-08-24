@@ -44,8 +44,22 @@ const CAD_EXTENSIONS = new Set(['.step', '.stp', '.iges', '.igs'])
 
 const convertInputSchema = z.object({
   meshQuality: z.enum(['preview', 'standard', 'high']).default('standard'),
-  decompose: z.boolean().default(false),
-  targetItemId: z.string().uuid().optional(),
+  decompose: z
+    .boolean()
+    .default(false)
+    .describe(
+      'Split a multi-solid assembly into one mesh per solid instead of one ' +
+        'mesh for the whole file.',
+    ),
+  targetItemId: z
+    .string()
+    .uuid()
+    .optional()
+    .describe(
+      'Attach the converted mesh to this item instead of the source ' +
+        'file’s own — e.g. a STEP held on a Document producing an STL on ' +
+        'the Part.',
+    ),
 })
 
 const setFileCategorySchema = z.object({
@@ -454,7 +468,28 @@ app.post(
   '/:fileId/convert',
   adapt(
     apiHandler<{ fileId: string }>(
-      { permission: ['documents', 'read'] },
+      {
+        permission: ['documents', 'read'],
+        openapi: {
+          summary: 'Queue a CAD file for mesh conversion',
+          description:
+            'STEP (.step/.stp) and IGES (.iges/.igs) only. Returns 202 with ' +
+            'the id of a background job — poll GET /api/v1/jobs/:id for its ' +
+            'result; the STL and GLB appear as new files on the target item ' +
+            'when it completes. The body is optional: an absent or ' +
+            'unparseable one runs on the defaults below.',
+          request: {
+            params: z.object({ fileId: z.string().uuid() }),
+            body: { schema: convertInputSchema, required: false },
+          },
+          responses: {
+            202: {
+              schema: z.object({ jobId: z.string().uuid() }),
+              description: 'Conversion queued',
+            },
+          },
+        },
+      },
       async ({ request, params, user }) => {
         const { fileId } = params
 

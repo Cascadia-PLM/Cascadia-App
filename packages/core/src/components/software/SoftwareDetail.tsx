@@ -31,6 +31,8 @@ import {
   ViewEditTextarea,
 } from '@/components/ui'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
 
 const SOFTWARE_TYPE_OPTIONS = [
   { value: 'firmware', label: 'Firmware' },
@@ -45,29 +47,14 @@ const SOURCE_MODE_OPTIONS = [
   { value: 'external', label: 'External (pinned repository ref)' },
 ]
 
-const stateVariant = (state: string) => {
-  const variants: Record<
-    string,
-    'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-  > = {
-    Draft: 'secondary',
-    InReview: 'default',
-    Approved: 'success',
-    Released: 'success',
-    Obsolete: 'destructive',
-  }
-  return variants[state] || 'default'
-}
-
 const createEmptySoftware = (defaultDesignId?: string): Software => ({
   id: undefined,
   masterId: undefined,
   itemType: 'Software',
   designId: defaultDesignId ?? '',
   itemNumber: '',
-  revision: 'A',
   name: '',
-  state: 'Draft',
+  state: '',
   isCurrent: true,
   description: '',
   softwareType: 'firmware',
@@ -120,6 +107,7 @@ export function SoftwareDetail({
   }, [initialSoftware])
 
   const current = software
+  const { isReleasedFamily } = useReleasedFamily('Software', current.state)
 
   const updateField = (field: keyof Software, value: unknown) => {
     setSoftware((prev) => ({ ...prev, [field]: value }))
@@ -226,12 +214,11 @@ export function SoftwareDetail({
 
       {!isCreateMode && (
         <div className="flex gap-2">
-          <Badge
-            variant={stateVariant(current.state ?? 'Draft')}
+          <StateBadge
+            itemType="Software"
+            state={current.state}
             className="text-sm"
-          >
-            {current.state ?? 'Draft'}
-          </Badge>
+          />
           <Badge variant="secondary" className="text-sm font-mono">
             Rev {current.revision}
           </Badge>
@@ -491,9 +478,7 @@ export function SoftwareDetail({
               canImport={(current.sourceMode ?? 'internal') === 'internal'}
               canEdit={
                 (current.sourceMode ?? 'internal') === 'internal' &&
-                !['Released', 'Obsolete', 'Superseded'].includes(
-                  current.state ?? '',
-                )
+                !isReleasedFamily
               }
             />
           </TabsContent>

@@ -148,8 +148,8 @@ npx vitest run -t "should create branch"
 npm run lint          # ESLint (--max-warnings 0)
 npm run format        # Prettier
 npm run check         # Format + lint fix
-npm run openapi:snapshot  # Regenerate docs/api/openapi.v1.json after route changes
-npm run openapi:check     # Verify the committed OpenAPI snapshot matches (CI gate)
+npm run openapi:snapshot  # Regenerate docs/api/openapi.v1.json (maintainers — see below)
+npm run openapi:check     # Verify the committed OpenAPI snapshot matches
 npm run license:check     # Every file carries its SPDX header (CI gate)
 npm run boundary:check    # Resolves every import and classifies the target (CI gate)
 
@@ -307,28 +307,29 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 ### Service Quick Reference
 
-| I need to...                     | Use                                              |
-| -------------------------------- | ------------------------------------------------ |
-| CRUD any item                    | `ItemService`                                    |
-| Manage ECO affected items        | `ChangeOrderService`                             |
-| Release an approved ECO          | `ChangeOrderMergeService.merge()`                |
-| Checkout item for editing        | `CheckoutService.checkout()`                     |
-| Get item at a version/commit/tag | `VersionResolver.getItemAtContext()`             |
-| Create/manage branches           | `BranchService`                                  |
-| Create commits                   | `CommitService`                                  |
-| Upload/download files            | `FileService`                                    |
-| Manage programs                  | `ProgramService`                                 |
-| Manage designs                   | `DesignService`                                  |
-| Manage lifecycle transitions     | `LifecycleService`                               |
-| Detect merge conflicts           | `ConflictDetectionService`                       |
-| Assess ECO impact on items       | `ImpactAssessmentService`                        |
-| AI chatbot conversations         | `SessionService` from `@/lib/ai`                 |
-| Submit background jobs           | `JobService.submit()`                            |
-| Register job types               | `JobTypeRegistry.register()`                     |
-| Wrap an API route handler        | `apiHandler()` from `@/lib/api/handler`          |
-| Parse & validate query params    | `parseQuery(request, zodSchema)`                 |
-| Check design access              | `requireDesignAccess()` from `@/lib/auth/access` |
-| Check branch access              | `requireBranchAccess()` from `@/lib/auth/access` |
+| I need to...                                              | Use                                              |
+| --------------------------------------------------------- | ------------------------------------------------ |
+| CRUD any item                                             | `ItemService`                                    |
+| Manage ECO affected items                                 | `ChangeOrderService`                             |
+| Release an approved ECO                                   | `ChangeOrderMergeService.merge()`                |
+| Checkout item for editing                                 | `CheckoutService.checkout()`                     |
+| Get item at a version/commit/tag                          | `VersionResolver.getItemAtContext()`             |
+| Create/manage branches                                    | `BranchService`                                  |
+| Create commits                                            | `CommitService`                                  |
+| Upload/download files                                     | `FileService`                                    |
+| Manage programs                                           | `ProgramService`                                 |
+| Manage designs                                            | `DesignService`                                  |
+| Manage lifecycle transitions                              | `LifecycleService`                               |
+| Derive state predicates (released family, initial, final) | `LifecycleService`                               |
+| Detect merge conflicts                                    | `ConflictDetectionService`                       |
+| Assess ECO impact on items                                | `ImpactAssessmentService`                        |
+| AI chatbot conversations                                  | `SessionService` from `@/lib/ai`                 |
+| Submit background jobs                                    | `JobService.submit()`                            |
+| Register job types                                        | `JobTypeRegistry.register()`                     |
+| Wrap an API route handler                                 | `apiHandler()` from `@/lib/api/handler`          |
+| Parse & validate query params                             | `parseQuery(request, zodSchema)`                 |
+| Check design access                                       | `requireDesignAccess()` from `@/lib/auth/access` |
+| Check branch access                                       | `requireBranchAccess()` from `@/lib/auth/access` |
 
 ### Core Patterns
 
@@ -337,6 +338,8 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 **Branch protection**: Cannot modify items on `main` directly. All changes flow through ECO branches, merged on release.
 
 **Revision assignment**: Revision letters (A, B, C...) are assigned only when merging ECO branch to main, not during work.
+
+**Lifecycle states are configuration, never literals**: no state name appears in application logic. A state carries `isInitial`, `isFinal` (+ `finalKind`), and the roles it plays in change-action mappings; everything else is the configuring user's choice. Every item type has a lifecycle (defaults in `packages/core/src/lib/items/default-lifecycles.ts`). Ask `LifecycleService` — `isReleasedFamilyState`, `isInitialState`, `getFinalStateIds`, `getFinalKind`, `resolveActionStates` — never compare `state === 'Released'`; render with `StateBadge`. See `docs/features/workflow-engine.md`.
 
 **Item types** (13): Part, Document, ChangeOrder, Requirement, Task, TestPlan, TestCase, WorkInstruction, Issue, Tool, Software, WorkOrder, PhysicalPart. All extend `BaseItem` and register via `ItemTypeRegistry` (definitions in `packages/core/src/lib/items/item-type-definitions.ts`, DB handlers in `packages/core/src/lib/items/type-handlers/`).
 
@@ -436,7 +439,7 @@ Mount new route modules in `packages/core/src/server/index.ts` via `app.route('/
 
 For responses needing custom status codes or headers (201 Created, Set-Cookie), return a raw `Response` from within the handler. Use `parseQuery(request, zodSchema)` for validated query parameters. Use `requireDesignAccess`/`requireBranchAccess` from `@/lib/auth/access` for design/branch access checks.
 
-The OpenAPI document is regenerated from these annotations at request time (`/openapi.json`) and served as Scalar UI at `/api/docs`. The committed snapshot at `docs/api/openapi.v1.json` is the frozen v1 contract — `npm run openapi:check` enforces it in CI. Run `npm run openapi:snapshot` whenever you change a route signature, then commit the regenerated JSON. See [`docs/api/README.md`](./docs/api/README.md) for the versioning policy.
+The OpenAPI document is regenerated from these annotations at request time (`/openapi.json`) and served as Scalar UI at `/api/docs`. The committed snapshot at `docs/api/openapi.v1.json` is the frozen v1 contract. **You do not need to regenerate it in a pull request** — the snapshot is refreshed by the maintainers, and `npm run openapi:check` runs on `main` rather than on PRs. See [`docs/api/README.md`](./docs/api/README.md) for the versioning policy.
 
 ## Common Tasks
 
@@ -458,7 +461,8 @@ The OpenAPI document is regenerated from these annotations at request time (`/op
 6. Return a plain object — it auto-wraps as `{ data: { ... } }` with JSON Content-Type
 7. If new file, mount it in `packages/core/src/server/index.ts` via `app.route('/api/v1/newroute', newroute)`
 8. Optional but encouraged: add `openapi: { summary, request, responses }` to the handler options to enrich the spec
-9. Run `npm run openapi:snapshot` and commit the updated `docs/api/openapi.v1.json`
+
+The committed `docs/api/openapi.v1.json` snapshot is refreshed by the maintainers — leave it out of your PR.
 
 ### Adding a Background Job Type
 

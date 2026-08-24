@@ -16,7 +16,6 @@ import type { Part } from '@/lib/items/types/part'
 import { useTour } from '@/lib/tour'
 import { PageContainer } from '@/components/layout'
 import {
-  Badge,
   Button,
   Card,
   CardContent,
@@ -30,6 +29,7 @@ import {
   itemCollectionQuery,
 } from '@/lib/query'
 import { DashboardCharts } from '@/components/dashboard'
+import { StateBadge } from '@/components/items/StateBadge'
 
 const recentPartsQuery = () =>
   itemCollectionQuery<Part>({ itemType: 'Part' }, 5)
@@ -223,17 +223,7 @@ function DashboardPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
-                      <Badge
-                        variant={
-                          part.state === 'Draft'
-                            ? 'secondary'
-                            : part.state === 'Released'
-                              ? 'success'
-                              : 'default'
-                        }
-                      >
-                        {part.state}
-                      </Badge>
+                      <StateBadge itemType="Part" state={part.state} />
                     </div>
                   </div>
                 </Link>

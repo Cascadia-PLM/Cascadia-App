@@ -13,6 +13,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 export type { BOMTreeNode }
 
@@ -105,6 +106,15 @@ export function EcoTreeTable({
   columnFilters,
   onColumnFilterChange,
 }: EcoTreeTableProps) {
+  // Lifecycles of the item types in this tree, for the final-state check on
+  // the add-to-ECO action. Parts dominate; other types resolve through the
+  // same per-type cache on demand.
+  const { data: partLifecycle } = useLifecyclePhases('Part')
+  const lifecycleByType: Record<
+    string,
+    { states: Array<{ id: string; isFinal?: boolean }> } | null
+  > = { Part: partLifecycle }
+
   const navigate = useNavigate()
 
   const columns: Array<ColumnDefinition> = [
@@ -164,13 +174,9 @@ export function EcoTreeTable({
       label: 'State',
       width: 'w-24 flex-shrink-0',
       align: 'center',
-      filterType: 'multiSelect',
-      filterOptions: [
-        { label: 'Draft', value: 'Draft' },
-        { label: 'In Review', value: 'InReview' },
-        { label: 'Released', value: 'Released' },
-        { label: 'Obsolete', value: 'Obsolete' },
-      ],
+      // The tree spans item types, each with its own lifecycle: a free text
+      // filter rather than one type's state list
+      filterType: 'text',
       renderCell: (node) => (
         <StateBadge
           itemType={node.itemType}
@@ -212,7 +218,12 @@ export function EcoTreeTable({
 
   const renderContextMenu = (node: BOMTreeNode) => {
     const route = getItemRoute(node.itemType, node.itemId)
-    const isEligibleForAdd = !node.isInEco && node.state !== 'Obsolete'
+    // An item whose flow has ended (a final state of its lifecycle —
+    // obsolete, superseded, whatever it is called) is not added to an ECO
+    const nodeLifecycle = lifecycleByType[node.itemType]
+    const nodeStateIsFinal =
+      nodeLifecycle?.states.find((st) => st.id === node.state)?.isFinal ?? false
+    const isEligibleForAdd = !node.isInEco && !nodeStateIsFinal
     const showAddChild =
       !readOnly && onAddChild && node.itemType === 'Part' && !node.isExternal
     const showAddToEco = !readOnly && isEligibleForAdd

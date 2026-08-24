@@ -35,6 +35,7 @@ import { designItemsGridQuery } from '@/lib/query/options/design-items'
 import { itemTextSearchQuery } from '@/lib/query/options/item-search'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { cn } from '@/lib/utils'
+import { StateBadge } from '@/components/items/StateBadge'
 
 interface DesignItem {
   id: string
@@ -386,17 +387,6 @@ export function AddPartFromDesignDialog({
     }
   }
 
-  const getStateBadgeVariant = (state: string) => {
-    switch (state) {
-      case 'Released':
-        return 'success' as const
-      case 'Draft':
-        return 'secondary' as const
-      default:
-        return 'default' as const
-    }
-  }
-
   const scopeOptions: Array<{ value: ImportDesignScope; label: string }> = [
     { value: 'all', label: 'All Designs' },
     { value: 'library', label: 'Standard Library' },
@@ -495,11 +485,7 @@ export function AddPartFromDesignDialog({
         getValue: () => unknown
       }) => {
         const state = getValue() as string
-        return (
-          <Badge variant={getStateBadgeVariant(state)} className="text-xs">
-            {state}
-          </Badge>
-        )
+        return <StateBadge itemType="Part" state={state} className="text-xs" />
       },
       meta: { width: '100px', align: 'center' as const },
     },
@@ -737,12 +723,11 @@ export function AddPartFromDesignDialog({
                               <span className="text-xs text-slate-500 w-10 text-center">
                                 {item.revision}
                               </span>
-                              <Badge
-                                variant={getStateBadgeVariant(item.state)}
+                              <StateBadge
+                                itemType="Part"
+                                state={item.state}
                                 className="text-xs"
-                              >
-                                {item.state}
-                              </Badge>
+                              />
                               {item.designCode && (
                                 <Badge variant="outline" className="text-xs">
                                   {item.designCode}
@@ -817,12 +802,11 @@ export function AddPartFromDesignDialog({
                         {item.revision}
                       </td>
                       <td className="px-3 py-1.5 text-center">
-                        <Badge
-                          variant={getStateBadgeVariant(item.state)}
+                        <StateBadge
+                          itemType="Part"
+                          state={item.state}
                           className="text-xs"
-                        >
-                          {item.state}
-                        </Badge>
+                        />
                       </td>
                       <td className="px-3 py-1.5 text-center">
                         {item.designCode && (
@@ -892,12 +876,11 @@ export function AddPartFromDesignDialog({
                           {item.revision}
                         </td>
                         <td className="px-3 py-1.5 text-center">
-                          <Badge
-                            variant={getStateBadgeVariant(item.state)}
+                          <StateBadge
+                            itemType="Part"
+                            state={item.state}
                             className="text-xs"
-                          >
-                            {item.state}
-                          </Badge>
+                          />
                         </td>
                         <td className="px-3 py-1.5 text-center">
                           {loadingActionOptions ? (

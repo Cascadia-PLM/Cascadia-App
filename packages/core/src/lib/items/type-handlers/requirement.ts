@@ -16,7 +16,6 @@ registerTypeHandler('Requirement', {
       description: data.description || null,
       type: data.type || null,
       priority: data.priority || null,
-      status: data.status || null,
       acceptanceCriteria: data.acceptanceCriteria || null,
       source: data.source || null,
       category: data.category || null,
@@ -45,7 +44,6 @@ registerTypeHandler('Requirement', {
       updateData.description = data.description || null
     if (data.type !== undefined) updateData.type = data.type || null
     if (data.priority !== undefined) updateData.priority = data.priority || null
-    if (data.status !== undefined) updateData.status = data.status || null
     if (data.acceptanceCriteria !== undefined)
       updateData.acceptanceCriteria = data.acceptanceCriteria || null
     if (data.source !== undefined) updateData.source = data.source || null

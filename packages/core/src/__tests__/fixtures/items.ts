@@ -143,7 +143,6 @@ export interface TestRequirement {
   description: string | null
   type: string | null
   priority: string | null
-  status: string | null
   acceptanceCriteria: string | null
   source: string | null
   category: string | null
@@ -708,7 +707,6 @@ export function createTestRequirement(
       description: overrides.description ?? 'Test requirement description',
       type: overrides.type ?? 'Functional',
       priority: overrides.priority ?? 'medium',
-      status: overrides.status ?? 'Open',
       acceptanceCriteria: overrides.acceptanceCriteria ?? null,
       source: overrides.source ?? null,
       category: overrides.category ?? null,
@@ -758,7 +756,6 @@ export async function insertTestRequirement(
         description: reqData.description,
         type: reqData.type,
         priority: reqData.priority,
-        status: reqData.status,
         acceptanceCriteria: reqData.acceptanceCriteria,
         source: reqData.source,
         category: reqData.category,

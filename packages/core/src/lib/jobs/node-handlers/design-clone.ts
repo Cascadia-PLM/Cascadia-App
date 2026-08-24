@@ -583,7 +583,6 @@ async function copyTypeSpecificData(
           description: sourceReq.description,
           type: sourceReq.type,
           priority: sourceReq.priority,
-          status: sourceReq.status,
           acceptanceCriteria: sourceReq.acceptanceCriteria,
           source: sourceReq.source,
           category: sourceReq.category,

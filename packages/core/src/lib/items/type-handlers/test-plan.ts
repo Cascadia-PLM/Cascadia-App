@@ -17,7 +17,6 @@ registerTypeHandler('TestPlan', {
       environment: data.environment || null,
       entryCriteria: data.entryCriteria || null,
       exitCriteria: data.exitCriteria || null,
-      status: data.status || null,
     })
   },
 
@@ -42,7 +41,6 @@ registerTypeHandler('TestPlan', {
       updateData.entryCriteria = data.entryCriteria || null
     if (data.exitCriteria !== undefined)
       updateData.exitCriteria = data.exitCriteria || null
-    if (data.status !== undefined) updateData.status = data.status || null
 
     if (Object.keys(updateData).length > 0) {
       await run

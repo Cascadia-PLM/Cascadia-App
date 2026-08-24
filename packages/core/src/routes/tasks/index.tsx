@@ -22,6 +22,7 @@ import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { itemCollectionQuery, useInvalidateResources } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
+import { LifecycleStateCards } from '@/components/items/LifecycleStateCards'
 
 const TASK_FILTERS: ItemFilters = { itemType: 'Task' }
 
@@ -48,6 +49,10 @@ function TasksListPage() {
   const { data: tasks = [] } = useQuery(
     itemCollectionQuery<Task>(TASK_FILTERS, TASK_LIMIT),
   )
+  const taskCountsByState = tasks.reduce<Record<string, number>>((acc, t) => {
+    if (t.state) acc[t.state] = (acc[t.state] ?? 0) + 1
+    return acc
+  }, {})
 
   // Navigate to new task page
   const handleEditTask = (task: Task) => {
@@ -76,9 +81,12 @@ function TasksListPage() {
     )
 
     try {
-      await apiFetch(`/api/v1/tasks/${updatedTask.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(updatedTask),
+      // Dragging between columns is a lifecycle transition - the sealed item
+      // update rejects state changes, and the lifecycle's own transitions
+      // decide which moves are legal
+      await apiFetch(`/api/v1/items/${updatedTask.id}/transition`, {
+        method: 'POST',
+        body: JSON.stringify({ toState: updatedTask.state }),
       })
     } catch (error) {
       queryClient.setQueryData(taskQuery.queryKey, previous)
@@ -149,55 +157,14 @@ function TasksListPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Tasks</CardDescription>
-            <CardTitle className="text-3xl">{tasks.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Backlog</CardDescription>
-            <CardTitle className="text-3xl">
-              {tasks.filter((t) => t.state === 'Backlog').length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>To Do</CardDescription>
-            <CardTitle className="text-3xl">
-              {tasks.filter((t) => t.state === 'ToDo').length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>In Progress</CardDescription>
-            <CardTitle className="text-3xl">
-              {tasks.filter((t) => t.state === 'InProgress').length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>In Review</CardDescription>
-            <CardTitle className="text-3xl">
-              {tasks.filter((t) => t.state === 'InReview').length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Done</CardDescription>
-            <CardTitle className="text-3xl">
-              {tasks.filter((t) => t.state === 'Done').length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {/* Stats - one card per Task lifecycle state, from configuration */}
+      <LifecycleStateCards
+        itemType="Task"
+        filters={TASK_FILTERS}
+        total={tasks.length}
+        totalLabel="Total Tasks"
+        counts={taskCountsByState}
+      />
 
       {/* Content - Kanban or List */}
       {viewMode === 'kanban' ? (

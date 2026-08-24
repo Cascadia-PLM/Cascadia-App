@@ -29,14 +29,14 @@ import {
   itemCountsQuery,
   itemGridQuery,
   itemListQuery,
+  lifecycleByItemTypeQuery,
   useInvalidateResources,
 } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
+import { LifecycleStateCards } from '@/components/items/LifecycleStateCards'
 
 // The states behind the stat cards, counted in one request rather than one
 // probe request each.
-const COUNT_STATES = ['Draft', 'InReview', 'Released']
-
 // Search schema for URL validation
 const documentsSearchSchema = z.object({
   search: z.coerce.string().optional(),
@@ -80,7 +80,17 @@ export const Route = createFileRoute('/documents/')({
       queryClient.ensureQueryData(
         itemListQuery<Document>(filters, gridParamsFromSearch(deps)),
       ),
-      queryClient.ensureQueryData(itemCountsQuery(filters, COUNT_STATES)),
+      (async () => {
+        const lifecycle = await queryClient.ensureQueryData(
+          lifecycleByItemTypeQuery('Document'),
+        )
+        await queryClient.ensureQueryData(
+          itemCountsQuery(
+            filters,
+            lifecycle.states.map((state) => state.id),
+          ),
+        )
+      })(),
       queryClient.ensureQueryData(designListQuery()),
     ])
   },
@@ -96,7 +106,6 @@ function DocumentsListPage() {
   const filters = documentFilters(searchParams)
 
   const { data: designs = [] } = useQuery(designListQuery())
-  const { data: counts } = useQuery(itemCountsQuery(filters, COUNT_STATES))
 
   const {
     items: documents,
@@ -212,33 +221,13 @@ function DocumentsListPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Documents</CardDescription>
-            <CardTitle className="text-3xl">{total}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Draft</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Draft ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>In Review</CardDescription>
-            <CardTitle className="text-3xl">{counts?.InReview ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Released</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Released ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {/* Stats — one card per lifecycle state, from configuration */}
+      <LifecycleStateCards
+        itemType="Document"
+        filters={filters}
+        total={total}
+        totalLabel="Total Documents"
+      />
 
       {/* Documents Table */}
       <Card>

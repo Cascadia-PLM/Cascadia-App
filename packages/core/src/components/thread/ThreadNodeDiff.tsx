@@ -27,6 +27,7 @@ import type { NodeProps } from '@xyflow/react'
 import type { LucideIcon } from 'lucide-react'
 import type { ThreadNodeDiff as ThreadNodeDiffData } from '@/lib/services/ThreadComparisonService'
 import { cn } from '@/lib/utils'
+import { useLifecycleState } from '@/components/items/StateBadge'
 
 interface ThreadNodeDiffProps {
   data: ThreadNodeDiffData & { onClick?: () => void }
@@ -87,15 +88,6 @@ const domainColors: Record<string, DomainColors> = {
   },
 }
 
-const stateColors: Record<string, string> = {
-  Draft: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-  'In Review':
-    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-  Approved: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  Released: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300',
-  Obsolete: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-}
-
 const diffStatusStyles = {
   added: {
     ring: 'ring-2 ring-green-500',
@@ -153,6 +145,7 @@ function ThreadNodeDiffComponent({
 }: ThreadNodeDiffProps) {
   const colors = domainColors[data.node.domain] ?? engineeringColors
   const Icon = itemTypeIcons[data.node.itemType] || Box
+  const stateStyle = useLifecycleState(data.node.itemType, data.node.state)
   const DomainIcon = domainIcons[data.node.domain] || Wrench
   const diffStyles = diffStatusStyles[data.status]
   const route = itemTypeRoutes[data.node.itemType]
@@ -270,10 +263,10 @@ function ThreadNodeDiffComponent({
             <span
               className={cn(
                 'px-1.5 py-0.5 rounded text-xs',
-                stateColors[data.node.state] || stateColors.Draft,
+                stateStyle.className,
               )}
             >
-              {data.node.state}
+              {stateStyle.label}
             </span>
           </div>
 

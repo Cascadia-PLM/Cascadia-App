@@ -45,8 +45,6 @@ export function WorkInstructionForm({
   const form = useForm({
     defaultValues: {
       itemType: 'WorkInstruction' as const,
-      state: 'Draft',
-      revision: 'A',
       itemNumber: '',
       name: '',
       description: '',
@@ -61,7 +59,6 @@ export function WorkInstructionForm({
       const submissionData = {
         ...value,
         itemNumber: value.itemNumber || undefined,
-        revision: value.revision.trim() || 'A',
       } as WorkInstruction
 
       // Creating requires the output part; editing does not restate it, since
@@ -104,27 +101,6 @@ export function WorkInstructionForm({
               onBlur={field.handleBlur}
               error={field.state.meta.errors[0]}
             />
-          )}
-        </form.Field>
-
-        {/* Revision */}
-        <form.Field name="revision">
-          {(field) => (
-            <FormField
-              label="Revision"
-              required
-              error={field.state.meta.errors[0]}
-              helpText="Version identifier (A, B, C, etc.)"
-            >
-              <Input
-                name={field.name}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                placeholder="A"
-                error={!!field.state.meta.errors.length}
-              />
-            </FormField>
           )}
         </form.Field>
 

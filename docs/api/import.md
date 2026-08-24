@@ -140,6 +140,14 @@ When `bomRelationships` are provided, the endpoint:
 3. Processes each relationship, creating `BOM` type links via `ItemService.addRelationship`
 4. Reports relationship successes and failures separately in the response
 
+A parent lists a child **once**: `item_relationships` is unique on
+`(source, target, type)`, so a file naming the same child on two lines has one
+edge to give. The first line is created and each later one is reported in
+`failedRelationships`, named by both item numbers — combine the lines and sum
+their quantities. See
+[Edge identity](./relationships.md#edge-identity). The import wizard flags
+this in the validation preview, before anything is uploaded.
+
 ---
 
 ## POST /api/v1/import/documents
@@ -294,13 +302,21 @@ All import endpoints use the standard Cascadia error envelope:
       "errorCount": 2,
       "createdItems": [],
       "failedRows": [
-        { "rowNumber": 2, "errors": ["Duplicate item number"] },
+        {
+          "rowNumber": 2,
+          "errors": ["Part number 'PN-000001' already exists"]
+        },
         { "rowNumber": 3, "errors": ["Name is required"] }
       ]
     }
   }
 }
 ```
+
+Per-row and per-relationship messages are always ours. An error the service
+layer did not classify is logged and reported as `Failed to create <type>`
+rather than passed through: the underlying text is the database driver's, and
+its message is the statement that failed together with every bound parameter.
 
 ## Limits
 

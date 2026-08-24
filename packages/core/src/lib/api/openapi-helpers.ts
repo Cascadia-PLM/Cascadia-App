@@ -105,7 +105,16 @@ export interface OpenApiMetadata {
   /** Override stable identifier for the operation; defaults to `${method}_${path}`. */
   operationId?: string
   request?: {
-    body?: { schema: z.ZodType; description?: string; mediaType?: string }
+    body?: {
+      schema: z.ZodType
+      description?: string
+      mediaType?: string
+      /**
+       * Defaults to true. Set false for a route that runs on defaults when
+       * the body is absent — `POST /files/:id/convert` is the one such case.
+       */
+      required?: boolean
+    }
     query?: z.ZodType
     params?: z.ZodType
   }
@@ -142,10 +151,18 @@ export function metadataToSpec(meta: OpenApiMetadata): DescribeRouteOptions {
     const mediaType = meta.request.body.mediaType ?? 'application/json'
     spec.requestBody = {
       description: meta.request.body.description,
-      required: true,
+      required: meta.request.body.required ?? true,
       content: {
         [mediaType]: {
-          schema: resolver(meta.request.body.schema) as never,
+          // Converted here rather than handed to `resolver()`. hono-openapi
+          // only awaits the resolver proxy for *responses* (`getSpec` calls
+          // `resolveResponseSchemas` and nothing else on the `describeRoute`
+          // path), so a resolver left in a body position serialises as the
+          // literal `{ "vendor": "zod" }`. Every one of the 32 annotated
+          // bodies in the snapshot said exactly that until this line
+          // changed — the annotations were there, the schemas never reached
+          // the document. Same reason as `zodObjectToParameters` below.
+          schema: zodToJsonSchema(meta.request.body.schema, 'input'),
         },
       },
     }
@@ -185,6 +202,44 @@ export function metadataToSpec(meta: OpenApiMetadata): DescribeRouteOptions {
 }
 
 /**
+ * Convert a Zod schema to a real OpenAPI 3.1 JSON Schema, synchronously.
+ *
+ * Everything on the request side goes through here rather than through
+ * hono-openapi's `resolver()`: that returns a vendor-tagged proxy which the
+ * generator only awaits for responses, so anywhere else it survives into the
+ * document as `{ "vendor": "zod" }`.
+ *
+ * `io` picks which side of a transform to describe. Request bodies, path and
+ * query parameters are all *inputs*, so a field with `.default()` is optional
+ * to the caller — `io: 'output'` would mark it required, which is the
+ * opposite of the truth for someone writing the request.
+ */
+function zodToJsonSchema(
+  schema: z.ZodType,
+  io: 'input' | 'output',
+): Record<string, unknown> {
+  const jsonSchema = z.toJSONSchema(schema, {
+    target: 'openapi-3.1',
+    io,
+    // A Zod date has no JSON Schema equivalent and the converter throws on
+    // one by default. That throw would happen at module load, when routes are
+    // defined — so a single `z.coerce.date()` in a documented body would take
+    // down the whole server, not just its spec. Emit `any` for anything
+    // unrepresentable, and let the override put the dates back as RFC 3339
+    // strings, which is what they are on the wire.
+    unrepresentable: 'any',
+    override: (ctx) => {
+      if (ctx.zodSchema._zod.def.type === 'date') {
+        ctx.jsonSchema.type = 'string'
+        ctx.jsonSchema.format = 'date-time'
+      }
+    },
+  }) as Record<string, unknown>
+  delete jsonSchema.$schema
+  return jsonSchema
+}
+
+/**
  * Expand a Zod object schema into per-field OpenAPI parameter entries. Each
  * key in the object becomes one `path` or `query` parameter; the field's
  * own optionality drives `required`.
@@ -200,19 +255,11 @@ function zodObjectToParameters(
   const shape = schema.shape as Record<string, z.ZodType>
   const out: Array<NonNullable<DescribeRouteOptions['parameters']>[number]> = []
   for (const [name, field] of Object.entries(shape)) {
-    // Convert each field to a real JSON Schema synchronously via Zod 4's
-    // built-in converter. `resolver()` returns a vendor-tagged proxy that
-    // hono-openapi only unwraps in body/response positions, so we'd otherwise
-    // emit `{ vendor: "zod" }` placeholders for path/query params.
-    const jsonSchema = z.toJSONSchema(field, {
-      target: 'openapi-3.1',
-    }) as Record<string, unknown>
-    delete jsonSchema.$schema
     out.push({
       in: location,
       name,
       required: location === 'path' ? true : !field.isOptional(),
-      schema: jsonSchema as never,
+      schema: zodToJsonSchema(field, 'input') as never,
     })
   }
   return out

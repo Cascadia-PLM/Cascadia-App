@@ -638,7 +638,7 @@ async function transitionItemStateHandlerImpl(
       return errorResponse(`Item with ID ${input.itemId} not found`)
     }
 
-    const currentState = item.state || 'Draft'
+    const currentState = item.state
 
     // Step 2: If not confirmed, return confirmation request
     if (!input.confirmed) {

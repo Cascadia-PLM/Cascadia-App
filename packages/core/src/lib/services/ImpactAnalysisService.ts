@@ -12,6 +12,7 @@ import {
   VERIFIED_BY_RELATIONSHIP,
 } from './RequirementService'
 import { VALIDATES_RELATIONSHIP } from './VerificationService'
+import { LifecycleService } from './LifecycleService'
 import type { ThreadDomain } from './ThreadService'
 
 // ============================================================================
@@ -216,15 +217,17 @@ export class ImpactAnalysisService {
     )
 
     // Convert nodes to ImpactedItem with severity and actions
-    const impactedItems = impactedNodes.map((node) =>
-      this.buildImpactedItem(node, changeType, sourceItem.designId),
+    const impactedItems = await Promise.all(
+      impactedNodes.map((node) =>
+        this.buildImpactedItem(node, changeType, sourceItem.designId),
+      ),
     )
 
     // Calculate summary
     const summary = this.calculateSummary(impactedItems, sourceItem.designId)
 
     // Generate recommendations
-    const recommendations = this.generateRecommendations(
+    const recommendations = await this.generateRecommendations(
       impactedItems,
       changeType,
       summary,
@@ -582,12 +585,16 @@ export class ImpactAnalysisService {
   /**
    * Build an ImpactedItem from a traversal node.
    */
-  private static buildImpactedItem(
+  private static async buildImpactedItem(
     node: TraversalNode,
     changeType: ChangeType,
     sourceDesignId: string | null,
-  ): ImpactedItem {
-    const severity = this.calculateSeverity(node, changeType, sourceDesignId)
+  ): Promise<ImpactedItem> {
+    const severity = await this.calculateSeverity(
+      node,
+      changeType,
+      sourceDesignId,
+    )
     const { reason, requiredAction } = this.generateImpactDetails(
       node,
       changeType,
@@ -620,13 +627,15 @@ export class ImpactAnalysisService {
   /**
    * Calculate severity based on item properties and change type.
    */
-  private static calculateSeverity(
+  private static async calculateSeverity(
     node: TraversalNode,
     changeType: ChangeType,
     sourceDesignId: string | null,
-  ): ImpactSeverity {
-    // Critical: Released items, cross-design impacts
-    if (node.state === 'Released') {
+  ): Promise<ImpactSeverity> {
+    // Critical: released-lineage items, cross-design impacts
+    if (
+      await LifecycleService.isReleasedFamilyState(node.itemType, node.state)
+    ) {
       if (changeType === 'obsolescence') return 'critical'
       if (node.designId !== sourceDesignId && sourceDesignId !== null) {
         return 'critical'
@@ -658,8 +667,8 @@ export class ImpactAnalysisService {
       return 'medium'
     }
 
-    // Low: Distant impacts (depth 4+), draft items
-    if (node.state === 'Draft') {
+    // Low: distant impacts (depth 4+), items still in their initial state
+    if (await LifecycleService.isInitialState(node.itemType, node.state)) {
       return 'low'
     }
 
@@ -787,11 +796,11 @@ export class ImpactAnalysisService {
   /**
    * Generate actionable recommendations.
    */
-  private static generateRecommendations(
+  private static async generateRecommendations(
     impactedItems: Array<ImpactedItem>,
     changeType: ChangeType,
     summary: ImpactAnalysisResult['summary'],
-  ): Array<string> {
+  ): Promise<Array<string>> {
     const recommendations: Array<string> = []
 
     // Cross-design warning
@@ -844,9 +853,15 @@ export class ImpactAnalysisService {
 
     // Change-type specific recommendations
     if (changeType === 'obsolescence') {
-      const released = impactedItems.filter(
-        (item) => item.item.state === 'Released',
+      const releasedFlags = await Promise.all(
+        impactedItems.map((item) =>
+          LifecycleService.isReleasedFamilyState(
+            item.item.itemType,
+            item.item.state,
+          ),
+        ),
       )
+      const released = impactedItems.filter((_, i) => releasedFlags[i])
       if (released.length > 0) {
         recommendations.push(
           `Ensure replacement items are defined for ${released.length} released item(s)`,

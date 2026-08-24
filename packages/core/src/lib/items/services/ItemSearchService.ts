@@ -694,10 +694,10 @@ export class ItemSearchService {
         'leadTimeDays',
       ],
       Document: ['description', 'fileName', 'mimeType'],
-      Requirement: ['description', 'type', 'priority', 'status', 'category'],
+      Requirement: ['description', 'type', 'priority', 'category'],
       Task: ['description', 'assignee', 'priority', 'dueDate'],
       ChangeOrder: ['changeType', 'priority', 'reasonForChange'],
-      TestPlan: ['scope', 'environment', 'status'],
+      TestPlan: ['scope', 'environment'],
       TestCase: ['testType', 'executionStatus'],
       Issue: [
         'description',
@@ -767,7 +767,6 @@ export class ItemSearchService {
         description: requirements.description,
         type: requirements.type,
         priority: requirements.priority,
-        status: requirements.status,
         category: requirements.category,
         verificationMethod: requirements.verificationMethod,
         verificationStatus: requirements.verificationStatus,
@@ -790,7 +789,6 @@ export class ItemSearchService {
       TestPlan: {
         scope: testPlans.scope,
         environment: testPlans.environment,
-        status: testPlans.status,
       },
       TestCase: {
         testType: testCases.testType,
@@ -921,7 +919,6 @@ export class ItemSearchService {
         description: requirements.description,
         type: requirements.type,
         priority: requirements.priority,
-        status: requirements.status,
         category: requirements.category,
         verificationMethod: requirements.verificationMethod,
         verificationStatus: requirements.verificationStatus,
@@ -944,7 +941,6 @@ export class ItemSearchService {
       TestPlan: {
         scope: testPlans.scope,
         environment: testPlans.environment,
-        status: testPlans.status,
       },
       TestCase: {
         testType: testCases.testType,

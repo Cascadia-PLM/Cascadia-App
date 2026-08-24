@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import type { TestCase } from '@/lib/items/types/testcase'
 import { apiFetch } from '@/lib/api/client'
+import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import {
   Badge,
   Button,
@@ -28,6 +29,11 @@ interface VerifyingTest extends TestCase {
   executionStatus?: 'NotRun' | 'Passed' | 'Failed' | 'Blocked'
 }
 
+/** The server's reason if it gave one, else a generic fallback. */
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback
+}
+
 interface RequirementVerificationPanelProps {
   requirementId: string
   designId?: string
@@ -39,6 +45,7 @@ export function RequirementVerificationPanel({
   designId,
   isEditable = false,
 }: RequirementVerificationPanelProps) {
+  const { alert } = useAlertDialog()
   const [verifyingTests, setVerifyingTests] = useState<Array<VerifyingTest>>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -116,7 +123,17 @@ export function RequirementVerificationPanel({
       setSearchQuery('')
       setSearchResults([])
     } catch (error) {
-      console.error('Failed to link test case:', error)
+      // A released requirement is not editable outside a change order, so
+      // this legitimately refuses. Silently dropping it left the user
+      // clicking + with nothing happening and no reason given.
+      alert({
+        title: 'Could not link test case',
+        description: errorMessage(
+          error,
+          'The verification link could not be recorded.',
+        ),
+        variant: 'destructive',
+      })
     } finally {
       setLinking(null)
     }
@@ -131,7 +148,14 @@ export function RequirementVerificationPanel({
       )
       setVerifyingTests((prev) => prev.filter((t) => t.id !== testCaseId))
     } catch (error) {
-      console.error('Failed to unlink test case:', error)
+      alert({
+        title: 'Could not remove test case',
+        description: errorMessage(
+          error,
+          'The verification link could not be removed.',
+        ),
+        variant: 'destructive',
+      })
     } finally {
       setUnlinking(null)
     }

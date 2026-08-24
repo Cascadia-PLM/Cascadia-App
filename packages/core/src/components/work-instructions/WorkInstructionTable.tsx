@@ -13,23 +13,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface WorkInstructionTableProps {
   items: Array<WorkInstruction>
   onEdit?: (workInstruction: WorkInstruction) => void
   onDelete?: (workInstruction: WorkInstruction) => void
   onPresent?: (workInstruction: WorkInstruction) => void
-}
-
-const stateColors: Record<
-  string,
-  'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-> = {
-  Draft: 'secondary',
-  InReview: 'warning',
-  Approved: 'default',
-  Released: 'success',
-  Obsolete: 'destructive',
 }
 
 const difficultyColors: Record<
@@ -55,6 +46,14 @@ export function WorkInstructionTable({
   onDelete,
   onPresent,
 }: WorkInstructionTableProps) {
+  // State filter options and badges come from the WorkInstruction lifecycle's
+  // configuration, not from a list in code
+  const { data: lifecycle } = useLifecyclePhases('WorkInstruction')
+  const stateFilterOptions = (lifecycle?.states ?? []).map((state) => ({
+    label: state.name,
+    value: state.id,
+  }))
+
   const columns: Array<DataGridColumn<WorkInstruction>> = [
     {
       id: 'itemNumber',
@@ -104,21 +103,10 @@ export function WorkInstructionTable({
       accessorKey: 'state',
       enableFiltering: true,
       filterType: 'multiSelect',
-      filterOptions: [
-        { label: 'Draft', value: 'Draft' },
-        { label: 'In Review', value: 'InReview' },
-        { label: 'Approved', value: 'Approved' },
-        { label: 'Released', value: 'Released' },
-        { label: 'Obsolete', value: 'Obsolete' },
-      ],
-      cell: ({ getValue }) => {
-        const value = getValue() as string
-        return (
-          <Badge variant={stateColors[value] || 'default'}>
-            {value === 'InReview' ? 'In Review' : value}
-          </Badge>
-        )
-      },
+      filterOptions: stateFilterOptions,
+      cell: ({ getValue }) => (
+        <StateBadge itemType="WorkInstruction" state={getValue() as string} />
+      ),
     },
     {
       id: 'difficulty',

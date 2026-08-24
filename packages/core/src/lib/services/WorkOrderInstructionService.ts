@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm'
+import { LifecycleService } from './LifecycleService'
 import type {
   InstantiateInstructionInput,
   WorkOrderInstruction,
@@ -143,7 +144,12 @@ export class WorkOrderInstructionService {
     userId: string,
   ) {
     const wo = await getWorkOrder(workOrderId)
-    if (wo.item.state === 'Complete' || wo.item.state === 'Cancelled') {
+    // Any final state freezes the traveler, whatever it is named
+    if (
+      (await LifecycleService.getFinalStateIds('WorkOrder')).includes(
+        wo.item.state,
+      )
+    ) {
       throw new ValidationError(
         `Work order ${wo.item.itemNumber} is ${wo.item.state} — its traveler is frozen`,
       )

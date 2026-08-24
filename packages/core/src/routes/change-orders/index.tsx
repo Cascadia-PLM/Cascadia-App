@@ -2,7 +2,6 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
 import type { ChangeOrder } from '@/lib/items/types/change-order'
@@ -25,14 +24,14 @@ import {
   itemCountsQuery,
   itemGridQuery,
   itemListQuery,
+  lifecycleByItemTypeQuery,
   useInvalidateResources,
 } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
+import { LifecycleStateCards } from '@/components/items/LifecycleStateCards'
 
 // The states behind the stat cards, counted in one request rather than one
 // probe request each.
-const COUNT_STATES = ['Draft', 'InReview', 'Released']
-
 // Search schema for URL validation. The grid params are validated here too —
 // anything the schema drops is a param `useServerDataGrid` cannot round-trip
 // through the URL.
@@ -70,7 +69,17 @@ export const Route = createFileRoute('/change-orders/')({
       queryClient.ensureQueryData(
         itemListQuery<ChangeOrder>(filters, gridParamsFromSearch(deps)),
       ),
-      queryClient.ensureQueryData(itemCountsQuery(filters, COUNT_STATES)),
+      (async () => {
+        const lifecycle = await queryClient.ensureQueryData(
+          lifecycleByItemTypeQuery('ChangeOrder'),
+        )
+        await queryClient.ensureQueryData(
+          itemCountsQuery(
+            filters,
+            lifecycle.states.map((state) => state.id),
+          ),
+        )
+      })(),
     ])
   },
 })
@@ -83,8 +92,6 @@ function ChangeOrdersListPage() {
   const searchParams = Route.useSearch()
 
   const filters = changeOrderFilters(searchParams)
-
-  const { data: counts } = useQuery(itemCountsQuery(filters, COUNT_STATES))
 
   const {
     items: changeOrders,
@@ -148,33 +155,13 @@ function ChangeOrdersListPage() {
         </Link>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Change Orders</CardDescription>
-            <CardTitle className="text-3xl">{total}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Draft</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Draft ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>In Review</CardDescription>
-            <CardTitle className="text-3xl">{counts?.InReview ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Released</CardDescription>
-            <CardTitle className="text-3xl">{counts?.Released ?? 0}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {/* Stats — one card per lifecycle state, from configuration */}
+      <LifecycleStateCards
+        itemType="ChangeOrder"
+        filters={filters}
+        total={total}
+        totalLabel="Total Change Orders"
+      />
 
       {/* Change Orders Table */}
       <Card>

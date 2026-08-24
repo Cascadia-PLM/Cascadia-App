@@ -31,15 +31,8 @@ import {
 } from '@/components/ui'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { itemAtContextQuery } from '@/lib/query/options/items'
-
-const STATE_OPTIONS = [
-  { value: 'Backlog', label: 'Backlog' },
-  { value: 'ToDo', label: 'To Do' },
-  { value: 'InProgress', label: 'In Progress' },
-  { value: 'InReview', label: 'In Review' },
-  { value: 'Done', label: 'Done' },
-  { value: 'Cancelled', label: 'Cancelled' },
-]
+import { StateBadge } from '@/components/items/StateBadge'
+import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
 
 const PRIORITY_OPTIONS = [
   { value: 'Low', label: 'Low' },
@@ -47,21 +40,6 @@ const PRIORITY_OPTIONS = [
   { value: 'High', label: 'High' },
   { value: 'Critical', label: 'Critical' },
 ]
-
-const stateVariant = (state: string) => {
-  const variants: Record<
-    string,
-    'default' | 'secondary' | 'success' | 'warning' | 'destructive'
-  > = {
-    Backlog: 'secondary',
-    ToDo: 'default',
-    InProgress: 'warning',
-    InReview: 'default',
-    Done: 'success',
-    Cancelled: 'destructive',
-  }
-  return variants[state] || 'default'
-}
 
 const priorityVariant = (priority: string) => {
   const variants: Record<
@@ -81,10 +59,9 @@ const createEmptyTask = (): Task => ({
   masterId: undefined,
   itemType: 'Task',
   itemNumber: '',
-  revision: 'A',
   name: '',
   description: '',
-  state: 'Backlog',
+  state: '',
   isCurrent: true,
   priority: 'Medium',
   assignee: undefined,
@@ -99,6 +76,8 @@ const createEmptyTask = (): Task => ({
 })
 
 interface TaskDetailProps {
+  /** Called after a lifecycle transition succeeds (refresh the item) */
+  onTransitioned?: () => void
   task?: Task
   onSave: (task: Task) => Promise<void>
   onDelete?: () => Promise<void>
@@ -109,6 +88,7 @@ interface TaskDetailProps {
 }
 
 export function TaskDetail({
+  onTransitioned,
   task: initialTask,
   onSave,
   onDelete,
@@ -252,12 +232,18 @@ export function TaskDetail({
 
       {!isCreateMode && (
         <div className="flex gap-2">
-          <Badge
-            variant={stateVariant(currentTask.state ?? 'Backlog')}
+          <StateBadge
+            itemType="Task"
+            state={currentTask.state}
             className="text-sm"
-          >
-            {currentTask.state ?? 'Backlog'}
-          </Badge>
+          />
+          {currentTask.id && (
+            <FreeTransitionControl
+              itemId={currentTask.id}
+              state={currentTask.state}
+              onTransitioned={onTransitioned}
+            />
+          )}
           {currentTask.priority && (
             <Badge
               variant={priorityVariant(currentTask.priority)}
@@ -301,14 +287,6 @@ export function TaskDetail({
                       isEditing={isEditing}
                       placeholder="Task name"
                       required
-                    />
-                    <ViewEditBadge
-                      label="State"
-                      value={isEditing ? task.state : currentTask.state}
-                      onChange={(v) => updateField('state', v)}
-                      isEditing={isEditing}
-                      options={STATE_OPTIONS}
-                      variant={stateVariant}
                     />
                     <ViewEditBadge
                       label="Priority"

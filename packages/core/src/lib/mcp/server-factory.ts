@@ -20,6 +20,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import type { Tool, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js'
+import { safeErrorMessage } from '@/lib/errors/pg'
 
 export interface McpToolSpec {
   name: string
@@ -96,9 +97,10 @@ export function buildMcpServer(options: {
     } catch (error) {
       // Tool execution failures (permission denials, not-found, validation)
       // are reported as tool errors so the model can correct course, per
-      // the MCP spec — not as protocol errors.
-      const message =
-        error instanceof Error ? error.message : 'Tool execution failed'
+      // the MCP spec — not as protocol errors. A database failure is the one
+      // kind the model cannot correct, and its message is the failed SQL and
+      // every bound parameter, so it is replaced rather than forwarded.
+      const message = safeErrorMessage(error, 'Tool execution failed')
       return {
         content: [{ type: 'text', text: message }],
         isError: true,

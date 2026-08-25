@@ -23,6 +23,7 @@ import {
 } from '../db/schema'
 import { NotFoundError } from '../errors'
 import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
+import { followSupersededRows } from '../items/version-lineage'
 import { EBOM_SOURCE_RELATIONSHIP } from './MbomService'
 import { RELATIONSHIP_EVIDENCES } from './QualificationService'
 import {
@@ -988,6 +989,12 @@ export class ThreadService {
 
   /**
    * Traverse parent requirements (DERIVES_FROM hierarchy via parentRequirementId)
+   *
+   * The column names the parent's version row at derive time and is never
+   * re-pointed, so a stale id has to be followed forward before the row is
+   * fetched. Without that the live thread drew a Released child hanging off
+   * the superseded Draft row an ECO had already replaced; the
+   * at-context walk self-corrected only because it re-resolves by master.
    */
   private static async traverseParentRequirements(
     requirementId: string,
@@ -1009,18 +1016,18 @@ export class ThreadService {
       .limit(1)
 
     if (!reqData?.parentRequirementId) return
-    if (
-      resolver.preservesIdentity &&
-      visitedIds.has(reqData.parentRequirementId)
-    ) {
+
+    const storedParentId = reqData.parentRequirementId
+    const parentId =
+      (await followSupersededRows([storedParentId])).get(storedParentId) ??
+      storedParentId
+
+    if (resolver.preservesIdentity && visitedIds.has(parentId)) {
       return
     }
 
     // Get the parent requirement at the resolver's context
-    const resolvedItem = await this.fetchResolved(
-      reqData.parentRequirementId,
-      resolver,
-    )
+    const resolvedItem = await this.fetchResolved(parentId, resolver)
     if (!resolvedItem || visitedIds.has(resolvedItem.id)) return
 
     visitedIds.add(resolvedItem.id)

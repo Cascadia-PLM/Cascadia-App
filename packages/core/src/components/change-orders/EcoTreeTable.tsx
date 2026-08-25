@@ -7,7 +7,7 @@ import type { BOMTreeNode } from '@/components/bom/types'
 import type { ColumnDefinition } from '@/components/bom/BomTreeView'
 import { Badge } from '@/components/ui'
 import { BomTreeView } from '@/components/bom/BomTreeView'
-import { getItemRoute } from '@/components/bom/helpers'
+import { getItemDetailPath } from '@/lib/items/item-type-ui'
 import { StateBadge } from '@/components/items/StateBadge'
 import {
   ContextMenuItem,
@@ -217,7 +217,7 @@ export function EcoTreeTable({
   ]
 
   const renderContextMenu = (node: BOMTreeNode) => {
-    const route = getItemRoute(node.itemType, node.itemId)
+    const route = getItemDetailPath(node.itemType, node.itemId)
     // An item whose flow has ended (a final state of its lifecycle —
     // obsolete, superseded, whatever it is called) is not added to an ECO
     const nodeLifecycle = lifecycleByType[node.itemType]
@@ -230,17 +230,19 @@ export function EcoTreeTable({
 
     return (
       <>
-        <ContextMenuItem
-          onClick={() =>
-            navigate({
-              to: route,
-              search: branchId ? { branch: branchId } : {},
-            } as any)
-          }
-        >
-          <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-          View
-        </ContextMenuItem>
+        {route && (
+          <ContextMenuItem
+            onClick={() =>
+              navigate({
+                to: route,
+                search: branchId ? { branch: branchId } : {},
+              } as any)
+            }
+          >
+            <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+            View
+          </ContextMenuItem>
+        )}
         {(showAddChild || showAddToEco) && <ContextMenuSeparator />}
         {showAddChild && (
           <ContextMenuItem onClick={() => onAddChild(node)}>

@@ -16,14 +16,16 @@
  * the names. Logic sees only `isInitial` / `isFinal` and the change-action
  * mappings.
  *
- * ChangeOrder appears only as a minimal Driving workflow: a ChangeOrder
- * item's state mirrors its workflow instance, so state resolution needs the
- * Driving definition's isInitial flag to exist. The shipped, richer CO
- * workflows live in `scripts/seed-minimal.ts` (first-writer-wins keeps them
- * on seeded databases), and CO test suites override with their own.
+ * This is the single source of the shipped defaults: the app seed writes no
+ * lifecycle of its own. The two change-order workflows are here too — a
+ * ChangeOrder item's state mirrors its workflow instance, so state resolution
+ * needs a Driving definition to exist everywhere — and CO test suites still
+ * override with their own. Descriptions and the editor's node positions ride
+ * along, so a fresh database opens each default laid out and explained.
  */
 
 import { sql } from 'drizzle-orm'
+import dagre from 'dagre'
 import { itemTypeConfigs, users, workflowDefinitions } from '../db/schema'
 import { LIFECYCLE_IDS } from './lifecycle-ids'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
@@ -37,6 +39,64 @@ type DbInstance = PostgresJsDatabase<typeof schema>
  */
 const SYSTEM_USER_ID = '00000000-0000-4000-8000-000000000000'
 
+interface LayoutEdge {
+  fromStateId: string
+  toStateId: string
+}
+
+interface LayoutableDefinition {
+  states: ReadonlyArray<{ id: string }>
+  transitions?: ReadonlyArray<LayoutEdge>
+  changeActionMappings?: Record<
+    string,
+    { fromState?: string; toState?: string; oldVersionState?: string }
+  >
+}
+
+/**
+ * The definition with dagre-positioned states, so the lifecycle editor opens
+ * a shipped default laid out left-to-right instead of stacked at the origin.
+ * Layout edges are the manual transitions plus the moves the change-action
+ * mappings describe — a Driven lifecycle has no transitions; its shape *is*
+ * its mappings. Same geometry the editor's own auto-layout uses.
+ */
+function withLayout<T extends LayoutableDefinition>(definition: T): T {
+  const edges: Array<LayoutEdge> = [...(definition.transitions ?? [])]
+  for (const move of Object.values(definition.changeActionMappings ?? {})) {
+    for (const to of [move.toState, move.oldVersionState]) {
+      if (move.fromState && to && to !== move.fromState) {
+        edges.push({ fromStateId: move.fromState, toStateId: to })
+      }
+    }
+  }
+  const width = 180
+  const height = 80
+  const graph = new dagre.graphlib.Graph()
+  graph.setDefaultEdgeLabel(() => ({}))
+  graph.setGraph({
+    rankdir: 'LR',
+    ranksep: 100,
+    nodesep: 50,
+    marginx: 20,
+    marginy: 20,
+  })
+  for (const state of definition.states) {
+    graph.setNode(state.id, { width, height })
+  }
+  for (const edge of edges) graph.setEdge(edge.fromStateId, edge.toStateId)
+  dagre.layout(graph)
+  return {
+    ...definition,
+    states: definition.states.map((state) => {
+      const node = graph.node(state.id)
+      return {
+        ...state,
+        position: { x: node.x - width / 2, y: node.y - height / 2 },
+      }
+    }),
+  }
+}
+
 /**
  * Canonical Driven lifecycle for versioned, ECO-controlled item types
  * (Part, Document, Requirement — and Software, which links to the Part
@@ -48,6 +108,7 @@ export const PART_LIFECYCLE_DEFINITION = {
     {
       id: 'Draft',
       name: 'Draft',
+      description: 'Item is being created or edited',
       color: 'gray',
       isInitial: true,
       isFinal: false,
@@ -55,6 +116,7 @@ export const PART_LIFECYCLE_DEFINITION = {
     {
       id: 'Released',
       name: 'Released',
+      description: 'Item is released for use',
       color: 'green',
       isInitial: false,
       isFinal: false,
@@ -62,6 +124,7 @@ export const PART_LIFECYCLE_DEFINITION = {
     {
       id: 'Superseded',
       name: 'Superseded',
+      description: 'Replaced by a newer revision',
       color: 'slate',
       isInitial: false,
       isFinal: true,
@@ -69,6 +132,7 @@ export const PART_LIFECYCLE_DEFINITION = {
     {
       id: 'Obsolete',
       name: 'Obsolete',
+      description: 'Item is no longer used',
       color: 'red',
       isInitial: false,
       isFinal: true,
@@ -94,6 +158,8 @@ export const PART_LIFECYCLE_DEFINITION = {
     },
   },
   lifecycleType: 'Driven' as const,
+  description:
+    'Standard lifecycle for Parts and Documents. All state changes go through ECOs.',
   applicableItemTypes: ['Part'],
 }
 
@@ -208,6 +274,8 @@ export const REQUIREMENT_LIFECYCLE_DEFINITION = {
     },
   },
   lifecycleType: 'Driven' as const,
+  description:
+    'Requirement lifecycle. Draft → Proposed → Approved by review; release, revision and obsolescence go through ECOs.',
   applicableItemTypes: ['Requirement'],
 }
 
@@ -216,6 +284,7 @@ export const WORK_ORDER_LIFECYCLE_DEFINITION = {
     {
       id: 'Not Started',
       name: 'Not Started',
+      description: 'Work order is planned but execution has not begun',
       color: 'gray',
       isInitial: true,
       isFinal: false,
@@ -223,6 +292,7 @@ export const WORK_ORDER_LIFECYCLE_DEFINITION = {
     {
       id: 'In Progress',
       name: 'In Progress',
+      description: 'Execution underway on the shop floor',
       color: 'blue',
       isInitial: false,
       isFinal: false,
@@ -230,6 +300,7 @@ export const WORK_ORDER_LIFECYCLE_DEFINITION = {
     {
       id: 'Complete',
       name: 'Complete',
+      description: 'All quantities completed',
       color: 'green',
       isInitial: false,
       isFinal: true,
@@ -238,6 +309,7 @@ export const WORK_ORDER_LIFECYCLE_DEFINITION = {
     {
       id: 'Cancelled',
       name: 'Cancelled',
+      description: 'Work order cancelled before completion',
       color: 'red',
       isInitial: false,
       isFinal: true,
@@ -248,29 +320,35 @@ export const WORK_ORDER_LIFECYCLE_DEFINITION = {
     {
       id: 'wo-t1',
       name: 'Start',
+      description: 'Begin execution',
       fromStateId: 'Not Started',
       toStateId: 'In Progress',
     },
     {
       id: 'wo-t2',
       name: 'Cancel',
+      description: 'Cancel before starting',
       fromStateId: 'Not Started',
       toStateId: 'Cancelled',
     },
     {
       id: 'wo-t3',
       name: 'Complete',
+      description: 'All quantities completed',
       fromStateId: 'In Progress',
       toStateId: 'Complete',
     },
     {
       id: 'wo-t4',
       name: 'Cancel In Progress',
+      description: 'Cancel a running work order',
       fromStateId: 'In Progress',
       toStateId: 'Cancelled',
     },
   ],
   lifecycleType: 'Free' as const,
+  description:
+    'Work order execution lifecycle. Not Started → In Progress → Complete, cancellable until complete.',
   applicableItemTypes: ['WorkOrder'],
 }
 
@@ -646,6 +724,7 @@ const ISSUE_LIFECYCLE_DEFINITION = {
     {
       id: 'Open',
       name: 'Open',
+      description: 'Issue has been reported and is awaiting triage',
       color: 'blue',
       isInitial: true,
       isFinal: false,
@@ -653,6 +732,7 @@ const ISSUE_LIFECYCLE_DEFINITION = {
     {
       id: 'InProgress',
       name: 'In Progress',
+      description: 'Issue is being actively investigated or worked on',
       color: 'yellow',
       isInitial: false,
       isFinal: false,
@@ -660,6 +740,7 @@ const ISSUE_LIFECYCLE_DEFINITION = {
     {
       id: 'Pending',
       name: 'Pending',
+      description: 'Issue is waiting for external input or action',
       color: 'orange',
       isInitial: false,
       isFinal: false,
@@ -667,6 +748,7 @@ const ISSUE_LIFECYCLE_DEFINITION = {
     {
       id: 'Resolved',
       name: 'Resolved',
+      description: 'Issue has been resolved but not yet verified',
       color: 'green',
       isInitial: false,
       isFinal: false,
@@ -674,6 +756,7 @@ const ISSUE_LIFECYCLE_DEFINITION = {
     {
       id: 'Verified',
       name: 'Verified',
+      description: 'Resolution has been verified and confirmed',
       color: 'emerald',
       isInitial: false,
       isFinal: false,
@@ -681,6 +764,7 @@ const ISSUE_LIFECYCLE_DEFINITION = {
     {
       id: 'Closed',
       name: 'Closed',
+      description: 'Issue is closed and complete',
       color: 'slate',
       isInitial: false,
       isFinal: true,
@@ -688,6 +772,7 @@ const ISSUE_LIFECYCLE_DEFINITION = {
     {
       id: 'Cancelled',
       name: 'Cancelled',
+      description: 'Issue was cancelled (duplicate, invalid, etc.)',
       color: 'red',
       isInitial: false,
       isFinal: true,
@@ -697,71 +782,84 @@ const ISSUE_LIFECYCLE_DEFINITION = {
     {
       id: 'issue-t1',
       name: 'Start Work',
+      description: 'Begin investigating or working on the issue',
       fromStateId: 'Open',
       toStateId: 'InProgress',
     },
     {
       id: 'issue-t2',
       name: 'Put on Hold',
+      description: 'Waiting for external input or action',
       fromStateId: 'InProgress',
       toStateId: 'Pending',
     },
     {
       id: 'issue-t3',
       name: 'Resume',
+      description: 'Resume work on the issue',
       fromStateId: 'Pending',
       toStateId: 'InProgress',
     },
     {
       id: 'issue-t4',
       name: 'Resolve',
+      description: 'Mark the issue as resolved',
       fromStateId: 'InProgress',
       toStateId: 'Resolved',
     },
     {
       id: 'issue-t5',
       name: 'Resolve from Pending',
+      description: 'Mark the issue as resolved',
       fromStateId: 'Pending',
       toStateId: 'Resolved',
     },
     {
       id: 'issue-t6',
       name: 'Verify',
+      description: 'Verify the resolution',
       fromStateId: 'Resolved',
       toStateId: 'Verified',
     },
     {
       id: 'issue-t7',
       name: 'Reopen',
+      description: 'Reopen the issue for further work',
       fromStateId: 'Resolved',
       toStateId: 'InProgress',
     },
     {
       id: 'issue-t8',
       name: 'Close',
+      description: 'Close the issue',
       fromStateId: 'Verified',
       toStateId: 'Closed',
     },
     {
       id: 'issue-t9',
-      name: 'Cancel',
+      name: 'Cancel from Open',
+      description: 'Cancel the issue',
       fromStateId: 'Open',
       toStateId: 'Cancelled',
     },
     {
       id: 'issue-t10',
-      name: 'Cancel',
+      name: 'Cancel from InProgress',
+      description: 'Cancel the issue',
       fromStateId: 'InProgress',
       toStateId: 'Cancelled',
     },
     {
       id: 'issue-t11',
-      name: 'Cancel',
+      name: 'Cancel from Pending',
+      description: 'Cancel the issue',
       fromStateId: 'Pending',
       toStateId: 'Cancelled',
     },
   ],
   lifecycleType: 'Free' as const,
+  description:
+    'Issue tracking lifecycle. Users can manually transition states without ECO approval.',
   applicableItemTypes: ['Issue'],
 }
 
@@ -777,6 +875,7 @@ const TOOL_LIFECYCLE_DEFINITION = {
     {
       id: 'Draft',
       name: 'Draft',
+      description: 'Tool is being configured and has not been validated',
       color: 'gray',
       isInitial: true,
       isFinal: false,
@@ -784,6 +883,7 @@ const TOOL_LIFECYCLE_DEFINITION = {
     {
       id: 'Available',
       name: 'Available',
+      description: 'Tool is in stock and available for use',
       color: 'green',
       isInitial: false,
       isFinal: false,
@@ -791,6 +891,7 @@ const TOOL_LIFECYCLE_DEFINITION = {
     {
       id: 'In Use',
       name: 'In Use',
+      description: 'Tool is checked out to a work order or operator',
       color: 'blue',
       isInitial: false,
       isFinal: false,
@@ -798,6 +899,7 @@ const TOOL_LIFECYCLE_DEFINITION = {
     {
       id: 'Maintenance',
       name: 'Maintenance',
+      description: 'Tool is undergoing maintenance or calibration',
       color: 'yellow',
       isInitial: false,
       isFinal: false,
@@ -805,6 +907,7 @@ const TOOL_LIFECYCLE_DEFINITION = {
     {
       id: 'Retired',
       name: 'Retired',
+      description: 'Tool is no longer in service',
       color: 'red',
       isInitial: false,
       isFinal: true,
@@ -814,53 +917,63 @@ const TOOL_LIFECYCLE_DEFINITION = {
     {
       id: 'tool-t1',
       name: 'Commission',
+      description: 'Mark tool as available for use',
       fromStateId: 'Draft',
       toStateId: 'Available',
     },
     {
       id: 'tool-t2',
       name: 'Check Out',
+      description: 'Check the tool out for use',
       fromStateId: 'Available',
       toStateId: 'In Use',
     },
     {
       id: 'tool-t3',
       name: 'Return',
+      description: 'Return the tool to available stock',
       fromStateId: 'In Use',
       toStateId: 'Available',
     },
     {
       id: 'tool-t4',
       name: 'Send to Maintenance',
+      description: 'Take tool offline for maintenance or calibration',
       fromStateId: 'Available',
       toStateId: 'Maintenance',
     },
     {
       id: 'tool-t5',
       name: 'Send to Maintenance',
+      description: 'Take a tool in use offline for maintenance or calibration',
       fromStateId: 'In Use',
       toStateId: 'Maintenance',
     },
     {
       id: 'tool-t6',
       name: 'Return to Service',
+      description: 'Return tool to available stock after maintenance',
       fromStateId: 'Maintenance',
       toStateId: 'Available',
     },
     {
       id: 'tool-t7',
       name: 'Retire',
+      description: 'Permanently retire tool from service',
       fromStateId: 'Available',
       toStateId: 'Retired',
     },
     {
       id: 'tool-t8',
       name: 'Retire from Maintenance',
+      description: 'Retire tool that is currently in maintenance',
       fromStateId: 'Maintenance',
       toStateId: 'Retired',
     },
   ],
   lifecycleType: 'Free' as const,
+  description:
+    'Tool lifecycle for manufacturing equipment. Draft → Available ↔ In Use, Maintenance ↔ Available, → Retired.',
   applicableItemTypes: ['Tool'],
 }
 
@@ -869,6 +982,7 @@ const PHYSICAL_PART_LIFECYCLE_DEFINITION = {
     {
       id: 'Available',
       name: 'Available',
+      description: 'Instance exists and can be consumed or put in service',
       color: 'green',
       isInitial: true,
       isFinal: false,
@@ -876,6 +990,7 @@ const PHYSICAL_PART_LIFECYCLE_DEFINITION = {
     {
       id: 'Consumed',
       name: 'Consumed',
+      description: 'Consumed by a work order (reversible while WO is open)',
       color: 'blue',
       isInitial: false,
       isFinal: false,
@@ -883,6 +998,7 @@ const PHYSICAL_PART_LIFECYCLE_DEFINITION = {
     {
       id: 'In Service',
       name: 'In Service',
+      description: 'Fielded/in use as an end item',
       color: 'blue',
       isInitial: false,
       isFinal: false,
@@ -890,6 +1006,7 @@ const PHYSICAL_PART_LIFECYCLE_DEFINITION = {
     {
       id: 'Scrapped',
       name: 'Scrapped',
+      description: 'Destroyed or disposed — identity retained for history',
       color: 'red',
       isInitial: false,
       isFinal: true,
@@ -899,48 +1016,58 @@ const PHYSICAL_PART_LIFECYCLE_DEFINITION = {
     {
       id: 'pp-t1',
       name: 'Consume',
+      description: 'Consumed as material by a work order',
       fromStateId: 'Available',
       toStateId: 'Consumed',
     },
     {
       id: 'pp-t2',
       name: 'Return to Stock',
+      description: 'Undo consumption (work order line removed)',
       fromStateId: 'Consumed',
       toStateId: 'Available',
     },
     {
       id: 'pp-t3',
       name: 'Put in Service',
+      description: 'Delivered/fielded as an end item',
       fromStateId: 'Available',
       toStateId: 'In Service',
     },
     {
       id: 'pp-t4',
-      name: 'Remove from Service',
+      name: 'Return from Service',
+      description: 'Returned from the field',
       fromStateId: 'In Service',
       toStateId: 'Available',
     },
     {
       id: 'pp-t5',
       name: 'Scrap',
+      description: 'Destroyed or disposed',
       fromStateId: 'Available',
       toStateId: 'Scrapped',
     },
     {
       id: 'pp-t6',
       name: 'Scrap from Service',
+      description: 'Retired from the field and disposed',
       fromStateId: 'In Service',
       toStateId: 'Scrapped',
     },
   ],
   lifecycleType: 'Free' as const,
+  description:
+    'Physical part lifecycle for serialized units and lots. Available ↔ Consumed / In Service → Scrapped.',
   applicableItemTypes: ['PhysicalPart'],
 }
 
 /**
- * Minimal Driving workflow so ChangeOrder items resolve an initial state on
- * databases the app seed has not touched. Finals declare `finalKind`; the
- * release-vs-cancel decision is made from that flag alone.
+ * The shipped ECO approval workflow. Finals declare `finalKind`; the
+ * release-vs-cancel decision is made from that flag alone. Returning to the
+ * initial state reopens the change order's scope, and a cancel path exists
+ * from every pre-final state — without one a submitted ECO could only ever be
+ * approved or sit in review forever.
  */
 const CHANGE_ORDER_WORKFLOW_DEFINITION = {
   states: [
@@ -948,13 +1075,15 @@ const CHANGE_ORDER_WORKFLOW_DEFINITION = {
       id: 'Draft',
       name: 'Draft',
       color: 'gray',
+      description: 'ECO is being prepared',
       isInitial: true,
       isFinal: false,
     },
     {
       id: 'InReview',
       name: 'In Review',
-      color: 'blue',
+      color: 'yellow',
+      description: 'ECO is under review',
       isInitial: false,
       isFinal: false,
     },
@@ -962,53 +1091,108 @@ const CHANGE_ORDER_WORKFLOW_DEFINITION = {
       id: 'Approved',
       name: 'Approved',
       color: 'green',
+      description: 'ECO has been approved and items are released',
       isInitial: false,
       isFinal: true,
+      // Completing here merges branches and assigns revisions
       finalKind: 'release' as const,
     },
     {
       id: 'Cancelled',
       name: 'Cancelled',
       color: 'red',
+      description: 'ECO was abandoned; branches are archived unmerged',
       isInitial: false,
       isFinal: true,
+      // Completing here archives branches without merging
       finalKind: 'cancel' as const,
     },
   ],
   transitions: [
     {
-      id: 'co-t1',
+      id: 't1',
       name: 'Submit for Review',
       fromStateId: 'Draft',
       toStateId: 'InReview',
+      description: 'Submit ECO for review',
     },
     {
-      id: 'co-t2',
-      name: 'Rework',
-      fromStateId: 'InReview',
-      toStateId: 'Draft',
-    },
-    {
-      id: 'co-t3',
+      id: 't2',
       name: 'Approve',
       fromStateId: 'InReview',
       toStateId: 'Approved',
+      // Approved is final with finalKind 'release': completing the workflow
+      // runs the merge, which applies each affected item's
+      // changeActionMappings — no per-transition actions needed
+      description: 'Approve the ECO and release affected items',
     },
     {
-      id: 'co-t4',
-      name: 'Cancel',
-      fromStateId: 'Draft',
-      toStateId: 'Cancelled',
+      id: 't3',
+      name: 'Return to Draft',
+      fromStateId: 'InReview',
+      toStateId: 'Draft',
+      description: 'Send the ECO back for rework',
     },
     {
-      id: 'co-t5',
+      id: 't4',
       name: 'Cancel',
       fromStateId: 'InReview',
       toStateId: 'Cancelled',
+      description: 'Abandon the ECO; branches are archived unmerged',
+    },
+    {
+      id: 't5',
+      name: 'Cancel',
+      fromStateId: 'Draft',
+      toStateId: 'Cancelled',
+      description: 'Abandon the ECO before review',
     },
   ],
-  definitionType: 'lifecycle',
   lifecycleType: 'Driving' as const,
+  description: 'Simple approval workflow for Engineering Change Orders',
+  applicableItemTypes: ['ChangeOrder'],
+}
+
+/**
+ * Template for ad-hoc change orders (`workflowType: 'flexible'`): each
+ * instance adds its own review states and transitions between Start and
+ * Complete. Completing releases exactly as the default ECO workflow does.
+ */
+const FLEXIBLE_CHANGE_ORDER_WORKFLOW_DEFINITION = {
+  states: [
+    {
+      id: 'start',
+      name: 'Start',
+      color: 'gray',
+      description: 'Initial state - add review steps as needed',
+      isInitial: true,
+      isFinal: false,
+    },
+    {
+      id: 'complete',
+      name: 'Complete',
+      color: 'green',
+      description: 'Workflow completed',
+      isInitial: false,
+      isFinal: true,
+      // Completing here merges branches and assigns revisions
+      finalKind: 'release' as const,
+    },
+  ],
+  transitions: [
+    {
+      id: 'complete-transition',
+      name: 'Complete',
+      fromStateId: 'start',
+      toStateId: 'complete',
+      // 'complete' is final with finalKind 'release': the merge applies each
+      // affected item's changeActionMappings — no actions needed
+      description: 'Mark as complete',
+    },
+  ],
+  lifecycleType: 'Driving' as const,
+  description:
+    'Flexible workflow template for Change Orders. Each instance can customize its own review steps and transitions.',
   applicableItemTypes: ['ChangeOrder'],
 }
 
@@ -1016,6 +1200,8 @@ export interface DefaultLifecycle {
   id: string
   name: string
   lifecycleType: 'Driven' | 'Free' | 'Driving'
+  /** `strict` unless the definition is a per-instance template. */
+  workflowType?: 'strict' | 'flexible'
   definition: Record<string, unknown>
   /**
    * Bump when the shipped default changes shape. Seeding upgrades an
@@ -1030,97 +1216,113 @@ export interface DefaultLifecycle {
  * Every default item lifecycle, keyed by the well-known ids in
  * `lifecycle-ids.ts`. Software carries no entry: `ITEM_TYPE_LIFECYCLES`
  * links it to the Part definition (driven, ECO-controlled release).
+ *
+ * Versions: v2 everywhere is the layout-and-descriptions pass that made this
+ * module the only source (the seed's copies carried them; now every
+ * database gets them). Tool, Work Order and Requirement had already moved
+ * for their own reasons and are one higher.
  */
 export const DEFAULT_ITEM_LIFECYCLES: ReadonlyArray<DefaultLifecycle> = [
   {
     id: LIFECYCLE_IDS.part,
     name: 'Part - Default Lifecycle',
     lifecycleType: 'Driven',
-    definition: PART_LIFECYCLE_DEFINITION,
-    version: 1,
+    definition: withLayout(PART_LIFECYCLE_DEFINITION),
+    version: 2,
   },
   {
     id: LIFECYCLE_IDS.document,
     name: 'Document - Default Lifecycle',
     lifecycleType: 'Driven',
-    definition: {
+    definition: withLayout({
       ...PART_LIFECYCLE_DEFINITION,
       applicableItemTypes: ['Document'],
-    },
-    version: 1,
+    }),
+    version: 2,
   },
   {
     id: LIFECYCLE_IDS.requirement,
     name: 'Requirement - Default Lifecycle',
     lifecycleType: 'Driven',
-    definition: REQUIREMENT_LIFECYCLE_DEFINITION,
+    definition: withLayout(REQUIREMENT_LIFECYCLE_DEFINITION),
     // v2: review progress (Proposed/Approved/Rejected) absorbed from the old
-    // requirements.status column; release maps from Approved
-    version: 2,
+    // requirements.status column; release maps from Approved. v3: layout.
+    version: 3,
   },
   {
     id: LIFECYCLE_IDS.task,
     name: 'Task - Default Lifecycle',
     lifecycleType: 'Free',
-    definition: TASK_LIFECYCLE_DEFINITION,
-    version: 1,
+    definition: withLayout(TASK_LIFECYCLE_DEFINITION),
+    version: 2,
   },
   {
     id: LIFECYCLE_IDS.testPlan,
     name: 'Test Plan - Default Lifecycle',
     lifecycleType: 'Free',
-    definition: TEST_PLAN_LIFECYCLE_DEFINITION,
-    version: 1,
+    definition: withLayout(TEST_PLAN_LIFECYCLE_DEFINITION),
+    version: 2,
   },
   {
     id: LIFECYCLE_IDS.testCase,
     name: 'Test Case - Default Lifecycle',
     lifecycleType: 'Free',
-    definition: TEST_CASE_LIFECYCLE_DEFINITION,
-    version: 1,
+    definition: withLayout(TEST_CASE_LIFECYCLE_DEFINITION),
+    version: 2,
   },
   {
     id: LIFECYCLE_IDS.workInstruction,
     name: 'Work Instruction - Default Lifecycle',
     lifecycleType: 'Free',
-    definition: WORK_INSTRUCTION_LIFECYCLE_DEFINITION,
-    version: 1,
+    definition: withLayout(WORK_INSTRUCTION_LIFECYCLE_DEFINITION),
+    version: 2,
   },
   {
     id: LIFECYCLE_IDS.issue,
     name: 'Issue - Default Lifecycle',
     lifecycleType: 'Free',
-    definition: ISSUE_LIFECYCLE_DEFINITION,
-    version: 1,
+    definition: withLayout(ISSUE_LIFECYCLE_DEFINITION),
+    version: 2,
   },
   {
     id: LIFECYCLE_IDS.tool,
     name: 'Tool - Default Lifecycle',
     lifecycleType: 'Free',
-    definition: TOOL_LIFECYCLE_DEFINITION,
-    // v2: toolStatus absorbed — Available/In Use replace Active
-    version: 2,
+    definition: withLayout(TOOL_LIFECYCLE_DEFINITION),
+    // v2: toolStatus absorbed — Available/In Use replace Active. v3: layout.
+    version: 3,
   },
   {
     id: LIFECYCLE_IDS.physicalPart,
     name: 'Physical Part - Default Lifecycle',
     lifecycleType: 'Free',
-    definition: PHYSICAL_PART_LIFECYCLE_DEFINITION,
-    version: 1,
+    definition: withLayout(PHYSICAL_PART_LIFECYCLE_DEFINITION),
+    version: 2,
   },
   {
     id: LIFECYCLE_IDS.workOrder,
     name: 'Work Order - Default Lifecycle',
     lifecycleType: 'Free',
-    definition: WORK_ORDER_LIFECYCLE_DEFINITION,
-    // v2: Complete/Cancelled declare finalKind (traveler gate keys on it)
-    version: 2,
+    definition: withLayout(WORK_ORDER_LIFECYCLE_DEFINITION),
+    // v2: Complete/Cancelled declare finalKind (traveler gate keys on it).
+    // v3: layout.
+    version: 3,
   },
   {
     id: LIFECYCLE_IDS.changeOrder,
-    name: 'Change Order - Default Workflow',
+    name: 'ECO - Default Workflow',
     lifecycleType: 'Driving',
-    definition: CHANGE_ORDER_WORKFLOW_DEFINITION,
+    definition: withLayout(CHANGE_ORDER_WORKFLOW_DEFINITION),
+    // v2: the shipped workflow, which used to live only in the app seed,
+    // replaces the minimal stand-in this module carried for test databases
+    version: 2,
+  },
+  {
+    id: LIFECYCLE_IDS.flexibleChangeOrder,
+    name: 'Dynamic Change Order',
+    lifecycleType: 'Driving',
+    workflowType: 'flexible',
+    definition: withLayout(FLEXIBLE_CHANGE_ORDER_WORKFLOW_DEFINITION),
     version: 1,
   },
 ]
@@ -1162,9 +1364,9 @@ export const DEFAULT_LIFECYCLE_LINKS: ReadonlyArray<{
  * Idempotent and non-destructive: `onConflictDoNothing` throughout, so a
  * database already holding richer rows (the app seed's descriptions and
  * layout, a suite's deliberate override, an admin's edits) keeps them. The
- * test global-setup calls this once per run; `scripts/seed-minimal.ts` writes
- * its own richer versions of the long-established types and calls this for
- * the rest.
+ * test global-setup calls this once per run and `scripts/seed-minimal.ts`
+ * seeds real databases with it — the seed writes no lifecycle of its own,
+ * so a re-seed can only ever upgrade a row, never hand it an older shape.
  */
 export async function seedDefaultLifecycles(db: DbInstance): Promise<void> {
   // Config rows reference the system user via modifiedBy
@@ -1187,7 +1389,7 @@ export async function seedDefaultLifecycles(db: DbInstance): Promise<void> {
         id: lifecycle.id,
         name: lifecycle.name,
         version,
-        workflowType: 'strict',
+        workflowType: lifecycle.workflowType ?? 'strict',
         definition: lifecycle.definition,
         isActive: true,
         lifecycleType: lifecycle.lifecycleType,
@@ -1198,6 +1400,7 @@ export async function seedDefaultLifecycles(db: DbInstance): Promise<void> {
         set: {
           name: lifecycle.name,
           version,
+          workflowType: lifecycle.workflowType ?? 'strict',
           definition: lifecycle.definition,
           lifecycleType: lifecycle.lifecycleType,
         },

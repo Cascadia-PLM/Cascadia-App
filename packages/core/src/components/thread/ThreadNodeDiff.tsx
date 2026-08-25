@@ -28,6 +28,7 @@ import type { LucideIcon } from 'lucide-react'
 import type { ThreadNodeDiff as ThreadNodeDiffData } from '@/lib/services/ThreadComparisonService'
 import { cn } from '@/lib/utils'
 import { useLifecycleState } from '@/components/items/StateBadge'
+import { getItemDetailRoutePattern } from '@/lib/items/item-type-ui'
 
 interface ThreadNodeDiffProps {
   data: ThreadNodeDiffData & { onClick?: () => void }
@@ -129,15 +130,6 @@ const domainIcons: Record<string, LucideIcon> = {
   validation: FlaskConical,
 }
 
-// Map item types to their detail routes
-const itemTypeRoutes: Record<string, string> = {
-  Part: '/parts/$id',
-  Document: '/documents/$id',
-  Requirement: '/requirements/$id',
-  ChangeOrder: '/change-orders/$id',
-  Task: '/tasks/$id',
-}
-
 function ThreadNodeDiffComponent({
   data,
   sourcePosition = Position.Bottom,
@@ -148,7 +140,7 @@ function ThreadNodeDiffComponent({
   const stateStyle = useLifecycleState(data.node.itemType, data.node.state)
   const DomainIcon = domainIcons[data.node.domain] || Wrench
   const diffStyles = diffStatusStyles[data.status]
-  const route = itemTypeRoutes[data.node.itemType]
+  const route = getItemDetailRoutePattern(data.node.itemType)
 
   return (
     <>

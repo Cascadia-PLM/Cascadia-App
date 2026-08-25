@@ -12,7 +12,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { AddPartToDesignDialog } from './AddPartToDesignDialog'
 import { AddPartToStructureDialog } from './AddPartToStructureDialog'
 import type { VersionContext } from '@/lib/hooks/useVersionContext'
@@ -53,7 +53,9 @@ import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { BomTreeView } from '@/components/bom/BomTreeView'
 import { exportBomTreeToCsv } from '@/components/bom/exportBomTree'
 import { useTreeSelection } from '@/components/bom/useTreeSelection'
-import { getItemRoute, getStateBadgeVariant } from '@/components/bom/helpers'
+import { getStateBadgeVariant } from '@/components/bom/helpers'
+import { ItemLink } from '@/components/items/ItemLink'
+import { getItemDetailPath } from '@/lib/items/item-type-ui'
 import { DataGrid } from '@/components/ui/DataGrid'
 
 // Items that belong to the design but sit outside the BOM hierarchy —
@@ -461,12 +463,13 @@ export function StructureTab({
         filterType: 'text',
         filterPlaceholder: 'Filter item...',
         cell: ({ row }) => (
-          <Link
-            to={getItemRoute(row.original.itemType, row.original.id)}
+          <ItemLink
+            itemType={row.original.itemType}
+            itemId={row.original.id}
             className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
           >
             {row.original.itemNumber}
-          </Link>
+          </ItemLink>
         ),
       },
       {
@@ -844,7 +847,7 @@ export function StructureTab({
 
   // Right-click context menu for tree rows
   const renderContextMenu = (node: BOMTreeNode) => {
-    const route = getItemRoute(node.itemType, node.itemId)
+    const route = getItemDetailPath(node.itemType, node.itemId)
     const showAddChild =
       !isHistoricalView &&
       node.itemType === 'Part' &&
@@ -860,12 +863,14 @@ export function StructureTab({
 
     return (
       <>
-        <ContextMenuItem onClick={() => navigate({ to: route })}>
-          <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-          {node.isExternal || node.isCrossDesignRef
-            ? 'View in Home Design'
-            : 'View'}
-        </ContextMenuItem>
+        {route && (
+          <ContextMenuItem onClick={() => navigate({ to: route })}>
+            <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+            {node.isExternal || node.isCrossDesignRef
+              ? 'View in Home Design'
+              : 'View'}
+          </ContextMenuItem>
+        )}
         {(showAddChild || showRemove || showPullIn) && <ContextMenuSeparator />}
         {showPullIn && (
           <ContextMenuItem onClick={() => handlePullInReference(node)}>
@@ -1056,7 +1061,9 @@ export function StructureTab({
                   enableGlobalFilter={nonStructureItems.length > 5}
                   defaultSorting={[{ id: 'itemNumber', desc: false }]}
                   enableContextMenu
-                  getRowUrl={(row) => getItemRoute(row.itemType, row.id)}
+                  getRowUrl={(row) =>
+                    getItemDetailPath(row.itemType, row.id) ?? undefined
+                  }
                   renderContextMenuItems={renderNonStructureContextMenu}
                   enableRowActions={!isHistoricalView}
                   renderRowActions={renderNonStructureRowActions}

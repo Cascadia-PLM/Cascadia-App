@@ -18,6 +18,12 @@
  *  - a full-scope key cannot widen access beyond the user's roles
  *  - write tools do not mutate without an explicit confirmed=true call
  *
+ * Two schema-contract invariants ride along, because the tool schema is the
+ * only thing an external agent can see:
+ *
+ *  - tool enums never advertise a value the item type's schema rejects
+ *  - a write that fails validation names the offending field
+ *
  * Run: npx vitest run src/server/routes/mcp.test.ts
  */
 
@@ -44,6 +50,10 @@ import {
 } from '@/lib/auth/api-key-utils'
 import { apiKeys } from '@/lib/db/schema/api-keys'
 import { ITEM_TYPE_DEFINITIONS } from '@/lib/items/item-type-definitions'
+import { changeOrderTypeSchema } from '@/lib/items/types/change-order'
+import { partTypeSchema } from '@/lib/items/types/part'
+import { requirementTypeSchema } from '@/lib/items/types/requirement'
+import { taskPrioritySchema } from '@/lib/items/types/task'
 
 // Import to register item types (read tools reach the item services)
 import '@/lib/items/registerItemTypes.server'
@@ -226,6 +236,45 @@ describe('MCP endpoint — authentication and scoping gates', () => {
     expect(createEnum).not.toContain('ChangeOrder')
   })
 
+  it('advertises only field values the item schemas accept', async () => {
+    // A tool enum that disagrees with the schema validating the write is a
+    // trap the agent cannot see: the call fails inside ItemService with a
+    // bare "Validation failed" and no field name, so the model retries the
+    // same rejected value. create_item once offered requirementType
+    // Interface/Constraint/Other (all rejected) and lowercase task
+    // priorities (all rejected), and create_change_order hid XCO.
+    const key = await mintKey(admin.id)
+    const res = await rpc(listToolsRequest(), {
+      Authorization: `Bearer ${key}`,
+    })
+    const body = (await res.json()) as JsonRpcResponse
+    const tools = body.result?.tools ?? []
+
+    const enumOf = (tool: string, field: string) =>
+      tools.find((t) => t.name === tool)?.inputSchema?.properties?.[field]?.enum
+
+    // Expectations come from the item type schemas, not repeated literals —
+    // restating the values here would just relocate the drift.
+    expect(enumOf('create_item', 'requirementType')).toEqual([
+      ...requirementTypeSchema.options,
+    ])
+    expect(enumOf('create_item', 'partType')).toEqual([
+      ...partTypeSchema.options,
+    ])
+    expect(enumOf('create_item', 'priority')).toEqual([
+      ...taskPrioritySchema.options,
+    ])
+    expect(enumOf('update_item', 'partType')).toEqual([
+      ...partTypeSchema.options,
+    ])
+    expect(enumOf('update_item', 'priority')).toEqual([
+      ...taskPrioritySchema.options,
+    ])
+    expect(enumOf('create_change_order', 'changeType')).toEqual([
+      ...changeOrderTypeSchema.options,
+    ])
+  })
+
   // ── Permission scoping ────────────────────────────────────────────────
 
   it('scoped key: read tools work, write tools are denied despite an admin role', async () => {
@@ -314,5 +363,29 @@ describe('MCP endpoint — authentication and scoping gates', () => {
     expect(body.result?.structuredContent?.requiresConfirmation).toBe(true)
     // Nothing was created on the unconfirmed pass
     expect(body.result?.structuredContent?.itemId).toBeUndefined()
+  })
+
+  it('names the offending field when a write fails validation', async () => {
+    // A write tool reports failures in its own response, not as a protocol
+    // error, so the response text is the agent's only diagnostic. Reporting
+    // ValidationError's bare message drops the fieldErrors it carries and
+    // leaves "Validation failed" — the model cannot tell which argument was
+    // wrong and retries the same call.
+    const key = await mintKey(admin.id)
+
+    const res = await rpc(
+      callToolRequest('create_item', {
+        itemType: 'Requirement',
+        name: 'Requirement with no design',
+        confirmed: true,
+      }),
+      { Authorization: `Bearer ${key}` },
+    )
+    const body = (await res.json()) as JsonRpcResponse
+    const error = body.result?.structuredContent?.error
+
+    expect(body.result?.structuredContent?.success).toBe(false)
+    expect(error).toContain('designId')
+    expect(error).not.toBe('Validation failed')
   })
 })

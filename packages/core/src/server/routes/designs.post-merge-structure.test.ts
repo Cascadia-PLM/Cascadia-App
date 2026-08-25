@@ -315,9 +315,9 @@ describe('design structure and graph after an ECO merge', () => {
       ...orphans.map((o) => o.id),
     ])
 
-    // The whole point of #104: the assembly is created directly on main and so
-    // has no branch_items row, while the merge gave the child one. Reading
-    // only branch_items left the assembly out of the design entirely.
+    // The whole point of this test: the assembly is created directly on main
+    // and so has no branch_items row, while the merge gave the child one.
+    // Reading only branch_items left the assembly out of the design entirely.
     expect(present).toContain(assembly.id)
     expect(present).toContain(releasedChild.id)
   })

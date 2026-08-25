@@ -13,19 +13,35 @@ export type VerificationMethod =
 export type VerificationStatus =
   'NotStarted' | 'InProgress' | 'Passed' | 'Failed' | 'Waived'
 
+// Requirement classification. Exported as a schema (not just a union) because
+// the AI/MCP `create_item` tool advertises these values to models — deriving
+// its enum from here is what keeps the two from drifting apart, which is how
+// three never-valid values ended up in the tool schema.
+export const requirementTypeSchema = z.enum([
+  'Functional',
+  'Non-Functional',
+  'Performance',
+  'Security',
+  'Usability',
+  'Business',
+])
+export type RequirementType = z.infer<typeof requirementTypeSchema>
+
+export const requirementPrioritySchema = z.enum([
+  'MustHave',
+  'ShouldHave',
+  'CouldHave',
+  'WontHave',
+])
+export type RequirementPriority = z.infer<typeof requirementPrioritySchema>
+
 // Requirement-specific interface
 export interface Requirement extends BaseItem {
   itemType: 'Requirement'
   designId: string // Required for Requirements - links to versioning system
   description?: string
-  type?:
-    | 'Functional'
-    | 'Non-Functional'
-    | 'Performance'
-    | 'Security'
-    | 'Usability'
-    | 'Business'
-  priority?: 'MustHave' | 'ShouldHave' | 'CouldHave' | 'WontHave'
+  type?: RequirementType
+  priority?: RequirementPriority
   acceptanceCriteria?: string
   source?: string
   category?: string
@@ -41,19 +57,8 @@ export const requirementSchema = baseItemSchema.extend({
   itemType: z.literal('Requirement'),
   designId: z.string().uuid({ message: 'Design is required' }), // Required for Requirements
   description: z.string().max(5000).optional(),
-  type: z
-    .enum([
-      'Functional',
-      'Non-Functional',
-      'Performance',
-      'Security',
-      'Usability',
-      'Business',
-    ])
-    .optional(),
-  priority: z
-    .enum(['MustHave', 'ShouldHave', 'CouldHave', 'WontHave'])
-    .optional(),
+  type: requirementTypeSchema.optional(),
+  priority: requirementPrioritySchema.optional(),
   acceptanceCriteria: z.string().max(5000).optional(),
   source: z.string().max(200).optional(),
   category: z.string().max(100).optional(),

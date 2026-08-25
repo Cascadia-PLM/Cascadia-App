@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm'
 import { db } from '../../db'
 import {
   branchItems,
@@ -111,10 +111,17 @@ export interface CrossDesignImpact {
   relationshipSummary: Record<string, number> // e.g. { bom_where_used: 3, definition_instance: 2 }
 }
 
+/** An open change order that also touches one of the impacted items. */
+export interface RelatedChange {
+  changeOrderId: string
+  itemNumber: string
+  state: string
+}
+
 export interface ImpactAnalysis {
   whereUsed: Array<WhereUsedNode>
   documents: Array<any>
-  relatedChanges: Array<any>
+  relatedChanges: Array<RelatedChange>
   totalImpactedItems: number
   maxDepth: number
   risks: Array<Risk>
@@ -593,12 +600,19 @@ export class ImpactAssessmentService {
   }
 
   /**
-   * Find related change orders that affect the same items
+   * Open change orders that affect any of the given items.
+   *
+   * `currentChangeOrderId` excludes the ECO asking the question, so an impact
+   * report lists only the *other* ECOs it collides with. Callers outside an ECO
+   * context — the `analyze_change_impact` assistant tool, for one — omit it and
+   * get every open change order touching the items. It must be omitted rather
+   * than passed as `''`: the column is a uuid, and an empty string is not one,
+   * so Postgres rejects the whole statement rather than matching nothing.
    */
   static async findRelatedChanges(
-    currentChangeOrderId: string,
+    currentChangeOrderId: string | undefined,
     impactedItemIds: Array<string>,
-  ): Promise<Array<any>> {
+  ): Promise<Array<RelatedChange>> {
     if (impactedItemIds.length === 0) return []
 
     // Find other active change orders that affect any of the impacted items
@@ -615,7 +629,9 @@ export class ImpactAssessmentService {
       .where(
         and(
           inArray(changeOrderAffectedItems.affectedItemId, impactedItemIds),
-          sql`${changeOrderAffectedItems.changeOrderId} != ${currentChangeOrderId}`,
+          currentChangeOrderId
+            ? ne(changeOrderAffectedItems.changeOrderId, currentChangeOrderId)
+            : undefined,
           isNull(workflowInstances.completedAt),
         ),
       )

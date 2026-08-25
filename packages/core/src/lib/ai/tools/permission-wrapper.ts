@@ -15,6 +15,7 @@ import { hasPermission } from '@/lib/auth/permissions'
 import { intersectPermissions } from '@/lib/auth/api-key-utils'
 import { db } from '@/lib/db'
 import { aiUsageLogs } from '@/lib/db/schema/ai'
+import { safeErrorMessage } from '@/lib/errors/pg'
 import { aiLogger } from '@/lib/logging/logger'
 
 /**
@@ -62,6 +63,26 @@ async function checkToolPermission(
 }
 
 /**
+ * Re-raise a failed tool call with a message the model may see.
+ *
+ * Both surfaces that run these handlers — TanStack AI for the in-app chatbot,
+ * the MCP server for external agents — put the thrown `message` straight into
+ * the tool result they hand back to the model. A database failure's message is
+ * the failed SQL and its bound parameters, so it is swapped for a generic one
+ * and kept only in the server log; every other message (not-found, validation,
+ * permission denied) is what the model needs to correct course and survives
+ * untouched.
+ */
+function rethrowSafely(error: unknown, toolName: string): never {
+  const safe = safeErrorMessage(error, 'Tool execution failed')
+  if (error instanceof Error && safe !== error.message) {
+    aiLogger.error({ err: error, toolName }, 'AI tool failed')
+    throw new Error(safe, { cause: error })
+  }
+  throw error
+}
+
+/**
  * Permission specification for a tool
  */
 export interface PermissionSpec {
@@ -104,8 +125,8 @@ export function withPermissionAndAudit<TInput, TOutput>(
       result = await handler(input, context)
       return result
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Unknown error'
-      throw e
+      error = safeErrorMessage(e, 'Unknown error')
+      rethrowSafely(e, toolName)
     } finally {
       // Log tool usage for audit trail
       const durationMs = Date.now() - startTime
@@ -171,8 +192,8 @@ export function withWritePermissionAndAudit<TInput, TOutput>(
       result = await handler(input, context)
       return result
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Unknown error'
-      throw e
+      error = safeErrorMessage(e, 'Unknown error')
+      rethrowSafely(e, toolName)
     } finally {
       const durationMs = Date.now() - startTime
 

@@ -850,7 +850,7 @@ describe('ChangeOrderMergeService', () => {
       // Created the way a client creates one now: naming no revision, so the
       // server marks it unreleased. Created at the conventional-looking 'A'
       // instead, the merge below reads it as a released A and this part
-      // reaches main as B - a revision it never had (issue #109).
+      // reaches main as B - a revision it never had.
       const part = await ItemService.create(
         'Part',
         {
@@ -1393,7 +1393,7 @@ describe('ChangeOrderMergeService', () => {
     })
 
     /**
-     * The shape behind both regressions in #106: a released part tracked on
+     * The shape behind both regressions below: a released part tracked on
      * main, checked out to the ECO branch and edited, so the change order
      * holds two rows of one item - the branch working copy (carrying the
      * branch's placeholder revision) and the affected-item row checkout
@@ -1442,7 +1442,7 @@ describe('ChangeOrderMergeService', () => {
     }
 
     it('lists a checked-out item once, at the revision the release will assign', async () => {
-      // Regression (#106): the preview deduplicated by item id, and the
+      // Regression: the preview deduplicated by item id, and the
       // branch working copy and the affected-item row are different rows of
       // the same item - so one checked-out item was listed twice. Neither
       // figure was right either: the branch row reported its placeholder
@@ -1472,7 +1472,7 @@ describe('ChangeOrderMergeService', () => {
     })
 
     it('previews nothing once the change order has released', async () => {
-      // Regression (#106): the ECO branch's rows survive the merge, and their
+      // Regression: the ECO branch's rows survive the merge, and their
       // current item IS the row now released on main - so previewing a
       // released change order bumped that revision a second time (B -> C) and
       // validateMerge read the row the merge had just promoted onto main as
@@ -3585,6 +3585,80 @@ describe('ChangeOrderMergeService', () => {
       expect(coverage.verified).toBe(1)
       expect(coverage.satisfied).toBe(1)
       expect(coverage.gaps.map((g) => g.gapType)).not.toContain('not_verified')
+    })
+
+    /**
+     * The derive hierarchy runs on `requirements.parent_requirement_id`, not on
+     * the edge table, and was the one traceability read the edge-table fix
+     * left uncovered. The column names the parent row that was current at
+     * derive time and is never re-pointed — the type handler copies it onto
+     * every later revision of the child — so after the parent is revised
+     * through an ECO the read by exact id inverts: the current parent row
+     * reported no children at all, while the row it superseded reported
+     * every historical row of every child, two or three per child.
+     */
+    it('keeps the derive hierarchy pointing at the revised parent', async () => {
+      const parent = await createRequirement('derive-parent')
+      const first = await RequirementService.deriveRequirement(
+        parent.id,
+        { name: 'Derived One' },
+        user.id,
+      )
+      const second = await RequirementService.deriveRequirement(
+        parent.id,
+        { name: 'Derived Two' },
+        user.id,
+      )
+      await testDb.db
+        .update(items)
+        .set({ state: 'Released' })
+        .where(inArray(items.id, [parent.id, first.id!, second.id!]))
+
+      // An ECO that revises the parent and nothing else — the children are
+      // untouched, so nothing re-points what they name.
+      const eco = await createChangeOrder()
+      await testDb.db.insert(changeOrderAffectedItems).values({
+        changeOrderId: eco.id,
+        affectedItemId: parent.id,
+        affectedItemMasterId: parent.masterId,
+        changeAction: 'revise',
+        currentState: 'Released',
+        currentRevision: 'A',
+        targetRevision: 'B',
+        createdBy: user.id,
+      })
+      await approveEco(eco.id)
+      await ChangeOrderMergeService.merge(eco.id, user.id)
+
+      const revised = await currentRevision(parent.masterId)
+      expect(revised.id).not.toBe(parent.id)
+
+      // Downward: the revised parent reports both children, one row each —
+      // it used to report none. This count is also what numbers the next
+      // derived child, so `-D3` follows from it rather than `-D1` or `-D5`.
+      const children = await RequirementService.getChildRequirements(revised.id)
+      expect(children.map((c) => c.id).sort()).toEqual(
+        [first.id!, second.id!].sort(),
+      )
+
+      // Upward: each child answers with the revision that replaced the row it
+      // names, rather than the superseded row itself.
+      expect(
+        (await RequirementService.getParentRequirement(first.id!))?.id,
+      ).toBe(revised.id)
+      expect(
+        (await RequirementService.getParentRequirement(second.id!))?.id,
+      ).toBe(revised.id)
+
+      // Reading the superseded parent row still reports the children derived
+      // from it — a row inherits nothing, so an old revision reports what it
+      // had — but as two children, not as every historical row of them.
+      const fromSuperseded = await RequirementService.getChildRequirements(
+        parent.id,
+      )
+      expect(fromSuperseded.map((c) => c.id).sort()).toEqual(
+        [first.id!, second.id!].sort(),
+      )
     })
 
     /**

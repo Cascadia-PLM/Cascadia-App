@@ -7,6 +7,7 @@ import { Link } from '@tanstack/react-router'
 import type { ExpandDirection } from '@/components/graph/GraphExpandButton'
 import { GraphExpandButton } from '@/components/graph/GraphExpandButton'
 import { useLifecycleState } from '@/components/items/StateBadge'
+import { getItemDetailPath } from '@/lib/items/item-type-ui'
 
 interface GraphItemNodeProps {
   data: {
@@ -73,28 +74,10 @@ export const GraphItemNode = memo(({ data }: GraphItemNodeProps) => {
       'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
   }
 
-  // Route for the item's detail page; null when no page exists for the type
-  const getItemRoute = () => {
-    const typeRoutes: Record<string, string> = {
-      Part: '/parts',
-      Document: '/documents',
-      ChangeOrder: '/change-orders',
-      Requirement: '/requirements',
-      Task: '/tasks',
-      Tool: '/tools',
-      Software: '/software',
-      Issue: '/issues',
-      WorkInstruction: '/work-instructions',
-      WorkOrder: '/work-orders',
-      PhysicalPart: '/physical-parts',
-    }
-    const base = typeRoutes[itemType]
-    return base ? `${base}/${itemId}` : null
-  }
-
   const baseLevelClass =
     levelColors[level as keyof typeof levelColors] || levelColors[2]
-  const itemRoute = getItemRoute()
+  // null when no detail page exists for the type
+  const itemRoute = getItemDetailPath(itemType, itemId)
 
   const handleUpstreamClick = () => {
     if (!expandState) return

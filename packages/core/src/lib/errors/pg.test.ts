@@ -18,7 +18,15 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { asPostgresError, constraintOf, isUniqueViolation, tableOf } from './pg'
+import {
+  asPostgresError,
+  constraintOf,
+  isDatabaseError,
+  isUniqueViolation,
+  safeErrorMessage,
+  tableOf,
+} from './pg'
+import { NotFoundError } from './index'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { users } from '@/lib/db/schema'
@@ -76,5 +84,30 @@ describe('postgres driver error inspection', () => {
     expect(isUniqueViolation(new Error('nope'))).toBe(false)
     expect(isUniqueViolation(null)).toBe(false)
     expect(asPostgresError({ cause: { cause: {} } })).toBeNull()
+  })
+
+  it('keeps the failed statement out of the message it hands on', () => {
+    // What the wrapper actually says, so the redaction has something to hide.
+    expect((uniqueViolation as Error).message).toContain('insert into')
+
+    expect(isDatabaseError(uniqueViolation)).toBe(true)
+    const message = safeErrorMessage(uniqueViolation, 'Tool execution failed')
+    expect(message).toBe('Tool execution failed')
+    expect(message).not.toContain('insert into')
+  })
+
+  it('leaves an error written to be read alone', () => {
+    // Every AppError carries a string `code` of its own, which is exactly what
+    // asPostgresError looks for — so the one message a caller can act on is
+    // the one most at risk of being mistaken for a driver error and redacted.
+    const notFound = new NotFoundError('Part', 'PN-1')
+    expect(isDatabaseError(notFound)).toBe(false)
+    expect(safeErrorMessage(notFound, 'fallback')).toBe(notFound.message)
+
+    expect(isDatabaseError(new Error('Item not found'))).toBe(false)
+    expect(safeErrorMessage(new Error('Item not found'), 'fallback')).toBe(
+      'Item not found',
+    )
+    expect(safeErrorMessage('a thrown string', 'fallback')).toBe('fallback')
   })
 })

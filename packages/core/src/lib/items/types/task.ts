@@ -5,6 +5,11 @@ import { z } from 'zod'
 import { baseItemSchema } from './base'
 import type { BaseItem } from './base'
 
+// Task priority. Exported as a schema so the AI/MCP tool schemas can advertise
+// exactly the values this type accepts (see requirement.ts).
+export const taskPrioritySchema = z.enum(['Low', 'Medium', 'High', 'Critical'])
+export type TaskPriority = z.infer<typeof taskPrioritySchema>
+
 // Task-specific interface
 export interface Task extends BaseItem {
   itemType: 'Task'
@@ -12,7 +17,7 @@ export interface Task extends BaseItem {
   parentTaskId?: string
   description?: string
   assignee?: string
-  priority?: 'Low' | 'Medium' | 'High' | 'Critical'
+  priority?: TaskPriority
   dueDate?: Date | string
   estimatedHours?: string
   actualHours?: string
@@ -26,10 +31,7 @@ export const taskSchema = baseItemSchema.extend({
   parentTaskId: z.string().uuid().optional(),
   description: z.string().max(5000).optional(),
   assignee: z.string().uuid().optional(),
-  priority: z
-    .enum(['Low', 'Medium', 'High', 'Critical'])
-    .optional()
-    .default('Medium'),
+  priority: taskPrioritySchema.optional().default('Medium'),
   dueDate: z.union([z.string(), z.date()]).optional(),
   estimatedHours: z.string().optional(),
   actualHours: z.string().optional(),

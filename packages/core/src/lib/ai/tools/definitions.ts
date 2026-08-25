@@ -93,7 +93,12 @@ export const getItemDetailsDef = toolDefinition({
   description: `Get complete details for a specific item by ID or item number.
 Returns all fields including type-specific data (e.g., material, cost for Parts).
 Provide either id OR (itemNumber and optionally revision).
-If revision is omitted when using itemNumber, returns the current revision.`,
+If revision is omitted when using itemNumber, returns the current revision.
+Item numbers are NOT unique: a manufacturing design (MBOM) repeats the item
+numbers of the engineering design it was derived from, so the same number can
+name several items. Pass designId when you know which design you mean.
+Without one the engineering item wins, and otherMatches lists the items that
+were not returned - check it before answering from a number-only lookup.`,
   inputSchema: z.object({
     id: z
       .string()
@@ -111,6 +116,12 @@ If revision is omitted when using itemNumber, returns the current revision.`,
       .describe(
         'Revision letter (e.g., A, B). If omitted, returns current revision.',
       ),
+    designId: z
+      .string()
+      .optional()
+      .describe(
+        'Design ID (UUID) or design code (e.g., "PC-PROTO") that the item number belongs to. Use this when the same item number exists in more than one design. Ignored when looking up by id.',
+      ),
   }),
   outputSchema: z.object({
     id: z.string(),
@@ -121,12 +132,34 @@ If revision is omitted when using itemNumber, returns the current revision.`,
     state: z.string(),
     itemType: z.string(),
     designId: z.string().nullable(),
+    designCode: z.string().nullable(),
+    designName: z.string().nullable(),
+    designType: z.string().nullable(),
     createdAt: z.string(),
     createdBy: z.string(),
     modifiedAt: z.string(),
     modifiedBy: z.string(),
     // Type-specific fields are dynamic
     typeSpecificData: z.record(z.string(), z.unknown()).optional(),
+    otherMatches: z
+      .array(
+        z.object({
+          id: z.string(),
+          itemNumber: z.string(),
+          name: z.string().nullable(),
+          revision: z.string(),
+          state: z.string(),
+          itemType: z.string(),
+          designId: z.string().nullable(),
+          designCode: z.string().nullable(),
+          designName: z.string().nullable(),
+          designType: z.string().nullable(),
+        }),
+      )
+      .optional()
+      .describe(
+        'Other items sharing this item number, which this call did NOT return. Present only when the lookup was ambiguous. Re-run with designId, or ask the user which design they mean, before treating the returned item as the answer.',
+      ),
   }),
 })
 

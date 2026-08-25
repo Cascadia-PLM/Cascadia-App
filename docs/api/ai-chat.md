@@ -98,16 +98,16 @@ The chat endpoint builds a system prompt that includes:
 
 ### Read tools
 
-| Tool                    | Description                                                                                        |
-| ----------------------- | -------------------------------------------------------------------------------------------------- |
-| `search_items`          | Search items by type, text query, state, or design. Returns id, itemNumber, name, revision, state. |
-| `get_item_details`      | Get full item details by ID or item number. Includes type-specific fields.                         |
-| `get_bom`               | Get Bill of Materials for a part. Supports multi-level depth (1-10).                               |
-| `get_where_used`        | Reverse BOM query -- find all parent assemblies using an item.                                     |
-| `analyze_change_impact` | Assess impact of changing an item: affected assemblies, documents, change orders, risk level.      |
-| `offer_navigation`      | Present a clickable navigation button to the user for an item page.                                |
-| `search_programs`       | Search programs by name, code, status, or customer.                                                |
-| `search_designs`        | Search designs by name, code, type, or program.                                                    |
+| Tool                    | Description                                                                                                                                                                                  |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `search_items`          | Search items by type, text query, state, or design. Returns id, itemNumber, name, revision, state.                                                                                           |
+| `get_item_details`      | Get full item details by ID or item number. Includes type-specific fields. Item numbers repeat across designs, so pass `designId` when you know it and check `otherMatches` when you do not. |
+| `get_bom`               | Get Bill of Materials for a part. Supports multi-level depth (1-10).                                                                                                                         |
+| `get_where_used`        | Reverse BOM query -- find all parent assemblies using an item.                                                                                                                               |
+| `analyze_change_impact` | Assess impact of changing an item: affected assemblies, documents, change orders, risk level.                                                                                                |
+| `offer_navigation`      | Present a clickable navigation button to the user for an item page.                                                                                                                          |
+| `search_programs`       | Search programs by name, code, status, or customer.                                                                                                                                          |
+| `search_designs`        | Search designs by name, code, type, or program.                                                                                                                                              |
 
 ### Write tools
 

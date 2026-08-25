@@ -28,6 +28,13 @@
 import { toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
 import { ITEM_TYPE_NAMES } from './definitions'
+import {
+  changeOrderPrioritySchema,
+  changeOrderTypeSchema,
+} from '@/lib/items/types/change-order'
+import { partTypeSchema } from '@/lib/items/types/part'
+import { requirementTypeSchema } from '@/lib/items/types/requirement'
+import { taskPrioritySchema } from '@/lib/items/types/task'
 
 /**
  * Item types create_item can produce — every registered type except
@@ -37,6 +44,27 @@ import { ITEM_TYPE_NAMES } from './definitions'
 export const CREATABLE_ITEM_TYPE_NAMES = ITEM_TYPE_NAMES.filter(
   (name) => name !== 'ChangeOrder',
 ) as [string, ...Array<string>]
+
+/**
+ * Field enums below reuse the Zod enums exported by the item types that
+ * validate the write (`partTypeSchema`, `taskPrioritySchema`,
+ * `requirementTypeSchema`, `changeOrderTypeSchema`), never a hand-written
+ * copy — the same reason `itemType` is derived from ITEM_TYPE_DEFINITIONS.
+ *
+ * A tool schema is a promise to the model: every value it advertises must be
+ * one the server accepts, and every value the server accepts should be
+ * requestable. Copies broke that promise in both directions —
+ * `requirementType` offered three values the Requirement schema rejects
+ * (surfacing as an opaque "Validation failed" from deep inside ItemService)
+ * while hiding four it accepts, Task `priority` was lowercased against a
+ * capitalized enum, and `changeType` omitted XCO. Reusing the schema node
+ * makes that drift impossible rather than merely fixed.
+ */
+
+/** Append the accepted values to a field description, for models that read prose. */
+function describeEnum(label: string, values: ReadonlyArray<string>): string {
+  return `${label}. One of: ${values.join(', ')}`
+}
 
 // ============================================================================
 // Shared Types
@@ -108,10 +136,14 @@ Requires user confirmation before creating.`,
     // Common optional fields
     description: z.string().optional().describe('Item description'),
     // Part-specific fields
-    partType: z
-      .enum(['Manufacture', 'Purchase', 'Software', 'Phantom'])
+    partType: partTypeSchema
       .optional()
-      .describe('Part type classification (Parts only)'),
+      .describe(
+        describeEnum(
+          'Part type classification (Parts only)',
+          partTypeSchema.options,
+        ),
+      ),
     material: z
       .string()
       .optional()
@@ -121,19 +153,24 @@ Requires user confirmation before creating.`,
       .string()
       .optional()
       .describe('User ID of assignee (Tasks only)'),
-    priority: z
-      .enum(['low', 'medium', 'high', 'critical'])
+    priority: taskPrioritySchema
       .optional()
-      .describe('Priority level (Tasks only)'),
+      .describe(
+        describeEnum('Priority level (Tasks only)', taskPrioritySchema.options),
+      ),
     dueDate: z
       .string()
       .optional()
       .describe('Due date in ISO format (Tasks only)'),
     // Requirement-specific fields
-    requirementType: z
-      .enum(['Functional', 'Performance', 'Interface', 'Constraint', 'Other'])
+    requirementType: requirementTypeSchema
       .optional()
-      .describe('Type of requirement (Requirements only)'),
+      .describe(
+        describeEnum(
+          'Type of requirement (Requirements only)',
+          requirementTypeSchema.options,
+        ),
+      ),
     // Confirmation flag
     confirmed: z
       .boolean()
@@ -159,10 +196,11 @@ Requires user confirmation before updating.`,
     name: z.string().optional().describe('New name/title'),
     description: z.string().optional().describe('New description'),
     // Part-specific updates
-    partType: z
-      .enum(['Manufacture', 'Purchase', 'Software', 'Phantom'])
+    partType: partTypeSchema
       .optional()
-      .describe('Part type classification'),
+      .describe(
+        describeEnum('Part type classification', partTypeSchema.options),
+      ),
     material: z.string().optional().describe('Material specification'),
     weight: z.number().optional().describe('Weight value'),
     weightUnit: z.string().optional().describe('Weight unit (kg, lb, etc.)'),
@@ -173,7 +211,9 @@ Requires user confirmation before updating.`,
       .describe('Currency code (USD, EUR, etc.)'),
     // Task-specific updates
     assignee: z.string().optional().describe('User ID of assignee'),
-    priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+    priority: taskPrioritySchema
+      .optional()
+      .describe(describeEnum('Priority level', taskPrioritySchema.options)),
     dueDate: z.string().optional().describe('Due date in ISO format'),
     // ECO for checkout if needed
     changeOrderId: z
@@ -277,13 +317,14 @@ The ECO will be created in Draft state with a workflow for approval.
 Requires user confirmation before creating.`,
   inputSchema: z.object({
     name: z.string().describe('ECO title/description'),
-    changeType: z
-      .enum(['ECO', 'ECN', 'Deviation', 'MCO'])
-      .describe('Type of change order'),
-    priority: z
-      .enum(['low', 'medium', 'high', 'critical'])
+    changeType: changeOrderTypeSchema.describe(
+      describeEnum('Type of change order', changeOrderTypeSchema.options),
+    ),
+    priority: changeOrderPrioritySchema
       .default('medium')
-      .describe('Priority level'),
+      .describe(
+        describeEnum('Priority level', changeOrderPrioritySchema.options),
+      ),
     reasonForChange: z
       .string()
       .optional()

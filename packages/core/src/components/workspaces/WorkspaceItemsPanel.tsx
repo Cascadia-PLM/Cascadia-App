@@ -3,7 +3,6 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { GitBranch, Loader2, X } from 'lucide-react'
-import { Link } from '@tanstack/react-router'
 import type { WorkspaceItem } from '@/lib/query'
 import {
   Badge,
@@ -18,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui'
 import { apiFetch } from '@/lib/api/client'
-import { getItemRoute } from '@/components/bom/helpers'
+import { ItemLink } from '@/components/items/ItemLink'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { useInvalidateResources, workspaceItemsQuery } from '@/lib/query'
@@ -166,12 +165,13 @@ export function WorkspaceItemsPanel({
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">
                       {item.itemId && item.itemType ? (
-                        <Link
-                          to={getItemRoute(item.itemType, item.itemId)}
+                        <ItemLink
+                          itemType={item.itemType}
+                          itemId={item.itemId}
                           className="text-blue-600 hover:underline dark:text-blue-400"
                         >
                           {item.itemNumber}
-                        </Link>
+                        </ItemLink>
                       ) : (
                         (item.itemNumber ?? '-')
                       )}

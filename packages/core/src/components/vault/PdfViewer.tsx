@@ -28,6 +28,10 @@ import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { ANNOTATION_COLORS } from '@/lib/vault/annotations'
 import { PdfAnnotationLayer } from '@/components/vault/PdfAnnotationLayer'
+import {
+  useFullscreen,
+  useViewerZoom,
+} from '@/components/vault/viewer-controls'
 
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
@@ -68,10 +72,6 @@ const MARKUP_TOOLS = [
   label: string
   Icon: typeof MousePointer2
 }>
-
-const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4]
-const MIN_ZOOM = Math.min(...ZOOM_STEPS)
-const MAX_ZOOM = Math.max(...ZOOM_STEPS)
 
 /**
  * Everything the viewer needs to show and capture markup. Absent when the
@@ -122,10 +122,8 @@ export function PdfViewer({
 }: PdfViewerProps) {
   const [pageCount, setPageCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
-  const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
   const [containerWidth, setContainerWidth] = useState(0)
-  const [isFullscreen, setIsFullscreen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Rendered size per page, recorded as each finishes, so the markup surface
   // can convert normalized geometry to pixels without re-measuring the DOM.
@@ -137,6 +135,9 @@ export function PdfViewer({
   const scrollRef = useRef<HTMLDivElement>(null)
   const pageRefs = useRef<Array<HTMLDivElement | null>>([])
 
+  const { zoom, stepZoom, resetZoom, canZoomIn, canZoomOut } = useViewerZoom()
+  const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef)
+
   // Track the scroll container's width so pages can be laid out to fit it.
   useEffect(() => {
     const element = scrollRef.current
@@ -147,14 +148,6 @@ export function PdfViewer({
     })
     observer.observe(element)
     return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
-    const onFullscreenChange = () =>
-      setIsFullscreen(document.fullscreenElement === containerRef.current)
-    document.addEventListener('fullscreenchange', onFullscreenChange)
-    return () =>
-      document.removeEventListener('fullscreenchange', onFullscreenChange)
   }, [])
 
   // A new document invalidates every page-scoped piece of state.
@@ -227,26 +220,6 @@ export function PdfViewer({
     [pageCount],
   )
 
-  const stepZoom = useCallback((direction: 1 | -1) => {
-    setZoom((current) => {
-      const next =
-        direction === 1
-          ? ZOOM_STEPS.find((step) => step > current + 0.001)
-          : [...ZOOM_STEPS].reverse().find((step) => step < current - 0.001)
-      return next ?? current
-    })
-  }, [])
-
-  const toggleFullscreen = useCallback(() => {
-    const container = containerRef.current
-    if (!container) return
-    if (document.fullscreenElement) {
-      void document.exitFullscreen()
-    } else {
-      void container.requestFullscreen()
-    }
-  }, [])
-
   // Fit the page to the container, leaving room for the scrollbar and padding,
   // then apply the user's zoom on top. Capped so a narrow panel does not blow
   // a 4x zoom up to an unrenderable canvas.
@@ -313,7 +286,7 @@ export function PdfViewer({
           variant="ghost"
           size="icon"
           onClick={() => stepZoom(-1)}
-          disabled={zoom <= MIN_ZOOM}
+          disabled={!canZoomOut}
           title="Zoom out"
           aria-label="Zoom out"
         >
@@ -321,7 +294,7 @@ export function PdfViewer({
         </Button>
         <button
           type="button"
-          onClick={() => setZoom(1)}
+          onClick={resetZoom}
           className="min-w-14 rounded px-1 text-sm text-slate-600 tabular-nums hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
           title="Reset zoom to fit width"
         >
@@ -331,7 +304,7 @@ export function PdfViewer({
           variant="ghost"
           size="icon"
           onClick={() => stepZoom(1)}
-          disabled={zoom >= MAX_ZOOM}
+          disabled={!canZoomIn}
           title="Zoom in"
           aria-label="Zoom in"
         >

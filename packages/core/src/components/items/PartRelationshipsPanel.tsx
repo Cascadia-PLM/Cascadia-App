@@ -16,7 +16,7 @@ import {
   Table as TableIcon,
   Trash2,
 } from 'lucide-react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import {
   Background,
   Controls,
@@ -60,7 +60,8 @@ import { DataGrid } from '@/components/ui/DataGrid'
 import { ContextMenuItem } from '@/components/ui/ContextMenu'
 import { BomTreeView } from '@/components/bom/BomTreeView'
 import { exportBomTreeToCsv } from '@/components/bom/exportBomTree'
-import { getItemRoute } from '@/components/bom/helpers'
+import { ItemLink } from '@/components/items/ItemLink'
+import { getItemDetailPath } from '@/lib/items/item-type-ui'
 import { StateBadge } from '@/components/items/StateBadge'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useTheme } from '@/lib/theme'
@@ -926,10 +927,12 @@ export function PartRelationshipsPanel({
   }, [relationships])
 
   // Get URL for relationship row
-  const getRowUrl = useCallback((row: Relationship) => {
-    const itemTypePlural = row.targetItem.itemType.toLowerCase() + 's'
-    return `/${itemTypePlural}/${row.targetItem.id}`
-  }, [])
+  const getRowUrl = useCallback(
+    (row: Relationship) =>
+      getItemDetailPath(row.targetItem.itemType, row.targetItem.id) ??
+      undefined,
+    [],
+  )
 
   // Context menu items
   const renderContextMenuItems = useCallback(
@@ -974,15 +977,15 @@ export function PartRelationshipsPanel({
         filterPlaceholder: 'Filter item number...',
         cell: ({ row }) => {
           const rel = row.original
-          const itemTypePlural = rel.targetItem.itemType.toLowerCase() + 's'
           return (
-            <Link
-              to={`/${itemTypePlural}/${rel.targetItem.id}`}
+            <ItemLink
+              itemType={rel.targetItem.itemType}
+              itemId={rel.targetItem.id}
               className="font-medium text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 hover:underline flex items-center gap-1"
             >
               {rel.targetItem.itemNumber}
               <ExternalLink className="h-3 w-3" />
-            </Link>
+            </ItemLink>
           )
         },
       },
@@ -1180,7 +1183,8 @@ export function PartRelationshipsPanel({
 
   // BOM tree context menu
   const renderBomContextMenu = (node: BOMTreeNode) => {
-    const route = getItemRoute(node.itemType, node.itemId)
+    const route = getItemDetailPath(node.itemType, node.itemId)
+    if (!route) return null
     return (
       <ContextMenuItem onClick={() => navigate({ to: route })}>
         <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
@@ -1653,12 +1657,13 @@ export function PartRelationshipsPanel({
                               className="border-b last:border-b-0 hover:bg-muted/30"
                             >
                               <td className="p-3">
-                                <Link
-                                  to={getItemRoute(node.itemType, node.itemId)}
+                                <ItemLink
+                                  itemType={node.itemType}
+                                  itemId={node.itemId}
                                   className="text-blue-600 dark:text-blue-400 hover:underline font-mono text-xs"
                                 >
                                   {node.itemNumber}
-                                </Link>
+                                </ItemLink>
                               </td>
                               <td className="p-3">{node.name}</td>
                               <td className="p-3">

@@ -5,8 +5,6 @@
  * Shared helper functions for BOM tree components
  */
 
-import { getItemDetailPath } from '@/lib/items/item-type-ui'
-
 /**
  * Get badge variant for item state
  */
@@ -32,11 +30,4 @@ export function getStateBadgeVariant(
     default:
       return 'default'
   }
-}
-
-/**
- * Get detail page route for an item type
- */
-export function getItemRoute(itemType: string, itemId: string): string {
-  return getItemDetailPath(itemType, itemId) ?? `/parts/${itemId}`
 }

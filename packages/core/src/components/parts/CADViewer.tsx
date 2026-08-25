@@ -17,6 +17,7 @@ import {
   GizmoHelper,
   GizmoViewcube,
   Grid,
+  Lightformer,
   PerspectiveCamera,
   TrackballControls,
 } from '@react-three/drei'
@@ -24,13 +25,15 @@ import * as THREE from 'three'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { Loader2 } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import { BACKGROUND_PRESETS, MATERIAL_PRESETS } from './CADViewerTypes'
 import type {
   BackgroundPreset,
+  EnvironmentConfig,
   MaterialPreset,
   StandardView,
 } from './CADViewerTypes'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export interface CADViewerHandle {
   /** Reset the camera to fit the model in view */
@@ -397,115 +400,133 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
           </div>
         )}
 
-        <Canvas shadows>
-          <PerspectiveCamera
-            ref={cameraRef}
-            makeDefault
-            position={[0, 0, initialCameraDistance]}
-            fov={50}
-            near={cameraNear}
-            far={cameraFar}
-          />
+        {/* The R3F tree can throw during render, and R3F re-throws
+            canvas-side errors out here into the DOM tree. <Suspense> above
+            catches suspension, not errors, so without a boundary of its own
+            the nearest catcher is the one in __root — which replaces the
+            entire page with "Something went wrong". Keep the blast radius on
+            the viewer: a scene that cannot draw should cost the preview, not
+            the part's Details tab. */}
+        <ErrorBoundary
+          fallback={
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+              <div className="text-center px-4">
+                <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto mb-2" />
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  3D preview unavailable
+                </p>
+              </div>
+            </div>
+          }
+        >
+          <Canvas shadows>
+            <PerspectiveCamera
+              ref={cameraRef}
+              makeDefault
+              position={[0, 0, initialCameraDistance]}
+              fov={50}
+              near={cameraNear}
+              far={cameraFar}
+            />
 
-          {/* Scene Background */}
-          <SceneBackground
-            topColor={bgConfig.topColor}
-            bottomColor={bgConfig.bottomColor}
-          />
+            {/* Scene Background */}
+            <SceneBackground
+              topColor={bgConfig.topColor}
+              bottomColor={bgConfig.bottomColor}
+            />
 
-          {/* Lighting */}
-          <ambientLight intensity={0.5} />
-          <ModelShadowLight bounds={modelBounds} />
-          <directionalLight position={[-10, -10, -5]} intensity={0.3} />
+            {/* Lighting */}
+            <ambientLight intensity={0.5} />
+            <ModelShadowLight bounds={modelBounds} />
+            <directionalLight position={[-10, -10, -5]} intensity={0.3} />
 
-          {/* Environment for reflections */}
-          <Suspense fallback={null}>
-            <Environment preset={bgConfig.environmentPreset as any} />
-          </Suspense>
+            {/* Environment for reflections */}
+            <SceneEnvironment config={bgConfig.environment} />
 
-          {/* Models. Geometry is deliberately never recentered: every layer
+            {/* Models. Geometry is deliberately never recentered: every layer
               renders in the part's native coordinates, which is exactly what
               lets two versions overlay and align without a registration step.
               The camera aims at the union of their bounding boxes instead —
               see CameraAutoFit. Keyed by slot, not by URL, so changing which
               file a side shows reloads that side in place. */}
-          <Suspense fallback={null}>
-            {layers.map((layer) => (
-              <Model
-                key={layer.slot}
-                fileUrl={layer.fileUrl}
-                fileType={layer.fileType}
-                wireframe={wireframe}
-                materialPreset={materialPreset}
-                hasEmbeddedColors={layer.hasEmbeddedColors}
-                tint={layer.tint}
-                visible={layer.visible}
-                renderOrder={layer.slot === 'A' ? 0 : 1}
-                onLoad={(stats) => handleLayerLoad(layer.slot, stats)}
-                onError={(err) => handleLayerError(layer.slot, layer, err)}
+            <Suspense fallback={null}>
+              {layers.map((layer) => (
+                <Model
+                  key={layer.slot}
+                  fileUrl={layer.fileUrl}
+                  fileType={layer.fileType}
+                  wireframe={wireframe}
+                  materialPreset={materialPreset}
+                  hasEmbeddedColors={layer.hasEmbeddedColors}
+                  tint={layer.tint}
+                  visible={layer.visible}
+                  renderOrder={layer.slot === 'A' ? 0 : 1}
+                  onLoad={(stats) => handleLayerLoad(layer.slot, stats)}
+                  onError={(err) => handleLayerError(layer.slot, layer, err)}
+                />
+              ))}
+            </Suspense>
+
+            {/* Grid */}
+            {showGrid && (
+              <Grid
+                position={[0, groundY, 0]}
+                args={[100, 100]}
+                cellSize={gridCellSize}
+                cellThickness={0.5}
+                cellColor="#94a3b8"
+                sectionSize={gridCellSize * 10}
+                sectionThickness={1}
+                sectionColor="#64748b"
+                fadeDistance={maxDim * 5}
+                fadeStrength={1}
+                infiniteGrid
               />
-            ))}
-          </Suspense>
+            )}
 
-          {/* Grid */}
-          {showGrid && (
-            <Grid
-              position={[0, groundY, 0]}
-              args={[100, 100]}
-              cellSize={gridCellSize}
-              cellThickness={0.5}
-              cellColor="#94a3b8"
-              sectionSize={gridCellSize * 10}
-              sectionThickness={1}
-              sectionColor="#64748b"
-              fadeDistance={maxDim * 5}
-              fadeStrength={1}
-              infiniteGrid
-            />
-          )}
+            {/* Contact shadows for studio mode */}
+            {bgConfig.contactShadows && modelBounds && (
+              <ContactShadows
+                position={[modelBounds.center.x, groundY, modelBounds.center.z]}
+                opacity={0.4}
+                scale={maxDim * 3}
+                blur={2}
+                far={maxDim * 2}
+                frames={1}
+              />
+            )}
 
-          {/* Contact shadows for studio mode */}
-          {bgConfig.contactShadows && modelBounds && (
-            <ContactShadows
-              position={[modelBounds.center.x, groundY, modelBounds.center.z]}
-              opacity={0.4}
-              scale={maxDim * 3}
-              blur={2}
-              far={maxDim * 2}
-              frames={1}
-            />
-          )}
+            {/* Orientation Gizmo */}
+            <GizmoHelper alignment="top-right" margin={[72, 72]}>
+              <GizmoViewcube
+                color="#64748b"
+                hoverColor="#06b6d4"
+                textColor="white"
+                strokeColor="#475569"
+              />
+            </GizmoHelper>
 
-          {/* Orientation Gizmo */}
-          <GizmoHelper alignment="top-right" margin={[72, 72]}>
-            <GizmoViewcube
-              color="#64748b"
-              hoverColor="#06b6d4"
-              textColor="white"
-              strokeColor="#475569"
-            />
-          </GizmoHelper>
-
-          {/* Trackball controls: unlimited tumbling (no polar-angle clamp
+            {/* Trackball controls: unlimited tumbling (no polar-angle clamp
               like OrbitControls), so models can be rotated freely for
               inspection from any direction. Dynamic zoom limits. */}
-          <TrackballControls
-            ref={controlsRef}
-            makeDefault
-            rotateSpeed={2.5}
-            zoomSpeed={1.0}
-            panSpeed={0.5}
-            staticMoving={false}
-            dynamicDampingFactor={0.15}
-            minDistance={minZoomDistance}
-            maxDistance={maxZoomDistance}
-          />
+            <TrackballControls
+              ref={controlsRef}
+              makeDefault
+              rotateSpeed={2.5}
+              zoomSpeed={1.0}
+              panSpeed={0.5}
+              staticMoving={false}
+              dynamicDampingFactor={0.15}
+              minDistance={minZoomDistance}
+              maxDistance={maxZoomDistance}
+            />
 
-          {/* Auto-fit camera when model loads */}
-          {modelBounds && (
-            <CameraAutoFit bounds={modelBounds} controlsRef={controlsRef} />
-          )}
-        </Canvas>
+            {/* Auto-fit camera when model loads */}
+            {modelBounds && (
+              <CameraAutoFit bounds={modelBounds} controlsRef={controlsRef} />
+            )}
+          </Canvas>
+        </ErrorBoundary>
 
         {/* File name overlay; a color legend while comparing */}
         {isComparing ? (
@@ -611,6 +632,77 @@ function SceneBackground({
   }, [scene, texture])
 
   return null
+}
+
+/**
+ * Reflections for the scene, built in-process from a few emissive panels.
+ *
+ * drei's `<Environment preset="…">` fetches a 1-2 MB HDR from a public CDN
+ * (raw.githack.com) through R3F's `useLoader`, which was wrong here twice
+ * over. It is a third-party network dependency in an app expected to run
+ * air-gapped; and its failure mode was a whole-page crash that outlived the
+ * failure. `useLoader` memoizes through suspend-react's module-global cache,
+ * which stores a *rejection* as permanently as a result — no lifespan, no
+ * retry — so a single unreachable fetch made every subsequent mount of this
+ * viewer re-throw the cached error synchronously during render, past
+ * `<Suspense>` and into the root error boundary, until the page was reloaded.
+ *
+ * Passing children and no `files`/`preset` takes drei's `EnvironmentPortal`
+ * path instead: the panels below are rendered to a cube map locally, once.
+ * Same IBL role for the metallic material presets, no network.
+ *
+ * Positions are in the environment's own virtual scene, not the model's, so
+ * they are independent of a part's native coordinates and scale.
+ */
+function SceneEnvironment({ config }: { config: EnvironmentConfig }) {
+  return (
+    <Environment resolution={128}>
+      {/* Overhead key — the broad highlight across up-facing surfaces. */}
+      <Lightformer
+        form="rect"
+        intensity={config.intensity * 2}
+        color={config.skyColor}
+        position={[0, 5, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
+        scale={[10, 10, 1]}
+      />
+      {/* Ground bounce, so undersides shade rather than go dead black. */}
+      <Lightformer
+        form="rect"
+        intensity={config.intensity * 0.6}
+        color={config.groundColor}
+        position={[0, -5, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        scale={[10, 10, 1]}
+      />
+      {/* Two side rims, deliberately unequal and offset: matched panels read
+          as a flat sheen, differing ones give a stationary model its edges. */}
+      <Lightformer
+        form="rect"
+        intensity={config.intensity * 1.2}
+        color={config.rimColor}
+        position={[-5, 1, -1]}
+        rotation={[0, Math.PI / 2, 0]}
+        scale={[6, 6, 1]}
+      />
+      <Lightformer
+        form="rect"
+        intensity={config.intensity}
+        color={config.rimColor}
+        position={[5, 0, 2]}
+        rotation={[0, -Math.PI / 2, 0]}
+        scale={[6, 6, 1]}
+      />
+      {/* Front fill, keeping the face toward the camera off pure black. */}
+      <Lightformer
+        form="rect"
+        intensity={config.intensity * 0.5}
+        color={config.skyColor}
+        position={[0, 0, 6]}
+        scale={[8, 8, 1]}
+      />
+    </Environment>
+  )
 }
 
 /** The volume a freshly loaded model occupies, in its native coordinates. */

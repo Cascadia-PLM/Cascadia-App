@@ -17,8 +17,16 @@ import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { withWritePermissionAndAudit } from './permission-wrapper'
 import type { BaseItem } from '@/lib/items/types/base'
-
+import type {
+  ChangeOrderPriority,
+  ChangeOrderType,
+} from '@/lib/items/types/change-order'
+import type { PartType } from '@/lib/items/types/part'
+import type { RequirementType } from '@/lib/items/types/requirement'
+import type { TaskPriority } from '@/lib/items/types/task'
 import type { ToolContext, WriteOperationMeta } from './permission-wrapper'
+import { AppError } from '@/lib/errors'
+
 import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { BranchService } from '@/lib/services/BranchService'
@@ -35,6 +43,10 @@ import { permissionService } from '@/lib/auth/permission-service'
 // Input Types (manually defined for better type inference)
 // ============================================================================
 
+// The field unions below come from the item type schemas (via
+// write-definitions.ts, which builds the tool enums from the same schemas).
+// Writing them out by hand is what let the tool advertise requirement types
+// and task priorities the server rejects.
 interface CreateItemInput {
   /** Any registered item type except ChangeOrder (schema-validated). */
   itemType: string
@@ -42,13 +54,12 @@ interface CreateItemInput {
   designId?: string
   changeOrderId?: string
   description?: string
-  partType?: 'Manufacture' | 'Purchase' | 'Software' | 'Phantom'
+  partType?: PartType
   material?: string
   assignee?: string
-  priority?: 'low' | 'medium' | 'high' | 'critical'
+  priority?: TaskPriority
   dueDate?: string
-  requirementType?:
-    'Functional' | 'Performance' | 'Interface' | 'Constraint' | 'Other'
+  requirementType?: RequirementType
   confirmed?: boolean
 }
 
@@ -56,14 +67,14 @@ interface UpdateItemInput {
   itemId: string
   name?: string
   description?: string
-  partType?: 'Manufacture' | 'Purchase' | 'Software' | 'Phantom'
+  partType?: PartType
   material?: string
   weight?: number
   weightUnit?: string
   cost?: number
   costCurrency?: string
   assignee?: string
-  priority?: 'low' | 'medium' | 'high' | 'critical'
+  priority?: TaskPriority
   dueDate?: string
   changeOrderId?: string
   confirmed?: boolean
@@ -88,8 +99,8 @@ interface TransitionItemStateInput {
 
 interface CreateChangeOrderInput {
   name: string
-  changeType: 'ECO' | 'ECN' | 'Deviation' | 'MCO'
-  priority?: 'low' | 'medium' | 'high' | 'critical'
+  changeType: ChangeOrderType
+  priority?: ChangeOrderPriority
   reasonForChange?: string
   impactDescription?: string
   affectedItemIds?: Array<string>
@@ -211,6 +222,29 @@ function successResponse(
     itemNumber,
     confirmationMessage: message,
   }
+}
+
+/**
+ * Render a thrown error as a message the calling model can act on.
+ *
+ * `ValidationError` carries the offending fields in `fieldErrors` and leaves
+ * `message` as the bare string "Validation failed" — enough for a human
+ * looking at a form that highlights its own fields, useless to an agent
+ * holding only the tool response. Without the field detail the model cannot
+ * tell which argument it got wrong, let alone what would have been accepted,
+ * so it retries the same call. Fold the field errors into the message so a
+ * write failure reads like the MCP layer's own argument errors do.
+ */
+function toErrorMessage(error: unknown, fallback: string): string {
+  if (!(error instanceof Error)) return fallback
+
+  const fieldErrors = error instanceof AppError ? (error.fieldErrors ?? []) : []
+  if (fieldErrors.length === 0) return error.message
+
+  const details = fieldErrors
+    .map(({ field, message }) => (field ? `${field}: ${message}` : message))
+    .join('; ')
+  return `${error.message}: ${details}`
 }
 
 /**
@@ -336,9 +370,7 @@ async function createItemHandlerImpl(
       `Created ${input.itemType} ${item.itemNumber || 'item'} "${input.name}"`,
     )
   } catch (e) {
-    return errorResponse(
-      e instanceof Error ? e.message : 'Failed to create item',
-    )
+    return errorResponse(toErrorMessage(e, 'Failed to create item'))
   }
 }
 
@@ -488,9 +520,7 @@ async function updateItemHandlerImpl(
       `Updated ${updated.itemType} ${updated.itemNumber || 'item'}`,
     )
   } catch (e) {
-    return errorResponse(
-      e instanceof Error ? e.message : 'Failed to update item',
-    )
+    return errorResponse(toErrorMessage(e, 'Failed to update item'))
   }
 }
 
@@ -590,9 +620,7 @@ async function createRelationshipHandlerImpl(
       confirmationMessage: `Added ${input.relationshipType} relationship: ${sourceItem.itemNumber} → ${targetItem.itemNumber}`,
     }
   } catch (e) {
-    return errorResponse(
-      e instanceof Error ? e.message : 'Failed to create relationship',
-    )
+    return errorResponse(toErrorMessage(e, 'Failed to create relationship'))
   }
 }
 
@@ -709,9 +737,7 @@ async function transitionItemStateHandlerImpl(
       }
     }
   } catch (e) {
-    return errorResponse(
-      e instanceof Error ? e.message : 'Failed to transition item state',
-    )
+    return errorResponse(toErrorMessage(e, 'Failed to transition item state'))
   }
 }
 
@@ -877,9 +903,7 @@ async function createChangeOrderHandlerImpl(
       confirmationMessage: `Created ${input.changeType} ${changeOrder.itemNumber || 'ECO'} "${input.name}"`,
     }
   } catch (e) {
-    return errorResponse(
-      e instanceof Error ? e.message : 'Failed to create change order',
-    )
+    return errorResponse(toErrorMessage(e, 'Failed to create change order'))
   }
 }
 
@@ -992,9 +1016,7 @@ async function createProgramHandlerImpl(
       confirmationMessage: `Created program ${program.code} "${program.name}" — you are its admin`,
     }
   } catch (e) {
-    return errorResponse(
-      e instanceof Error ? e.message : 'Failed to create program',
-    )
+    return errorResponse(toErrorMessage(e, 'Failed to create program'))
   }
 }
 

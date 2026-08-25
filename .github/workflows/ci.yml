@@ -202,7 +202,7 @@ jobs:
     # No `needs:` — deliberately. This was `needs: [lint, unit-tests]`, which made
     # the strictest gate in the repo hostage to the weakest: a prettier failure in
     # Lint skipped Build, and `typecheck:strict` with it. Between 2026-07-30 and
-    # 2026-08-05 that skipped Build on 15 of 18 runs, and PRs #57 and #58 reached
+    # 2026-08-05 that skipped Build on 15 of 18 runs, and two pull requests reached
     # main with no typecheck signal at all — the PR page showed a red X everyone
     # had already filed under "formatting".
     #

@@ -233,7 +233,7 @@ Each item type is assigned a lifecycle definition via the `item_type_configs` ta
 
 ### Default Lifecycle Assignments
 
-The shipped defaults live in `packages/core/src/lib/items/default-lifecycles.ts` as data, seeded by `scripts/seed-minimal.ts`, by the test global-setup (once per run) and by the test fixtures, with version-gated upgrade-only upserts: a default that changes shape bumps its `version`, and an existing row is replaced only when its stored version is lower — so admin edits (which bump the version through `WorkflowService`) and suite overrides are left alone.
+The shipped defaults live in `packages/core/src/lib/items/default-lifecycles.ts` as data, seeded by `scripts/seed-minimal.ts`, by the test global-setup (once per run) and by the test fixtures, with version-gated upgrade-only upserts: a default that changes shape bumps its `version`, and an existing row is replaced only when its stored version is lower — so admin edits (which bump the version through `WorkflowService`) and suite overrides are left alone. `scripts/seed-minimal.ts` writes no lifecycle of its own: it calls the module and then sets the shipped Driven lifecycles' `drivers` allow-list to the two change-order workflows, only where nothing has chosen yet. The module also ships each state's editor position and the descriptions the lifecycle editor shows, so a fresh database opens every default laid out.
 
 | Item Type       | Lifecycle                            | Type    | Lifecycle ID                    |
 | --------------- | ------------------------------------ | ------- | ------------------------------- |
@@ -873,7 +873,7 @@ Identical structure to the Part lifecycle but assigned to Documents. Same states
 
 ### Requirement - Default Lifecycle (Driven)
 
-Identical structure to the Part lifecycle but assigned to Requirements. Same states, same change action mappings — requirements are versioned items that live on Designs, are checked out to ECO branches, and receive revision letters at merge.
+Driven like Part, with review progress as pre-release states reached by manual transition: Draft → Proposed → Approved (Reject to Rejected, Rework back to Draft). Release maps Approved → Released; revise and obsolete are as for Part. Requirements are versioned items that live on Designs, are checked out to ECO branches, and receive revision letters at merge.
 
 ### ECO - Default Workflow (Driving, Strict)
 
@@ -891,10 +891,14 @@ A simple three-state approval workflow for Engineering Change Orders.
 
 **Transitions:**
 
-| Transition        | From     | To       |
-| ----------------- | -------- | -------- |
-| Submit for Review | Draft    | InReview |
-| Approve           | InReview | Approved |
+| Transition        | From             | To        |
+| ----------------- | ---------------- | --------- |
+| Submit for Review | Draft            | InReview  |
+| Approve           | InReview         | Approved  |
+| Return to Draft   | InReview         | Draft     |
+| Cancel            | Draft / InReview | Cancelled |
+
+Cancelled is a final state with `finalKind: 'cancel'`: branches are archived unmerged and no revisions are consumed. Return to Draft reopens the change order's scope.
 
 When "Approve" is executed, "Approved" is a final state with `finalKind: 'release'`, so the release orchestration runs: the merge processes the ECO (branch merge or affected-items implementation), applying each item's `changeActionMappings` (Draft → Released) and assigning revision letters — and only then does the workflow actually enter Approved.
 

@@ -19,7 +19,7 @@ import {
   expect,
   it,
 } from 'vitest'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { ItemService } from './ItemService'
 import type { Part } from '@/lib/items/types/part'
 import type { TestUser } from '@/__tests__/fixtures/users'
@@ -448,6 +448,119 @@ describe('ItemService', () => {
       const found = await ItemService.findByNumber('NONEXISTENT-001')
 
       expect(found).toBeNull()
+    })
+
+    // An MBOM copies the EBOM's item numbers verbatim, so the same number
+    // names two items. The lookup used to be an unordered LIMIT 1 and
+    // resolved to whichever row the planner reached first - in practice the
+    // manufacturing copy, which is how an agent asked about a released
+    // assembly answered from an empty draft shadow of it.
+    describe('when the number exists in more than one design', () => {
+      let mbomDesignId: string
+      let itemNumber: string
+
+      beforeEach(async () => {
+        mbomDesignId = takeFirst(
+          await testDb.db
+            .insert(designs)
+            .values({
+              name: 'Test Design MBOM',
+              code: `PROD-${uniquePrefix}-M`,
+              designType: 'Manufacturing',
+              sourceDesignId: designId,
+              createdBy: user.id,
+            })
+            .returning(),
+        ).id
+
+        itemNumber = `PN-${uniquePrefix}-SHARED-001`
+
+        await ItemService.create(
+          'Part',
+          { itemNumber, revision: 'A', name: 'EBOM part', designId } as any,
+          user.id,
+        )
+        await ItemService.create(
+          'Part',
+          {
+            itemNumber,
+            revision: 'A',
+            name: 'MBOM copy',
+            designId: mbomDesignId,
+          } as any,
+          user.id,
+        )
+
+        // The copy really is derived later than the original, but every row
+        // written inside one test transaction shares the same now(), so say
+        // it explicitly. That leaves recency - the last ordering rule with
+        // any opinion here - pointing at the copy, so these tests fail if
+        // the design ranking stops being what decides.
+        const { items: itemsTable } = await import('@/lib/db/schema')
+        await testDb.db
+          .update(itemsTable)
+          .set({ createdAt: new Date(Date.now() + 60_000) })
+          .where(
+            and(
+              eq(itemsTable.itemNumber, itemNumber),
+              eq(itemsTable.designId, mbomDesignId),
+            ),
+          )
+      })
+
+      it('returns the engineering item, not the manufacturing copy', async () => {
+        const found = await ItemService.findByNumber(itemNumber)
+
+        expect(found?.designId).toBe(designId)
+        expect(found?.name).toBe('EBOM part')
+      })
+
+      it('returns the same item every time', async () => {
+        const ids = await Promise.all(
+          Array.from({ length: 5 }, () => ItemService.findByNumber(itemNumber)),
+        )
+
+        expect(new Set(ids.map((item) => item?.id)).size).toBe(1)
+      })
+
+      it('honours an explicit designId over the ranking', async () => {
+        const found = await ItemService.findByNumber(itemNumber, undefined, {
+          designId: mbomDesignId,
+        })
+
+        expect(found?.designId).toBe(mbomDesignId)
+        expect(found?.name).toBe('MBOM copy')
+      })
+
+      it('reports every match, best first, named by design', async () => {
+        const matches = await ItemService.findMatchesByNumber(itemNumber)
+
+        expect(matches.map((m) => m.designId)).toEqual([designId, mbomDesignId])
+        expect(matches.map((m) => m.designType)).toEqual([
+          'Engineering',
+          'Manufacturing',
+        ])
+        expect(matches[1]?.designCode).toBe(`PROD-${uniquePrefix}-M`)
+      })
+
+      // `[]` is not `null`: a caller that reaches no design must see nothing,
+      // never everything - the ambiguity report must not become a way to read
+      // item numbers out of designs the caller has no access to.
+      it('sees only the designs its access scope admits', async () => {
+        const scoped = await ItemService.findMatchesByNumber(
+          itemNumber,
+          undefined,
+          { designIds: [mbomDesignId] },
+        )
+        expect(scoped.map((m) => m.designId)).toEqual([mbomDesignId])
+
+        const unscoped = await ItemService.findMatchesByNumber(
+          itemNumber,
+          undefined,
+          { designIds: [] },
+        )
+        expect(unscoped).toEqual([])
+      })
     })
   })
 

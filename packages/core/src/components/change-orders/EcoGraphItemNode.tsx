@@ -3,10 +3,10 @@
 
 import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
-import { Link } from '@tanstack/react-router'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
 import { useLifecycleState } from '@/components/items/StateBadge'
+import { ItemLink } from '@/components/items/ItemLink'
 
 interface EcoGraphItemNodeProps {
   data: {
@@ -67,17 +67,6 @@ export const EcoGraphItemNode = memo(({ data }: EcoGraphItemNodeProps) => {
       'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300',
   }
 
-  // Determine route based on item type
-  const getItemRoute = () => {
-    const typeRoutes: Record<string, string> = {
-      Part: '/parts',
-      Document: '/documents',
-      ChangeOrder: '/change-orders',
-      Requirement: '/requirements',
-    }
-    return `${typeRoutes[itemType] || '/items'}/${itemId}`
-  }
-
   const routeSearch = branchId ? { branch: branchId } : undefined
 
   // ECO center node styling
@@ -101,13 +90,14 @@ export const EcoGraphItemNode = memo(({ data }: EcoGraphItemNodeProps) => {
         />
 
         <div className="flex items-center justify-between gap-2 mb-2">
-          <Link
-            to={getItemRoute()}
+          <ItemLink
+            itemType={itemType}
+            itemId={itemId}
             search={routeSearch}
             className="font-semibold text-sm text-slate-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
           >
             {itemNumber}
-          </Link>
+          </ItemLink>
           <Badge variant="outline" className="text-xs">
             {state}
           </Badge>
@@ -159,8 +149,9 @@ export const EcoGraphItemNode = memo(({ data }: EcoGraphItemNodeProps) => {
 
       {/* Item header */}
       <div className="flex items-center justify-between gap-2 mb-1">
-        <Link
-          to={getItemRoute()}
+        <ItemLink
+          itemType={itemType}
+          itemId={itemId}
           search={routeSearch}
           className={cn(
             'font-semibold text-xs transition-colors',
@@ -170,7 +161,7 @@ export const EcoGraphItemNode = memo(({ data }: EcoGraphItemNodeProps) => {
           )}
         >
           {itemNumber}
-        </Link>
+        </ItemLink>
         <span
           className={cn(
             'text-[10px] px-1 py-0.5 rounded',

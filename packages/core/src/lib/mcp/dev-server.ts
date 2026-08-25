@@ -6,8 +6,10 @@
  *
  * MCP server for self-hosters standing up, customizing, and operating a
  * Cascadia instance. Runs over stdio from a repository checkout (see
- * `src/mcp-dev-server.ts`), with the operator's own shell credentials —
- * it is not authenticated and must never be exposed over the network.
+ * `packages/core/src/mcp-dev-server.ts`), with the operator's own shell
+ * credentials (direct database access — the same trust level as the admin
+ * shell it replaces). It is not authenticated and must never be exposed
+ * over the network.
  *
  * End-use PLM tooling (part search, ECO creation, BOM queries) lives in
  * the separate `cascadia-plm` server behind API-key auth: `./plm-server`.

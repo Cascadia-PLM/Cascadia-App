@@ -16,7 +16,10 @@ import {
   SATISFIES_RELATIONSHIP,
   VERIFIED_BY_RELATIONSHIP,
 } from '../items/traceability-relationships'
+import { resolveInheritedLineage } from '../items/version-lineage'
 import { BranchService } from './BranchService'
+import { VersionResolver } from './VersionResolver'
+import type { VersionContext } from './VersionResolver'
 import type { PersistedItem } from '../items/types/base'
 import type { Requirement } from '../items/types/requirement'
 
@@ -573,11 +576,23 @@ export class RequirementService {
     // Format: PARENT-D1, PARENT-D2, etc.
     let itemNumber = childData.itemNumber
     if (!itemNumber) {
-      // Count existing children to generate suffix
+      // The highest `-D<n>` already taken, not the number of children. The two
+      // agree only while nothing has ever been renumbered, deleted, or named
+      // by hand, and disagreeing means minting an item number that is already
+      // in use — a unique-constraint failure at insert, or a second `-D1` in
+      // the tree. Children come back one row each, so a revised parent counts
+      // its two children as two.
       const existingChildren =
         await this.getChildRequirements(parentRequirementId)
-      const suffix = existingChildren.length + 1
-      itemNumber = `${parentRequirement.itemNumber}-D${suffix}`
+      const prefix = `${parentRequirement.itemNumber}-D`
+      const taken = existingChildren.map((child) =>
+        child.itemNumber.startsWith(prefix)
+          ? Number(
+              /^\d+$/.exec(child.itemNumber.slice(prefix.length))?.[0] ?? 0,
+            )
+          : 0,
+      )
+      itemNumber = `${prefix}${Math.max(0, ...taken) + 1}`
     }
 
     // Ensure child has designId from parent if not specified. No revision:
@@ -659,7 +674,52 @@ export class RequirementService {
   }
 
   /**
+   * The version context a row answers in: the ECO/workspace branch it is a
+   * working copy on, or its design's released context.
+   *
+   * The same question `deriveRequirement` asks to decide where a new child
+   * goes. A row names its own context, which is why neither hierarchy read
+   * needs a branch parameter. A released row on main gets the released
+   * context: `getItemBranchInfo` matches only unarchived eco/workspace
+   * branches, and closing a change order archives its branch.
+   */
+  private static async contextOf(row: {
+    id: string
+    designId: string | null
+  }): Promise<VersionContext | null> {
+    const branchInfo = await ItemService.getItemBranchInfo(row.id)
+    if (branchInfo) {
+      return { type: 'branch', branchId: branchInfo.branchId }
+    }
+    return row.designId ? { type: 'released', designId: row.designId } : null
+  }
+
+  /**
    * Get child requirements that derive from a parent requirement.
+   *
+   * `requirements.parent_requirement_id` names one **version row** of the
+   * parent — whichever was current when the child was derived — and nothing
+   * ever re-points it: the requirement type handler copies it onto every later
+   * revision of the child. Matching it against the id passed in therefore
+   * answered with history rather than structure. Once the parent had been
+   * revised through an ECO its current row reported no children at all, while
+   * the row it superseded reported every historical row of every child, so
+   * each child came back two or three times.
+   *
+   * The column is an incoming reference like any other, so it gets the same
+   * treatment the relationship reads already had, in two steps:
+   *
+   * 1. `resolveInheritedLineage` says which parent rows this row answers for —
+   *    a current row inherits the rows it superseded, a working copy inherits
+   *    the released lineage it was cut from, and a superseded row names only
+   *    itself, so an old revision still reports the children it had. Nothing
+   *    inherits from a working revision, which is what keeps a child derived
+   *    inside one ECO invisible to main and to every other branch.
+   * 2. Each child **master** found that way resolves at this parent row's own
+   *    context, so the answer is one row per child: the branch's working copy
+   *    when read from inside the branch holding it, the current released row
+   *    otherwise. That is also what collapses the historical rows — they are
+   *    versions of one child, not children in their own right.
    */
   static async getChildRequirements(parentRequirementId: string): Promise<
     Array<{
@@ -670,46 +730,108 @@ export class RequirementService {
       priority: string | null
     }>
   > {
-    // Find requirements where parentRequirementId matches
-    const childReqs = await db
-      .select({
-        itemId: requirements.itemId,
-        priority: requirements.priority,
-      })
-      .from(requirements)
-      .where(eq(requirements.parentRequirementId, parentRequirementId))
+    const [parentRow] = await db
+      .select({ id: items.id, designId: items.designId })
+      .from(items)
+      .where(eq(items.id, parentRequirementId))
+      .limit(1)
 
-    if (childReqs.length === 0) {
+    if (!parentRow) {
       return []
     }
 
-    // Get base item details
-    const itemIds = childReqs.map((r) => r.itemId)
-    const itemDetails = await db
+    // Every parent row this one answers for, and the child rows naming any of
+    // them — several rows per child, spread across its revisions.
+    const lineage = await resolveInheritedLineage([parentRequirementId])
+    const childRows = await db
+      .select({ itemId: requirements.itemId })
+      .from(requirements)
+      .where(inArray(requirements.parentRequirementId, [...lineage.keys()]))
+
+    if (childRows.length === 0) {
+      return []
+    }
+
+    const candidates = await db
+      .select({
+        id: items.id,
+        masterId: items.masterId,
+        designId: items.designId,
+      })
+      .from(items)
+      .where(
+        and(
+          inArray(
+            items.id,
+            childRows.map((row) => row.itemId),
+          ),
+          notDeleted(),
+        ),
+      )
+
+    const firstRowByMaster = new Map<string, (typeof candidates)[number]>()
+    for (const row of candidates) {
+      if (!firstRowByMaster.has(row.masterId)) {
+        firstRowByMaster.set(row.masterId, row)
+      }
+    }
+
+    // One row per child master: the row that answers at the parent's context.
+    // A master with no row there — never released, and created on some other
+    // branch, or deleted on this one — drops out.
+    const context = await this.contextOf(parentRow)
+    const resolvedIds = [
+      ...new Set(
+        (
+          await Promise.all(
+            [...firstRowByMaster.values()].map(async (row) => {
+              if (!context || !row.designId) return row.id
+              const atContext = await VersionResolver.getItemAtContext(
+                row.masterId,
+                row.designId,
+                context,
+              )
+              return atContext?.id ?? null
+            }),
+          )
+        ).filter((id): id is string => id !== null),
+      ),
+    ]
+
+    if (resolvedIds.length === 0) {
+      return []
+    }
+
+    return db
       .select({
         id: items.id,
         itemNumber: items.itemNumber,
         name: items.name,
         state: items.state,
+        priority: requirements.priority,
       })
       .from(items)
-      .where(and(inArray(items.id, itemIds), notDeleted()))
-
-    // Combine data
-    return itemDetails.map((item) => {
-      const reqData = childReqs.find((r) => r.itemId === item.id)
-      return {
-        id: item.id,
-        itemNumber: item.itemNumber,
-        name: item.name,
-        state: item.state,
-        priority: reqData?.priority ?? null,
-      }
-    })
+      .innerJoin(requirements, eq(requirements.itemId, items.id))
+      .where(and(inArray(items.id, resolvedIds), notDeleted()))
+      .orderBy(items.itemNumber)
   }
 
   /**
    * Get parent requirement if this is a derived requirement.
+   *
+   * The stored `parent_requirement_id` names the parent's version row at
+   * derive time and is never re-pointed, so returning it verbatim answered a
+   * current, Released child with the superseded Draft row an ECO had already
+   * replaced — wrong in id, revision and state, and a UI following it
+   * navigated to a row nobody should be working from.
+   *
+   * The child owns this pointer, so — unlike the children read — the statement
+   * is not stale, only the id in it. The parent therefore resolves to the row
+   * that answers at the child row's own context: read from a branch holding
+   * the parent, the branch's working copy; read from main, the current
+   * released row. A parent in some other design resolves at that design's
+   * released context, the same rule `VersionResolver.resolveRelationshipTarget`
+   * applies to a stored edge target reaching outside the caller's design.
    */
   static async getParentRequirement(requirementId: string): Promise<{
     id: string
@@ -717,20 +839,44 @@ export class RequirementService {
     name: string | null
     state: string
   } | null> {
-    // Get the requirement to find parentRequirementId
-    const [reqData] = await db
+    const [childRow] = await db
       .select({
+        id: items.id,
+        designId: items.designId,
         parentRequirementId: requirements.parentRequirementId,
       })
-      .from(requirements)
-      .where(eq(requirements.itemId, requirementId))
+      .from(items)
+      .innerJoin(requirements, eq(requirements.itemId, items.id))
+      .where(eq(items.id, requirementId))
       .limit(1)
 
-    if (!reqData?.parentRequirementId) {
+    if (!childRow?.parentRequirementId) {
       return null
     }
 
-    // Get parent requirement details
+    const [parentRow] = await db
+      .select({ masterId: items.masterId, designId: items.designId })
+      .from(items)
+      .where(eq(items.id, childRow.parentRequirementId))
+      .limit(1)
+
+    // A design-less parent has no context to resolve at and stands as named.
+    let parentId = childRow.parentRequirementId
+    if (parentRow?.designId) {
+      const context =
+        parentRow.designId === childRow.designId
+          ? await this.contextOf(childRow)
+          : { type: 'released' as const, designId: parentRow.designId }
+      const atContext = context
+        ? await VersionResolver.getItemAtContext(
+            parentRow.masterId,
+            parentRow.designId,
+            context,
+          )
+        : null
+      parentId = atContext?.id ?? parentId
+    }
+
     const [parent] = await db
       .select({
         id: items.id,
@@ -739,10 +885,10 @@ export class RequirementService {
         state: items.state,
       })
       .from(items)
-      .where(and(eq(items.id, reqData.parentRequirementId), notDeleted()))
+      .where(and(eq(items.id, parentId), notDeleted()))
       .limit(1)
 
-    return parent || null
+    return parent ?? null
   }
 
   /**

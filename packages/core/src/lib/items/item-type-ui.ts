@@ -55,6 +55,16 @@ export function getItemDetailPath(
   return base ? `${base}/${itemId}` : null
 }
 
+/**
+ * Detail-route *pattern* (`/parts/$id`) for a type, or null if unregistered.
+ * For `<Link to={pattern} params={{ id }}>`; use `getItemDetailPath` when you
+ * want the interpolated href instead.
+ */
+export function getItemDetailRoutePattern(itemType: string): string | null {
+  const base = ITEM_DETAIL_BASE_PATHS[itemType]
+  return base ? `${base}/$id` : null
+}
+
 /** Icon components keyed by the icon *name* the item type definitions carry. */
 const ICONS_BY_NAME: Record<string, LucideIcon> = {
   Package,

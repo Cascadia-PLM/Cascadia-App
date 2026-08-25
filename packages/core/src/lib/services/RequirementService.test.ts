@@ -649,6 +649,174 @@ describe('RequirementService', () => {
   })
 
   // ================================================================
+  // The derive hierarchy across revisions
+  //
+  // `requirements.parent_requirement_id` names one version ROW of the parent
+  // and is never re-pointed — the type handler copies it onto every later
+  // revision of the child — so both hierarchy reads have to resolve lineage
+  // rather than match the id they were handed. These cover the branch half of
+  // that (a working copy at each end); the post-merge half, where the parent
+  // is genuinely superseded, runs against a real release in
+  // ChangeOrderMergeService.test.ts.
+  //
+  // Invariants: a parent row reports each child exactly once, at the row that
+  // answers in that parent row's own context; a child reports the parent row
+  // that answers in its context; and a child derived inside a branch is
+  // invisible from main.
+  // ================================================================
+
+  describe('derive hierarchy across revisions', () => {
+    let workspaceBranchId: string
+
+    beforeEach(async () => {
+      const branch = await BranchService.createWorkspaceBranch(
+        designId,
+        user.id,
+        `ws-derive-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      )
+      workspaceBranchId = branch.id
+    })
+
+    /** A parent with two children, all on main. */
+    async function parentWithTwoChildren() {
+      const parent = await createRequirement({
+        itemNumber: `REQ-DH-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      })
+      const first = await RequirementService.deriveRequirement(
+        parent.id!,
+        { name: 'Child One' },
+        user.id,
+      )
+      const second = await RequirementService.deriveRequirement(
+        parent.id!,
+        { name: 'Child Two' },
+        user.id,
+      )
+      return { parent, first, second }
+    }
+
+    /** The parent, opened for edit on the workspace branch. */
+    async function workingCopyOf(requirement: Requirement) {
+      const { workingCopy } =
+        await ChangeOrderService.createRevisionWorkingCopy(
+          (await ItemService.findById(
+            requirement.id!,
+          )) as unknown as Parameters<
+            typeof ChangeOrderService.createRevisionWorkingCopy
+          >[0],
+          workspaceBranchId,
+          user.id,
+        )
+      return workingCopy
+    }
+
+    it('numbers derived children by the highest suffix taken, not the count', async () => {
+      const { parent, first, second } = await parentWithTwoChildren()
+      expect([first.itemNumber, second.itemNumber]).toEqual([
+        `${parent.itemNumber}-D1`,
+        `${parent.itemNumber}-D2`,
+      ])
+
+      // Counting is only ever right while nothing has left the tree. Remove
+      // -D1 and the count says the next child is -D2 — an item number -D2
+      // already holds.
+      await ItemService.delete(first.id!, user.id)
+
+      const third = await RequirementService.deriveRequirement(
+        parent.id!,
+        { name: 'Child Three' },
+        user.id,
+      )
+
+      expect(third.itemNumber).toBe(`${parent.itemNumber}-D3`)
+    })
+
+    it('shows a working copy of the parent the children it was cut from', async () => {
+      const { parent, first, second } = await parentWithTwoChildren()
+
+      const workingCopy = await workingCopyOf(parent)
+
+      const children = await RequirementService.getChildRequirements(
+        workingCopy.id,
+      )
+      expect(children.map((c) => c.id).sort()).toEqual(
+        [first.id!, second.id!].sort(),
+      )
+    })
+
+    it('keeps a child derived on a branch off the main parent row', async () => {
+      const { parent, first, second } = await parentWithTwoChildren()
+      const workingCopy = await workingCopyOf(parent)
+      await CheckoutService.checkout(
+        { itemMasterId: parent.masterId!, branchId: workspaceBranchId },
+        user.id,
+      )
+
+      const branchOnly = await RequirementService.deriveRequirement(
+        workingCopy.id,
+        { name: 'Branch Child' },
+        user.id,
+        { branchId: workspaceBranchId },
+      )
+
+      // The branch sees what it inherited plus what it added.
+      const onBranch = await RequirementService.getChildRequirements(
+        workingCopy.id,
+      )
+      expect(onBranch.map((c) => c.id).sort()).toEqual(
+        [first.id!, second.id!, branchOnly.id!].sort(),
+      )
+
+      // Main sees only what was there before the branch was cut.
+      const onMain = await RequirementService.getChildRequirements(parent.id!)
+      expect(onMain.map((c) => c.id).sort()).toEqual(
+        [first.id!, second.id!].sort(),
+      )
+    })
+
+    it('reports each child once even when the child has a working copy too', async () => {
+      const { parent, first, second } = await parentWithTwoChildren()
+
+      // A second row for one child, on the branch. Read from main, the child
+      // is still one child — the extra row is a version of it, not a sibling.
+      const childWorkingCopy = await workingCopyOf(first)
+
+      const onMain = await RequirementService.getChildRequirements(parent.id!)
+      expect(onMain.map((c) => c.id).sort()).toEqual(
+        [first.id!, second.id!].sort(),
+      )
+      expect(onMain.map((c) => c.id)).not.toContain(childWorkingCopy.id)
+    })
+
+    it('answers a branch child with the parent row that branch is working from', async () => {
+      const { parent, first } = await parentWithTwoChildren()
+      const workingCopy = await workingCopyOf(parent)
+
+      // Main's child row still names the row it was derived from; read from
+      // main that is main's parent row.
+      const fromMain = await RequirementService.getParentRequirement(first.id!)
+      expect(fromMain?.id).toBe(parent.id)
+
+      // A child on the branch answers with the branch's parent row.
+      await CheckoutService.checkout(
+        { itemMasterId: parent.masterId!, branchId: workspaceBranchId },
+        user.id,
+      )
+      const branchChild = await RequirementService.deriveRequirement(
+        workingCopy.id,
+        { name: 'Branch Child' },
+        user.id,
+        { branchId: workspaceBranchId },
+      )
+
+      const fromBranch = await RequirementService.getParentRequirement(
+        branchChild.id!,
+      )
+      expect(fromBranch?.id).toBe(workingCopy.id)
+    })
+  })
+
+  // ================================================================
   // allocateToDesign() and removeAllocation()
   // ================================================================
 
@@ -1045,7 +1213,7 @@ describe('RequirementService', () => {
   //
   // Invariant: every traceability link write answers to some end's edit rule
   // - a branch row whose checkout the caller holds, or main before anything
-  // in the design has released - and is never ungated. See issue #114.
+  // in the design has released - and is never ungated.
   // ================================================================
 
   describe('branch protection on traceability links', () => {

@@ -29,12 +29,13 @@ import {
 import { BranchService } from '../../services/BranchService'
 import { RevisionService } from '../../services/RevisionService'
 import { UsageService } from '../../services/UsageService'
-import { notDeleted } from '../../db/filters'
+import { accessScopeCondition, notDeleted } from '../../db/filters'
 import { ItemVersioningFacade } from './ItemVersioningFacade'
 import { ItemEditPolicy } from './ItemEditPolicy'
 import { ItemSearchService } from './ItemSearchService'
 import { ItemRelationshipService } from './ItemRelationshipService'
 import type { TypeHandlerContext } from '../type-handlers'
+import type { SQL } from 'drizzle-orm'
 import type { TransactionClient } from '../../db'
 import type { commits, itemRelationships } from '../../db/schema'
 import type {
@@ -58,6 +59,62 @@ export type {
   SearchCriteria,
   SearchResult,
 } from './ItemSearchService'
+
+/**
+ * How a lookup by item number is scoped.
+ *
+ * Item numbers repeat across designs by design — see `findMatchesByNumber` —
+ * so a caller that knows which design it means says so here.
+ */
+export interface FindByNumberOptions {
+  /** Only consider items in this design. */
+  designId?: string
+  /**
+   * Only consider items the caller may read. `null`/omitted is unrestricted;
+   * `[]` reaches design-less items only. Same contract as
+   * `AccessControlService.getAccessibleDesignIds`, whose result this takes.
+   */
+  designIds?: Array<string> | null
+}
+
+/** One row a by-number lookup matched, named by the design it lives in. */
+export interface ItemNumberMatch {
+  id: string
+  masterId: string
+  itemNumber: string
+  name: string | null
+  revision: string
+  state: string
+  itemType: string
+  designId: string | null
+  designCode: string | null
+  designName: string | null
+  designType: string | null
+}
+
+/**
+ * Which design a colliding item number more likely means, lowest first.
+ *
+ * An MBOM is a copy of an EBOM that keeps the item numbers, so a bare number
+ * matches both the engineering original and its manufacturing shadow. The
+ * original is what a caller naming only a number means; the shadow is derived
+ * from it and links back through `EBOM_SOURCE`. Library sits behind
+ * Engineering because a standard part is the fallback meaning of a number a
+ * program design also uses. Family designs are containers that seldom own
+ * items at all, so they sort behind designs that do.
+ */
+const DESIGN_TYPE_PREFERENCE: Record<string, number> = {
+  Engineering: 0,
+  Library: 1,
+  Family: 3,
+  Manufacturing: 4,
+}
+
+/**
+ * Where rows outside any design sort. Change orders, tasks and issues live
+ * here; so does any design type not named above.
+ */
+const NO_DESIGN_PREFERENCE = 2
 
 /**
  * Service layer for item operations
@@ -758,38 +815,138 @@ export class ItemService {
   }
 
   /**
-   * Find an item by number and optionally revision
+   * Every item matching `itemNumber`, best match first.
+   *
+   * Item numbers are not unique. `MbomService` copies an EBOM into a
+   * Manufacturing design with the numbers unchanged, and a usage repeats its
+   * definition's number in every design that uses it — so a bare number
+   * routinely matches several rows. Callers that know which design they mean
+   * pass `designId`; the rest get the ranking in `rankedRowsByNumber`, and
+   * can show the runner-up rows rather than pretend the answer was unique.
+   */
+  static async findMatchesByNumber(
+    itemNumber: string,
+    revision?: string,
+    options?: FindByNumberOptions,
+  ): Promise<Array<ItemNumberMatch>> {
+    const rows = await this.rankedRowsByNumber(itemNumber, revision, options)
+
+    return rows.map(({ item, design }) => ({
+      id: item.id,
+      masterId: item.masterId,
+      itemNumber: item.itemNumber,
+      name: item.name,
+      revision: item.revision,
+      state: item.state,
+      itemType: item.itemType,
+      designId: item.designId,
+      designCode: design?.code ?? null,
+      designName: design?.name ?? null,
+      designType: design?.designType ?? null,
+    }))
+  }
+
+  /**
+   * Rows matching `itemNumber`, in a total order so the same database always
+   * yields the same winner.
+   *
+   * This used to be an unordered `LIMIT 1`, which handed the caller whichever
+   * row the planner reached first — in practice the newest master, i.e. the
+   * MBOM shadow rather than the engineering original it was copied from.
+   *
+   * The order is: design (`DESIGN_TYPE_PREFERENCE`), then released lineage
+   * before drafts, then newest first, then id. Only the first two carry
+   * meaning; the last two exist so ties resolve the same way every time.
+   */
+  private static async rankedRowsByNumber(
+    itemNumber: string,
+    revision?: string,
+    options?: FindByNumberOptions,
+  ): Promise<
+    Array<{
+      item: typeof items.$inferSelect
+      design: typeof designs.$inferSelect | null
+    }>
+  > {
+    const conditions: Array<SQL<unknown>> = [
+      eq(items.itemNumber, itemNumber),
+      notDeleted(),
+      // Without a revision, "the item" is the current version of each master.
+      revision ? eq(items.revision, revision) : eq(items.isCurrent, true),
+    ]
+
+    if (options?.designId) {
+      conditions.push(eq(items.designId, options.designId))
+    }
+
+    const scope = accessScopeCondition(options?.designIds)
+    if (scope) {
+      conditions.push(scope)
+    }
+
+    const rows = await db
+      .select({ item: items, design: designs })
+      .from(items)
+      .leftJoin(designs, eq(items.designId, designs.id))
+      .where(and(...conditions))
+
+    if (rows.length < 2) {
+      return rows
+    }
+
+    // One lifecycle resolution per distinct item type, not per row.
+    const { LifecycleService } = await import('../../services/LifecycleService')
+    const releasedStates = new Map<string, Array<string>>()
+    for (const itemType of new Set(rows.map((row) => row.item.itemType))) {
+      releasedStates.set(
+        itemType,
+        await LifecycleService.getReleasedFamilyStates(itemType),
+      )
+    }
+
+    const designRank = (design: typeof designs.$inferSelect | null): number =>
+      design
+        ? (DESIGN_TYPE_PREFERENCE[design.designType] ?? NO_DESIGN_PREFERENCE)
+        : NO_DESIGN_PREFERENCE
+
+    const isReleased = (item: typeof items.$inferSelect): boolean =>
+      releasedStates.get(item.itemType)?.includes(item.state) ?? false
+
+    return rows.sort(
+      (a, b) =>
+        designRank(a.design) - designRank(b.design) ||
+        Number(isReleased(b.item)) - Number(isReleased(a.item)) ||
+        b.item.createdAt.getTime() - a.item.createdAt.getTime() ||
+        a.item.id.localeCompare(b.item.id),
+    )
+  }
+
+  /**
+   * Find an item by number and optionally revision.
+   *
+   * Returns the best match — see `findMatchesByNumber` for why there can be
+   * more than one, and `rankedRowsByNumber` for which one wins.
    */
   static async findByNumber(
     itemNumber: string,
     revision?: string,
+    options?: FindByNumberOptions,
   ): Promise<PersistedItem | null> {
-    const query = revision
-      ? and(
-          eq(items.itemNumber, itemNumber),
-          eq(items.revision, revision),
-          notDeleted(),
-        )
-      : and(
-          eq(items.itemNumber, itemNumber),
-          eq(items.isCurrent, true),
-          notDeleted(),
-        )
+    const best = (
+      await this.rankedRowsByNumber(itemNumber, revision, options)
+    ).at(0)
 
-    const result = await db.select().from(items).where(query).limit(1)
-    const item = result.at(0)
-
-    if (!item) {
+    if (!best) {
       return null
     }
 
     const typeSpecificData = await this.getTypeSpecificData(
-      item.itemType,
-      item.id,
+      best.item.itemType,
+      best.item.id,
     )
 
     return {
-      ...item,
+      ...best.item,
       ...typeSpecificData,
     }
   }

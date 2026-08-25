@@ -40,6 +40,11 @@ ship with. See [docs/features/software-management.md](./docs/features/software-m
 
 - **Package framework** — The mechanism by which separately-licensed functionality is gated, via the `CASCADIA_PACKAGES` environment variable, read once at process start. `PackageRegistry` answers entitlement, `requirePackage()` gates server-side with a 403, and `/admin` lists holdings read-only. There is deliberately no in-app toggle. The framework ships in this edition; the packages that plug into it are licensed separately. See [docs/development/adding-packages.md](./docs/development/adding-packages.md)
 
+#### File Preview
+
+- **SVG drawings preview in the app** — The vault has always accepted `.svg` uploads but refused to render them, because an SVG is a scripting host and preview bytes are served from the app's own origin. SVG is now its own `PreviewKind` with a zoom/rotate/pan/fullscreen viewer, and three properties hold that boundary together, all of which have to be true at once: the server labels the bytes `text/plain` rather than `image/svg+xml`, so a browser reaching the endpoint directly renders source; the viewer draws through an `<img>`, which the SVG spec puts in secure static mode; and the `<img>` source is a `data:` URL rather than an object URL, which would carry the app's origin into a new tab. Nothing is sanitized and nothing needs to be — a hostile drawing's `<script>` and its external `<image href>` both survive in the source and neither executes nor fetches. Thumbnails and the gallery still refuse SVG outright
+- **Per-format preview ceilings** — `PreviewFormat` gains an optional `maxBytes`. SVG caps at 8 MB against the global 50 MB, because the data URL roughly doubles the source and has to be built as a single JavaScript string, so past that point the viewer rather than the transfer is what gives out
+
 ### Changed
 
 - **This repository is now generated.** Both editions are built from a single upstream tree in which this AGPL edition is one package, and publishing copies that package here. Contributions are still made by pull request against this repository — see [CONTRIBUTING.md](./CONTRIBUTING.md) for how an accepted pull request reaches `main`
@@ -52,6 +57,7 @@ ship with. See [docs/features/software-management.md](./docs/features/software-m
 - **`db:generate` writes migration SQL into the app's own `drizzle/` directory**
   (`apps/cascadia/drizzle`) instead of the repository root, keeping the generated
   baseline next to the composed schema (`modules.schema.ts`) that produced it
+- **The shipped lifecycles are defined in one place.** `default-lifecycles.ts` now carries both change-order workflows in their shipped shape, the state/transition/definition descriptions the lifecycle editor shows, and computed editor positions for every definition, so a fresh database opens with every default already laid out. `seed-minimal.ts` calls the module and keeps only what is genuinely policy — the Driven defaults' `drivers` allow-list, now applied only where nothing has chosen yet, so an admin's own list survives a re-seed
 
 ### Removed
 
@@ -88,6 +94,55 @@ its read/write PLM tools also remain.
 
 ### Fixed
 
+- **`analyze_change_impact` failed on every item it was asked about**, over
+  both the in-app chatbot and the MCP server. The tool includes related change
+  orders by default, and having no current ECO to exclude it passed `''` as
+  one; `findRelatedChanges` renders that argument into a uuid comparison, so
+  Postgres rejected the whole statement (`22P02`) rather than matching nothing.
+  Only `includeRelatedChanges: false` ever returned an answer.
+  `currentChangeOrderId` is now optional and the `!=` predicate is dropped when
+  it is absent — which is what "no current change order" should have meant all
+  along: every open ECO touching the item
+
+- **The dev MCP server's docs and database tools resolve against the repository
+  root again.** `REPO_ROOT` counted `..` segments up from
+  `lib/mcp/dev-tools.ts`, which reached the repository root before the
+  `packages/core` move and `packages/core` after it. The failure was silent:
+  `search_docs` reported `filesSearched: 0` for every query, `read_doc`
+  returned ENOENT for every path, and the `db_*` tools would have run their
+  npm scripts from a directory holding no `scripts/`. The root is now found by
+  walking up to the manifest declaring `workspaces`, which identifies it by
+  what it is rather than by how deep the file sits. The corrected root also
+  exposed `db_push` running bare `npx drizzle-kit push`, which fails on a
+  missing config because drizzle-kit must be launched from the edition's app
+  directory — it goes through `npm run db:push` like every other database
+  tool. Separately, `instance_status` read `process.env` before anything
+  imported dotenv, so it reported `DATABASE_URL` unset in the same response as
+  a successful database connection; the entry point now loads the root `.env`
+  first, resolved from the repository root rather than the working directory
+  an MCP client happens to choose
+
+- **The AI and MCP write tools no longer advertise field values the server
+  rejects.** `create_item`'s `requirementType` enum offered `Interface`,
+  `Constraint` and `Other` — none of which the Requirement item type accepts —
+  while hiding four it does (`Non-Functional`, `Security`, `Usability`,
+  `Business`). The handler copies the value straight into the item, so a
+  request for any of the three failed validation inside `ItemService` and
+  surfaced as a bare `Validation failed` carrying no field name and no
+  accepted values, which an agent cannot self-correct from. Every enum in the
+  write tools is now the Zod enum exported by the item type that validates the
+  write — the derivation `itemType` already used — which also caught task
+  `priority` (advertised lowercase against a capitalized enum, so every value
+  was rejected by `create_item` and written unvalidated by `update_item`) and
+  `changeType` (missing `XCO`, which the UI has always offered). A failed
+  write now names the offending field instead of reporting a bare
+  `Validation failed`
+
+- **`@xyflow/react` pinned to `12.11.2`.** `12.11.4` imports
+  `handleAttributionWarning` from `@xyflow/system`, which its own pinned
+  `@xyflow/system@0.0.80` does not export, so a fresh install resolving the
+  previous `^12.9.3` range could not build the client bundle
+
 - **An item's design can no longer be cleared or reassigned through update.**
   `ItemService.update()` wrote `designId` straight through whenever the key was
   present, so a request carrying `"designId": null` detached the item from its
@@ -99,8 +154,41 @@ its read/write PLM tools also remain.
   whole-object form saves send one — and assigning a design to an item that has
   none is still allowed, being the one direction that adds history rather than
   orphaning it
+- **The requirement derive hierarchy follows revisions.** `parent_requirement_id` names one version row of the parent — whichever was current when the child was derived — and nothing ever re-points it, so once a parent had been revised through a change order both directions inverted: the current parent row returned no children at all, the row it superseded returned every historical row of every child, and a current, Released child reported a superseded, Draft parent. Both reads now resolve through shared lineage primitives in `lib/items/version-lineage.ts`, so the relationship edge table and this pointer column answer to one rule rather than two. Derived numbering also takes the highest `-D<n>` already used rather than the count, which was only ever right while nothing had left the tree
+- **Item links resolve through the route map instead of naive pluralization.** Twelve components built item URLs by appending "s" to the lowercased item type, which is wrong for 7 of the 13 types — Software linked to `/softwares` while the route is `/software`, and change orders, test plans, test cases, work instructions, work orders and physical parts all 404'd the same way. Each carried its own partial copy of the map and invented a different fallback for the types it did not cover: either a route that does not exist, or a parts page rendered against a foreign id, which loads and is therefore harder to notice than a 404. A new `ItemLink` component now carries the "link when routable, plain text otherwise" policy, and the few non-link sites drop their View entry when there is no route. An item type added without a detail page renders unlinked rather than pointing at a parts page
+- **The 3D viewer no longer fetches its environment map from a third-party CDN.** It rendered a drei `<Environment preset>`, which resolves the preset name to an HDR hosted on a public CDN and fetches 1–2 MB at runtime — in an app expected to run air-gapped. The failure also outlived itself: `useLoader` memoizes a rejection exactly as permanently as a result, so one unreachable fetch made every later mount of the viewer re-throw during render, past `<Suspense>` — which catches suspension, not errors — and into the root error boundary, replacing a part's Details page with "Something went wrong" until a full reload. The environment is now a local rig of `<Lightformer>` panels, which renders a cube map in place and leaves no fetch path to fail, and the canvas has its own error boundary so a scene that cannot draw costs the preview rather than the page
+- **A failed file preview reports the error instead of a literal "[object Object]".** The error body was read as `{ error, details }` when the envelope is `{ error: { code, message } }`, and the `details` it surfaced is the internal vault path on a storage miss
+- **Re-seeding no longer downgrades an already-upgraded lifecycle.** `seed-minimal.ts` hand-wrote most of the shipped lifecycles at version 1 with unconditional upserts and only then called the module. A fresh reset came out right, because the module's newer rows won afterwards, but a plain re-seed over an existing database handed an already-upgraded row its old shape while leaving the version number in place — after which the module's upgrade-only gate refused to repair it
+- **A lookup by item number no longer answers from an arbitrary design.**
+  `ItemService.findByNumber` was an unordered `LIMIT 1` with no design scope,
+  and item numbers are not unique — creating an MBOM copies an engineering
+  design's items into a Manufacturing design keeping their numbers, and a usage
+  repeats its definition's number in every design that uses it. Which row came
+  back was whatever the query planner reached first, in practice the
+  manufacturing copy: `get_item_details {"itemNumber": "USV-1900"}` returned the
+  empty revision `-` Draft shadow instead of rev B Released, so an assistant
+  asked what was in the harness answered "nothing", with nothing in the response
+  to suggest it had been handed the wrong row. Matching rows are now put in a
+  total order — engineering before library before manufacturing, then released
+  lineage before drafts, then newest, then id — so the same database always
+  yields the same item; release state is asked of `LifecycleService` rather than
+  compared against a literal. `findByNumber` and `get_item_details` take an
+  optional `designId` (a UUID or design code, as `search_items` already
+  accepts), and where a number is still ambiguous the runners-up come back as
+  `otherMatches`, each named by its design, so an assistant can ask which design
+  was meant instead of guessing silently. Every `get_item_details` response now
+  also carries the design's code, name and type
 
 ### Security
+
+- **Assistant tool errors no longer hand the model the failed SQL and its
+  bound parameters.** Both surfaces that run PLM tools — TanStack AI for the
+  chatbot, the MCP server for external agents — put a thrown message straight
+  into the tool result the model reads, and drizzle's query wrapper _is_ the
+  statement plus every parameter value. Database failures now collapse to a
+  generic sentence and keep their detail in the server log. Not-found,
+  validation and permission messages survive untouched, being exactly what the
+  model needs to correct course
 
 - **An unset `ENCRYPTION_KEY` stores provider API keys as plaintext, and now
   says so.** AI provider keys entered in the admin UI are encrypted with
@@ -111,6 +199,14 @@ its read/write PLM tools also remain.
   key), and the variable is documented in SECURITY.md, both compose files, and
   the env examples. Keys saved before `ENCRYPTION_KEY` was configured stay
   plaintext — re-save them once it is set
+- **Item-number lookups are scoped to the designs the caller can read.**
+  `get_item_details` applied no design scope when resolving an item number, so
+  naming a number was the one way to read an item out of a program you are not a
+  member of — `search_items` has always filtered by accessible design. The
+  by-number path now goes through the same `accessScopeCondition` helper the item
+  lists, search and report execution use, which also keeps the new `otherMatches`
+  list from becoming a way to enumerate items in designs the caller cannot reach.
+  Lookup by an explicit item id is unchanged
 
 ## [0.1.0] - 2026-04-13
 

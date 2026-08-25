@@ -21,14 +21,37 @@ import { DISPLAYABLE_IMAGE_EXTENSIONS } from './image-files'
  * Note this is orthogonal to `fileCategory`. A PDF is categorized by what it
  * contains (`specification`, `reference`, ...) and is never asserted to be a
  * `drawing`; previewability only asks what the bytes are.
+ *
+ * ## SVG
+ *
+ * SVG is the one previewable format that is also a scripting host, so it is
+ * handled unlike the rest. Three things keep it safe, and all three have to
+ * hold:
+ *
+ * 1. **The server never labels it `image/svg+xml`.** These bytes go out as
+ *    `text/plain` like any other text flavour, so a browser that reaches the
+ *    endpoint directly — a pasted URL, a stray `window.open` — renders source,
+ *    not markup. This is the same reason `.md` is not served as `text/markdown`.
+ * 2. **The viewer renders it through an `<img>`**, which the SVG spec puts in
+ *    secure static mode: no script, no external references, no interactivity.
+ * 3. **The viewer's `src` is a `data:` URL, not an object URL** — see
+ *    `SvgViewer.tsx`, which owns that reasoning.
+ *
+ * Removing any one of those three re-opens same-origin script execution, which
+ * is why `preview.test.ts` pins the Content-Type as an invariant.
  */
 
-export type PreviewKind = 'pdf' | 'image' | 'text'
+export type PreviewKind = 'pdf' | 'image' | 'text' | 'svg'
 
 export interface PreviewFormat {
   kind: PreviewKind
   /** Content-Type the server sends when serving these bytes inline. */
   contentType: string
+  /**
+   * Ceiling for this format, when it is lower than `MAX_PREVIEW_BYTES`.
+   * Only formats the *viewer* cannot scale to 50 MB need one.
+   */
+  maxBytes?: number
 }
 
 /**
@@ -39,9 +62,10 @@ export interface PreviewFormat {
  * gallery, and two lists would drift. Only the mapping to a Content-Type lives
  * here, because only this module serves the bytes.
  *
- * SVG and TIFF are excluded there for the same reasons they matter here — SVG
- * is scriptable and these bytes are served inline from the app's own origin,
- * and TIFF has no browser support.
+ * SVG and TIFF are absent from that list and stay absent here. TIFF has no
+ * browser support at all. SVG *is* previewable — but as its own kind, under
+ * `text/plain`, never as an image under `image/svg+xml`; see the SVG section
+ * of this file's header for why that distinction is the whole safety argument.
  */
 const IMAGE_CONTENT_TYPES: Record<string, string> = {
   '.png': 'image/png',
@@ -51,6 +75,17 @@ const IMAGE_CONTENT_TYPES: Record<string, string> = {
   '.bmp': 'image/bmp',
   '.webp': 'image/webp',
 }
+
+/**
+ * Ceiling for SVG, well under the global one.
+ *
+ * The viewer hands the markup to an `<img>` as a percent-encoded `data:` URL,
+ * which is roughly twice the size of the source and has to be built as a single
+ * JavaScript string. A hand- or tool-authored drawing is a few hundred KB;
+ * anything past this is a traced bitmap that would render badly anyway, so it
+ * is offered as a download instead of freezing the tab.
+ */
+export const MAX_SVG_PREVIEW_BYTES = 8 * 1024 * 1024
 
 const PREVIEW_FORMATS: Record<string, PreviewFormat> = {
   pdf: { kind: 'pdf', contentType: 'application/pdf' },
@@ -72,6 +107,13 @@ const PREVIEW_FORMATS: Record<string, PreviewFormat> = {
   md: { kind: 'text', contentType: 'text/plain; charset=utf-8' },
   csv: { kind: 'text', contentType: 'text/plain; charset=utf-8' },
   log: { kind: 'text', contentType: 'text/plain; charset=utf-8' },
+  // Text/plain for the same reason as the flavours above, and here it is load
+  // bearing rather than tidy: see the SVG section of this file's header.
+  svg: {
+    kind: 'svg',
+    contentType: 'text/plain; charset=utf-8',
+    maxBytes: MAX_SVG_PREVIEW_BYTES,
+  },
 }
 
 /** Every extension the viewer can render, for error messages and docs. */
@@ -106,10 +148,16 @@ export function previewKindFor(fileName: string): PreviewKind | null {
   return previewFormatFor(fileName)?.kind ?? null
 }
 
+/** The size ceiling that applies to a format — its own, or the global one. */
+export function maxPreviewBytesFor(format: PreviewFormat): number {
+  return Math.min(format.maxBytes ?? MAX_PREVIEW_BYTES, MAX_PREVIEW_BYTES)
+}
+
 /**
  * Whether the Preview action should be offered for a file. Size is checked
  * here as well as server-side so the UI never opens a viewer onto a 415.
  */
 export function isPreviewable(fileName: string, fileSize: number): boolean {
-  return previewFormatFor(fileName) !== null && fileSize <= MAX_PREVIEW_BYTES
+  const format = previewFormatFor(fileName)
+  return format !== null && fileSize <= maxPreviewBytesFor(format)
 }

@@ -190,7 +190,7 @@ signal for a couple of runner-minutes.
 
 `noUncheckedIndexedAccess` **must** stay on in `tsconfig.json`. `@tanstack/eslint-config` sets `project: true`, which resolves to the nearest file named `tsconfig.json`; turning it off there makes every legitimate `if (arr[0])` guard a `no-unnecessary-condition` warning — measured at **266 lint problems**, which `--max-warnings 0` rejects.
 
-**History.** This was a two-tier ratchet (`scripts/typecheck.mjs`, `tsconfig.ci.json`) while the counts came down: CORE (nUIA off) reached zero over PRs #32–#44, then STRICT (nUIA on) went 1860 → 0 in one PR. Both files are now deleted. A few notes from that work, since the same shapes will recur:
+**History.** This was a two-tier ratchet (`scripts/typecheck.mjs`, `tsconfig.ci.json`) while the counts came down: CORE (nUIA off) reached zero over a run of pull requests, then STRICT (nUIA on) went 1860 → 0 in one. Both files are now deleted. A few notes from that work, since the same shapes will recur:
 
 - `db.insert(...).returning()` destructures use `takeFirst()` from `@/lib/db/take-first`, which throws on an empty result rather than letting `undefined` propagate. Do **not** use it on `.update()`/`.delete()` with a `.where()` — those can legitimately match nothing, so guard and throw `NotFoundError` instead.
 - The dominant bug-shape was `if (rows.at(0)) { const x = rows[0] }` — guarding a parallel expression rather than the binding, so nothing narrows. Bind first, then guard.
@@ -603,7 +603,7 @@ const job = await JobService.submit(
 - `packages/*/src/**/*.test.ts` - Unit/integration tests (co-located)
 - `tests/e2e/` - Playwright E2E tests
 - **Unit tests**: Vitest with `@testing-library/react` for components
-- **Service tests**: Mock database transactions with rollback
+- **Service tests**: Run against a real Postgres via `TestDatabase` (most suites); mocking is the rare exception
 - **E2E tests**: Playwright with page object model pattern
 - **CI/CD**: GitHub Actions for automated testing
 - Key utilities: `TestDatabase`, `TestDataBuilder`, `renderWithProviders()`, `MockVaultStorage`
@@ -626,7 +626,7 @@ If a file passes none of the three gates, skip tests. UI components, API routes 
 
 Claude may run tests automatically after meaningful changes. Prefer scoped runs:
 
-- After a service change: `npx vitest run src/lib/services/ThatService.test.ts`
+- After a service change: `npx vitest run packages/core/src/lib/services/ThatService.test.ts`
 - While iterating: `/test-ready --scoped` (lint + tests for changed files only)
 - Before a commit: `/test-ready` (lint + full unit suite + tier-1 E2E if UI touched)
 - Skip running tests for trivial changes (doc edits, styling, obviously inert refactors)
@@ -825,10 +825,10 @@ Server-only code (database queries via `postgres` package) is being pulled into 
 1. **Move shared types to separate files** without database imports:
 
    ```typescript
-   // BAD: src/lib/db/schema/config.ts imports drizzle-orm
+   // BAD: packages/core/src/lib/db/schema/config.ts imports drizzle-orm
    import type { RuntimeItemTypeConfig } from '../db/schema/config'
 
-   // GOOD: src/lib/items/types/runtime-config.ts has no db imports
+   // GOOD: packages/core/src/lib/items/types/runtime-config.ts has no db imports
    import type { RuntimeItemTypeConfig } from './types/runtime-config'
    ```
 

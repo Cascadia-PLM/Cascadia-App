@@ -10,10 +10,13 @@ import {
   ValidationError,
 } from '../../errors'
 import { isUniqueViolation } from '../../errors/pg'
-import { notDeleted } from '../../db/filters'
 import { resolveEdgeGuardEnd } from '../traceability-relationships'
 import { BranchService } from '../../services/BranchService'
-import { RevisionService } from '../../services/RevisionService'
+import {
+  findSupersededRows,
+  followSupersededRows,
+  resolveInheritedLineage,
+} from '../version-lineage'
 import { CommitService } from '../../services/CommitService'
 import { ThreadCacheService } from '../../services/ThreadCacheService'
 import type { PersistedItem } from '../types/base'
@@ -87,7 +90,7 @@ export class ItemRelationshipService {
 
     const relationships = await db.select().from(itemRelationships).where(query)
 
-    const currentByStaleTarget = await this.followSupersededTargets(
+    const currentByStaleTarget = await followSupersededRows(
       relationships.map((rel) => rel.targetId),
     )
 
@@ -107,39 +110,6 @@ export class ItemRelationshipService {
   }
 
   /**
-   * Which of `ids` name a row a release left behind.
-   *
-   * The one predicate behind every version-aware relationship read here:
-   * not its master's current row, and not a working copy. Working revisions
-   * are excluded rather than "everything that is not current" because a line
-   * pointing at a working copy is a branch's own edit and must be left
-   * exactly where it points.
-   */
-  private static async findSupersededRows(
-    ids: Array<string>,
-  ): Promise<Array<{ id: string; masterId: string }>> {
-    const unique = [...new Set(ids)]
-    if (unique.length === 0) return []
-
-    const rows = await db
-      .select({
-        id: items.id,
-        masterId: items.masterId,
-        isCurrent: items.isCurrent,
-        revision: items.revision,
-      })
-      .from(items)
-      .where(inArray(items.id, unique))
-
-    return rows
-      .filter(
-        (row) =>
-          !row.isCurrent && !RevisionService.isWorkingRevision(row.revision),
-      )
-      .map((row) => ({ id: row.id, masterId: row.masterId }))
-  }
-
-  /**
    * Relationships of one type pointing AT each of `itemIds`, keyed by the item
    * that answers for them.
    *
@@ -150,7 +120,7 @@ export class ItemRelationshipService {
    *   a merge rebuilds only the OUTGOING edges of the items the change order
    *   touched. A test case that verifies a requirement therefore goes on
    *   naming the revision the release superseded, so the lineage is walked
-   *   backwards (`resolveIncomingLinkLineage`) to find it.
+   *   backwards (`resolveInheritedLineage`) to find it.
    * - **Links a revision left behind.** An item's outgoing edges are copied
    *   onto its working copy, so after PN-001 is revised BOTH rev A and rev B
    *   claim to satisfy the requirement, and the reader listed the same part
@@ -177,7 +147,7 @@ export class ItemRelationshipService {
     for (const id of named) byOwner.set(id, [])
     if (named.length === 0) return byOwner
 
-    const lineage = await this.resolveIncomingLinkLineage(named)
+    const lineage = await resolveInheritedLineage(named)
 
     const rows = await db
       .select()
@@ -191,7 +161,7 @@ export class ItemRelationshipService {
     if (rows.length === 0) return byOwner
 
     const leftBehind = new Set(
-      (await this.findSupersededRows(rows.map((rel) => rel.sourceId))).map(
+      (await findSupersededRows(rows.map((rel) => rel.sourceId))).map(
         (row) => row.id,
       ),
     )
@@ -243,7 +213,7 @@ export class ItemRelationshipService {
       )
     if (rows.length === 0) return bySource
 
-    const redirects = await this.followSupersededTargets(
+    const redirects = await followSupersededRows(
       rows.map((rel) => rel.targetId),
     )
 
@@ -253,139 +223,6 @@ export class ItemRelationshipService {
     }
 
     return bySource
-  }
-
-  /**
-   * Map any target id that names a *superseded* revision onto the revision
-   * that replaced it.
-   *
-   * A relationship names one item version, and a merge re-points only the
-   * lines owned by the items the change order touched. An assembly the change
-   * order never touched therefore keeps naming the row the release
-   * superseded, and its BOM reads back a revision behind — showing the child
-   * as `Superseded` and linking to the row nobody should be working from.
-   *
-   * Only superseded rows are followed. A line pointing at a *working* copy is
-   * a branch's own edit and must be left exactly where it points, which is
-   * why the working revision is excluded rather than every non-current row.
-   */
-  private static async followSupersededTargets(
-    targetIds: Array<string>,
-  ): Promise<Map<string, string>> {
-    const redirects = new Map<string, string>()
-    const uniqueTargetIds = [...new Set(targetIds)]
-    if (uniqueTargetIds.length === 0) return redirects
-
-    const stale = await this.findSupersededRows(uniqueTargetIds)
-    if (stale.length === 0) return redirects
-
-    const currentRows = await db
-      .select({ id: items.id, masterId: items.masterId })
-      .from(items)
-      .where(
-        and(
-          inArray(
-            items.masterId,
-            stale.map((row) => row.masterId),
-          ),
-          eq(items.isCurrent, true),
-          notDeleted(),
-        ),
-      )
-
-    const currentByMaster = new Map(
-      currentRows.map((row) => [row.masterId, row.id] as const),
-    )
-    for (const row of stale) {
-      const current = currentByMaster.get(row.masterId)
-      if (current && current !== row.id) {
-        redirects.set(row.id, current)
-      }
-    }
-
-    return redirects
-  }
-
-  /**
-   * The rows whose *incoming* relationships belong to each of `itemIds`,
-   * mapped back to the item that answers for them.
-   *
-   * `followSupersededTargets` is the same fact read forwards. An edge names
-   * one item version, and a merge re-points only the lines owned by the items
-   * the change order touched — so when an ECO revises a requirement, the test
-   * cases and parts that pointed at it keep naming the revision it
-   * superseded. Reading incoming links by exact id therefore loses them: the
-   * new revision reports zero verifying tests and coverage reads 0%, for a
-   * requirement whose V&V never changed.
-   *
-   * Expansion runs one way only, which is what keeps it safe:
-   *
-   * - a **current** row inherits the superseded rows behind it;
-   * - a **working copy** inherits the released lineage it was cut from, so a
-   *   requirement opened inside an ECO still shows the coverage it arrived
-   *   with;
-   * - a **superseded** row names only itself, so reading an old revision
-   *   still reports what that revision actually had.
-   *
-   * Nothing ever inherits from a working revision. That is the branch
-   * isolation guarantee: a link recorded inside one ECO stays invisible to
-   * main and to every other branch until the merge promotes it.
-   *
-   * An id passed in always answers for itself, so a caller that names two
-   * revisions of one master gets each one's own edges rather than one
-   * swallowing the other.
-   */
-  private static async resolveIncomingLinkLineage(
-    itemIds: Array<string>,
-  ): Promise<Map<string, string>> {
-    const lineage = new Map<string, string>()
-    const named = [...new Set(itemIds)]
-    if (named.length === 0) return lineage
-    for (const id of named) lineage.set(id, id)
-
-    const namedRows = await db
-      .select({
-        id: items.id,
-        masterId: items.masterId,
-        isCurrent: items.isCurrent,
-        revision: items.revision,
-      })
-      .from(items)
-      .where(inArray(items.id, named))
-
-    // The complement of `findSupersededRows`: a row a release left behind
-    // inherits nothing, so an old revision still reports what it had.
-    const inheritors = namedRows.filter(
-      (row) => row.isCurrent || RevisionService.isWorkingRevision(row.revision),
-    )
-    if (inheritors.length === 0) return lineage
-
-    const inheritorByMaster = new Map(
-      inheritors.map((row) => [row.masterId, row.id] as const),
-    )
-
-    const lineageRows = await db
-      .select({
-        id: items.id,
-        masterId: items.masterId,
-        revision: items.revision,
-      })
-      .from(items)
-      .where(
-        and(
-          inArray(items.masterId, [...inheritorByMaster.keys()]),
-          notDeleted(),
-        ),
-      )
-
-    for (const row of lineageRows) {
-      if (lineage.has(row.id)) continue
-      if (RevisionService.isWorkingRevision(row.revision)) continue
-      const inheritor = inheritorByMaster.get(row.masterId)
-      if (inheritor) lineage.set(row.id, inheritor)
-    }
-
-    return lineage
   }
 
   /**

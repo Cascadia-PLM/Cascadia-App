@@ -355,9 +355,8 @@ complete with produced serials → verify genealogy page and qualification rollu
 
 ## 8. Implementation record
 
-Shipped as one PR per phase (#12 proposal, #13 Phase 0, #14 Phase 1, #15
-Phase 2, #16 Phase 2.5, #17 Phase 3, #18 Phase 4, Phase 5 in the closing PR).
-Deviations from the plan as written:
+Shipped as one pull request per phase — the proposal, then Phases 0 through 4,
+with Phase 5 folded into the closing one. Deviations from the plan as written:
 
 - **Lifecycle ids:** `…112` was already claimed by ChangeOrderService.test.ts
   as a private test workflow id; PhysicalPart took `…113`, WorkOrder `…114`.

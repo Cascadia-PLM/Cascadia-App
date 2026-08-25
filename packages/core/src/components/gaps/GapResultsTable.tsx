@@ -2,7 +2,6 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useMemo, useState } from 'react'
-import { Link } from '@tanstack/react-router'
 import {
   Cog,
   ExternalLink,
@@ -21,6 +20,7 @@ import type { ThreadDomain } from '@/lib/services/ThreadService'
 import { DataGrid } from '@/components/ui/DataGrid'
 import { Badge, Checkbox } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { ItemLink } from '@/components/items/ItemLink'
 
 interface GapResultsTableProps {
   gaps: Array<Gap>
@@ -129,22 +129,23 @@ export function GapResultsTable({
         accessorFn: (row) => row.itemNumber,
         cell: ({ row }) => {
           const gap = row.original
-          const itemUrl = getItemUrl(gap.itemType, gap.itemId)
           return (
             <div className="flex items-center gap-2">
-              <Link
-                to={itemUrl}
+              <ItemLink
+                itemType={gap.itemType}
+                itemId={gap.itemId}
                 className="text-cyan-600 dark:text-cyan-400 hover:underline font-medium"
               >
                 {gap.itemNumber}
-              </Link>
-              <Link
-                to={itemUrl}
+              </ItemLink>
+              <ItemLink
+                itemType={gap.itemType}
+                itemId={gap.itemId}
                 target="_blank"
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-400"
               >
                 <ExternalLink className="h-3 w-3" />
-              </Link>
+              </ItemLink>
             </div>
           )
         },
@@ -337,24 +338,4 @@ export function GapResultsTable({
       />
     </div>
   )
-}
-
-/**
- * Get the URL for an item based on its type.
- */
-function getItemUrl(itemType: string, itemId: string): string {
-  switch (itemType) {
-    case 'Part':
-      return `/parts/${itemId}`
-    case 'Requirement':
-      return `/requirements/${itemId}`
-    case 'Document':
-      return `/documents/${itemId}`
-    case 'TestCase':
-      return `/test-cases/${itemId}`
-    case 'ChangeOrder':
-      return `/change-orders/${itemId}`
-    default:
-      return `/items/${itemId}`
-  }
 }

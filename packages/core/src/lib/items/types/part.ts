@@ -5,12 +5,22 @@ import { z } from 'zod'
 import { baseItemSchema, commonStates } from './base'
 import type { BaseItem } from './base'
 
+// Part classification. Exported as a schema so the AI/MCP tool schemas can
+// advertise exactly the values this type accepts (see requirement.ts).
+export const partTypeSchema = z.enum([
+  'Manufacture',
+  'Purchase',
+  'Software',
+  'Phantom',
+])
+export type PartType = z.infer<typeof partTypeSchema>
+
 // Part-specific interface
 export interface Part extends BaseItem {
   itemType: 'Part'
   designId: string // Required for Parts - links to versioning system
   description?: string
-  partType?: 'Manufacture' | 'Purchase' | 'Software' | 'Phantom'
+  partType?: PartType
   trackingMode?: 'none' | 'lot' | 'serial'
   material?: string
   weight?: string
@@ -29,9 +39,7 @@ export const partSchema = baseItemSchema.extend({
   itemType: z.literal('Part'),
   designId: z.string().uuid({ message: 'Design is required' }), // Required for Parts
   description: z.string().max(5000).optional(),
-  partType: z
-    .enum(['Manufacture', 'Purchase', 'Software', 'Phantom'])
-    .optional(),
+  partType: partTypeSchema.optional(),
   trackingMode: z.enum(['none', 'lot', 'serial']).optional(),
   material: z.string().max(100).optional(),
   weight: z.string().optional(),

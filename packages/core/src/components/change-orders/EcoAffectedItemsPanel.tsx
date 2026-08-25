@@ -42,7 +42,7 @@ import {
   GRAPH_EDGE_COLORS,
   directionalMarker,
 } from '@/components/graph/edgeStyles'
-import { getItemRoute } from '@/components/bom/helpers'
+import { getItemDetailPath } from '@/lib/items/item-type-ui'
 import {
   changeOrderAffectedItemsQuery,
   changeOrderDesignsQuery,
@@ -805,16 +805,15 @@ export function EcoAffectedItemsPanel({
               const branchSuffix = design?.branchId
                 ? `?branch=${design.branchId}`
                 : ''
+              const detailPath = details?.id
+                ? getItemDetailPath(details.itemType, details.id)
+                : null
               return (
                 <>
-                  {details?.id && (
+                  {detailPath && (
                     <ContextMenuItem
                       onClick={() =>
-                        window.open(
-                          getItemRoute(details.itemType, details.id!) +
-                            branchSuffix,
-                          '_blank',
-                        )
+                        window.open(detailPath + branchSuffix, '_blank')
                       }
                     >
                       <Eye className="mr-2 h-4 w-4" />

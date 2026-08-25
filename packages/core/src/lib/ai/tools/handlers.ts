@@ -10,6 +10,7 @@
 
 import { withPermissionAndAudit } from './permission-wrapper'
 import type { ToolContext } from './permission-wrapper'
+import type { ItemNumberMatch } from '@/lib/items/services/ItemService'
 import { ImpactAssessmentService } from '@/lib/items/services/ImpactAssessmentService'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
@@ -83,6 +84,7 @@ interface GetItemDetailsInput {
   id?: string
   itemNumber?: string
   revision?: string
+  designId?: string
 }
 
 interface GetBomInput {
@@ -253,13 +255,35 @@ export const searchItemsHandler = withPermissionAndAudit(
 export const getItemDetailsHandler = withPermissionAndAudit(
   'get_item_details',
   { resource: 'parts', action: 'read' },
-  async (input: GetItemDetailsInput, _context: ToolContext) => {
+  async (input: GetItemDetailsInput, context: ToolContext) => {
     let item
+    // Rows sharing the requested item number that this call did not return.
+    // An MBOM copies its EBOM's item numbers verbatim, so a number-only
+    // lookup is routinely ambiguous — and answering as though it were not is
+    // how an agent ends up describing the manufacturing shadow of a part.
+    let otherMatches: Array<ItemNumberMatch> = []
 
     if (input.id) {
       item = await ItemService.findById(input.id)
     } else if (input.itemNumber) {
-      item = await ItemService.findByNumber(input.itemNumber, input.revision)
+      const matches = await ItemService.findMatchesByNumber(
+        input.itemNumber,
+        input.revision,
+        {
+          // Accepts a UUID or a design code, like search_items.
+          designId: await resolveDesignId(input.designId),
+          // Scope by design the same way search_items does, so a number
+          // lookup cannot reach — or disclose — an inaccessible design.
+          designIds: await AccessControlService.getAccessibleDesignIds(
+            context.userId,
+          ),
+        },
+      )
+      const best = matches.at(0)
+      if (best) {
+        item = await ItemService.findById(best.id)
+        otherMatches = matches.slice(1)
+      }
     } else {
       throw new Error('Must provide either id or itemNumber')
     }
@@ -289,6 +313,11 @@ export const getItemDetailsHandler = withPermissionAndAudit(
       ...typeSpecificData
     } = item
 
+    // Name the design on every path, including lookup by id: which design a
+    // row lives in is what tells the caller whether it has the engineering
+    // item or a manufacturing copy of it.
+    const design = designId ? await DesignService.getById(designId) : null
+
     return {
       id,
       masterId,
@@ -298,12 +327,30 @@ export const getItemDetailsHandler = withPermissionAndAudit(
       state,
       itemType,
       designId: designId ?? null,
+      designCode: design?.code ?? null,
+      designName: design?.name ?? null,
+      designType: design?.designType ?? null,
       createdAt: createdAt.toISOString(),
       createdBy,
       modifiedAt: modifiedAt.toISOString(),
       modifiedBy,
       typeSpecificData:
         Object.keys(typeSpecificData).length > 0 ? typeSpecificData : undefined,
+      otherMatches:
+        otherMatches.length > 0
+          ? otherMatches.map((match) => ({
+              id: match.id,
+              itemNumber: match.itemNumber,
+              name: match.name,
+              revision: match.revision,
+              state: match.state,
+              itemType: match.itemType,
+              designId: match.designId,
+              designCode: match.designCode,
+              designName: match.designName,
+              designType: match.designType,
+            }))
+          : undefined,
     }
   },
 )
@@ -522,9 +569,10 @@ export const analyzeChangeImpactHandler = withPermissionAndAudit(
       Array<{ id: string; itemNumber: string; state: string }> | undefined
     if (includeRelatedChanges) {
       const impactedItemIds = whereUsed.map((node) => node.itemId)
-      // Pass empty string for currentChangeOrderId since we're not in an ECO context
+      // No current ECO to exclude — the caller is asking about the item, not
+      // from inside a change order, so every open ECO touching it is relevant.
       const relatedChanges = await ImpactAssessmentService.findRelatedChanges(
-        '',
+        undefined,
         [input.itemId, ...impactedItemIds],
       )
       relatedChangeOrders = relatedChanges.map((co) => ({

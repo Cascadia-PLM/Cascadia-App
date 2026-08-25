@@ -12,6 +12,8 @@
  * error underneath rather than string-matching the wrapper.
  */
 
+import { AppError } from './AppError'
+
 /**
  * The fields a driver sets on a Postgres error.
  *
@@ -68,6 +70,52 @@ export function asPostgresError(error: unknown): PostgresDriverError | null {
     current = (current as { cause?: unknown }).cause
   }
   return null
+}
+
+/** A SQLSTATE code: exactly five alphanumerics, as in `23505` or `22P02`. */
+const SQLSTATE = /^[0-9A-Z]{5}$/
+
+/**
+ * Whether `error` came out of the database layer.
+ *
+ * Two shapes qualify: drizzle's query wrapper, whose `message` *is* the failed
+ * SQL plus its bound parameters, and a driver error anywhere under it. The
+ * wrapper is recognised by its own fields (`query` text + `params` array)
+ * rather than by importing `DrizzleQueryError`, which would pull drizzle into
+ * every module that only wants to ask this question.
+ *
+ * `AppError` is excluded outright, and the driver's `code` is narrowed to a
+ * SQLSTATE, because `asPostgresError` matches anything carrying a string
+ * `code` — which every `AppError` does. Without both guards this would call
+ * `NotFoundError` a database failure and redact the one message the caller
+ * needed.
+ */
+export function isDatabaseError(error: unknown): boolean {
+  if (error instanceof AppError) return false
+  if (
+    error instanceof Error &&
+    typeof (error as { query?: unknown }).query === 'string' &&
+    Array.isArray((error as { params?: unknown }).params)
+  ) {
+    return true
+  }
+  const code = asPostgresError(error)?.code
+  return code !== undefined && SQLSTATE.test(code)
+}
+
+/**
+ * An error message safe to hand to a client or a model.
+ *
+ * Database failures describe the *statement*, not the request: the drizzle
+ * wrapper spells out the SQL and every bound parameter, and the driver error
+ * beneath it names columns and types. Neither is actionable by the caller, so
+ * both collapse to `fallback`. Everything else keeps its own message — service
+ * errors (`NotFoundError`, `ValidationError`, permission denials) are written
+ * to be read, and hiding them would make the caller worse off.
+ */
+export function safeErrorMessage(error: unknown, fallback: string): string {
+  if (!(error instanceof Error) || isDatabaseError(error)) return fallback
+  return error.message
 }
 
 /**

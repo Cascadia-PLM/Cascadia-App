@@ -142,13 +142,24 @@ Returns an array of matching items with `id`, `itemNumber`, `name`, `revision`, 
 
 Get complete details for a specific item by ID or item number.
 
-| Parameter    | Type   | Description                                     |
-| ------------ | ------ | ----------------------------------------------- |
-| `id`         | string | Item UUID                                       |
-| `itemNumber` | string | Item number (e.g., `P-1001`)                    |
-| `revision`   | string | Revision letter (optional, defaults to current) |
+| Parameter    | Type   | Description                                             |
+| ------------ | ------ | ------------------------------------------------------- |
+| `id`         | string | Item UUID                                               |
+| `itemNumber` | string | Item number (e.g., `P-1001`)                            |
+| `revision`   | string | Revision letter (optional, defaults to current)         |
+| `designId`   | string | Design ID or code the item number belongs to (optional) |
 
-Returns all item fields including type-specific data (e.g., `material`, `cost` for Parts).
+Returns all item fields including type-specific data (e.g., `material`, `cost` for Parts), plus
+`designCode`, `designName` and `designType` naming the design the item lives in.
+
+**Item numbers are not unique.** Creating an MBOM copies an engineering design's items into a
+manufacturing design with their numbers unchanged, and a usage repeats its definition's number in
+every design that uses it -- so a lookup by number alone can match several items. Pass `designId`
+when you know which design you mean. Without one the engineering item wins over its manufacturing
+copy, released lineage wins over drafts, and the runners-up come back in `otherMatches` (id,
+itemNumber, name, revision, state, itemType, and the design's id, code, name and type) so the
+assistant can ask rather than answer from the wrong row. Lookups by number see only the designs
+the user can access, the same way `search_items` does.
 
 ### get_bom
 
@@ -212,18 +223,25 @@ Write tools modify PLM data. Every write operation goes through a confirmation f
 
 ### create_item
 
-Create a new Part, Document, Requirement, or Task.
+Create a new item of any registered type except ChangeOrder (which has its own tool).
 
-| Parameter         | Type   | Description                                                                         |
-| ----------------- | ------ | ----------------------------------------------------------------------------------- |
-| `itemType`        | enum   | `Part`, `Document`, `Requirement`, `Task`                                           |
-| `name`            | string | Item name                                                                           |
-| `designId`        | string | Design ID or code (required for Part/Document/Requirement)                          |
-| `changeOrderId`   | string | ECO for post-release designs                                                        |
-| `partType`        | enum   | `Manufacture`, `Purchase`, `Software`, `Phantom` (Parts only)                       |
-| `material`        | string | Material specification (Parts only)                                                 |
-| `priority`        | enum   | `low`, `medium`, `high`, `critical` (Tasks only)                                    |
-| `requirementType` | enum   | `Functional`, `Performance`, `Interface`, `Constraint`, `Other` (Requirements only) |
+| Parameter         | Type   | Description                                                                                            |
+| ----------------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| `itemType`        | enum   | Every registered item type except `ChangeOrder` — derived from `ITEM_TYPE_DEFINITIONS`                 |
+| `name`            | string | Item name                                                                                              |
+| `designId`        | string | Design ID or code (required for Part/Document/Requirement)                                             |
+| `changeOrderId`   | string | ECO for post-release designs                                                                           |
+| `partType`        | enum   | `Manufacture`, `Purchase`, `Software`, `Phantom` (Parts only)                                          |
+| `material`        | string | Material specification (Parts only)                                                                    |
+| `priority`        | enum   | `Low`, `Medium`, `High`, `Critical` (Tasks only)                                                       |
+| `requirementType` | enum   | `Functional`, `Non-Functional`, `Performance`, `Security`, `Usability`, `Business` (Requirements only) |
+
+The enum values above are not maintained by hand: each one is the Zod enum
+exported by the item type that validates the write (`partTypeSchema`,
+`taskPrioritySchema`, `requirementTypeSchema`), reused directly in the tool
+schema. A tool must never advertise a value its item type rejects — the write
+then fails deep inside `ItemService` and the model has no way to tell which
+argument was wrong.
 
 If the target design has released items and no `changeOrderId` is provided, the tool suggests creating an ECO first rather than failing silently.
 
@@ -241,7 +259,8 @@ Transition items or ECOs through workflow states. For ECOs, uses `ChangeOrderSer
 
 ### create_change_order
 
-Create a new Engineering Change Order. Supports ECO, ECN, Deviation, and MCO change types. On creation:
+Create a new Engineering Change Order. Change types come from
+`changeOrderTypeSchema` (ECO, ECN, Deviation, MCO, XCO). On creation:
 
 1. Creates the change order item in Draft state
 2. Auto-starts the workflow
@@ -292,6 +311,19 @@ When a write operation targets a released design without an ECO, the tool does n
 > "The design 'Widget Assembly Prototype' has released items and requires an ECO to add new items. Would you like me to create an ECO first?"
 
 The AI then offers to create the ECO before retrying the original operation.
+
+### Failure Responses
+
+A write tool reports failures in its own response (`{ success: false, error }`),
+never as a thrown protocol error — so the `error` string is the only diagnostic
+the model gets. `ValidationError` carries the offending fields in `fieldErrors`
+and leaves `message` as the bare string "Validation failed"; the handlers fold
+those fields back in, so a rejected write reads:
+
+> `Validation failed: designId: Design is required`
+
+rather than "Validation failed". Without the field name and the accepted
+values, a model cannot self-correct and simply repeats the rejected call.
 
 ---
 
@@ -409,7 +441,7 @@ The `context` object carries `userId`, `sessionId`, `programId`, and `designId` 
 | 6   | `offer_navigation`              | Read     | None                   | Generate navigation URL for UI button         |
 | 7   | `search_programs`               | Read     | `programs:read`        | Search programs by name, code, customer       |
 | 8   | `search_designs`                | Read     | `designs:read`         | Search designs by name, code, program         |
-| 9   | `create_item`                   | Write    | `parts:create`         | Create Part, Document, Requirement, or Task   |
+| 9   | `create_item`                   | Write    | `<type>:create`        | Create any item type except ChangeOrder       |
 | 10  | `update_item`                   | Write    | `parts:update`         | Update item properties                        |
 | 11  | `create_relationship`           | Write    | `parts:update`         | Create BOM, Document, or Affects relationship |
 | 12  | `transition_item_state`         | Write    | `change_orders:update` | Transition workflow state                     |

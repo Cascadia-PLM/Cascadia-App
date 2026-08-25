@@ -41,7 +41,8 @@ export function useItemPreviewableFiles(
 
   // Images are previewable *and* gallery-able. `documents` excludes them so a
   // caller that already offers a gallery can ask "is there anything the
-  // gallery would not already show?" and avoid two tabs doing one job.
+  // gallery would not already show?" and avoid two tabs doing one job. SVG is
+  // a separate kind and stays in: the gallery does not render it.
   const documents = previewable.filter(
     (file) => previewKindFor(file.originalFileName) !== 'image',
   )
@@ -124,7 +125,7 @@ export function ItemFilePreviewPanel({
             No previewable files attached
           </p>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-500">
-            Attach a PDF, image, or text file to read it here.
+            Attach a PDF, drawing, image, or text file to read it here.
           </p>
         </CardContent>
       </Card>

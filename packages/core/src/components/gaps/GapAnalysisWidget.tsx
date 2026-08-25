@@ -2,7 +2,6 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useEffect, useState } from 'react'
-import { Link } from '@tanstack/react-router'
 import {
   AlertCircle,
   CheckCircle2,
@@ -26,6 +25,7 @@ import {
 } from '@/components/ui'
 import { apiFetch } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
+import { ItemLink } from '@/components/items/ItemLink'
 
 interface GapAnalysisWidgetProps {
   designId: string
@@ -264,11 +264,10 @@ export function GapAnalysisWidget({
  * Single gap item in the list.
  */
 function GapListItem({ gap }: { gap: Gap }) {
-  const itemUrl = getItemUrl(gap.itemType, gap.itemId)
-
   return (
-    <Link
-      to={itemUrl}
+    <ItemLink
+      itemType={gap.itemType}
+      itemId={gap.itemId}
       className="block p-2 rounded hover:bg-slate-50 dark:hover:bg-slate-900 text-sm"
     >
       <div className="flex items-center justify-between">
@@ -290,26 +289,6 @@ function GapListItem({ gap }: { gap: Gap }) {
       {gap.itemName && (
         <p className="text-slate-500 text-xs truncate mt-0.5">{gap.itemName}</p>
       )}
-    </Link>
+    </ItemLink>
   )
-}
-
-/**
- * Get the URL for an item based on its type.
- */
-function getItemUrl(itemType: string, itemId: string): string {
-  switch (itemType) {
-    case 'Part':
-      return `/parts/${itemId}`
-    case 'Requirement':
-      return `/requirements/${itemId}`
-    case 'Document':
-      return `/documents/${itemId}`
-    case 'TestCase':
-      return `/test-cases/${itemId}`
-    case 'ChangeOrder':
-      return `/change-orders/${itemId}`
-    default:
-      return `/items/${itemId}`
-  }
 }

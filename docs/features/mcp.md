@@ -124,7 +124,7 @@ Claude Code registration (`.mcp.json` in the checkout):
   "mcpServers": {
     "cascadia-dev": {
       "command": "npx",
-      "args": ["tsx", "src/mcp-dev-server.ts"]
+      "args": ["tsx", "packages/core/src/mcp-dev-server.ts"]
     }
   }
 }
@@ -132,17 +132,17 @@ Claude Code registration (`.mcp.json` in the checkout):
 
 ### Tools
 
-| Tool              | Purpose                                                                                    |
-| ----------------- | ------------------------------------------------------------------------------------------ |
-| `instance_status` | Env flag presence (never secret values), licensed packages, DB connectivity, row counts    |
-| `list_item_types` | Registered item types with labels, tables, lifecycle state, runtime overrides              |
-| `list_packages`   | Optional licensed packages and enabled state (`CASCADIA_PACKAGES`)                         |
-| `list_roles`      | Built-in role definitions plus the roles present in the database                           |
-| `search_docs`     | Full-text search across `docs/**/*.md`, `CLAUDE.md`, `cascadia-feature-list.md`            |
-| `read_doc`        | Read one doc by repo-relative path (restricted to the doc tree)                            |
-| `db_push`         | `drizzle-kit push` (the pre-1.0 schema path); `force=true` to auto-approve destructive ops |
-| `db_seed`         | Run a seed script: `minimal`, `catalog`, `tools`, or `demo`                                |
-| `db_reset`        | **Destructive.** Truncate all tables; requires `confirm="RESET"`, optional reseed          |
+| Tool              | Purpose                                                                                   |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| `instance_status` | Env flag presence (never secret values), licensed packages, DB connectivity, row counts   |
+| `list_item_types` | Registered item types with labels, tables, lifecycle state, runtime overrides             |
+| `list_packages`   | Optional licensed packages and enabled state (`CASCADIA_PACKAGES`)                        |
+| `list_roles`      | Built-in role definitions plus the roles present in the database                          |
+| `search_docs`     | Full-text search across `docs/**/*.md`, `CLAUDE.md`, `cascadia-feature-list.md`           |
+| `read_doc`        | Read one doc by repo-relative path (restricted to the doc tree)                           |
+| `db_push`         | `npm run db:push` (the pre-1.0 schema path); `force=true` to auto-approve destructive ops |
+| `db_seed`         | Run a seed script: `minimal`, `catalog`, `tools`, or `demo`                               |
+| `db_reset`        | **Destructive.** Truncate all tables; requires `confirm="RESET"`, optional reseed         |
 
 The server starts without `DATABASE_URL` (database imports are lazy), so it
 can answer docs/configuration questions while an instance is still being
@@ -152,6 +152,14 @@ failing.
 The stdio protocol stream owns stdout, so the entry point sets
 `LOG_DESTINATION=stderr`, which `packages/core/src/lib/logging/logger.ts` honors for all
 pino output.
+
+Paths — `docs/`, the root markdown files, and the `package.json` scripts the
+`db_*` tools run — resolve against the workspace root, which
+`packages/core/src/lib/mcp/repo-root.ts` finds by walking up to the manifest
+declaring `workspaces`. The entry point loads that root's `.env` before any
+tool reads the environment, so `instance_status` reports the same
+configuration the database connection actually uses, whatever working
+directory the MCP client chose.
 
 ---
 
@@ -163,8 +171,9 @@ packages/core/src/lib/mcp/server-factory.ts    Shared protocol plumbing (tools/l
 packages/core/src/lib/mcp/plm-server.ts        cascadia-plm: registry -> MCP tools for one user context
 packages/core/src/lib/mcp/dev-server.ts        cascadia-dev: server assembly
 packages/core/src/lib/mcp/dev-tools.ts         cascadia-dev: tool implementations
+packages/core/src/lib/mcp/repo-root.ts         Workspace root the docs and db_* tools resolve against
 packages/core/src/server/routes/mcp.ts         /api/mcp HTTP endpoint (auth + Streamable HTTP transport)
-src/mcp-dev-server.ts            stdio entry point (npm run mcp:dev-server)
+packages/core/src/mcp-dev-server.ts            stdio entry point (npm run mcp:dev-server)
 ```
 
 Design decisions worth knowing:
@@ -183,6 +192,17 @@ Design decisions worth knowing:
   through the shared `ITEM_TYPE_RESOURCES` map (creating a Document checks
   `documents:create`, and so on); ChangeOrder is deliberately excluded in
   favor of `create_change_order`, which also sets up the ECO branch.
+- **Field enums come from the schemas too.** `requirementType`, `partType`,
+  task `priority` and `changeType` reuse the Zod enums exported by the item
+  types that validate the write, so a tool cannot advertise a value the
+  server rejects. Hand-copied enums did exactly that: `requirementType`
+  offered three values the Requirement schema rejects while hiding four it
+  accepts, and the failure surfaced as an opaque "Validation failed".
+- **Write failures name the field.** Handler exceptions become tool errors,
+  so the response text is the agent's only diagnostic. `ValidationError`'s
+  `fieldErrors` are folded into that text (`Validation failed: designId:
+Design is required`) so a rejected write is as actionable as the factory's
+  own argument errors.
 - **The chatbot rides the registry.** `createServerTools()` /
   `createSearchTools()` now bind registry entries instead of hand-wiring
   definitions to handlers, so the chatbot and MCP surfaces cannot drift. A
@@ -190,6 +210,13 @@ Design decisions worth knowing:
   protocol layer itself is exercised in-app, but the registry already
   guarantees behavioral parity where it matters (handlers, permissions,
   audit).
+
+### Dev-server tests
+
+`packages/core/src/lib/mcp/dev-tools.test.ts` pins the root resolution — that
+`search_docs` finds files and `read_doc` reads one — because a wrong root
+fails silently as an empty result set, and pins the traversal guard that keeps
+`read_doc` inside the doc tree.
 
 ### Security-gate tests
 

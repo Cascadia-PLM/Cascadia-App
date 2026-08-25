@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { Link } from '@tanstack/react-router'
 import {
   Archive,
   Box,
@@ -52,6 +51,7 @@ import {
 } from '@/components/ui/ContextMenu'
 import { Button } from '@/components/ui/Button'
 import { formatFileSize } from '@/lib/vault/utils/file-utils'
+import { ItemLink } from '@/components/items/ItemLink'
 import {
   FILE_CATEGORY_DEFINITIONS,
   FILE_CATEGORY_OPTIONS,
@@ -128,23 +128,6 @@ export function FileTable({
     )
   }
 
-  const getItemTypeRoute = (itemType: string): string => {
-    switch (itemType) {
-      case 'Part':
-        return '/parts'
-      case 'Document':
-        return '/documents'
-      case 'ChangeOrder':
-        return '/change-orders'
-      case 'Requirement':
-        return '/requirements'
-      case 'Task':
-        return '/tasks'
-      default:
-        return '/parts'
-    }
-  }
-
   const isViewableCAD = (file: VaultFileRecord): boolean => {
     const ext = file.originalFileName.toLowerCase().split('.').pop()
     return ext === 'stl' || ext === 'obj'
@@ -200,15 +183,15 @@ export function FileTable({
       filterPlaceholder: 'Search items...',
       cell: ({ row }) => {
         const file = row.original
-        const route = getItemTypeRoute(file.item.itemType)
         return (
           <div className="space-y-0.5">
-            <Link
-              to={`${route}/${file.item.id}`}
+            <ItemLink
+              itemType={file.item.itemType}
+              itemId={file.item.id}
               className="text-cyan-600 dark:text-cyan-400 hover:underline font-medium"
             >
               {file.item.itemNumber}
-            </Link>
+            </ItemLink>
             {file.item.name && (
               <p
                 className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]"
@@ -374,12 +357,10 @@ export function FileTable({
             </DropdownMenuItem>
           )}
           <DropdownMenuItem asChild>
-            <Link
-              to={`${getItemTypeRoute(file.item.itemType)}/${file.item.id}`}
-            >
+            <ItemLink itemType={file.item.itemType} itemId={file.item.id}>
               <FileIcon className="mr-2 h-4 w-4" />
               View Item
-            </Link>
+            </ItemLink>
           </DropdownMenuItem>
           {onSetCategory && (
             <DropdownMenuSub>
@@ -452,10 +433,10 @@ export function FileTable({
           </ContextMenuItem>
         )}
         <ContextMenuItem asChild>
-          <Link to={`${getItemTypeRoute(file.item.itemType)}/${file.item.id}`}>
+          <ItemLink itemType={file.item.itemType} itemId={file.item.id}>
             <FileIcon className="mr-2 h-4 w-4" />
             View Item
-          </Link>
+          </ItemLink>
         </ContextMenuItem>
         {onSetCategory && (
           <ContextMenuSub>

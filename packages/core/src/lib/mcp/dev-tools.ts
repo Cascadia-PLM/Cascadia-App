@@ -22,14 +22,11 @@ import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 import { readFile, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
+import { REPO_ROOT } from './repo-root'
 import type { McpToolSpec } from './server-factory'
 
 const execAsync = promisify(exec)
-
-/** Repo root, resolved from this file (src/lib/mcp/dev-tools.ts). */
-const REPO_ROOT = path.resolve(fileURLToPath(import.meta.url), '../../../..')
 
 /** Root-level docs also exposed alongside the docs/ tree. */
 const ROOT_DOCS = ['CLAUDE.md', 'README.md', 'cascadia-feature-list.md']
@@ -355,7 +352,7 @@ the right file first. Only markdown under docs/ and the root docs are readable.`
     },
     {
       name: 'db_push',
-      description: `Push the Drizzle schema to the configured database (drizzle-kit push).
+      description: `Push the Drizzle schema to the configured database (npm run db:push).
 This is the pre-1.0 migration path used in dev, CI, and compose. Without force, the
 command fails rather than apply destructive changes; set force=true to auto-approve
 (may drop columns/data — review the output first).`,
@@ -366,11 +363,16 @@ command fails rather than apply destructive changes; set force=true to auto-appr
           .describe('Auto-approve destructive schema changes'),
       }),
       annotations: { destructiveHint: true, openWorldHint: false },
+      // Through the npm script, never bare `npx drizzle-kit`: drizzle-kit
+      // resolves its schema and `.env` from its own working directory, and
+      // `scripts/drizzle.mjs` is what runs it from the edition's app dir with
+      // the root `.env` loaded. Called directly from the repo root it fails
+      // with "No schema files found".
       execute: (input) =>
         runCommand(
           (input as { force: boolean }).force
-            ? 'npx drizzle-kit push --force'
-            : 'npx drizzle-kit push',
+            ? 'npm run db:push -- --force'
+            : 'npm run db:push',
         ),
     },
     {

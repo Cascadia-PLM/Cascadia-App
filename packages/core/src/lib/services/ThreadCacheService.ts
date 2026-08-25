@@ -243,7 +243,7 @@ export class ThreadCacheService {
    * A cached thread lists the rows it resolved to, but the edges behind it can
    * hang off a different revision of the same item: a test case that still
    * names the requirement revision an ECO superseded is read into the current
-   * revision's thread (`ItemRelationshipService.resolveIncomingLinkLineage`).
+   * revision's thread (`resolveInheritedLineage`).
    * Invalidating only the row that was written would leave that thread cached
    * and wrong. Being too broad here costs a recomputation; being too narrow
    * serves a thread missing a link, so the lineage is invalidated whole.

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { Link } from '@tanstack/react-router'
 import type { VersionContext } from '@/lib/hooks/useVersionContext'
 import type { DataGridColumn } from '@/components/ui/DataGrid'
 import type { DesignItem, GridParams } from '@/lib/query'
@@ -10,24 +9,13 @@ import { designItemsGridQuery } from '@/lib/query'
 import { Badge } from '@/components/ui'
 import { DataGrid } from '@/components/ui/DataGrid'
 import { StateBadge } from '@/components/items/StateBadge'
+import { ItemLink } from '@/components/items/ItemLink'
+import { getItemDetailPath } from '@/lib/items/item-type-ui'
 
 interface LibraryItemsTabProps {
   designId: string
   versionContext: VersionContext
   isHistoricalView: boolean
-}
-
-const getItemRoute = (itemType: string, itemId: string) => {
-  switch (itemType) {
-    case 'Part':
-      return `/parts/${itemId}` as const
-    case 'Document':
-      return `/documents/${itemId}` as const
-    case 'Requirement':
-      return `/requirements/${itemId}` as const
-    default:
-      return `/parts/${itemId}` as const
-  }
 }
 
 const getTypeBadgeVariant = (itemType: string) => {
@@ -52,12 +40,13 @@ const columns: Array<DataGridColumn<DesignItem>> = [
     filterType: 'text',
     filterPlaceholder: 'Filter...',
     cell: ({ row }) => (
-      <Link
-        to={getItemRoute(row.original.itemType, row.original.id)}
+      <ItemLink
+        itemType={row.original.itemType}
+        itemId={row.original.id}
         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
       >
         {row.original.itemNumber}
-      </Link>
+      </ItemLink>
     ),
   },
   {
@@ -145,7 +134,7 @@ export function LibraryItemsTab({
       data={items}
       columns={columns}
       getRowId={(row) => row.id}
-      getRowUrl={(row) => getItemRoute(row.itemType, row.id)}
+      getRowUrl={(row) => getItemDetailPath(row.itemType, row.id) ?? undefined}
       emptyMessage={
         isHistoricalView
           ? 'No items found at this point in history'

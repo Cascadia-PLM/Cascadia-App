@@ -8,6 +8,7 @@ import type { PdfMarkupBinding } from '@/components/vault/PdfViewer'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { previewKindFor } from '@/lib/vault/preview'
+import { SvgViewer } from '@/components/vault/SvgViewer'
 
 // pdf.js and its worker are around a megabyte; most sessions never open a PDF,
 // so the viewer is split out and fetched on first use.
@@ -32,10 +33,21 @@ interface FilePreviewProps {
 
 interface LoadedContent {
   kind: PreviewKind
-  /** Object URL for pdf/image; the decoded string for text. */
+  /** Object URL for pdf/image; `null` for the formats read as text. */
   objectUrl: string | null
+  /** Decoded source for text and svg. */
   text: string | null
 }
+
+/**
+ * Formats read as a string rather than as bytes.
+ *
+ * SVG is here for a reason beyond convenience: an object URL for SVG markup
+ * carries this app's origin, so handing one to an `<img>` leaves a live
+ * same-origin document one "open in new tab" away. `SvgViewer` re-labels the
+ * source itself; see the note on `toDataUrl` there.
+ */
+const TEXTUAL_KINDS: ReadonlySet<PreviewKind> = new Set(['text', 'svg'])
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -74,18 +86,19 @@ export function FilePreview({ file, markup, className }: FilePreviewProps) {
         const response = await fetch(`/api/v1/files/${file.id}/content`)
 
         if (!response.ok) {
+          // `{ error: { code, message, details } }` — the envelope every API
+          // error uses. Reading `error` as a string instead put a literal
+          // "[object Object]" under "Preview unavailable". `details` is
+          // deliberately not shown: on a storage miss it is the vault path.
           const body = (await response.json().catch(() => null)) as {
-            error?: string
-            details?: string
+            error?: { code?: string; message?: string }
           } | null
           throw new Error(
-            body?.details ??
-              body?.error ??
-              `Preview failed (${response.status})`,
+            body?.error?.message ?? `Preview failed (${response.status})`,
           )
         }
 
-        if (kind === 'text') {
+        if (TEXTUAL_KINDS.has(kind)) {
           const text = await response.text()
           if (cancelled) return
           setContent({ kind, objectUrl: null, text })
@@ -167,6 +180,17 @@ export function FilePreview({ file, markup, className }: FilePreviewProps) {
           className={className}
         />
       </Suspense>
+    )
+  }
+
+  if (content.kind === 'svg' && content.text !== null) {
+    return (
+      <SvgViewer
+        source={content.text}
+        fileName={file.originalFileName}
+        toolbarExtra={downloadButton}
+        className={className}
+      />
     )
   }
 

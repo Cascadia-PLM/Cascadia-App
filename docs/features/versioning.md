@@ -150,14 +150,19 @@ read from either direction:
 | **Incoming** -- who points at me?   | Links a revision left behind are counted twice: rev A and rev B both claim to satisfy the requirement, so the same part is listed twice, once Released and once Superseded     |
 | **Outgoing** -- what do I point at? | The reference is a revision behind: the part still names the requirement row the release superseded, and reads back with its `Superseded` badge                                |
 
-`ItemRelationshipService` owns all three corrections, keyed on one predicate --
-`findSupersededRows`, meaning _not the master's current row, and not a working
-copy_:
+`lib/items/version-lineage.ts` owns all three corrections, keyed on one
+predicate -- `findSupersededRows`, meaning _not the master's current row, and
+not a working copy_:
 
-| Helper              | Direction | Rule                                                                                        |
-| ------------------- | --------- | ------------------------------------------------------------------------------------------- |
-| `findIncomingLinks` | Incoming  | Walk the lineage backwards for inherited links; **drop** sources that name a superseded row |
-| `findOutgoingLinks` | Outgoing  | **Follow** a superseded target forward to the revision that replaced it                     |
+| Primitive                 | Direction | Rule                                                                              |
+| ------------------------- | --------- | --------------------------------------------------------------------------------- |
+| `resolveInheritedLineage` | Incoming  | Walk the lineage backwards, so a row is read together with the rows it superseded |
+| `findSupersededRows`      | Incoming  | **Drop** the claims a revision left behind                                        |
+| `followSupersededRows`    | Outgoing  | **Follow** a stale reference forward to the revision that replaced it             |
+
+`ItemRelationshipService` applies them to the edge table -- `findIncomingLinks`
+and `findOutgoingLinks` for the traceability readers, `followSupersededRows`
+alone for the generic BOM / reference reader (`getRelationshipsWithDetails`).
 
 Incoming and outgoing are deliberately not symmetric. A stale **target** is
 only a stale _reference_ -- the link is the source's own content and still
@@ -179,26 +184,30 @@ the rows it resolved to, but the edges behind it can hang off a different
 revision of the same item, so a write anywhere in a lineage invalidates the
 whole lineage.
 
-`followSupersededTargets` applies the outgoing rule to the generic BOM /
-reference reader (`getRelationshipsWithDetails`); the traceability readers go
-through the two helpers above.
+#### The same rule for pointer columns
 
---------- | ---------------------------------------------------- | ---------------------------------------------------------------- |
-| Outgoing | `ItemRelationshipService.followSupersededTargets` | A line naming a superseded row reads as the row that replaced it |
-| Incoming | `ItemRelationshipService.resolveIncomingLinkLineage` | A row is read together with the rows it superseded |
+An edge is not the only way one item names another. A few type-specific
+columns are foreign keys doing the same job -- `requirements.parent_requirement_id`
+is the derive hierarchy -- and they are written once and copied forward by the
+type handler onto every later revision of the row that owns them. They need
+the same treatment, and got it late: until this change the reads matched
+the id they were handed.
 
-The incoming walk runs backwards only. A current row inherits the superseded
-rows behind it; a working copy inherits the released lineage it was cut from,
-so a requirement opened inside an ECO still shows the coverage it arrived with;
-a superseded row names only itself, so an old revision still reports what it
-actually had. **Nothing ever inherits from a working revision** -- that is what
-keeps a link recorded inside one ECO invisible to main and to every other
-branch until the merge promotes it.
+`RequirementService` routes both directions of the derive hierarchy through
+the primitives above, then resolves the answer at one context:
 
-Thread caches invalidate by lineage for the same reason: a cached thread lists
-the rows it resolved to, but the edges behind it can hang off a different
-revision of the same item, so a write anywhere in a lineage invalidates the
-whole lineage.
+- **Children** (`getChildRequirements`) expand the parent row's lineage to
+  find every row that named it, then resolve each child **master** at the
+  parent row's own context. That is what makes the answer one row per child --
+  the extra rows are versions of a child, not siblings.
+- **The parent** (`getParentRequirement`) resolves the stored row at the
+  child row's context, since the child owns the pointer and only the id in it
+  is stale.
+
+A row names its own context -- the ECO/workspace branch it is a working copy
+on, or its design's released context -- so neither read takes a branch
+parameter. Read from inside a branch, both answer with that branch's rows;
+read from main, with the current released ones.
 
 ---
 

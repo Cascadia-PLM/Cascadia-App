@@ -4,7 +4,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ExternalLink, Plus, Trash2 } from 'lucide-react'
-import { Link } from '@tanstack/react-router'
 import { AddRelationshipDialog } from './AddRelationshipDialog'
 import { NewRelationshipTypeDialog } from './NewRelationshipTypeDialog'
 import type { DataGridColumn } from '@/components/ui/DataGrid'
@@ -19,6 +18,8 @@ import { apiFetch } from '@/lib/api/client'
 import { useInvalidateResources } from '@/lib/query'
 import { itemRelationshipsQuery } from '@/lib/query/options/relationships'
 import { StateBadge } from '@/components/items/StateBadge'
+import { ItemLink } from '@/components/items/ItemLink'
+import { getItemDetailPath } from '@/lib/items/item-type-ui'
 
 interface Relationship {
   id: string
@@ -141,10 +142,12 @@ export function RelationshipSection({
   }, [relationships])
 
   // Get URL for relationship row (for "Open in new tab")
-  const getRowUrl = useCallback((row: Relationship) => {
-    const itemType = row.targetItem.itemType.toLowerCase() + 's'
-    return `/${itemType}/${row.targetItem.id}`
-  }, [])
+  const getRowUrl = useCallback(
+    (row: Relationship) =>
+      getItemDetailPath(row.targetItem.itemType, row.targetItem.id) ??
+      undefined,
+    [],
+  )
 
   // Context menu items (Remove)
   const renderContextMenuItems = useCallback(
@@ -189,15 +192,15 @@ export function RelationshipSection({
         filterPlaceholder: 'Filter item number...',
         cell: ({ row }) => {
           const rel = row.original
-          const itemType = rel.targetItem.itemType.toLowerCase() + 's'
           return (
-            <Link
-              to={`/${itemType}/${rel.targetItem.id}`}
+            <ItemLink
+              itemType={rel.targetItem.itemType}
+              itemId={rel.targetItem.id}
               className="font-medium text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 hover:underline flex items-center gap-1"
             >
               {rel.targetItem.itemNumber}
               <ExternalLink className="h-3 w-3" />
-            </Link>
+            </ItemLink>
           )
         },
       },

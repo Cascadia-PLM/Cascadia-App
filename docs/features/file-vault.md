@@ -172,16 +172,51 @@ Only formats Cascadia can display are served, up to a **50 MB ceiling**
 (neither the storage layer nor the API speaks HTTP Range yet, so the viewer
 fetches a file whole; past that point downloading is the cheaper path). Anything
 else returns `415 FILE_TYPE_NOT_ALLOWED`; anything larger returns
-`413 FILE_TOO_LARGE`.
+`413 FILE_TOO_LARGE`. A format may declare a lower ceiling of its own when its
+_viewer_, rather than the transfer, is what gives out first.
 
-| Kind    | Extensions                                  | Rendered by                                    |
-| ------- | ------------------------------------------- | ---------------------------------------------- |
-| `pdf`   | `.pdf`                                      | pdf.js, on canvas with a selectable text layer |
-| `image` | `.png` `.jpg` `.jpeg` `.gif` `.bmp` `.webp` | `<img>`                                        |
-| `text`  | `.txt` `.md` `.csv` `.log`                  | preformatted text                              |
+| Kind    | Extensions                                  | Ceiling | Rendered by                                    |
+| ------- | ------------------------------------------- | ------- | ---------------------------------------------- |
+| `pdf`   | `.pdf`                                      | 50 MB   | pdf.js, on canvas with a selectable text layer |
+| `image` | `.png` `.jpg` `.jpeg` `.gif` `.bmp` `.webp` | 50 MB   | `<img>`                                        |
+| `svg`   | `.svg`                                      | 8 MB    | `<img>`, in a zoom/pan/rotate viewer           |
+| `text`  | `.txt` `.md` `.csv` `.log`                  | 50 MB   | preformatted text                              |
 
-SVG and TIFF are excluded — SVG is scriptable and these bytes are served from
-the app's own origin, the same reasoning that excludes it from thumbnails.
+TIFF is excluded — no browser renders it.
+
+#### Why SVG is a kind of its own
+
+SVG is the one previewable format that is also a scripting host, and it is
+handled unlike the rest because of it. Three things keep it safe, and **all
+three have to hold**:
+
+1. **The server never labels it `image/svg+xml`.** It goes out as `text/plain`
+   like any other text flavour, so a browser that reaches the endpoint directly
+   renders source, not markup.
+2. **The viewer renders it through an `<img>`**, which the SVG spec puts in
+   [secure static mode](https://www.w3.org/TR/SVG2/conform.html#secure-static-mode):
+   no script, no external references, no interactivity.
+3. **The viewer's `src` is a `data:` URL, not an object URL.** This is the
+   subtle one. `URL.createObjectURL` mints a `blob:` URL that inherits the
+   app's origin, so a viewer who picks "open image in new tab" would load the
+   drawing as a top-level document _on Cascadia's origin_ — and a document,
+   unlike an `<img>`, runs the script the SVG carries. Browsers refuse
+   top-level navigation to a `data:` URL, and a `data:` document gets an opaque
+   origin regardless.
+
+Folding SVG into the `image` kind would quietly break (2) and (3) at once,
+which is why it is a separate `PreviewKind` with its own viewer rather than a
+sixth image extension. `preview.test.ts` pins the Content-Type and the kind as
+invariants so neither can be relaxed without the test going red.
+
+The 8 MB ceiling is the data URL's doing: percent-encoding roughly doubles the
+source and it has to be built as a single JavaScript string. Drawings past that
+are traced bitmaps that would render badly anyway, so they are offered as a
+download.
+
+This is orthogonal to thumbnails and the gallery, which still refuse SVG
+outright: both point an `<img>` straight at `/content`, and (1) means those
+bytes arrive as text.
 
 The vocabulary lives in `packages/core/src/lib/vault/preview.ts` and is shared by the server
 (the allowlist) and the client (whether to offer a Preview action, and which
@@ -990,6 +1025,8 @@ The factory caches the storage instance and reuses it across requests. Call `Sto
 | `packages/core/src/components/vault/FileList.tsx`             | UI component: file listing with lock status and actions                   |
 | `packages/core/src/components/vault/PdfViewer.tsx`            | UI component: pdf.js viewer (code-split; not exported from the barrel)    |
 | `packages/core/src/components/vault/FilePreview.tsx`          | UI component: fetches bytes and mounts the viewer for the format          |
+| `packages/core/src/components/vault/SvgViewer.tsx`            | UI component: vector drawing viewer — zoom, pan, rotate, fullscreen       |
+| `packages/core/src/components/vault/viewer-controls.ts`       | Zoom stops and fullscreen state shared by the PDF and SVG viewers         |
 | `packages/core/src/components/vault/FilePreviewDialog.tsx`    | UI component: preview one file in a dialog, opened from `FileList`        |
 | `packages/core/src/components/vault/ItemFilePreviewPanel.tsx` | UI component: in-page preview of an item's files (Documents' Preview tab) |
 | `packages/core/src/components/vault/PdfAnnotationLayer.tsx`   | UI component: the markup surface over one rendered PDF page               |

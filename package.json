@@ -124,7 +124,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/router-plugin": "^1.139.14",
     "@types/dagre": "^0.7.53",
-    "@xyflow/react": "^12.9.3",
+    "@xyflow/react": "12.11.2",
     "amqplib": "^0.10.9",
     "arctic": "^3.7.0",
     "codemirror": "^6.0.2",

@@ -27,8 +27,8 @@ import {
   FILE_CATEGORY_VALUES,
 } from '@/lib/vault/file-categories'
 import {
-  MAX_PREVIEW_BYTES,
   PREVIEWABLE_EXTENSIONS,
+  maxPreviewBytesFor,
   previewFormatFor,
 } from '@/lib/vault/preview'
 import {
@@ -619,7 +619,7 @@ app.get(
         openapi: {
           summary: 'Stream a file inline for in-app preview',
           description:
-            'Serves the file for rendering in the embedded viewer. Only formats Cascadia can display are served (PDF, raster images, plain text) and only up to the preview size ceiling; anything else must be downloaded. Logs a `view` action rather than a `download`.',
+            'Serves the file for rendering in the embedded viewer. Only formats Cascadia can display are served (PDF, raster images, SVG, plain text) and only up to the preview size ceiling for that format; anything else must be downloaded. Logs a `view` action rather than a `download`.',
           request: { params: z.object({ fileId: z.string().uuid() }) },
           responses: {
             200: {
@@ -647,9 +647,12 @@ app.get(
         }
 
         // No Range support in the storage layer yet, so the viewer pulls the
-        // file whole. Past this point downloading is the cheaper path.
-        if (file.fileSize > MAX_PREVIEW_BYTES) {
-          throw new FileTooLargeError(MAX_PREVIEW_BYTES, file.fileSize)
+        // file whole. Past this point downloading is the cheaper path. A few
+        // formats cap lower than the global ceiling because their viewer, not
+        // the transfer, is what gives out first.
+        const maxBytes = maxPreviewBytesFor(format)
+        if (file.fileSize > maxBytes) {
+          throw new FileTooLargeError(maxBytes, file.fileSize)
         }
 
         const headers = {

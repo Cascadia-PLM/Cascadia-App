@@ -10,7 +10,7 @@
  *
  * Or register it with an MCP client (e.g. Claude Code's .mcp.json):
  *
- *   { "cascadia-dev": { "command": "npx", "args": ["tsx", "src/mcp-dev-server.ts"] } }
+ *   { "cascadia-dev": { "command": "npx", "args": ["tsx", "packages/core/src/mcp-dev-server.ts"] } }
  *
  * See docs/features/mcp.md for details.
  */
@@ -21,6 +21,20 @@
 process.env.LOG_DESTINATION = 'stderr'
 
 async function main(): Promise<void> {
+  // Load `.env` before anything reads it. `instance_status` reports which
+  // settings are present, and reading them ahead of dotenv had it report
+  // DATABASE_URL unset in the same breath as connecting with it. The path is
+  // resolved from the repo root rather than `process.cwd()`: an MCP client
+  // chooses the server's working directory and it need not be the checkout.
+  // A variable already exported in the environment still wins — dotenv does
+  // not overwrite what is set.
+  const [{ REPO_ROOT }, { config: loadEnv }, { resolve }] = await Promise.all([
+    import('./lib/mcp/repo-root'),
+    import('dotenv'),
+    import('node:path'),
+  ])
+  loadEnv({ path: resolve(REPO_ROOT, '.env'), quiet: true })
+
   const [{ StdioServerTransport }, { createDevMcpServer, DEV_SERVER_NAME }] =
     await Promise.all([
       import('@modelcontextprotocol/sdk/server/stdio.js'),

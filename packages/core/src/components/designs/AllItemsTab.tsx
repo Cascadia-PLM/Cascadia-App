@@ -2,7 +2,6 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from '@tanstack/react-router'
 import { ExternalLink, Loader2, Plus } from 'lucide-react'
 import type { VersionContext } from '@/lib/hooks/useVersionContext'
 import {
@@ -23,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { apiFetch } from '@/lib/api/client'
+import { ItemLink } from '@/components/items/ItemLink'
 import { StateBadge } from '@/components/items/StateBadge'
 
 interface Item {
@@ -135,20 +135,6 @@ export function AllItemsTab({
         return 'outline' as const
       default:
         return 'default' as const
-    }
-  }
-
-  // Get item route
-  const getItemRoute = (itemType: string, itemId: string) => {
-    switch (itemType) {
-      case 'Part':
-        return `/parts/${itemId}`
-      case 'Document':
-        return `/documents/${itemId}`
-      case 'Requirement':
-        return `/requirements/${itemId}`
-      default:
-        return `/parts/${itemId}`
     }
   }
 
@@ -281,11 +267,11 @@ export function AllItemsTab({
                       : '-'}
                   </div>
                   <div className="w-20">
-                    <Link to={getItemRoute(item.itemType, item.id)}>
+                    <ItemLink itemType={item.itemType} itemId={item.id}>
                       <Button variant="ghost" size="sm">
                         <ExternalLink className="h-3 w-3" />
                       </Button>
-                    </Link>
+                    </ItemLink>
                   </div>
                 </div>
               ))}

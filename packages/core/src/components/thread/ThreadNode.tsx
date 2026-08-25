@@ -28,6 +28,7 @@ import type { Node, NodeProps } from '@xyflow/react'
 import type { LucideIcon } from 'lucide-react'
 import type { ThreadNode as ThreadNodeData } from '@/lib/services/ThreadService'
 import { useLifecycleState } from '@/components/items/StateBadge'
+import { getItemDetailRoutePattern } from '@/lib/items/item-type-ui'
 
 /** Opposite side of a handle position (Top↔Bottom, Left↔Right). */
 export function flipPosition(position: Position): Position {
@@ -199,17 +200,6 @@ const domainIcons: Record<string, LucideIcon> = {
   physical: Package,
 }
 
-// Map item types to their detail routes
-const itemTypeRoutes: Record<string, string> = {
-  Part: '/parts/$id',
-  Document: '/documents/$id',
-  Requirement: '/requirements/$id',
-  ChangeOrder: '/change-orders/$id',
-  Task: '/tasks/$id',
-  WorkOrder: '/work-orders/$id',
-  PhysicalPart: '/physical-parts/$id',
-}
-
 function ThreadNodeComponent({
   id,
   data: rawData,
@@ -222,7 +212,7 @@ function ThreadNodeComponent({
   const Icon = itemTypeIcons[data.itemType] || Box
   const stateStyle = useLifecycleState(data.itemType, data.state)
   const DomainIcon = domainIcons[data.domain] || Wrench
-  const route = itemTypeRoutes[data.itemType]
+  const route = getItemDetailRoutePattern(data.itemType)
   const { expandState, onToggleExpand } = data
   const isHorizontal = data.isHorizontal ?? false
 

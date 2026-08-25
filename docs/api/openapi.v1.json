@@ -6947,7 +6947,7 @@
     },
     "/api/v1/files/{fileId}/content": {
       "get": {
-        "description": "Serves the file for rendering in the embedded viewer. Only formats Cascadia can display are served (PDF, raster images, plain text) and only up to the preview size ceiling; anything else must be downloaded. Logs a `view` action rather than a `download`.",
+        "description": "Serves the file for rendering in the embedded viewer. Only formats Cascadia can display are served (PDF, raster images, SVG, plain text) and only up to the preview size ceiling for that format; anything else must be downloaded. Logs a `view` action rather than a `download`.",
         "operationId": "getApiV1FilesByFileIdContent",
         "parameters": [
           {

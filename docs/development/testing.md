@@ -395,10 +395,9 @@ contributor's pull request is never gated on regenerating it.
 Unit tests run `npm run test`, not `test:coverage` — no coverage thresholds are
 enforced.
 
-> **Checks run but do not block.** The `Cascadia-PLM` org is on the GitHub Free
-> plan, where branch protection and rulesets are unavailable on private repos.
-> Results appear on every PR, but nothing prevents merging on red. Red CI is a
-> convention here, not a gate.
+> **Checks run but do not block.** No ruleset requires them, so results appear on
+> every PR but nothing prevents merging on red. Red CI is a convention here, not
+> a gate.
 
 Key CI concerns:
 

@@ -8,7 +8,7 @@ import { ArrowLeft, Edit, Key, Shield, Trash2 } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
 import { UserForm } from '@/components/users/UserForm'
 import { RoleAssignmentDialog } from '@/components/users/RoleAssignmentDialog'
-import { PasswordChangeDialog } from '@/components/users/PasswordChangeDialog'
+import { PasswordResetDialog } from '@/components/users/PasswordResetDialog'
 import {
   Badge,
   Button,
@@ -52,7 +52,8 @@ function UserDetailPage() {
   const { data: roles = [] } = useQuery(roleListQuery())
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false)
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
+  const [isPasswordResetDialogOpen, setIsPasswordResetDialogOpen] =
+    useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (!user) return null
@@ -78,19 +79,26 @@ function UserDetailPage() {
   const handleDelete = () => {
     confirm({
       title: 'Delete User',
-      description: `Are you sure you want to delete ${user.email}? This action cannot be undone.`,
+      description: `Delete ${user.email}? If business records reference this account, it will be deactivated instead so its audit history remains intact.`,
       actionLabel: 'Delete',
       cancelLabel: 'Cancel',
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/v1/users/${user.id}`, {
-            method: 'DELETE',
-          })
+          const response = await apiFetch<{
+            data: { outcome: 'deleted' | 'deactivated' }
+          }>(`/api/v1/users/${user.id}`, { method: 'DELETE' })
 
-          showSuccess('User deleted', `${user.email} has been deleted`)
           await invalidate('users')
-          navigate({ to: '/users' })
+          if (response.data.outcome === 'deleted') {
+            showSuccess('User deleted', `${user.email} has been deleted`)
+            navigate({ to: '/users' })
+          } else {
+            showSuccess(
+              'User deactivated',
+              `${user.email} is referenced by business records, so the account was preserved and deactivated. All sessions were revoked.`,
+            )
+          }
         } catch (error) {
           handleError(error, { title: 'Failed to delete user' })
         }
@@ -130,16 +138,16 @@ function UserDetailPage() {
     }
   }
 
-  const handleChangePassword = async (userId: string, password: string) => {
+  const handleResetPassword = async (userId: string, password: string) => {
     try {
-      await apiFetch(`/api/v1/users/${userId}/password`, {
-        method: 'PUT',
+      await apiFetch(`/api/v1/users/${userId}/reset-password`, {
+        method: 'POST',
         body: JSON.stringify({ password }),
       })
 
-      showSuccess('Password changed', 'Password has been changed successfully')
+      showSuccess('Password reset', 'Password has been reset successfully')
     } catch (error) {
-      handleError(error, { title: 'Failed to change password' })
+      handleError(error, { title: 'Failed to reset password' })
       throw error
     }
   }
@@ -181,10 +189,10 @@ function UserDetailPage() {
           {user.provider === 'local' && (
             <Button
               variant="outline"
-              onClick={() => setIsPasswordDialogOpen(true)}
+              onClick={() => setIsPasswordResetDialogOpen(true)}
             >
               <Key className="h-4 w-4 mr-2" />
-              Change Password
+              Reset Password
             </Button>
           )}
           <Button variant="outline" onClick={handleToggleActive}>
@@ -374,12 +382,12 @@ function UserDetailPage() {
         onSave={handleAssignRoles}
       />
 
-      {/* Password Change Dialog */}
-      <PasswordChangeDialog
+      {/* Password Reset Dialog */}
+      <PasswordResetDialog
         user={user}
-        open={isPasswordDialogOpen}
-        onClose={() => setIsPasswordDialogOpen(false)}
-        onSave={handleChangePassword}
+        open={isPasswordResetDialogOpen}
+        onClose={() => setIsPasswordResetDialogOpen(false)}
+        onSave={handleResetPassword}
       />
     </PageContainer>
   )

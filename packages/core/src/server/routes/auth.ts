@@ -10,6 +10,8 @@ import type {
 } from '@/lib/auth/ApiKeyService'
 import { apiHandler } from '@/lib/api/handler'
 import { AuthService } from '@/lib/auth/AuthService'
+import { UserService } from '@/lib/auth/UserService'
+import { hashSessionToken } from '@/lib/auth/password'
 import { SessionManager } from '@/lib/auth/session'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { permissionService } from '@/lib/auth/permission-service'
@@ -19,7 +21,10 @@ import { getGitHubProvider } from '@/lib/auth/oauth'
 import { SettingKeys } from '@/lib/config/SettingKeys'
 import { SettingsService } from '@/lib/config/SettingsService'
 import { ApiKeyService } from '@/lib/auth/ApiKeyService'
-import { AuthenticationError } from '@/lib/errors'
+import { AuthenticationError, ValidationError } from '@/lib/errors'
+import { db } from '@/lib/db'
+import { authEvents } from '@/lib/db/schema/users'
+import { getClientIp } from '@/lib/api/rate-limit'
 
 const adapt = tagged('Auth')
 
@@ -137,6 +142,53 @@ app.get(
       } catch {
         return { authenticated: false }
       }
+    }),
+  ),
+)
+
+// PUT /api/auth/password — change the signed-in user's local password
+app.put(
+  '/password',
+  adapt(
+    apiHandler({ rateLimit: 'login' }, async ({ request, user }) => {
+      // Password changes are deliberately session-only. An API key should not
+      // be able to replace the interactive credentials of its owner.
+      if (request.headers.has('authorization')) {
+        throw new AuthenticationError('Session authentication required')
+      }
+
+      const sessionToken = getSessionTokenFromRequest(request)
+      if (!sessionToken) {
+        throw new AuthenticationError('Session authentication required')
+      }
+
+      const { password, currentPassword } = await request.json()
+      if (!currentPassword || typeof currentPassword !== 'string') {
+        throw new ValidationError('Current password is required')
+      }
+      if (!password || typeof password !== 'string') {
+        throw new ValidationError('Password is required')
+      }
+
+      const currentSessionId = await hashSessionToken(sessionToken)
+      await db.transaction(async (tx) => {
+        await UserService.changePassword(
+          user.id,
+          password,
+          currentPassword,
+          currentSessionId,
+          tx,
+        )
+
+        await tx.insert(authEvents).values({
+          userId: user.id,
+          eventType: 'password_changed',
+          ipAddress: getClientIp(request),
+          metadata: { method: 'self_service' },
+        })
+      })
+
+      return { success: true }
     }),
   ),
 )

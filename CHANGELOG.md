@@ -45,6 +45,10 @@ ship with. See [docs/features/software-management.md](./docs/features/software-m
 - **SVG drawings preview in the app** — The vault has always accepted `.svg` uploads but refused to render them, because an SVG is a scripting host and preview bytes are served from the app's own origin. SVG is now its own `PreviewKind` with a zoom/rotate/pan/fullscreen viewer, and three properties hold that boundary together, all of which have to be true at once: the server labels the bytes `text/plain` rather than `image/svg+xml`, so a browser reaching the endpoint directly renders source; the viewer draws through an `<img>`, which the SVG spec puts in secure static mode; and the `<img>` source is a `data:` URL rather than an object URL, which would carry the app's origin into a new tab. Nothing is sanitized and nothing needs to be — a hostile drawing's `<script>` and its external `<image href>` both survive in the source and neither executes nor fetches. Thumbnails and the gallery still refuse SVG outright
 - **Per-format preview ceilings** — `PreviewFormat` gains an optional `maxBytes`. SVG caps at 8 MB against the global 50 MB, because the data URL roughly doubles the source and has to be built as a single JavaScript string, so past that point the viewer rather than the transfer is what gives out
 
+#### User Management
+
+- **Password change from the profile page** — A signed-in user with a local account can change their own password (`PUT /api/v1/auth/password`). The current password is verified first, the request is rate-limited like a login attempt, and API-key callers are refused outright — a key must not be able to replace the interactive credential of its owner. Every other session is signed out in the same transaction as the change, keeping only the one that made it, and a `password_changed` auth event is recorded. Contributed by [Artur Klujewski](https://github.com/Kujoo25) in [Cascadia-App#71](https://github.com/Cascadia-PLM/Cascadia-App/pull/71)
+
 ### Changed
 
 - **This repository is now generated.** Both editions are built from a single upstream tree in which this AGPL edition is one package, and publishing copies that package here. Contributions are still made by pull request against this repository — see [CONTRIBUTING.md](./CONTRIBUTING.md) for how an accepted pull request reaches `main`
@@ -179,6 +183,28 @@ its read/write PLM tools also remain.
   was meant instead of guessing silently. Every `get_item_details` response now
   also carries the design's code, name and type
 
+- **Password reset from the admin user pages works.** The reset dialog posted
+  to the verified-change endpoint, which demands the account's current
+  password; the dialog never collected one, so every attempt was rejected as
+  invalid credentials and an administrator could not reset any password at all.
+  Reset is now its own endpoint — `POST /api/v1/users/:id/reset-password`,
+  gated on `users:manage` and rate-limited like a login — the dialog calls it,
+  every session of the target account is revoked, and a `password_reset` auth
+  event records the acting administrator. Contributed by
+  [Artur Klujewski](https://github.com/Kujoo25) in
+  [Cascadia-App#71](https://github.com/Cascadia-PLM/Cascadia-App/pull/71)
+- **Deleting a user no longer fails once the account has any history.**
+  `deleteUser` removed the role links, then the user row — and every other
+  reference, including the auth events written by simply logging in, raised a
+  foreign-key violation that surfaced as an unhandled 500, so no account that
+  had ever been used could actually be deleted. Deletion now runs in a
+  transaction that locks the row, clears the account's own auth history, and
+  lets the account-owned rows cascade; when business records still reference
+  the user, it rolls back and deactivates the account instead — sessions
+  revoked, history intact — and reports which of the two happened, so the UI
+  can say so. Contributed by [Artur Klujewski](https://github.com/Kujoo25) in
+  [Cascadia-App#71](https://github.com/Cascadia-PLM/Cascadia-App/pull/71)
+
 ### Security
 
 - **Assistant tool errors no longer hand the model the failed SQL and its
@@ -207,6 +233,16 @@ its read/write PLM tools also remain.
   lists, search and report execution use, which also keeps the new `otherMatches`
   list from becoming a way to enumerate items in designs the caller cannot reach.
   Lookup by an explicit item id is unchanged
+
+- **User reads no longer carry credential material.** Every user object
+  leaving `UserService` — lists, detail reads, create and update returns — now
+  omits `passwordHash` and `failedLoginAttempts` at the type level rather than
+  by caller discipline. Password changes and resets write `auth_events` rows
+  naming the actor where one account acted on another, and session revocation
+  happens in the same transaction as the credential update, so a failure
+  cannot leave a new password live alongside sessions it should have ended.
+  Contributed by [Artur Klujewski](https://github.com/Kujoo25) in
+  [Cascadia-App#71](https://github.com/Cascadia-PLM/Cascadia-App/pull/71)
 
 ## [0.1.0] - 2026-04-13
 

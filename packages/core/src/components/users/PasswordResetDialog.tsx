@@ -2,7 +2,6 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useState } from 'react'
-import type { UserWithRoles } from '@/lib/auth/types'
 import {
   Button,
   Dialog,
@@ -15,19 +14,25 @@ import {
   Input,
 } from '@/components/ui'
 
-interface PasswordChangeDialogProps {
-  user: UserWithRoles | null
+interface PasswordResetUser {
+  id: string
+  email: string
+  name: string | null
+}
+
+interface PasswordResetDialogProps {
+  user: PasswordResetUser | null
   open: boolean
   onClose: () => void
   onSave: (userId: string, password: string) => Promise<void>
 }
 
-export function PasswordChangeDialog({
+export function PasswordResetDialog({
   user,
   open,
   onClose,
   onSave,
-}: PasswordChangeDialogProps) {
+}: PasswordResetDialogProps) {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -36,9 +41,13 @@ export function PasswordChangeDialog({
   const handleSave = async () => {
     if (!user) return
 
-    // Validation
     if (password.length < 8) {
       setError('Password must be at least 8 characters')
+      return
+    }
+
+    if (password.length > 128) {
+      setError('Password must not exceed 128 characters')
       return
     }
 
@@ -55,8 +64,12 @@ export function PasswordChangeDialog({
       setPassword('')
       setConfirmPassword('')
       onClose()
-    } catch {
-      setError('Failed to change password')
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : 'Failed to reset password',
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -72,12 +85,13 @@ export function PasswordChangeDialog({
   if (!user) return null
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && handleClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Change Password</DialogTitle>
+          <DialogTitle>Reset Password</DialogTitle>
           <DialogDescription>
-            Set a new password for {user.name || user.email}
+            Set a new password for {user.name || user.email}. This will sign
+            them out of all active sessions.
           </DialogDescription>
         </DialogHeader>
 
@@ -85,40 +99,36 @@ export function PasswordChangeDialog({
           <FormField
             label="New Password"
             required
-            error={error && error.includes('8 characters') ? error : undefined}
-            helpText="Minimum 8 characters"
+            helpText="8 to 128 characters"
           >
             <Input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(event) => setPassword(event.target.value)}
               placeholder="••••••••"
-              error={!!error && error.includes('8 characters')}
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={128}
             />
           </FormField>
 
-          <FormField
-            label="Confirm Password"
-            required
-            error={error && error.includes('match') ? error : undefined}
-            helpText="Re-enter the new password"
-          >
+          <FormField label="Confirm Password" required>
             <Input
               type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(event) => setConfirmPassword(event.target.value)}
               placeholder="••••••••"
-              error={!!error && error.includes('match')}
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={128}
             />
           </FormField>
 
-          {error &&
-            !error.includes('8 characters') &&
-            !error.includes('match') && (
-              <div className="text-sm text-red-600 dark:text-red-400">
-                {error}
-              </div>
-            )}
+          {error && (
+            <div className="text-sm text-red-600 dark:text-red-400">
+              {error}
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -130,7 +140,7 @@ export function PasswordChangeDialog({
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Change Password'}
+            {isSubmitting ? 'Resetting...' : 'Reset Password'}
           </Button>
         </DialogFooter>
       </DialogContent>

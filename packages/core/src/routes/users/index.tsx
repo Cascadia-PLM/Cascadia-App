@@ -9,7 +9,7 @@ import type { UserWithRoles } from '@/lib/auth/types'
 import { PageContainer } from '@/components/layout'
 import { UserTable } from '@/components/users/UserTable'
 import { RoleAssignmentDialog } from '@/components/users/RoleAssignmentDialog'
-import { PasswordChangeDialog } from '@/components/users/PasswordChangeDialog'
+import { PasswordResetDialog } from '@/components/users/PasswordResetDialog'
 import {
   Button,
   Card,
@@ -42,7 +42,8 @@ function UsersListPage() {
   const { data: users = [] } = useQuery(userListQuery())
   const { data: roles = [] } = useQuery(roleListQuery())
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false)
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
+  const [isPasswordResetDialogOpen, setIsPasswordResetDialogOpen] =
+    useState(false)
   const [editingUser, setEditingUser] = useState<UserWithRoles | null>(null)
 
   const stats = useMemo(() => {
@@ -76,17 +77,27 @@ function UsersListPage() {
 
     confirm({
       title: 'Delete User',
-      description: `Are you sure you want to delete ${user.email}? This action cannot be undone.`,
+      description: `Delete ${user.email}? If business records reference this account, it will be deactivated instead so its audit history remains intact.`,
       actionLabel: 'Delete',
       cancelLabel: 'Cancel',
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await apiFetch(`/api/v1/users/${user.id}`, {
-            method: 'DELETE',
-          })
+          const response = await apiFetch<{
+            data: { outcome: 'deleted' | 'deactivated' }
+          }>(`/api/v1/users/${user.id}`, { method: 'DELETE' })
 
           await invalidate('users')
+          alert({
+            title:
+              response.data.outcome === 'deleted'
+                ? 'User deleted'
+                : 'User deactivated',
+            description:
+              response.data.outcome === 'deleted'
+                ? `${user.email} has been permanently deleted.`
+                : `${user.email} is referenced by business records, so the account was preserved and deactivated. All sessions were revoked.`,
+          })
         } catch (error) {
           console.error('Error deleting user:', error)
           alert({
@@ -113,14 +124,14 @@ function UsersListPage() {
     }
   }
 
-  const handleChangePassword = async (userId: string, password: string) => {
+  const handleResetPassword = async (userId: string, password: string) => {
     try {
-      await apiFetch(`/api/v1/users/${userId}/password`, {
-        method: 'PUT',
+      await apiFetch(`/api/v1/users/${userId}/reset-password`, {
+        method: 'POST',
         body: JSON.stringify({ password }),
       })
     } catch (error) {
-      console.error('Error changing password:', error)
+      console.error('Error resetting password:', error)
       throw error
     }
   }
@@ -130,9 +141,9 @@ function UsersListPage() {
     setIsRoleDialogOpen(true)
   }
 
-  const openPasswordDialog = (user: UserWithRoles) => {
+  const openPasswordResetDialog = (user: UserWithRoles) => {
     setEditingUser(user)
-    setIsPasswordDialogOpen(true)
+    setIsPasswordResetDialogOpen(true)
   }
 
   return (
@@ -203,7 +214,7 @@ function UsersListPage() {
             onEdit={handleEditUser}
             onDelete={handleDeleteUser}
             onManageRoles={openRoleDialog}
-            onChangePassword={openPasswordDialog}
+            onResetPassword={openPasswordResetDialog}
           />
         </CardContent>
       </Card>
@@ -220,15 +231,15 @@ function UsersListPage() {
         onSave={handleAssignRoles}
       />
 
-      {/* Password Change Dialog */}
-      <PasswordChangeDialog
+      {/* Password Reset Dialog */}
+      <PasswordResetDialog
         user={editingUser}
-        open={isPasswordDialogOpen}
+        open={isPasswordResetDialogOpen}
         onClose={() => {
-          setIsPasswordDialogOpen(false)
+          setIsPasswordResetDialogOpen(false)
           setEditingUser(null)
         }}
-        onSave={handleChangePassword}
+        onSave={handleResetPassword}
       />
     </PageContainer>
   )

@@ -5,6 +5,7 @@ import { and, eq, gt, lt, ne } from 'drizzle-orm'
 import { db } from '../db'
 import { sessions, users } from '../db/schema'
 import { generateSessionToken, hashSessionToken } from './password'
+import type { TransactionClient } from '@/lib/db'
 import { authLogger } from '@/lib/logging/logger'
 import { takeFirst } from '@/lib/db/take-first'
 
@@ -157,15 +158,23 @@ export class SessionManager {
   /**
    * Delete a specific session
    */
-  static async deleteSession(sessionId: string): Promise<void> {
-    await db.delete(sessions).where(eq(sessions.id, sessionId))
+  static async deleteSession(
+    sessionId: string,
+    tx?: TransactionClient,
+  ): Promise<void> {
+    const run = tx ?? db
+    await run.delete(sessions).where(eq(sessions.id, sessionId))
   }
 
   /**
    * Delete all sessions for a user
    */
-  static async deleteUserSessions(userId: string): Promise<void> {
-    await db.delete(sessions).where(eq(sessions.userId, userId))
+  static async deleteUserSessions(
+    userId: string,
+    tx?: TransactionClient,
+  ): Promise<void> {
+    const run = tx ?? db
+    await run.delete(sessions).where(eq(sessions.userId, userId))
   }
 
   /**
@@ -174,8 +183,10 @@ export class SessionManager {
   static async deleteOtherSessions(
     userId: string,
     keepSessionId: string,
+    tx?: TransactionClient,
   ): Promise<void> {
-    await db
+    const run = tx ?? db
+    await run
       .delete(sessions)
       .where(and(eq(sessions.userId, userId), ne(sessions.id, keepSessionId)))
   }

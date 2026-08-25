@@ -12,8 +12,8 @@ import { permissionService } from './permission-service'
 import type { SQL } from 'drizzle-orm'
 import type { UserWithRoles } from './types'
 import type { z } from 'zod'
-import { db, withTx } from '@/lib/db'
 import type { TransactionClient } from '@/lib/db'
+import { db, withTx } from '@/lib/db'
 import { authEvents, roles, userRoles, users } from '@/lib/db/schema/users'
 import { takeFirst } from '@/lib/db/take-first'
 import {
@@ -22,6 +22,7 @@ import {
   NotFoundError,
   ValidationError,
 } from '@/lib/errors'
+
 type DatabaseUser = typeof users.$inferSelect
 
 // The user shape that may leave the service/API boundary. Authentication

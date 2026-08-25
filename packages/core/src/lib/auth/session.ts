@@ -5,9 +5,9 @@ import { and, eq, gt, lt, ne } from 'drizzle-orm'
 import { db } from '../db'
 import { sessions, users } from '../db/schema'
 import { generateSessionToken, hashSessionToken } from './password'
+import type { TransactionClient } from '@/lib/db'
 import { authLogger } from '@/lib/logging/logger'
 import { takeFirst } from '@/lib/db/take-first'
-import type { TransactionClient } from '@/lib/db'
 
 export interface Session {
   id: string

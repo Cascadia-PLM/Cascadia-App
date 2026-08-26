@@ -1,0 +1,38 @@
+# Guards a release tag, not the release itself — publishing and tagging stay
+# manual (see RELEASING.md). This exists so a tag that disagrees with the
+# tree it points at is caught the moment it is pushed, not when a user asks
+# why v0.5.0 reports 0.4.0 from /api/v1/health.
+name: Release Tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  verify-tag:
+    name: Tag matches package version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify tag matches root package.json version
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::Tag v${TAG} does not match package.json version ${PKG}. Bump versions first (npm version ${TAG} --workspaces --include-workspace-root --no-git-tag-version, plus the Python worker), or fix the tag."
+            exit 1
+          fi
+          echo "Tag v${TAG} matches package.json."
+
+      - name: Verify the changelog has this version
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          if ! grep -q "^## \[${TAG}\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [${TAG}]' section. Cut the changelog before tagging (see RELEASING.md)."
+            exit 1
+          fi
+          echo "CHANGELOG.md carries ${TAG}."

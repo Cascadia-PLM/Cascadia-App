@@ -60,10 +60,11 @@ test.describe('Physical Traceability Workflow', () => {
     // ---- Seed: a design and three parts (built, component, feedstock) ----
     const designsResponse = await page.request.get('/api/v1/designs')
     const designs = (await designsResponse.json()).data?.designs ?? []
-    if (designs.length === 0) {
-      test.skip()
-      return
-    }
+    // Hard requirement, not a skip: global setup guarantees a design exists.
+    expect(
+      designs.length,
+      'no designs in the database — e2e global setup should have created one',
+    ).toBeGreaterThan(0)
     const designId: string = designs[0].id
 
     const ts = Date.now()

@@ -19,6 +19,7 @@ import {
 } from '../version-lineage'
 import { CommitService } from '../../services/CommitService'
 import { ThreadCacheService } from '../../services/ThreadCacheService'
+import type { TransactionClient } from '../../db'
 import type { PersistedItem } from '../types/base'
 import { itemLogger } from '@/lib/logging/logger'
 import { takeFirst } from '@/lib/db/take-first'
@@ -226,8 +227,16 @@ export class ItemRelationshipService {
   }
 
   /**
-   * Get relationships with details, merging main branch + ECO branch relationships.
-   * ECO relationships take precedence over main when the same target masterId exists in both.
+   * Get relationships with details in a branch context.
+   *
+   * The item's own edges ARE its structure — the authority rule the merge
+   * applies at release (ChangeOrderMergeService step 5b). Every step that
+   * mints an item-version row carries the source's edges onto it
+   * (copyRelationshipsToItem), so there is no fallback to the main version's
+   * rows: a line deleted on the branch is gone, and an emptied structure
+   * reads as empty. What the branch shows is what a release would produce;
+   * targets are additionally resolved to the version the branch carries,
+   * where it carries one.
    */
   static async getRelationshipsWithDetailsForBranch(
     itemId: string,
@@ -267,20 +276,22 @@ export class ItemRelationshipService {
       return this.getRelationshipsWithDetails(itemId, relationshipType)
     }
 
-    // 4. Query relationships from both main and ECO versions
-    const sourceIds = [itemId, mainItemId]
-    const baseCondition = inArray(itemRelationships.sourceId, sourceIds)
-    const query = relationshipType
-      ? and(
-          baseCondition,
-          eq(itemRelationships.relationshipType, relationshipType),
-        )
-      : baseCondition
-
-    const allRelationships = await db
+    // 4. The working copy's own edges ARE its structure. This method used to
+    //    return the union of branch and main edges deduplicated by target,
+    //    which resurrected every line deleted on the branch — as a row owned
+    //    by the released main version, which branch protection then
+    //    (correctly) refused to modify when the user tried to delete it again.
+    const visibleRelationships = await db
       .select()
       .from(itemRelationships)
-      .where(query)
+      .where(
+        relationshipType
+          ? and(
+              eq(itemRelationships.sourceId, itemId),
+              eq(itemRelationships.relationshipType, relationshipType),
+            )
+          : eq(itemRelationships.sourceId, itemId),
+      )
 
     // 5. Build ECO branchItems map for resolving target IDs to their ECO versions
     const ecoBranchItemsResult = await db
@@ -298,38 +309,22 @@ export class ItemRelationshipService {
       }
     }
 
-    // 6. Deduplicate by target masterId — ECO relationships take priority
-    //    We need target masterIds to deduplicate, so fetch target items
-    const targetIds = [...new Set(allRelationships.map((r) => r.targetId))]
-    const targetItemsMap = new Map<string, { id: string; masterId: string }>()
+    const targetIds = [...new Set(visibleRelationships.map((r) => r.targetId))]
+    const targetMasterById = new Map<string, string>()
     if (targetIds.length > 0) {
       const targetItemRows = await db
         .select({ id: items.id, masterId: items.masterId })
         .from(items)
         .where(inArray(items.id, targetIds))
       for (const row of targetItemRows) {
-        targetItemsMap.set(row.id, row)
+        targetMasterById.set(row.id, row.masterId)
       }
     }
 
-    // Group by target masterId, preferring ECO-sourced relationships
-    const deduped = new Map<string, (typeof allRelationships)[number]>()
-    for (const rel of allRelationships) {
-      const targetInfo = targetItemsMap.get(rel.targetId)
-      const targetMasterId = targetInfo?.masterId ?? rel.targetId
-      const isEcoRelationship = rel.sourceId === itemId
-
-      if (!deduped.has(targetMasterId) || isEcoRelationship) {
-        deduped.set(targetMasterId, rel)
-      }
-    }
-
-    // 7. Enrich with targetItem details, resolving to ECO versions where available
+    // 6. Enrich with targetItem details, resolving to ECO versions where available
     const enrichedRelationships = await Promise.all(
-      Array.from(deduped.values()).map(async (rel) => {
-        // Resolve the target to its ECO version if one exists
-        const targetInfo = targetItemsMap.get(rel.targetId)
-        const targetMasterId = targetInfo?.masterId
+      visibleRelationships.map(async (rel) => {
+        const targetMasterId = targetMasterById.get(rel.targetId)
         const ecoTargetId = targetMasterId
           ? ecoMasterToItemId.get(targetMasterId)
           : undefined
@@ -422,6 +417,49 @@ export class ItemRelationshipService {
     if (targetItem) {
       await ItemService.requireContentEditable(targetItem, userId)
     }
+  }
+
+  /**
+   * Copy every outgoing edge of `sourceItemId` onto `targetItemId`, verbatim.
+   *
+   * Every step that mints a new item-version row (revision working copy,
+   * first save on a branch, rebase, pull-from-main) calls this for the same
+   * reason each carries files: edges hang off a version row, so a copy
+   * created without them has silently lost its structure — and the merge
+   * releases the copy's edges AS the item's structure, which would make the
+   * loss permanent. `onConflictDoNothing` keeps it idempotent against a
+   * target that already holds one of the edges.
+   */
+  static async copyRelationshipsToItem(options: {
+    sourceItemId: string
+    targetItemId: string
+    userId: string
+    tx?: TransactionClient
+  }): Promise<void> {
+    const { sourceItemId, targetItemId, userId, tx } = options
+    const executor = tx ?? db
+
+    const sourceRelationships = await executor
+      .select()
+      .from(itemRelationships)
+      .where(eq(itemRelationships.sourceId, sourceItemId))
+    if (sourceRelationships.length === 0) return
+
+    await executor
+      .insert(itemRelationships)
+      .values(
+        sourceRelationships.map((rel) => ({
+          sourceId: targetItemId,
+          targetId: rel.targetId,
+          relationshipType: rel.relationshipType,
+          quantity: rel.quantity,
+          referenceDesignator: rel.referenceDesignator,
+          findNumber: rel.findNumber,
+          metadata: rel.metadata,
+          createdBy: userId,
+        })),
+      )
+      .onConflictDoNothing()
   }
 
   /**

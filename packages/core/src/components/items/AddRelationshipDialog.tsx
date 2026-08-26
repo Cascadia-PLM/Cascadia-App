@@ -23,14 +23,20 @@ import {
 } from '@/components/ui/Select'
 import { Badge } from '@/components/ui/Badge'
 import {
+  BOM_RELATIONSHIP_TYPE,
   BomScopeNotice,
   useRelationshipTargets,
 } from '@/components/items/bom-target-scope'
+import {
+  DEFAULT_BOM_QUANTITY,
+  isValidQuantity,
+} from '@/components/items/bom-quantity'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useListSelection } from '@/lib/hooks/useListSelection'
 import { apiFetch } from '@/lib/api/client'
 import { useInvalidateResources } from '@/lib/query'
 import { StateBadge } from '@/components/items/StateBadge'
+import { cn } from '@/lib/utils'
 
 interface AddRelationshipDialogProps {
   open: boolean
@@ -51,6 +57,16 @@ const EMPTY_DETAILS: LineDetails = {
   quantity: '',
   referenceDesignator: '',
   findNumber: '',
+}
+
+/**
+ * A BOM line starts at quantity 1 — as a real value, not a placeholder. The
+ * field used to show `1` as a placeholder and submit nothing, so every line
+ * left untouched was created with a null quantity.
+ */
+const BOM_DEFAULT_DETAILS: LineDetails = {
+  ...EMPTY_DETAILS,
+  quantity: DEFAULT_BOM_QUANTITY,
 }
 
 /** What `POST /api/v1/relationships/batch-create` reports back. */
@@ -91,6 +107,9 @@ export function AddRelationshipDialog({
   const selection = useListSelection(candidates)
   const selectedCount = selection.selected.length
 
+  const isBom = relationshipType === BOM_RELATIONSHIP_TYPE
+  const defaultDetails = isBom ? BOM_DEFAULT_DETAILS : EMPTY_DETAILS
+
   const setDetail = (
     id: string,
     field: keyof LineDetails,
@@ -98,12 +117,23 @@ export function AddRelationshipDialog({
   ): void => {
     setDetails((prev) => ({
       ...prev,
-      [id]: { ...(prev[id] ?? EMPTY_DETAILS), [field]: value },
+      [id]: { ...(prev[id] ?? defaultDetails), [field]: value },
     }))
   }
 
+  // A BOM line requires a quantity; on any line, a non-empty value must be a
+  // decimal the numeric column can hold.
+  const lineQuantityInvalid = (line: LineDetails): boolean =>
+    isBom
+      ? !isValidQuantity(line.quantity)
+      : line.quantity.trim() !== '' && !isValidQuantity(line.quantity)
+
+  const hasInvalidQuantity = selection.selected.some((item) =>
+    lineQuantityInvalid(details[item.id] ?? defaultDetails),
+  )
+
   const handleAdd = async () => {
-    if (selectedCount === 0) return
+    if (selectedCount === 0 || hasInvalidQuantity) return
 
     setLoading(true)
     try {
@@ -116,12 +146,12 @@ export function AddRelationshipDialog({
           method: 'POST',
           body: JSON.stringify({
             relationships: selection.selected.map((item) => {
-              const line = details[item.id] ?? EMPTY_DETAILS
+              const line = details[item.id] ?? defaultDetails
               return {
                 sourceId: itemId,
                 targetId: item.id,
                 relationshipType,
-                quantity: line.quantity || undefined,
+                quantity: line.quantity.trim() || undefined,
                 referenceDesignator: line.referenceDesignator || undefined,
                 findNumber: line.findNumber
                   ? parseInt(line.findNumber)
@@ -154,12 +184,15 @@ export function AddRelationshipDialog({
       onSuccess()
       selection.clear()
       setDetails({})
-    } catch {
+    } catch (error) {
       alert({
-        title: 'Error',
-        description:
+        title:
           selectedCount === 1
             ? 'Failed to add relationship'
+            : 'Failed to add relationships',
+        description:
+          error instanceof Error
+            ? error.message
             : 'Failed to add relationships',
         variant: 'destructive',
       })
@@ -332,7 +365,9 @@ export function AddRelationshipDialog({
                   Selected ({selectedCount})
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Quantity, reference designator and find number are optional.
+                  {isBom
+                    ? 'Every BOM line needs a decimal quantity (e.g. 4 or 2.5). Reference designator and find number are optional.'
+                    : 'Quantity, reference designator and find number are optional.'}
                 </p>
               </div>
 
@@ -348,7 +383,7 @@ export function AddRelationshipDialog({
 
               <div className="max-h-52 overflow-y-auto auto-hide-scroll space-y-2 pr-1">
                 {selection.selected.map((item) => {
-                  const line = details[item.id] ?? EMPTY_DETAILS
+                  const line = details[item.id] ?? defaultDetails
                   return (
                     <div
                       key={item.id}
@@ -366,7 +401,12 @@ export function AddRelationshipDialog({
                       </span>
                       <Input
                         type="text"
-                        className="h-8"
+                        inputMode="decimal"
+                        className={cn(
+                          'h-8',
+                          lineQuantityInvalid(line) &&
+                            'border-red-500 focus-visible:ring-red-500 dark:border-red-500',
+                        )}
                         placeholder="1"
                         aria-label={`Quantity for ${item.itemNumber}`}
                         value={line.quantity}
@@ -427,7 +467,7 @@ export function AddRelationshipDialog({
           <Button
             type="button"
             onClick={handleAdd}
-            disabled={selectedCount === 0 || loading}
+            disabled={selectedCount === 0 || loading || hasInvalidQuantity}
           >
             {loading
               ? 'Adding...'

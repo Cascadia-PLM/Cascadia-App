@@ -710,6 +710,54 @@ describe('ChangeOrderMergeService', () => {
       expect(targets).toContain(addChild.id)
       expect(targets).not.toContain(dropChild.id)
     })
+
+    it('releases an intentionally emptied structure as empty', async () => {
+      // Deleting EVERY line on the branch used to be indistinguishable from a
+      // working copy that never carried relationships, and the merge restored
+      // the base structure — the deletion silently did not ship. Working
+      // copies always carry their edges now, so no edges means no edges.
+      const assembly = await createPart('empty-assy')
+      const child = await createPart('empty-child')
+      await testDb.db
+        .update(items)
+        .set({ state: 'Released' })
+        .where(inArray(items.id, [assembly.id, child.id]))
+      await testDb.db.insert(itemRelationships).values({
+        sourceId: assembly.id,
+        targetId: child.id,
+        relationshipType: 'BOM',
+        quantity: '1',
+        createdBy: user.id,
+      })
+
+      const eco = await createChangeOrder()
+      const { workingCopyId } = await ChangeOrderService.addAffectedItem(
+        eco.id,
+        { affectedItemId: assembly.id, changeAction: 'revise' },
+        user.id,
+      )
+      await testDb.db
+        .delete(itemRelationships)
+        .where(eq(itemRelationships.sourceId, workingCopyId!))
+
+      await approveEco(eco.id)
+      await ChangeOrderMergeService.merge(eco.id, user.id)
+
+      const released = await testDb.db
+        .select()
+        .from(items)
+        .where(
+          and(eq(items.masterId, assembly.masterId), eq(items.isCurrent, true)),
+        )
+        .then((r) => r.at(0))
+      expect(released).toBeDefined()
+      expect(released!.id).not.toBe(assembly.id)
+      const finalBom = await testDb.db
+        .select()
+        .from(itemRelationships)
+        .where(eq(itemRelationships.sourceId, released!.id))
+      expect(finalBom).toHaveLength(0)
+    })
   })
 
   describe('mergeBranchToMain', () => {
@@ -3674,10 +3722,9 @@ describe('ChangeOrderMergeService', () => {
         otherId: string
       }) => Promise<void>,
     ) {
-      // Two requirements, because the merge treats a working copy with no
-      // relationships at all as a legacy copy and restores the previous
-      // revision's — so a test that removed the item's only edge would be
-      // measuring that fallback instead of this read.
+      // Two requirements, so the link the change order KEEPS still reads
+      // afterwards — the surviving link is what distinguishes a surgical
+      // removal from everything having disappeared.
       const requirement = await createRequirement('src')
       const other = await createRequirement('src-other')
       const part = await createPart('src-sat')

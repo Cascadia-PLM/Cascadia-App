@@ -1,6 +1,6 @@
 {
   "name": "cascadia",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "description": "Code-first, type-safe Product Lifecycle Management (PLM) system with ECO-as-Branch versioning. Built with Hono + Vite + TanStack Router + PostgreSQL.",
   "license": "AGPL-3.0-or-later",
   "private": true,
@@ -43,6 +43,7 @@
     "boundary:check": "node scripts/check-core-boundary.mjs",
     "db:generate": "node scripts/drizzle.mjs generate",
     "db:migrate": "node scripts/drizzle.mjs migrate",
+    "db:baseline": "tsx scripts/db-baseline.ts",
     "db:push": "node scripts/drizzle.mjs push",
     "db:studio": "node scripts/drizzle.mjs studio",
     "db:seed": "tsx scripts/seed-minimal.ts",

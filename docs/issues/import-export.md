@@ -58,6 +58,12 @@ All three template endpoints accept a `format` query parameter but contain a com
 
 **Recommendation:** Either implement XLSX template generation or remove the `format` parameter to avoid misleading API consumers.
 
+**Status (v0.5): FIXED.** `generateXlsxTemplate()` (which existed, complete
+and unwired, in `lib/import/xlsx-template.ts`) is now exported from
+`@/lib/import` and wired into all three endpoints; `format=xlsx` returns a
+real workbook and an unknown format is a 400 instead of a silent CSV
+fallback.
+
 ---
 
 ## 5. `PART_FIELDS` is defined in two places

@@ -116,6 +116,9 @@ app.get(
     documentation: {
       info: {
         title: 'Cascadia API',
+        // The API *contract* version, not the product version: v1 is frozen
+        // (docs/api/README.md), so this stays 1.0.0 across product releases.
+        // The product version lives in APP_VERSION and /api/v1/health.
         version: '1.0.0',
         description:
           'Code-first PLM. ECO-as-Branch versioning. v1 surface is frozen; ' +

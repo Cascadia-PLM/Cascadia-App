@@ -171,10 +171,11 @@ test.describe('Requirement Lifecycle @tier2', () => {
       const designOptions = page
         .locator('[role="option"]')
         .filter({ hasNotText: 'No Design' })
-      if ((await designOptions.count()) === 0) {
-        test.skip()
-        return
-      }
+      // Hard requirement, not a skip: global setup guarantees a selectable design.
+      expect(
+        await designOptions.count(),
+        'no selectable design — e2e global setup should have created one',
+      ).toBeGreaterThan(0)
       await designOptions.first().click()
 
       // Fill in requirement details

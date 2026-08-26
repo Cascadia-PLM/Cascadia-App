@@ -4,7 +4,11 @@
 import { Hono } from 'hono'
 import { tagged } from '../adapter'
 import type { BaseItem } from '@/lib/items/types/base'
-import type { BomImportResult, ImportResult } from '@/lib/import'
+import type {
+  BomImportResult,
+  ImportResult,
+  ItemFieldConfig,
+} from '@/lib/import'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
@@ -20,6 +24,7 @@ import {
   ISSUE_FIELDS,
   MAX_IMPORT_ROWS,
   PART_FIELDS,
+  generateXlsxTemplate,
   importDocumentsRequestSchema,
   importIssuesRequestSchema,
   importPartsWithBomRequestSchema,
@@ -588,72 +593,60 @@ app.post(
   ),
 )
 
+/**
+ * One template response for all three item-type endpoints: a header row plus
+ * an example row built from the field config, as CSV (default) or a real
+ * XLSX workbook. `format=xlsx` used to silently return CSV; the parameter
+ * now means what it says, and an unknown format is a 400 rather than a
+ * silent fallback — this surface freezes at v0.5.
+ */
+async function templateResponse(
+  fields: Array<ItemFieldConfig>,
+  resource: string,
+  format: string,
+): Promise<Response> {
+  if (format === 'xlsx') {
+    const buffer = await generateXlsxTemplate(fields, `${resource} import`)
+    return new Response(new Uint8Array(buffer), {
+      status: 200,
+      headers: {
+        'Content-Type':
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="${resource}-import-template.xlsx"`,
+      },
+    })
+  }
+
+  if (format !== 'csv') {
+    throw new ValidationError(`Unsupported template format: ${format}`)
+  }
+
+  const escapeCsv = (val: string) =>
+    val.includes(',') || val.includes('"') || val.includes('\n')
+      ? `"${val.replace(/"/g, '""')}"`
+      : val
+  const csvContent = [
+    fields.map((field) => field.label).join(','),
+    fields.map((field) => escapeCsv(field.example || '')).join(','),
+  ].join('\n')
+
+  return new Response(csvContent, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/csv',
+      'Content-Disposition': `attachment; filename="${resource}-import-template.csv"`,
+    },
+  })
+}
+
 // GET /api/import/templates/documents
 app.get(
   '/templates/documents',
   adapt(
-    // eslint-disable-next-line @typescript-eslint/require-await -- apiHandler signature requires async
     apiHandler({ public: true }, async ({ request }) => {
       const url = new URL(request.url)
       const format = url.searchParams.get('format') || 'csv'
-
-      // Build header row from DOCUMENT_FIELDS
-      const headers = DOCUMENT_FIELDS.map((field) => field.label)
-
-      // Build example row
-      const exampleRow = DOCUMENT_FIELDS.map((field) => field.example || '')
-
-      if (format === 'csv') {
-        // Generate CSV content
-        const csvContent = [
-          headers.join(','),
-          exampleRow
-            .map((val) => {
-              // Escape values with commas or quotes
-              if (
-                val.includes(',') ||
-                val.includes('"') ||
-                val.includes('\n')
-              ) {
-                return `"${val.replace(/"/g, '""')}"`
-              }
-              return val
-            })
-            .join(','),
-        ].join('\n')
-
-        return new Response(csvContent, {
-          status: 200,
-          headers: {
-            'Content-Type': 'text/csv',
-            'Content-Disposition':
-              'attachment; filename="documents-import-template.csv"',
-          },
-        })
-      }
-
-      // For XLSX, we would need to use xlsx library
-      // For now, return CSV as default
-      const csvContent = [
-        headers.join(','),
-        exampleRow
-          .map((val) => {
-            if (val.includes(',') || val.includes('"') || val.includes('\n')) {
-              return `"${val.replace(/"/g, '""')}"`
-            }
-            return val
-          })
-          .join(','),
-      ].join('\n')
-
-      return new Response(csvContent, {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/csv',
-          'Content-Disposition':
-            'attachment; filename="documents-import-template.csv"',
-        },
-      })
+      return templateResponse(DOCUMENT_FIELDS, 'documents', format)
     }),
   ),
 )
@@ -662,68 +655,10 @@ app.get(
 app.get(
   '/templates/issues',
   adapt(
-    // eslint-disable-next-line @typescript-eslint/require-await -- apiHandler signature requires async
     apiHandler({ public: true }, async ({ request }) => {
       const url = new URL(request.url)
       const format = url.searchParams.get('format') || 'csv'
-
-      // Build header row from ISSUE_FIELDS
-      const headers = ISSUE_FIELDS.map((field) => field.label)
-
-      // Build example row
-      const exampleRow = ISSUE_FIELDS.map((field) => field.example || '')
-
-      if (format === 'csv') {
-        // Generate CSV content
-        const csvContent = [
-          headers.join(','),
-          exampleRow
-            .map((val) => {
-              // Escape values with commas or quotes
-              if (
-                val.includes(',') ||
-                val.includes('"') ||
-                val.includes('\n')
-              ) {
-                return `"${val.replace(/"/g, '""')}"`
-              }
-              return val
-            })
-            .join(','),
-        ].join('\n')
-
-        return new Response(csvContent, {
-          status: 200,
-          headers: {
-            'Content-Type': 'text/csv',
-            'Content-Disposition':
-              'attachment; filename="issues-import-template.csv"',
-          },
-        })
-      }
-
-      // For XLSX, we would need to use xlsx library
-      // For now, return CSV as default
-      const csvContent = [
-        headers.join(','),
-        exampleRow
-          .map((val) => {
-            if (val.includes(',') || val.includes('"') || val.includes('\n')) {
-              return `"${val.replace(/"/g, '""')}"`
-            }
-            return val
-          })
-          .join(','),
-      ].join('\n')
-
-      return new Response(csvContent, {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/csv',
-          'Content-Disposition':
-            'attachment; filename="issues-import-template.csv"',
-        },
-      })
+      return templateResponse(ISSUE_FIELDS, 'issues', format)
     }),
   ),
 )
@@ -732,68 +667,10 @@ app.get(
 app.get(
   '/templates/parts',
   adapt(
-    // eslint-disable-next-line @typescript-eslint/require-await -- apiHandler signature requires async
     apiHandler({ public: true }, async ({ request }) => {
       const url = new URL(request.url)
       const format = url.searchParams.get('format') || 'csv'
-
-      // Build header row from PART_FIELDS
-      const headers = PART_FIELDS.map((field) => field.label)
-
-      // Build example row
-      const exampleRow = PART_FIELDS.map((field) => field.example || '')
-
-      if (format === 'csv') {
-        // Generate CSV content
-        const csvContent = [
-          headers.join(','),
-          exampleRow
-            .map((val) => {
-              // Escape values with commas or quotes
-              if (
-                val.includes(',') ||
-                val.includes('"') ||
-                val.includes('\n')
-              ) {
-                return `"${val.replace(/"/g, '""')}"`
-              }
-              return val
-            })
-            .join(','),
-        ].join('\n')
-
-        return new Response(csvContent, {
-          status: 200,
-          headers: {
-            'Content-Type': 'text/csv',
-            'Content-Disposition':
-              'attachment; filename="parts-import-template.csv"',
-          },
-        })
-      }
-
-      // For XLSX, we would need to use xlsx library
-      // For now, return CSV as default
-      const csvContent = [
-        headers.join(','),
-        exampleRow
-          .map((val) => {
-            if (val.includes(',') || val.includes('"') || val.includes('\n')) {
-              return `"${val.replace(/"/g, '""')}"`
-            }
-            return val
-          })
-          .join(','),
-      ].join('\n')
-
-      return new Response(csvContent, {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/csv',
-          'Content-Disposition':
-            'attachment; filename="parts-import-template.csv"',
-        },
-      })
+      return templateResponse(PART_FIELDS, 'parts', format)
     }),
   ),
 )

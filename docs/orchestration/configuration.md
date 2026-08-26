@@ -216,12 +216,13 @@ S3_SECRET_KEY=...
 
 When running PostgreSQL in Docker.
 
-| Variable            | Default                           | Description                  |
-| ------------------- | --------------------------------- | ---------------------------- |
-| `POSTGRES_DB`       | `cascadia`                        | Database name                |
-| `POSTGRES_USER`     | `postgres`                        | Database user                |
-| `POSTGRES_PASSWORD` | -                                 | Database password (required) |
-| `PGDATA`            | `/var/lib/postgresql/data/pgdata` | Data directory               |
+| Variable            | Default                           | Description                                                                  |
+| ------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
+| `POSTGRES_DB`       | `cascadia`                        | Database name                                                                |
+| `POSTGRES_USER`     | `postgres`                        | Database user                                                                |
+| `POSTGRES_PASSWORD` | — (required)                      | No compose default — the stack refuses to start without it                   |
+| `POSTGRES_BIND`     | `127.0.0.1`                       | Host bind address for the port mapping; set `0.0.0.0` to expose deliberately |
+| `PGDATA`            | `/var/lib/postgresql/data/pgdata` | Data directory                                                               |
 
 ---
 
@@ -229,11 +230,12 @@ When running PostgreSQL in Docker.
 
 When running RabbitMQ in Docker.
 
-| Variable                 | Default | Description          |
-| ------------------------ | ------- | -------------------- |
-| `RABBITMQ_DEFAULT_USER`  | `guest` | Management user      |
-| `RABBITMQ_DEFAULT_PASS`  | `guest` | Management password  |
-| `RABBITMQ_DEFAULT_VHOST` | `/`     | Default virtual host |
+| Variable            | Default     | Description                                                                         |
+| ------------------- | ----------- | ----------------------------------------------------------------------------------- |
+| `RABBITMQ_USER`     | `cascadia`  | Management user (compose maps it to `RABBITMQ_DEFAULT_USER`)                        |
+| `RABBITMQ_PASSWORD` | `cascadia`  | Management password — change it for any shared deployment                           |
+| `RABBITMQ_VHOST`    | `/`         | Default virtual host                                                                |
+| `RABBITMQ_BIND`     | `127.0.0.1` | Host bind for the AMQP and management-UI ports; loopback keeps them off the network |
 
 Connection string format:
 

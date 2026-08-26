@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { tagged } from '../adapter'
 import { FileService } from '@/lib/vault/services/FileService'
 import { JobService } from '@/lib/jobs/JobService'
-import { apiHandler, jsonResponse } from '@/lib/api/handler'
+import { apiHandler, jsonResponse, parseQuery } from '@/lib/api/handler'
 import {
   FileTooLargeError,
   FileTypeNotAllowedError,
@@ -298,8 +298,15 @@ app.get(
   '/',
   adapt(
     apiHandler({ permission: ['documents', 'read'] }, async ({ request }) => {
-      const url = new URL(request.url)
-      const limit = parseInt(url.searchParams.get('limit') || '100', 10)
+      // Validated, not parseInt: `limit=abc` used to become NaN and reach the
+      // query. The 100 default predates the freeze and is kept — the OpenAPI
+      // snapshot is the authority on per-endpoint defaults.
+      const { limit } = parseQuery(
+        request,
+        z.object({
+          limit: z.coerce.number().int().min(1).max(500).default(100),
+        }),
+      )
 
       const files = await FileService.listAllFiles({
         limit,

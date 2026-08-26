@@ -3,8 +3,9 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronDown, ExternalLink, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react'
 import { AddRelationshipDialog } from './AddRelationshipDialog'
+import { EditRelationshipDialog } from './EditRelationshipDialog'
 import { NewRelationshipTypeDialog } from './NewRelationshipTypeDialog'
 import type { DataGridColumn } from '@/components/ui/DataGrid'
 import type { Row } from '@tanstack/react-table'
@@ -62,6 +63,8 @@ export function RelationshipSection({
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [newTypeDialogOpen, setNewTypeDialogOpen] = useState(false)
   const [selectedType, setSelectedType] = useState<string | null>(null)
+  const [editingRelationship, setEditingRelationship] =
+    useState<Relationship | null>(null)
 
   const { data: relationships = [], isPending: loading } = useQuery(
     itemRelationshipsQuery<Relationship>(itemId),
@@ -113,10 +116,13 @@ export function RelationshipSection({
             method: 'DELETE',
           })
           await invalidate('relationships')
-        } catch {
+        } catch (error) {
           alert({
-            title: 'Error',
-            description: 'Failed to remove relationship',
+            title: 'Failed to remove relationship',
+            description:
+              error instanceof Error
+                ? error.message
+                : 'Failed to remove relationship',
             variant: 'destructive',
           })
         }
@@ -149,18 +155,24 @@ export function RelationshipSection({
     [],
   )
 
-  // Context menu items (Remove)
+  // Context menu items (Edit, Remove)
   const renderContextMenuItems = useCallback(
     (row: Row<Relationship>) => {
       if (readOnly) return null
       return (
-        <ContextMenuItem
-          onClick={() => handleRemoveRelationship(row.original.id)}
-          className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          Remove
-        </ContextMenuItem>
+        <>
+          <ContextMenuItem onClick={() => setEditingRelationship(row.original)}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Edit
+          </ContextMenuItem>
+          <ContextMenuItem
+            onClick={() => handleRemoveRelationship(row.original.id)}
+            className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Remove
+          </ContextMenuItem>
+        </>
       )
     },
     [readOnly],
@@ -301,18 +313,31 @@ export function RelationshipSection({
         header: '',
         enableSorting: false,
         enableFiltering: false,
-        meta: { width: '50px', align: 'center' as const },
+        meta: { width: '80px', align: 'center' as const },
         cell: ({ row }) =>
           readOnly ? null : (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => handleRemoveRelationship(row.original.id)}
-              className="h-8 w-8 p-0"
-            >
-              <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-            </Button>
+            <div className="flex items-center justify-center gap-0.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditingRelationship(row.original)}
+                className="h-8 w-8 p-0"
+                aria-label="Edit relationship"
+              >
+                <Pencil className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => handleRemoveRelationship(row.original.id)}
+                className="h-8 w-8 p-0"
+                aria-label="Remove relationship"
+              >
+                <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+              </Button>
+            </div>
           ),
       },
     ],
@@ -446,6 +471,16 @@ export function RelationshipSection({
           onOpenChange={setNewTypeDialogOpen}
           itemId={itemId}
           onSuccess={handleRelationshipAdded}
+        />
+      )}
+
+      {editingRelationship && (
+        <EditRelationshipDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditingRelationship(null)
+          }}
+          relationship={editingRelationship}
         />
       )}
     </>

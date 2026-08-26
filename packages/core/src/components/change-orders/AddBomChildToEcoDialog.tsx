@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { Badge } from '@/components/ui/Badge'
+import { isValidQuantity } from '@/components/items/bom-quantity'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { apiFetch } from '@/lib/api/client'
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
@@ -94,8 +95,10 @@ export function AddBomChildToEcoDialog({
     }
   }, [open])
 
+  const quantityInvalid = !isValidQuantity(quantity)
+
   const handleAdd = async () => {
-    if (!selectedItem) return
+    if (!selectedItem || quantityInvalid) return
 
     setLoading(true)
     try {
@@ -104,7 +107,8 @@ export function AddBomChildToEcoDialog({
         body: JSON.stringify({
           parentItemId,
           childItemId: selectedItem.id,
-          quantity: parseInt(quantity) || 1,
+          // parseFloat, not parseInt — BOM quantities are decimals ("2.5")
+          quantity: parseFloat(quantity),
           findNumber: findNumber ? parseInt(findNumber) : undefined,
           action: 'add',
         }),
@@ -112,11 +116,13 @@ export function AddBomChildToEcoDialog({
 
       onSuccess()
       onOpenChange(false)
-    } catch {
+    } catch (error) {
       alert({
-        title: 'Error',
+        title: 'Failed to add BOM relationship',
         description:
-          'Failed to add BOM relationship. Make sure the parent item is an affected item in this ECO.',
+          error instanceof Error && error.message
+            ? error.message
+            : 'Failed to add BOM relationship. Make sure the parent item is an affected item in this ECO.',
         variant: 'destructive',
       })
     } finally {
@@ -296,11 +302,21 @@ export function AddBomChildToEcoDialog({
                 <Label>Quantity</Label>
                 <Input
                   type="number"
-                  min="1"
+                  min="0"
+                  step="any"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                   placeholder="1"
+                  className={cn(
+                    quantityInvalid &&
+                      'border-red-500 focus-visible:ring-red-500 dark:border-red-500',
+                  )}
                 />
+                {quantityInvalid && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    A BOM line needs a decimal quantity, e.g. 4 or 2.5
+                  </p>
+                )}
               </div>
               <div>
                 <Label>Find Number</Label>
@@ -327,7 +343,7 @@ export function AddBomChildToEcoDialog({
           <Button
             type="button"
             onClick={handleAdd}
-            disabled={!selectedItem || loading}
+            disabled={!selectedItem || quantityInvalid || loading}
           >
             {loading ? 'Adding...' : 'Add to BOM'}
           </Button>

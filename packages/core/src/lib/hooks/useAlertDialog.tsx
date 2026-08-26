@@ -75,10 +75,15 @@ export function AlertDialogProvider({ children }: { children: ReactNode }) {
   }
 
   const handleAction = async () => {
-    if (state.onConfirm) {
-      await state.onConfirm()
+    const { onConfirm } = state
+    // Close BEFORE running onConfirm: a failing onConfirm reports through
+    // alert(), and closing afterwards dismissed that error dialog in the same
+    // breath it opened — every confirmed action that failed looked like it
+    // had silently succeeded.
+    setState((prev) => ({ ...prev, open: false, onConfirm: undefined }))
+    if (onConfirm) {
+      await onConfirm()
     }
-    setState((prev) => ({ ...prev, open: false }))
   }
 
   const handleCancel = () => {

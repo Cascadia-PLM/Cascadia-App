@@ -28,10 +28,15 @@ import {
   BomScopeNotice,
   useRelationshipTargets,
 } from '@/components/items/bom-target-scope'
+import {
+  DEFAULT_BOM_QUANTITY,
+  isValidQuantity,
+} from '@/components/items/bom-quantity'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { apiFetch } from '@/lib/api/client'
 import { useInvalidateResources } from '@/lib/query'
 import { StateBadge } from '@/components/items/StateBadge'
+import { cn } from '@/lib/utils'
 
 interface NewRelationshipTypeDialogProps {
   open: boolean
@@ -99,12 +104,22 @@ export function NewRelationshipTypeDialog({
     if ((nextFinal === BOM_RELATIONSHIP_TYPE) !== bomScope.active) {
       setSelectedItem(null)
     }
+    // A BOM line requires a quantity, so entering BOM fills the default in as
+    // a real value — the placeholder `1` used to submit as null.
+    if (nextFinal === BOM_RELATIONSHIP_TYPE && quantity.trim() === '') {
+      setQuantity(DEFAULT_BOM_QUANTITY)
+    }
     setRelationshipType(nextRelationshipType)
     setCustomType(nextCustomType)
   }
 
+  const isBom = finalType === BOM_RELATIONSHIP_TYPE
+  const quantityInvalid = isBom
+    ? !isValidQuantity(quantity)
+    : quantity.trim() !== '' && !isValidQuantity(quantity)
+
   const handleAdd = async () => {
-    if (!selectedItem) return
+    if (!selectedItem || quantityInvalid) return
 
     if (!finalType) {
       alert({
@@ -122,7 +137,7 @@ export function NewRelationshipTypeDialog({
         body: JSON.stringify({
           targetId: selectedItem.id,
           relationshipType: finalType,
-          quantity: quantity || null,
+          quantity: quantity.trim() || null,
           referenceDesignator: referenceDesignator || null,
           findNumber: findNumber ? parseInt(findNumber) : null,
         }),
@@ -137,10 +152,11 @@ export function NewRelationshipTypeDialog({
       setQuantity('')
       setReferenceDesignator('')
       setFindNumber('')
-    } catch {
+    } catch (error) {
       alert({
-        title: 'Error',
-        description: 'Failed to add relationship',
+        title: 'Failed to add relationship',
+        description:
+          error instanceof Error ? error.message : 'Failed to add relationship',
         variant: 'destructive',
       })
     } finally {
@@ -287,19 +303,35 @@ export function NewRelationshipTypeDialog({
           {selectedItem && (
             <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
               <h4 className="font-medium text-sm">
-                Relationship Details (Optional)
+                {isBom
+                  ? 'Relationship Details'
+                  : 'Relationship Details (Optional)'}
               </h4>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <Label htmlFor="quantity">Quantity</Label>
+                  <Label htmlFor="quantity">
+                    Quantity{isBom ? ' (required)' : ''}
+                  </Label>
                   <Input
                     id="quantity"
                     type="text"
+                    inputMode="decimal"
                     placeholder="1"
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
+                    className={cn(
+                      quantityInvalid &&
+                        'border-red-500 focus-visible:ring-red-500 dark:border-red-500',
+                    )}
                   />
+                  {quantityInvalid && (
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                      {isBom
+                        ? 'A BOM line needs a decimal quantity, e.g. 4 or 2.5'
+                        : 'Quantity must be a decimal, e.g. 4 or 2.5'}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -343,6 +375,7 @@ export function NewRelationshipTypeDialog({
               !selectedItem ||
               !relationshipType ||
               (relationshipType === 'custom' && !customType) ||
+              quantityInvalid ||
               loading
             }
           >

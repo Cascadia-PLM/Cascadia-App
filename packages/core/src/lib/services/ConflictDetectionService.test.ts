@@ -932,6 +932,84 @@ describe('ConflictDetectionService', () => {
       ])
     })
 
+    /**
+     * Same shape as the files test above, for structure: relationships hang
+     * off a version row too, and the merge releases the branch copy's edges
+     * AS the item's structure — so a rebase that dropped them would ship an
+     * assembly with an empty BOM.
+     */
+    it('keeps the branch relationships on the rebased working copy', async () => {
+      const part = await createPartOnMain('Structured Part', 'has a BOM')
+      const child = await createPartOnMain('Child Part', 'a BOM line')
+      await testDb.db.insert(itemRelationships).values({
+        sourceId: part.id,
+        targetId: child.id,
+        relationshipType: 'BOM',
+        quantity: '4',
+        createdBy: user.id,
+      })
+
+      const eco = await createChangeOrder()
+      const { branch: ecoBranch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+      await CheckoutService.checkout(
+        { itemMasterId: part.masterId, branchId: ecoBranch.id },
+        user.id,
+      )
+      await CheckoutService.checkin(part.masterId, ecoBranch.id, user.id)
+
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, ecoBranch.id)),
+      )
+
+      const newBaseItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: part.masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: part.itemNumber,
+            revision: 'B',
+            name: 'New Base Name',
+            state: 'Draft',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
+
+      const result = await ConflictDetectionService.rebaseItem(
+        branchItem.id,
+        newBaseItem.id,
+        user.id,
+      )
+      expect(result.success).toBe(true)
+
+      const rebased = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.id, branchItem.id)),
+      )
+      expect(rebased.currentItemId).not.toBe(part.id)
+
+      const edgesOnRebased = await testDb.db
+        .select()
+        .from(itemRelationships)
+        .where(eq(itemRelationships.sourceId, rebased.currentItemId!))
+      expect(edgesOnRebased).toHaveLength(1)
+      expect(edgesOnRebased[0]!.targetId).toBe(child.id)
+      expect(parseFloat(edgesOnRebased[0]!.quantity ?? '')).toBe(4)
+    })
+
     it('applies resolutions when provided', async () => {
       // Create part
       const part = await createPartOnMain(

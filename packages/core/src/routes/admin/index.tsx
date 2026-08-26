@@ -34,6 +34,7 @@ import {
   Label,
 } from '@/components/ui'
 import { SettingKeys } from '@/lib/config/SettingKeys'
+import { APP_VERSION } from '@/lib/version'
 import {
   packageListQuery,
   useInvalidateResources,
@@ -533,16 +534,24 @@ function AdminPage() {
         </CardContent>
       </Card>
 
-      {/* Additional Settings Placeholder */}
-      <Card className="opacity-60">
+      {/* System */}
+      <Card>
         <CardHeader>
-          <CardTitle>Additional Settings</CardTitle>
-          <CardDescription>Coming soon</CardDescription>
+          <CardTitle>System</CardTitle>
+          <CardDescription>About this Cascadia instance</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Additional system configuration options will be added here.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Version
+              </p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Also reported by <code>GET /api/v1/health</code>
+              </p>
+            </div>
+            <Badge variant="outline">{APP_VERSION}</Badge>
+          </div>
         </CardContent>
       </Card>
     </PageContainer>

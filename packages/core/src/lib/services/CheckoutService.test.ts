@@ -43,6 +43,7 @@ import {
 import {
   branchItems,
   changeOrderAffectedItems,
+  itemRelationships,
   itemVersions,
   items,
   programs,
@@ -1361,6 +1362,45 @@ describe('CheckoutService', () => {
         .limit(1)
       expect(releasedRow!.name).toBe('Original Name')
       expect(releasedRow!.state).toBe('Released')
+    })
+
+    it('first save carries the base version relationships onto the working copy', async () => {
+      // A field edit mints the working copy, and the copy's edges are what
+      // the merge releases as the item's structure — so a copy created by
+      // editing a description must not release an assembly with an empty BOM.
+      const parent = await createReleasedPart({ name: 'Assembly' })
+      const child = await createReleasedPart({ name: 'Child' })
+      await testDb.db.insert(itemRelationships).values({
+        sourceId: parent.id,
+        targetId: child.id,
+        relationshipType: 'BOM',
+        quantity: '2.5',
+        findNumber: 10,
+        createdBy: user.id,
+      })
+
+      await CheckoutService.checkout(
+        { itemMasterId: parent.masterId, branchId: ecoBranchId },
+        user.id,
+      )
+      const saved = await CheckoutService.saveChanges(
+        {
+          branchId: ecoBranchId,
+          itemId: parent.id,
+          changes: { name: 'Renamed Assembly' },
+          commitMessage: 'Field-only edit',
+        },
+        user.id,
+      )
+
+      const carried = await testDb.db
+        .select()
+        .from(itemRelationships)
+        .where(eq(itemRelationships.sourceId, saved.item.id))
+      expect(carried).toHaveLength(1)
+      expect(carried[0]!.targetId).toBe(child.id)
+      expect(parseFloat(carried[0]!.quantity ?? '')).toBe(2.5)
+      expect(carried[0]!.findNumber).toBe(10)
     })
 
     it('subsequent saves update the working copy in place (no revision collision)', async () => {

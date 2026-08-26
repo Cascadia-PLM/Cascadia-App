@@ -11,6 +11,7 @@ import {
   workflowInstances,
 } from '../db/schema'
 import { ItemService } from '../items/services/ItemService'
+import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
 import { getTypeHandler } from '../items/type-handlers'
 import { FileService } from '../vault/services/FileService'
 import { bomStructureOf, describeBomStructure } from './item-structure'
@@ -1069,6 +1070,18 @@ export class ConflictDetectionService {
           tx,
         })
 
+        // Relationships are branch content exactly like files: the copy being
+        // rebased is the authority on the structure (lines added, re-counted
+        // or deleted during the ECO), and the merge releases the copy's edges
+        // as the item's structure. Sourcing them from the new base would
+        // silently discard every structure edit made on the branch.
+        await ItemRelationshipService.copyRelationshipsToItem({
+          sourceItemId: ourItem.id,
+          targetItemId: newWorkingCopy.id,
+          userId,
+          tx,
+        })
+
         // Update branch item
         await tx
           .update(branchItems)
@@ -1182,6 +1195,16 @@ export class ConflictDetectionService {
           sourceItemId: ourItem.id,
           targetItemId: newWorkingCopy.id,
           branchId: bi.branchId,
+          tx,
+        })
+
+        // Same for relationships: branch content, not a three-way-compared
+        // field, so they come from the branch copy — the merge releases the
+        // copy's edges as the item's structure.
+        await ItemRelationshipService.copyRelationshipsToItem({
+          sourceItemId: ourItem.id,
+          targetItemId: newWorkingCopy.id,
+          userId,
           tx,
         })
 

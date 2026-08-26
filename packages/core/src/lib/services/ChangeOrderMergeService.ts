@@ -1816,30 +1816,19 @@ export class ChangeOrderMergeService {
             if (!releasedItemId) continue
 
             // The branch's own version of the item is the authority on its
-            // structure: it is created carrying the item's relationships and is
-            // what the user edits on the ECO branch (adding, re-quantifying or
-            // DELETING lines). Reading from baseItemId instead would resurrect
-            // every line deleted on the branch.
-            let sourceItemId = bi.currentItemId
+            // structure: every step that mints a working copy carries the
+            // item's relationships onto it (copyRelationshipsToItem), and the
+            // copy is what the user edits on the ECO branch (adding,
+            // re-quantifying or DELETING lines). Reading from baseItemId
+            // instead would resurrect every line deleted on the branch — and
+            // a copy whose every line was deleted releases an intentionally
+            // emptied structure, not the base's.
+            const sourceItemId = bi.currentItemId
 
-            let parentRelationships = await tx
+            const parentRelationships = await tx
               .select()
               .from(itemRelationships)
               .where(eq(itemRelationships.sourceId, sourceItemId))
-
-            // Compatibility: working copies created before branch checkout
-            // carried relationships have none of their own. Fall back to the
-            // previous revision so an in-flight ECO does not lose its BOM.
-            if (parentRelationships.length === 0 && bi.baseItemId) {
-              const baseRelationships = await tx
-                .select()
-                .from(itemRelationships)
-                .where(eq(itemRelationships.sourceId, bi.baseItemId))
-              if (baseRelationships.length > 0) {
-                sourceItemId = bi.baseItemId
-                parentRelationships = baseRelationships
-              }
-            }
 
             // Replace the released item's structure with the branch's, so a
             // line deleted on the branch does not come back.

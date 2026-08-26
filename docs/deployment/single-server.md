@@ -184,7 +184,7 @@ pgAdmin is available behind a Docker Compose profile so it does not start by def
 ```bash
 docker compose --profile tools up -d
 # Access at http://localhost:5050
-# Default login: admin@cascadia.local / admin
+# Default login: admin@cascadia.local / Cascadia
 ```
 
 To connect pgAdmin to the database, use host `cascadia-postgres`, port `5432`, and the credentials from your `.env`.

@@ -99,11 +99,12 @@ test.describe('Create Item - Smoke Tests @tier1', () => {
         .filter({ hasNotText: 'No Design' })
       const designCount = await designOptions.count()
 
-      if (designCount === 0) {
-        // Skip test if no designs available - this is expected in fresh databases
-        test.skip()
-        return
-      }
+      // Hard requirement, not a skip: global setup guarantees a selectable
+      // design, so an empty selector is a seeding regression to surface.
+      expect(
+        designCount,
+        'no selectable design — e2e global setup should have created one',
+      ).toBeGreaterThan(0)
 
       // Select the first available design
       await designOptions.first().click()

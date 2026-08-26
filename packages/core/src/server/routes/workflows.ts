@@ -2,11 +2,12 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
+import { z } from 'zod'
 import { tagged } from '../adapter'
 import { WorkflowService } from '@/lib/workflows/WorkflowService'
 import { WorkflowApprovalService } from '@/lib/workflows/WorkflowApprovalService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
-import { apiHandler, created } from '@/lib/api/handler'
+import { apiHandler, created, parseQuery } from '@/lib/api/handler'
 
 const adapt = tagged('Workflows')
 
@@ -24,11 +25,16 @@ app.get(
       // lifecycleType, not the legacy definitionType field)
       const kind = url.searchParams.get('type') as
         'lifecycle' | 'workflow' | null
-      const limit = Math.min(
-        parseInt(url.searchParams.get('limit') || '100', 10),
-        500,
+      // Validated, not parseInt: garbage used to become NaN and slice to an
+      // empty page. The 100 default predates the freeze and is kept — the
+      // OpenAPI snapshot is the authority on per-endpoint defaults.
+      const { limit, offset } = parseQuery(
+        request,
+        z.object({
+          limit: z.coerce.number().int().min(1).max(500).default(100),
+          offset: z.coerce.number().int().min(0).default(0),
+        }),
       )
-      const offset = parseInt(url.searchParams.get('offset') || '0', 10)
 
       const allWorkflows = await WorkflowService.list({
         isActive:

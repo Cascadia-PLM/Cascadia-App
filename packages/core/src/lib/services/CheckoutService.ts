@@ -768,6 +768,8 @@ export class CheckoutService {
     // this module, so importing FileService statically here would close the
     // cycle CheckoutService -> FileService -> ItemService -> CheckoutService.
     const { FileService } = await import('../vault/services/FileService')
+    const { ItemRelationshipService } =
+      await import('../items/services/ItemRelationshipService')
 
     return db.transaction(
       async (tx) => {
@@ -818,6 +820,17 @@ export class CheckoutService {
           sourceItemId: item.id,
           targetItemId: newItem.id,
           branchId: validated.branchId,
+          tx,
+        })
+
+        // 1d. Carry the base version's outgoing relationships for the same
+        // reason: the working copy's edges ARE the structure the merge
+        // releases, so a copy minted by a field edit must not release an
+        // assembly with an empty BOM.
+        await ItemRelationshipService.copyRelationshipsToItem({
+          sourceItemId: item.id,
+          targetItemId: newItem.id,
+          userId,
           tx,
         })
 

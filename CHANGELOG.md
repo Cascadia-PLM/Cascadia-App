@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.5.0] - 2026-08-25
+
 ### Added
 
 #### Physical Traceability
@@ -40,6 +44,12 @@ ship with. See [docs/features/software-management.md](./docs/features/software-m
 
 - **Package framework** — The mechanism by which separately-licensed functionality is gated, via the `CASCADIA_PACKAGES` environment variable, read once at process start. `PackageRegistry` answers entitlement, `requirePackage()` gates server-side with a 403, and `/admin` lists holdings read-only. There is deliberately no in-app toggle. The framework ships in this edition; the packages that plug into it are licensed separately. See [docs/development/adding-packages.md](./docs/development/adding-packages.md)
 
+#### Release Readiness
+
+- **Migration baselines and a real upgrade path** — the edition ships its `0000` baseline under `apps/cascadia/drizzle/`. The new `npm run db:baseline` stamps a pre-0.5, push-created database — after verifying its schema actually matches — so `npm run db:migrate` takes over from there; running it on a database that is not at the baseline refuses loudly. CI gains a drift gate: a schema change cannot land without its committed migration. See [docs/deployment/upgrading.md](./docs/deployment/upgrading.md)
+- **The running version is identifiable** — `GET /api/v1/health` reports it, the admin page shows it on a System card, and images carry `org.opencontainers.image.version`/`.revision` labels from build args. Previously the version existed only in package.json, making a deployed instance impossible to identify from outside
+- **XLSX import templates** — `format=xlsx` on the parts/documents/issues template endpoints returns a real workbook; an unrecognized format is a 400 instead of a silent CSV fallback
+
 #### File Preview
 
 - **SVG drawings preview in the app** — The vault has always accepted `.svg` uploads but refused to render them, because an SVG is a scripting host and preview bytes are served from the app's own origin. SVG is now its own `PreviewKind` with a zoom/rotate/pan/fullscreen viewer, and three properties hold that boundary together, all of which have to be true at once: the server labels the bytes `text/plain` rather than `image/svg+xml`, so a browser reaching the endpoint directly renders source; the viewer draws through an `<img>`, which the SVG spec puts in secure static mode; and the `<img>` source is a `data:` URL rather than an object URL, which would carry the app's origin into a new tab. Nothing is sanitized and nothing needs to be — a hostile drawing's `<script>` and its external `<image href>` both survive in the source and neither executes nor fetches. Thumbnails and the gallery still refuse SVG outright
@@ -51,6 +61,8 @@ ship with. See [docs/features/software-management.md](./docs/features/software-m
 
 ### Changed
 
+- **`docker-compose.yml` no longer exposes infrastructure by default.** Postgres, RabbitMQ (AMQP and management UI), and pgAdmin bind to `127.0.0.1` — override per service via `POSTGRES_BIND`/`RABBITMQ_BIND`/`PGADMIN_BIND` to expose deliberately. `POSTGRES_PASSWORD` and `PGADMIN_PASSWORD` lost their compose defaults entirely: the stack refuses to start without them. **Upgrading operators must set both in `.env`** — see `.env.docker.example`
+- **v1 API semantics are written down before the freeze.** PUT-with-partial-semantics (no PATCH in v1), listing through `/api/v1/items` rather than per-type roots, and snapshot-authoritative per-endpoint pagination defaults — see "v1 semantics worth knowing" in [docs/api/README.md](./docs/api/README.md). `/api/v1/files` and `/api/v1/workflows` now validate `limit`/`offset` instead of `parseInt`-ing them into NaN; their defaults are unchanged
 - **This repository is now generated.** Both editions are built from a single upstream tree in which this AGPL edition is one package, and publishing copies that package here. Contributions are still made by pull request against this repository — see [CONTRIBUTING.md](./CONTRIBUTING.md) for how an accepted pull request reaches `main`
 - **Requirements are versionable and ECO-actionable.** The minimal seed now creates `Requirement - Default Lifecycle` (Driven, same Draft → Released → Superseded/Obsolete shape as Part/Document, driven by both ECO workflows) and a Requirement item-type config. Requirements on Designs can be added to change orders, checked out to ECO branches, and receive revision letters at merge — previously the release/revise/obsolete actions were rejected because no lifecycle row existed. The deprecated code-defined fallback states now mirror the shared Driven set instead of advertising a manual Proposed/Approved flow
 - **ECO state change has one mechanism.** `executeWorkflowTransition()` is the single entry point; `ChangeOrderService.approve()`/`reject()` and the AI transition tool no longer bypass the close() orchestration, which had left ECOs stranded. `definitionType` is retired in favour of `lifecycleType`
@@ -98,6 +110,11 @@ its read/write PLM tools also remain.
 
 ### Fixed
 
+- **BOM line quantities are editable, defaulted, and honest on branches.** Four related defects, found in release testing: the add dialog showed "1" as a placeholder but submitted nothing, so untouched BOM lines were created with a null quantity (lines now start at a real 1 and require a positive decimal — the column is numeric(10,3)); quantities could not be edited at all afterward (a new edit dialog drives `PUT /api/v1/relationships/:id`); in a branch context the relationship read returned the union of the working copy's and main's edges, so a line deleted on the ECO branch reappeared as main's row — deleting that one tripped `BRANCH_PROTECTED`, and with a quantity set the failure looked like it had merely cleared the quantity (the read now follows the merge's authority rule: the working copy's edges are the structure); and the confirm dialog dismissed the very error alert a failing action had just opened, so rejections now stay visible and carry the server's reason
+- **Every version row carries its BOM edges.** Working copies minted by a field-only first save or a rebase carried no relationship rows and leaned on a zero-edge fallback to main — which made an intentionally emptied structure indistinguishable from an unpopulated copy: deleting the last BOM line resurfaced it read-only, and releasing re-shipped it. Every copy path now carries relationships the way it already carried files, the fallback is gone, and no edges means no edges: an emptied structure reads and releases as empty
+
+- **The password dialogs always failed.** `PUT /users/:id/password` requires the current password, but both UI callers sent only the new one, so every attempt was a 400 — including the change README and SECURITY.md instruct operators to make to the default admin credential. Admin password-setting now goes through `reset-password` (the operation that never needs the target's current password), self-service goes through the new `/api/v1/auth/password`, and `docs/deployment/single-server.md` no longer claims the default password is `admin` (the seed creates `Cascadia`)
+- **The E2E lifecycle suite can no longer pass by vacancy.** Eight lifecycle tests skipped themselves when no design was seeded, so a seeding regression produced a green suite that had tested nothing. Global setup now guarantees a selectable design and the specs assert it
 - **`analyze_change_impact` failed on every item it was asked about**, over
   both the in-app chatbot and the MCP server. The tool includes related change
   orders by default, and having no current ECO to exclude it passed `''` as

@@ -58,6 +58,22 @@ jobs:
       - name: Check core/proprietary boundary
         run: npm run boundary:check
 
+      # Since v0.5 the committed migrations under apps/*/drizzle are the
+      # upgrade path for real installs. If the schema changed and drizzle-kit
+      # can still mint a new migration, someone edited the schema without
+      # committing the migration alongside it — the tree goes dirty and this
+      # fails. `generate` is offline (it diffs schema against the committed
+      # migrations), so no database is needed.
+      - name: Check schema/migration drift
+        run: |
+          npm run db:generate
+          CASCADIA_APP=cascadia npm run db:generate
+          if [ -n "$(git status --porcelain apps/cascadia/drizzle apps/cascadia-enterprise/drizzle)" ]; then
+            git status --porcelain apps/cascadia/drizzle apps/cascadia-enterprise/drizzle
+            echo "::error::Schema changed without a committed migration. Run 'npm run db:generate' and 'CASCADIA_APP=cascadia npm run db:generate', then commit the new files under apps/*/drizzle."
+            exit 1
+          fi
+
   openapi:
     name: OpenAPI Snapshot
     # Pushes to `main` only. The snapshot in this repository is written by
@@ -261,6 +277,15 @@ jobs:
 
       - name: Validate contributor compose
         run: docker compose -f docker-compose.demo-with-build.yml config --quiet
+
+      # The main compose requires POSTGRES_PASSWORD/PGADMIN_PASSWORD (no
+      # defaults, deliberately — see docker-compose.yml). Dummy values here
+      # exercise exactly what an operator's .env provides.
+      - name: Validate main compose
+        env:
+          POSTGRES_PASSWORD: ci-validation-only
+          PGADMIN_PASSWORD: ci-validation-only
+        run: docker compose -f docker-compose.yml config --quiet
 
   large-files:
     name: Large File Guard

@@ -13,7 +13,6 @@ import {
   changeOrderRisks,
   changeOrders,
   designs,
-  itemRelationships,
   items,
   workflowInstances,
 } from '../../db/schema'
@@ -29,6 +28,7 @@ import { ConflictError, NotFoundError, ValidationError } from '../../errors'
 import { CHANGE_ACTION_LABELS } from '../types/change-order'
 import { copyTypeSpecificData } from '../type-handlers/copy'
 import { ItemService } from './ItemService'
+import { ItemRelationshipService } from './ItemRelationshipService'
 import type { TransactionClient } from '../../db'
 import type {
   AffectedItem,
@@ -640,28 +640,12 @@ export class ChangeOrderService {
       //    branch, let alone re-quantify or DELETE a line there. With it, the
       //    working copy carries the real structure and is the thing the merge
       //    releases, so edits made on the branch are what ship.
-      const sourceRelationships = await tx
-        .select()
-        .from(itemRelationships)
-        .where(eq(itemRelationships.sourceId, sourceItem.id))
-
-      if (sourceRelationships.length > 0) {
-        await tx
-          .insert(itemRelationships)
-          .values(
-            sourceRelationships.map((rel) => ({
-              sourceId: wc.id,
-              targetId: rel.targetId,
-              relationshipType: rel.relationshipType,
-              quantity: rel.quantity,
-              referenceDesignator: rel.referenceDesignator,
-              findNumber: rel.findNumber,
-              metadata: rel.metadata,
-              createdBy: userId,
-            })),
-          )
-          .onConflictDoNothing()
-      }
+      await ItemRelationshipService.copyRelationshipsToItem({
+        sourceItemId: sourceItem.id,
+        targetItemId: wc.id,
+        userId,
+        tx,
+      })
 
       // 3b. Carry the item's files onto the working copy, for the same reason
       //     its structure is carried: the working copy is what the branch

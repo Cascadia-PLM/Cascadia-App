@@ -4,6 +4,7 @@
 import { Hono } from 'hono'
 import { tagged } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'
+import { APP_VERSION } from '@/lib/version'
 
 const adapt = tagged('Health')
 
@@ -15,7 +16,11 @@ app.get(
   adapt(
     // eslint-disable-next-line @typescript-eslint/require-await -- apiHandler signature requires async
     apiHandler({ public: true }, async () => {
-      return { status: 'ok', timestamp: new Date().toISOString() }
+      return {
+        status: 'ok',
+        version: APP_VERSION,
+        timestamp: new Date().toISOString(),
+      }
     }),
   ),
 )

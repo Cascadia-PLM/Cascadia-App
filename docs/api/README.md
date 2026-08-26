@@ -16,6 +16,27 @@ The Cascadia HTTP API is mounted under `/api/v1/` and described by an OpenAPI 3.
 - **v1 is frozen** as of the commit that introduced this file. The spec at `docs/api/openapi.v1.json` is the contract external consumers should rely on.
 - **Additive changes only** until v2 is cut. New endpoints, new optional fields, new response keys are fine. Removing a field, narrowing a type, or changing a required value is a **breaking change** and requires bumping to `/api/v2/`.
 - **Breaking changes** mean a new path prefix (`/api/v2/`), a separate snapshot (`docs/api/openapi.v2.json`), and a deprecation window for `/api/v1/`. Don't mutate v1 in place.
+- **The spec's `info.version` is the contract version, not the product version.** It stays `1.0.0` for the life of v1; the product version is reported by `GET /api/v1/health`.
+
+## v1 semantics worth knowing
+
+Deliberate v1 behaviors that look like accidents until written down:
+
+- **Updates are `PUT` with partial semantics.** Update endpoints accept a
+  partial body and merge it — there is no `PATCH` in v1, and none will be
+  added to it (a semantically strict `PUT`/`PATCH` split is v2 material).
+  Omitted fields are left unchanged; explicit `null` clears where the field
+  is nullable.
+- **Listing goes through `/api/v1/items`.** Type-specific route modules
+  (`/parts`, `/documents`, `/requirements`, …) serve detail and actions from
+  `GET /:id` up; enumerating items of a type is the items API's job
+  (`?types=Part` etc.). `work-orders` carries its own root list for
+  historical reasons — grandfathered, not the pattern.
+- **Pagination defaults are per-endpoint, and the snapshot is the
+  authority.** Most list endpoints default `limit` to 50 via the shared
+  pagination schema; some surfaces deliberately differ (admin listings 100,
+  enterprise search 25, item search per-branch). New endpoints use the
+  shared schema's default unless there is a written reason not to.
 
 ## How the spec is generated
 

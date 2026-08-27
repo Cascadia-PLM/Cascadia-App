@@ -13,6 +13,7 @@ import type { OpenApiMetadata } from './openapi-helpers'
 import type { z } from 'zod'
 import type { PermissionAction, ResourceType } from '@/lib/auth/permissions'
 import type { SessionUser } from '@/lib/auth/session'
+import type { AuthMethod } from '@/lib/auth/credentials'
 import { resolveCredentials } from '@/lib/auth/credentials'
 import { intersectPermissions } from '@/lib/auth/api-key-utils'
 import { permissionService } from '@/lib/auth/permission-service'
@@ -21,7 +22,7 @@ import { db } from '@/lib/db'
 import { authEvents } from '@/lib/db/schema/users'
 import { ErrorCode } from '@/lib/errors/codes'
 import { getRequestId, handleApiError } from '@/lib/errors/handleApiError'
-import { RateLimitedError } from '@/lib/errors'
+import { AuthenticationError, RateLimitedError } from '@/lib/errors'
 
 /**
  * Security headers applied to all API responses as defense-in-depth.
@@ -148,6 +149,8 @@ function applySecurityHeaders(response: Response, request?: Request): Response {
 interface HandlerOptions {
   /** Permission check: [resource, action]. Omit for auth-only. */
   permission?: [ResourceType, PermissionAction]
+  /** Require one authentication method. Omit to accept a session or API key. */
+  authMethod?: AuthMethod
   /** Set to true to skip auth entirely (e.g., session check, health). */
   public?: boolean
   /** Rate limit preset or custom config. Defaults to general API limiter. Set 'none' to disable. */
@@ -255,6 +258,17 @@ export function apiHandler<TParams = Record<string, string>>(
               },
             }),
             { status: 401, headers: { 'Content-Type': 'application/json' } },
+          )
+        }
+
+        if (
+          options.authMethod &&
+          credentials.authMethod !== options.authMethod
+        ) {
+          const requiredMethod =
+            options.authMethod === 'session' ? 'Session' : 'API key'
+          throw new AuthenticationError(
+            `${requiredMethod} authentication required`,
           )
         }
 

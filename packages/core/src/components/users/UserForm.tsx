@@ -51,6 +51,11 @@ export function UserForm({
       onSubmit: zodValidator(schema),
     },
     onSubmit: async ({ value }) => {
+      if (mode === 'edit') {
+        const { active: _active, password: _password, ...editable } = value
+        await onSubmit(editable)
+        return
+      }
       await onSubmit(value)
     },
   })
@@ -186,29 +191,33 @@ export function UserForm({
           )}
         </form.Field>
 
-        {/* Active Status */}
-        <form.Field name="active">
-          {(field) => (
-            <FormField
-              label="Active Status"
-              error={field.state.meta.errors[0]}
-              helpText="Active users can log in"
-            >
-              <Select
-                value={field.state.value ? 'true' : 'false'}
-                onValueChange={(value) => field.handleChange(value === 'true')}
+        {/* Account status has its own endpoint so deactivation can revoke sessions. */}
+        {mode === 'create' && (
+          <form.Field name="active">
+            {(field) => (
+              <FormField
+                label="Active Status"
+                error={field.state.meta.errors[0]}
+                helpText="Active users can log in"
               >
-                <SelectTrigger error={field.state.meta.errors.length > 0}>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
-          )}
-        </form.Field>
+                <Select
+                  value={field.state.value ? 'true' : 'false'}
+                  onValueChange={(value) =>
+                    field.handleChange(value === 'true')
+                  }
+                >
+                  <SelectTrigger error={field.state.meta.errors.length > 0}>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Active</SelectItem>
+                    <SelectItem value="false">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
+          </form.Field>
+        )}
       </div>
 
       {/* Form Actions */}

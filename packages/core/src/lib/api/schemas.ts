@@ -38,25 +38,13 @@ export const userCreateSchema = z
 
 /**
  * Schema for updating a user.
- * Password is optional - only update if provided.
+ * Password and account status use dedicated endpoints because both changes
+ * have session-revocation and administrator-safety side effects.
  */
-export const userUpdateSchema = z
-  .object({
-    email: z.string().email('Valid email is required').optional(),
-    name: z.string().min(1).max(200).optional(),
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .optional(),
-    passwordConfirm: z.string().optional(),
-  })
-  .refine(
-    (data) => !data.passwordConfirm || data.password === data.passwordConfirm,
-    {
-      message: 'Passwords do not match',
-      path: ['passwordConfirm'],
-    },
-  )
+export const userUpdateSchema = z.object({
+  email: z.string().email('Valid email is required').optional(),
+  name: z.string().min(1).max(200).optional(),
+})
 
 export type UserCreate = z.infer<typeof userCreateSchema>
 export type UserUpdate = z.infer<typeof userUpdateSchema>

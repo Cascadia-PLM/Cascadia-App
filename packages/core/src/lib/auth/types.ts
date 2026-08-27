@@ -60,7 +60,6 @@ export const userCreateSchema = z.object({
 export const userUpdateSchema = z.object({
   email: z.string().email('Invalid email address').optional(),
   name: z.string().min(1, 'Name is required').max(255).optional(),
-  active: z.boolean().optional(),
   provider: z.enum(['local', 'azure', 'google', 'github']).optional(),
   providerId: z.string().nullable().optional(),
 })

@@ -7,10 +7,16 @@ import { z } from 'zod'
 import { tagged } from '../adapter'
 import { db } from '@/lib/db'
 import { itemRelationships, items } from '@/lib/db/schema'
-import { ValidationError } from '@/lib/errors'
+import { NotFoundError, ValidationError } from '@/lib/errors'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
 import { apiHandler, jsonResponse } from '@/lib/api/handler'
+import {
+  requireDesignAccess,
+  requireItemIdsDesignAccess,
+} from '@/lib/auth/access'
+import { requirePermission } from '@/lib/auth/server'
+import { getResourceType } from '@/lib/items/item-type-resources'
 // Register item types (server-side version)
 import '@/lib/items/registerItemTypes.server'
 
@@ -74,11 +80,41 @@ type BatchCreateResponse = z.infer<typeof batchCreateResponseSchema>
 
 const app = new Hono()
 
+async function requireRelationshipAccess(
+  userId: string,
+  relationshipId: string,
+) {
+  z.string().uuid().parse(relationshipId)
+  const [relationship] = await db
+    .select({
+      id: itemRelationships.id,
+      sourceId: itemRelationships.sourceId,
+      targetId: itemRelationships.targetId,
+    })
+    .from(itemRelationships)
+    .where(eq(itemRelationships.id, relationshipId))
+    .limit(1)
+
+  if (!relationship) {
+    throw new NotFoundError('ItemRelationship', relationshipId)
+  }
+
+  const itemsById = await requireItemIdsDesignAccess(userId, [
+    relationship.sourceId,
+    relationship.targetId,
+  ])
+  return {
+    relationship,
+    source: itemsById.get(relationship.sourceId)!,
+    target: itemsById.get(relationship.targetId)!,
+  }
+}
+
 // GET /api/relationships
 app.get(
   '/',
   adapt(
-    apiHandler({ permission: ['parts', 'read'] }, async ({ request }) => {
+    apiHandler({}, async ({ request, user }) => {
       const url = new URL(request.url)
       const designId = url.searchParams.get('designId')
       const type = url.searchParams.get('type')
@@ -86,6 +122,8 @@ app.get(
       if (!designId) {
         throw new ValidationError('designId is required')
       }
+      z.string().uuid().parse(designId)
+      await requireDesignAccess(user.id, designId)
 
       // Get all items in the design
       const designItems = await db
@@ -109,19 +147,28 @@ app.get(
         })
         .from(itemRelationships)
 
-      if (type) {
-        const relationships = await query.where(
-          and(
-            inArray(itemRelationships.sourceId, itemIds),
-            eq(itemRelationships.relationshipType, type),
-          ),
-        )
-        return { relationships }
-      }
+      const relationships = type
+        ? await query.where(
+            and(
+              inArray(itemRelationships.sourceId, itemIds),
+              eq(itemRelationships.relationshipType, type),
+            ),
+          )
+        : await query.where(inArray(itemRelationships.sourceId, itemIds))
 
-      const relationships = await query.where(
-        inArray(itemRelationships.sourceId, itemIds),
+      const itemsById = await requireItemIdsDesignAccess(
+        user.id,
+        relationships.flatMap((relationship) => [
+          relationship.sourceId,
+          relationship.targetId,
+        ]),
       )
+      const requiredResources = new Set(
+        [...itemsById.values()].map((item) => getResourceType(item.itemType)),
+      )
+      for (const resource of requiredResources) {
+        await requirePermission(request, resource, 'read')
+      }
 
       return { relationships }
     }),
@@ -134,7 +181,6 @@ app.post(
   adapt(
     apiHandler(
       {
-        permission: ['parts', 'update'],
         openapi: {
           summary: 'Create relationships in bulk',
           description:
@@ -199,6 +245,16 @@ app.post(
             })
             return
           }
+          if (
+            !z.string().uuid().safeParse(sourceId).success ||
+            !z.string().uuid().safeParse(targetId).success
+          ) {
+            errors.push({
+              relationship: relData,
+              error: 'sourceId and targetId must be valid UUIDs',
+            })
+            return
+          }
           candidates.push({ index, relData })
         })
 
@@ -223,6 +279,30 @@ app.post(
               code: 'DUPLICATE_RELATIONSHIP',
             })),
           )
+        }
+
+        const itemsById = await requireItemIdsDesignAccess(
+          user.id,
+          candidates.flatMap(({ relData }) => [
+            relData.sourceId,
+            relData.targetId,
+          ]),
+        )
+        const sourceResources = new Set(
+          candidates.map(({ relData }) =>
+            getResourceType(itemsById.get(relData.sourceId)!.itemType),
+          ),
+        )
+        for (const resource of sourceResources) {
+          await requirePermission(request, resource, 'update')
+        }
+        const targetResources = new Set(
+          candidates.map(({ relData }) =>
+            getResourceType(itemsById.get(relData.targetId)!.itemType),
+          ),
+        )
+        for (const resource of targetResources) {
+          await requirePermission(request, resource, 'read')
         }
 
         // Edges already stored are skipped rather than replaced. One query for
@@ -337,8 +417,22 @@ app.put(
   '/:relationshipId',
   adapt(
     apiHandler<{ relationshipId: string }>(
-      { permission: ['parts', 'update'] },
+      {},
       async ({ params, request, user }) => {
+        const { source, target } = await requireRelationshipAccess(
+          user.id,
+          params.relationshipId,
+        )
+        await requirePermission(
+          request,
+          getResourceType(source.itemType),
+          'update',
+        )
+        await requirePermission(
+          request,
+          getResourceType(target.itemType),
+          'read',
+        )
         const data = await request.json()
         const updated = await ItemService.updateRelationship(
           params.relationshipId,
@@ -360,8 +454,22 @@ app.delete(
   '/:relationshipId',
   adapt(
     apiHandler<{ relationshipId: string }>(
-      { permission: ['parts', 'delete'] },
-      async ({ params, user }) => {
+      {},
+      async ({ params, request, user }) => {
+        const { source, target } = await requireRelationshipAccess(
+          user.id,
+          params.relationshipId,
+        )
+        await requirePermission(
+          request,
+          getResourceType(source.itemType),
+          'update',
+        )
+        await requirePermission(
+          request,
+          getResourceType(target.itemType),
+          'read',
+        )
         await ItemService.removeRelationship(params.relationshipId, user.id)
         return { success: true, message: 'Relationship deleted successfully' }
       },

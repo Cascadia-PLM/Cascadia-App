@@ -5,11 +5,19 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../adapter'
 import type { Requirement } from '@/lib/items/types/requirement'
+import type { PermissionAction } from '@/lib/auth/permissions'
+import type { ItemAccessScope } from '@/lib/auth/access'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { RequirementService } from '@/lib/services/RequirementService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
-import { requireBranchAccess, requireDesignAccess } from '@/lib/auth/access'
+import {
+  requireBranchAccess,
+  requireItemDesignAccess,
+  requireItemIdsDesignAccess,
+} from '@/lib/auth/access'
+import { requirePermission } from '@/lib/auth/server'
 import { apiHandler, created } from '@/lib/api/handler'
+import { getResourceType } from '@/lib/items/item-type-resources'
 // Register item types (server-side version)
 import '@/lib/items/registerItemTypes.server'
 
@@ -91,16 +99,37 @@ const allocatedItemSchema = z.object({
 
 const app = new Hono()
 
+async function requireRequirementAccess(userId: string, id: string) {
+  z.string().uuid().parse(id)
+  const requirement = await ItemService.findById(id)
+  if (!requirement || requirement.itemType !== 'Requirement') {
+    throw new NotFoundError('Requirement', id)
+  }
+  await requireItemDesignAccess(userId, requirement)
+  return requirement
+}
+
+async function requireItemResourcePermissions(
+  request: Request,
+  itemScopes: Iterable<ItemAccessScope>,
+  action: PermissionAction,
+): Promise<void> {
+  const resources = new Set(
+    [...itemScopes].map((item) => getResourceType(item.itemType)),
+  )
+  for (const resource of resources) {
+    await requirePermission(request, resource, action)
+  }
+}
+
 // GET /api/requirements/:id
 app.get(
   '/:id',
   adapt(
     apiHandler<{ id: string }>(
-      { permission: ['parts', 'read'] },
-      async ({ params }) => {
-        const { id } = params
-        const requirement = await ItemService.findById(id)
-        if (!requirement) throw new NotFoundError('Requirement', id)
+      { permission: ['requirements', 'read'] },
+      async ({ params, user }) => {
+        const requirement = await requireRequirementAccess(user.id, params.id)
         return { requirement }
       },
     ),
@@ -112,10 +141,11 @@ app.put(
   '/:id',
   adapt(
     apiHandler<{ id: string }>(
-      { permission: ['parts', 'update'] },
+      { permission: ['requirements', 'update'] },
       async ({ params, request, user }) => {
         const data = await request.json()
         const { id } = params
+        await requireRequirementAccess(user.id, id)
         const requirement = await ItemService.update<Requirement>(
           id,
           data,
@@ -132,9 +162,10 @@ app.delete(
   '/:id',
   adapt(
     apiHandler<{ id: string }>(
-      { permission: ['parts', 'delete'] },
+      { permission: ['requirements', 'delete'] },
       async ({ params, user }) => {
         const { id } = params
+        await requireRequirementAccess(user.id, id)
         await ItemService.delete(id, user.id)
         return { success: true }
       },
@@ -146,13 +177,21 @@ app.delete(
 app.get(
   '/:id/derive',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params }) => {
-      const { id } = params
-      const childRequirements =
-        await RequirementService.getChildRequirements(id)
+    apiHandler<{ id: string }>(
+      { permission: ['requirements', 'read'] },
+      async ({ params, user }) => {
+        const { id } = params
+        await requireRequirementAccess(user.id, id)
+        const childRequirements =
+          await RequirementService.getChildRequirements(id)
+        await requireItemIdsDesignAccess(
+          user.id,
+          childRequirements.map((requirement) => requirement.id),
+        )
 
-      return { requirements: childRequirements }
-    }),
+        return { requirements: childRequirements }
+      },
+    ),
   ),
 )
 
@@ -162,6 +201,7 @@ app.post(
   adapt(
     apiHandler<{ id: string }>(
       {
+        permission: ['requirements', 'create'],
         openapi: {
           summary: 'Derive a child requirement from a requirement',
           request: { body: { schema: deriveRequirementSchema } },
@@ -176,13 +216,7 @@ app.post(
         // This route creates an item, so it owes the same design check the
         // item routes do — reaching the parent's design is what entitles a
         // caller to add a requirement to it.
-        const parent = await ItemService.findById(id)
-        if (!parent || parent.itemType !== 'Requirement') {
-          throw new NotFoundError('Requirement', id)
-        }
-        if (parent.designId) {
-          await requireDesignAccess(user.id, parent.designId)
-        }
+        await requireRequirementAccess(user.id, id)
         if (branchId) {
           await requireBranchAccess(user.id, branchId)
         }
@@ -207,13 +241,20 @@ app.post(
 app.get(
   '/:id/parent',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params }) => {
-      const { id } = params
-      const parentRequirement =
-        await RequirementService.getParentRequirement(id)
+    apiHandler<{ id: string }>(
+      { permission: ['requirements', 'read'] },
+      async ({ params, user }) => {
+        const { id } = params
+        await requireRequirementAccess(user.id, id)
+        const parentRequirement =
+          await RequirementService.getParentRequirement(id)
+        if (parentRequirement) {
+          await requireItemIdsDesignAccess(user.id, [parentRequirement.id])
+        }
 
-      return { parent: parentRequirement }
-    }),
+        return { parent: parentRequirement }
+      },
+    ),
   ),
 )
 
@@ -221,12 +262,25 @@ app.get(
 app.get(
   '/:id/satisfy',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params }) => {
-      const { id } = params
-      const satisfyingItems = await RequirementService.getSatisfyingItems(id)
+    apiHandler<{ id: string }>(
+      { permission: ['requirements', 'read'] },
+      async ({ params, request, user }) => {
+        const { id } = params
+        await requireRequirementAccess(user.id, id)
+        const satisfyingItems = await RequirementService.getSatisfyingItems(id)
+        const itemsById = await requireItemIdsDesignAccess(
+          user.id,
+          satisfyingItems.map((item) => item.id),
+        )
+        await requireItemResourcePermissions(
+          request,
+          itemsById.values(),
+          'read',
+        )
 
-      return { items: satisfyingItems }
-    }),
+        return { items: satisfyingItems }
+      },
+    ),
   ),
 )
 
@@ -234,17 +288,28 @@ app.get(
 app.post(
   '/:id/satisfy',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
-      const body = await request.json()
-      const { itemIds, branchId } = linkSatisfactionSchema.parse(body)
-      const { id } = params
+    apiHandler<{ id: string }>(
+      { permission: ['requirements', 'update'] },
+      async ({ params, request, user }) => {
+        const body = await request.json()
+        const { itemIds, branchId } = linkSatisfactionSchema.parse(body)
+        const { id } = params
 
-      await RequirementService.linkSatisfaction(id, itemIds, user.id, {
-        branchId,
-      })
+        await requireRequirementAccess(user.id, id)
+        const itemsById = await requireItemIdsDesignAccess(user.id, itemIds)
+        await requireItemResourcePermissions(
+          request,
+          itemsById.values(),
+          'update',
+        )
+        if (branchId) await requireBranchAccess(user.id, branchId)
+        await RequirementService.linkSatisfaction(id, itemIds, user.id, {
+          branchId,
+        })
 
-      return { success: true }
-    }),
+        return { success: true }
+      },
+    ),
   ),
 )
 
@@ -252,17 +317,28 @@ app.post(
 app.delete(
   '/:id/satisfy',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
-      const body = await request.json()
-      const { itemId, branchId } = unlinkSatisfactionSchema.parse(body)
-      const { id } = params
+    apiHandler<{ id: string }>(
+      { permission: ['requirements', 'update'] },
+      async ({ params, request, user }) => {
+        const body = await request.json()
+        const { itemId, branchId } = unlinkSatisfactionSchema.parse(body)
+        const { id } = params
 
-      await RequirementService.unlinkSatisfaction(id, itemId, user.id, {
-        branchId,
-      })
+        await requireRequirementAccess(user.id, id)
+        const itemsById = await requireItemIdsDesignAccess(user.id, [itemId])
+        await requireItemResourcePermissions(
+          request,
+          itemsById.values(),
+          'update',
+        )
+        if (branchId) await requireBranchAccess(user.id, branchId)
+        await RequirementService.unlinkSatisfaction(id, itemId, user.id, {
+          branchId,
+        })
 
-      return { success: true }
-    }),
+        return { success: true }
+      },
+    ),
   ),
 )
 
@@ -272,6 +348,7 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       {
+        permission: ['requirements', 'read'],
         openapi: {
           summary: 'List the items a requirement is allocated to',
           request: { params: z.object({ id: z.string().uuid() }) },
@@ -280,8 +357,18 @@ app.get(
           },
         },
       },
-      async ({ params }) => {
+      async ({ params, request, user }) => {
+        await requireRequirementAccess(user.id, params.id)
         const items = await RequirementService.getAllocatedItems(params.id)
+        const itemsById = await requireItemIdsDesignAccess(
+          user.id,
+          items.map((item) => item.id),
+        )
+        await requireItemResourcePermissions(
+          request,
+          itemsById.values(),
+          'read',
+        )
 
         return { items }
       },
@@ -295,6 +382,7 @@ app.post(
   adapt(
     apiHandler<{ id: string }>(
       {
+        permission: ['requirements', 'update'],
         openapi: {
           summary: 'Allocate a requirement to design items',
           description:
@@ -314,6 +402,15 @@ app.post(
       async ({ params, request, user }) => {
         const body = await request.json()
         const { itemIds, branchId } = allocateSchema.parse(body)
+
+        await requireRequirementAccess(user.id, params.id)
+        const itemsById = await requireItemIdsDesignAccess(user.id, itemIds)
+        await requireItemResourcePermissions(
+          request,
+          itemsById.values(),
+          'read',
+        )
+        if (branchId) await requireBranchAccess(user.id, branchId)
 
         for (const itemId of itemIds) {
           await RequirementService.allocateToDesign(
@@ -336,6 +433,7 @@ app.delete(
   adapt(
     apiHandler<{ id: string }>(
       {
+        permission: ['requirements', 'update'],
         openapi: {
           summary: 'Remove a requirement allocation',
           request: {
@@ -351,6 +449,15 @@ app.delete(
         const body = await request.json()
         const { itemId, branchId } = deallocateSchema.parse(body)
 
+        await requireRequirementAccess(user.id, params.id)
+        const itemsById = await requireItemIdsDesignAccess(user.id, [itemId])
+        await requireItemResourcePermissions(
+          request,
+          itemsById.values(),
+          'read',
+        )
+        if (branchId) await requireBranchAccess(user.id, branchId)
+
         await RequirementService.removeAllocation(params.id, itemId, user.id, {
           branchId,
         })
@@ -365,17 +472,28 @@ app.delete(
 app.post(
   '/:id/verify',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const body = await request.json()
-      const { testCaseIds, branchId } = linkVerificationSchema.parse(body)
+    apiHandler<{ id: string }>(
+      { permission: ['requirements', 'update'] },
+      async ({ request, params, user }) => {
+        const body = await request.json()
+        const { testCaseIds, branchId } = linkVerificationSchema.parse(body)
 
-      const { id } = params
-      await RequirementService.linkVerification(id, testCaseIds, user.id, {
-        branchId,
-      })
+        const { id } = params
+        await requireRequirementAccess(user.id, id)
+        const itemsById = await requireItemIdsDesignAccess(user.id, testCaseIds)
+        await requireItemResourcePermissions(
+          request,
+          itemsById.values(),
+          'update',
+        )
+        if (branchId) await requireBranchAccess(user.id, branchId)
+        await RequirementService.linkVerification(id, testCaseIds, user.id, {
+          branchId,
+        })
 
-      return created({ success: true })
-    }),
+        return created({ success: true })
+      },
+    ),
   ),
 )
 
@@ -383,21 +501,37 @@ app.post(
 app.delete(
   '/:id/verify',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const url = new URL(request.url)
-      const testCaseId = url.searchParams.get('testCaseId')
+    apiHandler<{ id: string }>(
+      { permission: ['requirements', 'update'] },
+      async ({ request, params, user }) => {
+        const url = new URL(request.url)
+        const testCaseId = url.searchParams.get('testCaseId')
 
-      if (!testCaseId) {
-        throw new ValidationError('testCaseId query parameter is required')
-      }
+        if (!testCaseId) {
+          throw new ValidationError('testCaseId query parameter is required')
+        }
 
-      const { id } = params
-      await RequirementService.unlinkVerification(id, testCaseId, user.id, {
-        branchId: url.searchParams.get('branchId') ?? undefined,
-      })
+        const branchId = url.searchParams.get('branchId') ?? undefined
+        z.string().uuid().parse(testCaseId)
+        if (branchId) z.string().uuid().parse(branchId)
+        const { id } = params
+        await requireRequirementAccess(user.id, id)
+        const itemsById = await requireItemIdsDesignAccess(user.id, [
+          testCaseId,
+        ])
+        await requireItemResourcePermissions(
+          request,
+          itemsById.values(),
+          'update',
+        )
+        if (branchId) await requireBranchAccess(user.id, branchId)
+        await RequirementService.unlinkVerification(id, testCaseId, user.id, {
+          branchId,
+        })
 
-      return { success: true }
-    }),
+        return { success: true }
+      },
+    ),
   ),
 )
 
@@ -405,12 +539,25 @@ app.delete(
 app.get(
   '/:id/verifying-tests',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params }) => {
-      const { id } = params
-      const tests = await RequirementService.getVerifyingTests(id)
+    apiHandler<{ id: string }>(
+      { permission: ['requirements', 'read'] },
+      async ({ params, request, user }) => {
+        const { id } = params
+        await requireRequirementAccess(user.id, id)
+        const tests = await RequirementService.getVerifyingTests(id)
+        const itemsById = await requireItemIdsDesignAccess(
+          user.id,
+          tests.map((test) => test.id),
+        )
+        await requireItemResourcePermissions(
+          request,
+          itemsById.values(),
+          'read',
+        )
 
-      return { tests }
-    }),
+        return { tests }
+      },
+    ),
   ),
 )
 

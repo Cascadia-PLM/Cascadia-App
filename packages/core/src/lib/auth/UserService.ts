@@ -18,6 +18,7 @@ import { authEvents, roles, userRoles, users } from '@/lib/db/schema/users'
 import { takeFirst } from '@/lib/db/take-first'
 import {
   AlreadyExistsError,
+  ConflictError,
   InvalidCredentialsError,
   NotFoundError,
   ValidationError,
@@ -29,6 +30,103 @@ type DatabaseUser = typeof users.$inferSelect
 // secrets and lockout counters are deliberately impossible to return here.
 export type User = Omit<DatabaseUser, 'passwordHash' | 'failedLoginAttempts'>
 type SafeUserWithRoles = User & Pick<UserWithRoles, 'roles'>
+
+const ADMINISTRATOR_ROLE_NAME = 'Administrator'
+
+interface LockedAdministrationState {
+  target: { id: string; active: boolean }
+  administratorRoleId: string | null
+  targetIsAdministrator: boolean
+  administratorCount: number
+  activeAdministratorCount: number
+}
+
+/**
+ * Serialize every operation that can change Administrator availability on the
+ * shared Administrator role row. Without the common lock, two concurrent
+ * requests could both observe two admins and remove one each.
+ */
+async function lockAdministrationState(
+  tx: TransactionClient,
+  targetUserId: string,
+): Promise<LockedAdministrationState> {
+  const [administratorRole] = await tx
+    .select({ id: roles.id })
+    .from(roles)
+    .where(eq(roles.name, ADMINISTRATOR_ROLE_NAME))
+    .limit(1)
+    .for('update')
+
+  const [target] = await tx
+    .select({ id: users.id, active: users.active })
+    .from(users)
+    .where(eq(users.id, targetUserId))
+    .limit(1)
+    .for('update')
+
+  if (!target) throw new NotFoundError('User', targetUserId)
+  if (!administratorRole) {
+    return {
+      target,
+      administratorRoleId: null,
+      targetIsAdministrator: false,
+      administratorCount: 0,
+      activeAdministratorCount: 0,
+    }
+  }
+
+  const [targetMembership] = await tx
+    .select({ userId: userRoles.userId })
+    .from(userRoles)
+    .where(
+      and(
+        eq(userRoles.userId, targetUserId),
+        eq(userRoles.roleId, administratorRole.id),
+      ),
+    )
+    .limit(1)
+
+  const administrators = await tx
+    .select({ id: users.id, active: users.active })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .where(eq(userRoles.roleId, administratorRole.id))
+
+  return {
+    target,
+    administratorRoleId: administratorRole.id,
+    targetIsAdministrator: Boolean(targetMembership),
+    administratorCount: administrators.length,
+    activeAdministratorCount: administrators.filter((user) => user.active)
+      .length,
+  }
+}
+
+function assertAccountAccessCanBeRemoved(
+  actorUserId: string,
+  state: LockedAdministrationState,
+  action: 'delete' | 'deactivate',
+): void {
+  if (state.target.id === actorUserId) {
+    throw new ConflictError(`You cannot ${action} your own account`)
+  }
+  if (
+    action === 'delete' &&
+    state.targetIsAdministrator &&
+    state.administratorCount <= 1
+  ) {
+    throw new ConflictError('Cannot delete the last Administrator account')
+  }
+  if (
+    state.target.active &&
+    state.targetIsAdministrator &&
+    state.activeAdministratorCount <= 1
+  ) {
+    throw new ConflictError(
+      `Cannot ${action} the last active Administrator account`,
+    )
+  }
+}
 
 function toSafeUser(user: DatabaseUser): User {
   return {
@@ -85,46 +183,45 @@ export class UserService {
     // Validate input
     const validated = userCreateSchema.parse(data)
 
-    // Check if email already exists
-    const existing = await db.query.users.findFirst({
-      where: eq(users.email, validated.email),
-    })
-
-    if (existing) {
-      throw new AlreadyExistsError('email', validated.email)
-    }
-
     // Hash password
     const passwordHash = await hashPassword(validated.password)
 
-    // Create user
-    const user = takeFirst(
-      await db
-        .insert(users)
-        .values({
-          email: validated.email,
-          name: validated.name,
-          passwordHash,
-          provider: validated.provider,
-          providerId: validated.providerId,
-          active: validated.active,
-        })
-        .returning(),
-    )
+    return db.transaction(async (tx) => {
+      const existing = await tx.query.users.findFirst({
+        where: eq(users.email, validated.email),
+      })
+      if (existing) {
+        throw new AlreadyExistsError('email', validated.email)
+      }
 
-    // Assign default "User" role to new users
-    const defaultRole = await db.query.roles.findFirst({
-      where: eq(roles.name, 'User'),
-    })
+      const [defaultRole] = await tx
+        .select({ id: roles.id })
+        .from(roles)
+        .where(eq(roles.name, 'User'))
+        .limit(1)
+      if (!defaultRole) throw new NotFoundError('Role', 'User')
 
-    if (defaultRole) {
-      await db.insert(userRoles).values({
+      const user = takeFirst(
+        await tx
+          .insert(users)
+          .values({
+            email: validated.email,
+            name: validated.name,
+            passwordHash,
+            provider: validated.provider,
+            providerId: validated.providerId,
+            active: validated.active,
+          })
+          .returning(),
+      )
+
+      await tx.insert(userRoles).values({
         userId: user.id,
         roleId: defaultRole.id,
       })
-    }
 
-    return toSafeUser(user)
+      return toSafeUser(user)
+    })
   }
 
   /**
@@ -175,21 +272,14 @@ export class UserService {
   /**
    * Delete a user
    */
-  static async deleteUser(id: string): Promise<'deleted' | 'deactivated'> {
+  static async deleteUser(
+    id: string,
+    actorUserId: string,
+  ): Promise<'deleted' | 'deactivated'> {
     try {
       await db.transaction(async (tx) => {
-        // Lock the account so no new business reference can be attached between
-        // checking its existence and deleting it.
-        const [existing] = await tx
-          .select({ id: users.id })
-          .from(users)
-          .where(eq(users.id, id))
-          .limit(1)
-          .for('update')
-
-        if (!existing) {
-          throw new NotFoundError('User', id)
-        }
+        const state = await lockAdministrationState(tx, id)
+        assertAccountAccessCanBeRemoved(actorUserId, state, 'delete')
 
         // Authentication history alone must not make an otherwise unused
         // account permanent. Account-owned rows with ON DELETE CASCADE are
@@ -209,7 +299,7 @@ export class UserService {
       // The failed transaction (including auth-event deletion) has rolled
       // back. Preserve the user referenced by business records, but revoke
       // access immediately.
-      await this.toggleActive(id, false)
+      await this.toggleActive(id, false, actorUserId)
       permissionService.clearUserCache(id)
       return 'deactivated'
     }
@@ -293,49 +383,52 @@ export class UserService {
   static async assignRoles(
     userId: string,
     roleIds: Array<string>,
+    actorUserId: string,
   ): Promise<void> {
-    // Check if user exists
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
+    const uniqueRoleIds = [...new Set(roleIds)]
+
+    await db.transaction(async (tx) => {
+      const state = await lockAdministrationState(tx, userId)
+      const existingRoles =
+        uniqueRoleIds.length > 0
+          ? await tx.query.roles.findMany({
+              where: inArray(roles.id, uniqueRoleIds),
+            })
+          : []
+
+      if (existingRoles.length !== uniqueRoleIds.length) {
+        throw new NotFoundError('Role', 'specified roles')
+      }
+
+      const keepsAdministrator = state.administratorRoleId
+        ? uniqueRoleIds.includes(state.administratorRoleId)
+        : false
+      if (
+        state.target.id === actorUserId &&
+        state.targetIsAdministrator !== keepsAdministrator
+      ) {
+        throw new ConflictError(
+          'You cannot change your own Administrator role assignment',
+        )
+      }
+      if (
+        state.targetIsAdministrator &&
+        !keepsAdministrator &&
+        (state.administratorCount <= 1 ||
+          (state.target.active && state.activeAdministratorCount <= 1))
+      ) {
+        throw new ConflictError(
+          'Cannot remove the last Administrator role assignment or leave no active Administrator',
+        )
+      }
+
+      await tx.delete(userRoles).where(eq(userRoles.userId, userId))
+      if (uniqueRoleIds.length > 0) {
+        await tx
+          .insert(userRoles)
+          .values(uniqueRoleIds.map((roleId) => ({ userId, roleId })))
+      }
     })
-
-    if (!user) {
-      throw new NotFoundError('User', userId)
-    }
-
-    // Verify all roles exist
-    const existingRoles = await db.query.roles.findMany({
-      where: inArray(roles.id, roleIds),
-    })
-
-    if (existingRoles.length !== roleIds.length) {
-      throw new NotFoundError('Role', 'specified roles')
-    }
-
-    // Delete existing role assignments
-    await db.delete(userRoles).where(eq(userRoles.userId, userId))
-
-    // Insert new role assignments
-    if (roleIds.length > 0) {
-      await db.insert(userRoles).values(
-        roleIds.map((roleId) => ({
-          userId,
-          roleId,
-        })),
-      )
-    }
-
-    // Clear permission cache for this user
-    permissionService.clearUserCache(userId)
-  }
-
-  /**
-   * Remove a specific role from a user
-   */
-  static async removeRole(userId: string, roleId: string): Promise<void> {
-    await db
-      .delete(userRoles)
-      .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)))
 
     // Clear permission cache for this user
     permissionService.clearUserCache(userId)
@@ -425,17 +518,17 @@ export class UserService {
    * Toggle user active status.
    * When deactivating, immediately revokes all sessions for the user.
    */
-  static async toggleActive(userId: string, active: boolean): Promise<User> {
-    // Check if user exists
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    })
-
-    if (!user) {
-      throw new NotFoundError('User', userId)
-    }
-
+  static async toggleActive(
+    userId: string,
+    active: boolean,
+    actorUserId: string,
+  ): Promise<User> {
     return db.transaction(async (tx) => {
+      const state = await lockAdministrationState(tx, userId)
+      if (!active && state.target.active) {
+        assertAccountAccessCanBeRemoved(actorUserId, state, 'deactivate')
+      }
+
       const [updated] = await tx
         .update(users)
         .set({ active })

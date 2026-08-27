@@ -45,7 +45,12 @@ import {
   jsonResponse,
   parseQuery,
 } from '@/lib/api/handler'
-import { requireBranchAccess, requireDesignAccess } from '@/lib/auth/access'
+import {
+  requireBranchAccess,
+  requireDesignAccess,
+  requireItemDesignAccess,
+  requireItemIdsDesignAccess,
+} from '@/lib/auth/access'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import {
   batchCreateRequestSchema,
@@ -3084,10 +3089,26 @@ app.post(
 app.get(
   '/:id/relationships',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params, request }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
+      z.string().uuid().parse(params.id)
       const url = new URL(request.url)
       const relationshipType = url.searchParams.get('type') || undefined
       const branchId = url.searchParams.get('branch') || undefined
+
+      const source = await ItemService.findById(params.id)
+      if (!source) throw new NotFoundError('Item', params.id)
+      await requirePermission(request, getResourceType(source.itemType), 'read')
+      await requireItemDesignAccess(user.id, source)
+
+      if (branchId) {
+        z.string().uuid().parse(branchId)
+        const branchAccess = await requireBranchAccess(user.id, branchId)
+        if (source.designId !== branchAccess.designId) {
+          throw new ValidationError(
+            'Branch belongs to a different design than the source item',
+          )
+        }
+      }
 
       const relationships = branchId
         ? await ItemRelationshipService.getRelationshipsWithDetailsForBranch(
@@ -3099,6 +3120,17 @@ app.get(
             params.id,
             relationshipType,
           )
+
+      const targetsById = await requireItemIdsDesignAccess(
+        user.id,
+        relationships.map((relationship) => relationship.targetItem!.id),
+      )
+      const targetResources = new Set(
+        [...targetsById.values()].map((item) => getResourceType(item.itemType)),
+      )
+      for (const resource of targetResources) {
+        await requirePermission(request, resource, 'read')
+      }
 
       return { relationships }
     }),
@@ -3147,7 +3179,24 @@ app.post(
         },
       },
       async ({ params, request, user }) => {
-        const data = await request.json()
+        z.string().uuid().parse(params.id)
+        const data = addRelationshipSchema.parse(await request.json())
+        const itemsById = await requireItemIdsDesignAccess(user.id, [
+          params.id,
+          data.targetId,
+        ])
+        const source = itemsById.get(params.id)!
+        const target = itemsById.get(data.targetId)!
+        await requirePermission(
+          request,
+          getResourceType(source.itemType),
+          'update',
+        )
+        await requirePermission(
+          request,
+          getResourceType(target.itemType),
+          'read',
+        )
 
         await ItemService.addRelationship(
           params.id,
@@ -3171,10 +3220,21 @@ app.post(
 app.get(
   '/:id/satisfied-requirements',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params }) => {
+    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
       const { id } = params
+      z.string().uuid().parse(id)
+      const source = await ItemService.findById(id)
+      if (!source) throw new NotFoundError('Item', id)
+      await requirePermission(request, getResourceType(source.itemType), 'read')
+      await requireItemDesignAccess(user.id, source)
+      await requirePermission(request, 'requirements', 'read')
+
       const satisfiedRequirements =
         await RequirementService.getRequirementsSatisfiedBy(id)
+      await requireItemIdsDesignAccess(
+        user.id,
+        satisfiedRequirements.map((requirement) => requirement.id),
+      )
 
       return { requirements: satisfiedRequirements }
     }),

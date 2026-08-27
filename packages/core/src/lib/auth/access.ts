@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { AccessControlService } from './AccessControlService'
 import { BranchService } from '@/lib/services/BranchService'
 import { FileService } from '@/lib/vault/services/FileService'
@@ -25,6 +25,61 @@ export async function requireDesignAccess(
   if (!canAccess) {
     throw new PermissionDeniedError('design', 'read')
   }
+}
+
+export interface ItemAccessScope {
+  id: string
+  designId: string | null
+  itemType: string
+}
+
+/** Verify access to the design containing an already-resolved item. */
+export async function requireItemDesignAccess(
+  userId: string,
+  item: { designId?: string | null },
+): Promise<void> {
+  if (item.designId) {
+    await requireDesignAccess(userId, item.designId)
+  }
+}
+
+/**
+ * Resolve several item IDs and verify that the caller reaches every design
+ * involved. Relationship endpoints use this for both ends of every edge so a
+ * known UUID cannot cross a program boundary.
+ */
+export async function requireItemIdsDesignAccess(
+  userId: string,
+  itemIds: Array<string>,
+): Promise<Map<string, ItemAccessScope>> {
+  const uniqueIds = [...new Set(itemIds)]
+  if (uniqueIds.length === 0) return new Map()
+
+  const rows = await db
+    .select({
+      id: items.id,
+      designId: items.designId,
+      itemType: items.itemType,
+    })
+    .from(items)
+    .where(inArray(items.id, uniqueIds))
+
+  const byId = new Map(rows.map((item) => [item.id, item]))
+  const missingId = uniqueIds.find((id) => !byId.has(id))
+  if (missingId) throw new NotFoundError('Item', missingId)
+
+  const designIds = [
+    ...new Set(
+      rows
+        .map((item) => item.designId)
+        .filter((designId): designId is string => designId !== null),
+    ),
+  ]
+  for (const designId of designIds) {
+    await requireDesignAccess(userId, designId)
+  }
+
+  return byId
 }
 
 /**

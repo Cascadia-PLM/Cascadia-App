@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
+import { z } from 'zod'
 import { tagged } from '../adapter'
 import { UserService } from '@/lib/auth/UserService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
@@ -15,6 +16,9 @@ import { authEvents } from '@/lib/db/schema/users'
 const adapt = tagged('Users')
 
 const app = new Hono()
+const roleAssignmentSchema = z.object({
+  roleIds: z.array(z.string().uuid()),
+})
 
 // GET /api/users
 app.get(
@@ -82,6 +86,11 @@ app.put(
       async ({ params, request, user }) => {
         const { id } = params
         const data = await request.json()
+        if (data && typeof data === 'object' && 'active' in data) {
+          throw new ValidationError(
+            'Use POST /users/:id/activate to change account status',
+          )
+        }
         const updated = await UserService.updateUser(id, data, user.id)
         return { user: updated }
       },
@@ -95,9 +104,9 @@ app.delete(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['users', 'delete'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
         const { id } = params
-        const outcome = await UserService.deleteUser(id)
+        const outcome = await UserService.deleteUser(id, user.id)
         return { success: true, outcome }
       },
     ),
@@ -110,14 +119,14 @@ app.post(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['users', 'manage'] },
-      async ({ params, request }) => {
+      async ({ params, request, user }) => {
         const { id } = params
         const { active } = await request.json()
         if (typeof active !== 'boolean') {
           throw new ValidationError('active must be a boolean')
         }
-        const user = await UserService.toggleActive(id, active)
-        return { user }
+        const updated = await UserService.toggleActive(id, active, user.id)
+        return { user: updated }
       },
     ),
   ),
@@ -224,13 +233,10 @@ app.put(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['users', 'manage'] },
-      async ({ params, request }) => {
+      async ({ params, request, user }) => {
         const { id } = params
-        const { roleIds } = await request.json()
-        if (!Array.isArray(roleIds)) {
-          throw new ValidationError('roleIds must be an array')
-        }
-        await UserService.assignRoles(id, roleIds)
+        const { roleIds } = roleAssignmentSchema.parse(await request.json())
+        await UserService.assignRoles(id, roleIds, user.id)
         return { success: true }
       },
     ),

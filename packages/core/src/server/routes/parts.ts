@@ -6,13 +6,21 @@ import { z } from 'zod'
 import { eq } from 'drizzle-orm'
 import { tagged } from '../adapter'
 import type { Part } from '@/lib/items/types/part'
+import type { PermissionAction } from '@/lib/auth/permissions'
+import type { ItemAccessScope } from '@/lib/auth/access'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { VerificationService } from '@/lib/services/VerificationService'
 import { ParametricResolutionService } from '@/lib/services/ParametricResolutionService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { apiHandler, created } from '@/lib/api/handler'
+import {
+  requireItemDesignAccess,
+  requireItemIdsDesignAccess,
+} from '@/lib/auth/access'
+import { requirePermission } from '@/lib/auth/server'
 import { mountRoutes } from '@/lib/api/route-registry'
 import { partUpdateSchema } from '@/lib/api/schemas'
+import { getResourceType } from '@/lib/items/item-type-resources'
 import { db } from '@/lib/db'
 import {
   items,
@@ -27,6 +35,9 @@ const adapt = tagged('Parts')
 const app = new Hono()
 
 const partIdParamSchema = z.object({ id: z.string().uuid() })
+const partValidationSchema = z.object({
+  testCaseIds: z.array(z.string().uuid()).min(1),
+})
 const partResponseSchema = z
   .object({
     id: z.string().uuid(),
@@ -34,6 +45,27 @@ const partResponseSchema = z
     partType: z.string().nullable(),
   })
   .passthrough()
+
+async function requirePartAccess(userId: string, id: string) {
+  z.string().uuid().parse(id)
+  const part = await ItemService.findById(id)
+  if (!part || part.itemType !== 'Part') throw new NotFoundError('Part', id)
+  await requireItemDesignAccess(userId, part)
+  return part
+}
+
+async function requireItemResourcePermissions(
+  request: Request,
+  itemScopes: Iterable<ItemAccessScope>,
+  action: PermissionAction,
+): Promise<void> {
+  const resources = new Set(
+    [...itemScopes].map((item) => getResourceType(item.itemType)),
+  )
+  for (const resource of resources) {
+    await requirePermission(request, resource, action)
+  }
+}
 
 // GET /api/parts/:id
 app.get(
@@ -50,10 +82,8 @@ app.get(
           },
         },
       },
-      async ({ params }) => {
-        const { id } = params
-        const part = await ItemService.findById(id)
-        if (!part) throw new NotFoundError('Part', id)
+      async ({ params, user }) => {
+        const part = await requirePartAccess(user.id, params.id)
         return { part }
       },
     ),
@@ -81,6 +111,7 @@ app.put(
       async ({ params, request, user }) => {
         const { id } = params
         const data = await request.json()
+        await requirePartAccess(user.id, id)
         const part = await ItemService.update<Part>(id, data, user.id)
         return { part }
       },
@@ -105,6 +136,7 @@ app.delete(
       },
       async ({ params, user }) => {
         const { id } = params
+        await requirePartAccess(user.id, id)
         await ItemService.delete(id, user.id)
         return { success: true }
       },
@@ -123,8 +155,9 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['parts', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
         const { id } = params
+        await requirePartAccess(user.id, id)
         const attributes =
           await ParametricResolutionService.getResolvableAttributes(id)
 
@@ -138,22 +171,27 @@ app.get(
 app.post(
   '/:id/validate',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const { id } = params
-      const body = await request.json()
-      const { testCaseIds } = body
+    apiHandler<{ id: string }>(
+      { permission: ['parts', 'update'] },
+      async ({ request, params, user }) => {
+        const { id } = params
+        const { testCaseIds } = partValidationSchema.parse(await request.json())
+        await requirePartAccess(user.id, id)
+        const itemsById = await requireItemIdsDesignAccess(user.id, testCaseIds)
+        await requireItemResourcePermissions(
+          request,
+          itemsById.values(),
+          'update',
+        )
 
-      if (!testCaseIds || !Array.isArray(testCaseIds)) {
-        throw new ValidationError('testCaseIds array is required')
-      }
+        // Link each test case to this part (testCase -> part)
+        for (const testCaseId of testCaseIds) {
+          await VerificationService.linkValidation(testCaseId, [id], user.id)
+        }
 
-      // Link each test case to this part (testCase -> part)
-      for (const testCaseId of testCaseIds) {
-        await VerificationService.linkValidation(testCaseId, [id], user.id)
-      }
-
-      return created({ success: true })
-    }),
+        return created({ success: true })
+      },
+    ),
   ),
 )
 
@@ -161,19 +199,32 @@ app.post(
 app.delete(
   '/:id/validate',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const { id } = params
-      const url = new URL(request.url)
-      const testCaseId = url.searchParams.get('testCaseId')
+    apiHandler<{ id: string }>(
+      { permission: ['parts', 'update'] },
+      async ({ request, params, user }) => {
+        const { id } = params
+        const url = new URL(request.url)
+        const testCaseId = url.searchParams.get('testCaseId')
 
-      if (!testCaseId) {
-        throw new ValidationError('testCaseId query parameter is required')
-      }
+        if (!testCaseId) {
+          throw new ValidationError('testCaseId query parameter is required')
+        }
+        z.string().uuid().parse(testCaseId)
 
-      await VerificationService.unlinkValidation(testCaseId, id, user.id)
+        await requirePartAccess(user.id, id)
+        const itemsById = await requireItemIdsDesignAccess(user.id, [
+          testCaseId,
+        ])
+        await requireItemResourcePermissions(
+          request,
+          itemsById.values(),
+          'update',
+        )
+        await VerificationService.unlinkValidation(testCaseId, id, user.id)
 
-      return { success: true }
-    }),
+        return { success: true }
+      },
+    ),
   ),
 )
 
@@ -181,12 +232,25 @@ app.delete(
 app.get(
   '/:id/validating-tests',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params }) => {
-      const { id } = params
-      const tests = await VerificationService.getValidatingTests(id)
+    apiHandler<{ id: string }>(
+      { permission: ['parts', 'read'] },
+      async ({ params, request, user }) => {
+        const { id } = params
+        await requirePartAccess(user.id, id)
+        const tests = await VerificationService.getValidatingTests(id)
+        const itemsById = await requireItemIdsDesignAccess(
+          user.id,
+          tests.map((test) => test.id),
+        )
+        await requireItemResourcePermissions(
+          request,
+          itemsById.values(),
+          'read',
+        )
 
-      return { tests }
-    }),
+        return { tests }
+      },
+    ),
   ),
 )
 
@@ -196,18 +260,9 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['parts', 'read'] },
-      async ({ params }) => {
+      async ({ params, request, user }) => {
         const { id } = params
-        // Verify part exists
-        const [part] = await db
-          .select()
-          .from(items)
-          .where(eq(items.id, id))
-          .limit(1)
-
-        if (!part || part.itemType !== 'Part') {
-          throw new NotFoundError('Part', id)
-        }
+        await requirePartAccess(user.id, id)
 
         // Get work instructions attached to this part
         const attachedWIs = await db
@@ -256,6 +311,16 @@ app.get(
           estimatedTime: row.workInstructionDetails.estimatedTime,
           difficulty: row.workInstructionDetails.difficulty,
         }))
+
+        const itemsById = await requireItemIdsDesignAccess(
+          user.id,
+          workInstructionsList.map((instruction) => instruction.id),
+        )
+        await requireItemResourcePermissions(
+          request,
+          itemsById.values(),
+          'read',
+        )
 
         return { workInstructions: workInstructionsList }
       },

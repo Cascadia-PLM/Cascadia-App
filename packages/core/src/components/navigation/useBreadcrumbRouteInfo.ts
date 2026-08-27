@@ -23,7 +23,6 @@ export function useBreadcrumbRouteInfo(): BreadcrumbRouteInfo {
     /^\/designs\/[^/]+/.test(pathname) &&
     !!params.id &&
     !pathname.includes('/edit') &&
-    !pathname.startsWith('/designs/collaborative') &&
     !pathname.startsWith('/designs/workspaces')
   const isProgramDetailPage = /^\/programs\/[^/]+/.test(pathname) && !!params.id
   const isChangeOrderDetailPage =

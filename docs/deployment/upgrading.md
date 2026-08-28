@@ -36,16 +36,20 @@ this:**
 
 ```bash
 # 1. Update the code to v0.5.0. Back up the database.
-# 2. Stamp the baseline as already applied (verifies the schema first):
+# 2. Optionally verify the baseline without writing anything:
+npm run db:baseline -- --check
+# 3. Stamp the baseline as already applied (verifies the schema again):
 npm run db:baseline          # community edition: CASCADIA_APP=cascadia npm run db:baseline
-# 3. From now on, every upgrade is:
+# 4. From now on, every upgrade is:
 npm run db:migrate
 ```
 
 `db:baseline` refuses to stamp when the live schema is missing tables the
 baseline creates — that means the database was not kept current with
 `db:push` before the upgrade. Bring it to the 0.5.0 schema first (check out
-v0.5.0 and run `npm run db:push` once), then stamp.
+v0.5.0 and run `npm run db:push` once), then stamp. The command records only
+the `0000` baseline; every `0001` and later migration remains pending and is
+executed by the following `npm run db:migrate`.
 
 ### In Docker
 

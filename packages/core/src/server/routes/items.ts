@@ -3204,7 +3204,8 @@ app.post(
           data.relationshipType,
           user.id,
           {
-            quantity: data.quantity,
+            quantity:
+              data.quantity === undefined ? undefined : String(data.quantity),
             referenceDesignator: data.referenceDesignator,
             findNumber: data.findNumber,
           },

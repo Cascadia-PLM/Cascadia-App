@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { Menu, Pin, PinOff } from 'lucide-react'
 import { SidebarNav } from './SidebarNav'
+import { BuildStamp } from './BuildStamp'
 import type { SidebarProps } from './types'
 import {
   SIDEBAR_MAX_WIDTH,
@@ -115,6 +116,10 @@ export function Sidebar({ currentPath }: SidebarProps) {
           iconSize={iconSize}
         />
       </nav>
+
+      {/* Sits below the scrolling nav, not inside it: `nav` is flex-1 and
+          scrolls, so a stamp within it would scroll away. */}
+      <BuildStamp isOpen={isOpen} />
     </aside>
   )
 }

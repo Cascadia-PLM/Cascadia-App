@@ -17,7 +17,12 @@ import { eq } from 'drizzle-orm'
 import { db } from '../db'
 import { workflowDefinitions } from '../db/schema/workflows'
 import { ItemTypeRegistry } from '../items/registry'
-import { InternalError, NotFoundError, ValidationError } from '../errors'
+import {
+  AlreadyExistsError,
+  InternalError,
+  NotFoundError,
+  ValidationError,
+} from '../errors'
 import {
   resolveLifecycleType,
   resolveStoredLifecycleType,
@@ -572,9 +577,14 @@ export class LifecycleService {
    * phases) and to derive the released family (the change-action mappings).
    * Null only when the type has no assigned definition.
    *
-   * Presentation-only: lifecycle *logic* must keep using
-   * `getLifecycleForItemType`, which correctly never treats a Driving
-   * workflow as an item lifecycle.
+   * Change-action *logic* must keep using `getLifecycleForItemType`, which
+   * correctly never treats a Driving workflow as an item lifecycle: a change
+   * order does not have a release mapping, it *is* one. Reading a state's own
+   * flags (`isInitial`, `isFinal`, `finalKind`) is the other legitimate use,
+   * for the same reason the private `getGoverningStates` exists — an item's
+   * `state` column mirrors those states whichever kind of definition governs
+   * it, so `getLifecycleForItemType` would report every change order
+   * stateless. `ItemService.requireNoRetainedEvidence` is the caller.
    */
   static async getGoverningDefinition(itemType: string): Promise<{
     id: string
@@ -840,6 +850,17 @@ export class LifecycleService {
    * guards, approvals, history, and the Phase 1 hardening all apply.
    *
    * Accepts the target state by id or display name.
+   *
+   * Goal-idempotent, deliberately: the operation names a target STATE, not a
+   * particular edge. When the item already sits in the target state — because
+   * it always did, or because a concurrent caller made exactly this move while
+   * this one was reading — the call succeeds as a no-op with zero writes
+   * rather than raising a ValidationError the caller can do nothing about.
+   * Only the eligibility rules above (unknown state, released lineage, change
+   * orders, an unfinished work-order traveler) reject, and they run before
+   * the idempotent return. A lost race that landed somewhere ELSE still
+   * fails, and absorption is keyed on the instance's observed state, never
+   * on an error message.
    */
   static async transitionFreeItem(
     itemId: string,
@@ -900,13 +921,74 @@ export class LifecycleService {
       }
     }
 
+    // Work orders carry completion semantics no other Free type has, and
+    // both halves live here rather than in the caller: the traveler gates
+    // entry into a `finalKind: 'complete'` state, and completedAt is stamped
+    // on the way in. Held as an unconditional arm beside the ChangeOrder one
+    // — a registry would let this vanish for any caller that had not
+    // imported the registration, which is the shape of the defect it would
+    // be guarding. Read off the resolved target's own flags — the
+    // same pair getFinalKind derives from — so a caller naming the state
+    // rather than its id is gated identically, and there is no second
+    // lookup to fall out of step with the transition's.
+    const completing =
+      item.itemType === 'WorkOrder' &&
+      targetState.isFinal === true &&
+      targetState.finalKind === 'complete'
+    if (completing) {
+      const { WorkOrderInstructionService } =
+        await import('./WorkOrderInstructionService')
+      await WorkOrderInstructionService.assertReadyForCompletion(itemId)
+    }
+
+    // Every success path reports through here, so no one of them can return
+    // an order that reached a complete state without its stamp. Entering the
+    // state stamps it; re-asserting a goal the order already holds writes
+    // only to repair a stamp that is missing, never to slide the completion
+    // time of a record that is already closed. completedAt is a work_orders
+    // type field, not lifecycle-controlled, which is why it is its own write.
+    const settle = async (fromStateId: string, alreadyThere = false) => {
+      const stamped = (item as { completedAt?: Date | null }).completedAt
+      if (completing && !(alreadyThere && stamped)) {
+        await ItemService.update(
+          itemId,
+          { completedAt: new Date() } as never,
+          userId,
+        )
+      }
+      return {
+        fromStateId,
+        toStateId: targetState.id,
+        toStateName: targetState.name,
+      }
+    }
+
     // Lazily create the instance: Free-lifecycle items get the workflow
     // machinery on their first transition
     let instance = await WorkflowService.getInstanceByItemId(itemId)
     if (!instance) {
-      instance = await WorkflowService.startInstance(lifecycle.id, itemId, {
-        actorId: userId,
-      })
+      try {
+        instance = await WorkflowService.startInstance(lifecycle.id, itemId, {
+          actorId: userId,
+        })
+      } catch (error) {
+        // `workflow_instances_one_active_per_item` makes the loser of a
+        // concurrent lazy create fail. Adopt the winner's instance and carry
+        // on — the PhysicalPartService.register shape. Matched on error
+        // class, never on a message.
+        if (!(error instanceof AlreadyExistsError)) throw error
+        instance = await WorkflowService.getInstanceByItemId(itemId)
+        if (!instance) throw error
+      }
+    }
+
+    // The goal already holds: another writer put the item where this call
+    // wanted it (or it never left). Return success without moving it — and
+    // before the adopt below, which would otherwise roll the instance
+    // BACKWARD onto this caller's stale item read and record a
+    // `state_adopted` regression that never happened.
+    if (instance.currentState === targetState.id) {
+      return settle(instance.currentState, true)
     }
 
     // Adopt the item's stored state if the instance diverges (items whose
@@ -929,14 +1011,19 @@ export class LifecycleService {
       comments,
     )
     if (!result.success) {
+      // A concurrent writer may have made exactly this move between the read
+      // above and the compare-and-swap inside transition(). Ask the instance
+      // where it actually is rather than parsing why the attempt failed: if
+      // it is in the target state, the goal is met and this call succeeded;
+      // anything else is a genuine rejection and still throws.
+      const settled = await WorkflowService.getInstance(instance.id)
+      if (settled && settled.currentState === targetState.id) {
+        return settle(result.fromState)
+      }
       throw new ValidationError(result.error || 'Transition not allowed')
     }
 
-    return {
-      fromStateId: result.fromState,
-      toStateId: targetState.id,
-      toStateName: targetState.name,
-    }
+    return settle(result.fromState)
   }
 
   /**

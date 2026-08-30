@@ -112,13 +112,23 @@ Run Cascadia with a managed cloud database (AWS RDS, Google Cloud SQL, Azure Dat
 
 Follow your cloud provider's instructions above.
 
-### Step 2: Create Database Schema
+### Step 2: Apply Database Schema
+
+Nothing is required for a fresh database: `docker-compose.yml` here boots the app
+through `scripts/boot-migrate.ts`, which applies the committed migrations under
+`apps/*/drizzle/` before the server starts. To apply them ahead of the
+deployment instead, from a checkout of the release being deployed:
 
 ```bash
-# From your local machine with DATABASE_URL set
-cd CascadiaApp
-npm run db:push
+# From your local machine with DATABASE_URL set to the cloud database
+npm run db:migrate
 ```
+
+Never `db:push` a managed instance -- it diff-applies the schema by whatever DDL
+that takes and records nothing, which is a data-loss primitive on a populated
+database. See [upgrading.md](../../../deployment/upgrading.md) for the
+push-vs-migrate rule and for the one-time `db:baseline` stamp that a pre-v0.5
+database needs.
 
 ### Step 3: Deploy Application
 

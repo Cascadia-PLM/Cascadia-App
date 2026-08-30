@@ -25,6 +25,10 @@
  */
 
 import { sql } from 'drizzle-orm'
+// Laid out at module load, synchronously. That is the constraint on ever
+// replacing dagre here: an async layout library (elkjs) cannot be called
+// from a module-level constant. See the note in
+// components/versioning/graph-layout.ts.
 import dagre from 'dagre'
 import { itemTypeConfigs, users, workflowDefinitions } from '../db/schema'
 import { LIFECYCLE_IDS } from './lifecycle-ids'

@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2026 Cascadia PLM LLC
+
+# Deliberately carries no `[project]` table. This package is consumed via
+# PYTHONPATH — each worker image copies `py-common/src` next to its own `src`
+# and sets `ENV PYTHONPATH="/app/src:/app/common/src"` — and is never installed
+# as a distribution. Declaring one here would make that model, and the module
+# docstring that states it, false. pytest's `pythonpath` option below gives the
+# suite importability with no install and nothing else changes.
+
+[tool.pytest.ini_options]
+# Resolved relative to rootdir, which is this directory because this file
+# contains the section — so `pytest workers/py-common` from the repo root and
+# `pytest` from inside it both import `cascadia_worker_common` the same way.
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+  "db: needs a PostgreSQL database (TEST_DATABASE_URL); deselect with -m 'not db'",
+]

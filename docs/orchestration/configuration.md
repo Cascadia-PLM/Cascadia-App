@@ -50,13 +50,50 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains
 
 Adjust `script-src` and `style-src` to remove `'unsafe-inline'` if your deployment supports nonce-based or hash-based CSP.
 
+### Client IP Trust
+
+Rate-limit buckets, `auth_events` rows and API-key activity records are all keyed on the caller's address. `X-Forwarded-For` is a request header, so the caller writes it too — the app therefore believes only as many forwarded hops as you declare.
+
+| Variable              | Default | Description                                                              |
+| --------------------- | ------- | ------------------------------------------------------------------------ |
+| `TRUSTED_PROXY_COUNT` | `0`     | How many reverse proxies in front of the app append to `X-Forwarded-For` |
+
+Set it to the number of proxies a request genuinely passes through on its way in:
+
+- `0` — nothing in front of the app, or you have not checked. Forwarded headers are ignored entirely and the TCP peer address is the answer.
+- `1` — one nginx, Traefik, ALB or ingress controller terminating for the app.
+- `2` — a CDN or WAF in front of that load balancer.
+
+Entries are counted **from the right**, because each proxy appends the address it saw. With `TRUSTED_PROXY_COUNT=2` and `X-Forwarded-For: 192.0.2.66, 203.0.113.7, 10.0.0.4`, the app reads `203.0.113.7` — the address the outermost trusted proxy observed — and discards `192.0.2.66`, which the caller supplied. A header carrying fewer entries than the declared depth, or whose trusted entry is not an address, falls back to the peer address; it never falls forward to the leftmost, caller-chosen entry.
+
+> **Leaving this at `0` behind a proxy is safe but blunt.** Every request resolves to the proxy's own address, so everyone behind it shares one rate-limit bucket and audit rows record the proxy rather than the client. That fails closed — nobody can forge their way into a private bucket — but one abusive client can spend the shared login budget for everybody. Set the real depth.
+
+Two requirements on the proxy itself:
+
+- It must **append** to `X-Forwarded-For`, not replace it. nginx's `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` does; a bare `$remote_addr` does not, and would leave a one-entry header where the app expects the chain.
+- `X-Real-IP` alone is not read. A proxy that sets only that header must also be configured to append `X-Forwarded-For`.
+
+### Rate Limiting
+
+Sliding-window limits, held per instance and per resolved client address (above). Multi-instance deployments count independently — this is abuse prevention, not metering.
+
+| Variable                       | Default | Description                                                         |
+| ------------------------------ | ------- | ------------------------------------------------------------------- |
+| `RATE_LIMIT_ENFORCE`           | unset   | Set to `true` to enforce limits when `NODE_ENV` is not `production` |
+| `RATE_LIMIT_LOGIN_PER_MINUTE`  | `10`    | Budget for login and password endpoints                             |
+| `RATE_LIMIT_API_PER_MINUTE`    | `1000`  | Budget for every other route that does not opt out                  |
+| `RATE_LIMIT_UPLOAD_PER_MINUTE` | `100`   | Budget for file uploads                                             |
+
+Limits are enforced whenever `NODE_ENV=production`, which every containerized deployment and both editions' built entrypoints set. `RATE_LIMIT_ENFORCE=true` is for the one case that gate misses: a staging box running the development server that still wants the login budget enforced.
+
+Raise the per-minute budgets for deployments where many users share one egress address — a corporate NAT puts a whole office in one bucket, and a single page load spends several API requests. An unset, unparseable or non-positive value falls back to the default rather than removing the limit.
+
 ### Vault Configuration
 
-| Variable            | Default              | Description                      |
-| ------------------- | -------------------- | -------------------------------- |
-| `VAULT_TYPE`        | `local`              | Storage backend: `local` or `s3` |
-| `VAULT_ROOT`        | `/app/vault`         | Local storage directory          |
-| `FILE_STORAGE_PATH` | `/app/storage/files` | General file storage             |
+| Variable     | Default      | Description                      |
+| ------------ | ------------ | -------------------------------- |
+| `VAULT_TYPE` | `local`      | Storage backend: `local` or `s3` |
+| `VAULT_ROOT` | `/app/vault` | Local storage directory          |
 
 > **Note:** the app always uses its configured storage backend directly — the
 > local root resolves DB setting → `VAULT_ROOT` → `./vault`. There is no
@@ -109,10 +146,22 @@ proxy configuration.
 | `CASCADIA_PDF_SIGNING_NAME`                | `Cascadia PLM`       | Signer name shown in a PDF reader's signature panel.                                                          |
 | `CASCADIA_PDF_SIGNING_CONTACT`             | -                    | Contact shown alongside the signature.                                                                        |
 | `CASCADIA_PDF_SIGNING_LOCATION`            | -                    | Location shown alongside the signature.                                                                       |
+| `CASCADIA_AUDIT_ANCHOR_PERIOD_MS`          | `86400000` (24h)     | Gap between scheduled chain anchors. `0` opts out of scheduled anchoring.                                     |
 
 > **Security:** `CASCADIA_CLIENT_CERT_HEADER` makes Cascadia trust a request
 > header as proof of identity. Only set it once the reverse proxy overwrites
 > that header on every request and the app is unreachable except through it.
+
+**Chain anchoring rides the jobs worker.** Setting `CASCADIA_PDF_SIGNING_P12`
+is what turns anchoring on: the worker's maintenance sweep then submits the
+`audit.anchor.chains` job every `CASCADIA_AUDIT_ANCHOR_PERIOD_MS`. A deployment
+with the package licensed but no signing credential never anchors and nothing
+fails to say so — `GET /api/v1/signatures/anchors` is the health check, and
+reports `configured: false` on exactly that instance. An instance that already
+submits the job from its own scheduler should set the period to `0`, or it will
+anchor twice a period (harmless — anchors are append-only evidence — but it
+doubles the reconciliation scan). Anchoring runs only where the jobs worker
+runs; an app-only deployment takes no anchors.
 
 ---
 
@@ -145,12 +194,13 @@ S3_FORCE_PATH_STYLE=false           # Set true for MinIO
 
 ### Worker Settings
 
-| Variable             | Default  | Description                                   |
-| -------------------- | -------- | --------------------------------------------- |
-| `WORKER_CONCURRENCY` | `5`      | Max concurrent jobs per worker                |
-| `JOB_TYPES`          | `*`      | Job types to process (comma-separated or `*`) |
-| `JOB_TIMEOUT`        | `300000` | Default job timeout (ms)                      |
-| `MAX_RETRIES`        | `3`      | Default retry attempts                        |
+| Variable                      | Default  | Description                                                         |
+| ----------------------------- | -------- | ------------------------------------------------------------------- |
+| `WORKER_CONCURRENCY`          | `5`      | Max concurrent jobs per worker                                      |
+| `JOB_TYPES`                   | `*`      | Job types to process (comma-separated or `*`)                       |
+| `JOB_TIMEOUT`                 | `300000` | Default job timeout (ms)                                            |
+| `MAX_RETRIES`                 | `3`      | Default retry attempts                                              |
+| `WORKER_CLAIM_RETRY_DELAY_MS` | `5000`   | Pause before requeueing a delivery whose claim hit a database error |
 
 ### Specialized Workers
 
@@ -209,6 +259,44 @@ S3_REGION=us-east-1
 S3_ACCESS_KEY=...
 S3_SECRET_KEY=...
 ```
+
+---
+
+## CAD Worker Timeout Enforcement
+
+The Python CAD workers (`cad-converter`, `cad-generator`) enforce `JOB_TIMEOUT`
+themselves, in two stages. A pythonocc or CadQuery call that wedges inside
+native code cannot be interrupted — a Python thread cannot be killed, and one
+parked in a C extension never reaches the interpreter to be asked to stop — so
+the deadline is enforced from the outside.
+
+At the deadline the worker marks the job failed through the same guarded
+update any other failure uses: the row leaves 'running' and rejoins the
+ordinary attempts ledger, parking for retry or failing terminally. If the job's
+thread is **still** alive `POISON_EXIT_GRACE_MS` after that, the slot is not
+coming back, so the worker logs a critical line and exits with status 1 and the
+container restart policy reclaims it. Jobs that were still running in that
+process are left 'running' and recovered by the app's stale-running sweep
+(`JOB_STALE_RUNNING_GRACE_MS`).
+
+The grace window is what makes the second stage safe: a conversion that merely
+overran its deadline and then finished costs only its own row, never the other
+jobs sharing the process.
+
+| Variable               | Default                               | Description                                                                |
+| ---------------------- | ------------------------------------- | -------------------------------------------------------------------------- |
+| `JOB_TIMEOUT`          | `600000` converter, `60000` generator | How long a single job may run, in milliseconds                             |
+| `POISON_EXIT_GRACE_MS` | `60000`                               | Extra time a timed-out job's thread gets before the worker restarts itself |
+| `EXIT_ON_HUNG_JOB`     | `true`                                | Kill switch for that restart; the timeout is still recorded when off       |
+
+Raise `JOB_TIMEOUT` for deployments whose STEP files legitimately take longer
+than the default. Nothing distinguishes "slow" from "hung", so a timeout that is
+too low now burns a job's retry attempts rather than being ignored, as it was
+before enforcement existed.
+
+Set `EXIT_ON_HUNG_JOB=false` to keep a wedged container alive for debugging.
+Timed-out jobs are still failed and retried; the worker simply keeps the lost
+concurrency slot until someone restarts it by hand.
 
 ---
 
@@ -291,7 +379,6 @@ BASE_URL=http://localhost:3000
 
 # Vault (local storage)
 VAULT_TYPE=local
-FILE_STORAGE_PATH=/app/storage/files
 VAULT_ROOT=/app/vault
 
 # Tools (optional)

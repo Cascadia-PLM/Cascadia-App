@@ -4,42 +4,13 @@
 /**
  * Test Helpers Index
  *
- * Central export for all test utilities.
+ * Central export for the database test harnesses. Most suites import the
+ * concrete module directly (`@test/helpers/db`); this barrel exists for the
+ * few that prefer the short path.
  *
  * @example
  * ```typescript
- * import {
- *   // Database
- *   TestDatabase,
- *   setupTestDb,
- *   testQueries,
- *
- *   // Auth
- *   createMockRequest,
- *   createMockSession,
- *   mockAuth,
- *   setupAuthMocks,
- *   authAssertions,
- *
- *   // API
- *   createApiTestClient,
- *   apiAssertions,
- *   createServiceMocks,
- *
- *   // Vault
- *   MockVaultStorage,
- *   createTestFile,
- *   VaultTestHelper,
- *   createFileServiceMocks,
- *   vaultAssertions,
- *
- *   // React rendering
- *   renderWithProviders,
- *   screen,
- *   userEvent,
- *   testUsers,
- *   testPermissions,
- * } from '@test/helpers'
+ * import { TestDatabase } from '@test/helpers'
  * ```
  */
 
@@ -52,67 +23,6 @@ export {
   type TestDatabaseConfig,
 } from './db'
 
-// Auth utilities
-export {
-  createMockSession,
-  createMockRequest,
-  createAuthenticatedRequest,
-  getPermissionsForRole,
-  getPermissionsForRoles,
-  hasPermission,
-  setupAuthMocks,
-  mockAuth,
-  isAuthError,
-  parseAuthError,
-  authAssertions,
-  type MockSessionValidationResult,
-  type MockRequestOptions,
-  type MockAuthOptions,
-} from './auth'
-
-// API utilities
-export {
-  ApiTestClient,
-  createApiTestClient,
-  apiAssertions,
-  createServiceMocks,
-  expectApiError,
-  expectValidationErrors,
-  type HttpMethod,
-  type ApiTestRequestOptions,
-  type ApiTestResponse,
-} from './api'
-
-// Vault utilities
-export {
-  MockVaultStorage,
-  createTestFile,
-  createTestFileMetadata,
-  filePresets,
-  VaultTestHelper,
-  createFileServiceMocks,
-  vaultAssertions,
-} from './vault'
-
-// React rendering utilities
-export {
-  renderWithProviders,
-  renderWithRouter,
-  useTestToasts,
-  useTestAuth,
-  useTestTheme,
-  waitForUpdates,
-  createMockEvent,
-  testUsers,
-  testPermissions,
-  // Re-exports from @testing-library/react
-  screen,
-  fireEvent,
-  waitFor,
-  within,
-  act,
-  // Re-export userEvent
-  userEvent,
-  type RenderWithProvidersOptions,
-  type TestUserContext,
-} from './render'
+// The multi-connection variant, for tests about races rather than about
+// behaviour. It commits — see its header before reaching for it.
+export { ConcurrentTestDatabase, type SeededScope } from './concurrent-db'

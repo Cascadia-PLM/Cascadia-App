@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import {
+  bigint,
   boolean,
   check,
   decimal,
@@ -79,16 +80,37 @@ export const items = pgTable(
     usageOf: uuid('usage_of'),
   },
   (table) => [
-    // Unique item number + revision per design (allows same item number in different designs for usages)
-    unique().on(
-      table.itemNumber,
-      table.revision,
-      table.designId,
-      table.itemType,
+    // Unique item number + revision per design (allows same item number in
+    // different designs for usages).
+    //
+    // NULLS NOT DISTINCT, because design-less item types (WorkOrder, Tool,
+    // PhysicalPart, Task, Issue, ChangeOrder) all carry designId NULL — and
+    // under SQL's default NULLs-are-distinct rule the constraint never fired
+    // for any of them, so two WO-000123 rows were an insert away. Design-less
+    // items live at the unreleased marker forever and are updated in place
+    // (no versioning multiplicity), and branch working copies always carry a
+    // designId with a branch-scoped revision marker, so no legitimate row
+    // pair collides under this.
+    unique()
+      .on(table.itemNumber, table.revision, table.designId, table.itemType)
+      .nullsNotDistinct(),
+    // A revision starting with '-' is a working marker, and there are exactly
+    // two legal shapes: the bare '-' unreleased-on-main marker and the
+    // '-{8 hex}' branch marker (branchId.substring(0, 8) of a UUID is pure
+    // hex). One-sided on purpose — released revisions are whatever the
+    // configured scheme mints (alpha, numeric, user-prefixed) and legacy
+    // 'DRAFT'/'' pass untouched. A malformed marker is the corruption
+    // RevisionService warns about: isWorkingRevision stops agreeing with the
+    // merge, which then mints a revision from the literal marker text.
+    check(
+      'ck_items_revision_working_marker',
+      sql`revision NOT LIKE '-%' OR revision = '-' OR revision ~ '^-[0-9a-f]{8}$'`,
     ),
     index('idx_master_id').on(table.masterId),
     index('idx_item_type_state').on(table.itemType, table.state),
-    index('idx_current').on(table.isCurrent),
+    // No index on isCurrent alone. Every one of its ~53 call sites filters it
+    // alongside masterId, designId or itemType, each of which has its own
+    // index; a two-value btree on top of that is planner dead weight.
     // SysML Migration indexes
     index('idx_item_design').on(table.designId),
     index('idx_item_commit').on(table.commitId),
@@ -121,10 +143,6 @@ export const parts = pgTable('parts', {
   cost: decimal('cost', { precision: 10, scale: 2 }),
   costCurrency: varchar('cost_currency', { length: 3 }),
   leadTimeDays: integer('lead_time_days'),
-  quantityOnHand: integer('quantity_on_hand').default(0),
-  reorderPoint: integer('reorder_point'),
-  location: text('location'),
-  lastInventoryCheck: timestamp('last_inventory_check', { withTimezone: true }),
 })
 
 export const documents = pgTable('documents', {
@@ -134,7 +152,12 @@ export const documents = pgTable('documents', {
   description: text('description'),
   fileId: uuid('file_id'),
   fileName: varchar('file_name', { length: 500 }),
-  fileSize: integer('file_size'),
+  // bigint, matching vaultFiles.fileSize. The 2 GB integer cap is reachable:
+  // the vault accepts files larger than that, and this mirror of their size
+  // overflowed. `mode: 'number'` keeps the TypeScript type `number`, so the
+  // Zod schema and every reader are untouched — file sizes are nowhere near
+  // 2^53, where that mode would start losing precision.
+  fileSize: bigint('file_size', { mode: 'number' }),
   mimeType: varchar('mime_type', { length: 100 }),
   storagePath: text('storage_path'),
 })
@@ -145,6 +168,10 @@ export const changeOrders = pgTable('change_orders', {
     .references(() => items.id, { onDelete: 'cascade' }),
   changeType: varchar('change_type', { length: 20 }).notNull(),
   priority: varchar('priority', { length: 20 }).default('medium'),
+  // General description, separate from reasonForChange. The `ChangeOrder`
+  // interface, both API schemas and the detail page's textarea have always
+  // offered it; the column is what makes it round-trip.
+  description: text('description'),
   reasonForChange: text('reason_for_change'),
   impactDescription: text('impact_description'),
   implementationDate: timestamp('implementation_date', { withTimezone: true }),
@@ -193,6 +220,27 @@ export const changeOrderAffectedItems = pgTable(
       .references(() => users.id),
   },
   (table) => [
+    /**
+     * One scope row per item per change order.
+     *
+     * Two rows for the same master (say 'revise' and 'obsolete') each
+     * validate on their own, and the merge processes them in unspecified
+     * table order — so which one the release applied depended on which came
+     * back first. Three writers guarded this by reading first and then
+     * inserting (`addAffectedItem`, `registerBranchChange`,
+     * `checkoutItemToEco`), which is a race, not a guarantee.
+     *
+     * Keyed on the master rather than on `affected_item_id`: the same logical
+     * item is several `items.id` rows (its released version, a branch working
+     * copy), so an id-keyed key would let the same item in twice.
+     *
+     * Partial, because a row can legitimately carry no master —
+     * `changeAction: 'create'` records an item that does not exist yet, and a
+     * change order may hold many of those.
+     */
+    uniqueIndex('uq_coai_change_order_master')
+      .on(table.changeOrderId, table.affectedItemMasterId)
+      .where(sql`${table.affectedItemMasterId} IS NOT NULL`),
     index('idx_change_order').on(table.changeOrderId),
     index('idx_affected_item').on(table.affectedItemId),
     index('idx_working_copy').on(table.workingCopyId),
@@ -290,6 +338,14 @@ export const changeOrderDesigns = pgTable(
     unique('change_order_designs_unique').on(
       table.changeOrderId,
       table.designId,
+    ),
+    // ChangeOrderMergeService branches on these values to decide whether a
+    // design merges on release — a typo'd status would silently skip or
+    // double-merge a design, so the set is closed at the database. NULL
+    // passes (the column has a default and stays nullable).
+    check(
+      'ck_cod_merge_status',
+      sql`merge_status IN ('pending', 'merged', 'conflict', 'skipped')`,
     ),
     index('idx_cod_change_order').on(table.changeOrderId),
     index('idx_cod_design').on(table.designId),

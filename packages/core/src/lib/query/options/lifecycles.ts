@@ -84,6 +84,30 @@ export function releasedFamilyStateIds(
  * `lifecycles` reaches it too, since `lifecycles` names `workflows` as a
  * dependent.
  */
+/**
+ * The free-lifecycle transitions available from an item's current state.
+ *
+ * Keyed beneath the item, so a transition — which invalidates `items` —
+ * refreshes the control that offers the next ones.
+ */
+export function itemTransitionsQuery<T>(
+  itemId: string,
+  /** The state they are available *from*; part of the key. */
+  state?: string | null,
+  enabled = true,
+) {
+  return queryOptions({
+    queryKey: qk.sub('items', itemId, 'transitions', state ?? undefined),
+    queryFn: async (): Promise<Array<T>> => {
+      const result = await apiFetch<{ data: { transitions?: Array<T> } }>(
+        `/api/v1/items/${itemId}/transitions`,
+      )
+      return result.data.transitions ?? []
+    },
+    enabled: enabled && Boolean(itemId),
+  })
+}
+
 export function lifecycleListQuery() {
   return collectionQuery<WorkflowDefinition>('workflows', 'workflows')
 }

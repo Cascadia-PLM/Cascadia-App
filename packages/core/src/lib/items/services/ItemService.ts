@@ -16,6 +16,7 @@ import {
   BranchProtectionError,
   InternalError,
   NotFoundError,
+  PermissionDeniedError,
   ValidationError,
 } from '../../errors'
 import { isUniqueViolation } from '../../errors/pg'
@@ -27,6 +28,10 @@ import {
   computeInitialFieldValues,
 } from '../../services/CheckoutService'
 import { BranchService } from '../../services/BranchService'
+// Imported directly rather than through lib/auth/access.ts, whose static
+// FileService import would recreate the ItemService <-> FileService cycle that
+// the dynamic import further down this file exists to break.
+import { AccessControlService } from '../../auth/AccessControlService'
 import { RevisionService } from '../../services/RevisionService'
 import { UsageService } from '../../services/UsageService'
 import { accessScopeCondition, notDeleted } from '../../db/filters'
@@ -34,6 +39,7 @@ import { ItemVersioningFacade } from './ItemVersioningFacade'
 import { ItemEditPolicy } from './ItemEditPolicy'
 import { ItemSearchService } from './ItemSearchService'
 import { ItemRelationshipService } from './ItemRelationshipService'
+import type { AccessScope } from '../../db/filters'
 import type { TypeHandlerContext } from '../type-handlers'
 import type { SQL } from 'drizzle-orm'
 import type { TransactionClient } from '../../db'
@@ -71,10 +77,14 @@ export interface FindByNumberOptions {
   designId?: string
   /**
    * Only consider items the caller may read. `null`/omitted is unrestricted;
-   * `[]` reaches design-less items only. Same contract as
-   * `AccessControlService.getAccessibleDesignIds`, whose result this takes.
+   * an empty scope reaches only the types that scope on nothing. Same
+   * contract as `AccessControlService.getAccessScope`, whose result this
+   * takes.
+   *
+   * This is the caller's own reach, not a narrowing the caller asked for —
+   * `designId` above is that.
    */
-  designIds?: Array<string> | null
+  accessScope?: AccessScope | null
 }
 
 /** One row a by-number lookup matched, named by the design it lives in. */
@@ -400,6 +410,37 @@ export class ItemService {
   }
 
   /**
+   * Refuse a write to an item whose design the caller cannot reach.
+   *
+   * Type-level RBAC ("may this user update parts?") is checked at the route;
+   * it says nothing about *which* parts. Program membership is what scopes
+   * that, and it was enforced only on the paths that happened to route through
+   * a branch — so PUT and DELETE on every by-id type route wrote across the
+   * program boundary. Putting it here covers all of them at once, including
+   * batch update, and it runs before the lifecycle and designId validation so
+   * a caller who may not touch the item learns that rather than which of its
+   * fields are immutable.
+   *
+   * Items with no design (change orders, tools, physical parts) fall through:
+   * there is no design to check. ECOs are gated on their own routes.
+   */
+  private static async requireDesignAccess(
+    item: BaseItem,
+    userId: string,
+    action: 'update' | 'delete',
+  ): Promise<void> {
+    if (!item.designId) return
+    if (await AccessControlService.canAccessDesign(userId, item.designId)) {
+      return
+    }
+    throw new PermissionDeniedError(item.itemType, action, {
+      userId,
+      itemId: item.id,
+      designId: item.designId,
+    })
+  }
+
+  /**
    * Update an existing item
    *
    * In pre-release phase: Items can be updated directly
@@ -430,6 +471,17 @@ export class ItemService {
        * with the rest of the design's merge.
        */
       tx?: TransactionClient
+      /**
+       * Skip the caller's design-access check. Reserved for the change-order
+       * release machinery — never set this from routes, AI tools, or
+       * UI-facing services. Grep usages when auditing.
+       *
+       * The release needs it because a legitimate releaser may reach only a
+       * subset of a multi-design ECO's designs (see resolveEcoDesignScope):
+       * authorization for the release is decided once, on the ECO, and
+       * re-checking it per item would fail releases that are entirely valid.
+       */
+      skipAccessCheck?: boolean
     },
   ): Promise<T> {
     // Get current item with type-specific data (for computing field changes)
@@ -437,6 +489,10 @@ export class ItemService {
 
     if (!oldItem) {
       throw new NotFoundError('Item', id, { operation: 'update' })
+    }
+
+    if (!options?.skipAccessCheck) {
+      await this.requireDesignAccess(oldItem, userId, 'update')
     }
 
     // Lifecycle-controlled fields never change through the generic update
@@ -660,17 +716,105 @@ export class ItemService {
   }
 
   /**
+   * Refuse a hard delete of a row whose state says it carries evidence meant
+   * to outlive it. Expressed in lifecycle configuration, never in state names:
+   *
+   * - a released-family state is immutable lineage everywhere else in the
+   *   codebase; this was the one place it was not;
+   * - a final state whose `finalKind` is 'release' or 'complete' is the record
+   *   that the release or the build happened. Against the shipped lifecycles
+   *   that is an approved change order and a completed work order and nothing
+   *   else — 'cancel' finals, and the finals that declare no kind (a retired
+   *   tool, a scrapped physical part, a closed issue), stay deletable;
+   * - an item governed by a Driving definition — a change order — may only be
+   *   deleted while still in the state `create` gave it. Past that it holds
+   *   votes, a locked branch and its affected-item list. Bounding it here is
+   *   what keeps ChangeOrderService.create's cleanup of a change order it just
+   *   failed to link working, and nothing wider.
+   *
+   * A change order's state mirrors its workflow instance rather than an item
+   * lifecycle, so the flags are read from the *governing* definition:
+   * `getLifecycleForItemType` deliberately never resolves a Driving workflow
+   * as an item lifecycle, and would report every change order stateless.
+   */
+  private static async requireNoRetainedEvidence(
+    item: BaseItem,
+    id: string,
+  ): Promise<void> {
+    const { LifecycleService } = await import('../../services/LifecycleService')
+    const label = item.itemNumber || id
+
+    if (
+      await LifecycleService.isReleasedFamilyState(item.itemType, item.state)
+    ) {
+      throw new ValidationError(
+        `'${label}' is released. Released versions are never destroyed — obsolete it through a change order instead.`,
+      )
+    }
+
+    const governing = await LifecycleService.getGoverningDefinition(
+      item.itemType,
+    )
+    if (!governing) return
+
+    const state = governing.states.find((s) => s.id === item.state)
+
+    if (
+      state?.isFinal === true &&
+      (state.finalKind === 'release' || state.finalKind === 'complete')
+    ) {
+      throw new ValidationError(
+        `'${label}' is the record of ${
+          state.finalKind === 'release' ? 'a release' : 'completed work'
+        } and cannot be deleted — its approvals, history and the work recorded against it would go with it.`,
+      )
+    }
+
+    if (governing.lifecycleType === 'Driving' && state?.isInitial !== true) {
+      throw new ValidationError(
+        `'${label}' has left its initial state and cannot be deleted — deleting it would destroy its approval trail, workflow history and affected-item list. Cancel it through the workflow instead.`,
+      )
+    }
+  }
+
+  /**
    * Delete an item
    *
    * Idempotent for missing items (no error). Enforces the same edit-lock
    * policy as update(): protected main and other users' checkouts block the
    * delete. Branch-tracked rows must go through deleteOnBranch instead —
    * deleting them here would leave branch_items.currentItemId dangling.
+   *
+   * This is a hard delete, and the schema cascades from `items.id`: the
+   * item_versions and item_field_changes rows go with it (the items row IS
+   * the version content), and so do the workflow instance, its history and
+   * approvals, a change order's affected and impacted lists, and a work
+   * order's traveler lines and their executions. None of that is recoverable,
+   * so the operation is bounded to rows that do not yet carry evidence meant
+   * to outlive them — see `requireNoRetainedEvidence` and
+   * docs/features/versioning.md. Anything past that point is retired through
+   * its lifecycle, or deleted on a branch where the deletion is itself
+   * history.
    */
-  static async delete(id: string, userId: string): Promise<void> {
+  static async delete(
+    id: string,
+    userId: string,
+    options?: {
+      /**
+       * Skip the caller's design-access check. Reserved for internal machinery
+       * cleaning up an item it just created — never set this from routes, AI
+       * tools, or UI-facing services. Grep usages when auditing.
+       */
+      skipAccessCheck?: boolean
+    },
+  ): Promise<void> {
     const item = await this.findById(id)
     if (!item) {
       return // preserve idempotent delete semantics
+    }
+
+    if (!options?.skipAccessCheck) {
+      await this.requireDesignAccess(item, userId, 'delete')
     }
 
     const branchInfo = await ItemEditPolicy.requireContentEditable(item, userId)
@@ -679,6 +823,8 @@ export class ItemService {
         `Item '${item.itemNumber || id}' is tracked on branch "${branchInfo.branchName}". Use the branch delete operation (deleteOnBranch) so the change is recorded on the branch.`,
       )
     }
+
+    await this.requireNoRetainedEvidence(item, id)
 
     await db.delete(items).where(eq(items.id, id))
   }
@@ -879,7 +1025,7 @@ export class ItemService {
       conditions.push(eq(items.designId, options.designId))
     }
 
-    const scope = accessScopeCondition(options?.designIds)
+    const scope = accessScopeCondition(options?.accessScope)
     if (scope) {
       conditions.push(scope)
     }
@@ -994,7 +1140,7 @@ export class ItemService {
       itemTypes?: Array<string>
       currentOnly?: boolean
       designIds?: Array<string>
-      accessDesignIds?: Array<string> | null
+      accessScope?: AccessScope | null
     },
   ): Promise<Array<BaseItem>> {
     return ItemSearchService.searchByItemNumber(query, options)

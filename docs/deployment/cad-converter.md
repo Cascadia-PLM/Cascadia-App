@@ -118,17 +118,20 @@ Xvfb is required because pythonocc's thumbnail rendering uses OpenGL, which need
 
 All configuration is via environment variables (case-insensitive, no prefix):
 
-| Variable                  | Default                                                  | Description                                       |
-| ------------------------- | -------------------------------------------------------- | ------------------------------------------------- |
-| `DATABASE_URL`            | `postgresql://postgres:postgres@localhost:5432/cascadia` | PostgreSQL connection string                      |
-| `RABBITMQ_URL`            | `amqp://localhost:5672`                                  | RabbitMQ connection string                        |
-| `VAULT_ROOT`              | `/vault`                                                 | Root directory for vault file storage             |
-| `WORKER_CONCURRENCY`      | `2`                                                      | Maximum concurrent jobs (RabbitMQ prefetch count) |
-| `JOB_TIMEOUT`             | `600000`                                                 | Job timeout in milliseconds (10 minutes)          |
-| `HEALTH_PORT`             | `3003`                                                   | HTTP health check port                            |
-| `MESH_LINEAR_DEFLECTION`  | `0.1`                                                    | Default tessellation linear deflection (mm)       |
-| `MESH_ANGULAR_DEFLECTION` | `0.5`                                                    | Default tessellation angular deflection (rad)     |
-| `STL_FORMAT`              | `binary`                                                 | STL output format: `binary` or `ascii`            |
+| Variable                    | Default                                                  | Description                                                         |
+| --------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
+| `DATABASE_URL`              | `postgresql://postgres:postgres@localhost:5432/cascadia` | PostgreSQL connection string                                        |
+| `RABBITMQ_URL`              | `amqp://localhost:5672`                                  | RabbitMQ connection string                                          |
+| `VAULT_ROOT`                | `/vault`                                                 | Root directory for vault file storage                               |
+| `WORKER_CONCURRENCY`        | `2`                                                      | Maximum concurrent jobs (RabbitMQ prefetch count)                   |
+| `JOB_TIMEOUT`               | `600000`                                                 | Job timeout in milliseconds (10 minutes)                            |
+| `CLAIM_RETRY_DELAY_SECONDS` | `5`                                                      | Pause before requeueing a delivery whose claim hit a database error |
+| `POISON_EXIT_GRACE_MS`      | `60000`                                                  | Grace after a job's timeout before the worker restarts itself       |
+| `EXIT_ON_HUNG_JOB`          | `true`                                                   | Whether a job still hung after that grace restarts the worker       |
+| `HEALTH_PORT`               | `3003`                                                   | HTTP health check port                                              |
+| `MESH_LINEAR_DEFLECTION`    | `0.1`                                                    | Default tessellation linear deflection (mm)                         |
+| `MESH_ANGULAR_DEFLECTION`   | `0.5`                                                    | Default tessellation angular deflection (rad)                       |
+| `STL_FORMAT`                | `binary`                                                 | STL output format: `binary` or `ascii`                              |
 
 ## Development Setup
 

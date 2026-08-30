@@ -139,6 +139,49 @@ app.delete('/items/:id', adapt(
 ))
 ```
 
+Both halves of the tuple are typed, so a misspelt resource or action is a
+compile error. What the types cannot say is whether any role _holds_ the pair
+you charged. `manage` is the trap: it sits on `workflows`, `users`, `roles`,
+`programs` and `system`, and on no item-type resource — so
+`permission: ['documents', 'manage']` is not a tight route, it is a route
+nobody can call, answering 403 to everyone including the Administrator with
+the message an unauthorized caller gets.
+
+`npm run permissions:check` fails on a tuple no role in `ROLE_DEFINITIONS`
+grants, and runs in CI's Lint job. The other way to satisfy one is to grant the
+action in `packages/core/src/lib/auth/permissions.ts` — existing databases pick
+that up with `npm run db:sync-roles`. To see which roles a tuple actually
+admits, run `npm run permissions:check -- --audience`.
+
+#### Row-level reach: `access:`
+
+`permission:` answers _may this role do this verb at all_. It cannot answer
+_may this user touch this row_ — that needs the route's params. Declare the
+second as `access:`, which runs **after** the permission check and **before**
+the body is parsed:
+
+```typescript
+apiHandler<{ id: string }, z.infer<typeof transitionSchema>>(
+  {
+    permission: ['change_orders', 'update'],
+    access: ({ params, user }) => requireEcoAccess(user.id, params.id),
+    body: transitionSchema,
+  },
+  async ({ params, body }) => { ... },
+)
+```
+
+**The ordering is the point, not a detail.** These checks used to be the first
+statement of each handler, which put them _after_ the wrapper's body parse —
+so a caller with no reach got a 400 describing the body they were not allowed
+to send, instead of a 403. Declaring the gate makes the ordering structural
+rather than something every author has to remember.
+`program-isolation.permissions.test.ts` and `handler.test.ts` both hold it.
+
+Throw to refuse; the `require*Access` helpers in `lib/auth/access` already
+throw `PermissionDeniedError`, so most gates are one line. Any return value is
+awaited and discarded.
+
 ### Handler Context
 
 The handler function receives a context object:
@@ -147,7 +190,8 @@ The handler function receives a context object:
 interface HandlerContext {
   request: Request // Raw HTTP request
   params: TParams // URL parameters (e.g., { id: '...' })
-  user: SessionUser // Authenticated user (empty for public routes)
+  body: TBody // Validated body when the route declares `body:` (see below)
+  user: SessionUser // Authenticated user, null on a public route
   requestId: string // Unique request ID for tracing
 }
 ```
@@ -194,17 +238,53 @@ app.post(
 
 ### JSON Body
 
+**Declare a `body:` schema. Do not call `request.json()`.** The wrapper reads,
+parses and validates the body before the handler runs, and hands it over as
+`ctx.body` — so a body that does not conform never reaches your code, and the
+400 it produces names the failing fields in the documented envelope.
+
 ```typescript
-app.post(
-  '/',
+app.put(
+  '/:id',
   adapt(
-    apiHandler({}, async ({ request }) => {
-      const data = await request.json()
-      // data is unknown — validate with Zod or pass to service
-    }),
+    apiHandler<{ id: string }, z.infer<typeof partUpdateSchema>>(
+      { permission: ['parts', 'update'], body: partUpdateSchema },
+      async ({ params, body, user }) =>
+        ItemService.update(params.id, body, user.id),
+    ),
   ),
 )
 ```
+
+The same schema is written into the route's OpenAPI metadata, so the spec
+cannot drift from what actually runs.
+
+Four things this replaced, none of which should come back:
+
+- `await request.json()` followed by hand-rolled `if (!x) throw new
+ValidationError(...)` checks. Put the rule in the schema; the 400 then names
+  the field instead of describing the rule in prose.
+- `schema.safeParse(body)` with the issues mapped into a `ValidationError` by
+  hand. `handleApiError` already builds that envelope from a `ZodError`.
+- `(await request.json()) as SomeInterface` — a cast, which validates nothing.
+- Unbounded arrays and numbers. Every array gets a `.max()` and every numeric
+  field a range; an uncapped `maxDepth` or message list is a request that can
+  ask the server for unbounded work.
+
+Naming `TParams` switches off inference for the rest, so a route with both
+params and a body names both type arguments. A route with only a body
+(`apiHandler({ body: schema }, …)`) has its body type inferred.
+
+**Two documented exceptions**, both because the schema is not knowable until
+after a lookup, and both commented where they live:
+
+- `PUT /api/v1/items/:id` — the schema depends on the _stored_ item's type.
+- `POST /api/v1/relationships/batch` — validates line by line and collects
+  rejections into `errors[]`, which is what a batch endpoint is for. Parsing
+  the whole body would turn one malformed line into a rejection of all 500.
+  Its _envelope_ (non-empty, at most 500) is still a `body:` schema.
+
+Multipart upload handlers read the raw request and are untouched by this.
 
 ### Query Parameters
 

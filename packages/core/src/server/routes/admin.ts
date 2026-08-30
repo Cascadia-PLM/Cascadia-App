@@ -11,6 +11,7 @@ import type { UpdateApiKeyInput } from '@/lib/auth/ApiKeyService'
 import type { AIProviderConfig as AIProviderDBConfig } from '@/lib/db/schema/ai'
 import type { AIProviderConfig, ProviderType } from '@/lib/ai/adapters'
 import { apiHandler, parseQuery } from '@/lib/api/handler'
+import { aiProviderTypeSchema, aiSettingsUpdateSchema } from '@/lib/api/schemas'
 import { mountRoutes } from '@/lib/api/route-registry'
 import { db } from '@/lib/db'
 import { aiSettings } from '@/lib/db/schema/ai'
@@ -21,13 +22,13 @@ import {
   validateApiKeyPolicy,
 } from '@/lib/auth/api-key-policy-types'
 import {
-  decrypt,
+  decryptSecret,
   encrypt,
   isEncryptionConfigured,
 } from '@/lib/crypto/encryption'
 import { getAdapter } from '@/lib/ai/adapters'
 import { aiLogger } from '@/lib/logging/logger'
-import { AI_PROVIDERS, isAiProviderType } from '@/lib/ai/model-catalog'
+import { AI_PROVIDERS } from '@/lib/ai/model-catalog'
 import { listProviderModels } from '@/lib/ai/model-discovery'
 import {
   CatalogService,
@@ -50,6 +51,71 @@ import '@/lib/items/registerItemTypes.server'
 const adapt = tagged('Admin')
 
 const app = new Hono()
+
+// =============================================================================
+// Request-body schemas. One schema per settings write, superseding the
+// interim hand-rolled checks ENV-1 left behind — the same object now
+// validates the request and documents it in the OpenAPI spec.
+// =============================================================================
+
+/** Body of POST /admin/ai-settings/test. */
+const aiSettingsTestSchema = z.object({
+  provider: aiProviderTypeSchema,
+  apiKey: z.string().optional(),
+  model: z.string(),
+  baseURL: z.string().optional(),
+})
+
+/** Body of POST /admin/item-type-configs. */
+const itemTypeConfigBodySchema = z.object({
+  itemType: z.string().min(1),
+  // Validated structurally by ConfigService against the registered type.
+  config: z.record(z.string(), z.unknown()),
+})
+
+/** Body of POST /admin/settings. Exactly one of value/jsonValue is required. */
+const settingsWriteSchema = z.object({
+  key: z.string().min(1),
+  value: z.string().optional(),
+  jsonValue: z.unknown().optional(),
+  description: z.string().max(2000).optional(),
+})
+
+/** Body of POST /admin/thread-cache/cleanup. Absent body keeps the defaults. */
+const threadCacheCleanupSchema = z
+  .object({
+    maxAgeDays: z.number().positive().optional(),
+    maxInvalidatedAgeHours: z.number().positive().optional(),
+  })
+  .optional()
+
+/** Body of POST /admin/thread-cache/clear — requires an explicit confirm. */
+const threadCacheClearSchema = z
+  .object({
+    confirm: z.boolean().optional(),
+  })
+  .optional()
+
+/** Body of POST /admin/thread-cache/warm. */
+const threadCacheWarmSchema = z.object({
+  itemIds: z.array(z.string()).min(1, 'itemIds array must not be empty'),
+  // Optional thread projection options, passed through to the cache warmer.
+  request: z.record(z.string(), z.unknown()).optional(),
+})
+
+/** Body of PUT /admin/api-key-policy. Semantics via validateApiKeyPolicy. */
+const apiKeyPolicySchema = z.object({
+  defaultExpirationDays: z.number().nullable().optional(),
+  maxExpirationDays: z.number().nullable().optional(),
+  requireExpiration: z.boolean().optional(),
+})
+
+/** Body of PATCH /admin/api-keys/:keyId — mirrors UpdateApiKeyInput. */
+const apiKeyUpdateSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  permissions: z.record(z.string(), z.array(z.string())).nullable().optional(),
+  roles: z.array(z.string()).nullable().optional(),
+})
 
 // ============================================
 // AI Settings
@@ -77,14 +143,11 @@ app.get(
         let maskedKey: string | undefined
         if (settings.config.apiKey) {
           try {
-            const decrypted =
-              isEncryptionConfigured() &&
-              !settings.config.apiKey.startsWith('sk-') &&
-              !settings.config.apiKey.startsWith('key-')
-                ? decrypt(settings.config.apiKey)
-                : settings.config.apiKey
+            const decrypted = decryptSecret(settings.config.apiKey)
             maskedKey = `${decrypted.slice(0, 8)}...${decrypted.slice(-4)}`
           } catch {
+            // Display only: a key we cannot read still gets a mask, so the
+            // settings page renders and the admin can re-save it.
             maskedKey = `${settings.config.apiKey.slice(0, 8)}...`
           }
         }
@@ -109,113 +172,73 @@ app.get(
 app.post(
   '/ai-settings',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ request }) => {
-      const body = await request.json()
-      const { enabled, provider, config } = body as {
-        enabled: boolean
-        provider: string
-        config: AIProviderDBConfig
-      }
+    apiHandler(
+      { permission: ['system', 'manage'], body: aiSettingsUpdateSchema },
+      async ({ body }) => {
+        const { enabled, provider, config } = body
 
-      // Validate required fields
-      if (typeof enabled !== 'boolean') {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: 'enabled must be a boolean',
-            },
-          }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
+        // Encrypt API key before storing if encryption is configured
+        const configToStore: AIProviderDBConfig = { ...config }
+        if (configToStore.apiKey && isEncryptionConfigured()) {
+          configToStore.apiKey = encrypt(configToStore.apiKey)
+        } else if (configToStore.apiKey) {
+          aiLogger.warn(
+            { provider },
+            'ENCRYPTION_KEY is not configured — storing AI provider API key in plaintext at rest. Set ENCRYPTION_KEY (see SECURITY.md) and re-save the key to encrypt it.',
+          )
+        }
 
-      if (!provider || typeof provider !== 'string') {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: 'provider is required',
-            },
-          }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
+        // Check if global settings exist
+        const existing = await db.query.aiSettings.findFirst({
+          where: isNull(aiSettings.programId),
+        })
 
-      const validProviders = ['openai', 'anthropic', 'gemini', 'ollama']
-      if (!validProviders.includes(provider)) {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: `Invalid provider. Must be one of: ${validProviders.join(', ')}`,
-            },
-          }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
-
-      // Encrypt API key before storing if encryption is configured
-      const configToStore: AIProviderDBConfig = { ...config }
-      if (configToStore.apiKey && isEncryptionConfigured()) {
-        configToStore.apiKey = encrypt(configToStore.apiKey)
-      } else if (configToStore.apiKey) {
-        aiLogger.warn(
-          { provider },
-          'ENCRYPTION_KEY is not configured — storing AI provider API key in plaintext at rest. Set ENCRYPTION_KEY (see SECURITY.md) and re-save the key to encrypt it.',
-        )
-      }
-
-      // Check if global settings exist
-      const existing = await db.query.aiSettings.findFirst({
-        where: isNull(aiSettings.programId),
-      })
-
-      let result
-      if (existing) {
-        // Update existing
-        const [updated] = await db
-          .update(aiSettings)
-          .set({
-            enabled,
-            provider,
-            config: configToStore,
-            updatedAt: new Date(),
-          })
-          .where(eq(aiSettings.id, existing.id))
-          .returning()
-        // Zero rows here means the row was deleted between the read above and
-        // this update — surface it rather than dereferencing undefined below.
-        if (!updated) throw new NotFoundError('AI settings', existing.id)
-        result = updated
-      } else {
-        // Create new
-        const created = takeFirst(
-          await db
-            .insert(aiSettings)
-            .values({
+        let result
+        if (existing) {
+          // Update existing
+          const [updated] = await db
+            .update(aiSettings)
+            .set({
               enabled,
               provider,
               config: configToStore,
-              programId: null, // Global settings
+              updatedAt: new Date(),
             })
-            .returning(),
-        )
-        result = created
-      }
+            .where(eq(aiSettings.id, existing.id))
+            .returning()
+          // Zero rows here means the row was deleted between the read above and
+          // this update — surface it rather than dereferencing undefined below.
+          if (!updated) throw new NotFoundError('AI settings', existing.id)
+          result = updated
+        } else {
+          // Create new
+          const created = takeFirst(
+            await db
+              .insert(aiSettings)
+              .values({
+                enabled,
+                provider,
+                config: configToStore,
+                programId: null, // Global settings
+              })
+              .returning(),
+          )
+          result = created
+        }
 
-      return {
-        settings: {
-          ...result,
-          config: {
-            ...result.config,
-            apiKey: result.config.apiKey
-              ? `${result.config.apiKey.slice(0, 8)}...${result.config.apiKey.slice(-4)}`
-              : undefined,
+        return {
+          settings: {
+            ...result,
+            config: {
+              ...result.config,
+              apiKey: result.config.apiKey
+                ? `${result.config.apiKey.slice(0, 8)}...${result.config.apiKey.slice(-4)}`
+                : undefined,
+            },
           },
-        },
-      }
-    }),
+        }
+      },
+    ),
   ),
 )
 
@@ -223,149 +246,133 @@ app.post(
 app.post(
   '/ai-settings/test',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ request }) => {
-      const body = await request.json()
-      const { provider, apiKey, model, baseURL } = body as {
-        provider: string
-        apiKey?: string
-        model: string
-        baseURL?: string
-      }
+    apiHandler(
+      { permission: ['system', 'manage'], body: aiSettingsTestSchema },
+      async ({ body }) => {
+        const { provider, apiKey, model, baseURL } = body
 
-      // Validate provider
-      const validProviders = ['openai', 'anthropic', 'gemini', 'ollama']
-      if (!validProviders.includes(provider)) {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: `Invalid provider. Must be one of: ${validProviders.join(', ')}`,
-            },
-          }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
+        // Get API key from env if not provided
+        let effectiveApiKey = apiKey
+        if (!effectiveApiKey && provider === 'openai') {
+          effectiveApiKey = process.env.OPENAI_API_KEY
+        }
+        if (!effectiveApiKey && provider === 'anthropic') {
+          effectiveApiKey = process.env.ANTHROPIC_API_KEY
+        }
+        if (!effectiveApiKey && provider === 'gemini') {
+          effectiveApiKey =
+            process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
+        }
 
-      // Get API key from env if not provided
-      let effectiveApiKey = apiKey
-      if (!effectiveApiKey && provider === 'openai') {
-        effectiveApiKey = process.env.OPENAI_API_KEY
-      }
-      if (!effectiveApiKey && provider === 'anthropic') {
-        effectiveApiKey = process.env.ANTHROPIC_API_KEY
-      }
-      if (!effectiveApiKey && provider === 'gemini') {
-        effectiveApiKey =
-          process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
-      }
+        // Ollama doesn't need an API key
+        if (provider !== 'ollama' && !effectiveApiKey) {
+          throw new ValidationError(`API key is required for ${provider}`)
+        }
 
-      // Ollama doesn't need an API key
-      if (provider !== 'ollama' && !effectiveApiKey) {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: `API key is required for ${provider}`,
-            },
-          }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
-
-      if (provider === 'ollama') {
-        // For Ollama, do a fast reachability check against /api/tags before
-        // running an actual chat round-trip. The user-facing baseURL may or
-        // may not include /v1 — strip it for the native tags endpoint.
-        const rawBase = (baseURL || 'http://localhost:11434').replace(
-          /\/+$/,
-          '',
-        )
-        const ollamaNativeUrl = rawBase.endsWith('/v1')
-          ? rawBase.slice(0, -3)
-          : rawBase
-        try {
-          const response = await fetch(`${ollamaNativeUrl}/api/tags`, {
-            method: 'GET',
-            signal: AbortSignal.timeout(5000),
-          })
-          if (!response.ok) {
-            throw new Error(`Ollama returned status ${response.status}`)
+        if (provider === 'ollama') {
+          // For Ollama, do a fast reachability check against /api/tags before
+          // running an actual chat round-trip. The user-facing baseURL may or
+          // may not include /v1 — strip it for the native tags endpoint.
+          const rawBase = (baseURL || 'http://localhost:11434').replace(
+            /\/+$/,
+            '',
+          )
+          const ollamaNativeUrl = rawBase.endsWith('/v1')
+            ? rawBase.slice(0, -3)
+            : rawBase
+          try {
+            const response = await fetch(`${ollamaNativeUrl}/api/tags`, {
+              method: 'GET',
+              signal: AbortSignal.timeout(5000),
+            })
+            if (!response.ok) {
+              throw new Error(`Ollama returned status ${response.status}`)
+            }
+          } catch (ollamaError) {
+            const err = ollamaError as Error
+            return new Response(
+              JSON.stringify({
+                error: {
+                  code: 'CONNECTION_ERROR',
+                  message: `Failed to connect to Ollama at ${ollamaNativeUrl}: ${err.message}`,
+                },
+              }),
+              {
+                status: 503,
+                headers: { 'Content-Type': 'application/json' },
+              },
+            )
           }
-        } catch (ollamaError) {
-          const err = ollamaError as Error
+        }
+
+        // Create config and adapter
+        const config: AIProviderConfig = {
+          provider: provider,
+          apiKey: effectiveApiKey,
+          model,
+          baseURL,
+        }
+
+        try {
+          // Get the adapter - this validates the config
+          const adapter = getAdapter(config)
+
+          // Make a simple test request with minimal tokens using chatStream
+          const testMessage = { role: 'user' as const, content: 'Hi' }
+          const stream = adapter.chatStream({
+            model,
+            messages: [testMessage],
+            // `maxTokens` is TanStack AI's portable option; it maps to each
+            // provider's native field. `maxOutputTokens` is Gemini's native name
+            // and, passed via modelOptions, every other adapter ignored it - so
+            // this probe was requesting a full-length response.
+            maxTokens: 5,
+          })
+          const response = await streamToText(stream)
+
+          // If we got here, the connection works
+          // The schema closed the provider union, so the last arm is total.
+          const providerName =
+            provider === 'openai'
+              ? 'OpenAI'
+              : provider === 'anthropic'
+                ? 'Anthropic'
+                : provider === 'gemini'
+                  ? 'Gemini'
+                  : 'Ollama'
+
+          return {
+            success: true,
+            message: `Connected to ${providerName} successfully!`,
+            model: model,
+            responsePreview: response.slice(0, 50) || '(empty)',
+          }
+        } catch (adapterError) {
+          const err = adapterError as Error
           return new Response(
             JSON.stringify({
               error: {
                 code: 'CONNECTION_ERROR',
-                message: `Failed to connect to Ollama at ${ollamaNativeUrl}: ${err.message}`,
+                message: err.message || 'Failed to connect to AI provider',
               },
             }),
-            {
-              status: 503,
-              headers: { 'Content-Type': 'application/json' },
-            },
+            { status: 503, headers: { 'Content-Type': 'application/json' } },
           )
         }
-      }
-
-      // Create config and adapter
-      const config: AIProviderConfig = {
-        provider: provider as ProviderType,
-        apiKey: effectiveApiKey,
-        model,
-        baseURL,
-      }
-
-      try {
-        // Get the adapter - this validates the config
-        const adapter = getAdapter(config)
-
-        // Make a simple test request with minimal tokens using chatStream
-        const testMessage = { role: 'user' as const, content: 'Hi' }
-        const stream = adapter.chatStream({
-          model,
-          messages: [testMessage],
-          // `maxTokens` is TanStack AI's portable option; it maps to each
-          // provider's native field. `maxOutputTokens` is Gemini's native name
-          // and, passed via modelOptions, every other adapter ignored it - so
-          // this probe was requesting a full-length response.
-          maxTokens: 5,
-        })
-        const response = await streamToText(stream)
-
-        // If we got here, the connection works
-        const providerName =
-          provider === 'openai'
-            ? 'OpenAI'
-            : provider === 'anthropic'
-              ? 'Anthropic'
-              : provider === 'gemini'
-                ? 'Gemini'
-                : provider === 'ollama'
-                  ? 'Ollama'
-                  : provider
-
-        return {
-          success: true,
-          message: `Connected to ${providerName} successfully!`,
-          model: model,
-          responsePreview: response.slice(0, 50) || '(empty)',
-        }
-      } catch (adapterError) {
-        const err = adapterError as Error
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'CONNECTION_ERROR',
-              message: err.message || 'Failed to connect to AI provider',
-            },
-          }),
-          { status: 503, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
-    }),
+      },
+    ),
   ),
 )
+
+/**
+ * Body of `POST /ai-settings/models`. Named rather than inlined in the
+ * annotation, because the same object now runs.
+ */
+const listModelsSchema = z.object({
+  provider: z.enum(AI_PROVIDERS),
+  apiKey: z.string().optional(),
+  baseURL: z.string().optional(),
+})
 
 // POST /api/admin/ai-settings/models
 //
@@ -376,6 +383,7 @@ app.post(
   adapt(
     apiHandler(
       {
+        body: listModelsSchema,
         permission: ['system', 'manage'],
         openapi: {
           summary: 'List models available from an AI provider',
@@ -383,15 +391,6 @@ app.post(
             'Queries the provider’s own list-models endpoint. Falls back to the ' +
             'stored settings key, then the environment key, when no plaintext key is ' +
             'supplied. Returns 503 if the provider is unreachable or rejects the key.',
-          request: {
-            body: {
-              schema: z.object({
-                provider: z.enum(AI_PROVIDERS),
-                apiKey: z.string().optional(),
-                baseURL: z.string().optional(),
-              }),
-            },
-          },
           responses: {
             200: {
               schema: z.object({
@@ -404,30 +403,12 @@ app.post(
           },
         },
       },
-      async ({ request }) => {
-        const body = (await request.json()) as {
-          provider?: unknown
-          apiKey?: unknown
-          baseURL?: unknown
-        }
-
+      async ({ body }) => {
         const { provider } = body
-        if (!isAiProviderType(provider)) {
-          return new Response(
-            JSON.stringify({
-              error: {
-                code: 'VALIDATION_ERROR',
-                message: `Invalid provider. Must be one of: ${AI_PROVIDERS.join(', ')}`,
-              },
-            }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } },
-          )
-        }
 
-        const baseURL =
-          typeof body.baseURL === 'string' && body.baseURL.length > 0
-            ? body.baseURL
-            : undefined
+        // An empty string is not a base URL; the schema keeps the field
+        // optional and this keeps "sent, but blank" meaning the same thing.
+        const baseURL = body.baseURL ? body.baseURL : undefined
 
         const apiKey =
           provider === 'ollama'
@@ -435,15 +416,7 @@ app.post(
             : await resolveDiscoveryApiKey(provider, body.apiKey)
 
         if (provider !== 'ollama' && !apiKey) {
-          return new Response(
-            JSON.stringify({
-              error: {
-                code: 'VALIDATION_ERROR',
-                message: `API key is required for ${provider}`,
-              },
-            }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } },
-          )
+          throw new ValidationError(`API key is required for ${provider}`)
         }
 
         try {
@@ -489,11 +462,7 @@ async function resolveDiscoveryApiKey(
   const storedKey = stored?.config.apiKey
   if (storedKey && stored.provider === provider) {
     try {
-      return isEncryptionConfigured() &&
-        !storedKey.startsWith('sk-') &&
-        !storedKey.startsWith('key-')
-        ? decrypt(storedKey)
-        : storedKey
+      return decryptSecret(storedKey)
     } catch {
       // Fall through to the environment: a key we cannot decrypt (rotated
       // ENCRYPTION_KEY, say) is no better than no key at all.
@@ -565,15 +534,16 @@ app.get(
 app.post(
   '/component-catalog/categories',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ request }) => {
-      const body = await request.json()
-      const data = catalogCategoryCreateSchema.parse(body)
-      const category = await CatalogService.createCategory(data)
-      return new Response(JSON.stringify({ data: category }), {
-        status: 201,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }),
+    apiHandler(
+      { permission: ['system', 'manage'], body: catalogCategoryCreateSchema },
+      async ({ body: data }) => {
+        const category = await CatalogService.createCategory(data)
+        return new Response(JSON.stringify({ data: category }), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      },
+    ),
   ),
 )
 
@@ -581,11 +551,9 @@ app.post(
 app.put(
   '/component-catalog/categories/:id',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['system', 'manage'] },
-      async ({ params, request }) => {
-        const body = await request.json()
-        const data = catalogCategoryUpdateSchema.parse(body)
+    apiHandler<{ id: string }, z.infer<typeof catalogCategoryUpdateSchema>>(
+      { permission: ['system', 'manage'], body: catalogCategoryUpdateSchema },
+      async ({ params, body: data }) => {
         const { id } = params
         return CatalogService.updateCategory(id, data)
       },
@@ -616,19 +584,21 @@ const importBodySchema = z.object({
 app.post(
   '/component-catalog/import',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ request }) => {
-      const body = await request.json()
-      const { rows } = importBodySchema.parse(body)
-      const result = await CatalogService.bulkImport(rows)
+    apiHandler(
+      { permission: ['system', 'manage'], body: importBodySchema },
+      async ({ body }) => {
+        const { rows } = body
+        const result = await CatalogService.bulkImport(rows)
 
-      const status =
-        result.errorCount === 0 ? 201 : result.successCount === 0 ? 400 : 207
+        const status =
+          result.errorCount === 0 ? 201 : result.successCount === 0 ? 400 : 207
 
-      return new Response(JSON.stringify({ data: result }), {
-        status,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }),
+        return new Response(JSON.stringify({ data: result }), {
+          status,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      },
+    ),
   ),
 )
 
@@ -656,15 +626,16 @@ app.get(
 app.post(
   '/component-catalog',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ request }) => {
-      const body = await request.json()
-      const data = catalogEntryCreateSchema.parse(body)
-      const entry = await CatalogService.createEntry(data)
-      return new Response(JSON.stringify({ data: entry }), {
-        status: 201,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }),
+    apiHandler(
+      { permission: ['system', 'manage'], body: catalogEntryCreateSchema },
+      async ({ body: data }) => {
+        const entry = await CatalogService.createEntry(data)
+        return new Response(JSON.stringify({ data: entry }), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      },
+    ),
   ),
 )
 
@@ -686,11 +657,9 @@ app.get(
 app.put(
   '/component-catalog/:id',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['system', 'manage'] },
-      async ({ params, request }) => {
-        const body = await request.json()
-        const data = catalogEntryUpdateSchema.parse(body)
+    apiHandler<{ id: string }, z.infer<typeof catalogEntryUpdateSchema>>(
+      { permission: ['system', 'manage'], body: catalogEntryUpdateSchema },
+      async ({ params, body: data }) => {
         const { id } = params
         return CatalogService.updateEntry(id, data)
       },
@@ -776,44 +745,16 @@ app.post(
   '/item-type-configs',
   adapt(
     apiHandler(
-      { permission: ['system', 'manage'] },
-      async ({ request, user }) => {
-        const body = await request.json()
+      { permission: ['system', 'manage'], body: itemTypeConfigBodySchema },
+      async ({ user, body }) => {
         const { itemType, config } = body
 
-        if (!itemType || typeof itemType !== 'string') {
-          return new Response(
-            JSON.stringify({
-              error: {
-                code: 'VALIDATION_ERROR',
-                message: 'itemType is required',
-              },
-            }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } },
-          )
-        }
-
         if (!ItemTypeRegistry.hasType(itemType)) {
-          return new Response(
-            JSON.stringify({
-              error: {
-                code: 'NOT_FOUND',
-                message: `Item type "${itemType}" is not registered in code`,
-              },
-            }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } },
-          )
-        }
-
-        if (!config || typeof config !== 'object') {
-          return new Response(
-            JSON.stringify({
-              error: {
-                code: 'VALIDATION_ERROR',
-                message: 'config object is required',
-              },
-            }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } },
+          // Was a 400 carrying code NOT_FOUND. The status is the honest one —
+          // the caller named a type that does not exist — so it stays, and the
+          // code becomes the one a 400 carries.
+          throw new ValidationError(
+            `Item type "${itemType}" is not registered in code`,
           )
         }
 
@@ -852,15 +793,7 @@ app.get(
         const codeDefinition = ItemTypeRegistry.getCodeDefinition(itemType)
 
         if (!codeDefinition) {
-          return new Response(
-            JSON.stringify({
-              error: {
-                code: 'NOT_FOUND',
-                message: `Item type "${itemType}" not found`,
-              },
-            }),
-            { status: 404, headers: { 'Content-Type': 'application/json' } },
-          )
+          throw new NotFoundError('Item type', itemType)
         }
 
         const runtimeConfig = await ConfigService.getConfig(itemType)
@@ -915,15 +848,7 @@ app.delete(
         const { itemType } = params
 
         if (!ItemTypeRegistry.hasType(itemType)) {
-          return new Response(
-            JSON.stringify({
-              error: {
-                code: 'NOT_FOUND',
-                message: `Item type "${itemType}" not found`,
-              },
-            }),
-            { status: 404, headers: { 'Content-Type': 'application/json' } },
-          )
+          throw new NotFoundError('Item type', itemType)
         }
 
         await ConfigService.deleteConfig(itemType)
@@ -1076,34 +1001,9 @@ app.post(
   '/settings',
   adapt(
     apiHandler(
-      { permission: ['system', 'manage'] },
-      async ({ request, user }) => {
-        const body = await request.json()
+      { permission: ['system', 'manage'], body: settingsWriteSchema },
+      async ({ user, body }) => {
         const { key, value, jsonValue, description } = body
-
-        if (!key || typeof key !== 'string') {
-          return new Response(
-            JSON.stringify({
-              error: {
-                code: 'VALIDATION_ERROR',
-                message: 'key is required and must be a string',
-              },
-            }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } },
-          )
-        }
-
-        if (value === undefined && jsonValue === undefined) {
-          return new Response(
-            JSON.stringify({
-              error: {
-                code: 'VALIDATION_ERROR',
-                message: 'Either value or jsonValue is required',
-              },
-            }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } },
-          )
-        }
 
         let result
         if (jsonValue !== undefined) {
@@ -1113,13 +1013,15 @@ app.post(
             user.id,
             description,
           )
-        } else {
+        } else if (value !== undefined) {
           result = await SettingsService.setValue(
             key,
             value,
             user.id,
             description,
           )
+        } else {
+          throw new ValidationError('Either value or jsonValue is required')
         }
 
         return { setting: result }
@@ -1137,29 +1039,13 @@ app.delete(
       const key = url.searchParams.get('key')
 
       if (!key) {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: 'key query parameter is required',
-            },
-          }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } },
-        )
+        throw new ValidationError('key query parameter is required')
       }
 
       const deleted = await SettingsService.delete(key)
 
       if (!deleted) {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'NOT_FOUND',
-              message: `Setting "${key}" not found`,
-            },
-          }),
-          { status: 404, headers: { 'Content-Type': 'application/json' } },
-        )
+        throw new NotFoundError('Setting', key)
       }
 
       return { deleted: true, key }
@@ -1175,32 +1061,30 @@ app.delete(
 app.post(
   '/thread-cache/cleanup',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ request }) => {
-      let maxAgeMs = 7 * 24 * 60 * 60 * 1000 // 7 days default
-      let maxInvalidatedAgeMs = 60 * 60 * 1000 // 1 hour default
+    apiHandler(
+      { permission: ['system', 'manage'], body: threadCacheCleanupSchema },
+      async ({ body }) => {
+        let maxAgeMs = 7 * 24 * 60 * 60 * 1000 // 7 days default
+        let maxInvalidatedAgeMs = 60 * 60 * 1000 // 1 hour default
 
-      try {
-        const body = await request.json()
-        if (body.maxAgeDays !== undefined) {
+        if (body?.maxAgeDays !== undefined) {
           maxAgeMs = body.maxAgeDays * 24 * 60 * 60 * 1000
         }
-        if (body.maxInvalidatedAgeHours !== undefined) {
+        if (body?.maxInvalidatedAgeHours !== undefined) {
           maxInvalidatedAgeMs = body.maxInvalidatedAgeHours * 60 * 60 * 1000
         }
-      } catch {
-        // No body or invalid JSON, use defaults
-      }
 
-      const removed = await ThreadCacheService.cleanup(
-        maxAgeMs,
-        maxInvalidatedAgeMs,
-      )
+        const removed = await ThreadCacheService.cleanup(
+          maxAgeMs,
+          maxInvalidatedAgeMs,
+        )
 
-      return {
-        removed,
-        message: `Cleaned up ${removed} cache entries`,
-      }
-    }),
+        return {
+          removed,
+          message: `Cleaned up ${removed} cache entries`,
+        }
+      },
+    ),
   ),
 )
 
@@ -1208,29 +1092,23 @@ app.post(
 app.post(
   '/thread-cache/clear',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ request }) => {
-      const body = await request.json()
+    apiHandler(
+      { permission: ['system', 'manage'], body: threadCacheClearSchema },
+      async ({ body }) => {
+        if (body?.confirm !== true) {
+          throw new ValidationError(
+            'Confirmation required. Set confirm: true to clear all cache entries.',
+          )
+        }
 
-      if (body.confirm !== true) {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message:
-                'Confirmation required. Set confirm: true to clear all cache entries.',
-            },
-          }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
+        const removed = await ThreadCacheService.clearAll()
 
-      const removed = await ThreadCacheService.clearAll()
-
-      return {
-        removed,
-        message: `Cleared ${removed} cache entries`,
-      }
-    }),
+        return {
+          removed,
+          message: `Cleared ${removed} cache entries`,
+        }
+      },
+    ),
   ),
 )
 
@@ -1250,55 +1128,24 @@ app.get(
 app.post(
   '/thread-cache/warm',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async ({ request }) => {
-      const body = await request.json()
+    apiHandler(
+      { permission: ['system', 'manage'], body: threadCacheWarmSchema },
+      async ({ body }) => {
+        if (body.itemIds.length > 100) {
+          throw new ValidationError('itemIds array must not exceed 100 items')
+        }
 
-      if (!body.itemIds || !Array.isArray(body.itemIds)) {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: 'itemIds array is required',
-            },
-          }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        const result = await ThreadCacheService.warmCache(
+          body.itemIds,
+          body.request,
         )
-      }
 
-      if (body.itemIds.length === 0) {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: 'itemIds array must not be empty',
-            },
-          }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
-
-      if (body.itemIds.length > 100) {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: 'itemIds array must not exceed 100 items',
-            },
-          }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
-
-      const result = await ThreadCacheService.warmCache(
-        body.itemIds,
-        body.request,
-      )
-
-      return {
-        ...result,
-        message: `Warmed cache for ${result.warmed} items (${result.errors} errors)`,
-      }
-    }),
+        return {
+          ...result,
+          message: `Warmed cache for ${result.warmed} items (${result.errors} errors)`,
+        }
+      },
+    ),
   ),
 )
 
@@ -1338,10 +1185,8 @@ app.put(
   '/api-key-policy',
   adapt(
     apiHandler(
-      { permission: ['system', 'manage'] },
-      async ({ request, user }) => {
-        const body = (await request.json()) as Partial<ApiKeyPolicy>
-
+      { permission: ['system', 'manage'], body: apiKeyPolicySchema },
+      async ({ user, body }) => {
         const policy: ApiKeyPolicy = {
           defaultExpirationDays: body.defaultExpirationDays ?? null,
           maxExpirationDays: body.maxExpirationDays ?? null,
@@ -1394,10 +1239,9 @@ app.get(
 app.patch(
   '/api-keys/:keyId',
   adapt(
-    apiHandler<{ keyId: string }>(
-      { permission: ['system', 'manage'] },
-      async ({ params, request }) => {
-        const body = (await request.json()) as UpdateApiKeyInput
+    apiHandler<{ keyId: string }, UpdateApiKeyInput>(
+      { permission: ['system', 'manage'], body: apiKeyUpdateSchema },
+      async ({ params, body }) => {
         const key = await ApiKeyService.update(params.keyId, null, body)
         return { apiKey: key }
       },

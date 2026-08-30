@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
   ArrowDownRight,
@@ -23,6 +24,13 @@ import {
   Input,
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { apiFetch } from '@/lib/api/client'
+import {
+  entitySubQuery,
+  itemTextSearchQuery,
+  useInvalidateResources,
+} from '@/lib/query'
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
 
 interface PartSearchResult {
   id: string
@@ -68,114 +76,45 @@ export function PartAttachmentPanel({
   onError,
   onSuccess,
 }: PartAttachmentPanelProps) {
-  const [attachments, setAttachments] = useState<Array<PartAttachment>>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<Array<PartSearchResult>>(
-    [],
-  )
-  const [searching, setSearching] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [attaching, setAttaching] = useState<string | null>(null)
+  const invalidate = useInvalidateResources()
 
-  // Load existing attachments
-  const loadAttachments = useCallback(async () => {
-    try {
-      const response = await fetch(
-        `/api/v1/work-instructions/${workInstructionId}/parts`,
-      )
-      if (!response.ok) {
-        throw new Error('Failed to load attachments')
-      }
-      const data = await response.json()
-      // Output part first — it is the one that decides the WI's design, so it
-      // should not be somewhere in the middle of a long attachment list.
-      const rows: Array<PartAttachment> = data.data?.attachments ?? []
-      setAttachments(
-        [...rows].sort((a, b) => Number(b.isOutput) - Number(a.isOutput)),
-      )
-    } catch (error) {
-      onError?.(error as Error)
-    } finally {
-      setLoading(false)
-    }
-  }, [workInstructionId, onError])
+  const { data: attachmentRows = [], isPending: loading } = useQuery(
+    entitySubQuery<PartAttachment>(
+      'work-instructions',
+      workInstructionId,
+      'parts',
+      'attachments',
+    ),
+  )
+  // Output part first — it is the one that decides the WI's design, so it
+  // should not be somewhere in the middle of a long attachment list.
+  const attachments = [...attachmentRows].sort(
+    (a, b) => Number(b.isOutput) - Number(a.isOutput),
+  )
 
-  useEffect(() => {
-    loadAttachments()
-  }, [loadAttachments])
-
-  // Search for parts
-  useEffect(() => {
-    if (searchQuery.length < 2) {
-      setSearchResults([])
-      return
-    }
-
-    const timer = setTimeout(async () => {
-      setSearching(true)
-      try {
-        const response = await fetch(
-          `/api/v1/items/search?q=${encodeURIComponent(searchQuery)}&types=Part&limit=10`,
-        )
-        if (response.ok) {
-          const data = await response.json()
-          // Filter out already attached parts
-          const attachedIds = new Set(attachments.map((a) => a.partId))
-          const filtered = (data.data?.items ?? []).filter(
-            (item: PartSearchResult) => !attachedIds.has(item.id),
-          )
-          setSearchResults(filtered)
-        }
-      } catch {
-        // Silently fail search
-      } finally {
-        setSearching(false)
-      }
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [searchQuery, attachments])
+  const debouncedSearch = useDebouncedValue(searchQuery)
+  const { data: searchHits = [], isFetching: searching } = useQuery(
+    itemTextSearchQuery<PartSearchResult>(
+      { q: debouncedSearch, types: ['Part'], limit: 10 },
+      debouncedSearch.length >= 2,
+    ),
+  )
+  const attachedIds = new Set(attachments.map((a) => a.partId))
+  const searchResults = searchHits.filter((hit) => !attachedIds.has(hit.id))
 
   const handleAttach = async (part: PartSearchResult) => {
     setAttaching(part.id)
     try {
-      const response = await fetch(
-        `/api/v1/work-instructions/${workInstructionId}/parts`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ partId: part.id }),
-        },
-      )
+      await apiFetch(`/api/v1/work-instructions/${workInstructionId}/parts`, {
+        method: 'POST',
+        body: JSON.stringify({ partId: part.id }),
+      })
+      await invalidate('work-instructions')
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.details || error.error || 'Failed to attach part')
-      }
-
-      // Add the server-created row to local state (real id, real timestamps)
-      const body = await response.json()
-      const created = body.data?.attachment
-      const newAttachment: PartAttachment = {
-        id: created?.id ?? part.id,
-        partId: part.id,
-        isOutput: created?.isOutput ?? false,
-        inheritToMBOM: created?.inheritToMBOM ?? false,
-        inheritedFromId: created?.inheritedFromId ?? null,
-        createdAt: created?.createdAt ?? new Date().toISOString(),
-        part: {
-          id: part.id,
-          itemNumber: part.itemNumber,
-          name: part.name,
-          revision: part.revision,
-        },
-      }
-      setAttachments((prev) => [...prev, newAttachment])
-
-      // Clear search
       setSearchQuery('')
-      setSearchResults([])
       setShowSearch(false)
 
       onSuccess?.(`Attached ${part.itemNumber}`)
@@ -188,32 +127,14 @@ export function PartAttachmentPanel({
 
   const handleToggleInherit = async (attachment: PartAttachment) => {
     try {
-      const response = await fetch(
-        `/api/v1/work-instructions/${workInstructionId}/parts`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            partId: attachment.partId,
-            inheritToMBOM: !attachment.inheritToMBOM,
-          }),
-        },
-      )
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(
-          error.details || error.error || 'Failed to update inheritance',
-        )
-      }
-
-      setAttachments((prev) =>
-        prev.map((a) =>
-          a.id === attachment.id
-            ? { ...a, inheritToMBOM: !a.inheritToMBOM }
-            : a,
-        ),
-      )
+      await apiFetch(`/api/v1/work-instructions/${workInstructionId}/parts`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          partId: attachment.partId,
+          inheritToMBOM: !attachment.inheritToMBOM,
+        }),
+      })
+      await invalidate('work-instructions')
       onSuccess?.(
         `${attachment.inheritToMBOM ? 'Disabled' : 'Enabled'} MBOM inheritance for ${attachment.part.itemNumber}`,
       )
@@ -229,23 +150,11 @@ export function PartAttachmentPanel({
    */
   const handleSetOutput = async (attachment: PartAttachment) => {
     try {
-      const response = await fetch(
-        `/api/v1/work-instructions/${workInstructionId}/parts`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ partId: attachment.partId, isOutput: true }),
-        },
-      )
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(
-          error.details || error.error || 'Failed to set output part',
-        )
-      }
-
-      await loadAttachments()
+      await apiFetch(`/api/v1/work-instructions/${workInstructionId}/parts`, {
+        method: 'PATCH',
+        body: JSON.stringify({ partId: attachment.partId, isOutput: true }),
+      })
+      await invalidate('work-instructions')
       onSuccess?.(`${attachment.part.itemNumber} is now the output part`)
     } catch (error) {
       onError?.(error as Error)
@@ -254,17 +163,11 @@ export function PartAttachmentPanel({
 
   const handleDetach = async (attachment: PartAttachment) => {
     try {
-      const response = await fetch(
+      await apiFetch(
         `/api/v1/work-instructions/${workInstructionId}/parts?partId=${attachment.partId}`,
         { method: 'DELETE' },
       )
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.details || error.error || 'Failed to detach part')
-      }
-
-      setAttachments((prev) => prev.filter((a) => a.id !== attachment.id))
+      await invalidate('work-instructions')
       onSuccess?.(`Detached ${attachment.part.itemNumber}`)
     } catch (error) {
       onError?.(error as Error)
@@ -312,7 +215,6 @@ export function PartAttachmentPanel({
                 onClick={() => {
                   setShowSearch(false)
                   setSearchQuery('')
-                  setSearchResults([])
                 }}
               >
                 <X className="h-4 w-4" />

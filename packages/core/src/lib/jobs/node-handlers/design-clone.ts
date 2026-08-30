@@ -546,10 +546,6 @@ async function copyTypeSpecificData(
           cost: sourcePart.cost,
           costCurrency: sourcePart.costCurrency,
           leadTimeDays: sourcePart.leadTimeDays,
-          quantityOnHand: sourcePart.quantityOnHand,
-          reorderPoint: sourcePart.reorderPoint,
-          location: sourcePart.location,
-          lastInventoryCheck: sourcePart.lastInventoryCheck,
         })
       }
       break

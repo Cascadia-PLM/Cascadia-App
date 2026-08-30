@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
+import { z } from 'zod'
 import { tagged } from '../adapter'
 import type { SysMLElement } from '@/lib/sysml'
 import type { VersionContext } from '@/lib/services/VersionResolver'
@@ -13,9 +14,25 @@ import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { NotFoundError, PermissionDeniedError } from '@/lib/errors'
 import { SysMLSerializer } from '@/lib/sysml'
 import { requireDesignAccess } from '@/lib/auth/access'
+import { requirePermission } from '@/lib/auth/server'
+import { getResourceType } from '@/lib/items/item-type-resources'
 import { apiHandler, created } from '@/lib/api/handler'
-// Register item types
+
 import '@/lib/items/registerItemTypes.server'
+
+/**
+ * A SysML element as the OMG JSON serialization writes it. The two `@`-keyed
+ * fields are the identity the serializer reads; everything else is
+ * pass-through, because a SysML element carries whatever attributes its
+ * metamodel defines and this route is a conformant endpoint, not a filter.
+ */
+const sysmlElementSchema = z
+  .object({
+    '@id': z.string().min(1).max(200),
+    '@type': z.string().min(1).max(200),
+  })
+  .passthrough() as unknown as z.ZodType<SysMLElement>
+// Register item types
 
 const adapt = tagged('SysML')
 
@@ -100,13 +117,29 @@ app.get(
   ),
 )
 
+/**
+ * The element-create route below declares no permission, and checks one in the
+ * handler instead — the same shape `POST /api/items/enrich-from-url` uses, and
+ * for the same reason the import routes gained theirs.
+ *
+ * A declared tuple cannot cover it: the item type this route creates depends on
+ * the element's `@type` (`SysMLSerializer.elementToItem` maps through
+ * `SYSML_TO_CASCADIA_MAP` to Part, Requirement or Task), so the resource is not
+ * known until the body is parsed. Without the check, a session user whose role
+ * lacks the `create` verb — Approver, View Only — could mint real items through
+ * the SysML endpoint, and an API key scoped to `{ parts: ['read'] }` got full
+ * write access, because `apiHandler` applies key-scope narrowing only inside
+ * its declared-permission branch. `requirePermission` does both, and logs the
+ * denial the way the declared path does.
+ */
+
 // POST /api/sysml/projects/:id/branches/:bid/elements
 app.post(
   '/projects/:id/branches/:bid/elements',
   adapt(
-    apiHandler<{ id: string; bid: string }>(
-      {},
-      async ({ request, params, user }) => {
+    apiHandler<{ id: string; bid: string }, SysMLElement>(
+      { body: sysmlElementSchema },
+      async ({ body: element, params, request, user }) => {
         const { id, bid } = params
         // Validate project exists
         const design = await DesignService.getById(id)
@@ -128,11 +161,16 @@ app.post(
           throw new PermissionDeniedError('branch', 'create')
         }
 
-        // Parse SysML Element from request body
-        const element: SysMLElement = await request.json()
-
         // Convert SysML Element to Cascadia item
         const itemData = SysMLSerializer.elementToItem(element, id)
+
+        // Now that the produced type is known, gate on that type's create
+        // verb — intersecting API-key scope with role permissions.
+        await requirePermission(
+          request,
+          getResourceType(itemData.itemType),
+          'create',
+        )
 
         // Create item on branch
         // Cast to BaseItem to allow SysML-specific fields (sysmlType, metamodel, attributes)

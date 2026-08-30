@@ -52,9 +52,10 @@ This documentation covers the Cascadia PLM application architecture, features, A
 
 Separately-licensed functionality, enabled per instance via `CASCADIA_PACKAGES`.
 
-| Document                                             | Description                                                                |
-| ---------------------------------------------------- | -------------------------------------------------------------------------- |
-| [Advanced Auditing](./features/advanced-auditing.md) | CAC/PIV digital signatures on workflow approvals, hash-chained audit trail |
+| Document                                               | Description                                                                              |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| [Advanced Auditing](./features/advanced-auditing.md)   | CAC/PIV digital signatures on workflow approvals, hash-chained audit trail               |
+| [Odoo ERP Integration](./features/odoo-integration.md) | Pushes released parts and BOMs into an Odoo 19+ ERP on release, plus manual/dry-run sync |
 
 ## Administration
 

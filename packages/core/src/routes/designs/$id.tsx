@@ -44,19 +44,21 @@ import {
 } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
 
+/** The tabs the design page renders; the search schema derives from this list. */
+const DESIGN_DETAIL_TABS = [
+  'structure',
+  'items',
+  'graph',
+  'history',
+  'ecos',
+  'baselines',
+  'members',
+] as const
+type DesignDetailTab = (typeof DESIGN_DETAIL_TABS)[number]
+
 // Search schema for URL validation
 const designSearchSchema = z.object({
-  tab: z
-    .enum([
-      'structure',
-      'items',
-      'graph',
-      'history',
-      'ecos',
-      'baselines',
-      'members',
-    ])
-    .optional(),
+  tab: z.enum(DESIGN_DETAIL_TABS).optional(),
   branch: z.string().uuid().optional(),
   tag: z.string().uuid().optional(),
   commit: z.string().uuid().optional(),
@@ -166,20 +168,13 @@ function DesignDetailPage() {
     (isFamily ? 'members' : isLibrary ? 'items' : 'structure')
 
   // Handle tab change
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab: DesignDetailTab) => {
     navigate({
       to: '/designs/$id',
       params: { id },
       search: (prev: z.infer<typeof designSearchSchema>) => ({
         ...prev,
-        tab: tab as
-          | 'structure'
-          | 'items'
-          | 'graph'
-          | 'history'
-          | 'ecos'
-          | 'baselines'
-          | 'members',
+        tab,
       }),
     })
   }
@@ -294,7 +289,7 @@ function DesignDetailPage() {
         /* Family Design Tabs - Only Members */
         <Tabs
           value={activeTab}
-          onValueChange={handleTabChange}
+          onValueChange={(value) => handleTabChange(value as DesignDetailTab)}
           className="w-full"
         >
           <TabsList className="w-fit">
@@ -313,7 +308,7 @@ function DesignDetailPage() {
         /* Library Design Tabs - Items, History, ECOs, Baselines */
         <Tabs
           value={activeTab}
-          onValueChange={handleTabChange}
+          onValueChange={(value) => handleTabChange(value as DesignDetailTab)}
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-5">
@@ -370,7 +365,7 @@ function DesignDetailPage() {
         /* Regular Design Tabs - Structure, History, ECOs, Baselines */
         <Tabs
           value={activeTab}
-          onValueChange={handleTabChange}
+          onValueChange={(value) => handleTabChange(value as DesignDetailTab)}
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-5">

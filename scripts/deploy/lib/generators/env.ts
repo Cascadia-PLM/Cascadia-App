@@ -15,6 +15,28 @@ import type {
 } from '../types.js'
 
 /**
+ * Emitted into every app-serving .env so the operator sees the variable before
+ * they need it.
+ *
+ * The app keys rate-limit buckets and audit rows on the caller's address, and
+ * `X-Forwarded-For` is a header the caller can write — so it believes only as
+ * many forwarded hops as this declares. Zero is the safe default (no header is
+ * trusted at all) but it collapses everyone behind a proxy into one bucket,
+ * and the generator cannot know how many proxies a deployment will have.
+ *
+ * Not emitted into the jobs worker's .env: it consumes queue messages and
+ * serves no HTTP, so there is no caller address to resolve.
+ */
+const TRUSTED_PROXY_BLOCK = `
+# Number of reverse proxies in front of this app that append to
+# X-Forwarded-For (0 = none; ignore the header entirely and use the peer
+# address). Set this to your real hop depth — leaving it at 0 behind a proxy
+# puts every user in one shared rate-limit bucket. See
+# docs/orchestration/configuration.md.
+TRUSTED_PROXY_COUNT=0
+`
+
+/**
  * Generate .env file for single-server deployment
  */
 export function generateSingleServerEnv(
@@ -42,7 +64,7 @@ export function generateSingleServerEnv(
 NODE_ENV=${config.nodeEnv}
 APP_PORT=${config.appPort}
 BASE_URL=${config.baseUrl}
-
+${TRUSTED_PROXY_BLOCK}
 # =============================================================================
 # DATABASE
 # =============================================================================
@@ -173,7 +195,7 @@ NODE_ENV=${config.nodeEnv}
 APP_PORT=${config.appPort}
 BASE_URL=${config.baseUrl}
 APP_VERSION=latest
-
+${TRUSTED_PROXY_BLOCK}
 # =============================================================================
 # DATABASE (connect to infrastructure server)
 # =============================================================================
@@ -274,7 +296,7 @@ NODE_ENV=${config.nodeEnv}
 APP_PORT=${config.appPort}
 BASE_URL=${config.baseUrl}
 APP_VERSION=latest
-
+${TRUSTED_PROXY_BLOCK}
 # =============================================================================
 # DATABASE (managed cloud database)
 # =============================================================================

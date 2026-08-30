@@ -76,6 +76,19 @@ export function ChangeOrderTable({
     value: state.id,
   }))
 
+  // The server refuses to hard-delete a change order that has left its initial
+  // state — past that it holds votes, workflow history and an affected-item
+  // list that the delete would cascade away. Offering the action anyway would
+  // be offering a guaranteed error, so the menu item follows the same rule.
+  // A hint, not the gate: ItemService.delete is the gate.
+  const isDeletable = useCallback(
+    (co: ChangeOrder) =>
+      (lifecycle?.states ?? []).some(
+        (state) => state.isInitial === true && state.id === co.state,
+      ),
+    [lifecycle],
+  )
+
   const columns: Array<DataGridColumn<ChangeOrder>> = [
     {
       id: 'itemNumber',
@@ -197,7 +210,8 @@ export function ChangeOrderTable({
 
   const renderRowActions = (row: Row<ChangeOrder>) => {
     const co = row.original
-    const hasActions = co.id || onEdit || onDelete
+    const canDelete = onDelete && isDeletable(co)
+    const hasActions = co.id || onEdit || canDelete
     if (!hasActions) return null
 
     return (
@@ -223,7 +237,7 @@ export function ChangeOrderTable({
               Edit
             </DropdownMenuItem>
           )}
-          {onDelete && (
+          {canDelete && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -243,7 +257,8 @@ export function ChangeOrderTable({
   const renderContextMenuItems = useCallback(
     (row: Row<ChangeOrder>) => {
       const co = row.original
-      const hasActions = onEdit || onDelete
+      const canDelete = onDelete && isDeletable(co)
+      const hasActions = onEdit || canDelete
       if (!hasActions) return null
 
       return (
@@ -254,7 +269,7 @@ export function ChangeOrderTable({
               Edit
             </ContextMenuItem>
           )}
-          {onDelete && (
+          {canDelete && (
             <>
               <ContextMenuSeparator />
               <ContextMenuItem
@@ -269,7 +284,7 @@ export function ChangeOrderTable({
         </>
       )
     },
-    [onEdit, onDelete],
+    [onEdit, onDelete, isDeletable],
   )
 
   const getRowUrl = useCallback((row: ChangeOrder) => {

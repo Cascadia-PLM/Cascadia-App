@@ -21,9 +21,6 @@ const PART_TYPED_ATTRIBUTES = [
   'cost',
   'costCurrency',
   'leadTimeDays',
-  'quantityOnHand',
-  'reorderPoint',
-  'location',
 ] as const
 
 // Item-level attributes that can be resolved

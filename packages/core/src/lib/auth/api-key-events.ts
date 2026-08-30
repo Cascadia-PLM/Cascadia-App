@@ -17,6 +17,7 @@
 
 import { db } from '../db'
 import { apiKeyEvents } from '../db/schema/api-keys'
+import { UNKNOWN_CLIENT_IP, resolveClientIp } from '../api/client-ip'
 import type { ApiKeyEventOutcome } from '../db/schema/api-keys'
 import { authLogger } from '@/lib/logging/logger'
 
@@ -53,10 +54,15 @@ export function eventContextFromRequest(request: Request): KeyEventContext {
     path = undefined
   }
 
+  // This column is nullable, and "we could not tell" is what NULL means here —
+  // so an unresolvable address stays NULL rather than becoming the literal
+  // 'unknown' the not-null audit tables have to use.
+  const clientIp = resolveClientIp(request)
+
   return {
     method: request.method,
     path,
-    ipAddress: request.headers.get('x-forwarded-for'),
+    ipAddress: clientIp === UNKNOWN_CLIENT_IP ? null : clientIp,
     userAgent: request.headers.get('user-agent'),
   }
 }

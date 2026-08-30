@@ -51,9 +51,11 @@ export const jobs = pgTable(
     itemId: uuid('item_id').references(() => items.id, {
       onDelete: 'set null',
     }),
-    createdBy: uuid('created_by')
-      .notNull()
-      .references(() => users.id),
+    // Nullable: NULL means the system submitted the job (the scheduler's
+    // maintenance sweep) — released installs have no seeded system user to
+    // attribute it to, and inventing one via migration would fight the auth
+    // schema.
+    createdBy: uuid('created_by').references(() => users.id),
 
     // Timing
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -66,6 +68,16 @@ export const jobs = pgTable(
     // Retry handling
     attempts: integer('attempts').default(0),
     maxAttempts: integer('max_attempts').default(3),
+    // The backoff schedule snapshotted from the type's JobTypeConfig at
+    // submit time, in **milliseconds** (the TS convention every config
+    // already uses). Carried on the row for the same reason `maxAttempts`
+    // is: the Python workers cannot read the TypeScript registry, so both
+    // `markFailed` implementations read this one value instead of each
+    // keeping its own table of numbers. NULL means a pre-migration row (or
+    // a type that declares no delays) and the executor falls back to its own
+    // default — deliberately not backfilled, since a backfill would need the
+    // registry inside a SQL migration.
+    retryDelays: jsonb('retry_delays').$type<Array<number>>(),
     nextRetryAt: timestamp('next_retry_at', { withTimezone: true }),
   },
   (table) => [

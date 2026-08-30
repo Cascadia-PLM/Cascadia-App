@@ -3,11 +3,8 @@
 
 import { Hono } from 'hono'
 import { generateState } from 'arctic'
+import { z } from 'zod'
 import { tagged } from '../adapter'
-import type {
-  CreateApiKeyInput,
-  UpdateApiKeyInput,
-} from '@/lib/auth/ApiKeyService'
 import { apiHandler } from '@/lib/api/handler'
 import { AuthService } from '@/lib/auth/AuthService'
 import { UserService } from '@/lib/auth/UserService'
@@ -21,12 +18,59 @@ import { getGitHubProvider } from '@/lib/auth/oauth'
 import { SettingKeys } from '@/lib/config/SettingKeys'
 import { SettingsService } from '@/lib/config/SettingsService'
 import { ApiKeyService } from '@/lib/auth/ApiKeyService'
-import { AuthenticationError, ValidationError } from '@/lib/errors'
+import { AuthenticationError } from '@/lib/errors'
 import { db } from '@/lib/db'
 import { authEvents } from '@/lib/db/schema/users'
-import { getClientIp } from '@/lib/api/rate-limit'
+import { resolveClientIp } from '@/lib/api/client-ip'
 
 const adapt = tagged('Auth')
+
+/**
+ * Credential bodies.
+ *
+ * These are the API's login and password-change doors, so the schemas do the
+ * least that is honest: require the fields, and cap their length so an
+ * unbounded string never reaches the hasher or the user lookup. Minimum
+ * password length stays with `UserService`, which is what stores it — a second
+ * opinion here would be a second place to change.
+ *
+ * They deliberately do **not** narrow further. A login schema that rejected,
+ * say, an over-long username with a distinct 400 would be a way to probe what
+ * the server considers well-formed; every rejection here is the same shape.
+ */
+const MAX_CREDENTIAL = 512
+
+const loginSchema = z.object({
+  username: z.string().min(1).max(MAX_CREDENTIAL),
+  password: z.string().min(1).max(MAX_CREDENTIAL),
+})
+
+const changePasswordSchema = z.object({
+  password: z.string().min(1, 'Password is required').max(MAX_CREDENTIAL),
+  currentPassword: z
+    .string()
+    .min(1, 'Current password is required')
+    .max(MAX_CREDENTIAL),
+})
+
+/** A permission grant map: resource → actions. */
+const permissionMapSchema = z.record(
+  z.string().max(100),
+  z.array(z.string().max(100)).max(100),
+)
+
+const createApiKeySchema = z.object({
+  name: z.string().min(1).max(200),
+  permissions: permissionMapSchema.nullish(),
+  roles: z.array(z.string().uuid()).max(100).optional(),
+  expiresAt: z.string().datetime().optional(),
+})
+
+const updateApiKeySchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  permissions: permissionMapSchema.nullish(),
+  roles: z.array(z.string().uuid()).max(100).nullish(),
+})
 
 const app = new Hono()
 
@@ -34,29 +78,30 @@ const app = new Hono()
 app.post(
   '/login',
   adapt(
-    apiHandler({ public: true, rateLimit: 'login' }, async ({ request }) => {
-      const { username, password } = await request.json()
+    apiHandler(
+      { public: true, rateLimit: 'login', body: loginSchema },
+      async ({ request, body: { username, password } }) => {
+        const result = await AuthService.login({
+          username,
+          password,
+          ipAddress: resolveClientIp(request),
+          userAgent: request.headers.get('user-agent') || 'unknown',
+        })
 
-      const result = await AuthService.login({
-        username,
-        password,
-        ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
-        userAgent: request.headers.get('user-agent') || 'unknown',
-      })
-
-      return new Response(
-        JSON.stringify({
-          data: { success: result.success, user: result.user },
-        }),
-        {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Set-Cookie': buildSessionCookie(result.sessionToken),
+        return new Response(
+          JSON.stringify({
+            data: { success: result.success, user: result.user },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'Set-Cookie': buildSessionCookie(result.sessionToken),
+            },
           },
-        },
-      )
-    }),
+        )
+      },
+    ),
   ),
 )
 
@@ -74,7 +119,7 @@ app.post(
 
       await AuthService.logout({
         sessionToken,
-        ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+        ipAddress: resolveClientIp(request),
       })
 
       return new Response(JSON.stringify({ data: { success: true } }), {
@@ -150,46 +195,43 @@ app.get(
 app.put(
   '/password',
   adapt(
-    apiHandler({ rateLimit: 'login' }, async ({ request, user }) => {
-      // Password changes are deliberately session-only. An API key should not
-      // be able to replace the interactive credentials of its owner.
-      if (request.headers.has('authorization')) {
-        throw new AuthenticationError('Session authentication required')
-      }
+    apiHandler(
+      { rateLimit: 'login', body: changePasswordSchema },
+      async ({ request, body, user }) => {
+        // Password changes are deliberately session-only. An API key should not
+        // be able to replace the interactive credentials of its owner.
+        if (request.headers.has('authorization')) {
+          throw new AuthenticationError('Session authentication required')
+        }
 
-      const sessionToken = getSessionTokenFromRequest(request)
-      if (!sessionToken) {
-        throw new AuthenticationError('Session authentication required')
-      }
+        const sessionToken = getSessionTokenFromRequest(request)
+        if (!sessionToken) {
+          throw new AuthenticationError('Session authentication required')
+        }
 
-      const { password, currentPassword } = await request.json()
-      if (!currentPassword || typeof currentPassword !== 'string') {
-        throw new ValidationError('Current password is required')
-      }
-      if (!password || typeof password !== 'string') {
-        throw new ValidationError('Password is required')
-      }
+        const { password, currentPassword } = body
 
-      const currentSessionId = await hashSessionToken(sessionToken)
-      await db.transaction(async (tx) => {
-        await UserService.changePassword(
-          user.id,
-          password,
-          currentPassword,
-          currentSessionId,
-          tx,
-        )
+        const currentSessionId = await hashSessionToken(sessionToken)
+        await db.transaction(async (tx) => {
+          await UserService.changePassword(
+            user.id,
+            password,
+            currentPassword,
+            currentSessionId,
+            tx,
+          )
 
-        await tx.insert(authEvents).values({
-          userId: user.id,
-          eventType: 'password_changed',
-          ipAddress: getClientIp(request),
-          metadata: { method: 'self_service' },
+          await tx.insert(authEvents).values({
+            userId: user.id,
+            eventType: 'password_changed',
+            ipAddress: resolveClientIp(request),
+            metadata: { method: 'self_service' },
+          })
         })
-      })
 
-      return { success: true }
-    }),
+        return { success: true }
+      },
+    ),
   ),
 )
 
@@ -327,7 +369,7 @@ app.get(
           providerId: String(githubUser.id),
           email,
           name: githubUser.name || githubUser.login,
-          ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+          ipAddress: resolveClientIp(request),
           userAgent: request.headers.get('user-agent') || 'unknown',
         })
 
@@ -379,9 +421,7 @@ app.get(
 app.post(
   '/api-keys',
   adapt(
-    apiHandler({}, async ({ request, user }) => {
-      const body = (await request.json()) as CreateApiKeyInput
-
+    apiHandler({ body: createApiKeySchema }, async ({ body, user }) => {
       const { key, rawKey } = await ApiKeyService.create(user.id, body)
 
       // The raw key is returned ONCE — only its hash is stored.
@@ -397,11 +437,13 @@ app.post(
 app.patch(
   '/api-keys/:keyId',
   adapt(
-    apiHandler<{ keyId: string }>({}, async ({ params, request, user }) => {
-      const body = (await request.json()) as UpdateApiKeyInput
-      const key = await ApiKeyService.update(params.keyId, user.id, body)
-      return { apiKey: key }
-    }),
+    apiHandler<{ keyId: string }, z.infer<typeof updateApiKeySchema>>(
+      { body: updateApiKeySchema },
+      async ({ params, body, user }) => {
+        const key = await ApiKeyService.update(params.keyId, user.id, body)
+        return { apiKey: key }
+      },
+    ),
   ),
 )
 

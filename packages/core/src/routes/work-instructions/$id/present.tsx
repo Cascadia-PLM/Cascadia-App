@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import {
   workInstructionDetailQuery,
   workInstructionOperationsQuery,
+  workInstructionResolvedParametricsQuery,
 } from '@/lib/query'
 
 export const Route = createFileRoute('/work-instructions/$id/present')({
@@ -130,9 +131,6 @@ function PresentationView({
 }) {
   const navigate = useNavigate()
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
-  const [resolvedValues, setResolvedValues] = useState<
-    Record<string, { value: string | null; available: boolean }>
-  >({})
 
   const sortedSteps = [...workInstruction.steps].sort(
     (a, b) => a.orderIndex - b.orderIndex,
@@ -214,26 +212,18 @@ function PresentationView({
     })
   }
 
-  // Resolve parametric values on load
-  useEffect(() => {
-    const hasParametric = sortedSteps.some((step) =>
-      step.content.blocks.some(
-        (b: StepContentBlock) => b.type === 'parametric',
-      ),
-    )
-    if (!hasParametric) return
-
-    fetch(`/api/v1/work-instructions/${workInstruction.id}/resolve-parametric`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.data?.resolved) {
-          setResolvedValues(data.data.resolved)
-        }
-      })
-      .catch(() => {
-        // Silently fail - parametric blocks will show fallback values
-      })
-  }, [workInstruction.id, sortedSteps])
+  // Parametric values, resolved against the parts the blocks reference. Only
+  // requested when the template has such blocks; a failure leaves the map
+  // empty and the blocks render their fallback values.
+  const hasParametric = sortedSteps.some((step) =>
+    step.content.blocks.some((b: StepContentBlock) => b.type === 'parametric'),
+  )
+  const { data: resolvedValues = {} } = useQuery(
+    workInstructionResolvedParametricsQuery(
+      workInstruction.id ?? '',
+      hasParametric,
+    ),
+  )
 
   // Keyboard navigation
   useEffect(() => {

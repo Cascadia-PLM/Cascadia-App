@@ -153,6 +153,11 @@ describe('CommitService', () => {
         user.id,
       )
 
+      // Both commits are written inside the test transaction, so they share
+      // one created_at exactly — the tie case pagination has to survive.
+      const all = await CommitService.getByBranch(design.mainBranch!.id)
+      expect(all.length).toBeGreaterThanOrEqual(2)
+
       const page1 = await CommitService.getByBranch(design.mainBranch!.id, {
         limit: 1,
         offset: 0,
@@ -164,7 +169,9 @@ describe('CommitService', () => {
 
       expect(page1.length).toBe(1)
       expect(page2.length).toBe(1)
-      expect(page1[0]!.id).not.toBe(page2[0]!.id)
+      // Walking the pages must reproduce the unpaginated order — no row
+      // repeated across pages, none skipped between them.
+      expect([page1[0]!.id, page2[0]!.id]).toEqual([all[0]!.id, all[1]!.id])
     })
 
     it('returns empty array for branch with no commits', async () => {
@@ -847,6 +854,74 @@ describe('CommitService', () => {
       expect(history.length).toBeGreaterThanOrEqual(1)
       expect(
         history.every((h) => h.commit.branchId === design.mainBranch!.id),
+      ).toBe(true)
+    })
+
+    it('keeps a soft-deleted item row in its own history', async () => {
+      const design = await DesignService.create(
+        {
+          programId,
+          name: 'Test Design',
+          code: `${uniquePrefix}-DES`,
+          designType: 'Engineering',
+        },
+        user.id,
+      )
+
+      const masterId = crypto.randomUUID()
+      const item = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId,
+            itemNumber: `${uniquePrefix}-DELETED-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Soft Deleted Part',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
+
+      await CommitService.create(
+        {
+          branchId: design.mainBranch!.id,
+          message: 'Add part',
+          itemChanges: [{ itemId: item.id, changeType: 'added' }],
+        },
+        user.id,
+      )
+      await CommitService.create(
+        {
+          branchId: design.mainBranch!.id,
+          message: 'Delete part',
+          itemChanges: [{ itemId: item.id, changeType: 'deleted' }],
+        },
+        user.id,
+      )
+
+      // Mirrors what ChangeOrderMergeService stamps on the released row when an
+      // ECO whose branch item is `deleted` merges to main.
+      await testDb.db
+        .update(items)
+        .set({ isDeleted: true, deletedAt: new Date(), deletedBy: user.id })
+        .where(eq(items.id, item.id))
+
+      const history = await CommitService.getItemCommits(masterId, design.id)
+
+      // Both the creation and the deletion event survive the soft delete —
+      // history is an audit read, and the deletion is what the reader came for.
+      expect(
+        history.some((h) => h.item.id === item.id && h.changeType === 'added'),
+      ).toBe(true)
+      expect(
+        history.some(
+          (h) => h.item.id === item.id && h.changeType === 'deleted',
+        ),
       ).toBe(true)
     })
   })
@@ -1832,6 +1907,75 @@ describe('CommitService', () => {
         // When both tags point to the same commit, the comparison is valid
         // Returns empty if the commit has no item changes recorded
         expect(Array.isArray(diffs)).toBe(true)
+      })
+
+      it('rejects tags on divergent lineages, in either argument order', async () => {
+        const design = await DesignService.create(
+          {
+            programId,
+            name: 'Test Design',
+            code: `${uniquePrefix}-DES`,
+            designType: 'Engineering',
+          },
+          user.id,
+        )
+
+        // Fork before either side advances, so the two heads share only the
+        // initial commit and neither is an ancestor of the other.
+        const workspace = await BranchService.createWorkspaceBranch(
+          design.id,
+          user.id,
+          'divergent',
+        )
+
+        const mainCommit = await CommitService.create(
+          {
+            branchId: design.mainBranch!.id,
+            message: 'main work',
+            itemChanges: [],
+          },
+          user.id,
+        )
+        const workspaceCommit = await CommitService.create(
+          {
+            branchId: workspace.id,
+            message: 'workspace work',
+            itemChanges: [],
+          },
+          user.id,
+        )
+
+        const mainTag = takeFirst(
+          await testDb.db
+            .insert(tags)
+            .values({
+              designId: design.id,
+              name: 'v1.0-divergent-main',
+              commitId: mainCommit.id,
+              createdBy: user.id,
+            })
+            .returning(),
+        )
+        const workspaceTag = takeFirst(
+          await testDb.db
+            .insert(tags)
+            .values({
+              designId: design.id,
+              name: 'v1.0-divergent-workspace',
+              commitId: workspaceCommit.id,
+              createdBy: user.id,
+            })
+            .returning(),
+        )
+
+        // Refusal is the contract: a one-sided diff would make the answer
+        // depend on argument order.
+        await expect(
+          CommitService.compareTags(mainTag.id, workspaceTag.id),
+        ).rejects.toBeInstanceOf(ValidationError)
+        await expect(
+          CommitService.compareTags(workspaceTag.id, mainTag.id),
+        ).rejects.toBeInstanceOf(ValidationError)
       })
     })
 

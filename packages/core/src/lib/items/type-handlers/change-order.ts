@@ -15,6 +15,7 @@ registerTypeHandler('ChangeOrder', {
       itemId,
       changeType: data.changeType,
       priority: data.priority || 'medium',
+      description: data.description || null,
       reasonForChange: data.reasonForChange || null,
       impactDescription: data.impactDescription || null,
       implementationDate: data.implementationDate || null,
@@ -47,6 +48,8 @@ registerTypeHandler('ChangeOrder', {
     if (data.changeType !== undefined) updateData.changeType = data.changeType
     if (data.priority !== undefined)
       updateData.priority = data.priority || 'medium'
+    if (data.description !== undefined)
+      updateData.description = data.description || null
     if (data.reasonForChange !== undefined)
       updateData.reasonForChange = data.reasonForChange || null
     if (data.impactDescription !== undefined)

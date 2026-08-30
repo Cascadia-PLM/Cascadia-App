@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { and, eq, inArray, isNotNull } from 'drizzle-orm'
+import {
+  and,
+  eq,
+  getTableColumns,
+  inArray,
+  isNotNull,
+  isNull,
+} from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
 import { branchItems, branches, items, users } from '../db/schema'
@@ -15,48 +22,39 @@ import { LifecycleService } from './LifecycleService'
 import { RevisionService } from './RevisionService'
 import { VersionResolver } from './VersionResolver'
 import { expandSourceFieldChanges } from './software-source-changes'
+import type { TransactionClient } from '../db'
 import type { commits } from '../db/schema'
 import type { FieldChange } from './CommitService'
 
 // Core fields that exist on all items
 const coreFields = ['name', 'state', 'revision', 'itemNumber']
 
-// Type-specific fields by item type
-const typeFields: Record<string, Array<string>> = {
-  Part: [
-    'description',
-    'weight',
-    'material',
-    'uom',
-    'partType',
-    'cost',
-    'leadTime',
-  ],
-  Document: ['documentType', 'description', 'content'],
-  Requirement: [
-    'requirementType',
-    'description',
-    'priority',
-    'verificationMethod',
-    'acceptanceCriteria',
-  ],
-  ChangeOrder: [
-    'changeType',
-    'priority',
-    'reasonForChange',
-    'proposedSolution',
-  ],
-  Task: ['taskType', 'description', 'priority', 'dueDate', 'assignee'],
-  Software: [
-    'description',
-    'softwareType',
-    'sourceMode',
-    'version',
-    'targetHardware',
-    'toolchain',
-    'manifestId',
-    'buildArtifactFileId',
-  ],
+// Type-specific fields, read off each type's extension table rather than
+// restated here.
+//
+// The extension table's columns ARE the fields the type handler stores, so
+// deriving makes the two ways a hand-written list drifts structurally
+// impossible: a name that stores nothing can no longer be categorised 'type'
+// (the old map carried 'documentType', 'content', 'requirementType',
+// 'taskType' and 'proposedSolution', none of which are columns anywhere), and
+// a column the handler writes can no longer be filed as an 'attribute' change
+// because the list forgot it. It also covers the seven types that had no entry
+// at all - TestPlan, TestCase, WorkInstruction, Issue, Tool, WorkOrder and
+// PhysicalPart, whose own columns were every one of them mis-filed.
+//
+// `itemId` and `draftManifestId` are columns but never user-visible field
+// changes; both stay excluded by `ignoreFields`, which is consulted first.
+const typeFieldCache = new Map<string, ReadonlySet<string>>()
+
+function typeFieldsFor(itemType: string): ReadonlySet<string> {
+  const cached = typeFieldCache.get(itemType)
+  if (cached) return cached
+  const handler = getTypeHandler(itemType)
+  const fields: ReadonlySet<string> = new Set(
+    handler ? Object.keys(getTableColumns(handler.table)) : [],
+  )
+  typeFieldCache.set(itemType, fields)
+  return fields
 }
 
 // Fields to ignore (metadata)
@@ -66,6 +64,11 @@ const ignoreFields = [
   'designId',
   'commitId',
   'itemType',
+  // The extension row's foreign key to the item version it hangs off. Diffs
+  // that read both sides from the database carry it, and it differs by
+  // construction whenever the new side is a freshly minted working copy -
+  // never a user-visible field change.
+  'itemId',
   // Uncommitted editor state on Software working copies - never part of the
   // committed history (the commit records the manifestId change instead)
   'draftManifestId',
@@ -120,7 +123,7 @@ export function computeInitialFieldValues(
     let category: 'core' | 'type' | 'attribute' | 'relationship' = 'attribute'
     if (coreFields.includes(field)) {
       category = 'core'
-    } else if (typeFields[itemType]?.includes(field)) {
+    } else if (typeFieldsFor(itemType).has(field)) {
       category = 'type'
     }
 
@@ -183,7 +186,7 @@ export function computeFieldChanges(
     let category: 'core' | 'type' | 'attribute' | 'relationship' = 'attribute'
     if (coreFields.includes(field)) {
       category = 'core'
-    } else if (typeFields[itemType]?.includes(field)) {
+    } else if (typeFieldsFor(itemType).has(field)) {
       category = 'type'
     }
 
@@ -307,6 +310,97 @@ export class CheckoutService {
   /**
    * Checkout an item to a branch for editing
    */
+  /**
+   * Name the holder of an exclusive checkout, and refuse.
+   *
+   * Both race paths end here, so the message a loser gets does not depend on
+   * which of them lost.
+   */
+  private static async refuseLockedByAnother(
+    holderId: string,
+    itemMasterId: string,
+    client: TransactionClient | typeof db = db,
+  ): Promise<never> {
+    const holder = await client
+      .select({ name: users.name, email: users.email })
+      .from(users)
+      .where(eq(users.id, holderId))
+      .limit(1)
+
+    throw new ResourceLockedError(
+      'Item',
+      `already checked out by ${holder.at(0)?.name || holder.at(0)?.email || 'another user'}`,
+      { operation: 'checkout', itemMasterId },
+    )
+  }
+
+  /**
+   * Take the lock on a `branch_items` row that already exists.
+   *
+   * The claim is a compare-and-set: the UPDATE carries
+   * `checkedOutBy IS NULL` in its WHERE, so the database decides who wins
+   * rather than a SELECT taken moments earlier. An empty `returning()` is a
+   * legitimate outcome — somebody else got there — which is why this reads it
+   * with `.at(0)` and not `takeFirst`.
+   *
+   * The loop exists for one case only: losing the CAS to a caller who then
+   * checked the item straight back in, leaving the row free again. Two passes,
+   * then stop. Spinning against real contention would turn a 409 into a hang,
+   * and the second failure is answered by naming whoever holds it now.
+   */
+  private static async claimExistingCheckout(
+    branchId: string,
+    itemMasterId: string,
+    userId: string,
+  ): Promise<typeof branchItems.$inferSelect> {
+    const read = async () =>
+      db
+        .select()
+        .from(branchItems)
+        .where(
+          and(
+            eq(branchItems.branchId, branchId),
+            eq(branchItems.itemMasterId, itemMasterId),
+          ),
+        )
+        .limit(1)
+        .then((rows) => rows.at(0))
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const row = await read()
+      if (!row) {
+        throw new NotFoundError('Item', itemMasterId, { operation: 'checkout' })
+      }
+      // Already ours: a double-click is not a conflict.
+      if (row.checkedOutBy === userId) return row
+      if (row.checkedOutBy) {
+        await this.refuseLockedByAnother(row.checkedOutBy, itemMasterId)
+      }
+
+      const claimed = await db
+        .update(branchItems)
+        .set({ checkedOutBy: userId, checkedOutAt: new Date() })
+        .where(
+          and(eq(branchItems.id, row.id), isNull(branchItems.checkedOutBy)),
+        )
+        .returning()
+
+      const won = claimed.at(0)
+      if (won) return won
+    }
+
+    const settled = await read()
+    if (settled?.checkedOutBy === userId) return settled
+    if (settled?.checkedOutBy) {
+      await this.refuseLockedByAnother(settled.checkedOutBy, itemMasterId)
+    }
+    throw new ResourceLockedError(
+      'Item',
+      'contended by concurrent checkouts; try again',
+      { operation: 'checkout', itemMasterId },
+    )
+  }
+
   static async checkout(
     data: CheckoutInput,
     userId: string,
@@ -353,38 +447,16 @@ export class CheckoutService {
       )
       .limit(1)
 
-    const bi = existingBranchItem[0]
-    if (bi) {
-      if (bi.checkedOutBy) {
-        if (bi.checkedOutBy === userId) {
-          // Already checked out by same user - return existing
-          return bi
-        } else {
-          // Checked out by another user — the lock is exclusive
-          const otherUser = await db
-            .select({ name: users.name, email: users.email })
-            .from(users)
-            .where(eq(users.id, bi.checkedOutBy))
-            .limit(1)
-          throw new ResourceLockedError(
-            'Item',
-            `already checked out by ${otherUser.at(0)?.name || otherUser.at(0)?.email || 'another user'}`,
-            { operation: 'checkout', itemMasterId: validated.itemMasterId },
-          )
-        }
-      }
-
-      // BranchItem exists but not checked out - update it
-      const updated = await db
-        .update(branchItems)
-        .set({
-          checkedOutBy: userId,
-          checkedOutAt: new Date(),
-        })
-        .where(eq(branchItems.id, bi.id))
-        .returning()
-
-      return takeFirst(updated, 'updated branchItem')
+    // The row exists: claiming it is a compare-and-set, not a decision taken
+    // from the SELECT above. That read is a hint — between it and the write,
+    // another caller can take the lock — and an unguarded UPDATE would simply
+    // overwrite them, handing the same exclusive checkout to two people.
+    if (existingBranchItem[0]) {
+      return await this.claimExistingCheckout(
+        validated.branchId,
+        validated.itemMasterId,
+        userId,
+      )
     }
 
     // Bringing a new item onto the branch - scope has to still be open
@@ -401,7 +473,11 @@ export class CheckoutService {
       })
     }
 
-    // Create branchItem entry
+    // Create branchItem entry. `onConflictDoNothing` rather than a bare
+    // insert: two callers reaching the check above at the same time both find
+    // no row, and `branch_items_unique` would turn the loser's insert into a
+    // raw 23505 — a 500 with a constraint name in it, for what is really "the
+    // other tab got there first".
     const branchItem = await db
       .insert(branchItems)
       .values({
@@ -413,7 +489,23 @@ export class CheckoutService {
         checkedOutBy: userId,
         checkedOutAt: new Date(),
       })
+      .onConflictDoNothing({
+        target: [branchItems.branchId, branchItems.itemMasterId],
+      })
       .returning()
+
+    const created = branchItem.at(0)
+    if (!created) {
+      // Lost the insert. The row now exists and belongs to whoever won, so
+      // resolve against it exactly as the update path does — and do not
+      // register the branch change: that is the winner's to do, and doing it
+      // twice would be two callers racing on the affected-items list as well.
+      return await this.claimExistingCheckout(
+        validated.branchId,
+        validated.itemMasterId,
+        userId,
+      )
+    }
 
     // Record it on the owning change order, so what merges and what
     // reviewers see stay the same set
@@ -425,7 +517,89 @@ export class CheckoutService {
       userId,
     )
 
-    return takeFirst(branchItem, 'branchItem')
+    return created
+  }
+
+  /**
+   * Give a released item a branch-local working copy before the edit lock is
+   * taken, so every subsequent content edit (fields, relationships,
+   * work-instruction steps) targets the branch copy — never the shared
+   * released row.
+   *
+   * The single-item and batch checkout routes used to do this inline: mint
+   * the copy, then call `checkout` — which found the row already present,
+   * took the claim path, and never registered the change on the owning
+   * change order (registration is the row-creator's job). The branch then
+   * carried modified content the affected-items list did not show, and the
+   * release preview refused the change order with nothing left for the user
+   * but to re-add the item by hand. Minting and registering are one
+   * transaction here, the same pairing `addAffectedItem`,
+   * `checkoutItemToEco` and the plain-checkout create path each guarantee.
+   *
+   * A master the branch does not track yet is new scope, so it runs the
+   * same gate as `checkout` bringing a new item onto the branch: refused
+   * once the change order leaves its initial state. A master the branch
+   * already tracks without branch-local content (checked out earlier, copy
+   * not yet minted) is scope the reviewers already see — minting its copy
+   * stays open during review, exactly like the lazy mint in `saveChanges`.
+   *
+   * No-op on main, for items whose state does not imply a revision, and for
+   * masters whose branch row already carries branch-local content.
+   */
+  static async ensureRevisionWorkingCopy(
+    sourceItem: typeof items.$inferSelect,
+    branchId: string,
+    userId: string,
+  ): Promise<void> {
+    const branch = await BranchService.getById(branchId)
+    if (!branch || branch.branchType === 'main') return
+
+    // "Released" is whatever state the lifecycle revises from, not the
+    // literal name — inferChangeAction reads the mappings.
+    const ChangeOrderService = await getChangeOrderService()
+    const action = await ChangeOrderService.inferChangeAction(
+      sourceItem.itemType,
+      sourceItem.state,
+    )
+    if (action !== 'revise') return
+
+    const existingRow = await db
+      .select({ changeType: branchItems.changeType })
+      .from(branchItems)
+      .where(
+        and(
+          eq(branchItems.branchId, branchId),
+          eq(branchItems.itemMasterId, sourceItem.masterId),
+        ),
+      )
+      .limit(1)
+      .then((rows) => rows.at(0))
+
+    // Already tracking branch-local content: nothing to mint.
+    if (existingRow && existingRow.changeType !== null) return
+
+    if (!existingRow) {
+      await assertBranchAcceptsNewItems(branch)
+    }
+
+    await db.transaction(async (tx) => {
+      await ChangeOrderService.createRevisionWorkingCopy(
+        sourceItem,
+        branchId,
+        userId,
+        tx,
+      )
+      // Record it on the owning change order, so what merges and what
+      // reviewers see stay the same set. Idempotent, and a no-op for
+      // branches no change order owns.
+      await ChangeOrderService.registerBranchChange(
+        branch.id,
+        sourceItem.masterId,
+        sourceItem.id,
+        userId,
+        tx,
+      )
+    })
   }
 
   /**
@@ -631,7 +805,7 @@ export class CheckoutService {
       .where(eq(items.id, validated.itemId))
       .limit(1)
 
-    const item = currentItem[0]
+    let item = currentItem[0]
     if (!item) {
       throw new NotFoundError('Item', validated.itemId, {
         operation: 'saveChanges',
@@ -657,6 +831,27 @@ export class CheckoutService {
 
     if (bi.checkedOutBy !== userId) {
       throw new ValidationError('You do not have this item checked out')
+    }
+
+    // The caller's id picks the master; the branch row picks the row to edit.
+    // A detail page addresses the save by the row it checked out from (still
+    // in its URL) while the branch may already track a working copy — a
+    // revise-checkout mints one up front — and applying the changes to the
+    // addressed row would mutate the shared released version that every other
+    // context reads.
+    if (bi.currentItemId && bi.currentItemId !== item.id) {
+      const branchRow = await db
+        .select()
+        .from(items)
+        .where(eq(items.id, bi.currentItemId))
+        .limit(1)
+      const branchCurrent = branchRow[0]
+      if (!branchCurrent) {
+        throw new NotFoundError('Item', bi.currentItemId, {
+          operation: 'saveChanges',
+        })
+      }
+      item = branchCurrent
     }
 
     // Extension-table data of the version being edited - the items row alone
@@ -689,6 +884,22 @@ export class CheckoutService {
     if (bi.changeType !== null) {
       return db.transaction(
         async (tx) => {
+          // The baseline for the history diff, read inside the transaction:
+          // `item`/`extData` above were read before it opened and can be
+          // stale, and the diff must compare two snapshots of the same row.
+          const before = takeFirst(
+            await tx.select().from(items).where(eq(items.id, item.id)).limit(1),
+            'item',
+          )
+          const beforeExt = (await typeHandler?.get(item.id, tx)) as
+            Record<string, unknown> | undefined
+
+          // Deliberately narrow, and matching `ItemService.update`'s own
+          // updateData: a generic field save writes name and attributes, and
+          // nothing else on the items row. The structural columns (sysmlType,
+          // metamodel, usageOf, inDesignStructure) are set at create/clone/
+          // usage time and by their own endpoints - do not widen this to
+          // "everything the caller sent".
           const coreUpdate: Record<string, unknown> = {
             modifiedAt: new Date(),
             modifiedBy: userId,
@@ -704,11 +915,25 @@ export class CheckoutService {
             await typeHandler.update(item.id, sanitizedChanges, tx)
           }
 
+          // History is a diff of what was STORED, never of what was asked
+          // for. `sanitizedChanges` is the input to the writes above and is
+          // deliberately not an input here: a key neither `coreUpdate` nor
+          // the type handler writes (the update schemas admit several with no
+          // column behind them) would otherwise be recorded as an edit no
+          // reader can find on the item. `ItemService.update` re-reads the
+          // item for the same reason.
+          const after = takeFirst(
+            await tx.select().from(items).where(eq(items.id, item.id)).limit(1),
+            'item',
+          )
+          const afterExt = (await typeHandler?.get(item.id, tx)) as
+            Record<string, unknown> | undefined
+
           const fieldChanges = await expandSourceFieldChanges(
             item.itemType,
             computeFieldChanges(
-              { ...item, ...extData },
-              { ...item, ...extData, ...sanitizedChanges },
+              { ...before, ...beforeExt },
+              { ...after, ...afterExt },
               item.itemType,
             ),
           )
@@ -729,14 +954,21 @@ export class CheckoutService {
             tx,
           )
 
-          const updated = takeFirst(
+          // An UPDATE with a WHERE can legitimately match nothing, so this is
+          // a guard-and-throw rather than `takeFirst` (which is for
+          // statements that provably return a row).
+          const updated = (
             await tx
               .update(items)
               .set({ commitId: commit.id })
               .where(eq(items.id, item.id))
-              .returning(),
-            'item',
-          )
+              .returning()
+          ).at(0)
+          if (!updated) {
+            throw new NotFoundError('Item', item.id, {
+              operation: 'saveChanges',
+            })
+          }
 
           return { item: updated, commit }
         },
@@ -838,11 +1070,18 @@ export class CheckoutService {
         // Include extension fields on both sides so type-category changes
         // (weight, manifestId, ...) are recorded in the commit. Software
         // manifest changes expand into per-file 'source' rows.
+        //
+        // The new side is read back from the rows just written, not built
+        // from `sanitizedChanges`: the handler's insert whitelists its own
+        // columns, so a key it drops must not be recorded as an edit. Same
+        // rule as the in-place path above and as `ItemService.update`.
+        const newExtData = (await typeHandler?.get(newItem.id, tx)) as
+          Record<string, unknown> | undefined
         const fieldChanges = await expandSourceFieldChanges(
           item.itemType,
           computeFieldChanges(
             { ...item, ...extData },
-            { ...newItem, ...extData, ...sanitizedChanges },
+            { ...newItem, ...newExtData },
             item.itemType,
           ),
         )
@@ -875,7 +1114,7 @@ export class CheckoutService {
           tx,
         )
 
-        // 5. Update item with commitId
+        // 6. Update item with commitId
         await tx
           .update(items)
           .set({ commitId: commit.id })
@@ -889,6 +1128,12 @@ export class CheckoutService {
 
   /**
    * Create a new item on a branch
+   *
+   * `insertTypeData` is how a caller gets the type-specific extension row
+   * (`parts`, `documents`, …) written inside the same transaction as the
+   * `items` row it extends. It is a callback rather than a payload so this
+   * service stays ignorant of every type's data shape — the caller keeps the
+   * validated data and the type-handler context and only lends the write.
    */
   static async createOnBranch(
     data: {
@@ -906,6 +1151,7 @@ export class CheckoutService {
     branchId: string,
     commitMessage: string,
     userId: string,
+    insertTypeData?: (tx: TransactionClient, itemId: string) => Promise<void>,
   ): Promise<{
     item: typeof items.$inferSelect
     commit: typeof commits.$inferSelect
@@ -940,6 +1186,10 @@ export class CheckoutService {
     const initialState =
       data.state ?? (await LifecycleService.getInitialStateId(data.itemType))
 
+    // Resolved before the transaction: a dynamic import inside one buys
+    // nothing and the module is needed on every path.
+    const ChangeOrderService = await getChangeOrderService()
+
     const created = await db.transaction(async (tx) => {
       // 1. Generate a new masterId for this item
       const masterId = crypto.randomUUID()
@@ -970,7 +1220,18 @@ export class CheckoutService {
         .returning()
       const newItem = takeFirst(newItemRows, 'item')
 
-      // 3. Create branchItem entry
+      // 3. Write the type-specific extension row — in this transaction, not
+      // after it. Run on the pool once the base row had committed, a throwing
+      // handler (a bad `outputPartId`, a `parentRequirementId` naming
+      // nothing) left an `items` row with no extension row behind it, and
+      // nothing reports that: `findById` spreads the missing type data, so
+      // `{ ...item, ...undefined }` resolves everywhere as a fieldless item
+      // with no error and no rollback to reach for. Ahead of the branch row
+      // and the registration below, so `registerBranchChange` — which reads
+      // the item back — sees a complete one.
+      await insertTypeData?.(tx, newItem.id)
+
+      // 4. Create branchItem entry
       await tx.insert(branchItems).values({
         branchId,
         itemMasterId: masterId,
@@ -981,7 +1242,7 @@ export class CheckoutService {
         checkedOutAt: null,
       })
 
-      // 4. Create commit (uses savepoint via outerTx)
+      // 5. Create commit (uses savepoint via outerTx)
       const commit = await CommitService.create(
         {
           branchId,
@@ -1003,23 +1264,38 @@ export class CheckoutService {
         .set({ commitId: commit.id })
         .where(eq(items.id, newItem.id))
 
+      // 7. Record the new item on the owning change order — inside this
+      // transaction, not after it. Registering on the pool once the item and
+      // its branch row had already committed left a window where a crash
+      // produced branch content no affected-items row lists: the exact shape
+      // `findUnlistedBranchContent` reports and the release refuses, with
+      // nothing left for the user but to re-add the item by hand. Now a
+      // registration failure rolls the creation back whole.
+      await ChangeOrderService.registerBranchChange(
+        branchId,
+        masterId,
+        newItem.id,
+        userId,
+        tx,
+      )
+
       return { item: newItem, commit, masterId }
     })
-
-    // Record the new item on the owning change order
-    const ChangeOrderService = await getChangeOrderService()
-    await ChangeOrderService.registerBranchChange(
-      branchId,
-      created.masterId,
-      created.item.id,
-      userId,
-    )
 
     return { item: created.item, commit: created.commit }
   }
 
   /**
    * Delete an item on a branch (soft delete)
+   *
+   * A delete is a write to the branch working copy, so it answers to the same
+   * three rules every other writer here does, and used to answer to none of
+   * them: it cleared whoever held the exclusive checkout instead of refusing
+   * them, it minted branch tracking for a master the branch did not track
+   * without asking whether the change order still accepts new scope, and it
+   * never recorded the deletion on the owning change order — so a late delete
+   * produced branch content the affected-items list did not show, which the
+   * release refuses with no in-app way out.
    */
   static async deleteOnBranch(
     itemMasterId: string,
@@ -1044,9 +1320,12 @@ export class CheckoutService {
       throw new ValidationError('Cannot delete items on a locked branch')
     }
 
-    // Get or create branchItem
-    const branchItem = await db
-      .select()
+    // A hint, not a decision. Everything below re-reads the row under a lock
+    // inside the transaction; this read only answers the two questions that
+    // have to be settled on the pool, because neither collaborator is
+    // tx-aware.
+    const hint = await db
+      .select({ changeType: branchItems.changeType })
       .from(branchItems)
       .where(
         and(
@@ -1055,14 +1334,92 @@ export class CheckoutService {
         ),
       )
       .limit(1)
+      .then((rows) => rows.at(0))
 
-    const existing = branchItem[0]
+    // Deleting a master the branch does not track yet mints branch content
+    // for it, which is new scope — the same gate `checkout` and
+    // `createOnBranch` run before bringing a new item onto the branch.
+    // Without it, a delete after reviewers locked the scope left content the
+    // change order could not list and the release could not accept.
+    if (!hint) {
+      await assertBranchAcceptsNewItems(branch)
+    }
 
-    // If item was added on this branch, we can actually remove the branchItem
-    if (existing?.changeType === 'added') {
-      const ChangeOrderService = await getChangeOrderService()
-      return db.transaction(async (tx) => {
-        await tx.delete(branchItems).where(eq(branchItems.id, existing.id))
+    const ChangeOrderService = await getChangeOrderService()
+
+    // `VersionResolver.getWorkingVersion` is pool-bound and takes no tx, so
+    // it resolves here. It returns null once the branch already records this
+    // master as deleted, which is what turns a second concurrent delete into
+    // a clean NotFoundError rather than a unique-constraint 500. Skipped for
+    // a master the branch added: that path retires the branch row outright
+    // and reads the item off the row itself.
+    const workingItem =
+      hint?.changeType === 'added'
+        ? null
+        : await VersionResolver.getWorkingVersion(itemMasterId, branchId)
+
+    return db.transaction(async (tx) => {
+      // One transaction, one row lock, both paths. The read above is stale by
+      // the time this runs — another caller can take the checkout, mint the
+      // row, or delete it in between — so the branch is taken from a row read
+      // FOR UPDATE and every writer for a given master queues behind it.
+      const locked = await tx
+        .select()
+        .from(branchItems)
+        .where(
+          and(
+            eq(branchItems.branchId, branchId),
+            eq(branchItems.itemMasterId, itemMasterId),
+          ),
+        )
+        .limit(1)
+        .for('update')
+        .then((rows) => rows.at(0))
+
+      // The checkout is an exclusive lock, and this used to be the one writer
+      // that ignored it: the update below sets `checkedOutBy: null`, so a
+      // delete by anyone silently discarded the holder's claim on their
+      // in-progress working copy. `cancelCheckout`, `saveChanges` and
+      // `checkin` all refuse a non-holder; so does this now, with the same
+      // named-holder error `checkout` gives a loser. There is no bypass flag —
+      // the holder cancels their own checkout, and admin lock-force stays the
+      // deliberate override.
+      if (locked?.checkedOutBy && locked.checkedOutBy !== userId) {
+        await this.refuseLockedByAnother(locked.checkedOutBy, itemMasterId, tx)
+      }
+
+      // If item was added on this branch, we can actually remove the branchItem
+      if (locked?.changeType === 'added') {
+        if (!locked.currentItemId) {
+          throw new NotFoundError('Item', itemMasterId, {
+            operation: 'deleteOnBranch',
+          })
+        }
+        await tx.delete(branchItems).where(eq(branchItems.id, locked.id))
+
+        // Retire the working copy too. Dropping only the tracking left the
+        // `items` row itself current and undeleted, owned by no branch:
+        // `ItemSearchService` reads `items` directly on notDeleted() plus
+        // isCurrent and never consults branch_items, so the deleted draft went
+        // on answering global searches under its working revision while every
+        // version-resolved view showed nothing — and it could not be deleted
+        // again either, because `ItemEditPolicy.getItemBranchInfo` finds no
+        // branch for it and the main-context protection gate then refuses.
+        // Soft, not hard: `itemVersions.itemId` is ON DELETE CASCADE, so
+        // removing the row would take the version row of the very commit
+        // below with it and blank the history entry recording the deletion.
+        // `state` is deliberately left alone — the release-time deletion maps
+        // to an obsolete state because it is retiring a released item on main,
+        // and this draft never left its branch.
+        await tx
+          .update(items)
+          .set({
+            isCurrent: false,
+            isDeleted: true,
+            deletedAt: new Date(),
+            deletedBy: userId,
+          })
+          .where(eq(items.id, locked.currentItemId))
 
         // The item existed only on this branch, so the change order has
         // nothing left to release for it — leave the scope row behind and the
@@ -1080,7 +1437,7 @@ export class CheckoutService {
             message: commitMessage,
             itemChanges: [
               {
-                itemId: existing.currentItemId!,
+                itemId: locked.currentItemId,
                 changeType: 'deleted',
               },
             ],
@@ -1088,23 +1445,15 @@ export class CheckoutService {
           userId,
           tx,
         )
-      })
-    }
+      }
 
-    // Get the current item
-    const currentItem = await VersionResolver.getWorkingVersion(
-      itemMasterId,
-      branchId,
-    )
-    if (!currentItem) {
-      throw new NotFoundError('Item', itemMasterId, {
-        operation: 'deleteOnBranch',
-      })
-    }
+      if (!workingItem) {
+        throw new NotFoundError('Item', itemMasterId, {
+          operation: 'deleteOnBranch',
+        })
+      }
 
-    return db.transaction(async (tx) => {
-      // Update branchItem to mark as deleted
-      if (existing) {
+      if (locked) {
         await tx
           .update(branchItems)
           .set({
@@ -1112,17 +1461,75 @@ export class CheckoutService {
             checkedOutBy: null,
             checkedOutAt: null,
           })
-          .where(eq(branchItems.id, existing.id))
+          .where(eq(branchItems.id, locked.id))
       } else {
-        // Create branchItem with deleted status
-        await tx.insert(branchItems).values({
-          branchId,
-          itemMasterId,
-          currentItemId: currentItem.id,
-          baseItemId: currentItem.id,
-          changeType: 'deleted',
-        })
+        // Create branchItem with deleted status. `onConflictDoNothing` rather
+        // than a bare insert: FOR UPDATE locks no row when there is none to
+        // lock, so two callers can both find nothing here and both insert
+        // into `branch_items_unique` — and the loser got a raw 23505 back,
+        // the same 500-with-a-constraint-name `checkout` was fixed for.
+        const inserted = await tx
+          .insert(branchItems)
+          .values({
+            branchId,
+            itemMasterId,
+            currentItemId: workingItem.id,
+            baseItemId: workingItem.id,
+            changeType: 'deleted',
+          })
+          .onConflictDoNothing({
+            target: [branchItems.branchId, branchItems.itemMasterId],
+          })
+          .returning()
+
+        if (!inserted.at(0)) {
+          // Lost the insert. The row now exists and is whoever won it: take
+          // it under the same lock, re-run the ownership guard against what
+          // is actually there, and mark it deleted rather than erroring.
+          const won = await tx
+            .select()
+            .from(branchItems)
+            .where(
+              and(
+                eq(branchItems.branchId, branchId),
+                eq(branchItems.itemMasterId, itemMasterId),
+              ),
+            )
+            .limit(1)
+            .for('update')
+            .then((rows) => rows.at(0))
+
+          if (!won) {
+            throw new NotFoundError('Item', itemMasterId, {
+              operation: 'deleteOnBranch',
+            })
+          }
+          if (won.checkedOutBy && won.checkedOutBy !== userId) {
+            await this.refuseLockedByAnother(won.checkedOutBy, itemMasterId, tx)
+          }
+          await tx
+            .update(branchItems)
+            .set({
+              changeType: 'deleted',
+              checkedOutBy: null,
+              checkedOutAt: null,
+            })
+            .where(eq(branchItems.id, won.id))
+        }
       }
+
+      // Record the deletion on the owning change order, so what merges and
+      // what reviewers approved stay the same set. Order matters: the branch
+      // row already says 'deleted' by now, and that is what
+      // `registerBranchChange` reads to record the master as `obsolete`.
+      // Idempotent, and a no-op on branches no change order owns.
+      await ChangeOrderService.registerBranchChange(
+        branchId,
+        itemMasterId,
+        workingItem.id,
+        userId,
+        tx,
+      )
 
       // Create commit (uses savepoint via outerTx)
       return CommitService.create(
@@ -1131,7 +1538,7 @@ export class CheckoutService {
           message: commitMessage,
           itemChanges: [
             {
-              itemId: currentItem.id,
+              itemId: workingItem.id,
               changeType: 'deleted',
             },
           ],

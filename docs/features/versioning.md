@@ -276,6 +276,22 @@ When viewing an ECO branch, the history includes:
 
 This gives engineers context for what the baseline looked like when they started working.
 
+### Deleting an Item, and What Survives
+
+There are two deletes, and only one of them is history.
+
+**Branch-recorded deletion** (`CheckoutService.deleteOnBranch`) is the normal path. The item is marked deleted on the branch, the deletion rides the branch's commits, and the merge carries it to main as an `isDeleted` item. Nothing is destroyed: the item, its versions and its field changes stay readable at any earlier commit or tag, and the deletion itself appears in the history as a change like any other.
+
+**Hard deletion** (`ItemService.delete`) removes the `items` row outright. The row _is_ the version content, so the database cascades from it: `item_versions` and `item_field_changes` go with it, and so do the workflow instance, its history and approvals, a change order's affected and impacted item lists, and a work order's traveler lines and their executions. Per-item history is read from `items` (`CommitService.getItemCommits` selects on `masterId` + `designId`), so a hard-deleted item leaves no readable trace beyond the commits themselves. None of it is recoverable.
+
+Because it is unrecoverable, the hard delete is bounded to rows that do not yet carry evidence meant to outlive them. `ItemService.delete` refuses when:
+
+- the item's state is in its lifecycle's **released family** (released, revising, obsolete, superseded) — released lineage is immutable everywhere else, and this is not an exception;
+- the item's state is **final with a `finalKind` of `release` or `complete`** — the record that a release or a build happened. Against the shipped lifecycles that is an approved change order and a completed work order; `cancel` finals and finals that declare no kind (a retired tool, a scrapped physical part) stay deletable;
+- the item is governed by a **Driving** definition — a change order — and has **left its initial state**. A change order past Draft holds votes, a locked branch and an affected-item list.
+
+Everything past those bounds is retired through its lifecycle instead: cancel the change order, obsolete the part, or delete it on a branch so the deletion is itself recorded. The rules are read from lifecycle configuration, never from state names, so a renamed or custom lifecycle follows them unchanged.
+
 ---
 
 ## 6. Design History Graph

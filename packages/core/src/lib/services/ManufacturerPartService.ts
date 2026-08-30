@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { db } from '@/lib/db'
 import { manufacturerParts, partManufacturerParts } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'
+import { likeContains } from '@/lib/db/like-pattern'
 import { takeFirst } from '@/lib/db/take-first'
 
 /**
@@ -75,16 +76,17 @@ export class ManufacturerPartService {
   static async search(criteria: { search?: string; limit?: number }) {
     const limit = Math.min(criteria.limit ?? 50, 200)
     const term = criteria.search?.trim()
+    const pattern = term ? likeContains(term) : undefined
 
     const rows = await db
       .select()
       .from(manufacturerParts)
       .where(
-        term
+        pattern
           ? or(
-              ilike(manufacturerParts.manufacturer, `%${term}%`),
-              ilike(manufacturerParts.mpn, `%${term}%`),
-              ilike(manufacturerParts.description, `%${term}%`),
+              ilike(manufacturerParts.manufacturer, pattern),
+              ilike(manufacturerParts.mpn, pattern),
+              ilike(manufacturerParts.description, pattern),
             )
           : undefined,
       )
@@ -263,6 +265,23 @@ export class ManufacturerPartService {
           .returning(),
       )
     })
+  }
+
+  /**
+   * One AML mapping row, by id.
+   *
+   * The routes that act on a mapping need its `partMasterId` before they can
+   * decide whether the caller may reach it, and the mapping id is the only
+   * thing the URL carries. Same lookup `updateMapping` and `detach` do.
+   */
+  static async getMapping(mappingId: string) {
+    const [mapping] = await db
+      .select()
+      .from(partManufacturerParts)
+      .where(eq(partManufacturerParts.id, mappingId))
+      .limit(1)
+    if (!mapping) throw new NotFoundError('AML mapping', mappingId)
+    return mapping
   }
 
   static async updateMapping(mappingId: string, data: AmlMappingUpdate) {

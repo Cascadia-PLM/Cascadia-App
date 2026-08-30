@@ -44,6 +44,7 @@ import {
   itemFieldChanges,
   itemVersions,
   items,
+  programMembers,
   programs,
   software,
   softwareBlobs,
@@ -149,6 +150,18 @@ describe('SoftwareSourceService', () => {
         .returning(),
     )
     programId = program.id
+
+    // The program's creator is not automatically a member when the row is
+    // inserted directly (ProgramService.create is what enrols them), and
+    // ItemService.update/delete now refuse a write to a design the caller
+    // cannot reach. Enrol the acting user so these cases exercise their own
+    // subject rather than the program boundary.
+    await testDb.db.insert(programMembers).values({
+      programId,
+      userId: user.id,
+      role: 'admin',
+      invitedBy: user.id,
+    })
 
     const design = await DesignService.create(
       {
@@ -869,8 +882,16 @@ describe('SoftwareSourceService', () => {
         )
         .limit(1)
 
-      // Another user takes the checkout lock
+      // Another user takes the checkout lock. They are enrolled in the program
+      // too: the subject here is who holds the checkout, and an outsider would
+      // be turned away by the design-access check before reaching it.
       const otherUser = await insertTestUser(testDb.db)
+      await testDb.db.insert(programMembers).values({
+        programId,
+        userId: otherUser.id,
+        role: 'engineer',
+        invitedBy: user.id,
+      })
       const { branch } = await BranchService.getOrCreateEcoBranch(
         designId,
         eco.id,

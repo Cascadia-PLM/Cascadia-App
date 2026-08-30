@@ -134,12 +134,17 @@ export function NewRelationshipTypeDialog({
     try {
       await apiFetch(`/api/v1/items/${itemId}/relationships`, {
         method: 'POST',
+        // Omitted rather than null. The route's body schema takes these as
+        // optional — absent is "not given" — and rejects an explicit null,
+        // so sending one made every add with an empty reference designator or
+        // find number (the ordinary case) answer 400. `undefined` is dropped
+        // by JSON.stringify, which is exactly the shape the schema wants.
         body: JSON.stringify({
           targetId: selectedItem.id,
           relationshipType: finalType,
-          quantity: quantity.trim() || null,
-          referenceDesignator: referenceDesignator || null,
-          findNumber: findNumber ? parseInt(findNumber) : null,
+          quantity: quantity.trim() || undefined,
+          referenceDesignator: referenceDesignator || undefined,
+          findNumber: findNumber ? parseInt(findNumber) : undefined,
         }),
       })
 

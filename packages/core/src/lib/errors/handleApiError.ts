@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid'
 import { ZodError } from 'zod'
 import { createErrorResponse } from './api'
 import { ErrorLogService } from './ErrorLogService'
-import { asPostgresError, constraintOf, tableOf } from './pg'
+import { asPostgresError, constraintOf, isSqlStateCode, tableOf } from './pg'
 import {
   AppError,
   DatabaseQueryError,
@@ -58,16 +58,29 @@ export function handleApiError(
   // Handle PostgreSQL/Drizzle errors. Drizzle wraps the driver error, so this
   // looks through the cause chain — matching only the outermost object left
   // every wrapped constraint violation classified as a 500 below.
+  //
+  // The `code` is narrowed to a SQLSTATE because that cause-walk matches
+  // anything carrying a string `code`. An fs `ENOENT`, an undici
+  // `ECONNREFUSED`, an `EAI_AGAIN` from DNS, an AMQP failure — every one of
+  // them used to fall into `mapPostgresError`'s default branch and come back
+  // as "Database operation failed", logged CRITICAL against a database that
+  // was never touched.
   const pgError = asPostgresError(error)
-  if (pgError) {
+  if (pgError && isSqlStateCode(pgError.code)) {
     const dbError = mapPostgresError(pgError, requestId)
     logError(dbError, request, requestId)
     return createErrorResponse(dbError, requestId)
   }
 
-  // Unknown errors - wrap in AppError. A nested driver error no longer lands
-  // here: asPostgresError above follows the cause chain, so this branch is
-  // genuinely "not a database error" and says nothing about the query.
+  // Unknown errors - wrap in AppError. A nested driver error does not land
+  // here: asPostgresError above follows the cause chain, so a wrapped
+  // constraint violation is already classified. What does land here is every
+  // failure whose `code` is not a SQLSTATE, which now answers "An unexpected
+  // error occurred" instead of naming a database it never reached.
+  //
+  // The residual is the one `isSqlStateCode` documents: a five-character
+  // uppercase errno (EPIPE, EBUSY, EXDEV) has a SQLSTATE's shape and is still
+  // classified above.
   const unknownError = new AppError(
     ErrorCode.INTERNAL_ERROR,
     'An unexpected error occurred',

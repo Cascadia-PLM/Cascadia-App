@@ -10,7 +10,7 @@
  * Run: npm run test -- src/lib/workflows/WorkflowApprovalService.test.ts
  */
 
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import {
   afterAll,
   afterEach,
@@ -707,6 +707,107 @@ describe('WorkflowApprovalService', () => {
             'rejected',
           ),
         ).rejects.toThrow(ConflictError)
+      })
+
+      /**
+       * Data-integrity gate. The test above proves the service's pre-check
+       * catches the ordinary double-vote; these prove the database catches
+       * what the pre-check cannot. It reads "has this user voted?" and then
+       * inserts, so two requests can both read "no" — and getApprovalStatus
+       * counts live rows, meaning one person would count twice toward a
+       * quorum. The insert here goes direct, past the pre-check, which is the
+       * only way to stand where the loser of that race stands.
+       */
+      describe('one live vote per person, enforced by the database', () => {
+        async function voteDirectly(
+          instanceId: string,
+          userId: string,
+          overrides: Record<string, unknown> = {},
+        ) {
+          return testDb.db.insert(workflowApprovalVotes).values({
+            workflowInstanceId: instanceId,
+            stateId: 'draft',
+            userId,
+            vote: 'approved',
+            ...overrides,
+          } as never)
+        }
+
+        it('rejects a second live vote inserted behind the pre-check', async () => {
+          const { user, workflow, instance } =
+            await createWorkflowWithInstance()
+          await WorkflowApprovalService.addStateApprover(
+            workflow.id,
+            'draft',
+            { type: 'user', id: user.id, isRequired: true },
+            user.id,
+          )
+          await WorkflowApprovalService.submitApproval(
+            instance.id,
+            'draft',
+            user.id,
+            'approved',
+          )
+
+          const live = await testDb.db
+            .select()
+            .from(workflowApprovalVotes)
+            .where(
+              and(
+                eq(workflowApprovalVotes.workflowInstanceId, instance.id),
+                isNull(workflowApprovalVotes.supersededAt),
+              ),
+            )
+          expect(live).toHaveLength(1)
+
+          // Read the state first: a rejected insert aborts the surrounding
+          // test transaction, so anything queried afterwards would only report
+          // that.
+          await expect(voteDirectly(instance.id, user.id)).rejects.toThrow()
+        })
+
+        it('still lets the same user vote again once the first is superseded', async () => {
+          // Rework supersedes votes rather than deleting them, so the index
+          // has to be partial — a plain unique would lock the user out of the
+          // second round.
+          const { user, workflow, instance } =
+            await createWorkflowWithInstance()
+          await WorkflowApprovalService.addStateApprover(
+            workflow.id,
+            'draft',
+            { type: 'user', id: user.id, isRequired: true },
+            user.id,
+          )
+          await WorkflowApprovalService.submitApproval(
+            instance.id,
+            'draft',
+            user.id,
+            'approved',
+          )
+
+          await testDb.db
+            .update(workflowApprovalVotes)
+            .set({ supersededAt: new Date() })
+            .where(eq(workflowApprovalVotes.workflowInstanceId, instance.id))
+
+          const second = await WorkflowApprovalService.submitApproval(
+            instance.id,
+            'draft',
+            user.id,
+            'rejected',
+          )
+          expect(second.vote).toBe('rejected')
+        })
+
+        it('rejects a vote value that would not count as either answer', async () => {
+          // Gating counts `vote = 'approved'`, so anything else is not a bad
+          // label — it is an approval that silently does not count.
+          const { user, instance } = await createWorkflowWithInstance()
+
+          await expect(
+            voteDirectly(instance.id, user.id, { vote: 'maybe' }),
+          ).rejects.toThrow()
+        })
       })
 
       it('throws error for invalid role', async () => {

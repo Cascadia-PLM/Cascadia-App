@@ -102,18 +102,6 @@ function getAvailableFields(itemType: string): Array<FieldDefinition> {
         type: 'number',
         table: 'parts',
       },
-      {
-        path: 'parts.quantityOnHand',
-        label: 'Quantity On Hand',
-        type: 'number',
-        table: 'parts',
-      },
-      {
-        path: 'parts.location',
-        label: 'Location',
-        type: 'string',
-        table: 'parts',
-      },
     ],
     Document: [
       {

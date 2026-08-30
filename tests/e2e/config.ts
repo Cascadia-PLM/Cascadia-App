@@ -9,6 +9,16 @@
  */
 
 /**
+ * Where the signed-in browser state is written.
+ *
+ * `global.setup.ts` logs in once and saves here; the `chromium` project loads
+ * it as `storageState`, so every test starts authenticated without logging in
+ * itself. Relative to `process.cwd()` because tests run from the project root
+ * and this file has to resolve the same way under ESM.
+ */
+export const AUTH_STATE_PATH = 'playwright/.auth/user.json'
+
+/**
  * Test user configuration
  *
  * Uses the default admin account created by the seed script.

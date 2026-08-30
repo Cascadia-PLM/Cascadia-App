@@ -397,6 +397,44 @@ import { StateBadge } from '@/components/items/StateBadge'
 
 `StateBadge` resolves the configured display name and colour through the per-item-type lifecycle cache. For raw spans (graph nodes), `useLifecycleState(itemType, state)` returns `{ label, className }`. `FreeTransitionControl` renders the transitions a Free-lifecycle item may take from its current state; `LifecycleStateCards` draws a list page's per-state summary cards; `useReleasedFamily(itemType, state)` answers "is this released lineage" for presentation gates (the server's `ItemEditPolicy` remains the authority); `lifecycleByItemTypeQuery` is the loader-safe query behind all of them.
 
+## Component size, and refactor-on-touch
+
+**New components target ~400 lines at review.** Not a lint rule — a number to
+notice. Past it, ask what the file is doing twice.
+
+A file over the line is not automatically wrong, but it needs a **named seam**:
+a sentence in its header comment saying where it would split and why it has not
+yet. "It is big" is not a plan; "the CAD viewer state and the field cards are
+independent, split there when either grows" is.
+
+**Touching a large file means splitting what you touch.** A PR that adds a
+feature to a 1,500-line component extracts the region it is working in — not
+the whole file. This is how the big ones come down: `PartDetail.tsx` went from
+1,833 lines to under 1,000 by extracting the four things that were independent
+of each other, and each extraction was legible on its own.
+
+Seams worth looking for, in the order they usually pay:
+
+1. **State with no other reader.** A dozen `useState`s that only one region
+   consumes is a hook, not a component's business. Extracting the _state_
+   rather than only the markup is what stops the split turning into twelve
+   props down and twelve setters back up — see
+   `components/parts/useCADViewerState.ts`.
+2. **A mode the rest of the file does not have.** Create-only, edit-only,
+   admin-only branches are usually a component the caller renders conditionally.
+3. **A region with its own data.** If a block owns a query nothing else reads,
+   it can own that query somewhere else. Two components reading the same query
+   factory share one request — that is the layer working as designed, not a
+   duplicate fetch. See
+   [data-fetching.md](./data-fetching.md).
+4. **Repeated field groups.** A card of `ViewEdit*` fields with its own option
+   constants is a component and its constants, together.
+
+The same rule covers mutations: a PR that rewrites a mutation handler moves it
+to `useResourceMutation` (see [data-fetching.md](./data-fetching.md)). Both are
+convention enforced by review, not by lint — the exceptions are too legitimate
+and too varied to reach zero warnings.
+
 ## Common Pitfalls
 
 ### Zod v4 + TanStack Form

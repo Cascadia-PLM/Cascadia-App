@@ -122,10 +122,12 @@ When an ECO leaves the Draft state (transitions to InReview), the workflow insta
 - Removing affected items (`ChangeOrderService.removeAffectedItem()` checks `scopeLocked`)
 - Checking out new items to the ECO (`ChangeOrderService.checkoutItemToEco()` checks `scopeLocked`)
 - Adding new design associations
-- Bringing a **new** item onto the ECO's branch by any route — the plain checkout and
-  create-on-branch paths (`POST /api/v1/items/:id/checkout`, batch checkout, the AI tools)
-  check the owning change order's scope too. Without that, content could be added to an ECO
-  already in review and would release without ever appearing in the affected items list.
+- Bringing a **new** item onto the ECO's branch by any route — the plain checkout,
+  create-on-branch and delete-on-branch paths (`POST /api/v1/items/:id/checkout`, batch
+  checkout, the AI tools) check the owning change order's scope too. Without that, content
+  could be added to an ECO already in review and would release without ever appearing in
+  the affected items list. Deleting counts: a delete of a master the branch does not track
+  yet mints branch content for it, which is new scope like any other.
 
 Existing working copies can still be edited while scope is locked. This separation ensures reviewers evaluate a fixed scope while engineers can continue refining the details — the lock freezes _what_ the change covers, not the work on it.
 
@@ -153,6 +155,16 @@ When the target state has `isFinal: true`, the endpoint:
 3. Returns the merge result including revisions assigned
 
 There are no separate `/submit`, `/approve`, `/reject` endpoints. Everything flows through the transition endpoint.
+
+**Advancing an ECO requires reach to every design it links.** Reading a change
+order needs reach to only one of them — the rest is redacted — but submitting,
+releasing or cancelling one needs all of them, because a release merges every
+linked branch and stamps permanent revisions across all of them and a cancel
+archives every linked branch. The gate lives in
+`ChangeOrderService.executeWorkflowTransition`, not the route, so the AI tools
+and MCP paths are covered too; cross-program authority bypasses it. See
+[programs-and-designs.md](./programs-and-designs.md#how-permissions-cascade)
+for the full three-tier rule.
 
 ---
 
@@ -405,14 +417,35 @@ release, naming items it had never been given the chance to list.
 
 `CheckoutService.deleteOnBranch()`:
 
+- Refuses when someone else holds the item's checkout, with the same
+  named-holder `ResourceLockedError` a contended checkout returns. A delete is
+  a write to the working copy, so it answers to the exclusive lock exactly as
+  `cancelCheckout`, `saveChanges` and `checkin` do. There is no bypass flag:
+  the holder cancels their own checkout, and the admin lock-force paths stay
+  the deliberate override.
+- Runs the scope gate above when the branch does not track the master yet,
+  because minting branch content for it is new scope.
 - If the item was added on this branch (`changeType = 'added'`), removes the
   `branch_items` record, and drops the item from the change order's scope
   (`ChangeOrderService.unregisterBranchChange()`) when no branch of that change
   order carries the master any more — the item existed only on the branch, so
   leaving the scope row would have the branchless merge path release a draft
   that no longer exists.
-- Otherwise, sets `branch_items.changeType = 'deleted'`.
+- Otherwise, sets `branch_items.changeType = 'deleted'` and records the master
+  on the owning change order as an `obsolete` affected item
+  (`ChangeOrderService.registerBranchChange()`), so deletions appear in the
+  scope reviewers approve instead of turning up as unlisted branch content the
+  release refuses. Recorded whether or not the item's lifecycle configures an
+  obsolete action — the merge's branch path already handles the unmapped case
+  by marking the item deleted and leaving its state alone.
 - Creates a commit recording the deletion.
+
+The whole sequence is one transaction, and the `branch_items` row it decides
+from is re-read under `FOR UPDATE` inside it: the row can be claimed, minted
+or removed between the first read and the write, and the insert on the
+no-row path carries `ON CONFLICT DO NOTHING` against `branch_items_unique`
+so a lost race resolves onto the winner's row rather than surfacing a
+constraint violation.
 
 ---
 
@@ -575,6 +608,19 @@ If no branches were merged (either no branches exist or all were skipped), the s
 - Creates release commits on the main branch.
 - Archives any associated ECO branches.
 
+Like the branch merge, this pass is **one serializable transaction under
+`withSerializableRetry`**, and for the same reason: every action is a
+check-then-act — read the item's state and revision, decide from them, write
+both back — so at a weaker isolation level two change orders listing the same
+master each read the pre-release row and each act on it, minting one revision
+letter twice. A change order cannot race itself (the workflow claim CAS
+serializes repeat transitions of one instance); distinct change orders sharing
+a master is the exposure. Because a retry re-runs the whole pass, the count of
+revisions it assigned and the released-items map behind the release commits
+live _inside_ the retry closure and are folded into the result only once it
+resolves — an accumulator outside would report the aborted attempt's work
+alongside the successful one's.
+
 #### Affected Items Path (alongside a branch merge)
 
 A branch merge releases branch **content** — it creates the new version for every item the
@@ -586,6 +632,11 @@ in their target state are skipped so a retry after a partial release stays idemp
 
 The division is structural, not a list of actions: whatever the branch merge released is its,
 and everything else belongs to this pass.
+
+This pass is serializable and retried on the same terms as the two above, with the same
+per-attempt accumulator. The set of masters the branch merge already handled is computed
+before the transaction and deliberately stays there: it records what has already committed,
+which no retry of this pass can change.
 
 #### Scope reconciliation
 

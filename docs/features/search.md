@@ -13,10 +13,10 @@ The enterprise search bar lives in the top navigation and is accessible from any
 page via **Cmd+K** (macOS) or **Ctrl+K** (Windows/Linux).
 
 When you type at least two characters the bar fires a debounced request to the
-enterprise search API, which fans out across every registered item type in
-parallel (Part, Document, ChangeOrder, Requirement, Task, TestPlan, TestCase,
-Issue, etc.). Results are grouped by type and rendered in a dropdown with
-keyboard navigation (arrow keys + Enter).
+enterprise search API, which fans out in parallel across every registered item
+type you may read (Part, Document, ChangeOrder, Requirement, Task, TestPlan,
+TestCase, Issue, etc.). Results are grouped by type and rendered in a dropdown
+with keyboard navigation (arrow keys + Enter).
 
 Each result displays:
 
@@ -30,16 +30,24 @@ Selecting a result navigates directly to the item detail page.
 ### How It Works
 
 1. The client calls `GET /api/v1/enterprise-search?q=<query>&limit=20`.
-2. The server resolves which designs the current user can access (from their
-   program memberships plus any Library-type designs).
-3. For each registered item type, `ItemService.searchByItemNumber()` is called
-   concurrently, scoped to the accessible design IDs.
+2. The server resolves which item types the current user may read, and which
+   designs they can access (from their program memberships plus any
+   Library-type designs).
+3. For each readable item type, `ItemService.searchByItemNumber()` is called
+   concurrently, scoped to the accessible designs.
 4. Results are enriched with design metadata (design code, design name) before
    being returned.
 
 ### Access Scoping
 
-Enterprise search only returns items from designs the user can access:
+Two independent gates apply, the same pair the results grid enforces.
+
+**Item type (RBAC).** Only types the user holds `read` on are searched. A
+withheld type contributes no group at all — not an empty one — and a user with
+no read grants gets an empty `results`.
+
+**Design (program membership).** Within a readable type, only items from designs
+the user can access come back:
 
 - Designs belonging to programs the user is a member of
 - Designs with `designType = 'Library'` (e.g., the Standard Library)
@@ -263,10 +271,10 @@ It supports the same filter vocabulary:
 
 Cross-type search for the navigation bar.
 
-| Parameter | Required | Description                        |
-| --------- | -------- | ---------------------------------- |
-| `q`       | yes      | Search query (minimum 1 character) |
-| `limit`   | no       | Max results per type (default: 50) |
+| Parameter | Required | Description                               |
+| --------- | -------- | ----------------------------------------- |
+| `q`       | yes      | Search query (minimum 1 character)        |
+| `limit`   | no       | Max results per type, 1-100 (default: 50) |
 
 **Response:**
 

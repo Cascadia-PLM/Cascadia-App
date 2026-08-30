@@ -39,14 +39,30 @@ export abstract class BasePage {
   }
 
   /**
-   * Open the sidebar navigation
+   * Expand the sidebar navigation, and require that it ends up expanded.
+   *
+   * The old version asked whether `main-nav` was visible — which it always
+   * is, since collapsing changes the sidebar's width and padding, never its
+   * presence — so it never clicked anything, and callers that needed the
+   * expanded nav got whatever state the app happened to be in. That matters:
+   * `SidebarSection` renders its `data-testid` button ONLY when expanded;
+   * collapsed, it is a plain icon link with no test id at all.
+   *
+   * The hamburger's accessible name is the honest signal for the current
+   * state, and the closing wait is the assertion — nothing here can leave a
+   * caller on a collapsed sidebar without failing.
    */
   async openSidebar(): Promise<void> {
-    const isVisible = await this.sidebar.isVisible()
-    if (!isVisible) {
-      await this.menuButton.click()
-      await this.sidebar.waitFor({ state: 'visible' })
-    }
+    await this.sidebar.waitFor({ state: 'visible' })
+    await this.page
+      .getByRole('button', { name: 'Expand menu' })
+      .click({ timeout: 2000 })
+      .catch(() => {
+        // Already expanded — there is no "Expand menu" button to click.
+      })
+    await this.page
+      .getByRole('button', { name: 'Collapse menu' })
+      .waitFor({ state: 'visible', timeout: 5000 })
   }
 
   /**

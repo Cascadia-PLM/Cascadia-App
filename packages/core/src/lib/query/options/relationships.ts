@@ -153,6 +153,28 @@ interface BomRelationship {
  * rebuilt on every tab switch. Branches of the walk that revisit an ancestor
  * stop there, so a cyclic structure terminates.
  */
+/**
+ * What this item's digital thread can be compared against.
+ *
+ * Keyed beneath the item, so a relationship or version change refreshes the
+ * picker rather than leaving the dialog with a stale list.
+ */
+export function threadComparisonTargetsQuery<T>(
+  itemId: string,
+  enabled = true,
+) {
+  return queryOptions({
+    queryKey: qk.sub('items', itemId, 'thread-comparison-targets'),
+    queryFn: async (): Promise<T> => {
+      const result = await apiFetch<{ data: T }>(
+        `/api/v1/thread/${itemId}/comparison-targets`,
+      )
+      return result.data
+    },
+    enabled: enabled && Boolean(itemId),
+  })
+}
+
 export function itemBomTreeQuery(
   itemId: string,
   branchId?: string,

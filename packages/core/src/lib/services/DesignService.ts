@@ -14,6 +14,7 @@ import {
 } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
+import { likeContains } from '../db/like-pattern'
 import { branches, commits, designs, items, tags } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import type { SQL } from 'drizzle-orm'
@@ -236,20 +237,10 @@ export class DesignService {
           .returning(),
       )
 
-      // 2. Create initial commit (with temporary branchId)
-      const initialCommit = takeFirst(
-        await tx
-          .insert(commits)
-          .values({
-            designId: design.id,
-            branchId: design.id, // Temporary - will update after branch creation
-            message: 'Initial commit',
-            createdBy: userId,
-          })
-          .returning(),
-      )
-
-      // 3. Create main branch pointing to initial commit
+      // 2. Create the main branch first, head unset. The old order created
+      // the commit under a placeholder branchId (the design's id) and fixed
+      // it up afterwards — the commits.branch_id FK now rejects that trick,
+      // and FK-valid insert order needs no fixup row at all.
       const mainBranch = takeFirst(
         await tx
           .insert(branches)
@@ -257,18 +248,31 @@ export class DesignService {
             designId: design.id,
             name: 'main',
             branchType: 'main',
-            headCommitId: initialCommit.id,
-            baseCommitId: initialCommit.id,
             createdBy: userId,
           })
           .returning(),
       )
 
-      // 4. Update commit with correct branchId
+      // 3. Create the initial commit on the real branch
+      const initialCommit = takeFirst(
+        await tx
+          .insert(commits)
+          .values({
+            designId: design.id,
+            branchId: mainBranch.id,
+            message: 'Initial commit',
+            createdBy: userId,
+          })
+          .returning(),
+      )
+
+      // 4. Point the branch at its initial commit
       await tx
-        .update(commits)
-        .set({ branchId: mainBranch.id })
-        .where(eq(commits.id, initialCommit.id))
+        .update(branches)
+        .set({ headCommitId: initialCommit.id, baseCommitId: initialCommit.id })
+        .where(eq(branches.id, mainBranch.id))
+      mainBranch.headCommitId = initialCommit.id
+      mainBranch.baseCommitId = initialCommit.id
 
       // 5. Update design with default branch
       const [updatedDesign] = await tx
@@ -284,7 +288,7 @@ export class DesignService {
       return {
         ...updatedDesign,
         mainBranch,
-        initialCommit: { ...initialCommit, branchId: mainBranch.id },
+        initialCommit,
       }
     })
   }
@@ -558,7 +562,7 @@ export class DesignService {
 
     // Global search: ILIKE across code, name, description
     if (criteria.globalSearch && criteria.globalSearch.trim()) {
-      const searchTerm = `%${criteria.globalSearch.trim()}%`
+      const searchTerm = likeContains(criteria.globalSearch.trim())
       conditions.push(
         or(
           ilike(designs.code, searchTerm),
@@ -623,7 +627,7 @@ export class DesignService {
     // Text filter (ILIKE)
     if (typeof filterValue === 'string') {
       if (!filterValue.trim()) return null
-      return ilike(column, `%${filterValue.trim()}%`)
+      return ilike(column, likeContains(filterValue.trim()))
     }
 
     // Multi-select filter (IN)
@@ -1134,12 +1138,39 @@ export class DesignService {
   /**
    * Get families available for a design to join
    * Filters to families in the same program
+   *
+   * `accessDesignIds` is the caller's reach and is **required**, the same
+   * shape `PhysicalPartService.search` uses and for the same reason: while it
+   * was absent this method filtered on nothing but the `programId` handed to
+   * it from the query string, so naming any program id returned that
+   * program's family designs — their names, codes and descriptions — to any
+   * authenticated caller. Requiring the argument means a future caller has to
+   * state its scope rather than inherit "everything" by omitting it.
+   *
+   * `null` is cross-program authority, matching
+   * `AccessControlService.getAccessibleDesignIds`. `[]` is not null: it says
+   * the caller reaches no design, and `inArray(col, [])` compiles to `false`,
+   * so it correctly yields nothing. A `.length > 0` guard here would skip the
+   * filter for exactly the caller with the least reach.
+   *
+   * The program-less branch is bounded by the same list rather than left
+   * open. That is not a narrowing in practice — `listAccessibleIds` always
+   * includes every design carrying no program, because those are readable by
+   * every authenticated user — but it means both branches are drawn on one
+   * expression instead of one being scoped and the other trusted.
    */
-  static async getAvailableFamilies(programId: string | null) {
+  static async getAvailableFamilies(
+    programId: string | null,
+    accessDesignIds: Array<string> | null,
+  ) {
     const conditions = [
       eq(designs.designType, 'Family'),
       eq(designs.isArchived, false),
     ]
+
+    if (accessDesignIds) {
+      conditions.push(inArray(designs.id, accessDesignIds))
+    }
 
     if (programId) {
       conditions.push(eq(designs.programId, programId))

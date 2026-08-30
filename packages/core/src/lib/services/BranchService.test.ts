@@ -34,6 +34,7 @@ import {
 import {
   branchItems,
   changeOrderAffectedItems,
+  commits,
   programs,
 } from '@/lib/db/schema'
 import { takeFirst } from '@/lib/db/take-first'
@@ -525,8 +526,20 @@ describe('BranchService', () => {
       )
       const originalHead = branch.headCommitId
 
-      // Create a new commit ID (in a real scenario, this would be a valid commit)
-      const newCommitId = crypto.randomUUID()
+      // A real commit on the branch — branches.head_commit_id is a foreign
+      // key now, so the old fabricated uuid can no longer stand in.
+      const newCommit = takeFirst(
+        await testDb.db
+          .insert(commits)
+          .values({
+            designId,
+            branchId: branch.id,
+            message: 'Advance head',
+            createdBy: user.id,
+          })
+          .returning(),
+      )
+      const newCommitId = newCommit.id
 
       await BranchService.updateHead(branch.id, newCommitId)
 

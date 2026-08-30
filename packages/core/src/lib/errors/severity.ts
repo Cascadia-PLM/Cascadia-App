@@ -175,6 +175,12 @@ const defaultStrategies: Partial<Record<ErrorCode, ErrorHandlingStrategy>> = {
     severity: 'error',
     presentation: 'toast',
   },
+  // A stored secret that will not decrypt is a misconfiguration, not a
+  // transient fault — retrying cannot help and an operator has to act.
+  [ErrorCode.SECRET_DECRYPTION_FAILED]: {
+    severity: 'critical',
+    presentation: 'dialog',
+  },
 }
 
 /**

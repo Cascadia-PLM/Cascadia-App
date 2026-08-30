@@ -8,6 +8,7 @@
  */
 
 import { defineConfig, devices } from '@playwright/test'
+import { AUTH_STATE_PATH } from './tests/e2e/config'
 
 /**
  * The dev server this run drives, and the URL it is reached at.
@@ -44,8 +45,18 @@ export default defineConfig({
   /* Retry failed tests */
   retries: process.env.CI ? 2 : 1,
 
-  /* Use single worker for stability (parallel causes login race conditions) */
-  workers: 1,
+  /*
+   * The suite signs in once in the setup project and every test restores that
+   * state, so there is no longer a per-test login to race. `workers: 1` was
+   * pinned because the old fixture logged in per test and wrote the shared
+   * state file from each worker; with that gone, the specs are independent
+   * journeys against distinct data and run in parallel.
+   *
+   * CI is pinned to 2 rather than left to the runner's core count: the same
+   * container runs Postgres and the dev server, and the value that matters is
+   * the one measured there, not the one a bigger machine could sustain.
+   */
+  workers: process.env.CI ? 2 : undefined,
 
   /* Reporter configuration */
   reporter: process.env.CI
@@ -101,6 +112,12 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        /*
+         * Signed in, courtesy of the setup project. A spec that needs a signed
+         * out browser overrides this per file with
+         * `test.use({ storageState: { cookies: [], origins: [] } })`.
+         */
+        storageState: AUTH_STATE_PATH,
       },
       dependencies: ['setup'],
     },

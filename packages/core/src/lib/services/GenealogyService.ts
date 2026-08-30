@@ -7,6 +7,7 @@ import {
   RELATIONSHIP_PRODUCES,
 } from './WorkOrderMaterialService'
 import { db } from '@/lib/db'
+import { physicalPartAccessScopeCondition } from '@/lib/db/filters'
 import { itemRelationships, items, physicalParts } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors'
 
@@ -248,11 +249,30 @@ export class GenealogyService {
   /**
    * Recall query: end items reachable upward from every instance matching a
    * serial or lot identity. "Which shipped units contain lot L?" is one call.
+   *
+   * `accessDesignIds` bounds the *seeds* and is required for the reason it is
+   * required on `PhysicalPartService.search`: this is the second list surface
+   * on the type, and leaving it open would have kept the whole disclosure
+   * reachable through a sibling route after the index was closed. `partMasterId`
+   * is the shape that matters — it enumerates every unit and lot of a lineage
+   * together with the end items each was built into, which is a dump rather
+   * than the oracle a known serial gives.
+   *
+   * The seeds are the boundary; the upward traversal from an admitted seed is
+   * not re-checked, exactly as `forPhysicalPart` does not re-check the graph it
+   * walks from an id the route already gated. Genealogy crossing a program
+   * boundary from a reachable seed is a pre-existing property of both, and one
+   * to settle on its own rather than under cover of this scoping.
+   *
+   * `null` is cross-program authority; `[]` is a caller who reaches no design
+   * and must still see the design-less lineages the by-id gate ungates, so the
+   * guard is on truthiness and never on `.length`.
    */
   static async recall(criteria: {
     serialNumber?: string
     lotNumber?: string
     partMasterId?: string
+    accessDesignIds: Array<string> | null
   }) {
     const conditions = []
     if (criteria.serialNumber) {
@@ -264,11 +284,23 @@ export class GenealogyService {
     if (criteria.partMasterId) {
       conditions.push(eq(physicalParts.partMasterId, criteria.partMasterId))
     }
+    // Naming no identity at all still returns nothing, so this guard counts
+    // only the caller's own filters — pushing the access predicate before it
+    // would turn "recall with no criteria" into "every instance you may read".
     if (conditions.length === 0) return []
 
+    if (criteria.accessDesignIds) {
+      conditions.push(
+        physicalPartAccessScopeCondition(criteria.accessDesignIds),
+      )
+    }
+
+    // `physicalPartAccessScopeCondition` is written against `items`, which this
+    // query had no reason to join until now.
     const matches = await db
       .select({ itemId: physicalParts.itemId })
       .from(physicalParts)
+      .innerJoin(items, eq(items.id, physicalParts.itemId))
       .where(and(...conditions))
 
     const results = []

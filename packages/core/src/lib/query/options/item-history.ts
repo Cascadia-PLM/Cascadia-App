@@ -6,28 +6,27 @@ import { qk } from '../keys'
 import { apiFetch } from '@/lib/api/client'
 
 /**
- * Every revision of one item lineage, newest first.
+ * One item's history, resolved against a version context.
  *
- * Keyed by master id rather than by the id of the revision being viewed, so
- * the timeline is shared by every revision page of the same lineage and is
- * refreshed by any write that names `items` — releasing an ECO adds a
- * revision without the timeline knowing to ask again.
+ * Addressed by the id of the revision being viewed, but not scoped to it: the
+ * server resolves that item's master id first and returns every version of the
+ * lineage in its design, newest first. This is the revision timeline as much as
+ * the per-item one. Keyed beneath the item.
  */
-export function itemRevisionHistoryQuery<T>(
-  masterId: string,
-  designId?: string,
+export function itemHistoryQuery<T>(
+  itemId: string,
+  search: string,
   enabled = true,
 ) {
   return queryOptions({
-    queryKey: qk.collection('items', 'revisions', { masterId, designId }),
-    queryFn: async (): Promise<Array<T>> => {
-      const search = new URLSearchParams({ masterId })
-      if (designId) search.set('designId', designId)
-      const result = await apiFetch<{ data: { revisions?: Array<T> } }>(
-        `/api/v1/items/history?${search}`,
+    queryKey: qk.sub('items', itemId, 'history', search || undefined),
+    queryFn: async (): Promise<T> => {
+      const suffix = search ? `?${search}` : ''
+      const result = await apiFetch<{ data: T }>(
+        `/api/v1/items/${itemId}/history${suffix}`,
       )
-      return result.data.revisions ?? []
+      return result.data
     },
-    enabled: enabled && Boolean(masterId),
+    enabled: enabled && Boolean(itemId),
   })
 }

@@ -89,7 +89,7 @@ npm install
 cp .env.example .env
 # Edit .env with your database credentials
 
-# Set up database (pre-1.0: push the schema directly, no migration files)
+# Set up database (dev: diff-apply the schema directly)
 npm run db:push
 npm run db:seed
 
@@ -215,9 +215,9 @@ npm run build         # Build for production
 npm run serve         # Preview production build
 
 # Database
-npm run db:push       # Push schema directly (the pre-1.0 path: dev, CI, compose)
-npm run db:generate   # Mint migration SQL (unused pre-1.0 — no committed migrations)
-npm run db:migrate    # Run pending migrations (none exist pre-1.0)
+npm run db:push       # Diff-apply schema directly (dev/CI/demo only)
+npm run db:generate   # Mint migration SQL into apps/cascadia/drizzle/ (CI drift gate)
+npm run db:migrate    # Apply committed migrations (the upgrade path for released installs)
 npm run db:studio     # Open Drizzle Studio GUI
 npm run db:seed       # Minimal seed (admin, roles, program, standard library)
 npm run db:reset      # Truncate all tables only
@@ -282,8 +282,8 @@ NODE_ENV=development
 Optional:
 
 ```
-FILE_STORAGE_PATH=/path/to/vault  # Default: ./vault-storage
-RABBITMQ_URL=amqp://localhost     # For background jobs
+VAULT_ROOT=/path/to/vault   # Default: ./vault (a DB storage setting overrides)
+RABBITMQ_URL=amqp://localhost  # For background jobs
 ```
 
 There is no session secret to configure: sessions are opaque random tokens

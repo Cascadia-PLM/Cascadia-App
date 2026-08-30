@@ -33,6 +33,7 @@ import {
   items,
   workflowApprovalVotes,
   workflowDefinitions,
+  workflowInstances,
 } from '@/lib/db/schema'
 import { takeFirst } from '@/lib/db/take-first'
 
@@ -1072,6 +1073,68 @@ describe('WorkflowService', () => {
       })
     })
 
+    /**
+     * A Driven lifecycle mints a new `items` row per release, and
+     * (item_number, revision, design_id, item_type) is unique — so a revision
+     * scheme that never advances makes the second release of any item a
+     * unique violation inside the merge transaction. The configuration is
+     * refused at save time instead.
+     */
+    describe("revision scheme 'none' on a Driven lifecycle", () => {
+      const noneScheme = { type: 'none' } as const
+      const states = [
+        { id: 'draft', name: 'Draft', isInitial: true },
+        { id: 'released', name: 'Released' },
+      ]
+
+      it('is rejected at the lifecycle level', () => {
+        const result = WorkflowService.validateDefinition({
+          name: 'Driven None',
+          lifecycleType: 'Driven',
+          states,
+          transitions: [],
+          revisionScheme: noneScheme,
+        } as any)
+
+        expect(result.valid).toBe(false)
+        expect(result.errors.map((e) => e.code)).toContain(
+          'NONE_SCHEME_ON_DRIVEN',
+        )
+      })
+
+      it('is accepted on a Free lifecycle, which updates items in place', () => {
+        const result = WorkflowService.validateDefinition({
+          name: 'Free None',
+          lifecycleType: 'Free',
+          states,
+          transitions: [],
+          revisionScheme: noneScheme,
+        } as any)
+
+        expect(result.errors.map((e) => e.code)).not.toContain(
+          'NONE_SCHEME_ON_DRIVEN',
+        )
+      })
+
+      it('is accepted as a phase-level override on a Driven lifecycle', () => {
+        // Phase overrides are read only by the promote path, which updates the
+        // item in place and mints no row.
+        const result = WorkflowService.validateDefinition({
+          name: 'Driven Phase None',
+          lifecycleType: 'Driven',
+          states: states.map((s) => ({ ...s, phaseId: 'p1' })),
+          transitions: [],
+          phases: [
+            { id: 'p1', name: 'Service', order: 0, revisionScheme: noneScheme },
+          ],
+        } as any)
+
+        expect(result.errors.map((e) => e.code)).not.toContain(
+          'NONE_SCHEME_ON_DRIVEN',
+        )
+      })
+    })
+
     describe('transition hardening (WI-1.2 / WI-1.4)', () => {
       async function setupInstance() {
         const user = await insertTestUser(testDb.db)
@@ -1138,6 +1201,12 @@ describe('WorkflowService', () => {
         expect(blocked.success).toBe(false)
         expect(blocked.error).toMatch(/release .* already in progress/i)
 
+        // The claim was taken a moment ago, so it is live and the CAS refuses
+        // to hand it to anyone else. The next test is the other half of this
+        // pair: the identical call *succeeds* once the same claim has aged
+        // past RELEASE_CLAIM_TIMEOUT_MS. Age is the only thing separating
+        // them, which is what makes the timeout the whole of the takeover
+        // policy — read them together.
         const second = await WorkflowService.claimRelease(instance.id, 'draft')
         expect(second.claimed).toBe(false)
 
@@ -1148,6 +1217,40 @@ describe('WorkflowService', () => {
           user.id,
         )
         expect(after.success).toBe(true)
+      })
+
+      it('takes over a release claim that has gone stale', async () => {
+        // The other half of the pair above. `releaseClaim` is only ever called
+        // by the process that took the claim, so a process that dies between
+        // claiming and closing clears nothing — without the staleness arm of
+        // the CAS its instance would be wedged permanently, unable to
+        // transition and unable to be released. Backdating `releasingAt` past
+        // the timeout is what that crash looks like from the database's side.
+        const { instance } = await setupInstance()
+
+        const first = await WorkflowService.claimRelease(instance.id, 'draft')
+        expect(first.claimed).toBe(true)
+
+        await testDb.db
+          .update(workflowInstances)
+          .set({
+            releasingAt: new Date(
+              Date.now() - WorkflowService.RELEASE_CLAIM_TIMEOUT_MS - 60_000,
+            ),
+          })
+          .where(eq(workflowInstances.id, instance.id))
+
+        const takeover = await WorkflowService.claimRelease(
+          instance.id,
+          'draft',
+        )
+        expect(takeover.claimed).toBe(true)
+
+        // Taking over re-stamps the claim rather than simply consuming the
+        // stale one: the instance is exclusive again immediately, so a third
+        // caller arriving behind the takeover still loses.
+        const third = await WorkflowService.claimRelease(instance.id, 'draft')
+        expect(third.claimed).toBe(false)
       })
 
       it('refuses a release claim when the expected state is stale', async () => {

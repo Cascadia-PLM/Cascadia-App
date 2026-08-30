@@ -137,17 +137,34 @@ Run Cascadia with a managed PostgreSQL database from AWS RDS, Google Cloud SQL, 
 
 Follow your cloud provider's instructions above to provision the PostgreSQL instance.
 
-### Step 2: Push the Database Schema
+### Step 2: Apply the Database Schema
 
-From your local development machine or a CI/CD pipeline:
+For a fresh database there is nothing to do here. The compose template in Step 3
+boots the app through `scripts/boot-migrate.ts`, which applies the committed
+migrations under `apps/*/drizzle/` and only then starts the server -- so an empty
+cloud database is brought to the current schema the first time the stack comes
+up, and every later boot applies whatever the new image added.
+
+Apply them ahead of the deployment instead -- from your local development
+machine or a CI/CD pipeline -- when you want a failed migration to fail the
+pipeline rather than the container, or when the schema has to be in place before
+anything else is provisioned:
 
 ```bash
 # Set DATABASE_URL to your cloud database
 export DATABASE_URL=postgresql://cascadia:PASSWORD@<cloud-db-host>:5432/cascadia?sslmode=require
 
-# Push the schema
-npm run db:push
+# Apply the committed migrations
+npm run db:migrate
 ```
+
+**Do not point `db:push` at a managed instance.** It diff-applies the declared
+schema by whatever DDL that takes, unattended and unreviewed, which on a
+populated database means dropping columns and tables to make it match the code.
+It is the development, CI, and demo-stack path only.
+[upgrading.md](./upgrading.md) is the canonical statement of the difference, and
+carries the one-time `db:baseline` stamp that a database created before v0.5
+needs before `db:migrate` will touch it.
 
 ### Step 3: Deploy the Application
 
@@ -186,10 +203,10 @@ Start the application:
 docker compose up -d
 ```
 
-The compose file pushes the schema on startup (pre-1.0: no committed migration files):
+The compose file applies committed migrations on startup, through the guard in `scripts/boot-migrate.ts`:
 
 ```yaml
-command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
+command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
 ```
 
 ### Step 4: Seed the Database (Optional)
@@ -225,7 +242,7 @@ services:
     volumes:
       - app_storage:/app/storage
       - app_vault:/app/vault
-    command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
+    command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
 ```
 
 When using S3 storage, the local volumes (`app_storage`, `app_vault`) are not needed for file vault data, but the app may still use them for temporary files.
@@ -355,22 +372,50 @@ cloudsql-proxy:
 - **ETIMEDOUT**: Check VPC configuration, private endpoints, or network peering.
 - **SSL error**: Add `?sslmode=require` or `?sslmode=disable` (for debugging only) to the connection string.
 
-### Schema Push Fails on Deployment
+### The App Refuses to Start With "no migration journal"
 
-If the startup command fails:
+`scripts/boot-migrate.ts` decides between three states before the server starts:
+a journal with entries means apply whatever is new, an empty journal on an empty
+database means apply the baseline and everything after it, and an empty journal
+on a database that _already has tables_ means stop. The third is what a database
+created before v0.5 looks like -- its schema came from `db:push`, which records
+nothing -- and migrating it would replay the baseline over live tables. Boot
+changes nothing, prints this, and exits non-zero:
 
-```bash
-# Run manually
-docker compose exec app npm run db:push
+```
+[boot] REFUSING to start: this database has tables but no migration journal.
 ```
 
-Check that the database user has sufficient privileges (CREATE, ALTER, DROP on the target schema).
+Stamp the baseline as already applied, once, then bring the stack back up. The
+refusing container is restarting on a loop, so run the stamp as a one-off
+container rather than exec-ing into the one that keeps exiting:
+
+```bash
+docker compose run --rm app npx tsx scripts/db-baseline.ts
+docker compose up -d
+```
+
+`db-baseline` verifies that the live schema matches the baseline before stamping
+and refuses if it does not; nothing in the database has been changed by the
+failed boot. Every boot after the stamp applies what is new and does nothing
+when there is nothing new, so restarts stay free. See
+[upgrading.md](./upgrading.md#upgrading-an-install-created-before-v050) for the
+full procedure, including the backup to take first.
+
+### Migrations Fail With a Permissions Error
+
+A failure rather than a refusal usually means the app's database user lacks
+CREATE and ALTER on the target schema. Grant them, or apply the migrations
+separately as in [Step 2](#step-2-apply-the-database-schema) with a role that
+has them.
 
 ### Empty Database After Deployment
 
-If pages return 500 errors with `relation "program_members" does not exist`, the schema was never pushed. Run:
+If pages return 500 errors with `relation "program_members" does not exist`, the
+migrations never ran -- check the app's startup output for the `[boot]` lines
+above. Apply them by hand and seed:
 
 ```bash
-docker compose exec app npm run db:push
+docker compose exec app npm run db:migrate
 docker compose exec app npm run db:seed
 ```

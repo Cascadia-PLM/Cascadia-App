@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { tagged } from '../adapter'
 import { VerificationService } from '@/lib/services/VerificationService'
 import { apiHandler } from '@/lib/api/handler'
+import { requireItemAccess } from '@/lib/auth/access'
 import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('Test Plans')
@@ -39,7 +40,8 @@ app.get(
           },
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const testCases = await VerificationService.getTestCasesForPlan(
           params.id,
         )

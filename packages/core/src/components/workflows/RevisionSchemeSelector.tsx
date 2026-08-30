@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import type { RevisionScheme } from '@/lib/types/lifecycle'
+import { NO_REVISION_MARKER } from '@/lib/types/lifecycle'
 import {
   Input,
   Label,
@@ -40,7 +41,9 @@ function getPreview(type: SchemeType, prefix: string): string {
     case 'prefixed-numeric':
       return `${prefix}1, ${prefix}2, ${prefix}3, ...`
     case 'none':
-      return '(no revisions)'
+      // Not "(no revision)": a released item does carry a revision under this
+      // scheme — the fixed marker — it just never advances.
+      return `${NO_REVISION_MARKER} -> ${NO_REVISION_MARKER} (never advances)`
   }
 }
 

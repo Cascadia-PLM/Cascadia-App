@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
+import { z } from 'zod'
 import { tagged } from '../adapter'
-import type { WorkOrderStatus } from '@/lib/items/types/work-order'
 import { WorkOrderService } from '@/lib/services/WorkOrderService'
 import { WorkOrderInstructionService } from '@/lib/services/WorkOrderInstructionService'
 import { InstructionExecutionService } from '@/lib/services/InstructionExecutionService'
@@ -30,8 +30,84 @@ import {
 } from '@/lib/errors'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { apiHandler } from '@/lib/api/handler'
+import { requireItemAccess, requireWorkOrderAccess } from '@/lib/auth/access'
+
+/** Step data or progress for a run in flight; either half may be sent alone. */
+const executionProgressSchema = z.object({
+  stepData: z
+    .object({ blockId: z.string().min(1).max(200), value: z.unknown() })
+    .optional(),
+  // The traveler's own step count bounds this; the cap is a sanity ceiling.
+  currentStepIndex: z.number().int().min(0).max(10000).optional(),
+})
+
+/** A work-order status change; the lifecycle decides which targets are legal. */
+const workOrderStatusSchema = z.object({
+  status: z.string().min(1).max(100),
+})
+
+/** Closing note on a run that is being completed or abandoned. */
+const executionNotesSchema = z.object({
+  notes: z.string().max(10000).optional(),
+})
+
+/**
+ * A sign-off on a completed run. Rejecting requires a comment — a rejection
+ * the executor cannot read is not feedback.
+ */
+const signOffSchema = z
+  .object({
+    decision: z.enum(['approved', 'rejected']),
+    comments: z.string().max(10000).optional(),
+  })
+  .refine((v) => v.decision !== 'rejected' || Boolean(v.comments), {
+    message: 'Comments are required when rejecting',
+    path: ['comments'],
+  })
 
 const adapt = tagged('Work Orders')
+
+/**
+ * Refuse a work order whose part and whose program name different programs.
+ *
+ * The two instance gates below pass independently, and a caller who
+ * legitimately reaches both programs satisfies both at once — the row that
+ * results is a standing bridge between them. Every member of the program named
+ * then reads the other program's part number, name and revision back through
+ * `GET /work-orders/:id`, and `POST /:id/instructions/populate` walks that
+ * part's BOM and copies its work-instruction snapshots into a traveler they
+ * read through `GET /:id/instructions`. Creation already establishes this
+ * agreement whenever the body omits the program, by deriving it from the part
+ * (`WorkOrderService.deriveProgramId`); this is the same invariant on the path
+ * that supplies one.
+ *
+ * A part whose design has no program — Standard Library, unassigned — derives
+ * `null` and is deliberately exempt. Building a library part from any program
+ * is the one legitimate mixed case, and it is the asymmetry the derivation
+ * already encodes.
+ *
+ * The derived program is not named in the error. It is the one value here the
+ * caller did not supply, and on an update it can come from a part they cannot
+ * reach; the field names are enough to act on.
+ */
+async function requirePartAndProgramAgree(
+  partId: string,
+  programId: string,
+): Promise<void> {
+  const derived = await WorkOrderService.deriveProgramId(partId)
+  if (derived !== null && derived !== programId) {
+    throw new ValidationError(
+      'The part belongs to a different program than the one given',
+      [
+        {
+          field: 'programId',
+          message:
+            'A work order must be filed in the program that owns the part it builds',
+        },
+      ],
+    )
+  }
+}
 
 const app = new Hono()
 
@@ -87,12 +163,36 @@ app.post(
   '/',
   adapt(
     apiHandler(
-      { permission: ['work_orders', 'create'] },
-      async ({ request, user }) => {
-        const body = await request.json()
-        const data = workOrderCreateSchema.parse(body)
+      { permission: ['work_orders', 'create'], body: workOrderCreateSchema },
+      async ({ body, user }) => {
+        // Naming a part is a read of it: the 201 echoes that part's number,
+        // name and revision straight back, so without this gate a caller
+        // holding `work_orders:create` turns a part id into readable part
+        // identity in another program. It is also what stops the derivation
+        // below from parking the order in a program the caller cannot open —
+        // the `programId` gate only inspects a program the body names, and
+        // creation derives one from the part when the body names none.
+        if (body.partId) await requireItemAccess(user.id, body.partId)
 
-        const workOrder = await WorkOrderService.create(data, user.id)
+        // Filing into a program is a program-scoped write — the same check the
+        // list makes for a `?programId=` filter. Without it a caller could
+        // park an order in a program they cannot open, and would then not be
+        // able to read back what they had just created.
+        if (
+          body.programId &&
+          !(await AccessControlService.canAccessProgram(
+            user.id,
+            body.programId,
+          ))
+        ) {
+          throw new PermissionDeniedError('program work orders', 'create')
+        }
+
+        if (body.partId && body.programId) {
+          await requirePartAndProgramAgree(body.partId, body.programId)
+        }
+
+        const workOrder = await WorkOrderService.create(body, user.id)
 
         return new Response(JSON.stringify({ data: { workOrder } }), {
           status: 201,
@@ -109,7 +209,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['work_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const { id } = params
         const workOrder = await WorkOrderService.findById(id)
         if (!workOrder) {
@@ -126,15 +227,54 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['work_orders', 'update'] },
-      async ({ params, request, user }) => {
-        const body = await request.json()
-        const data = workOrderUpdateSchema.parse(body)
+    apiHandler<{ id: string }, z.infer<typeof workOrderUpdateSchema>>(
+      {
+        permission: ['work_orders', 'update'],
+        access: ({ params, user }) =>
+          requireWorkOrderAccess(user.id, params.id),
+        body: workOrderUpdateSchema,
+      },
+      async ({ params, body, user }) => {
+        // Repointing the order at another part is a read of that part, exactly
+        // as it is on create — and the sharper case, because the `access` gate
+        // above already answered "yes" for the row itself, so nothing else
+        // here looks at what the new `partId` names.
+        if (body.partId) await requireItemAccess(user.id, body.partId)
+
+        // Reassignment is a write into the destination program too: the
+        // `access` gate above answered for the program the order is in now,
+        // not the one it is being moved to.
+        if (
+          body.programId &&
+          !(await AccessControlService.canAccessProgram(
+            user.id,
+            body.programId,
+          ))
+        ) {
+          throw new PermissionDeniedError('program work orders', 'update')
+        }
+
+        // Either half of the pair can be moved on its own, so the agreement is
+        // checked against the row as it will be, not as it was sent. Only an
+        // edit that touches one of them is measured: a row that already
+        // disagrees predates this rule, and making its quantity uneditable
+        // would take the repair away from the administrator who has to do it.
+        if (body.partId !== undefined || body.programId !== undefined) {
+          // `access:` above discards its return value; this is the same query
+          // it just ran, which handler.ts blesses re-running for the row.
+          const current = await requireWorkOrderAccess(user.id, params.id)
+          const partId =
+            body.partId === undefined ? current.partId : body.partId
+          const programId =
+            body.programId === undefined ? current.programId : body.programId
+          if (partId && programId) {
+            await requirePartAndProgramAgree(partId, programId)
+          }
+        }
 
         const workOrder = await WorkOrderService.update(
           params.id,
-          data,
+          body,
           user.id,
         )
 
@@ -151,6 +291,7 @@ app.delete(
     apiHandler<{ id: string }>(
       { permission: ['work_orders', 'delete'] },
       async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         await WorkOrderService.delete(params.id, user.id)
 
         return { success: true }
@@ -176,7 +317,8 @@ app.get(
             'List the traveler: instruction instances with derived status and progress',
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const instructions = await WorkOrderInstructionService.list(params.id)
         return { instructions }
       },
@@ -188,17 +330,17 @@ app.get(
 app.post(
   '/:id/instructions',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof instantiateInstructionSchema>>(
       {
+        body: instantiateInstructionSchema,
         permission: ['work_orders', 'update'],
         openapi: {
           summary:
             'Add a traveler line: instantiate a work instruction template (frozen snapshot)',
-          request: { body: { schema: instantiateInstructionSchema } },
         },
       },
-      async ({ params, request, user }) => {
-        const input = instantiateInstructionSchema.parse(await request.json())
+      async ({ body: input, params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const instruction = await WorkOrderInstructionService.instantiate(
           params.id,
           input,
@@ -227,6 +369,7 @@ app.post(
         },
       },
       async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const result = await WorkOrderInstructionService.populate(
           params.id,
           user.id,
@@ -244,18 +387,16 @@ app.post(
 app.put(
   '/:id/instructions',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof reorderInstructionsSchema>>(
       {
+        body: reorderInstructionsSchema,
         permission: ['work_orders', 'update'],
         openapi: {
           summary: 'Reorder traveler lines',
-          request: { body: { schema: reorderInstructionsSchema } },
         },
       },
-      async ({ params, request }) => {
-        const { instructions } = reorderInstructionsSchema.parse(
-          await request.json(),
-        )
+      async ({ body: { instructions }, params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const result = await WorkOrderInstructionService.reorder(
           params.id,
           instructions,
@@ -272,7 +413,8 @@ app.get(
   adapt(
     apiHandler<{ id: string; instructionId: string }>(
       { permission: ['work_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const instruction = await WorkOrderInstructionService.get(
           params.id,
           params.instructionId,
@@ -287,18 +429,19 @@ app.get(
 app.patch(
   '/:id/instructions/:instructionId',
   adapt(
-    apiHandler<{ id: string; instructionId: string }>(
+    apiHandler<
+      { id: string; instructionId: string },
+      z.infer<typeof updateInstructionSchema>
+    >(
       {
+        body: updateInstructionSchema,
         permission: ['work_orders', 'update'],
         openapi: {
           summary: 'Update how many completed runs a traveler line needs',
-          request: { body: { schema: updateInstructionSchema } },
         },
       },
-      async ({ params, request }) => {
-        const { requiredCount } = updateInstructionSchema.parse(
-          await request.json(),
-        )
+      async ({ body: { requiredCount }, params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const instruction =
           await WorkOrderInstructionService.updateRequiredCount(
             params.id,
@@ -315,16 +458,19 @@ app.patch(
 app.post(
   '/:id/instructions/:instructionId/skip',
   adapt(
-    apiHandler<{ id: string; instructionId: string }>(
+    apiHandler<
+      { id: string; instructionId: string },
+      z.infer<typeof skipInstructionSchema>
+    >(
       {
+        body: skipInstructionSchema,
         permission: ['work_orders', 'update'],
         openapi: {
           summary: 'Skip a traveler line (audited; requires a reason)',
-          request: { body: { schema: skipInstructionSchema } },
         },
       },
-      async ({ params, request, user }) => {
-        const { reason } = skipInstructionSchema.parse(await request.json())
+      async ({ body: { reason }, params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const instruction = await WorkOrderInstructionService.skip(
           params.id,
           params.instructionId,
@@ -343,7 +489,8 @@ app.post(
   adapt(
     apiHandler<{ id: string; instructionId: string }>(
       { permission: ['work_orders', 'update'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const instruction = await WorkOrderInstructionService.unskip(
           params.id,
           params.instructionId,
@@ -366,7 +513,8 @@ app.post(
             'Re-freeze a traveler line from its template (only while unexecuted)',
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const instruction = await WorkOrderInstructionService.refreshSnapshot(
           params.id,
           params.instructionId,
@@ -383,7 +531,8 @@ app.delete(
   adapt(
     apiHandler<{ id: string; instructionId: string }>(
       { permission: ['work_orders', 'update'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         await WorkOrderInstructionService.remove(
           params.id,
           params.instructionId,
@@ -406,7 +555,8 @@ app.get(
             "Resolve the snapshot's parametric blocks against current part data",
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const line = await WorkOrderInstructionService.getLineRow(
           params.id,
           params.instructionId,
@@ -432,7 +582,8 @@ app.get(
   adapt(
     apiHandler<{ id: string; instructionId: string }>(
       { permission: ['work_instructions', 'read'] },
-      async ({ params, request }) => {
+      async ({ params, request, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         await WorkOrderInstructionService.getLineRow(
           params.id,
           params.instructionId,
@@ -457,22 +608,30 @@ app.get(
 app.post(
   '/:id/instructions/:instructionId/executions',
   adapt(
-    apiHandler<{ id: string; instructionId: string }>(
+    apiHandler<
+      { id: string; instructionId: string },
+      z.infer<typeof startExecutionSchema> | undefined
+    >(
       {
+        // `.optional()`: an unlabelled run sends no body at all, and the
+        // handler used to spell that as `.catch(() => ({}))`. Declared here
+        // instead, so the document says the body is optional and a body that
+        // is present but malformed is a 400 rather than silently an empty one.
+        body: startExecutionSchema.optional(),
         permission: ['work_instructions', 'read'],
         openapi: {
           summary:
             'Start (or resume) a run of a traveler line; auto-starts a Not Started order',
-          request: { body: { schema: startExecutionSchema } },
+          request: { body: { schema: startExecutionSchema, required: false } },
         },
       },
-      async ({ params, request, user }) => {
+      async ({ body, params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         await WorkOrderInstructionService.getLineRow(
           params.id,
           params.instructionId,
         )
-        const body = await request.json().catch(() => ({}))
-        const { unitLabel } = startExecutionSchema.parse(body)
+        const unitLabel = body?.unitLabel
 
         const { execution, resumed } = await InstructionExecutionService.start(
           params.instructionId,
@@ -501,7 +660,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['work_orders', 'read'] },
-      async ({ params, request }) => {
+      async ({ params, request, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const url = new URL(request.url)
         const limit = url.searchParams.get('limit')
           ? parseInt(url.searchParams.get('limit')!)
@@ -527,7 +687,8 @@ app.get(
   adapt(
     apiHandler<{ id: string; executionId: string }>(
       { permission: ['work_instructions', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const execution =
           await InstructionExecutionService.findByIdForWorkOrder(
             params.executionId,
@@ -543,18 +704,22 @@ app.get(
 app.put(
   '/:id/executions/:executionId',
   adapt(
-    apiHandler<{ id: string; executionId: string }>(
-      { permission: ['work_instructions', 'read'] },
-      async ({ params, request }) => {
+    apiHandler<
+      { id: string; executionId: string },
+      z.infer<typeof executionProgressSchema>
+    >(
+      {
+        permission: ['work_instructions', 'read'],
+        access: ({ params, user }) =>
+          requireWorkOrderAccess(user.id, params.id),
+        body: executionProgressSchema,
+      },
+      async ({ params, body }) => {
         await InstructionExecutionService.findByIdForWorkOrder(
           params.executionId,
           params.id,
         )
-        const body = await request.json()
-        const { stepData, currentStepIndex } = body as {
-          stepData?: { blockId: string; value: unknown }
-          currentStepIndex?: number
-        }
+        const { stepData, currentStepIndex } = body
 
         let execution
 
@@ -583,16 +748,21 @@ app.put(
 app.post(
   '/:id/executions/:executionId/complete',
   adapt(
-    apiHandler<{ id: string; executionId: string }>(
-      { permission: ['work_instructions', 'read'] },
-      async ({ params, request, user }) => {
+    apiHandler<
+      { id: string; executionId: string },
+      z.infer<typeof executionNotesSchema>
+    >(
+      {
+        permission: ['work_instructions', 'read'],
+        access: ({ params, user }) =>
+          requireWorkOrderAccess(user.id, params.id),
+        body: executionNotesSchema,
+      },
+      async ({ params, body: { notes }, user }) => {
         await InstructionExecutionService.findByIdForWorkOrder(
           params.executionId,
           params.id,
         )
-        const body = await request.json().catch(() => ({}))
-        const { notes } = body as { notes?: string }
-
         const execution = await InstructionExecutionService.complete(
           params.executionId,
           user.id,
@@ -609,21 +779,24 @@ app.post(
 app.post(
   '/:id/executions/:executionId/abandon',
   adapt(
-    apiHandler<{ id: string; executionId: string }>(
+    apiHandler<
+      { id: string; executionId: string },
+      z.infer<typeof executionNotesSchema>
+    >(
       {
         permission: ['work_instructions', 'read'],
+        access: ({ params, user }) =>
+          requireWorkOrderAccess(user.id, params.id),
+        body: executionNotesSchema,
         openapi: {
           summary: 'Abandon an in-progress run (kept as an Incomplete record)',
         },
       },
-      async ({ params, request, user }) => {
+      async ({ params, body: { notes }, user }) => {
         await InstructionExecutionService.findByIdForWorkOrder(
           params.executionId,
           params.id,
         )
-        const body = await request.json().catch(() => ({}))
-        const { notes } = body as { notes?: string }
-
         const execution = await InstructionExecutionService.abandon(
           params.executionId,
           user.id,
@@ -645,6 +818,7 @@ app.post(
     apiHandler<{ id: string; executionId: string }>(
       { permission: ['work_instructions', 'read'] },
       async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         await InstructionExecutionService.findByIdForWorkOrder(
           params.executionId,
           params.id,
@@ -666,7 +840,8 @@ app.get(
   adapt(
     apiHandler<{ id: string; executionId: string }>(
       { permission: ['work_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         await InstructionExecutionService.findByIdForWorkOrder(
           params.executionId,
           params.id,
@@ -685,30 +860,21 @@ app.get(
 app.post(
   '/:id/executions/:executionId/sign-off',
   adapt(
-    apiHandler<{ id: string; executionId: string }>(
-      { permission: ['work_orders', 'update'] },
-      async ({ params, request, user }) => {
+    apiHandler<
+      { id: string; executionId: string },
+      z.infer<typeof signOffSchema>
+    >(
+      {
+        permission: ['work_orders', 'update'],
+        access: ({ params, user }) =>
+          requireWorkOrderAccess(user.id, params.id),
+        body: signOffSchema,
+      },
+      async ({ params, body: { decision, comments }, user }) => {
         await InstructionExecutionService.findByIdForWorkOrder(
           params.executionId,
           params.id,
         )
-        const body = await request.json()
-        // `decision` is untrusted input, so it is typed as `unknown` until the
-        // check below narrows it. Casting it to the union up front would assert
-        // the very thing this handler is validating.
-        const { decision, comments } = body as {
-          decision?: unknown
-          comments?: string
-        }
-
-        if (decision !== 'approved' && decision !== 'rejected') {
-          throw new ValidationError('Decision must be "approved" or "rejected"')
-        }
-
-        if (decision === 'rejected' && !comments) {
-          throw new ValidationError('Comments are required when rejecting')
-        }
-
         const execution = await InstructionExecutionService.submitSignOff(
           params.executionId,
           user.id,
@@ -728,7 +894,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['work_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const materials = await WorkOrderMaterialService.list(params.id)
         return { materials }
       },
@@ -740,16 +907,16 @@ app.get(
 app.post(
   '/:id/materials',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof consumeMaterialSchema>>(
       {
+        body: consumeMaterialSchema,
         permission: ['work_orders', 'update'],
         openapi: {
           summary: 'Consume material on a work order',
-          request: { body: { schema: consumeMaterialSchema } },
         },
       },
-      async ({ params, request, user }) => {
-        const input = consumeMaterialSchema.parse(await request.json())
+      async ({ body: input, params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const materials = await WorkOrderMaterialService.consume(
           params.id,
           input,
@@ -768,6 +935,7 @@ app.delete(
     apiHandler<{ id: string; edgeId: string }>(
       { permission: ['work_orders', 'update'] },
       async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const materials = await WorkOrderMaterialService.remove(
           params.id,
           params.edgeId,
@@ -785,7 +953,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['work_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const produced = await WorkOrderMaterialService.listProduced(params.id)
         return { produced }
       },
@@ -797,16 +966,16 @@ app.get(
 app.post(
   '/:id/produce',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof produceUnitsSchema>>(
       {
+        body: produceUnitsSchema,
         permission: ['work_orders', 'update'],
         openapi: {
           summary: 'Record serials produced by a work order',
-          request: { body: { schema: produceUnitsSchema } },
         },
       },
-      async ({ params, request, user }) => {
-        const { serialNumbers } = produceUnitsSchema.parse(await request.json())
+      async ({ body: { serialNumbers }, params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         const produced = await WorkOrderMaterialService.produce(
           params.id,
           serialNumbers,
@@ -830,7 +999,8 @@ app.get(
             'Qualification rollup: requirements in scope, evidence, and gaps',
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireWorkOrderAccess(user.id, params.id)
         return QualificationService.rollupForWorkOrder(params.id)
       },
     ),
@@ -841,18 +1011,16 @@ app.get(
 app.put(
   '/:id/status',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['work_orders', 'update'] },
-      async ({ params, request, user }) => {
-        const body = await request.json()
-        const { status } = body as Partial<{ status: WorkOrderStatus }>
-
+    apiHandler<{ id: string }, z.infer<typeof workOrderStatusSchema>>(
+      {
+        permission: ['work_orders', 'update'],
+        access: ({ params, user }) =>
+          requireWorkOrderAccess(user.id, params.id),
         // The target is validated by the lifecycle's own transitions in
         // WorkOrderService.updateStatus; no state list is named here.
-        if (!status || typeof status !== 'string') {
-          throw new ValidationError('status is required')
-        }
-
+        body: workOrderStatusSchema,
+      },
+      async ({ params, body: { status }, user }) => {
         const workOrder = await WorkOrderService.updateStatus(
           params.id,
           status,

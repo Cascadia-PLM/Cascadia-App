@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   Background,
   Controls,
@@ -34,6 +35,7 @@ import type {
 } from '@/lib/services/ThreadComparisonService'
 import type { VersionContext } from '@/lib/services/VersionResolver'
 import { apiFetch } from '@/lib/api/client'
+import { threadComparisonTargetsQuery } from '@/lib/query'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/lib/theme'
 import {
@@ -86,8 +88,6 @@ export function ThreadComparisonDialog({
   const [step, setStep] = useState<WizardStep>('configure')
 
   // Comparison targets (tags, branches, commits)
-  const [targets, setTargets] = useState<ComparisonTargets | null>(null)
-  const [loadingTargets, setLoadingTargets] = useState(false)
 
   // Configuration
   const [beforeContext, setBeforeContext] = useState<VersionContext | null>(
@@ -113,26 +113,11 @@ export function ThreadComparisonDialog({
 
   const nodeTypes = useMemo(() => ({ threadNodeDiff: ThreadNodeDiff }), [])
 
-  // Load comparison targets when dialog opens
-  useEffect(() => {
-    if (open && !targets && !loadingTargets) {
-      setLoadingTargets(true)
-      apiFetch<{ data: ComparisonTargets }>(
-        `/api/v1/thread/${itemId}/comparison-targets`,
-      )
-        .then((response) => {
-          setTargets(response.data)
-        })
-        .catch((err) => {
-          setError(
-            err instanceof Error ? err.message : 'Failed to load targets',
-          )
-        })
-        .finally(() => {
-          setLoadingTargets(false)
-        })
-    }
-  }, [open, itemId, targets, loadingTargets])
+  // What this item can be compared against; asked only while the dialog is
+  // open, and shared with anything else that needs the same list.
+  const { data: targets = null, isFetching: loadingTargets } = useQuery(
+    threadComparisonTargetsQuery<ComparisonTargets>(itemId, open),
+  )
 
   // Toggle domain selection
   const toggleDomain = (domain: ThreadDomain) => {

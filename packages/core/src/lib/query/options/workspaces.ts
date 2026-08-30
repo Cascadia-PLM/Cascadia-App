@@ -4,6 +4,7 @@
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
 import { collectionQuery, entitySubQuery } from './entities'
+import type { ApiData } from '@/lib/api/typed'
 import { apiFetch } from '@/lib/api/client'
 
 /** A workspace branch as the list endpoint returns it, joined to its design. */
@@ -23,15 +24,15 @@ export function workspaceListQuery() {
   return collectionQuery<Workspace>('workspaces', 'workspaces')
 }
 
-export interface WorkspaceDetail extends Workspace {
-  designCode: string
-  headCommitId: string | null
-  baseCommitId: string | null
-  /** Every item on the branch, untouched checkouts included — what convert/merge would carry. */
-  itemCount: number
-  /** Items created on this workspace and existing nowhere else — what deleting it would destroy. */
-  workspaceOnlyItemCount: number
-}
+/**
+ * One workspace with its counts, derived from the OpenAPI contract (FE-7):
+ * the route's documented response IS this type, so the two cannot drift.
+ * Notable fields: `itemCount` is every item on the branch, untouched
+ * checkouts included — what convert/merge would carry; and
+ * `workspaceOnlyItemCount` is items existing nowhere else — what deleting
+ * the workspace would destroy.
+ */
+export type WorkspaceDetail = ApiData<'/api/v1/workspaces/{id}', 'get'>
 
 /**
  * One workspace.

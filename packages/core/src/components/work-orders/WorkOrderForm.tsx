@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import { Loader2, Search } from 'lucide-react'
+import { z } from 'zod'
 import type { WorkOrderCreateInput } from '@/lib/items/types/work-order'
 import {
   Button,
@@ -16,6 +18,9 @@ import {
   SelectValue,
   Textarea,
 } from '@/components/ui'
+import { entityQuery, itemTextSearchQuery, programListQuery } from '@/lib/query'
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
+import { zodValidator } from '@/lib/form-validation'
 
 interface PartSearchResult {
   id: string
@@ -23,6 +28,29 @@ interface PartSearchResult {
   name?: string
   revision: string
 }
+
+/**
+ * A work order is gated on the program it names, and a program-less order is
+ * reachable by an administrator alone. The server derives the program from the
+ * part being built, so a part is enough — but an order with no part has
+ * nothing to derive from, and would land invisible to the person who filed it.
+ * Requiring a program in that case is a client-side rule on purpose: the v1
+ * request body keeps `programId` optional, so the contract stays additive.
+ */
+const workOrderFormSchema = z
+  .object({
+    partId: z.string().nullable(),
+    programId: z.string(),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.partId && !value.programId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['programId'],
+        message: 'Choose a program when no part is selected',
+      })
+    }
+  })
 
 interface WorkOrderFormProps {
   defaultValues?: Partial<WorkOrderCreateInput & { partId: string }>
@@ -38,67 +66,36 @@ export function WorkOrderForm({
   isSubmitting,
 }: WorkOrderFormProps) {
   const [partSearch, setPartSearch] = useState('')
-  const [searchResults, setSearchResults] = useState<Array<PartSearchResult>>(
-    [],
+  // What the user picked in this form, which wins over the prefilled part.
+  // `null` after an explicit Change means "cleared", so the prefilled part
+  // does not come back.
+  const [pickedPart, setPickedPart] = useState<PartSearchResult | null>(null)
+  const [cleared, setCleared] = useState(false)
+
+  const { data: prefilledPart } = useQuery(
+    entityQuery<PartSearchResult>(
+      'parts',
+      defaultValues?.partId ?? '',
+      'part',
+      Boolean(defaultValues?.partId),
+    ),
   )
-  const [searching, setSearching] = useState(false)
-  const [selectedPart, setSelectedPart] = useState<PartSearchResult | null>(
-    null,
+  const selectedPart = pickedPart ?? (cleared ? null : (prefilledPart ?? null))
+
+  const debouncedSearch = useDebouncedValue(partSearch)
+  const { data: searchResults = [], isFetching: searching } = useQuery(
+    itemTextSearchQuery<PartSearchResult>(
+      { q: debouncedSearch, types: ['Part'], limit: 10 },
+      debouncedSearch.length >= 2,
+    ),
   )
 
-  // Load part if defaultValues has partId
-  useEffect(() => {
-    if (defaultValues?.partId && !selectedPart) {
-      fetch(`/api/v1/parts/${defaultValues.partId}`)
-        .then((r) => r.json())
-        .then((data) => {
-          const part = data.data?.part || data.data
-          if (part) {
-            setSelectedPart({
-              id: part.id,
-              itemNumber: part.itemNumber,
-              name: part.name,
-              revision: part.revision,
-            })
-          }
-        })
-        .catch(() => {})
-    }
-  }, [defaultValues?.partId])
-
-  // Part search
-  useEffect(() => {
-    if (partSearch.length < 2) {
-      setSearchResults([])
-      return
-    }
-    const timeout = setTimeout(async () => {
-      setSearching(true)
-      try {
-        const response = await fetch(
-          `/api/v1/items/search?q=${encodeURIComponent(partSearch)}&types=Part&limit=10`,
-        )
-        const data = await response.json()
-        setSearchResults(
-          (data.data?.items || []).map((item: Record<string, unknown>) => ({
-            id: item.id,
-            itemNumber: item.itemNumber,
-            name: item.name,
-            revision: item.revision,
-          })),
-        )
-      } catch {
-        setSearchResults([])
-      } finally {
-        setSearching(false)
-      }
-    }, 300)
-    return () => clearTimeout(timeout)
-  }, [partSearch])
+  const { data: programs = [] } = useQuery(programListQuery())
 
   const form = useForm({
     defaultValues: {
       partId: defaultValues?.partId ?? (null as string | null),
+      programId: defaultValues?.programId ?? '',
       quantity: defaultValues?.quantity ?? 1,
       priority: defaultValues?.priority ?? 'Normal',
       dueDate: defaultValues?.dueDate ?? '',
@@ -107,9 +104,15 @@ export function WorkOrderForm({
       assignedTo: defaultValues?.assignedTo ?? ([] as Array<string>),
       requiresSignOff: defaultValues?.requiresSignOff ?? false,
     },
+    validators: {
+      onSubmit: zodValidator(workOrderFormSchema),
+    },
     onSubmit: async ({ value }) => {
       await onSubmit({
         partId: value.partId,
+        // Empty means "derive it from the part" — the server does that, and
+        // the validator above has already ruled out the part-less case.
+        programId: value.programId || null,
         quantity: value.quantity,
         priority: value.priority,
         dueDate: value.dueDate || null,
@@ -148,7 +151,8 @@ export function WorkOrderForm({
               size="sm"
               className="ml-auto"
               onClick={() => {
-                setSelectedPart(null)
+                setPickedPart(null)
+                setCleared(true)
                 form.setFieldValue('partId', null)
               }}
             >
@@ -175,9 +179,8 @@ export function WorkOrderForm({
                     type="button"
                     className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-sm"
                     onClick={() => {
-                      setSelectedPart(part)
+                      setPickedPart(part)
                       setPartSearch('')
-                      setSearchResults([])
                       form.setFieldValue('partId', part.id)
                     }}
                   >
@@ -192,6 +195,36 @@ export function WorkOrderForm({
           </div>
         )}
       </div>
+
+      {/* Program — what the order is gated on once it exists */}
+      <form.Field name="programId">
+        {(field) => (
+          <FormField
+            label="Program"
+            error={field.state.meta.errors[0]}
+            helpText="Leave unset to inherit the program of the part being built"
+          >
+            <Select
+              value={field.state.value || 'none'}
+              onValueChange={(value) =>
+                field.handleChange(value === 'none' ? '' : value)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select program" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Inherit from part</SelectItem>
+                {programs.map((program) => (
+                  <SelectItem key={program.id} value={program.id}>
+                    {program.code} - {program.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+        )}
+      </form.Field>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Quantity */}

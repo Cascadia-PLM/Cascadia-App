@@ -18,6 +18,31 @@ export interface ProgramCounts {
 const EMPTY_COUNTS: ProgramCounts = { active: 0, onHold: 0, completed: 0 }
 
 /** Every program — the picker/reference list loaded by five routes. */
+/**
+ * The commit graph across a program's designs.
+ *
+ * Keyed beneath the program (and the design subset it covers), so a commit
+ * or release refreshes it.
+ */
+export function programHistoryGraphQuery<T>(
+  programId: string,
+  designIds?: Array<string>,
+  limit = 50,
+) {
+  const ids = designIds && designIds.length > 0 ? designIds.join(',') : ''
+  return queryOptions({
+    queryKey: qk.sub('programs', programId, 'history-graph', { ids, limit }),
+    queryFn: async (): Promise<T> => {
+      const qs = new URLSearchParams({ limit: String(limit) })
+      if (ids) qs.set('designIds', ids)
+      const result = await apiFetch<{ data: T }>(
+        `/api/v1/programs/${programId}/history/graph?${qs}`,
+      )
+      return result.data
+    },
+  })
+}
+
 export function programListQuery() {
   return queryOptions({
     queryKey: qk.list('programs', {}),

@@ -8,6 +8,13 @@ resources:
   - configmap.yaml
   # Note: secrets.yaml must be created from secrets.yaml.example
   # - secrets.yaml
+  #
+  # migrate-job.yaml is deliberately absent. A Job's pod template is immutable,
+  # so listing it here would make every upgrade's `kubectl apply -k .` fail on
+  # that one object instead of re-running the migration. Run it by hand before
+  # this apply — the sequence is in migrate-job.yaml's header and in
+  # docs/deployment/kubernetes.md. Note that the `images:` override below does
+  # not reach it either: pin its tag to match.
   - app/deployment.yaml
   - app/service.yaml
   - app/hpa.yaml

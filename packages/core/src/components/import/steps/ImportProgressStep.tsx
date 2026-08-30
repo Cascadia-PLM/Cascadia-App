@@ -9,6 +9,7 @@ import {
   PartyPopper,
   XCircle,
 } from 'lucide-react'
+import { useMutation } from '@tanstack/react-query'
 import type {
   BomImportResult,
   BomRelationship,
@@ -50,120 +51,124 @@ export function ImportProgressStep({
   const validRows = getValidRows(validatedRows)
   const hasBomRelationships = config.supportsBom && bomRelationships.length > 0
 
-  useEffect(() => {
-    const executeImport = async () => {
-      // Prevent double execution in StrictMode
-      if (hasStarted.current || validRows.length === 0) return
-      hasStarted.current = true
+  // The import is an action, not a read: it lives in a mutation, and the
+  // effect below only fires it once when the step opens.
+  const runImport = useMutation({
+    mutationFn: async () => {
+      // Prepare the import request based on item type
+      let rows: Array<Record<string, unknown>>
+      let requestBody: Record<string, unknown>
 
-      setStatus('importing')
-      setProgress(10)
+      if (itemType === 'Part') {
+        rows = validRows.map((row) => ({
+          itemNumber: row.mappedData.itemNumber as string | undefined,
+          name: row.mappedData.name as string,
+          revision: (row.mappedData.revision as string) || '-',
+          description: row.mappedData.description as string | undefined,
+          partType: row.mappedData.partType as
+            'Manufacture' | 'Purchase' | 'Software' | 'Phantom' | undefined,
+          material: row.mappedData.material as string | undefined,
+          weight: row.mappedData.weight as string | undefined,
+          weightUnit: row.mappedData.weightUnit as string | undefined,
+          cost: row.mappedData.cost as string | undefined,
+          costCurrency: row.mappedData.costCurrency as string | undefined,
+          leadTimeDays: row.mappedData.leadTimeDays as number | undefined,
+          attributes: row.mappedData.attributes as
+            Record<string, string> | undefined,
+        }))
 
-      try {
-        // Prepare the import request based on item type
-        let rows: Array<Record<string, unknown>>
-        let requestBody: Record<string, unknown>
+        // Prepare BOM relationships for API
+        const bomRelationshipsForApi = bomRelationships.map((rel) => ({
+          parentItemNumber: rel.parentItemNumber,
+          childItemNumber: rel.childItemNumber,
+          quantity: rel.quantity,
+          findNumber: rel.findNumber,
+          referenceDesignator: rel.referenceDesignator,
+        }))
 
-        if (itemType === 'Part') {
-          rows = validRows.map((row) => ({
-            itemNumber: row.mappedData.itemNumber as string | undefined,
-            name: row.mappedData.name as string,
-            revision: (row.mappedData.revision as string) || '-',
-            description: row.mappedData.description as string | undefined,
-            partType: row.mappedData.partType as
-              'Manufacture' | 'Purchase' | 'Software' | 'Phantom' | undefined,
-            material: row.mappedData.material as string | undefined,
-            weight: row.mappedData.weight as string | undefined,
-            weightUnit: row.mappedData.weightUnit as string | undefined,
-            cost: row.mappedData.cost as string | undefined,
-            costCurrency: row.mappedData.costCurrency as string | undefined,
-            leadTimeDays: row.mappedData.leadTimeDays as number | undefined,
-            attributes: row.mappedData.attributes as
-              Record<string, string> | undefined,
-          }))
-
-          // Prepare BOM relationships for API
-          const bomRelationshipsForApi = bomRelationships.map((rel) => ({
-            parentItemNumber: rel.parentItemNumber,
-            childItemNumber: rel.childItemNumber,
-            quantity: rel.quantity,
-            findNumber: rel.findNumber,
-            referenceDesignator: rel.referenceDesignator,
-          }))
-
-          requestBody = {
-            designId: context.designId,
-            branchId: context.branchId,
-            rows,
-            bypassBranchProtection: context.designPhase === 'pre-release',
-            bomRelationships:
-              bomRelationshipsForApi.length > 0
-                ? bomRelationshipsForApi
-                : undefined,
-          }
-        } else if (itemType === 'Document') {
-          rows = validRows.map((row) => ({
-            itemNumber: row.mappedData.itemNumber as string | undefined,
-            name: row.mappedData.name as string,
-            revision: (row.mappedData.revision as string) || '-',
-            description: row.mappedData.description as string | undefined,
-            docType: row.mappedData.docType as string | undefined,
-            fileName: row.mappedData.fileName as string | undefined,
-            mimeType: row.mappedData.mimeType as string | undefined,
-            attributes: row.mappedData.attributes as
-              Record<string, string> | undefined,
-          }))
-
-          requestBody = {
-            designId: context.designId,
-            branchId: context.branchId,
-            rows,
-            bypassBranchProtection: context.designPhase === 'pre-release',
-          }
-        } else {
-          // Issue
-          rows = validRows.map((row) => ({
-            itemNumber: row.mappedData.itemNumber as string | undefined,
-            name: row.mappedData.name as string,
-            description: row.mappedData.description as string | undefined,
-            severity: row.mappedData.severity as string | undefined,
-            priority: row.mappedData.priority as string | undefined,
-            category: row.mappedData.category as string | undefined,
-            reportedDate: row.mappedData.reportedDate as string | undefined,
-            resolution: row.mappedData.resolution as string | undefined,
-            rootCause: row.mappedData.rootCause as string | undefined,
-            attributes: row.mappedData.attributes as
-              Record<string, string> | undefined,
-          }))
-
-          requestBody = {
-            programId: context.programId,
-            rows,
-          }
+        requestBody = {
+          designId: context.designId,
+          branchId: context.branchId,
+          rows,
+          bypassBranchProtection: context.designPhase === 'pre-release',
+          bomRelationships:
+            bomRelationshipsForApi.length > 0
+              ? bomRelationshipsForApi
+              : undefined,
         }
+      } else if (itemType === 'Document') {
+        rows = validRows.map((row) => ({
+          itemNumber: row.mappedData.itemNumber as string | undefined,
+          name: row.mappedData.name as string,
+          revision: (row.mappedData.revision as string) || '-',
+          description: row.mappedData.description as string | undefined,
+          docType: row.mappedData.docType as string | undefined,
+          fileName: row.mappedData.fileName as string | undefined,
+          mimeType: row.mappedData.mimeType as string | undefined,
+          attributes: row.mappedData.attributes as
+            Record<string, string> | undefined,
+        }))
 
-        setProgress(30)
+        requestBody = {
+          designId: context.designId,
+          branchId: context.branchId,
+          rows,
+          bypassBranchProtection: context.designPhase === 'pre-release',
+        }
+      } else {
+        // Issue
+        rows = validRows.map((row) => ({
+          itemNumber: row.mappedData.itemNumber as string | undefined,
+          name: row.mappedData.name as string,
+          description: row.mappedData.description as string | undefined,
+          severity: row.mappedData.severity as string | undefined,
+          priority: row.mappedData.priority as string | undefined,
+          category: row.mappedData.category as string | undefined,
+          reportedDate: row.mappedData.reportedDate as string | undefined,
+          resolution: row.mappedData.resolution as string | undefined,
+          rootCause: row.mappedData.rootCause as string | undefined,
+          attributes: row.mappedData.attributes as
+            Record<string, string> | undefined,
+        }))
 
-        // Make the API call using the appropriate endpoint
-        const response = await apiFetch<{ data: { result: BomImportResult } }>(
-          config.apiEndpoint,
-          {
-            method: 'POST',
-            body: JSON.stringify(requestBody),
-          },
-        )
-
-        setProgress(100)
-        setResult(response.data.result)
-        setStatus('complete')
-        onComplete(response.data.result)
-      } catch (err) {
-        setStatus('error')
-        setError(err instanceof Error ? err.message : 'Import failed')
+        requestBody = {
+          programId: context.programId,
+          rows,
+        }
       }
-    }
 
-    executeImport()
+      setProgress(30)
+
+      // Make the API call using the appropriate endpoint
+      const response = await apiFetch<{ data: { result: BomImportResult } }>(
+        config.apiEndpoint,
+        {
+          method: 'POST',
+          body: JSON.stringify(requestBody),
+        },
+      )
+      return response.data.result
+    },
+    onSuccess: (imported) => {
+      setProgress(100)
+      setResult(imported)
+      setStatus('complete')
+      onComplete(imported)
+    },
+    onError: (err: unknown) => {
+      setStatus('error')
+      setError(err instanceof Error ? err.message : 'Import failed')
+    },
+  })
+
+  useEffect(() => {
+    // Prevent double execution in StrictMode
+    if (hasStarted.current || validRows.length === 0) return
+    hasStarted.current = true
+    setStatus('importing')
+    setProgress(10)
+    // Fires exactly once when the step opens, guarded by the ref above.
+    runImport.mutate()
   }, [])
 
   // Render based on status

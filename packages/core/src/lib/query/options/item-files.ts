@@ -36,3 +36,37 @@ export function itemFilesQuery<T>(
     },
   })
 }
+
+/**
+ * The viewable CAD files reachable from an item, in a version context.
+ *
+ * A different endpoint from {@link itemFilesQuery}: `/cad-files` also walks
+ * the item's referenced CAD Documents, so a part with no attachments of its
+ * own still has a model to show. Keyed under the item for the same reason —
+ * invalidating `files` refreshes it — and it replaces a `fetch` in a
+ * `useEffect` that reloaded on every mount and never noticed an upload.
+ */
+export function itemCadFilesQuery<T>(
+  itemId: string | undefined,
+  context: { branchId?: string; mainBranchId?: string } = {},
+  enabled = true,
+) {
+  const search = new URLSearchParams()
+  if (context.branchId) search.set('branchId', context.branchId)
+  if (context.mainBranchId) search.set('mainBranchId', context.mainBranchId)
+  const suffix = search.size > 0 ? `?${search}` : ''
+
+  return queryOptions({
+    queryKey: qk.sub('items', itemId ?? '', 'cad-files', {
+      branchId: context.branchId,
+      mainBranchId: context.mainBranchId,
+    }),
+    queryFn: async (): Promise<Array<T>> => {
+      const result = await apiFetch<{ data: { files?: Array<T> } }>(
+        `/api/v1/items/${itemId}/cad-files${suffix}`,
+      )
+      return result.data.files ?? []
+    },
+    enabled: enabled && Boolean(itemId),
+  })
+}

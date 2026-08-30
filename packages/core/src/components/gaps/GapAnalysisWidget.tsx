@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   AlertCircle,
   CheckCircle2,
@@ -23,7 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
+import { designGapAnalysisQuery } from '@/lib/query'
 import { cn } from '@/lib/utils'
 import { ItemLink } from '@/components/items/ItemLink'
 
@@ -67,27 +67,12 @@ export function GapAnalysisWidget({
   onRunFullAnalysis,
   className = '',
 }: GapAnalysisWidgetProps) {
-  const [result, setResult] = useState<GapAnalysisResult | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    async function fetchGapAnalysis() {
-      setLoading(true)
-      setError(null)
-      try {
-        const response = await apiFetch<{ data: GapAnalysisResult }>(
-          `/api/v1/designs/${designId}/gap-analysis`,
-        )
-        setResult(response.data)
-      } catch (err) {
-        setError('Failed to load gap analysis')
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchGapAnalysis()
-  }, [designId])
+  const {
+    data: result = null,
+    isPending: loading,
+    error: loadError,
+  } = useQuery(designGapAnalysisQuery<GapAnalysisResult>(designId))
+  const error = loadError ? 'Failed to load gap analysis' : null
 
   if (loading) {
     return (

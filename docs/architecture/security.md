@@ -96,17 +96,28 @@ The session token is generated using `@oslojs/encoding` and cryptographically ra
 
 **File**: `packages/core/src/lib/auth/AuthService.ts`
 
-After **10 consecutive failed login attempts**, the account is locked for **15 minutes**:
+After **10 consecutive failed password attempts**, the account is locked for
+**15 minutes**:
 
 ```typescript
-const MAX_FAILED_ATTEMPTS = 10
-const LOCKOUT_DURATION_MINUTES = 15
+AuthService.MAX_FAILED_ATTEMPTS = 10
+AuthService.LOCKOUT_DURATION_MINUTES = 15
 ```
 
 - Failed attempts increment `users.failedLoginAttempts`
 - When threshold is reached, `users.lockedUntil` is set
-- Successful login resets both counters
-- Lockout expiry is checked on every login attempt
+- A successful password check resets both counters
+- Lockout expiry is checked on every attempt
+
+**One budget, not one per endpoint.** Every path that checks an account
+password shares this counter, not just the sign-in form — re-entering a
+password to sign an approval spends from the same ten attempts and can lock the
+account for login. Without that, an attacker holding a stolen session could
+guess a password at leisure against an account the login form would already
+have locked. The cost is the mirror image: someone spraying the signing prompt
+can lock a victim out of signing in, which is the same denial-of-service the
+login endpoint has always carried. The `auth_events` metadata records a
+`source` (`login` or `signature`) so an administrator can tell the two apart.
 
 ### Session Cookie Security
 

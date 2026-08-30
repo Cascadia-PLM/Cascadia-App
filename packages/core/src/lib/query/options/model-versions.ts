@@ -3,48 +3,26 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
+import type { ApiData } from '@/lib/api/typed'
 import { apiFetch } from '@/lib/api/client'
 
 /** Whether a model hangs off the item version itself or a Document it links. */
-export type ModelVersionFileSource = 'direct' | 'cad_doc'
+export type ModelVersionFileSource = ModelVersionFile['source']
+
+/**
+ * One version of an item's master, resolved to its viewable CAD models —
+ * derived from the OpenAPI contract (FE-7). `key` is the stable picker
+ * identity (`current`, `branch:<id>`, `historical:<itemId>`); `files` lists
+ * every viewable model with the default pick first; `file` is the model this
+ * version context would show, or null when it has none.
+ */
+export type ModelVersionEntry = ApiData<
+  '/api/v1/items/{itemId}/model-versions',
+  'get'
+>['versions'][number]
 
 /** One viewable CAD model a version context offers. */
-export interface ModelVersionFile {
-  id: string
-  fileName: string
-  fileType: string
-  hasColors: boolean
-  isPrimaryModel: boolean
-  fileSize: number
-  uploadedAt: string
-  source: ModelVersionFileSource
-  /** The item row the file hangs off — this version, or a linked Document. */
-  sourceItemId: string
-  /** Item number of the linked Document, for `cad_doc` files only. */
-  sourceItemNumber: string | null
-}
-
-/** One version of an item's master, resolved to its viewable CAD models. */
-export interface ModelVersionEntry {
-  /** Stable identity for pickers: `current`, `branch:<id>`, `historical:<itemId>`. */
-  key: string
-  kind: 'current' | 'branch' | 'historical'
-  itemId: string
-  revision: string
-  state: string
-  modifiedAt: string
-  branch: {
-    id: string
-    name: string
-    branchType: string
-    changeOrderItemId: string | null
-    changeOrderNumber: string | null
-  } | null
-  /** Every viewable model this version offers, the default pick first. */
-  files: Array<ModelVersionFile>
-  /** The model this version context would show, or null when it has none. */
-  file: ModelVersionFile | null
-}
+export type ModelVersionFile = ModelVersionEntry['files'][number]
 
 /**
  * Every version of the item's master with the CAD models each offers — the

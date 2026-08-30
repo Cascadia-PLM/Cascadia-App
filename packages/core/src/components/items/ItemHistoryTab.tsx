@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   ArrowUpCircle,
   ChevronDown,
@@ -25,7 +26,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
+import { designBranchesQuery, itemHistoryQuery } from '@/lib/query'
 import { SourceChangesList } from '@/components/software/SourceChangesList'
 
 interface FieldChange {
@@ -264,10 +265,52 @@ export function ItemHistoryTab({
   itemType,
 }: ItemHistoryTabProps) {
   const { resolvePhase } = useLifecyclePhases(itemType)
-  const [loading, setLoading] = useState(true)
-  const [entries, setEntries] = useState<Array<HistoryEntry>>([])
-  const [error, setError] = useState<string | null>(null)
   const [expandedCommits, setExpandedCommits] = useState<Set<string>>(new Set())
+
+  // The main context filters history to the design's main branch, whose id has
+  // to be resolved first; every other context names its own commit, tag, or
+  // branch. This is the same `designs/:id/branches` cache entry the branch
+  // pickers read, so the id is usually already there.
+  const needsMainBranch = versionContext.type === 'main'
+  const { data: branches = [], isPending: resolvingMainBranch } = useQuery(
+    designBranchesQuery<{ id: string; branchType: string }>(
+      designId ?? '',
+      true,
+      needsMainBranch,
+    ),
+  )
+  const mainBranchId = branches.find((b) => b.branchType === 'main')?.id
+
+  const historyParams = new URLSearchParams()
+  if (versionContext.type === 'commit' && versionContext.commitId) {
+    historyParams.set('commitId', versionContext.commitId)
+  } else if (versionContext.type === 'tag' && versionContext.tagId) {
+    historyParams.set('tagId', versionContext.tagId)
+  } else if (versionContext.type === 'branch' && versionContext.branchId) {
+    historyParams.set('branchId', versionContext.branchId)
+  } else if (mainBranchId) {
+    historyParams.set('branchId', mainBranchId)
+  }
+
+  // Held back until the main branch id is known, so the filtered history is
+  // the first thing fetched rather than a correction to an unfiltered one. A
+  // failed branch lookup stops pending and falls through unfiltered, as before.
+  const pendingMainBranch = needsMainBranch && resolvingMainBranch
+  const {
+    data: history,
+    isPending: loadingHistory,
+    error: loadError,
+  } = useQuery(
+    itemHistoryQuery<{ history: Array<HistoryEntry> }>(
+      itemId,
+      historyParams.toString(),
+      Boolean(designId) && !pendingMainBranch,
+    ),
+  )
+
+  const entries = history?.history ?? []
+  const loading = Boolean(designId) && (pendingMainBranch || loadingHistory)
+  const error = loadError ? 'Failed to load history.' : null
 
   // Toggle expanded state for a commit
   const toggleExpanded = (commitId: string) => {
@@ -281,67 +324,6 @@ export function ItemHistoryTab({
       return next
     })
   }
-
-  // Fetch history based on version context
-  useEffect(() => {
-    async function fetchHistory() {
-      if (!designId) {
-        setLoading(false)
-        return
-      }
-
-      setLoading(true)
-      setError(null)
-      try {
-        // Build the API URL with version context parameters
-        const params = new URLSearchParams()
-
-        // Use the version context to determine which history to show
-        if (versionContext.type === 'commit' && versionContext.commitId) {
-          params.set('commitId', versionContext.commitId)
-        } else if (versionContext.type === 'tag' && versionContext.tagId) {
-          params.set('tagId', versionContext.tagId)
-        } else if (
-          versionContext.type === 'branch' &&
-          versionContext.branchId
-        ) {
-          params.set('branchId', versionContext.branchId)
-        } else if (versionContext.type === 'main') {
-          // For main context, we need to fetch the main branch ID
-          try {
-            const branchesResponse = await apiFetch<{
-              data: { branches: Array<{ id: string; branchType: string }> }
-            }>(`/api/v1/designs/${designId}/branches`)
-            const mainBranch = branchesResponse.data.branches.find(
-              (b) => b.branchType === 'main',
-            )
-            if (mainBranch) {
-              params.set('branchId', mainBranch.id)
-            }
-          } catch {
-            // If we can't fetch branches, continue without branch filter
-            console.warn('Could not fetch main branch ID for history filtering')
-          }
-        }
-
-        const queryString = params.toString()
-        const url = `/api/v1/items/${itemId}/history${queryString ? `?${queryString}` : ''}`
-
-        const response = await apiFetch<{
-          data: { history: Array<HistoryEntry> }
-        }>(url)
-
-        setEntries(response.data.history)
-      } catch {
-        setError('Failed to load history.')
-        setEntries([])
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchHistory()
-  }, [itemId, designId, versionContext])
 
   // Get change type icon
   const getChangeIcon = (changeType: 'added' | 'modified' | 'deleted') => {

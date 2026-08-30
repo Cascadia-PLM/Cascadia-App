@@ -87,21 +87,23 @@ Tool, PhysicalPart, and WorkOrder are additionally **non-versioned** -- they car
 
 ### Type-Specific Fields
 
-| Column                 | Type                   | Description                                         |
-| ---------------------- | ---------------------- | --------------------------------------------------- |
-| `item_id`              | UUID (PK, FK to items) | Links to base item                                  |
-| `description`          | text                   | Detailed part description                           |
-| `part_type`            | varchar(20)            | `Manufacture`, `Purchase`, `Phantom`, or `Software` |
-| `material`             | varchar(100)           | Material specification (e.g., `Aluminum 6061`)      |
-| `weight`               | decimal(10,3)          | Part weight                                         |
-| `weight_unit`          | varchar(10)            | Unit of weight (default: `kg`)                      |
-| `cost`                 | decimal(10,2)          | Unit cost                                           |
-| `cost_currency`        | varchar(3)             | Currency code (default: `USD`)                      |
-| `lead_time_days`       | integer                | Procurement/manufacturing lead time                 |
-| `quantity_on_hand`     | integer                | Current inventory count                             |
-| `reorder_point`        | integer                | Inventory reorder threshold                         |
-| `location`             | text                   | Storage location                                    |
-| `last_inventory_check` | timestamp              | Last physical inventory date                        |
+| Column           | Type                   | Description                                         |
+| ---------------- | ---------------------- | --------------------------------------------------- |
+| `item_id`        | UUID (PK, FK to items) | Links to base item                                  |
+| `description`    | text                   | Detailed part description                           |
+| `part_type`      | varchar(20)            | `Manufacture`, `Purchase`, `Phantom`, or `Software` |
+| `material`       | varchar(100)           | Material specification (e.g., `Aluminum 6061`)      |
+| `weight`         | decimal(10,3)          | Part weight                                         |
+| `weight_unit`    | varchar(10)            | Unit of weight (default: `kg`)                      |
+| `cost`           | decimal(10,2)          | Unit cost                                           |
+| `cost_currency`  | varchar(3)             | Currency code (default: `USD`)                      |
+| `lead_time_days` | integer                | Procurement/manufacturing lead time                 |
+
+Mutable stock state (quantity on hand, storage location, reorder points)
+deliberately has no columns here: quantity and value belong to the ERP, and a
+versioned engineering row is the wrong home for it. See
+[physical-parts-and-traceability.md](./physical-parts-and-traceability.md) for
+what Cascadia does track (identity and genealogy).
 
 ### Part Types
 

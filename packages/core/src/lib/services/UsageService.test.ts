@@ -29,11 +29,20 @@ import {
 import { eq } from 'drizzle-orm'
 import { UsageService } from './UsageService'
 import { DesignService } from './DesignService'
+import { BranchService } from './BranchService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { documents, items, parts, programs } from '@/lib/db/schema'
-import { NotFoundError } from '@/lib/errors'
+import {
+  branchItems,
+  branches,
+  documents,
+  itemRelationships,
+  items,
+  parts,
+  programs,
+} from '@/lib/db/schema'
+import { NotFoundError, ValidationError } from '@/lib/errors'
 import { takeFirst } from '@/lib/db/take-first'
 import '@/lib/items/registerItemTypes.server'
 
@@ -311,14 +320,9 @@ describe('UsageService', () => {
       expect(copyFieldNames).toContain('costCurrency')
       expect(copyFieldNames).toContain('leadTimeDays')
 
-      // Check usage-only fields
-      const usageOnlyFields = config.fields.filter(
-        (f) => f.mode === 'usage-only',
-      )
-      const usageOnlyNames = usageOnlyFields.map((f) => f.fieldName)
-      expect(usageOnlyNames).toContain('quantityOnHand')
-      expect(usageOnlyNames).toContain('reorderPoint')
-      expect(usageOnlyNames).toContain('location')
+      // Part has no usage-only fields since the inventory columns were
+      // removed (DBI-7) — the mode's exemplars live on Requirement and Task.
+      expect(config.fields.some((f) => f.mode === 'usage-only')).toBe(false)
     })
 
     it('returns Document inheritance config with all inherit-mode fields', () => {
@@ -559,10 +563,6 @@ describe('UsageService', () => {
       // Inherit-mode fields are also initially copied
       expect(result.typeData!.material).toBe('Titanium')
       expect(result.typeData!.weight).toBe('5.000')
-      // Usage-only fields should be null
-      expect(result.typeData!.quantityOnHand).toBeNull()
-      expect(result.typeData!.reorderPoint).toBeNull()
-      expect(result.typeData!.location).toBeNull()
     })
 
     it('allows overriding name on usage creation', async () => {
@@ -792,10 +792,9 @@ describe('UsageService', () => {
       expect(resolved!.fieldSources!.weight).toBe('inherited')
       expect(resolved!.fieldSources!.description).toBe('inherited')
 
-      // Copy and usage-only fields should show 'local' source
+      // Copy-mode fields should show 'local' source
       expect(resolved!.fieldSources!.partType).toBe('local')
       expect(resolved!.fieldSources!.cost).toBe('local')
-      expect(resolved!.fieldSources!.quantityOnHand).toBe('local')
     })
 
     it('returns null for non-existent usage', async () => {
@@ -874,6 +873,207 @@ describe('UsageService', () => {
       // Copy fields should retain usage's own copied values, not the updated definition
       expect((resolved as any).partType).toBe('Manufacture')
       expect((resolved as any).cost).toBe('75.00')
+    })
+  })
+
+  describe('createUsageSubtree', () => {
+    // The multi-entity write behind POST /designs/:id/items (DESIGNS-1):
+    // data-integrity gate — one transaction over usage creation, branch
+    // tracking, and BOM-edge remapping.
+    let targetDesignId: string
+
+    beforeEach(async () => {
+      const target = await DesignService.create(
+        {
+          programId,
+          name: 'Target Design',
+          code: `TGT-${Date.now()}-${Math.random().toString(36).slice(2, 4).toUpperCase()}`,
+          designType: 'Engineering',
+        },
+        user.id,
+      )
+      targetDesignId = target.id
+    })
+
+    async function bomEdge(sourceId: string, targetId: string) {
+      await testDb.db.insert(itemRelationships).values({
+        sourceId,
+        targetId,
+        relationshipType: 'BOM',
+        quantity: '2',
+        createdBy: user.id,
+      })
+    }
+
+    /** assembly → child → grandchild, plus assembly → external (library). */
+    async function seedSubtree() {
+      const assembly = await insertDefinitionPart({ name: 'Assembly' })
+      const child = await insertDefinitionPart({ name: 'Child' })
+      const grandchild = await insertDefinitionPart({ name: 'Grandchild' })
+      await bomEdge(assembly.id, child.id)
+      await bomEdge(child.id, grandchild.id)
+      return { assembly, child, grandchild }
+    }
+
+    it('creates a usage in the target design for every subtree definition, with BOM edges remapped', async () => {
+      const { assembly, child, grandchild } = await seedSubtree()
+
+      const result = await UsageService.createUsageSubtree(
+        { rootItemId: assembly.id, targetDesignId },
+        user.id,
+      )
+
+      expect(result.items).toHaveLength(3)
+      // Every definition in the subtree has exactly one usage in the target.
+      for (const definition of [assembly, child, grandchild]) {
+        const usages = await UsageService.getUsagesOfDefinition(definition.id, {
+          designId: targetDesignId,
+        })
+        expect(usages).toHaveLength(1)
+      }
+
+      // The BOM edges connect the NEW usage ids, not the definitions.
+      const usageOf = new Map(result.items.map((u) => [u.usageOf, u.id]))
+      const newAsm = usageOf.get(assembly.id)!
+      const newChild = usageOf.get(child.id)!
+      const newGrand = usageOf.get(grandchild.id)!
+      const edges = await testDb.db
+        .select()
+        .from(itemRelationships)
+        .where(eq(itemRelationships.sourceId, newAsm))
+      expect(edges).toHaveLength(1)
+      expect(edges[0]!.targetId).toBe(newChild)
+      expect(edges[0]!.quantity).toBe('2.000')
+      const childEdges = await testDb.db
+        .select()
+        .from(itemRelationships)
+        .where(eq(itemRelationships.sourceId, newChild))
+      expect(childEdges).toHaveLength(1)
+      expect(childEdges[0]!.targetId).toBe(newGrand)
+    })
+
+    it('tracks created usages on the ECO branch with changeType added when branchId is supplied', async () => {
+      const { assembly } = await seedSubtree()
+      const mainBranch = await BranchService.getMainBranch(targetDesignId)
+      const ecoBranch = takeFirst(
+        await testDb.db
+          .insert(branches)
+          .values({
+            designId: targetDesignId,
+            name: `eco-${Date.now()}`,
+            branchType: 'eco',
+            headCommitId: mainBranch!.headCommitId,
+            createdBy: user.id,
+          })
+          .returning(),
+      )
+
+      const result = await UsageService.createUsageSubtree(
+        {
+          rootItemId: assembly.id,
+          targetDesignId,
+          branchId: ecoBranch.id,
+        },
+        user.id,
+      )
+
+      for (const usage of result.items) {
+        const tracking = await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.itemMasterId, usage.masterId))
+        expect(tracking).toHaveLength(1)
+        expect(tracking[0]!.branchId).toBe(ecoBranch.id)
+        expect(tracking[0]!.changeType).toBe('added')
+      }
+    })
+
+    it('tracks on the main branch untyped when no branchId is supplied', async () => {
+      const { assembly } = await seedSubtree()
+      const mainBranch = await BranchService.getMainBranch(targetDesignId)
+
+      const result = await UsageService.createUsageSubtree(
+        { rootItemId: assembly.id, targetDesignId },
+        user.id,
+      )
+
+      const rootUsage = result.items.find((u) => u.usageOf === assembly.id)!
+      const tracking = await testDb.db
+        .select()
+        .from(branchItems)
+        .where(eq(branchItems.itemMasterId, rootUsage.masterId))
+      expect(tracking).toHaveLength(1)
+      expect(tracking[0]!.branchId).toBe(mainBranch!.id)
+      expect(tracking[0]!.changeType).toBeNull()
+    })
+
+    it('reuses a pre-existing usage of a subtree child instead of duplicating it', async () => {
+      const { assembly, child } = await seedSubtree()
+      // The child already lives in the target design.
+      const preExisting = await UsageService.createUsage(
+        { definitionId: child.id, targetDesignId },
+        user.id,
+      )
+
+      const result = await UsageService.createUsageSubtree(
+        { rootItemId: assembly.id, targetDesignId },
+        user.id,
+      )
+
+      // The child was not copied again...
+      const childUsages = await UsageService.getUsagesOfDefinition(child.id, {
+        designId: targetDesignId,
+      })
+      expect(childUsages).toHaveLength(1)
+      expect(childUsages[0]!.id).toBe(preExisting.usage.id)
+      // ...and the copied assembly's BOM edge points at the reused usage.
+      const newAsm = result.items.find((u) => u.usageOf === assembly.id)!
+      const edges = await testDb.db
+        .select()
+        .from(itemRelationships)
+        .where(eq(itemRelationships.sourceId, newAsm.id))
+      expect(edges).toHaveLength(1)
+      expect(edges[0]!.targetId).toBe(preExisting.usage.id)
+    })
+
+    it('throws ValidationError when the root already has a usage in the target design', async () => {
+      const { assembly } = await seedSubtree()
+      await UsageService.createUsage(
+        { definitionId: assembly.id, targetDesignId },
+        user.id,
+      )
+
+      await expect(
+        UsageService.createUsageSubtree(
+          { rootItemId: assembly.id, targetDesignId },
+          user.id,
+        ),
+      ).rejects.toThrow(ValidationError)
+    })
+
+    it('rolls the whole copy back when a mid-copy write fails', async () => {
+      const { assembly, child, grandchild } = await seedSubtree()
+
+      // A branchId that exists in no branches row: the first branch-tracking
+      // insert violates its FK after the first usage row is already written —
+      // the transaction must take everything with it.
+      await expect(
+        UsageService.createUsageSubtree(
+          {
+            rootItemId: assembly.id,
+            targetDesignId,
+            branchId: randomUUID(),
+          },
+          user.id,
+        ),
+      ).rejects.toThrow()
+
+      for (const definition of [assembly, child, grandchild]) {
+        const usages = await UsageService.getUsagesOfDefinition(definition.id, {
+          designId: targetDesignId,
+        })
+        expect(usages).toHaveLength(0)
+      }
     })
   })
 })

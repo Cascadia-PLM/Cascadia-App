@@ -25,6 +25,15 @@ export interface AIProviderConfig {
   apiKey?: string
   model: string
   baseURL?: string
+  /**
+   * Monthly token ceiling (input + output summed over `ai_usage_logs`) for
+   * the scope this settings row governs. On a program's settings row the
+   * budget bounds that program's month-to-date spend; on the global row it
+   * bounds the whole instance's. Unset or 0 means unlimited — and no usage
+   * query runs at all. Enforced in `loadProviderConfig`, so every AI
+   * surface (chat, design engine, enrichment) passes through it.
+   */
+  monthlyTokenBudget?: number
 }
 
 export interface ToolCall {
@@ -155,6 +164,14 @@ export const aiUsageLogs = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
 
+    // Program the session was scoped to when the tokens were spent. This is
+    // what a per-program budget (AI-2) sums over, so it lives on the log row
+    // rather than being joined through the session — a session's program can
+    // change, and spend must stay attributed to where it happened.
+    programId: uuid('program_id').references(() => programs.id, {
+      onDelete: 'set null',
+    }),
+
     // Tool execution details
     toolName: varchar('tool_name', { length: 100 }),
     toolParams: jsonb('tool_params'),
@@ -181,6 +198,44 @@ export const aiUsageLogs = pgTable(
     index('ai_usage_logs_session_id_idx').on(table.sessionId),
     index('ai_usage_logs_user_id_idx').on(table.userId),
     index('ai_usage_logs_timestamp_idx').on(table.timestamp),
+    // The budget query shape: spend for one program over a time window
+    index('ai_usage_logs_program_id_timestamp_idx').on(
+      table.programId,
+      table.timestamp,
+    ),
+  ],
+)
+
+// AI write confirmations — server-issued single-use tokens (AI-3).
+//
+// A write tool's preview response carries an opaque token; executing the
+// write requires redeeming it. The row binds the token to the user, the
+// tool, and a hash of the exact preview parameters, so the confirmed call
+// must be the previewed call — a model (or a prompt-injected agent) cannot
+// skip the preview or confirm something different from what was shown.
+// Tokens are stored hashed (like sessions), expire quickly, and redeem
+// atomically exactly once.
+export const aiWriteConfirmations = pgTable(
+  'ai_write_confirmations',
+  {
+    // sha256 hex of the raw token; the raw token never touches the database.
+    tokenHash: varchar('token_hash', { length: 64 }).primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    toolName: varchar('tool_name', { length: 100 }).notNull(),
+    // sha256 hex of the canonical JSON of the previewed input (minus the
+    // confirmation fields themselves).
+    paramsHash: varchar('params_hash', { length: 64 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+  },
+  (table) => [
+    // Opportunistic cleanup scans by expiry.
+    index('ai_write_confirmations_expires_at_idx').on(table.expiresAt),
   ],
 )
 

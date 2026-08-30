@@ -69,16 +69,16 @@ export class TestDatabase {
   private config: Required<TestDatabaseConfig>
 
   constructor(config: TestDatabaseConfig = {}) {
-    // Use the same database as the app - we use transaction rollback for isolation
-    const connectionUrl =
-      config.connectionUrl ||
-      process.env.TEST_DATABASE_URL ||
-      process.env.DATABASE_URL
+    // TEST_DATABASE_URL only. DATABASE_URL used to be the fallback here, which
+    // is how a test run reached the development database; global-setup.ts
+    // refuses to start without the test one, so by the time this constructor
+    // runs it is set.
+    const connectionUrl = config.connectionUrl || process.env.TEST_DATABASE_URL
     if (!connectionUrl) {
       throw new Error(
-        'TestDatabase: DATABASE_URL is not set and no connectionUrl was ' +
-          'passed. Refusing to fall back to an implicit database — set ' +
-          'DATABASE_URL in .env (vitest.config.ts loads it) or export it.',
+        'TestDatabase: TEST_DATABASE_URL is not set and no connectionUrl was ' +
+          'passed. Refusing to fall back to an implicit database — see the ' +
+          'provisioning steps in packages/core/src/__tests__/README.md.',
       )
     }
     this.config = {
@@ -239,41 +239,6 @@ export class TestDatabase {
       return result
     } finally {
       await this.rollback()
-    }
-  }
-
-  /**
-   * Clean all data from tables (use with caution!)
-   * Respects foreign key constraints by truncating in correct order
-   */
-  async cleanAllTables(): Promise<void> {
-    if (!this._db) {
-      throw new Error('TestDatabase not initialized. Call setup() first.')
-    }
-
-    // Truncate in order that respects foreign key constraints
-    const tablesToClean = [
-      'change_order_impact_reports',
-      'change_order_risks',
-      'change_order_impacted_items',
-      'change_order_affected_items',
-      'item_relationships',
-      'files',
-      'tasks',
-      'requirements',
-      'change_orders',
-      'documents',
-      'parts',
-      'items',
-      'sessions',
-      'auth_events',
-      'user_roles',
-      'users',
-      'roles',
-    ]
-
-    for (const table of tablesToClean) {
-      await this._db.execute(sql.raw(`TRUNCATE TABLE "${table}" CASCADE`))
     }
   }
 }

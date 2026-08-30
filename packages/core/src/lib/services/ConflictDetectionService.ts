@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { and, eq, inArray, isNotNull, isNull, ne } from 'drizzle-orm'
+import {
+  and,
+  eq,
+  getTableColumns,
+  inArray,
+  isNotNull,
+  isNull,
+  ne,
+} from 'drizzle-orm'
 import { db } from '../db'
 import {
   branchItems,
@@ -18,7 +26,28 @@ import { bomStructureOf, describeBomStructure } from './item-structure'
 import '../items/type-handlers/init'
 import { BranchService } from './BranchService'
 import { RevisionService } from './RevisionService'
+import type { TransactionClient } from '../db'
 import { takeFirst } from '@/lib/db/take-first'
+
+/**
+ * Columns that identify an item version rather than describe it.
+ *
+ * A rebase writes merged *content* onto a working copy; it never re-identifies
+ * it. `revision` in particular: the branch working revision is what the merge
+ * recognises as unreleased, and the merged data carries the *base's* revision,
+ * so copying it across would release the branch copy by accident.
+ */
+const VERSION_IDENTITY_COLUMNS = new Set([
+  'id',
+  'masterId',
+  'itemNumber',
+  'revision',
+  'designId',
+  'itemType',
+  'isCurrent',
+  'createdAt',
+  'createdBy',
+])
 
 // ============================================
 // Types
@@ -937,6 +966,73 @@ export class ConflictDetectionService {
   }
 
   /**
+   * Is this branch item's current version the branch's own working copy?
+   *
+   * Two shapes reach a rebase. After `createRevisionWorkingCopy` — the normal
+   * post-remediation shape, minted eagerly when an item joins an ECO —
+   * `currentItemId` points at a branch-local row carrying
+   * `getWorkingRevision(branchId)`, and `baseItemId` at the released row it was
+   * taken from. After a plain checkout, `currentItemId` still points at the
+   * shared released row, which is also the base.
+   *
+   * Only the first shape can be written in place; the second must mint the
+   * working copy, because the row it points at belongs to main.
+   */
+  private static isBranchWorkingCopy(
+    bi: typeof branchItems.$inferSelect,
+    ourItem: { id: string; revision: string },
+  ): boolean {
+    return (
+      RevisionService.isWorkingRevision(ourItem.revision) &&
+      ourItem.id !== bi.baseItemId
+    )
+  }
+
+  /**
+   * Write merged values onto the working copy that already exists.
+   *
+   * The alternative — inserting a second row carrying the same
+   * `-{branchId8}` revision — violates the items unique constraint
+   * (`item_number`, `revision`, `design_id`, `item_type`, NULLS NOT
+   * DISTINCT), so the whole rebase rolled back as a 23505. That is the defect
+   * this exists to close: the *normal* case, an item revised on an ECO branch,
+   * could never be rebased or pulled at all.
+   *
+   * Only content moves. `VERSION_IDENTITY_COLUMNS` are excluded because a
+   * rebase re-bases a version, it does not re-identify one, and the merged
+   * record carries the base's identity by construction.
+   */
+  private static async applyMergedDataInPlace(
+    tx: TransactionClient,
+    workingCopy: { id: string; itemType: string },
+    mergedData: Record<string, unknown>,
+    userId: string,
+  ): Promise<void> {
+    const itemColumns = getTableColumns(items)
+    const coreUpdate: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(mergedData)) {
+      if (key in itemColumns && !VERSION_IDENTITY_COLUMNS.has(key)) {
+        coreUpdate[key] = value
+      }
+    }
+    coreUpdate.modifiedAt = new Date()
+    coreUpdate.modifiedBy = userId
+
+    await tx.update(items).set(coreUpdate).where(eq(items.id, workingCopy.id))
+
+    // Extension fields, the same way `saveChanges` writes them. Every type
+    // handler's `update` recognises the keys its `insert` does — the two
+    // exceptions (physical-part's identity columns, work-instruction's
+    // attachment-derived ones) are not extension-row columns at all, so
+    // nothing the insert path would have carried is dropped here.
+    const typeHandler = getTypeHandler(workingCopy.itemType)
+    if (typeHandler) {
+      const { itemId: _ignored, ...extFields } = mergedData
+      await typeHandler.update(workingCopy.id, extFields, tx)
+    }
+  }
+
+  /**
    * Rebase an item's working copy onto a newer base version
    * Attempts auto-merge for non-conflicting changes
    */
@@ -1030,7 +1126,37 @@ export class ConflictDetectionService {
           // If conflict and no resolution, keep newBase value
         }
 
-        // Create new item with merged data.
+        // The branch already has its own working copy in the normal case
+        // (createRevisionWorkingCopy mints one when the item joins the ECO).
+        // Update it; do not insert a second row carrying the same working
+        // revision, which the items unique constraint rejects.
+        if (this.isBranchWorkingCopy(bi, ourItem)) {
+          await this.applyMergedDataInPlace(tx, ourItem, mergedData, userId)
+
+          // No file or relationship copy: the working copy already owns the
+          // branch's files and edges, and copying them from itself is both
+          // wrong and a no-op at best.
+
+          // currentItemId is unchanged — the row it names is the row just
+          // written. Only the base moves.
+          await tx
+            .update(branchItems)
+            .set({ baseItemId: newBaseItemId })
+            .where(eq(branchItems.id, branchItemId))
+
+          return {
+            success: true,
+            itemMasterId: bi.itemMasterId,
+            newBaseItemId,
+            autoMerged: fieldConflicts.length === 0,
+            manualResolutionRequired: false,
+            fieldConflicts: [],
+          }
+        }
+
+        // Plain-checkout shape: currentItemId is still the shared released
+        // row, which belongs to main. Mint the branch's working copy.
+        //
         // The branch-scoped working revision is what the merge recognises as
         // an unreleased copy; a literal 'DRAFT' sent it down the legacy path
         // where it minted a revision from that marker text.
@@ -1163,6 +1289,25 @@ export class ConflictDetectionService {
 
         // Start with main's data (main wins for all fields)
         const mergedData: Record<string, unknown> = { ...mainData }
+
+        // Same two shapes as rebaseItem, and the same reason: inserting a
+        // second row with this branch's working revision collides on the
+        // items unique constraint whenever the working copy already exists.
+        if (this.isBranchWorkingCopy(bi, ourItem)) {
+          await this.applyMergedDataInPlace(tx, ourItem, mergedData, userId)
+
+          // Files and relationships stay where they are — see rebaseItem.
+          await tx
+            .update(branchItems)
+            .set({ baseItemId: mainItemId })
+            .where(eq(branchItems.id, branchItemId))
+
+          return {
+            success: true,
+            itemMasterId: bi.itemMasterId,
+            newItemId: ourItem.id,
+          }
+        }
 
         // Create new item version with merged data
         const newWorkingCopy = takeFirst(

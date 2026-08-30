@@ -54,6 +54,63 @@ export function workInstructionAlertCountQuery(id: string) {
   })
 }
 
+/** One parametric block's resolved value, or why it has none. */
+export interface ResolvedParametricValue {
+  value: string | null
+  available: boolean
+}
+
+/**
+ * Parametric block values resolved against the parts they reference, keyed
+ * by block id. Enabled only when the template actually has parametric
+ * blocks — the presenter skips the request entirely otherwise.
+ */
+export function workInstructionResolvedParametricsQuery(
+  id: string,
+  enabled = true,
+) {
+  return queryOptions({
+    queryKey: qk.sub('work-instructions', id, 'resolve-parametric'),
+    queryFn: async (): Promise<Record<string, ResolvedParametricValue>> => {
+      const result = await apiFetch<{
+        data: { resolved?: Record<string, ResolvedParametricValue> }
+      }>(`/api/v1/work-instructions/${id}/resolve-parametric`)
+      return result.data.resolved ?? {}
+    },
+    enabled: enabled && Boolean(id),
+  })
+}
+
+/** One change alert plus the panel's pending/total counters. */
+export interface WorkInstructionAlerts<T> {
+  alerts: Array<T>
+  counts: { pending: number; total: number }
+}
+
+/**
+ * The change alerts raised against this template, optionally filtered by
+ * status. Keyed beneath the work instruction alongside the badge's count
+ * query, so acknowledging an alert refreshes both.
+ */
+export function workInstructionAlertsQuery<T>(id: string, status?: string) {
+  return queryOptions({
+    queryKey: qk.sub('work-instructions', id, 'alerts', status ?? undefined),
+    queryFn: async (): Promise<WorkInstructionAlerts<T>> => {
+      const suffix = status ? `?status=${status}` : ''
+      const result = await apiFetch<{
+        data: {
+          alerts?: Array<T>
+          counts?: { pending: number; total: number }
+        }
+      }>(`/api/v1/work-instructions/${id}/alerts${suffix}`)
+      return {
+        alerts: result.data.alerts ?? [],
+        counts: result.data.counts ?? { pending: 0, total: 0 },
+      }
+    },
+  })
+}
+
 /** Which work-order travelers have instantiated this template. */
 export function workInstructionUsageQuery<T>(id: string) {
   return queryOptions({

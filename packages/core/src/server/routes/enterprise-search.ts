@@ -9,7 +9,6 @@ import { readableItemTypes } from './items'
 import type { GlobalSearchCriteria } from '@/lib/items/services/ItemService'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { ItemTypeRegistry } from '@/lib/items/registry'
-import { ValidationError } from '@/lib/errors'
 import { db } from '@/lib/db'
 import { designs } from '@/lib/db/schema/designs'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
@@ -64,21 +63,30 @@ async function enrichWithDesignMetadata<T extends { designId?: string | null }>(
 }
 
 /**
- * Search across multiple item types and return grouped results
+ * Search across multiple item types and return grouped results.
+ *
+ * `readableTypes` is the type-level permission gate: the fan-out below reads
+ * every registered item type, so it has to start from the types this caller
+ * may read rather than from the whole registry. `accessScope` is the
+ * orthogonal design-level gate — a readable type still only yields rows from
+ * designs the caller can reach.
  */
 async function searchAcrossTypes(
   query: string,
   userId: string,
-  limit: number = 50,
+  readableTypes: Set<string>,
+  limit: number,
 ): Promise<{
   results: Array<{ itemType: string; items: Array<any>; total: number }>
 }> {
-  // Get all registered item types
-  const allTypes = ItemTypeRegistry.getAllTypes()
+  // The registered item types this caller may read — the same gate the
+  // '/results' sibling applies, so the two search surfaces agree.
+  const allTypes = ItemTypeRegistry.getAllTypes().filter((typeConfig) =>
+    readableTypes.has(typeConfig.name),
+  )
 
-  // Get accessible design IDs for the user
-  const accessDesignIds =
-    await AccessControlService.getAccessibleDesignIds(userId)
+  // Bound every per-type search to what this caller may read.
+  const accessScope = await AccessControlService.getAccessScope(userId)
 
   // Search each item type in parallel
   const searchPromises = allTypes.map(async (typeConfig) => {
@@ -86,7 +94,7 @@ async function searchAcrossTypes(
       const results = await ItemService.searchByItemNumber(query, {
         limit,
         itemTypes: [typeConfig.name],
-        accessDesignIds,
+        accessScope,
       })
 
       // Enrich with design metadata
@@ -129,6 +137,18 @@ async function searchAcrossTypes(
 
   return { results: filteredResults }
 }
+
+/**
+ * The header typeahead's query. `limit` is capped exactly as the '/results'
+ * sibling caps its own; it was an unbounded `parseInt`, so `limit=abc`
+ * reached the per-type searches as NaN (a SQL error swallowed into empty
+ * groups) and `limit=1000000` reached them whole. The default stays at this
+ * endpoint's historical 50 rather than the grid's 25.
+ */
+const typeaheadQuerySchema = z.object({
+  q: z.string().trim().min(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+})
 
 const resultsQuerySchema = z.object({
   globalSearch: z.string().optional(),
@@ -188,17 +208,13 @@ app.get(
   '/',
   adapt(
     apiHandler({}, async ({ request, user }) => {
-      const url = new URL(request.url)
-      const query = url.searchParams.get('q')
-      const limit = parseInt(url.searchParams.get('limit') || '50')
+      const { q, limit } = parseQuery(request, typeaheadQuerySchema)
 
-      if (!query || query.trim().length === 0) {
-        throw new ValidationError('Search query (q) is required')
-      }
+      // Permission gate: the grouped fan-out is bounded by the types the
+      // user may read, matching '/results'.
+      const readable = await readableItemTypes(user.id)
 
-      const results = await searchAcrossTypes(query.trim(), user.id, limit)
-
-      return results
+      return await searchAcrossTypes(q, user.id, readable, limit)
     }),
   ),
 )
@@ -248,13 +264,12 @@ app.get(
           ? requestedTypes.filter((t) => readable.has(t))
           : [...readable]
 
-        const accessDesignIds =
-          await AccessControlService.getAccessibleDesignIds(user.id)
+        const accessScope = await AccessControlService.getAccessScope(user.id)
 
         return await ItemService.searchGlobal({
           query: params.globalSearch,
           itemTypes,
-          accessDesignIds,
+          accessScope,
           limit: params.limit,
           offset: params.offset,
           sortField: params.sortField,

@@ -3,12 +3,15 @@
 
 import {
   boolean,
+  check,
+  index,
   integer,
   jsonb,
   pgEnum,
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
   varchar,
@@ -149,20 +152,43 @@ export const workflowHistoryRelations = relations(
  * Definition-level approvers for workflow states
  * Defines which users or roles are required to approve at each state
  */
-export const workflowStateApprovers = pgTable('workflow_state_approvers', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  workflowDefinitionId: uuid('workflow_definition_id')
-    .notNull()
-    .references(() => workflowDefinitions.id, { onDelete: 'cascade' }),
-  stateId: varchar('state_id', { length: 100 }).notNull(),
-  approverType: varchar('approver_type', { length: 10 }).notNull(), // 'user' | 'role'
-  approverId: uuid('approver_id').notNull(), // References users.id or roles.id
-  isRequired: boolean('is_required').default(true).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  createdBy: uuid('created_by').references(() => users.id),
-})
+export const workflowStateApprovers = pgTable(
+  'workflow_state_approvers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    workflowDefinitionId: uuid('workflow_definition_id')
+      .notNull()
+      .references(() => workflowDefinitions.id, { onDelete: 'cascade' }),
+    stateId: varchar('state_id', { length: 100 }).notNull(),
+    approverType: varchar('approver_type', { length: 10 }).notNull(), // 'user' | 'role'
+    approverId: uuid('approver_id').notNull(), // References users.id or roles.id
+    isRequired: boolean('is_required').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    createdBy: uuid('created_by').references(() => users.id),
+  },
+  (table) => [
+    /**
+     * One row per approver per state. `addStateApprover` selected for an
+     * existing row and then inserted, which is the same TOCTOU window
+     * `uq_wf_votes_active` closes one table over: two requests that both read
+     * "not an approver yet" both wrote.
+     *
+     * A duplicate is not cosmetic. `getApprovalStatus` counts required
+     * approvers to build the quorum and counts the approvals it has against
+     * it, and the satisfaction loop collapses the twins while the counts do
+     * not — so the state reports "1 of 2 approved" with one person named
+     * twice, and stays there however many times that person approves.
+     */
+    unique('uq_wf_state_approvers').on(
+      table.workflowDefinitionId,
+      table.stateId,
+      table.approverType,
+      table.approverId,
+    ),
+  ],
+)
 
 /**
  * Instance-level approvers for workflow states (WI-4.2)
@@ -188,33 +214,79 @@ export const workflowInstanceApprovers = pgTable(
       .notNull(),
     createdBy: uuid('created_by').references(() => users.id),
   },
+  (table) => [
+    /**
+     * The instance-scoped half of the same rule. Nothing here was
+     * check-then-insert — `setInstanceApprovers` deletes the state's rows and
+     * rewrites them — but the table feeds the identical count through
+     * `getEffectiveApprovers`, so a duplicate arriving by any route (a
+     * repeated pair inside one request's array, a structure copy replayed)
+     * inflates the same quorum. The constraint is what makes that
+     * unrepresentable rather than merely unlikely.
+     */
+    unique('uq_wf_instance_approvers').on(
+      table.workflowInstanceId,
+      table.stateId,
+      table.approverType,
+      table.approverId,
+    ),
+  ],
 )
 
 /**
  * Instance-level approval votes
  * Tracks actual approvals submitted by users for workflow instances
  */
-export const workflowApprovalVotes = pgTable('workflow_approval_votes', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  workflowInstanceId: uuid('workflow_instance_id')
-    .notNull()
-    .references(() => workflowInstances.id, { onDelete: 'cascade' }),
-  stateId: varchar('state_id', { length: 100 }).notNull(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id),
-  roleId: uuid('role_id'), // If approving on behalf of a role
-  vote: varchar('vote', { length: 10 }).notNull(), // 'approved' | 'rejected'
-  comments: text('comments'),
-  votedAt: timestamp('voted_at', { withTimezone: true }).defaultNow().notNull(),
-  /**
-   * Set when a backward (rework) transition invalidates this vote.
-   * Votes are never deleted — an append-only audit trail has to show that a
-   * vote existed and was superseded, not that it vanished (decision D7). Only
-   * rows with supersededAt IS NULL count toward approval gating.
-   */
-  supersededAt: timestamp('superseded_at', { withTimezone: true }),
-})
+export const workflowApprovalVotes = pgTable(
+  'workflow_approval_votes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    workflowInstanceId: uuid('workflow_instance_id')
+      .notNull()
+      .references(() => workflowInstances.id, { onDelete: 'cascade' }),
+    stateId: varchar('state_id', { length: 100 }).notNull(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    roleId: uuid('role_id'), // If approving on behalf of a role
+    vote: varchar('vote', { length: 10 }).notNull(), // 'approved' | 'rejected'
+    comments: text('comments'),
+    votedAt: timestamp('voted_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    /**
+     * Set when a backward (rework) transition invalidates this vote.
+     * Votes are never deleted — an append-only audit trail has to show that a
+     * vote existed and was superseded, not that it vanished (decision D7). Only
+     * rows with supersededAt IS NULL count toward approval gating.
+     */
+    supersededAt: timestamp('superseded_at', { withTimezone: true }),
+  },
+  (table) => [
+    /**
+     * One live vote per person per state. Partial on supersededAt IS NULL,
+     * because that is exactly the set approval gating counts — a rework
+     * supersedes the old vote and the same user must be able to vote again.
+     *
+     * The service checked for an existing vote before inserting, which is a
+     * TOCTOU window: two requests that both read "no vote yet" both insert,
+     * and getApprovalStatus then counts one person twice toward a quorum.
+     */
+    uniqueIndex('uq_wf_votes_active')
+      .on(table.workflowInstanceId, table.stateId, table.userId)
+      .where(sql`${table.supersededAt} IS NULL`),
+    // Every read of this table is by instance and state.
+    index('idx_wf_votes_instance_state').on(
+      table.workflowInstanceId,
+      table.stateId,
+    ),
+    /**
+     * Gating counts `vote = 'approved'` rows, so a value outside this pair is
+     * not a bad label — it is an approval that silently does not count.
+     */
+    check('ck_wf_votes_value', sql`${table.vote} IN ('approved', 'rejected')`),
+  ],
+)
 
 // Approval table relations
 export const workflowStateApproversRelations = relations(

@@ -6,6 +6,22 @@
  *
  * Used by CommitGraphView, EcoHistoryGraphView, and ProgramHistoryGraphView
  * to avoid duplicating dagre layout, branch column assignment, and edge styling.
+ *
+ * **On `dagre@0.8.5` having no release since 2019 — that is a decision, not
+ * neglect.** It was spiked against the alternatives and the answer was to keep
+ * it: dagre is unmaintained but *finished* — pure JS, no network, no
+ * filesystem, so effectively no security surface — at 30 KB gzipped and 14 ms
+ * over nine call sites. elkjs is 432 KB and 6.6x slower, and its async API is
+ * one `default-lifecycles.ts` cannot take, because that module computes its
+ * editor positions at load time. d3-dag is a viable synchronous swap and stays
+ * open at low priority; it is simply not worth six files of churn.
+ *
+ * Three things reopen it: a CVE against dagre, graphlib or lodash that matters
+ * in a browser; a layout requirement dagre cannot meet (nested nodes, port
+ * constraints, orthogonal routing — that is elkjs's real argument, and it
+ * should be made by a feature rather than a version number); or npm
+ * unpublishing it, in which case vendoring dagre + graphlib is ~1,300 lines
+ * and smaller than any migration.
  */
 
 import dagre from 'dagre'

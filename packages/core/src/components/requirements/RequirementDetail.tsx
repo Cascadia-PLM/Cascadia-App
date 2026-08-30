@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -53,8 +53,8 @@ import {
 } from '@/components/ui'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
 import { itemAtContextQuery } from '@/lib/query/options/items'
+import { branchDetailQuery } from '@/lib/query'
 import { StateBadge } from '@/components/items/StateBadge'
 import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
 import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
@@ -141,6 +141,20 @@ const createEmptyRequirement = (): Requirement => ({
   parentRequirementId: undefined,
 })
 
+/**
+ * The tabs this detail view renders. The route's search schema derives its
+ * `tab` enum from this list, so the URL contract and the rendered tabs
+ * cannot drift apart; the `onValueChange` cast below is the one seam where
+ * Radix's `string` meets it, and the triggers are rendered from the same
+ * source of truth.
+ */
+export const REQUIREMENT_DETAIL_TABS = [
+  'details',
+  'relationships',
+  'history',
+] as const
+export type RequirementDetailTab = (typeof REQUIREMENT_DETAIL_TABS)[number]
+
 interface RequirementDetailProps {
   /** Called after a lifecycle transition succeeds (refresh the item) */
   onTransitioned?: () => void
@@ -151,8 +165,8 @@ interface RequirementDetailProps {
   onDelete?: () => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
-  activeTab?: 'details' | 'relationships' | 'history'
-  onTabChange?: (tab: string) => void
+  activeTab?: RequirementDetailTab
+  onTabChange?: (tab: RequirementDetailTab) => void
 }
 
 export function RequirementDetail({
@@ -167,6 +181,7 @@ export function RequirementDetail({
   activeTab = 'details',
   onTabChange,
 }: RequirementDetailProps) {
+  const navigate = useNavigate()
   const { confirm } = useAlertDialog()
   const { handleError } = useErrorHandler()
 
@@ -182,8 +197,6 @@ export function RequirementDetail({
   const [isEditing, setIsEditing] = useState(isCreateMode)
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false)
   const [isImpactDialogOpen, setIsImpactDialogOpen] = useState(false)
-
-  const [isWorkspaceContext, setIsWorkspaceContext] = useState(false)
 
   const { context, contextLabel, isEditable, setContext } = useVersionContext(
     isCreateMode ? undefined : requirement.designId,
@@ -209,23 +222,15 @@ export function RequirementDetail({
     }
   }, [initialRequirement])
 
-  useEffect(() => {
-    async function checkIfWorkspace() {
-      if (context.type !== 'branch' || !context.branchId) {
-        setIsWorkspaceContext(false)
-        return
-      }
-      try {
-        const response = await apiFetch<{
-          data: { branch: { branchType: string } }
-        }>(`/api/v1/branches/${context.branchId}`)
-        setIsWorkspaceContext(response.data.branch.branchType === 'workspace')
-      } catch {
-        setIsWorkspaceContext(false)
-      }
-    }
-    if (!isCreateMode) checkIfWorkspace()
-  }, [context, isCreateMode])
+  // Whether the viewing context is a workspace branch, read through the
+  // shared cache rather than a per-mount probe.
+  const { data: contextBranch } = useQuery(
+    branchDetailQuery(
+      context.type === 'branch' ? (context.branchId ?? '') : '',
+      !isCreateMode,
+    ),
+  )
+  const isWorkspaceContext = contextBranch?.branchType === 'workspace'
 
   const currentRequirement = isCreateMode ? requirement : displayedRequirement
 
@@ -271,10 +276,25 @@ export function RequirementDetail({
     setIsEditing(true)
   }
 
-  const handleCheckoutComplete = (branchId: string) => {
-    setContext({ type: 'branch', branchId })
+  // A revise-checkout mints the branch working copy up front, so editing
+  // belongs on that row's page: the route-level save PUTs the id in the URL,
+  // and from the released row's page it would target the released version and
+  // be refused (BRANCH_PROTECTED). Navigate there in edit mode — the route
+  // component survives the param change, so `isEditing` carries over and the
+  // working copy drops into the form via the initialRequirement effect above.
+  const handleCheckoutComplete = (branchId: string, currentItemId?: string) => {
     setRequirement(currentRequirement)
     setIsEditing(true)
+    if (currentItemId && currentItemId !== currentRequirement.id) {
+      navigate({
+        to: '/requirements/$id',
+        params: { id: currentItemId },
+        search: { branch: branchId, tab: activeTab },
+      } as any)
+      return
+    }
+    // The branch still tracks the row this page is showing — edit in place.
+    setContext({ type: 'branch', branchId })
   }
 
   const handleSave = async () => {
@@ -513,7 +533,11 @@ export function RequirementDetail({
           <WorkspaceContextBanner branchId={context.branchId} />
         )}
 
-      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => onTabChange?.(value as RequirementDetailTab)}
+        className="w-full"
+      >
         <TabsList
           className={`grid w-full ${isCreateMode ? 'grid-cols-2' : 'grid-cols-3'}`}
         >

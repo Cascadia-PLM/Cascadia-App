@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { BadgeCheck, GitCompareArrows, GitFork, Package } from 'lucide-react'
@@ -29,8 +29,10 @@ import { PageContainer } from '@/components/layout'
 import { DigitalThreadNavigator } from '@/components/thread'
 import { FileList, FileUploadZone } from '@/components/vault'
 import { apiFetch } from '@/lib/api/client'
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import {
+  itemTextSearchQuery,
   physicalPartAsBuiltQuery,
   physicalPartDetailQuery,
   physicalPartEvidenceQuery,
@@ -208,32 +210,19 @@ function EvidenceCard({ physicalPartId }: { physicalPartId: string }) {
   const { handleError, showSuccess } = useErrorHandler()
   const invalidate = useInvalidateResources()
   const [query, setQuery] = useState('')
-  const [suggestions, setSuggestions] = useState<Array<RequirementSuggestion>>(
-    [],
-  )
   const [note, setNote] = useState('')
 
   const { data } = useQuery(physicalPartEvidenceQuery(physicalPartId))
 
-  useEffect(() => {
-    if (query.trim().length < 2) {
-      setSuggestions([])
-      return
-    }
-    const t = setTimeout(async () => {
-      try {
-        const result = await apiFetch<{
-          data: { items: Array<RequirementSuggestion> }
-        }>(
-          `/api/v1/items/search?q=${encodeURIComponent(query.trim())}&types=Requirement&limit=8`,
-        )
-        setSuggestions(result.data.items)
-      } catch {
-        setSuggestions([])
-      }
-    }, 250)
-    return () => clearTimeout(t)
-  }, [query])
+  // Requirement typeahead. The debounced term is part of the key, so typing
+  // costs one request per pause and re-typing a term resolves from cache.
+  const debouncedQuery = useDebouncedValue(query.trim(), 250)
+  const { data: suggestions = [] } = useQuery(
+    itemTextSearchQuery<RequirementSuggestion>(
+      { q: debouncedQuery, types: ['Requirement'], limit: 8 },
+      debouncedQuery.length >= 2,
+    ),
+  )
 
   const handleAdd = async (requirement: RequirementSuggestion) => {
     try {
@@ -247,7 +236,6 @@ function EvidenceCard({ physicalPartId }: { physicalPartId: string }) {
       showSuccess('Evidence linked', `${requirement.itemNumber} evidenced`)
       setQuery('')
       setNote('')
-      setSuggestions([])
       await invalidate('physical-parts')
     } catch (error) {
       handleError(error)

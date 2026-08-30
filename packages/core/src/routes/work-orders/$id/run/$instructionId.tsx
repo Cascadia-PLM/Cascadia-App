@@ -2,18 +2,27 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import { CheckCircle, ChevronLeft, ChevronRight, LogOut, X } from 'lucide-react'
+import {
+  AlertTriangle,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  X,
+} from 'lucide-react'
 import type {
   InstructionSnapshot,
   WorkOrderInstruction,
 } from '@/lib/items/types/work-order'
 import type { StepContentBlock } from '@/lib/items/types/work-instruction'
+import type { ResolvedParametricValue } from '@/components/work-orders/useInstructionRun'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useInvalidateResources, workOrderInstructionQuery } from '@/lib/query'
+import { useInstructionRun } from '@/components/work-orders/useInstructionRun'
 
 type SnapshotOperation = InstructionSnapshot['operations'][number]
 type SnapshotStep = InstructionSnapshot['steps'][number]
@@ -36,12 +45,19 @@ function ExecutionDataField({
   block,
   value,
   onChange,
+  disabled,
 }: {
   block: StepContentBlock
   value: unknown
   onChange: (value: unknown) => void
+  /** True until the server has a run to record entries against. */
+  disabled: boolean
 }) {
   const fieldLabel = block.fieldLabel || 'Data Field'
+  // The checkbox branch already had one; these are the same id, shared so the
+  // numeric and text inputs get a real label association and the pass/fail
+  // button pair gets a group name.
+  const fieldId = `field-${block.id}`
 
   switch (block.fieldType) {
     case 'numeric': {
@@ -55,22 +71,27 @@ function ExecutionDataField({
 
       return (
         <div className="space-y-1">
-          <label className="text-lg font-medium text-emerald-700 dark:text-emerald-300">
+          <label
+            htmlFor={fieldId}
+            className="text-lg font-medium text-emerald-700 dark:text-emerald-300"
+          >
             {fieldLabel}
             {block.fieldRequired && (
               <span className="text-red-500 ml-1">*</span>
             )}
           </label>
           <input
+            id={fieldId}
             type="number"
             value={numVal}
             onChange={(e) =>
               onChange(e.target.value ? Number(e.target.value) : '')
             }
+            disabled={disabled}
             min={block.fieldValidation?.min}
             max={block.fieldValidation?.max}
             className={cn(
-              'w-full px-4 py-3 text-xl border rounded-lg bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none',
+              'w-full px-4 py-3 text-xl border rounded-lg bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none disabled:opacity-50',
               isOutOfRange
                 ? 'border-red-500 focus:ring-red-500'
                 : 'border-slate-300 dark:border-slate-600',
@@ -103,11 +124,12 @@ function ExecutionDataField({
             type="checkbox"
             checked={!!value}
             onChange={(e) => onChange(e.target.checked)}
-            className="h-6 w-6 rounded border-slate-300 dark:border-slate-700 text-emerald-600 dark:text-emerald-400 focus:ring-emerald-500"
-            id={`field-${block.id}`}
+            disabled={disabled}
+            className="h-6 w-6 rounded border-slate-300 dark:border-slate-700 text-emerald-600 dark:text-emerald-400 focus:ring-emerald-500 disabled:opacity-50"
+            id={fieldId}
           />
           <label
-            htmlFor={`field-${block.id}`}
+            htmlFor={fieldId}
             className="text-lg font-medium text-emerald-700 dark:text-emerald-300"
           >
             {fieldLabel}
@@ -120,17 +142,24 @@ function ExecutionDataField({
     case 'passFail':
       return (
         <div className="space-y-2">
-          <label className="text-lg font-medium text-emerald-700 dark:text-emerald-300">
+          {/* Two buttons, not a labelable control: `htmlFor` has nothing to
+              point at, so the pair is a labelled group instead. */}
+          <span
+            id={fieldId}
+            className="block text-lg font-medium text-emerald-700 dark:text-emerald-300"
+          >
             {fieldLabel}
             {block.fieldRequired && (
               <span className="text-red-500 ml-1">*</span>
             )}
-          </label>
-          <div className="flex gap-3">
+          </span>
+          <div className="flex gap-3" role="group" aria-labelledby={fieldId}>
             <button
               type="button"
               onClick={() => onChange('pass')}
+              disabled={disabled}
               className={cn(
+                'disabled:opacity-50',
                 'flex-1 py-3 px-6 rounded-lg text-lg font-semibold transition-colors',
                 value === 'pass'
                   ? 'bg-green-500 text-white'
@@ -142,7 +171,9 @@ function ExecutionDataField({
             <button
               type="button"
               onClick={() => onChange('fail')}
+              disabled={disabled}
               className={cn(
+                'disabled:opacity-50',
                 'flex-1 py-3 px-6 rounded-lg text-lg font-semibold transition-colors',
                 value === 'fail'
                   ? 'bg-red-500 text-white'
@@ -157,17 +188,22 @@ function ExecutionDataField({
     default:
       return (
         <div className="space-y-1">
-          <label className="text-lg font-medium text-emerald-700 dark:text-emerald-300">
+          <label
+            htmlFor={fieldId}
+            className="text-lg font-medium text-emerald-700 dark:text-emerald-300"
+          >
             {fieldLabel}
             {block.fieldRequired && (
               <span className="text-red-500 ml-1">*</span>
             )}
           </label>
           <input
+            id={fieldId}
             type="text"
             value={(value as string) || ''}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full px-4 py-3 text-xl border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none"
+            disabled={disabled}
+            className="w-full px-4 py-3 text-xl border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none disabled:opacity-50"
             placeholder="Enter value..."
           />
         </div>
@@ -180,11 +216,13 @@ function ExecutionStepBlockRenderer({
   fieldValues,
   onFieldChange,
   resolvedValues,
+  fieldsDisabled,
 }: {
   block: StepContentBlock
   fieldValues: Record<string, unknown>
   onFieldChange: (blockId: string, value: unknown) => void
-  resolvedValues: Record<string, { value: string | null; available: boolean }>
+  resolvedValues: Record<string, ResolvedParametricValue>
+  fieldsDisabled: boolean
 }) {
   if (block.type === 'text') {
     return (
@@ -251,6 +289,7 @@ function ExecutionStepBlockRenderer({
         block={block}
         value={fieldValues[block.id]}
         onChange={(value) => onFieldChange(block.id, value)}
+        disabled={fieldsDisabled}
       />
     </div>
   )
@@ -279,15 +318,7 @@ function InstructionRunner({
   const navigate = useNavigate()
   const invalidate = useInvalidateResources()
   const { unitLabel } = Route.useSearch()
-  const [currentStepIndex, setCurrentStepIndex] = useState(0)
-  const [executionId, setExecutionId] = useState<string | null>(null)
-  const [fieldValues, setFieldValues] = useState<Record<string, unknown>>({})
-  const [completing, setCompleting] = useState(false)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
-  const [resolvedValues, setResolvedValues] = useState<
-    Record<string, { value: string | null; available: boolean }>
-  >({})
-  const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   const snapshot = instruction.snapshot
 
@@ -341,166 +372,51 @@ function InstructionRunner({
 
   const stepItems = presentationSteps.filter((i) => i.type === 'step')
   const totalSteps = stepItems.length
-  const currentItem = presentationSteps[currentStepIndex]
 
-  // Start or resume a run of this traveler line on mount
-  useEffect(() => {
-    fetch(
-      `/api/v1/work-orders/${workOrderId}/instructions/${instruction.id}/executions`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(unitLabel ? { unitLabel } : {}),
-      },
-    )
-      .then((r) => r.json())
-      .then((data) => {
-        const exec = data.data?.execution
-        if (exec) {
-          setExecutionId(exec.id)
-          if (data.data.resumed) {
-            setCurrentStepIndex(exec.currentStepIndex || 0)
-            // Restore field values from step data
-            const restored: Record<string, unknown> = {}
-            if (exec.stepData) {
-              for (const [key, entry] of Object.entries(exec.stepData)) {
-                restored[key] = (entry as { value: unknown }).value
-              }
-            }
-            setFieldValues(restored)
-          }
-        }
-      })
-      .catch(console.error)
-  }, [workOrderId, instruction.id, unitLabel])
-
-  // Resolve parametric values from the snapshot against current part data
-  useEffect(() => {
-    const hasParametric = sortedSteps.some((step) =>
-      step.content.blocks.some(
-        (b: StepContentBlock) => b.type === 'parametric',
+  const hasParametricBlocks = useMemo(
+    () =>
+      sortedSteps.some((step) =>
+        step.content.blocks.some(
+          (b: StepContentBlock) => b.type === 'parametric',
+        ),
       ),
-    )
-    if (!hasParametric) return
-
-    fetch(
-      `/api/v1/work-orders/${workOrderId}/instructions/${instruction.id}/resolve-parametric`,
-    )
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.data?.resolved) {
-          setResolvedValues(data.data.resolved)
-        }
-      })
-      .catch(() => {})
-  }, [workOrderId, instruction.id, sortedSteps])
-
-  // Save field data (debounced)
-  const saveFieldData = useCallback(
-    (blockId: string, value: unknown) => {
-      if (!executionId) return
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
-      saveTimeoutRef.current = setTimeout(() => {
-        fetch(`/api/v1/work-orders/${workOrderId}/executions/${executionId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            stepData: { blockId, value },
-          }),
-        }).catch(console.error)
-      }, 500)
-    },
-    [executionId, workOrderId],
+    [sortedSteps],
   )
 
-  const handleFieldChange = (blockId: string, value: unknown) => {
-    setFieldValues((prev) => ({ ...prev, [blockId]: value }))
-    saveFieldData(blockId, value)
-  }
-
-  // Save progress when step changes
-  useEffect(() => {
-    if (!executionId) return
-    fetch(`/api/v1/work-orders/${workOrderId}/executions/${executionId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currentStepIndex }),
-    }).catch(console.error)
-  }, [currentStepIndex, executionId, workOrderId])
-
-  const goToNextStep = useCallback(() => {
-    if (currentStepIndex < presentationSteps.length - 1) {
-      setCurrentStepIndex((prev) => prev + 1)
-    }
-  }, [currentStepIndex, presentationSteps.length])
-
-  const goToPreviousStep = useCallback(() => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex((prev) => prev - 1)
-    }
-  }, [currentStepIndex])
-
-  const exitToWorkOrder = useCallback(() => {
+  const exitToWorkOrder = useCallback(async () => {
+    await invalidate('work-orders')
     navigate({
       to: '/work-orders/$id',
       params: { id: workOrderId },
       search: { tab: 'instructions' },
     })
-  }, [navigate, workOrderId])
+  }, [invalidate, navigate, workOrderId])
 
-  const handleComplete = async () => {
-    if (!executionId) return
-    setCompleting(true)
-    try {
-      await fetch(
-        `/api/v1/work-orders/${workOrderId}/executions/${executionId}/complete`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
-        },
-      )
-      await invalidate('work-orders')
-      exitToWorkOrder()
-    } catch {
-      setCompleting(false)
+  const run = useInstructionRun({
+    workOrderId,
+    instructionId: instruction.id,
+    unitLabel,
+    hasParametricBlocks,
+    onExit: exitToWorkOrder,
+  })
+
+  const { currentStepIndex, goToStep } = run
+  const currentItem = presentationSteps[currentStepIndex]
+
+  const goToNextStep = useCallback(() => {
+    if (currentStepIndex < presentationSteps.length - 1) {
+      goToStep(currentStepIndex + 1)
     }
-  }
+  }, [currentStepIndex, goToStep, presentationSteps.length])
+
+  const goToPreviousStep = useCallback(() => {
+    if (currentStepIndex > 0) {
+      goToStep(currentStepIndex - 1)
+    }
+  }, [currentStepIndex, goToStep])
 
   const handleExit = () => {
     setShowExitConfirm(true)
-  }
-
-  // Pause: progress stays saved, the run stays In Progress for resume.
-  const confirmPause = async () => {
-    if (executionId) {
-      await fetch(
-        `/api/v1/work-orders/${workOrderId}/executions/${executionId}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ currentStepIndex }),
-        },
-      ).catch(() => {})
-    }
-    await invalidate('work-orders')
-    exitToWorkOrder()
-  }
-
-  // Abandon: the run is closed out as an Incomplete record.
-  const confirmAbandon = async () => {
-    if (executionId) {
-      await fetch(
-        `/api/v1/work-orders/${workOrderId}/executions/${executionId}/abandon`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ notes: 'Abandoned from runner' }),
-        },
-      ).catch(() => {})
-    }
-    await invalidate('work-orders')
-    exitToWorkOrder()
   }
 
   // Keyboard navigation (no space/enter to prevent conflicts with inputs)
@@ -529,6 +445,32 @@ function InstructionRunner({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [goToNextStep, goToPreviousStep])
 
+  // A run that never started records nothing. Say so and offer a retry rather
+  // than rendering an editable traveler whose entries go nowhere.
+  if (run.startError) {
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center">
+        <div className="max-w-md text-center text-white px-6">
+          <AlertTriangle className="h-10 w-10 mx-auto mb-4 text-amber-400" />
+          <h1 className="text-2xl font-bold mb-2">Could not start this run</h1>
+          <p className="text-slate-400 mb-2">{run.startError.message}</p>
+          <p className="text-slate-500 text-sm mb-8">
+            Nothing you enter would be recorded until the run starts.
+          </p>
+          <div className="flex justify-center gap-3">
+            <Button onClick={run.retryStart} disabled={run.isStarting}>
+              {run.isStarting ? 'Retrying...' : 'Retry'}
+            </Button>
+            <Button onClick={() => void exitToWorkOrder()} variant="outline">
+              <X className="h-4 w-4 mr-2" />
+              Exit
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (totalSteps === 0) {
     return (
       <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center">
@@ -537,7 +479,7 @@ function InstructionRunner({
           <p className="text-slate-400 mb-8">
             This instruction's snapshot has no steps to execute.
           </p>
-          <Button onClick={exitToWorkOrder} variant="outline">
+          <Button onClick={() => void exitToWorkOrder()} variant="outline">
             <X className="h-4 w-4 mr-2" />
             Exit
           </Button>
@@ -581,12 +523,23 @@ function InstructionRunner({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-          <span className="font-medium text-slate-900 dark:text-white">
-            Step {currentStepNumber}
-          </span>
-          <span>of</span>
-          <span>{totalSteps}</span>
+        <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+          {run.hasUnsavedChanges && (
+            <span
+              role="status"
+              className="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium"
+            >
+              <AlertTriangle className="h-4 w-4" />
+              Changes not saved
+            </span>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-slate-900 dark:text-white">
+              Step {currentStepNumber}
+            </span>
+            <span>of</span>
+            <span>{totalSteps}</span>
+          </div>
         </div>
       </header>
 
@@ -644,9 +597,10 @@ function InstructionRunner({
                     <ExecutionStepBlockRenderer
                       key={block.id || index}
                       block={block}
-                      fieldValues={fieldValues}
-                      onFieldChange={handleFieldChange}
-                      resolvedValues={resolvedValues}
+                      fieldValues={run.fieldValues}
+                      onFieldChange={run.setFieldValue}
+                      resolvedValues={run.resolvedValues}
+                      fieldsDisabled={run.fieldsDisabled}
                     />
                   ),
                 )}
@@ -678,7 +632,7 @@ function InstructionRunner({
           {presentationSteps.map((item, index) => (
             <button
               key={index}
-              onClick={() => setCurrentStepIndex(index)}
+              onClick={() => goToStep(index)}
               className={cn(
                 'transition-colors',
                 item.type === 'operation'
@@ -697,12 +651,12 @@ function InstructionRunner({
         {isLastStep ? (
           <Button
             size="lg"
-            onClick={handleComplete}
-            disabled={completing}
+            onClick={() => void run.complete()}
+            disabled={run.completing || run.fieldsDisabled}
             className="min-w-[150px] bg-emerald-600 hover:bg-emerald-700"
           >
             <CheckCircle className="h-5 w-5 mr-2" />
-            {completing ? 'Completing...' : 'Complete'}
+            {run.completing ? 'Completing...' : 'Complete'}
           </Button>
         ) : (
           <Button
@@ -735,11 +689,11 @@ function InstructionRunner({
               >
                 Keep Working
               </Button>
-              <Button variant="outline" onClick={confirmPause}>
+              <Button variant="outline" onClick={() => void run.pause()}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Pause
               </Button>
-              <Button variant="destructive" onClick={confirmAbandon}>
+              <Button variant="destructive" onClick={() => void run.abandon()}>
                 <X className="h-4 w-4 mr-2" />
                 Abandon
               </Button>

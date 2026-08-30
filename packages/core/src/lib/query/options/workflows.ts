@@ -32,6 +32,25 @@ const NO_WORKFLOW: WorkflowState = { instance: null, definition: null }
  * is the entity it belongs to — invalidating either resource reaches it, since
  * `workflows` lists `change-orders` as a dependent.
  */
+/**
+ * One workflow (lifecycle) definition by id.
+ *
+ * The lifecycle editor seeds its editable copy from this; the admin list
+ * reads the same `workflows` resource, so a save refreshes both.
+ */
+export function workflowDefinitionQuery<T>(id: string, enabled = true) {
+  return queryOptions({
+    queryKey: qk.detail('workflows', id),
+    queryFn: async (): Promise<T> => {
+      const result = await apiFetch<{ data: { workflow: T } }>(
+        `/api/v1/workflows/${id}`,
+      )
+      return result.data.workflow
+    },
+    enabled: enabled && Boolean(id),
+  })
+}
+
 export function changeOrderWorkflowQuery(itemId: string) {
   return queryOptions({
     queryKey: qk.sub('change-orders', itemId, 'workflow'),

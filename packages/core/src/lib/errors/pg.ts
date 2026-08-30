@@ -76,6 +76,26 @@ export function asPostgresError(error: unknown): PostgresDriverError | null {
 const SQLSTATE = /^[0-9A-Z]{5}$/
 
 /**
+ * Whether `code` has the shape of a SQLSTATE.
+ *
+ * The shape is all there is to go on: SQLSTATE classes are open — an extension
+ * or a future server version can raise a code no table here lists — so this
+ * cannot be an allow-list. Callers use it to narrow `asPostgresError`, which
+ * matches anything carrying a string `code` and so answers yes for an fs
+ * `ENOENT`, an undici `ECONNREFUSED`, or an AMQP failure just as readily as for
+ * a driver error.
+ *
+ * The accepted residual: a five-character uppercase errno — `EPIPE`, `EBUSY`,
+ * `EXDEV` — is indistinguishable from a SQLSTATE by shape and still passes.
+ * Narrowing further would mean an allow-list, which fails the other way by
+ * misclassifying real database errors, and those are the ones worth getting
+ * right.
+ */
+export function isSqlStateCode(code: string): boolean {
+  return SQLSTATE.test(code)
+}
+
+/**
  * Whether `error` came out of the database layer.
  *
  * Two shapes qualify: drizzle's query wrapper, whose `message` *is* the failed
@@ -84,11 +104,11 @@ const SQLSTATE = /^[0-9A-Z]{5}$/
  * rather than by importing `DrizzleQueryError`, which would pull drizzle into
  * every module that only wants to ask this question.
  *
- * `AppError` is excluded outright, and the driver's `code` is narrowed to a
- * SQLSTATE, because `asPostgresError` matches anything carrying a string
- * `code` — which every `AppError` does. Without both guards this would call
- * `NotFoundError` a database failure and redact the one message the caller
- * needed.
+ * `AppError` is excluded outright, and the driver's `code` is narrowed by
+ * `isSqlStateCode`, because `asPostgresError` matches anything carrying a
+ * string `code` — which every `AppError` does. Without both guards this would
+ * call `NotFoundError` a database failure and redact the one message the
+ * caller needed.
  */
 export function isDatabaseError(error: unknown): boolean {
   if (error instanceof AppError) return false
@@ -100,7 +120,7 @@ export function isDatabaseError(error: unknown): boolean {
     return true
   }
   const code = asPostgresError(error)?.code
-  return code !== undefined && SQLSTATE.test(code)
+  return code !== undefined && isSqlStateCode(code)
 }
 
 /**

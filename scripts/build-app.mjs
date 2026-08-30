@@ -14,10 +14,17 @@
 
 import * as esbuild from 'esbuild'
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { assertBundleParses, cjsInteropBanner } from './build-shared.mjs'
 import { resolveApp } from './edition.mjs'
+import { render } from './generate-third-party-notices.mjs'
 
 // No argument means "whichever edition this tree is", so `npm run build` works
 // in both without naming an app that one of them does not have.
@@ -134,3 +141,29 @@ await bundle(
   `apps/${app}/src/jobs-worker.ts`,
   `${outBase}/server/jobs-worker.mjs`,
 )
+
+/**
+ * Attribution for everything we redistribute.
+ *
+ * Written twice because the two images take different things: the app image
+ * copies `dist/` and `.output/`, the jobs worker image copies only `.output/`.
+ * One file in one place would credit our dependencies in whichever image
+ * happened to get it.
+ *
+ * The `dist/` copy is also the served one — the static handler roots at
+ * `dist/<app>/`, so it lands at `/THIRD-PARTY-NOTICES.txt` on a running
+ * instance. That is the only copy a browser user can reach: the SPA bundle
+ * itself is stripped of comments, so no licence text survives in it.
+ *
+ * Generated rather than committed. It is ~1.5 MB derived entirely from the
+ * lockfile and the installed tree, and a checked-in copy would be one more
+ * artefact to drift out of date with the dependency it credits.
+ */
+console.log(`\n▶ Third-party notices (${app})`)
+const notices = render({ edition: app })
+for (const dir of [`dist/${app}`, outBase]) {
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  const target = resolve(dir, 'THIRD-PARTY-NOTICES.txt')
+  writeFileSync(target, `${notices}\n`, 'utf8')
+  console.log(`  ${target}`)
+}

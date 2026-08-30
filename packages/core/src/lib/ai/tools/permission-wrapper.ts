@@ -91,6 +91,34 @@ export interface PermissionSpec {
 }
 
 /**
+ * How a tool declares the permission a call has to satisfy.
+ *
+ * A constant covers the tools whose target is fixed by the tool itself —
+ * `create_program` always charges `programs`. The resolver form is for the
+ * tools that write whatever the caller names: `update_item` and
+ * `transition_item_state` reach every registered item type through one entry
+ * point, so the resource to charge is a property of the *input*, not of the
+ * tool.
+ *
+ * Resolving here rather than inside the handler is the whole point. The
+ * wrapper is the only RBAC gate on these paths — neither `ItemService` nor
+ * `LifecycleService` re-checks below it — and `checkToolPermission`
+ * intersects an API key's scope with the user's role permissions, so a
+ * handler-side check would be a second, weaker gate that MCP callers could
+ * hold a narrower key than.
+ */
+export type ToolPermission<TInput> =
+  PermissionSpec | ((input: TInput) => Promise<PermissionSpec>)
+
+/** Narrow a tool's declared permission to the tuple this call must satisfy. */
+async function resolvePermission<TInput>(
+  permission: ToolPermission<TInput>,
+  input: TInput,
+): Promise<PermissionSpec> {
+  return typeof permission === 'function' ? permission(input) : permission
+}
+
+/**
  * Wrap a tool handler with permission checking and audit logging
  *
  * This wrapper:
@@ -135,6 +163,7 @@ export function withPermissionAndAudit<TInput, TOutput>(
         await db.insert(aiUsageLogs).values({
           sessionId: context.sessionId || null,
           userId: context.userId,
+          programId: context.programId || null,
           toolName,
           toolParams: input,
           toolResult: error ? null : result,
@@ -142,7 +171,9 @@ export function withPermissionAndAudit<TInput, TOutput>(
           durationMs,
           provider: context.provider || null,
           model: context.model || null,
-          // TODO: inputTokens/outputTokens - TanStack AI streaming doesn't expose token counts directly
+          // Token counts are not a per-tool quantity: they live on the
+          // stream's done chunks, which this wrapper never sees. The chat
+          // route records them per request via lib/ai/usage.ts.
         })
       } catch (logError) {
         // Don't fail the tool execution if logging fails
@@ -165,10 +196,14 @@ export interface WriteOperationMeta {
 /**
  * Wrap a write tool handler with permission checking and audit logging.
  * Same as withPermissionAndAudit but accepts WriteOperationMeta for richer audit trails.
+ *
+ * `permission` may be a resolver (see `ToolPermission`); it runs inside the
+ * try/finally so a failed lookup is audit-logged and re-raised safely rather
+ * than escaping unrecorded.
  */
 export function withWritePermissionAndAudit<TInput, TOutput>(
   toolName: string,
-  permission: PermissionSpec,
+  permission: ToolPermission<TInput>,
   handler: (input: TInput, context: ToolContext) => Promise<TOutput>,
 ) {
   return async (
@@ -181,11 +216,12 @@ export function withWritePermissionAndAudit<TInput, TOutput>(
     let error: string | null = null
 
     try {
-      const permitted = await checkToolPermission(context, permission)
+      const required = await resolvePermission(permission, input)
+      const permitted = await checkToolPermission(context, required)
 
       if (!permitted) {
         throw new Error(
-          `Permission denied: You don't have ${permission.action} access to ${permission.resource}`,
+          `Permission denied: You don't have ${required.action} access to ${required.resource}`,
         )
       }
 
@@ -201,6 +237,7 @@ export function withWritePermissionAndAudit<TInput, TOutput>(
         await db.insert(aiUsageLogs).values({
           sessionId: context.sessionId || null,
           userId: context.userId,
+          programId: context.programId || null,
           toolName,
           toolParams: {
             ...(input as Record<string, unknown>),

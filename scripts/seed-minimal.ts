@@ -217,20 +217,9 @@ try {
         .returning(),
     )
 
-    // Create initial commit
-    const initialCommit = takeFirst(
-      await db
-        .insert(commits)
-        .values({
-          designId: created.id,
-          branchId: created.id, // Temporary
-          message: 'Initial commit',
-          createdBy: adminId,
-        })
-        .returning(),
-    )
-
-    // Create main branch
+    // Create main branch first (head unset), then the initial commit on it —
+    // commits.branch_id is a real FK now, so the old placeholder-then-fixup
+    // order cannot insert.
     const mainBranch = takeFirst(
       await db
         .insert(branches)
@@ -238,18 +227,27 @@ try {
           designId: created.id,
           name: 'main',
           branchType: 'main',
-          headCommitId: initialCommit.id,
-          baseCommitId: initialCommit.id,
           createdBy: adminId,
         })
         .returning(),
     )
 
-    // Update commit with correct branchId
+    const initialCommit = takeFirst(
+      await db
+        .insert(commits)
+        .values({
+          designId: created.id,
+          branchId: mainBranch.id,
+          message: 'Initial commit',
+          createdBy: adminId,
+        })
+        .returning(),
+    )
+
     await db
-      .update(commits)
-      .set({ branchId: mainBranch.id })
-      .where(eq(commits.id, initialCommit.id))
+      .update(branches)
+      .set({ headCommitId: initialCommit.id, baseCommitId: initialCommit.id })
+      .where(eq(branches.id, mainBranch.id))
 
     // Update design with default branch
     const [updated] = await db

@@ -9,12 +9,16 @@
  *
  * Write operations require user confirmation before execution.
  * The confirmation flow is:
- * 1. Tool is called with confirmed: false (or omitted)
- * 2. Returns requiresConfirmation: true with a message
+ * 1. Tool is called without a confirmationToken
+ * 2. Returns requiresConfirmation: true with a message and a server-issued
+ *    single-use confirmationToken bound to these exact parameters
  * 3. AI presents ConfirmationCard to user
  * 4. User clicks Confirm/Cancel
- * 5. AI calls tool again with confirmed: true
- * 6. Tool executes the operation
+ * 5. AI repeats the same call with the confirmationToken from step 2
+ * 6. Tool redeems the token (once, within its short expiry) and executes
+ *
+ * The legacy `confirmed: true` flag is accepted but ignored — such a call
+ * degrades to a fresh preview with a new token, never a hard error.
  *
  * Tools:
  * - create_item: Create a new item of any registered type
@@ -76,6 +80,9 @@ function describeEnum(label: string, values: ReadonlyArray<string>): string {
 const confirmationResponseSchema = z.object({
   // When true, operation requires user confirmation
   requiresConfirmation: z.boolean(),
+  // Single-use token to present on the confirmed call (present iff
+  // requiresConfirmation is true)
+  confirmationToken: z.string().optional(),
   // Human-readable message for the confirmation card
   confirmationMessage: z.string().optional(),
   // Structured data for the confirmation card
@@ -171,11 +178,21 @@ Requires user confirmation before creating.`,
           requirementTypeSchema.options,
         ),
       ),
-    // Confirmation flag
+    // Confirmation plumbing
+    confirmationToken: z
+      .string()
+      .optional()
+      .describe(
+        'Single-use token from the preview response. After the user ' +
+          'approves, repeat the exact same call with this token to execute.',
+      ),
     confirmed: z
       .boolean()
       .optional()
-      .describe('Set to true after user confirms the operation'),
+      .describe(
+        'Deprecated — ignored. Confirmation requires the confirmationToken ' +
+          'issued by the preview response.',
+      ),
   }),
   outputSchema: confirmationResponseSchema,
 })
@@ -220,11 +237,21 @@ Requires user confirmation before updating.`,
       .string()
       .optional()
       .describe('ECO ID for checkout if item is Released'),
-    // Confirmation flag
+    // Confirmation plumbing
+    confirmationToken: z
+      .string()
+      .optional()
+      .describe(
+        'Single-use token from the preview response. After the user ' +
+          'approves, repeat the exact same call with this token to execute.',
+      ),
     confirmed: z
       .boolean()
       .optional()
-      .describe('Set to true after user confirms the operation'),
+      .describe(
+        'Deprecated — ignored. Confirmation requires the confirmationToken ' +
+          'issued by the preview response.',
+      ),
   }),
   outputSchema: confirmationResponseSchema,
 })
@@ -258,11 +285,21 @@ Requires user confirmation before creating.`,
       .string()
       .optional()
       .describe('Reference designator like R1, C2 (BOM only)'),
-    // Confirmation flag
+    // Confirmation plumbing
+    confirmationToken: z
+      .string()
+      .optional()
+      .describe(
+        'Single-use token from the preview response. After the user ' +
+          'approves, repeat the exact same call with this token to execute.',
+      ),
     confirmed: z
       .boolean()
       .optional()
-      .describe('Set to true after user confirms the operation'),
+      .describe(
+        'Deprecated — ignored. Confirmation requires the confirmationToken ' +
+          'issued by the preview response.',
+      ),
   }),
   outputSchema: confirmationResponseSchema.extend({
     relationshipId: z.string().optional(),
@@ -291,11 +328,21 @@ Requires user confirmation before transitioning.`,
       .string()
       .optional()
       .describe('Optional transition comments/reason'),
-    // Confirmation flag
+    // Confirmation plumbing
+    confirmationToken: z
+      .string()
+      .optional()
+      .describe(
+        'Single-use token from the preview response. After the user ' +
+          'approves, repeat the exact same call with this token to execute.',
+      ),
     confirmed: z
       .boolean()
       .optional()
-      .describe('Set to true after user confirms the operation'),
+      .describe(
+        'Deprecated — ignored. Confirmation requires the confirmationToken ' +
+          'issued by the preview response.',
+      ),
   }),
   outputSchema: confirmationResponseSchema.extend({
     previousState: z.string().optional(),
@@ -343,11 +390,21 @@ Requires user confirmation before creating.`,
       .array(z.string())
       .optional()
       .describe('Design IDs or codes to associate with the ECO'),
-    // Confirmation flag
+    // Confirmation plumbing
+    confirmationToken: z
+      .string()
+      .optional()
+      .describe(
+        'Single-use token from the preview response. After the user ' +
+          'approves, repeat the exact same call with this token to execute.',
+      ),
     confirmed: z
       .boolean()
       .optional()
-      .describe('Set to true after user confirms the operation'),
+      .describe(
+        'Deprecated — ignored. Confirmation requires the confirmationToken ' +
+          'issued by the preview response.',
+      ),
   }),
   outputSchema: confirmationResponseSchema.extend({
     changeOrderId: z.string().optional(),
@@ -376,11 +433,21 @@ Requires user confirmation before creating.`,
       ),
     description: z.string().optional().describe('Program description'),
     customer: z.string().optional().describe('Customer name, if any'),
-    // Confirmation flag
+    // Confirmation plumbing
+    confirmationToken: z
+      .string()
+      .optional()
+      .describe(
+        'Single-use token from the preview response. After the user ' +
+          'approves, repeat the exact same call with this token to execute.',
+      ),
     confirmed: z
       .boolean()
       .optional()
-      .describe('Set to true after user confirms the operation'),
+      .describe(
+        'Deprecated — ignored. Confirmation requires the confirmationToken ' +
+          'issued by the preview response.',
+      ),
   }),
   outputSchema: confirmationResponseSchema.extend({
     programId: z.string().optional(),

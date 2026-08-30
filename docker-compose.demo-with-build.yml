@@ -123,7 +123,10 @@ services:
 
   cad-converter:
     build:
-      context: ./workers/cad-converter
+      # Context is ./workers so the image can carry the shared py-common
+      # package alongside the worker's own source (JOBS-8).
+      context: ./workers
+      dockerfile: cad-converter/Dockerfile
     container_name: cascadia-demo-cad-converter
     restart: unless-stopped
     depends_on:

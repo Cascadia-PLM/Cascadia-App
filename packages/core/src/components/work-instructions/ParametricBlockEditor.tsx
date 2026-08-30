@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link2, Loader2, Search, Trash2, Variable } from 'lucide-react'
 import type { StepContentBlock } from '@/lib/items/types/work-instruction'
 import { Button, Input } from '@/components/ui'
+import { entityQuery, entitySubQuery, itemTextSearchQuery } from '@/lib/query'
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
 
 interface PartSearchResult {
   id: string
@@ -35,100 +38,48 @@ export function ParametricBlockEditor({
   onError: _onError,
 }: ParametricBlockEditorProps) {
   const [partSearch, setPartSearch] = useState('')
-  const [searchResults, setSearchResults] = useState<Array<PartSearchResult>>(
-    [],
+  // The part the user just picked, before the block's own partId query has
+  // caught up — so the field shows the choice immediately.
+  const [justPicked, setJustPicked] = useState<PartSearchResult | null>(null)
+
+  const { data: boundPart } = useQuery(
+    entityQuery<PartSearchResult>(
+      'parts',
+      block.partId ?? '',
+      'part',
+      Boolean(block.partId),
+    ),
   )
-  const [searching, setSearching] = useState(false)
-  const [selectedPart, setSelectedPart] = useState<PartSearchResult | null>(
-    null,
+  const selectedPart = block.partId ? (boundPart ?? justPicked) : null
+
+  const { data: attributes = [], isFetching: loadingAttrs } = useQuery({
+    ...entitySubQuery<ResolvableAttribute>(
+      'parts',
+      block.partId ?? '',
+      'resolvable-attributes',
+      'attributes',
+    ),
+    enabled: Boolean(block.partId),
+  })
+
+  const resolvedPreview =
+    block.partId && block.attributePath
+      ? (attributes.find((a) => a.path === block.attributePath)?.value ?? null)
+      : null
+
+  // Keyed on the settled term, so typing costs one request per pause and a
+  // repeated term resolves from cache.
+  const debouncedSearch = useDebouncedValue(partSearch)
+  const { data: searchResults = [], isFetching: searching } = useQuery(
+    itemTextSearchQuery<PartSearchResult>(
+      { q: debouncedSearch, types: ['Part'], limit: 10 },
+      debouncedSearch.length >= 2,
+    ),
   )
-  const [attributes, setAttributes] = useState<Array<ResolvableAttribute>>([])
-  const [loadingAttrs, setLoadingAttrs] = useState(false)
-  const [resolvedPreview, setResolvedPreview] = useState<string | null>(null)
-
-  // Load selected part info if block already has a partId
-  useEffect(() => {
-    if (block.partId && !selectedPart) {
-      fetch(`/api/v1/parts/${block.partId}`)
-        .then((r) => r.json())
-        .then((data) => {
-          const part = data.data?.part || data.data
-          if (part) {
-            setSelectedPart({
-              id: part.id,
-              itemNumber: part.itemNumber,
-              name: part.name,
-              revision: part.revision,
-            })
-          }
-        })
-        .catch(() => {})
-    }
-  }, [block.partId])
-
-  // Load attributes when part is selected
-  useEffect(() => {
-    if (!block.partId) {
-      setAttributes([])
-      return
-    }
-
-    setLoadingAttrs(true)
-    fetch(`/api/v1/parts/${block.partId}/resolvable-attributes`)
-      .then((r) => r.json())
-      .then((data) => {
-        setAttributes(data.data?.attributes || [])
-      })
-      .catch(() => setAttributes([]))
-      .finally(() => setLoadingAttrs(false))
-  }, [block.partId])
-
-  // Update preview when attribute changes
-  useEffect(() => {
-    if (block.partId && block.attributePath) {
-      const attr = attributes.find((a) => a.path === block.attributePath)
-      setResolvedPreview(attr?.value ?? null)
-    } else {
-      setResolvedPreview(null)
-    }
-  }, [block.attributePath, attributes])
-
-  // Search for parts
-  useEffect(() => {
-    if (partSearch.length < 2) {
-      setSearchResults([])
-      return
-    }
-
-    const timeout = setTimeout(async () => {
-      setSearching(true)
-      try {
-        const response = await fetch(
-          `/api/v1/items/search?q=${encodeURIComponent(partSearch)}&types=Part&limit=10`,
-        )
-        const data = await response.json()
-        setSearchResults(
-          (data.data?.items || []).map((item: Record<string, unknown>) => ({
-            id: item.id,
-            itemNumber: item.itemNumber,
-            name: item.name,
-            revision: item.revision,
-          })),
-        )
-      } catch {
-        setSearchResults([])
-      } finally {
-        setSearching(false)
-      }
-    }, 300)
-
-    return () => clearTimeout(timeout)
-  }, [partSearch])
 
   const handleSelectPart = (part: PartSearchResult) => {
-    setSelectedPart(part)
+    setJustPicked(part)
     setPartSearch('')
-    setSearchResults([])
     onUpdate({
       ...block,
       partId: part.id,
@@ -172,7 +123,7 @@ export function ParametricBlockEditor({
                 size="icon"
                 className="h-6 w-6 ml-auto"
                 onClick={() => {
-                  setSelectedPart(null)
+                  setJustPicked(null)
                   onUpdate({
                     ...block,
                     partId: undefined,

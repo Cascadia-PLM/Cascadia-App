@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   Badge,
   Button,
@@ -16,6 +17,8 @@ import {
   Textarea,
 } from '@/components/ui'
 import { apiFetch } from '@/lib/api/client'
+import { itemTextSearchQuery } from '@/lib/query'
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 
 interface PartSuggestion {
@@ -50,7 +53,6 @@ export function RegisterPhysicalPartDialog({
 }: RegisterPhysicalPartDialogProps) {
   const { handleError, showSuccess } = useErrorHandler()
   const [query, setQuery] = useState('')
-  const [suggestions, setSuggestions] = useState<Array<PartSuggestion>>([])
   const [selectedPart, setSelectedPart] = useState<SelectedPart | null>(null)
   const [identity, setIdentity] = useState('')
   const [notes, setNotes] = useState('')
@@ -79,26 +81,15 @@ export function RegisterPhysicalPartDialog({
     }
   }
 
-  // Debounced part autocomplete
-  useEffect(() => {
-    if (!open || selectedPart || query.trim().length < 2) {
-      setSuggestions([])
-      return
-    }
-    const t = setTimeout(async () => {
-      try {
-        const result = await apiFetch<{
-          data: { items: Array<PartSuggestion> }
-        }>(
-          `/api/v1/items/search?q=${encodeURIComponent(query.trim())}&types=Part&limit=8`,
-        )
-        setSuggestions(result.data.items)
-      } catch {
-        setSuggestions([])
-      }
-    }, 250)
-    return () => clearTimeout(t)
-  }, [query, open, selectedPart])
+  // Part autocomplete: one request per typing pause, keyed on the settled
+  // term, and silent while a part is already chosen.
+  const debouncedQuery = useDebouncedValue(query.trim(), 250)
+  const { data: suggestions = [] } = useQuery(
+    itemTextSearchQuery<PartSuggestion>(
+      { q: debouncedQuery, types: ['Part'], limit: 8 },
+      open && !selectedPart && debouncedQuery.length >= 2,
+    ),
+  )
 
   const selectPart = async (suggestion: PartSuggestion) => {
     try {
@@ -121,7 +112,6 @@ export function RegisterPhysicalPartDialog({
         name: part.name,
         trackingMode: part.trackingMode ?? 'none',
       })
-      setSuggestions([])
     } catch (error) {
       handleError(error)
     }
@@ -129,7 +119,6 @@ export function RegisterPhysicalPartDialog({
 
   const reset = () => {
     setQuery('')
-    setSuggestions([])
     setSelectedPart(null)
     setIdentity('')
     setNotes('')

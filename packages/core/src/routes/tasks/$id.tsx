@@ -5,13 +5,14 @@ import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 import type { Task } from '@/lib/items/types/task'
-import { TaskDetail } from '@/components/tasks/TaskDetail'
+import type { TaskDetailTab } from '@/components/tasks/TaskDetail'
+import { TASK_DETAIL_TABS, TaskDetail } from '@/components/tasks/TaskDetail'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { entityQuery, useInvalidateResources } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
 
 const taskDetailSearchSchema = z.object({
-  tab: z.enum(['details', 'history']).optional().default('details'),
+  tab: z.enum(TASK_DETAIL_TABS).optional().default('details'),
 })
 
 export const Route = createFileRoute('/tasks/$id')({
@@ -63,12 +64,12 @@ function TaskDetailPage() {
     navigate({ to: '/tasks' })
   }
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab: TaskDetailTab) => {
     router.navigate({
       to: '/tasks/$id',
       params: { id: task.id ?? '' },
       search: {
-        tab: tab as 'details' | 'history',
+        tab,
       },
       replace: true,
     })

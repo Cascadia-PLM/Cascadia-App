@@ -51,8 +51,22 @@ import workflows from './routes/workflows'
 import workspaces from './routes/workspaces'
 import { ERROR_COMPONENTS } from '@/lib/api/openapi-helpers'
 import { mountRoutes } from '@/lib/api/route-registry'
+import { buildPreflightResponse } from '@/lib/api/cors'
 
 const app = new Hono()
+
+// CORS preflight, ahead of every route mount because none of them can answer
+// it: route modules register concrete methods (app.get, app.post, …), so Hono
+// dispatches OPTIONS to nothing and a browser's preflight would 404 with no
+// Access-Control-* headers — which is what made CORS_ALLOWED_ORIGINS
+// unusable from a browser however it was set.
+//
+// It answers 204 for every /api/* path, including /api/mcp and paths that do
+// not exist. That is harmless: a preflight asks about policy, not about the
+// resource, and the real request that follows is still routed — or 404s —
+// normally. A disallowed origin gets a 204 with no Access-Control-* headers
+// and the browser blocks the real request. See lib/api/cors.ts.
+app.options('/api/*', (c) => buildPreflightResponse(c.req.raw))
 
 // Mount route groups under the v1 prefix. The OpenAPI document published at
 // /openapi.json is the frozen contract for v1; breaking changes bump to /api/v2.

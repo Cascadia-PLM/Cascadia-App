@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   ArrowDownToLine,
   Download,
@@ -50,6 +51,12 @@ import {
 } from '@/components/ui/ContextMenu'
 import { apiFetch } from '@/lib/api/client'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
+import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import {
+  designStructureQuery,
+  useInvalidateResources,
+  useResourceMutation,
+} from '@/lib/query'
 import { BomTreeView } from '@/components/bom/BomTreeView'
 import { exportBomTreeToCsv } from '@/components/bom/exportBomTree'
 import { useTreeSelection } from '@/components/bom/useTreeSelection'
@@ -77,6 +84,13 @@ interface PullInChainInfo {
   parentBomRelationshipId: string | null // if chain starts below a native parent
 }
 
+// Module-scope so the "no data yet" render keeps a stable array identity.
+// `filteredRoots` is memoized on `roots`, and the filter auto-expand effect
+// below writes a fresh Set whenever `filteredRoots` changes — a `?? []`
+// written inline would hand it a new array every render and spin.
+const NO_ROOTS: Array<BOMTreeNode> = []
+const NO_NON_STRUCTURE_ITEMS: Array<NonStructureItem> = []
+
 interface StructureTabProps {
   designId: string
   designCode: string
@@ -85,6 +99,18 @@ interface StructureTabProps {
   isHistoricalView: boolean
 }
 
+/**
+ * The BOM tree for one design, plus the items that belong to it without
+ * sitting in the hierarchy.
+ *
+ * Well past the ~400-line guideline, and the seam is the pull-in machinery:
+ * chain construction (`handlePullInReference`, `buildBatchChains`), the two
+ * dialogs that render a chain, and the writes that execute one are a feature
+ * of their own — everything they need from the tree is `roots`, and nothing
+ * else in the file reads their state. Split there when either the single or
+ * the batch flow next grows. The tree, its filter and its column definitions
+ * stay behind; the non-structure grid is the second-cheapest cut after that.
+ */
 export function StructureTab({
   designId,
   designCode,
@@ -94,18 +120,34 @@ export function StructureTab({
 }: StructureTabProps) {
   const navigate = useNavigate()
   const { confirm } = useAlertDialog()
-  const [loading, setLoading] = useState(true)
-  const [roots, setRoots] = useState<Array<BOMTreeNode>>([])
-  const [nonStructureItems, setNonStructureItems] = useState<
-    Array<NonStructureItem>
-  >([])
+  const { handleError } = useErrorHandler()
+  const invalidate = useInvalidateResources()
+
+  // The structure read. Keyed on the three scalar version-context fields
+  // rather than the `versionContext` object they came from — see
+  // `designStructureQuery` for why that distinction is load-bearing. Living in
+  // the shared cache is what lets a write made anywhere in the app — the add
+  // dialogs below, an ECO release two pages away — refresh this tab.
+  const {
+    data: structure,
+    isPending,
+    isError,
+    dataUpdatedAt,
+  } = useQuery(
+    designStructureQuery<BOMTreeNode, NonStructureItem>(designId, {
+      branchId: versionContext.branchId,
+      tagId: versionContext.tagId,
+      commitId: versionContext.commitId,
+    }),
+  )
+  const roots = structure?.roots ?? NO_ROOTS
+  const nonStructureItems = structure?.orphans ?? NO_NON_STRUCTURE_ITEMS
+
   // Expanded on load whenever the design has any non-structure items.
   const [nonStructureOpen, setNonStructureOpen] = useState(false)
   const [filter, setFilter] = useState('')
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
-  const [error, setError] = useState<string | null>(null)
   const [isAddPartDialogOpen, setIsAddPartDialogOpen] = useState(false)
-  const [removingItemId, setRemovingItemId] = useState<string | null>(null)
   // State for AddPartToStructureDialog (add child to BOM)
   const [addChildDialogOpen, setAddChildDialogOpen] = useState(false)
   const [parentForAddChild, setParentForAddChild] = useState<{
@@ -118,7 +160,6 @@ export function StructureTab({
   const [pullInChainInfo, setPullInChainInfo] =
     useState<PullInChainInfo | null>(null)
   const [pullInSuffix, setPullInSuffix] = useState(false)
-  const [pullInLoading, setPullInLoading] = useState(false)
 
   // State for batch Pull-In dialog
   const [batchPullInDialogOpen, setBatchPullInDialogOpen] = useState(false)
@@ -204,49 +245,43 @@ export function StructureTab({
     }
   }, [filter, filteredRoots])
 
-  // Fetch structure data
-  const fetchStructure = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      // Build query params
-      const params = new URLSearchParams()
-      if (versionContext.branchId) params.set('branch', versionContext.branchId)
-      if (versionContext.tagId) params.set('tag', versionContext.tagId)
-      if (versionContext.commitId) params.set('commit', versionContext.commitId)
-
-      const response = await apiFetch<{
-        data: { roots: Array<BOMTreeNode>; orphans: Array<NonStructureItem> }
-      }>(`/api/v1/designs/${designId}/structure?${params.toString()}`)
-
-      setRoots(response.data.roots)
-      setNonStructureItems(response.data.orphans)
-      setNonStructureOpen(response.data.orphans.length > 0)
-      selection.clearSelection()
-    } catch {
-      setError(
-        'Failed to load structure. The API endpoint may not be implemented yet.',
-      )
-      // Set empty data
-      setRoots([])
-      setNonStructureItems([])
-      setNonStructureOpen(false)
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  // The read used to clear the selection and re-open the non-structure panel
+  // on every successful reload, from inside the fetch function. `dataUpdatedAt`
+  // advances on each settled fetch — including one that returns identical bytes
+  // — so hanging both off it fires them at exactly the same moments, now that
+  // the fetch itself belongs to the query layer. Zero means nothing has loaded.
+  const clearSelection = selection.clearSelection
   useEffect(() => {
-    fetchStructure()
-  }, [designId, versionContext])
+    if (dataUpdatedAt === 0) return
+    setNonStructureOpen(nonStructureItems.length > 0)
+    clearSelection()
+  }, [dataUpdatedAt, nonStructureItems, clearSelection])
 
-  // Handle successful add
-  const handleAddSuccess = () => {
-    fetchStructure()
+  // Adding a part to the design writes the design's item membership; adding a
+  // BOM child writes a relationship. Naming the resource each dialog actually
+  // wrote is what lets `RESOURCE_DEPENDENTS` fan the refresh out to the parts
+  // lists, the relationships panel and the mBOM views as well as to this tree.
+  const handleAddToDesignSuccess = () => {
+    void invalidate('designs')
+  }
+  const handleAddChildSuccess = () => {
+    void invalidate('relationships')
   }
 
-  // Handle remove root part from design structure (moves to Non-Structure Items)
-  // Note: This only applies to root parts (no relationshipId). Child parts are managed via their parent.
+  // Remove a root part from the design structure (moves it to Non-Structure
+  // Items). Only root parts (no relationshipId) get here; child parts are
+  // managed through their parent.
+  const removeFromStructure = useResourceMutation({
+    // Set inDesignStructure=false, keeping the designId association
+    mutationFn: (itemId: string) =>
+      apiFetch(`/api/v1/designs/${designId}/items?itemId=${itemId}`, {
+        method: 'DELETE',
+      }),
+    invalidates: ['designs'],
+    onError: (error: Error) =>
+      handleError(error, { title: 'Failed to remove from structure' }),
+  })
+
   const handleRemoveFromStructure = (itemId: string, itemNumber: string) => {
     confirm({
       title: 'Remove from Structure',
@@ -254,45 +289,42 @@ export function StructureTab({
       actionLabel: 'Remove',
       cancelLabel: 'Cancel',
       variant: 'destructive',
-      onConfirm: async () => {
-        setRemovingItemId(itemId)
-        try {
-          // Set inDesignStructure=false, keeping the designId association
-          await apiFetch(`/api/v1/designs/${designId}/items?itemId=${itemId}`, {
-            method: 'DELETE',
-          })
-          fetchStructure()
-        } catch {
-          // Silently fail - user can retry the operation
-        } finally {
-          setRemovingItemId(null)
-        }
+      onConfirm: () => {
+        removeFromStructure.mutate(itemId)
       },
     })
   }
 
-  // Handle adding a non-structure part back to the design structure
+  // Add a non-structure part back to the design structure as a root part.
+  const addToStructure = useResourceMutation({
+    // Set inDesignStructure=true
+    mutationFn: (itemId: string) =>
+      apiFetch(`/api/v1/designs/${designId}/items`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId }),
+      }),
+    invalidates: ['designs'],
+    onError: (error: Error) =>
+      handleError(error, { title: 'Failed to add to structure' }),
+  })
+
+  // Which non-structure row is mid-write, for its own button's spinner label.
+  // The mutation's own `variables` replaces the `removingItemId` state this
+  // used to keep, and stays set until invalidation settles rather than being
+  // dropped in a `finally` while the re-read was still in flight.
+  const addingItemId = addToStructure.isPending
+    ? addToStructure.variables
+    : null
+
   const handleAddToStructure = (itemId: string, itemNumber: string) => {
     confirm({
       title: 'Add to Structure',
       description: `Add ${itemNumber} back to the design structure as a root part?`,
       actionLabel: 'Add',
       cancelLabel: 'Cancel',
-      onConfirm: async () => {
-        setRemovingItemId(itemId) // Reuse loading state
-        try {
-          // Set inDesignStructure=true
-          await apiFetch(`/api/v1/designs/${designId}/items`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ itemId }),
-          })
-          fetchStructure()
-        } catch {
-          // Silently fail - user can retry the operation
-        } finally {
-          setRemovingItemId(null)
-        }
+      onConfirm: () => {
+        addToStructure.mutate(itemId)
       },
     })
   }
@@ -534,10 +566,10 @@ export function StructureTab({
         size="sm"
         className="h-6 px-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950"
         onClick={() => handleAddToStructure(item.id, item.itemNumber)}
-        disabled={removingItemId === item.id}
+        disabled={addingItemId === item.id}
       >
         <Plus className="h-3 w-3 mr-1" />
-        {removingItemId === item.id ? 'Adding...' : 'Add to Structure'}
+        {addingItemId === item.id ? 'Adding...' : 'Add to Structure'}
       </Button>
     )
   }
@@ -622,30 +654,33 @@ export function StructureTab({
     setPullInDialogOpen(true)
   }
 
-  // Execute the pull-in after user confirms options
-  const executePullIn = async () => {
-    if (!pullInChainInfo) return
-    setPullInLoading(true)
-    try {
-      await apiFetch(`/api/v1/designs/${designId}/cross-references`, {
+  // Execute the pull-in after user confirms options. A pull-in rewrites BOM
+  // and cross-reference edges, so the resource written is 'relationships';
+  // its dependents carry the refresh on to items, parts, designs and mbom.
+  const pullIn = useResourceMutation({
+    mutationFn: (chain: PullInChainInfo) =>
+      apiFetch(`/api/v1/designs/${designId}/cross-references`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          refId: pullInChainInfo.refId || undefined,
-          itemIds: pullInChainInfo.chainItemIds,
-          parentBomRelationshipId:
-            pullInChainInfo.parentBomRelationshipId || undefined,
+          refId: chain.refId || undefined,
+          itemIds: chain.chainItemIds,
+          parentBomRelationshipId: chain.parentBomRelationshipId || undefined,
           branchId: versionContext.branchId || null,
           suffixItemNumber: pullInSuffix || undefined,
         }),
-      })
+      }),
+    invalidates: ['relationships'],
+    onSuccess: () => {
       setPullInDialogOpen(false)
-      fetchStructure()
-    } catch {
-      // Silently fail - user can retry
-    } finally {
-      setPullInLoading(false)
-    }
+    },
+    onError: (error: Error) =>
+      handleError(error, { title: 'Failed to pull in reference' }),
+  })
+
+  const executePullIn = () => {
+    if (!pullInChainInfo) return
+    pullIn.mutate(pullInChainInfo)
   }
 
   // Build deduplicated chains for batch pull-in
@@ -841,8 +876,14 @@ export function StructureTab({
     if (errors.length === 0) {
       setBatchPullInDialogOpen(false)
       selection.clearSelection()
-      fetchStructure()
     }
+
+    // One invalidation for the whole batch rather than one per chain: the
+    // dialog already reports its own progress, so the intermediate states are
+    // visible without paying for a tree re-read between every write. It runs
+    // even on a partial failure — the chains that did land are real writes,
+    // and leaving them out of the cache is what "stale after an edit" means.
+    await invalidate('relationships')
   }
 
   // Right-click context menu for tree rows
@@ -907,7 +948,10 @@ export function StructureTab({
     )
   }
 
-  if (loading) {
+  // Only the first load of a version context blanks the tab. A refetch after a
+  // write keeps the tree on screen and swaps it when the new answer lands,
+  // where the old fetch-in-an-effect flashed the whole tab back to a spinner.
+  if (isPending) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
@@ -918,10 +962,13 @@ export function StructureTab({
   return (
     <div className="space-y-6">
       {/* Error message */}
-      {error && (
+      {isError && (
         <Card className="border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800">
           <CardContent className="py-4">
-            <p className="text-amber-700 dark:text-amber-300">{error}</p>
+            <p className="text-amber-700 dark:text-amber-300">
+              Failed to load structure. The API endpoint may not be implemented
+              yet.
+            </p>
             <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
               This feature requires the structure API endpoint to be
               implemented.
@@ -1027,7 +1074,7 @@ export function StructureTab({
               No items match the filter.
             </div>
           ) : (
-            !error && (
+            !isError && (
               <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                 No BOM structure found. Add parent-child relationships between
                 parts to build the design structure.
@@ -1084,7 +1131,7 @@ export function StructureTab({
         designId={designId}
         designCode={designCode}
         designName={designName}
-        onSuccess={handleAddSuccess}
+        onSuccess={handleAddToDesignSuccess}
       />
 
       {/* Add Part to BOM Dialog (cross-design aware) */}
@@ -1096,7 +1143,7 @@ export function StructureTab({
           parentItemNumber={parentForAddChild.number}
           currentDesignId={designId}
           currentDesignCode={designCode}
-          onSuccess={handleAddSuccess}
+          onSuccess={handleAddChildSuccess}
         />
       )}
 
@@ -1313,12 +1360,12 @@ export function StructureTab({
             <Button
               variant="outline"
               onClick={() => setPullInDialogOpen(false)}
-              disabled={pullInLoading}
+              disabled={pullIn.isPending}
             >
               Cancel
             </Button>
-            <Button onClick={executePullIn} disabled={pullInLoading}>
-              {pullInLoading ? 'Pulling in...' : 'Pull In'}
+            <Button onClick={executePullIn} disabled={pullIn.isPending}>
+              {pullIn.isPending ? 'Pulling in...' : 'Pull In'}
             </Button>
           </DialogFooter>
         </DialogContent>

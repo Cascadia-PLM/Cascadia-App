@@ -8,12 +8,28 @@
  * - alpha: A, B, C, ..., Z, AA, AB, ... (default, traditional PLM)
  * - numeric: 1, 2, 3, ...
  * - prefixed-numeric: X1, X2, X3, ... (prefix + numeric)
- * - none: No revision tracking
+ * - none: No revision tracking — released items sit at `NO_REVISION` forever
  */
 
+import { NO_REVISION_MARKER } from '../types/lifecycle'
 import type { RevisionScheme } from '../types/lifecycle'
 
 export class RevisionService {
+  /**
+   * The revision a released item carries under the `none` scheme.
+   *
+   * Deliberately non-empty: `''` is a working marker to `isWorkingRevision`
+   * and to `notWorkingRevision()` in SQL, so releasing at `''` produced an
+   * item that no released-item query would return. See
+   * `NO_REVISION_MARKER` for the constraints the literal has to satisfy.
+   *
+   * It is not in `isWorkingRevision` and must not be: reading as released is
+   * the entire point. The `next*` helpers do treat it as "no revision yet",
+   * so switching a lifecycle off `none` mints the scheme's first revision
+   * rather than incrementing the marker text.
+   */
+  static readonly NO_REVISION = NO_REVISION_MARKER
+
   /**
    * Get the next revision value based on the current revision and scheme.
    * Defaults to alpha scheme when no scheme is provided (backward compatibility).
@@ -32,7 +48,7 @@ export class RevisionService {
       case 'prefixed-numeric':
         return this.nextPrefixedNumeric(currentRevision, resolvedScheme.prefix)
       case 'none':
-        return currentRevision || ''
+        return currentRevision || this.NO_REVISION
     }
   }
 
@@ -51,7 +67,7 @@ export class RevisionService {
       case 'prefixed-numeric':
         return `${resolvedScheme.prefix}1`
       case 'none':
-        return ''
+        return this.NO_REVISION
     }
   }
 
@@ -107,16 +123,29 @@ export class RevisionService {
   // ============================================
 
   /**
+   * Whether a revision carries no released ordinal to increment from — the
+   * empty/legacy markers, a branch placeholder (e.g. "-abc12345"), or the
+   * `none` scheme's fixed marker.
+   *
+   * The marker belongs here even though it is a *released* revision: it
+   * encodes no position in any sequence, so switching a lifecycle from `none`
+   * to alpha must mint 'A', not increment 'N/A' into garbage.
+   */
+  private static hasNoOrdinal(currentRevision: string): boolean {
+    return (
+      !currentRevision ||
+      currentRevision === 'DRAFT' ||
+      currentRevision.startsWith('-') ||
+      currentRevision === this.NO_REVISION
+    )
+  }
+
+  /**
    * Alpha revision: A → B → ... → Z → AA → AB → ...
    * Extracted from ChangeOrderMergeService.getNextRevision()
    */
   private static nextAlpha(currentRevision: string): string {
-    // Handle initial/empty revisions and placeholders (e.g., "-abc12345")
-    if (
-      !currentRevision ||
-      currentRevision === 'DRAFT' ||
-      currentRevision.startsWith('-')
-    ) {
+    if (this.hasNoOrdinal(currentRevision)) {
       return 'A'
     }
 
@@ -141,11 +170,7 @@ export class RevisionService {
    * Numeric revision: 1 → 2 → 3 → ...
    */
   private static nextNumeric(currentRevision: string): string {
-    if (
-      !currentRevision ||
-      currentRevision === 'DRAFT' ||
-      currentRevision.startsWith('-')
-    ) {
+    if (this.hasNoOrdinal(currentRevision)) {
       return '1'
     }
 
@@ -165,11 +190,7 @@ export class RevisionService {
     currentRevision: string,
     prefix: string,
   ): string {
-    if (
-      !currentRevision ||
-      currentRevision === 'DRAFT' ||
-      currentRevision.startsWith('-')
-    ) {
+    if (this.hasNoOrdinal(currentRevision)) {
       return `${prefix}1`
     }
 

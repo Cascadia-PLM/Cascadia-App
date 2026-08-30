@@ -120,7 +120,7 @@ export const widgetProcessingConfig: JobTypeConfig<
 | `routingKey`         | Yes      | RabbitMQ routing key for queue binding                       |
 | `payloadSchema`      | Yes      | Zod schema to validate job payload                           |
 | `resultSchema`       | Yes      | Zod schema to validate job result                            |
-| `timeout`            | Yes      | Max execution time in ms                                     |
+| `timeout`            | Yes      | Max execution time in ms (also the stale-running lease)      |
 | `maxAttempts`        | Yes      | Total attempts including retries                             |
 | `retryDelays`        | Yes      | Array of delays between retries (ms)                         |
 | `priority`           | Yes      | Default priority: `low`, `normal`, `high`, `critical`        |
@@ -210,6 +210,35 @@ for (const item of items) {
   await processItem(item)
 }
 ```
+
+The signal fires in three cases: the worker is shutting down, the job's
+timeout elapsed, or an admin cancelled the job from another process. The
+cross-process case rides progress reporting — `context.updateProgress` is a
+checkpoint that learns the row was cancelled and aborts the local signal
+(the Python workers' `update_job_progress` raises `JobCancelled` at the same
+point). **A handler that never reports progress is only stopped by its
+timeout**, so long handlers should call `updateProgress` at every natural
+boundary — it is the cancellation poll, not just cosmetics.
+
+Whatever the handler does, the job's outcome is settled: a row that reached
+`cancelled` (or any terminal state) is immutable — the completion/failure
+marks are guarded to `running` rows, so a handler that ignores its signal
+completes into the void.
+
+### Timeouts
+
+`config.timeout` is enforced per job type; the worker-wide `JOB_TIMEOUT` is
+only the fallback for types that do not set one. When the timeout fires the
+worker aborts `context.signal` and marks the job failed (which parks it for
+retry while attempts remain). The timeout that governed a run is logged on
+its `Starting job` line as `timeoutMs`.
+
+`config.timeout` is also the **stale-running lease**: when the worker dies
+before it can mark anything, the scheduler reaps the row at
+`timeout + JOB_STALE_RUNNING_GRACE_MS` (see
+[How retries actually run](#how-retries-actually-run)). Set it to the type's
+worst honest run rather than an optimistic one — it is what tells the
+scheduler the difference between a slow job and a lost one.
 
 ## Step 4: Register the Config and Handler
 
@@ -337,6 +366,148 @@ docker logs -f cascadia-jobs-worker-dev
 ```
 
 The worker uses plain `tsx` (not watch mode), so you must restart it to pick up code changes.
+
+## How retries actually run
+
+`maxAttempts` and `retryDelays` describe a loop that lives in three places:
+
+1. **Claim.** A worker (Node or Python) takes an execution with an atomic
+   claim — one `UPDATE` that flips a `pending`/`queued` row to `running` and
+   increments `attempts`. An execution that starts is an attempt, however it
+   ends; a duplicate RabbitMQ delivery finds nothing to claim and acks
+   without executing.
+2. **Park.** A failed execution below the attempt cap is parked: status back
+   to `pending` with `nextRetryAt = now + retryDelays[attempts - 1]`. At the
+   cap the row goes `failed` terminally (the admin Retry button resets it).
+   The schedule is **snapshotted onto the row** at submit time
+   (`jobs.retry_delays`, milliseconds) beside `maxAttempts`, and both failure
+   paths — `JobService.markFailed` and the Python workers'
+   `mark_job_failed` — read that column, so a type's `retryDelays` governs
+   Python-executed types too. Editing a config affects jobs submitted
+   afterwards, not rows already queued; the admin Retry button re-snapshots.
+   A row written before the column existed, or one whose type declares
+   `retryDelays: []`, falls back to the executor's own 30s/60s/120s default.
+3. **Sweep.** Every Node jobs worker runs a DB sweep
+   (`lib/jobs/scheduler.ts`, interval `JOB_RETRY_SWEEP_MS`, default 15s) that
+   re-publishes parked rows whose backoff has elapsed. The sweep also
+   recovers **submit-crash orphans**: `JobService.submit` inserts the row,
+   publishes, then flips it to `queued`, and a crash between insert and
+   publish leaves a `pending` row with no `nextRetryAt` — swept once it is
+   older than a two-minute grace window. And it recovers **stranded `queued`
+   rows**: the claim is the only thing that ever moves one, so a delivery
+   acked without claiming — a worker whose claim hit a transient database
+   error, a broker that lost an unconsumed message — took the job's last
+   wake-up with it. Such a row is re-published once its `queued_at` is older
+   than `JOB_QUEUED_STALE_MS` (default 10 minutes). Keep that comfortably
+   above the deployment's worst-case queue latency: a genuine backlog older
+   than the grace costs one duplicate delivery per row per window, which the
+   claim in step 1 discards, because the re-publish restamps `queued_at`.
+4. **Reap.** A row leaves `running` only because the worker executing it
+   says so, so a worker that dies mid-execution — OOM kill, pod eviction,
+   power loss — used to wedge its job at `running` permanently: the claim
+   refuses a redelivery of it, the retry sweep never looks at `running`
+   rows, and the admin Retry button requires `failed`. The
+   stale-running sweep (`sweepStaleRunningJobs`, cadence
+   `JOB_STALE_SWEEP_MS`, default 60s) expires that lease. A row is reaped
+   once its `started_at` is older than **the type's own `timeout` plus a
+   grace window** (`JOB_STALE_RUNNING_GRACE_MS`, default 5 minutes), and the
+   reap is `markFailed` — the same guarded call a worker makes — so the row
+   parks for retry or fails terminally on exactly the ledger rules in step
+   2, and a worker that was merely slow and finishes during the sweep still
+   wins the race. No heartbeat column is involved: the claim already stamps
+   `started_at` and the config already declares how long the type may run.
+
+Multiple workers sweeping concurrently can re-publish the same job more than
+once; the claim in step 1 is what makes that harmless, so there is
+deliberately no cross-process lock around the sweep.
+
+The reap in step 4 skips any row whose type this process has no definition
+for — a community jobs worker sweeping a database that also carries
+enterprise rows, or a type dropped by an upgrade while rows of it are still
+in flight. Its timeout is simply unknowable here, so the row is left exactly
+as it is (warned about once per type per process) for whichever worker fleet
+does own the type.
+
+One deployment caveat: Python-executed types (CAD conversion/generation)
+park their retries in the same table, and the sweep that re-publishes them
+runs in the **Node** jobs worker. A deployment running only Python workers
+never retries a parked CAD job, and never reaps a stale running one either.
+
+### How a worker settles a delivery
+
+The loop above assumes the delivery itself is answered correctly, and there are
+exactly three answers a worker can give one. The Node worker
+(`lib/jobs/worker/index.ts`) and the two Python workers give the same three at
+the same three points, deliberately: the delivery is the job's only wake-up, so
+answering wrongly loses the job silently.
+
+1. **Decode.** The body is parsed as JSON and checked against `jobMessageSchema`
+   (`lib/jobs/types.ts`). A body that fails either is a poison message — no
+   amount of retrying fixes it — so it is nacked **without requeue**, which
+   routes it to the queue's dead-letter exchange. It gets there without opening
+   a database connection: validating at the boundary is what stops a garbage
+   `jobId` reaching the claim and coming back as a Postgres invalid-input error
+   that is indistinguishable, at that point, from an outage.
+2. **Claim.** If `claimJob` _throws_ — a different thing from returning null,
+   which just means some other delivery owns the job — the claim never landed
+   and the row is still `pending`/`queued`. Acking would consume the job's only
+   wake-up, and `markFailed` is guarded to `running` rows so it would no-op.
+   The delivery is nacked **with requeue** after a pause
+   (`WORKER_CLAIM_RETRY_DELAY_MS`, default 5s; `CLAIM_RETRY_DELAY_SECONDS` on
+   the Python workers), so a database outage bounces the message on a slow
+   cadence instead of spinning the queue at full speed. That pause holds a
+   prefetch slot for its duration, which is why it is measured in seconds.
+3. **Execute.** From a successful claim onwards every outcome is recorded in
+   the database, so every outcome **acks** — including a failed job, because
+   retries are scheduled by status and never by requeueing. The stored payload
+   is checked against its type's `payloadSchema` before the handler sees it,
+   and one that fails goes down the ordinary failure path rather than into the
+   handler as an unexplained `TypeError`.
+
+Recording a failure is itself a database write, running in exactly the
+conditions where the database is the likely culprit. If it cannot be written
+the worker logs loudly and acks anyway, leaving the row `running` — which is
+the case the reap in step 4 above exists for. The alternative is what used to
+happen: the Node consume callback discarded the handler's promise, so a
+transient outage surfaced as an unhandled rejection and Node ended the process,
+crash-looping it for the length of the outage. The worker also registers
+process-level backstops (`installProcessBackstops` in `jobs-worker-main.ts`) —
+an unhandled rejection is logged and survived, an uncaught exception is logged
+and exits 1 for the restart policy.
+
+### Handlers must be idempotent
+
+The reap expires a _lease_, not a process. Nothing stops a handler that is
+still executing — re-opening the row is all the sweep can do — so a retry
+can overlap the attempt it replaced:
+
+- the original worker is wedged rather than dead (a socket with no timeout,
+  a long GC pause) and comes back after the retry has started;
+- the handler ignores `context.signal` and keeps going past its own timeout;
+- the type is Python-executed, where `job_timeout` is currently configured
+  but not enforced by the worker, so the handler runs until the process ends.
+
+The `jobs` row is protected up to a point. Every terminal write is guarded to
+`running` rows, so while the row sits parked or failed a zombie's
+`markCompleted` lands nowhere and the reap's own outcome stands — that is
+what the reap relies on. It stops being protected once the retry is claimed:
+the row is `running` again, for a _different_ execution, and the guard cannot
+tell the two apart because nothing on the row identifies which execution owns
+it. **Side effects outside the `jobs` table are never protected.** So
+anything a handler does out there has to be idempotent or checkpointed:
+
+- write against a natural key and upsert (`onConflictDoUpdate`) rather than
+  inserting blindly, so a second attempt converges instead of duplicating;
+- checkpoint anything you paid for or cannot repeat — record the provider's
+  request id before waiting on it and resume that id on the next attempt,
+  rather than submitting a fresh request;
+- check `context.signal.aborted` and call `context.updateProgress` at every
+  natural boundary, which is what stops the cooperative cases early.
+
+If a handler genuinely cannot be made idempotent, give its type a `timeout`
+that comfortably exceeds its worst honest run: the reap only fires at
+`timeout + grace`, so an accurate timeout is what keeps a live handler out
+of the sweep's way.
 
 ## Existing Job Types for Reference
 

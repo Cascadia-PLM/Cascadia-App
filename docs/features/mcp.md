@@ -132,17 +132,17 @@ Claude Code registration (`.mcp.json` in the checkout):
 
 ### Tools
 
-| Tool              | Purpose                                                                                   |
-| ----------------- | ----------------------------------------------------------------------------------------- |
-| `instance_status` | Env flag presence (never secret values), licensed packages, DB connectivity, row counts   |
-| `list_item_types` | Registered item types with labels, tables, lifecycle state, runtime overrides             |
-| `list_packages`   | Optional licensed packages and enabled state (`CASCADIA_PACKAGES`)                        |
-| `list_roles`      | Built-in role definitions plus the roles present in the database                          |
-| `search_docs`     | Full-text search across `docs/**/*.md`, `CLAUDE.md`, `cascadia-feature-list.md`           |
-| `read_doc`        | Read one doc by repo-relative path (restricted to the doc tree)                           |
-| `db_push`         | `npm run db:push` (the pre-1.0 schema path); `force=true` to auto-approve destructive ops |
-| `db_seed`         | Run a seed script: `minimal`, `catalog`, `tools`, or `demo`                               |
-| `db_reset`        | **Destructive.** Truncate all tables; requires `confirm="RESET"`, optional reseed         |
+| Tool              | Purpose                                                                                                                      |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `instance_status` | Env flag presence (never secret values), licensed packages, DB connectivity, row counts                                      |
+| `list_item_types` | Registered item types with labels, tables, lifecycle state, runtime overrides                                                |
+| `list_packages`   | Optional licensed packages and enabled state (`CASCADIA_PACKAGES`)                                                           |
+| `list_roles`      | Built-in role definitions plus the roles present in the database                                                             |
+| `search_docs`     | Full-text search across `docs/**/*.md`, `CLAUDE.md`, `cascadia-feature-list.md`                                              |
+| `read_doc`        | Read one doc by repo-relative path (restricted to the doc tree)                                                              |
+| `db_push`         | `npm run db:push` (dev/demo schema apply — released installs use `db:migrate`); `force=true` to auto-approve destructive ops |
+| `db_seed`         | Run a seed script: `minimal`, `catalog`, `tools`, or `demo`                                                                  |
+| `db_reset`        | **Destructive.** Truncate all tables; requires `confirm="RESET"`, optional reseed                                            |
 
 The server starts without `DATABASE_URL` (database imports are lazy), so it
 can answer docs/configuration questions while an instance is still being

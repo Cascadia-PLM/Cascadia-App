@@ -25,7 +25,7 @@ import { eq } from 'drizzle-orm'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type * as schema from '@/lib/db/schema'
 import type { RoleName } from '@/lib/auth/permissions'
-import { roles, sessions, userRoles, users } from '@/lib/db/schema'
+import { roles, userRoles, users } from '@/lib/db/schema'
 import { ROLE_DEFINITIONS, roleToDbFormat } from '@/lib/auth/permissions'
 import { takeFirst } from '@/lib/db/take-first'
 
@@ -75,14 +75,6 @@ export interface TestRole {
 /**
  * Test session data type
  */
-export interface TestSession {
-  id: string
-  userId: string
-  expiresAt: Date
-  ipAddress: string | null
-  userAgent: string | null
-  createdAt: Date
-}
 
 let userCounter = 0
 let roleCounter = 0
@@ -215,6 +207,34 @@ export async function assignRoleToUser(
 }
 
 /**
+ * Seed the built-in roles, once, before any worker forks.
+ *
+ * `roles.name` is unique and no suite seeds the table, so every suite that
+ * wanted a built-in role inserted it — inside its own gate transaction, which
+ * then rolled back, so the next suite inserted it again. Run in parallel that
+ * is a queue of transactions contending on one unique index, and because
+ * different suites ask for different roles in different orders, it deadlocks:
+ * a full run failed here 9 to 12 times out of ~2000, in a different set of
+ * tests each time.
+ *
+ * Committed in global setup instead, first-writer-wins, the way the default
+ * lifecycles already are. After this, `insertTestUserWithRole` finds every
+ * built-in role and inserts nothing.
+ */
+export async function seedBuiltInRoles(db: TestDbInstance): Promise<void> {
+  for (const definition of Object.values(ROLE_DEFINITIONS)) {
+    await db
+      .insert(roles)
+      .values({
+        name: definition.name,
+        description: definition.description,
+        permissions: roleToDbFormat(definition),
+      })
+      .onConflictDoNothing({ target: roles.name })
+  }
+}
+
+/**
  * Insert test user with a specific role
  */
 export async function insertTestUserWithRole(
@@ -222,27 +242,33 @@ export async function insertTestUserWithRole(
   roleName: RoleName,
   userOverrides: CreateTestUserInput = {},
 ): Promise<{ user: TestUser; role: TestRole }> {
-  // First check if role already exists (from seed data)
   const definition = ROLE_DEFINITIONS[roleName]
-  const [existingRole] = await db
-    .select()
-    .from(roles)
-    .where(eq(roles.name, definition.name))
-    .limit(1)
+  let roleRow = await findRoleByName(db, definition.name)
 
-  let role: TestRole
-  const roleRow = existingRole
-  if (roleRow) {
-    role = {
-      id: roleRow.id,
-      name: roleRow.name,
-      description: roleRow.description,
-      permissions: roleRow.permissions as Record<string, Array<string>>,
-    }
-  } else {
-    // Create and insert new role
-    const roleData = createTestRole(roleName)
-    role = await insertTestRole(db, roleData)
+  if (!roleRow) {
+    // Global setup seeds these before any worker forks, so this is only
+    // reached on a database that predates it. Conflict-tolerant, then re-read:
+    // two forks racing on the unique name must not become a failed insert.
+    await db
+      .insert(roles)
+      .values({
+        name: definition.name,
+        description: definition.description,
+        permissions: roleToDbFormat(definition),
+      })
+      .onConflictDoNothing({ target: roles.name })
+    roleRow = await findRoleByName(db, definition.name)
+  }
+
+  if (!roleRow) {
+    throw new Error(`Role '${definition.name}' could not be seeded`)
+  }
+
+  const role: TestRole = {
+    id: roleRow.id,
+    name: roleRow.name,
+    description: roleRow.description,
+    permissions: roleRow.permissions as Record<string, Array<string>>,
   }
 
   // Create and insert user
@@ -254,52 +280,13 @@ export async function insertTestUserWithRole(
   return { user, role }
 }
 
-/**
- * Create a test session for a user
- */
-export function createTestSession(
-  userId: string,
-  overrides: Partial<TestSession> = {},
-): TestSession {
-  return {
-    id: overrides.id ?? crypto.randomUUID().replace(/-/g, ''),
-    userId,
-    expiresAt:
-      overrides.expiresAt ?? new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-    ipAddress: overrides.ipAddress ?? '127.0.0.1',
-    userAgent: overrides.userAgent ?? 'TestAgent/1.0',
-    createdAt: overrides.createdAt ?? new Date(),
-  }
-}
-
-/**
- * Insert test session into database
- */
-export async function insertTestSession(
-  db: TestDbInstance,
-  userId: string,
-  overrides: Partial<TestSession> = {},
-): Promise<TestSession> {
-  const sessionData = createTestSession(userId, overrides)
-
-  const inserted = takeFirst(
-    await db
-      .insert(sessions)
-      .values({
-        id: sessionData.id,
-        userId: sessionData.userId,
-        expiresAt: sessionData.expiresAt,
-        ipAddress: sessionData.ipAddress,
-        userAgent: sessionData.userAgent,
-      })
-      .returning(),
-  )
-
-  return {
-    ...inserted,
-    createdAt: inserted.createdAt,
-    expiresAt: inserted.expiresAt,
-  }
+async function findRoleByName(db: TestDbInstance, name: string) {
+  const [row] = await db
+    .select()
+    .from(roles)
+    .where(eq(roles.name, name))
+    .limit(1)
+  return row ?? null
 }
 
 /**

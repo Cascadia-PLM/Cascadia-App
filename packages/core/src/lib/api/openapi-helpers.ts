@@ -7,15 +7,33 @@ import type { DescribeRouteOptions } from 'hono-openapi'
 
 /**
  * Standard error envelope returned by `handleApiError`. Matches the shape
- * produced by `src/lib/errors/handleApiError.ts` so the spec stays honest.
+ * `createErrorResponse` (`src/lib/errors/api.ts`) actually writes, field for
+ * field, so the spec stays honest.
+ *
+ * Two of these fields were wrong until the CSRF rejection was made to
+ * validate against this schema. `fieldErrors` is a list of per-issue objects,
+ * not a map of field name to messages — that is what `ValidationError` builds
+ * from a `ZodError`, and it is what every 400 in the API has always returned.
+ * And `requestId` was missing entirely, though it is the field a support
+ * conversation starts from. `details` is a string and appears only in
+ * development.
  */
 export const errorResponseSchema = z.object({
   error: z.object({
     code: z.string(),
     message: z.string(),
     timestamp: z.string(),
-    fieldErrors: z.record(z.string(), z.array(z.string())).optional(),
-    details: z.record(z.string(), z.unknown()).optional(),
+    requestId: z.string().optional(),
+    fieldErrors: z
+      .array(
+        z.object({
+          field: z.string(),
+          message: z.string(),
+          code: z.string().optional(),
+        }),
+      )
+      .optional(),
+    details: z.string().optional(),
   }),
 })
 

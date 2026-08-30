@@ -27,6 +27,12 @@ export interface ItemSearchParams {
    * design the caller is working in.
    */
   contextDesignId?: string
+  /**
+   * Comma-separated design ids the endpoint confines results to. Distinct
+   * from `designScope`/`contextDesignId`: this is an explicit set, which is
+   * what the requirement and relationship pickers want.
+   */
+  designIds?: string
 }
 
 /**
@@ -37,7 +43,14 @@ export interface ItemSearchParams {
  * happened to load.
  */
 export function itemSearchQuery<T>(params: ItemSearchParams, enabled = true) {
-  const { itemType, limit = 50, state, designScope, contextDesignId } = params
+  const {
+    itemType,
+    limit = 50,
+    state,
+    designScope,
+    contextDesignId,
+    designIds,
+  } = params
 
   return queryOptions({
     queryKey: qk.collection('items', 'search', {
@@ -46,12 +59,14 @@ export function itemSearchQuery<T>(params: ItemSearchParams, enabled = true) {
       state,
       designScope,
       contextDesignId,
+      designIds,
     }),
     queryFn: async (): Promise<Array<T>> => {
       const search = new URLSearchParams({ itemType, limit: String(limit) })
       if (state) search.set('state', state)
       if (designScope) search.set('designScope', designScope)
       if (contextDesignId) search.set('contextDesignId', contextDesignId)
+      if (designIds) search.set('designIds', designIds)
       const result = await apiFetch<{ data: { items?: Array<T> } }>(
         `/api/v1/items/search?${search}`,
       )
@@ -76,6 +91,8 @@ export interface ItemTextSearchParams {
   designScope?: string
   /** The design the search is run from, for scope resolution. */
   contextDesignId?: string
+  /** Comma-separated design ids to confine results to. */
+  designIds?: string
 }
 
 /**
@@ -91,7 +108,14 @@ export function itemTextSearchQuery<T>(
   params: ItemTextSearchParams,
   enabled = true,
 ) {
-  const { q, types, limit = 50, designScope, contextDesignId } = params
+  const {
+    q,
+    types,
+    limit = 50,
+    designScope,
+    contextDesignId,
+    designIds,
+  } = params
 
   return queryOptions({
     queryKey: qk.collection('items', 'text-search', {
@@ -100,6 +124,7 @@ export function itemTextSearchQuery<T>(
       limit,
       designScope,
       contextDesignId,
+      designIds,
     }),
     queryFn: async (): Promise<Array<T>> => {
       const search = new URLSearchParams({
@@ -109,6 +134,7 @@ export function itemTextSearchQuery<T>(
       })
       if (designScope) search.set('designScope', designScope)
       if (contextDesignId) search.set('contextDesignId', contextDesignId)
+      if (designIds) search.set('designIds', designIds)
       const result = await apiFetch<{ data: { items?: Array<T> } }>(
         `/api/v1/items/search?${search}`,
       )

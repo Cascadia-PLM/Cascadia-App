@@ -18,7 +18,11 @@ import {
   verifyPassword,
 } from '@/lib/auth/password'
 import { SessionManager } from '@/lib/auth/session'
-import { AuthenticationError, ValidationError } from '@/lib/errors'
+import {
+  AccountLockedError,
+  AuthenticationError,
+  ValidationError,
+} from '@/lib/errors'
 import { takeFirst } from '@/lib/db/take-first'
 
 export interface LoginInput {
@@ -47,16 +51,133 @@ export interface LogoutResult {
   success: true
 }
 
-/** Maximum consecutive failed login attempts before lockout */
-const MAX_FAILED_ATTEMPTS = 10
-
-/** Lockout duration in minutes */
-const LOCKOUT_DURATION_MINUTES = 15
+/**
+ * Which password prompt a failed attempt came from.
+ *
+ * Recorded in the `auth_events` metadata so an administrator reading a
+ * lockout can tell a login spray apart from a signer mistyping their password
+ * on an approval ten times. Both spend the same budget — see
+ * {@link AuthService.recordFailedPasswordAttempt}.
+ */
+export type PasswordAttemptSource = 'login' | 'signature'
 
 /**
  * Service for handling authentication operations.
  */
 export class AuthService {
+  /** Maximum consecutive failed password attempts before lockout */
+  static readonly MAX_FAILED_ATTEMPTS = 10
+
+  /** Lockout duration in minutes */
+  static readonly LOCKOUT_DURATION_MINUTES = 15
+
+  // ============================================
+  // Lockout policy
+  //
+  // Every path that checks an account password shares one budget, so these
+  // live here rather than inline in `login()`. The three writes below all go
+  // to the module-level `db` handle and deliberately take no `tx`: a caller
+  // that is inside a transaction which is about to roll back (the approval
+  // signature path is exactly that) must still leave the counter behind, or
+  // the failure erases its own record and the lockout never engages. On the
+  // pooled handle each of these lands on its own connection and commits
+  // immediately. Do not add a `tx` parameter.
+  // ============================================
+
+  /**
+   * Minutes left on an active lockout, or `null` when the account is not
+   * locked. The single reading of `lockedUntil`; no caller compares the
+   * timestamp itself.
+   */
+  static lockoutMinutesRemaining(user: {
+    lockedUntil: Date | null
+  }): number | null {
+    if (!user.lockedUntil || user.lockedUntil <= new Date()) return null
+    return Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000)
+  }
+
+  /**
+   * Refuse to go on while the account is locked out.
+   *
+   * `login()` deliberately does not call this. Its refusal predates
+   * `AccountLockedError` and tells the signing-in user how many minutes are
+   * left, which is what the sign-in form displays; changing that class would
+   * be a behavior change to the login endpoint rather than the extraction it
+   * looks like. Every other password prompt gets this generic refusal.
+   */
+  static assertNotLocked(user: { lockedUntil: Date | null }): void {
+    if (this.lockoutMinutesRemaining(user) !== null) {
+      throw new AccountLockedError()
+    }
+  }
+
+  /**
+   * Record one failed password check and lock the account when the budget is
+   * spent. Returns the new count and whether this attempt was the one that
+   * locked it.
+   *
+   * `currentFailedAttempts` is passed in rather than re-read because every
+   * caller has already selected the row it is about to verify against.
+   */
+  static async recordFailedPasswordAttempt(
+    userId: string,
+    currentFailedAttempts: number,
+    options: {
+      source: PasswordAttemptSource
+      ipAddress?: string | null
+      username?: string
+    },
+  ): Promise<{ failedAttempts: number; locked: boolean }> {
+    const failedAttempts = currentFailedAttempts + 1
+    const locked = failedAttempts >= AuthService.MAX_FAILED_ATTEMPTS
+
+    const updateFields: { failedLoginAttempts: number; lockedUntil?: Date } = {
+      failedLoginAttempts: failedAttempts,
+    }
+    if (locked) {
+      updateFields.lockedUntil = new Date(
+        Date.now() + AuthService.LOCKOUT_DURATION_MINUTES * 60 * 1000,
+      )
+    }
+
+    await db.update(users).set(updateFields).where(eq(users.id, userId))
+
+    await db.insert(authEvents).values({
+      userId,
+      eventType: locked ? 'account_locked' : 'login_failed',
+      ipAddress: options.ipAddress ?? null,
+      metadata: {
+        username: options.username,
+        source: options.source,
+        reason: locked ? 'max_attempts_exceeded' : 'invalid_password',
+        failedAttempts,
+      },
+    })
+
+    return { failedAttempts, locked }
+  }
+
+  /**
+   * Clear the lockout state after a password check succeeded.
+   *
+   * `touchLastLogin` is what separates signing in from signing: both prove the
+   * password, but only one of them is a login, and `users.lastLogin` is what
+   * the admin screens report as last seen.
+   */
+  static async resetLockout(
+    userId: string,
+    options: { touchLastLogin?: boolean } = {},
+  ): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        ...(options.touchLastLogin ? { lastLogin: new Date() } : {}),
+      })
+      .where(eq(users.id, userId))
+  }
+
   /**
    * Authenticate a user with username (email) and password.
    * Creates a session and returns the session token.
@@ -111,11 +232,8 @@ export class AuthService {
     }
 
     // Check account lockout
-    if (user.lockedUntil && user.lockedUntil > new Date()) {
-      const minutesRemaining = Math.ceil(
-        (user.lockedUntil.getTime() - Date.now()) / 60000,
-      )
-
+    const minutesRemaining = this.lockoutMinutesRemaining(user)
+    if (minutesRemaining !== null) {
       await db.insert(authEvents).values({
         userId: user.id,
         eventType: 'login_failed',
@@ -132,36 +250,16 @@ export class AuthService {
     const isValidPassword = await verifyPassword(user.passwordHash, password)
 
     if (!isValidPassword) {
-      const newFailedAttempts = user.failedLoginAttempts + 1
-      const isNowLocked = newFailedAttempts >= MAX_FAILED_ATTEMPTS
+      // Increment failed attempts, lock on the last one, and audit either way.
+      const { locked } = await this.recordFailedPasswordAttempt(
+        user.id,
+        user.failedLoginAttempts,
+        { source: 'login', ipAddress, username },
+      )
 
-      // Increment failed attempts and optionally lock
-      const updateFields: Record<string, unknown> = {
-        failedLoginAttempts: newFailedAttempts,
-      }
-      if (isNowLocked) {
-        updateFields.lockedUntil = new Date(
-          Date.now() + LOCKOUT_DURATION_MINUTES * 60 * 1000,
-        )
-      }
-
-      await db.update(users).set(updateFields).where(eq(users.id, user.id))
-
-      // Log failed login attempt
-      await db.insert(authEvents).values({
-        userId: user.id,
-        eventType: isNowLocked ? 'account_locked' : 'login_failed',
-        ipAddress,
-        metadata: {
-          username,
-          reason: isNowLocked ? 'max_attempts_exceeded' : 'invalid_password',
-          failedAttempts: newFailedAttempts,
-        },
-      })
-
-      if (isNowLocked) {
+      if (locked) {
         throw new AuthenticationError(
-          `Account locked due to too many failed attempts. Try again in ${LOCKOUT_DURATION_MINUTES} minutes.`,
+          `Account locked due to too many failed attempts. Try again in ${AuthService.LOCKOUT_DURATION_MINUTES} minutes.`,
         )
       }
 
@@ -169,14 +267,7 @@ export class AuthService {
     }
 
     // Successful login — reset lockout state
-    await db
-      .update(users)
-      .set({
-        failedLoginAttempts: 0,
-        lockedUntil: null,
-        lastLogin: new Date(),
-      })
-      .where(eq(users.id, user.id))
+    await this.resetLockout(user.id, { touchLastLogin: true })
 
     // Rehash with Argon2id if still using legacy PBKDF2
     if (needsRehash(user.passwordHash)) {
@@ -294,10 +385,15 @@ export class AuthService {
         where: eq(roles.name, 'User'),
       })
       if (defaultRole) {
-        await db.insert(userRoles).values({
-          userId: user.id,
-          roleId: defaultRole.id,
-        })
+        // Idempotent under the composite PK: a repeat assignment is a
+        // no-op, never a 500.
+        await db
+          .insert(userRoles)
+          .values({
+            userId: user.id,
+            roleId: defaultRole.id,
+          })
+          .onConflictDoNothing()
       }
     }
 

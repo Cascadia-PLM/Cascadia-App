@@ -4,7 +4,7 @@
 /**
  * Stylesheet E2E Smoke Test
  *
- * Tier 1: runs on every PR, and needs no login — the sign-in page is enough.
+ * Needs no login — the sign-in page is enough.
  *
  * This exists because the whole application once rendered as unstyled HTML in
  * both editions and every gate stayed green, including these E2E tests. Tailwind
@@ -28,6 +28,12 @@
 import { expect, test } from '@playwright/test'
 
 const TRANSPARENT = new Set(['rgba(0, 0, 0, 0)', 'transparent'])
+
+/*
+ * The sign-in page is the subject here, so this opts out of the signed-in
+ * state the setup project saves — authenticated, `/` renders the dashboard.
+ */
+test.use({ storageState: { cookies: [], origins: [] } })
 
 test.describe('Stylesheet', () => {
   test('the sign-in page renders with its stylesheet applied', async ({

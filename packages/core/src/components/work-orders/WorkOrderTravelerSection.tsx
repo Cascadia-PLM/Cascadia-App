@@ -45,7 +45,9 @@ import {
 import { ExecutionHistoryTable } from '@/components/work-instructions/ExecutionHistoryTable'
 import { apiFetch } from '@/lib/api/client'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
 import {
+  itemTextSearchQuery,
   useInvalidateResources,
   workOrderExecutionsQuery,
   workOrderInstructionsQuery,
@@ -481,7 +483,6 @@ function AddInstructionDialog({
 }) {
   const { handleError, showSuccess } = useErrorHandler()
   const [query, setQuery] = useState('')
-  const [suggestions, setSuggestions] = useState<Array<TemplateSuggestion>>([])
   const [selected, setSelected] = useState<TemplateSuggestion | null>(null)
   const [perUnit, setPerUnit] = useState(false)
   const [requiredCount, setRequiredCount] = useState('1')
@@ -490,32 +491,19 @@ function AddInstructionDialog({
   useEffect(() => {
     if (!open) {
       setQuery('')
-      setSuggestions([])
       setSelected(null)
       setPerUnit(false)
       setRequiredCount('1')
     }
   }, [open])
 
-  useEffect(() => {
-    if (selected || query.trim().length < 2) {
-      setSuggestions([])
-      return
-    }
-    const t = setTimeout(async () => {
-      try {
-        const result = await apiFetch<{
-          data: { items: Array<TemplateSuggestion> }
-        }>(
-          `/api/v1/items/search?q=${encodeURIComponent(query.trim())}&types=WorkInstruction&limit=8`,
-        )
-        setSuggestions(result.data.items)
-      } catch {
-        setSuggestions([])
-      }
-    }, 250)
-    return () => clearTimeout(t)
-  }, [query, selected])
+  const debouncedQuery = useDebouncedValue(query.trim(), 250)
+  const { data: suggestions = [] } = useQuery(
+    itemTextSearchQuery<TemplateSuggestion>(
+      { q: debouncedQuery, types: ['WorkInstruction'], limit: 8 },
+      !selected && debouncedQuery.length >= 2,
+    ),
+  )
 
   const handleAdd = async () => {
     if (!selected) return

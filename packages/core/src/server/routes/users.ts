@@ -2,15 +2,43 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
+import { z } from 'zod'
 import { tagged } from '../adapter'
 import { UserService } from '@/lib/auth/UserService'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+import { NotFoundError } from '@/lib/errors'
 import { hashSessionToken } from '@/lib/auth/password'
 import { AuthService } from '@/lib/auth/AuthService'
 import { apiHandler, created } from '@/lib/api/handler'
-import { getClientIp } from '@/lib/api/rate-limit'
+import { userCreateSchema, userUpdateSchema } from '@/lib/auth/types'
+import { resolveClientIp } from '@/lib/api/client-ip'
 import { db } from '@/lib/db'
 import { authEvents } from '@/lib/db/schema/users'
+
+/**
+ * Password bodies.
+ *
+ * The minimum length is `UserService`'s to enforce — it hashes and stores the
+ * value, and a second opinion here would be a second place to change. What
+ * these schemas do is make "a password is required" a 400 that names the
+ * field, and cap the length so an unbounded string never reaches the hasher.
+ */
+const MAX_PASSWORD = 512
+
+const changePasswordSchema = z.object({
+  password: z.string().min(1, 'Password is required').max(MAX_PASSWORD),
+  currentPassword: z
+    .string()
+    .min(1, 'Current password is required')
+    .max(MAX_PASSWORD),
+})
+
+const resetPasswordSchema = z.object({
+  password: z.string().min(1, 'Password is required').max(MAX_PASSWORD),
+})
+
+const assignRolesSchema = z.object({
+  roleIds: z.array(z.string().uuid()).max(100),
+})
 
 const adapt = tagged('Users')
 
@@ -46,10 +74,9 @@ app.post(
   '/',
   adapt(
     apiHandler(
-      { permission: ['users', 'create'] },
-      async ({ request, user }) => {
-        const data = await request.json()
-        const newUser = await UserService.createUser(data, user.id)
+      { permission: ['users', 'create'], body: userCreateSchema },
+      async ({ body, user }) => {
+        const newUser = await UserService.createUser(body, user.id)
 
         return created({ user: newUser })
       },
@@ -77,12 +104,10 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['users', 'update'] },
-      async ({ params, request, user }) => {
-        const { id } = params
-        const data = await request.json()
-        const updated = await UserService.updateUser(id, data, user.id)
+    apiHandler<{ id: string }, z.infer<typeof userUpdateSchema>>(
+      { permission: ['users', 'update'], body: userUpdateSchema },
+      async ({ params, body, user }) => {
+        const updated = await UserService.updateUser(params.id, body, user.id)
         return { user: updated }
       },
     ),
@@ -108,15 +133,13 @@ app.delete(
 app.post(
   '/:id/activate',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['users', 'manage'] },
-      async ({ params, request }) => {
-        const { id } = params
-        const { active } = await request.json()
-        if (typeof active !== 'boolean') {
-          throw new ValidationError('active must be a boolean')
-        }
-        const user = await UserService.toggleActive(id, active)
+    apiHandler<{ id: string }, { active: boolean }>(
+      {
+        permission: ['users', 'manage'],
+        body: z.object({ active: z.boolean() }),
+      },
+      async ({ params, body: { active } }) => {
+        const user = await UserService.toggleActive(params.id, active)
         return { user }
       },
     ),
@@ -127,17 +150,15 @@ app.post(
 app.put(
   '/:id/password',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['users', 'manage'], rateLimit: 'login' },
-      async ({ params, request, user }) => {
+    apiHandler<{ id: string }, z.infer<typeof changePasswordSchema>>(
+      {
+        permission: ['users', 'manage'],
+        rateLimit: 'login',
+        body: changePasswordSchema,
+      },
+      async ({ params, request, body, user }) => {
         const { id } = params
-        const { password, currentPassword } = await request.json()
-        if (!password || typeof password !== 'string') {
-          throw new ValidationError('Password is required')
-        }
-        if (!currentPassword || typeof currentPassword !== 'string') {
-          throw new ValidationError('Current password is required')
-        }
+        const { password, currentPassword } = body
 
         // Extract current session ID so it can be preserved
         const cookieHeader = request.headers.get('cookie')
@@ -158,7 +179,7 @@ app.put(
           await tx.insert(authEvents).values({
             userId: id,
             eventType: 'password_changed',
-            ipAddress: getClientIp(request),
+            ipAddress: resolveClientIp(request),
             metadata: {
               actorUserId: user.id,
               method: 'verified_admin_change',
@@ -176,14 +197,14 @@ app.put(
 app.post(
   '/:id/reset-password',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['users', 'manage'], rateLimit: 'login' },
-      async ({ params, request, user }) => {
+    apiHandler<{ id: string }, z.infer<typeof resetPasswordSchema>>(
+      {
+        permission: ['users', 'manage'],
+        rateLimit: 'login',
+        body: resetPasswordSchema,
+      },
+      async ({ params, request, body: { password }, user }) => {
         const { id } = params
-        const { password } = await request.json()
-        if (!password || typeof password !== 'string') {
-          throw new ValidationError('Password is required')
-        }
 
         await db.transaction(async (tx) => {
           await UserService.adminResetPassword(id, password, tx)
@@ -191,7 +212,7 @@ app.post(
           await tx.insert(authEvents).values({
             userId: id,
             eventType: 'password_reset',
-            ipAddress: getClientIp(request),
+            ipAddress: resolveClientIp(request),
             metadata: { actorUserId: user.id },
           })
         })
@@ -222,15 +243,10 @@ app.get(
 app.put(
   '/:id/roles',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['users', 'manage'] },
-      async ({ params, request }) => {
-        const { id } = params
-        const { roleIds } = await request.json()
-        if (!Array.isArray(roleIds)) {
-          throw new ValidationError('roleIds must be an array')
-        }
-        await UserService.assignRoles(id, roleIds)
+    apiHandler<{ id: string }, z.infer<typeof assignRolesSchema>>(
+      { permission: ['users', 'manage'], body: assignRolesSchema },
+      async ({ params, body: { roleIds } }) => {
+        await UserService.assignRoles(params.id, roleIds)
         return { success: true }
       },
     ),

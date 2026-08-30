@@ -24,9 +24,9 @@ const NEVER_COPIED = new Set(['draftManifestId'])
  * `itemId`, so this copies **the whole row** rather than a hand-maintained
  * field list. That is the point: the two hand-written copies this replaced had
  * already drifted from the schema in opposite directions — one dropped a Part's
- * `trackingMode`, the other dropped `quantityOnHand`, `reorderPoint` and
- * `location` — and every column added since would have had to be remembered in
- * both. Copying by row means a new column is carried forward the day it exists.
+ * `trackingMode`, the other dropped the (since-removed) inventory columns —
+ * and every column added since would have had to be remembered in both.
+ * Copying by row means a new column is carried forward the day it exists.
  *
  * Types whose content spills into child tables (WorkInstruction: operations,
  * steps, attachments) declare a `copyChildren` on their handler; it runs even

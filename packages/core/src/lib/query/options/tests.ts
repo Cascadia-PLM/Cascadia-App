@@ -3,32 +3,20 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
+import type { ApiData } from '@/lib/api/typed'
 import { apiFetch } from '@/lib/api/client'
 
-/** One recorded run of a test case. */
-export interface TestExecution {
-  id: string
-  testCaseId: string
-  executorId: string
-  executorName?: string
-  executedAt: string
-  status: 'Passed' | 'Failed' | 'Blocked'
-  duration?: number
-  environment?: string
-  actualResults?: string
-  notes?: string
-}
+/** One recorded run of a test case — derived from the OpenAPI contract (FE-7). */
+export type TestExecution = ApiData<
+  '/api/v1/test-cases/{id}/executions',
+  'get'
+>['executions'][number]
 
-/** A test case as listed under its parent plan. */
-export interface TestPlanTestCase {
-  id: string
-  itemNumber: string
-  name: string | null
-  state: string
-  testType: string | null
-  executionStatus: string | null
-  lastExecutedAt: string | null
-}
+/** A test case as listed under its parent plan — derived from the contract. */
+export type TestPlanTestCase = ApiData<
+  '/api/v1/test-plans/{id}/test-cases',
+  'get'
+>['testCases'][number]
 
 /**
  * Execution history for one test case.

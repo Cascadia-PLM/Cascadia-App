@@ -70,6 +70,16 @@ const createEmptyTool = (): Tool => ({
   notes: '',
 })
 
+/**
+ * The tabs this detail view renders. The route's search schema derives its
+ * `tab` enum from this list, so the URL contract and the rendered tabs
+ * cannot drift apart; the `onValueChange` cast below is the one seam where
+ * Radix's `string` meets it, and the triggers are rendered from the same
+ * source of truth.
+ */
+export const TOOL_DETAIL_TABS = ['details', 'history'] as const
+export type ToolDetailTab = (typeof TOOL_DETAIL_TABS)[number]
+
 interface ToolDetailProps {
   /** Called after a lifecycle transition succeeds (refresh the item) */
   onTransitioned?: () => void
@@ -78,8 +88,8 @@ interface ToolDetailProps {
   onDelete?: () => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
-  activeTab?: 'details' | 'history'
-  onTabChange?: (tab: string) => void
+  activeTab?: ToolDetailTab
+  onTabChange?: (tab: ToolDetailTab) => void
 }
 
 export function ToolDetail({
@@ -315,7 +325,11 @@ export function ToolDetail({
           </div>
         )}
 
-        <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => onTabChange?.(value as ToolDetailTab)}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>

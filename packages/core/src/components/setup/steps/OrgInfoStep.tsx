@@ -2,8 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Building2, CheckCircle, Loader2 } from 'lucide-react'
 import { strings } from '../strings'
+import { settingQuery } from '@/lib/query'
 import { Button, Card, CardContent, Input, Label } from '@/components/ui'
 
 interface OrgInfo {
@@ -28,23 +30,14 @@ export function OrgInfoStep({ onCompleted }: OrgInfoStepProps) {
   const [savedName, setSavedName] = useState<string | null>(null)
   const [error, setError] = useState('')
 
+  // Whatever a previous run of the wizard stored, so re-running shows it.
+  const { data: stored } = useQuery(settingQuery<OrgInfo>('org.info'))
   useEffect(() => {
-    let cancelled = false
-    fetch('/api/v1/admin/settings?key=org.info')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((json) => {
-        if (cancelled || !json) return
-        const stored = json.data?.setting?.jsonValue as OrgInfo | undefined
-        if (stored) {
-          setForm({ ...DEFAULT_ORG_INFO, ...stored })
-          setSavedName(stored.name)
-        }
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
+    if (stored) {
+      setForm({ ...DEFAULT_ORG_INFO, ...stored })
+      setSavedName(stored.name)
     }
-  }, [])
+  }, [stored])
 
   const handleSave = async () => {
     if (!form.name.trim()) {

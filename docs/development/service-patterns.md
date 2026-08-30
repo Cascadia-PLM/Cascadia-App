@@ -246,41 +246,53 @@ return db.transaction(async (tx) => {
 }, { isolationLevel: 'repeatable read' })
 ```
 
-### When NOT to Use Transactions
+### Composing Transactions Across Services — `withTx`
 
-Avoid wrapping calls that contain their own transactions. Nested transactions with `postgres.js` attempt to reserve additional connections and can deadlock:
+A service that always calls `db.transaction()` cannot take part in a
+caller's transaction: on the global `db` handle that opens a _second_,
+independent transaction on another pooled connection, so the caller's
+rollback leaves the callee's writes behind. That is what once made the
+change-order release's outer transaction decorative — every nested
+`ItemService.update()` committed on its own.
 
-```typescript
-// CheckoutService.createOnBranch — CommitService.create() has its own transaction
-// So we do NOT wrap the outer method in db.transaction()
-
-// 1. Insert item
-const [newItem] = await db.insert(items).values({ ... }).returning()
-
-// 2. Insert branchItem
-await db.insert(branchItems).values({ ... })
-
-// 3. Create commit (has its own transaction internally)
-const commit = await CommitService.create({ ... }, userId)
-```
-
-### Multi-step Operations
-
-When multiple operations must happen atomically but one step has its own transaction, use sequential calls without a wrapping transaction:
+The pattern the codebase uses instead: a service method accepts an
+optional trailing `tx?: TransactionClient`, threads it to every callee,
+and wraps its own writes in `withTx(tx, fn)` from `@/lib/db` — which runs
+`fn` inside the caller's transaction when there is one and opens a new
+one otherwise. Nesting a real transaction client produces a savepoint,
+which is what you want.
 
 ```typescript
-static async deleteOnBranch(itemMasterId, branchId, commitMessage, userId) {
-  // Step 1: Update branchItem (single query, auto-committed)
-  await db.update(branchItems)
-    .set({ changeType: 'deleted' })
-    .where(eq(branchItems.id, bi.id))
+import { withTx } from '../db'
+import type { TransactionClient } from '../db'
 
-  // Step 2: Create commit (has its own transaction)
-  const commit = await CommitService.create({ ... }, userId)
-
-  return commit
+static async addAffectedItem(
+  changeOrderId: string,
+  input: AddAffectedItemInput,
+  userId: string,
+  outerTx?: TransactionClient,
+) {
+  return withTx(outerTx, async (tx) => {
+    // Every write in here — and every callee handed `tx` — commits and
+    // rolls back with the caller.
+    await SomeOtherService.doPart(changeOrderId, userId, tx)
+    return tx.insert(changeOrderAffectedItems).values({ ... }).returning()
+  })
 }
 ```
+
+Real call sites to copy from: `ChangeOrderService.addAffectedItem` /
+`addAffectedItemsBatch`, `BranchService`, `ItemService`, `UserService`.
+`docs/architecture/service-layer.md` ("Transaction Boundaries") tells the
+same story from the architecture side.
+
+**A green test suite does not verify this.** `TestDatabase` injects its
+gate transaction as the global `db` and caps the pool at one connection,
+so a service that ignores the caller's `tx` and opens its own still lands
+on the same connection — as a savepoint nested inside the caller's — and
+rolls back with it. Ignoring `tx` therefore looks perfectly atomic under
+test and is not atomic at all in production, where the global handle is a
+pool. Review this by reading the call chain, not by trusting the suite.
 
 ## Service Composition
 

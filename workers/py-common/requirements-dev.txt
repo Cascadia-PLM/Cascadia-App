@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2026 Cascadia PLM LLC
+
+# What the py-common test suite needs, and nothing else. The runtime deps are
+# pinned identically in workers/cad-converter/environment.yml and
+# workers/cad-generator/environment.yml — this file exists so the suite can run
+# under a plain `pip install -r`, without a conda solve, since py-common itself
+# pulls in neither pythonocc-core nor cadquery.
+pytest>=7.0
+psycopg[binary]>=3.1
+pydantic>=2.0

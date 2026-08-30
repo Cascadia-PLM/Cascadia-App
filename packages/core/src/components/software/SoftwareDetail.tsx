@@ -64,6 +64,16 @@ const createEmptySoftware = (defaultDesignId?: string): Software => ({
   toolchain: '',
 })
 
+/**
+ * The tabs this detail view renders. The route's search schema derives its
+ * `tab` enum from this list, so the URL contract and the rendered tabs
+ * cannot drift apart; the `onValueChange` cast below is the one seam where
+ * Radix's `string` meets it, and the triggers are rendered from the same
+ * source of truth.
+ */
+export const SOFTWARE_DETAIL_TABS = ['details', 'source', 'history'] as const
+export type SoftwareDetailTab = (typeof SOFTWARE_DETAIL_TABS)[number]
+
 interface SoftwareDetailProps {
   software?: Software
   designs?: Array<Design>
@@ -72,8 +82,8 @@ interface SoftwareDetailProps {
   onDelete?: () => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
-  activeTab?: 'details' | 'source' | 'history'
-  onTabChange?: (tab: string) => void
+  activeTab?: SoftwareDetailTab
+  onTabChange?: (tab: SoftwareDetailTab) => void
 }
 
 export function SoftwareDetail({
@@ -230,7 +240,11 @@ export function SoftwareDetail({
         </div>
       )}
 
-      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => onTabChange?.(value as SoftwareDetailTab)}
+        className="w-full"
+      >
         <TabsList
           className={
             isCreateMode ? 'grid w-full grid-cols-1' : 'grid w-full grid-cols-3'

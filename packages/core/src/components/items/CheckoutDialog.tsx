@@ -46,7 +46,14 @@ interface CheckoutDialogProps {
   itemId: string
   itemNumber: string
   designId: string
-  onCheckoutComplete?: (branchId: string) => void
+  /**
+   * `currentItemId` is the row the branch now tracks for this item — the
+   * revision working copy the checkout minted for a released item, or the
+   * shared base row when no copy was needed. When it differs from `itemId`,
+   * edits belong on that row's page: saves addressed to the row the dialog
+   * was opened from would target the released version and be refused.
+   */
+  onCheckoutComplete?: (branchId: string, currentItemId?: string) => void
 }
 
 export function CheckoutDialog({
@@ -114,7 +121,9 @@ export function CheckoutDialog({
 
     setIsSubmitting(true)
     try {
-      await apiFetch(`/api/v1/items/${itemId}/checkout`, {
+      const result = await apiFetch<{
+        data: { branchItem: { currentItemId: string | null } }
+      }>(`/api/v1/items/${itemId}/checkout`, {
         method: 'POST',
         body: JSON.stringify({ branchId: selectedBranchId }),
       })
@@ -127,7 +136,10 @@ export function CheckoutDialog({
 
       await invalidate('branch-items')
       onOpenChange(false)
-      onCheckoutComplete?.(selectedBranchId)
+      onCheckoutComplete?.(
+        selectedBranchId,
+        result.data.branchItem.currentItemId ?? undefined,
+      )
     } catch (error) {
       handleError(error, { title: 'Failed to check out item' })
     } finally {
@@ -153,7 +165,9 @@ export function CheckoutDialog({
     setSelectedBranchId(workspaceId)
     setIsSubmitting(true)
     try {
-      await apiFetch(`/api/v1/items/${itemId}/checkout`, {
+      const result = await apiFetch<{
+        data: { branchItem: { currentItemId: string | null } }
+      }>(`/api/v1/items/${itemId}/checkout`, {
         method: 'POST',
         body: JSON.stringify({ branchId: workspaceId }),
       })
@@ -165,7 +179,10 @@ export function CheckoutDialog({
 
       await invalidate('workspaces', 'branch-items')
       onOpenChange(false)
-      onCheckoutComplete?.(workspaceId)
+      onCheckoutComplete?.(
+        workspaceId,
+        result.data.branchItem.currentItemId ?? undefined,
+      )
     } catch (error) {
       handleError(error, { title: 'Failed to check out item' })
     } finally {
@@ -204,6 +221,7 @@ export function CheckoutDialog({
                 {/* Option: Existing ECO */}
                 {ecoBranches.length > 0 && (
                   <div
+                    data-testid="checkout-option-eco"
                     className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                       checkoutOption === 'existing'
                         ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20'
@@ -224,7 +242,10 @@ export function CheckoutDialog({
                         value={selectedBranchId}
                         onValueChange={setSelectedBranchId}
                       >
-                        <SelectTrigger className="w-full mt-2">
+                        <SelectTrigger
+                          className="w-full mt-2"
+                          data-testid="checkout-eco-branch-select"
+                        >
                           <SelectValue placeholder="Select ECO branch">
                             {getSelectedBranchDisplay()}
                           </SelectValue>
@@ -235,7 +256,11 @@ export function CheckoutDialog({
                             {ecoBranches.map((branch) => {
                               const status = branchStatuses.get(branch.id)
                               return (
-                                <SelectItem key={branch.id} value={branch.id}>
+                                <SelectItem
+                                  key={branch.id}
+                                  value={branch.id}
+                                  data-testid="checkout-eco-branch-option"
+                                >
                                   <div className="flex items-center gap-2">
                                     <span>{branch.name}</span>
                                     {status?.isCheckedOut && (
@@ -385,6 +410,7 @@ export function CheckoutDialog({
             Cancel
           </Button>
           <Button
+            data-testid="checkout-confirm"
             onClick={handleCheckout}
             disabled={
               !selectedBranchId ||

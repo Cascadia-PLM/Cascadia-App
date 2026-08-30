@@ -12,6 +12,7 @@
 import { ProgramService } from '../services/ProgramService'
 import { DesignService } from '../services/DesignService'
 import { permissionService } from './permission-service'
+import type { AccessScope } from '../db/filters'
 
 export class AccessControlService {
   /**
@@ -153,5 +154,33 @@ export class AccessControlService {
 
     const programs = await ProgramService.listByUser(userId)
     return programs.map((p) => p.id)
+  }
+
+  /**
+   * Both axes of the caller's reach, resolved together — what
+   * `accessScopeCondition` takes.
+   *
+   * Not every item type scopes on designs: a work order names its program on
+   * its own row and has no design at all, and neither axis derives from the
+   * other. Resolving them here rather than at each call site means a query
+   * cannot end up bounded on one axis and unbounded on the other, and it
+   * costs one membership lookup instead of the two that
+   * `getAccessibleDesignIds` + `getAccessibleProgramIds` made side by side.
+   *
+   * `null` is cross-program authority. It is not `{ designIds: [],
+   * programIds: [] }`, which reaches nothing on either axis.
+   */
+  static async getAccessScope(userId: string): Promise<AccessScope | null> {
+    // Cross-program authority - return null to indicate "all"
+    if (await this.hasCrossProgramAccess(userId)) {
+      return null
+    }
+
+    const programs = await ProgramService.listByUser(userId)
+    const programIds = programs.map((p) => p.id)
+    return {
+      programIds,
+      designIds: await DesignService.listAccessibleIds(programIds),
+    }
   }
 }

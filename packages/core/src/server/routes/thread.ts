@@ -92,8 +92,12 @@ app.get(
 app.post(
   '/:itemId/compare',
   adapt(
-    apiHandler<{ itemId: string }>(
+    apiHandler<
+      { itemId: string },
+      z.infer<typeof threadComparisonRequestSchema>
+    >(
       {
+        body: threadComparisonRequestSchema,
         openapi: {
           summary: 'Compare threads at two version contexts',
           // Body schema deliberately not annotated: the discriminated-union
@@ -104,18 +108,11 @@ app.post(
           },
         },
       },
-      async ({ request, params }) => {
+      async ({ body, params }) => {
         const { itemId } = params
-        const body = await request.json()
-
-        // Parse and validate request body
-        const validated = threadComparisonRequestSchema.parse(body)
 
         // Run comparison
-        const comparison = await ThreadComparisonService.compare(
-          itemId,
-          validated,
-        )
+        const comparison = await ThreadComparisonService.compare(itemId, body)
 
         return comparison
       },

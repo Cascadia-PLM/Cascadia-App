@@ -13,6 +13,7 @@ import {
   items,
   upstreamChanges,
 } from '../db/schema'
+import { notDeleted } from '../db/filters'
 import { NotFoundError, ValidationError } from '../errors'
 import { DesignService } from './DesignService'
 import { BranchService } from './BranchService'
@@ -21,6 +22,7 @@ import { VersionResolver } from './VersionResolver'
 import { LifecycleService } from './LifecycleService'
 import type { UpstreamChangeItem } from '../db/schema'
 import { takeFirst } from '@/lib/db/take-first'
+import { serviceLogger } from '@/lib/logging/logger'
 
 /**
  * Relationship type for linking MBOM items back to their EBOM source
@@ -67,6 +69,15 @@ export interface MbomCreationResult {
   itemsCopied: number
   relationshipsCopied: number
   sourceLinks: number
+  /**
+   * Work instruction attachments inherited from the EBOM. These rows are
+   * the traveler baseline — `WorkOrderInstructionService.populate` walks the
+   * MBOM and instantiates every work instruction attached to every part — so
+   * a zero here on an EBOM that carries flagged attachments means the work
+   * orders will be missing procedures. Inheritance is best-effort (a failure
+   * is logged, never rethrown), which is exactly why the count is reported.
+   */
+  instructionsInherited: number
 }
 
 export interface UpstreamChangeResult {
@@ -166,20 +177,8 @@ export class MbomService {
           .returning(),
       )
 
-      // 2. Create initial commit (with temporary branchId)
-      const initialCommit = takeFirst(
-        await tx
-          .insert(commits)
-          .values({
-            designId: mbomDesign.id,
-            branchId: mbomDesign.id, // Temporary - will update after branch creation
-            message: `Initial MBOM created from ${sourceDesign.code}`,
-            createdBy: userId,
-          })
-          .returning(),
-      )
-
-      // 3. Create main branch
+      // 2. Create the main branch first, head unset — commits.branch_id is a
+      // real FK now, so the old placeholder-then-fixup order cannot insert.
       const mainBranch = takeFirst(
         await tx
           .insert(branches)
@@ -187,18 +186,31 @@ export class MbomService {
             designId: mbomDesign.id,
             name: 'main',
             branchType: 'main',
-            headCommitId: initialCommit.id,
-            baseCommitId: initialCommit.id,
             createdBy: userId,
           })
           .returning(),
       )
 
-      // 4. Update commit with correct branchId
+      // 3. Create the initial commit on the real branch
+      const initialCommit = takeFirst(
+        await tx
+          .insert(commits)
+          .values({
+            designId: mbomDesign.id,
+            branchId: mainBranch.id,
+            message: `Initial MBOM created from ${sourceDesign.code}`,
+            createdBy: userId,
+          })
+          .returning(),
+      )
+
+      // 4. Point the branch at its initial commit
       await tx
-        .update(commits)
-        .set({ branchId: mainBranch.id })
-        .where(eq(commits.id, initialCommit.id))
+        .update(branches)
+        .set({ headCommitId: initialCommit.id, baseCommitId: initialCommit.id })
+        .where(eq(branches.id, mainBranch.id))
+      mainBranch.headCommitId = initialCommit.id
+      mainBranch.baseCommitId = initialCommit.id
 
       // 5. Update design with default branch
       await tx
@@ -209,6 +221,7 @@ export class MbomService {
       let itemsCopied = 0
       let relationshipsCopied = 0
       let sourceLinks = 0
+      let instructionsInherited = 0
 
       // 6. Create MBOM usages from EBOM definitions if requested
       if (validated.copyBomStructure) {
@@ -233,15 +246,28 @@ export class MbomService {
           try {
             const { WorkInstructionInheritanceService } =
               await import('./WorkInstructionInheritanceService')
-            await WorkInstructionInheritanceService.inheritAttachments(
-              tx,
-              validated.sourceDesignId,
-              mbomDesign.id,
-              copyResult.itemIdMap,
-              userId,
+            const inheritResult =
+              await WorkInstructionInheritanceService.inheritAttachments(
+                tx,
+                validated.sourceDesignId,
+                mbomDesign.id,
+                copyResult.itemIdMap,
+                userId,
+              )
+            instructionsInherited = inheritResult.inherited
+          } catch (error) {
+            // WI inheritance failure should not block MBOM creation — but it
+            // must not be silent either: these attachments are the traveler
+            // baseline, so losing them ships an MBOM whose work orders are
+            // missing procedures.
+            serviceLogger.warn(
+              {
+                err: error,
+                sourceDesignId: validated.sourceDesignId,
+                targetDesignId: mbomDesign.id,
+              },
+              'Work instruction inheritance failed; MBOM created without inherited attachments',
             )
-          } catch {
-            // WI inheritance failure should not block MBOM creation
           }
         }
       }
@@ -253,6 +279,7 @@ export class MbomService {
         itemsCopied,
         relationshipsCopied,
         sourceLinks,
+        instructionsInherited,
       }
     })
   }
@@ -617,7 +644,7 @@ export class MbomService {
         and(
           eq(items.designId, mbomDesign.sourceDesignId),
           eq(items.isCurrent, true),
-          eq(items.isDeleted, false),
+          notDeleted(),
         ),
       )
 

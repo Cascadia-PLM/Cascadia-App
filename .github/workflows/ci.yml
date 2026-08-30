@@ -17,6 +17,11 @@ concurrency:
 env:
   NODE_ENV: test
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_test
+  # The unit suite runs against its own database and refuses to guess which
+  # one (packages/core/src/__tests__/global-setup.ts). Here it is the same
+  # database DATABASE_URL names, because each job gets a throwaway service
+  # container — locally the two are deliberately different.
+  TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_test
 
 jobs:
   lint:
@@ -50,6 +55,15 @@ jobs:
       - name: Check license headers
         run: npm run license:check
 
+      # No dependency may oblige us to publish source we sell. The same closure
+      # ships under two licences at once — every third-party package is declared
+      # in the root manifest, and the publish pipeline keeps the public
+      # manifest's dependencies tracking it exactly — so a strong-copyleft
+      # dependency added for either edition lands in both. Reads the lockfile,
+      # so it needs no install of its own and cannot drift from what ships.
+      - name: Check third-party licenses
+        run: npm run license:thirdparty
+
       # Core must not reach proprietary code. Resolves every import specifier
       # and classifies the target, rather than matching patterns: two rounds of
       # grepping previously declared a package "fully seamed" while a dynamic
@@ -57,6 +71,31 @@ jobs:
       # known-pending list may only shrink.
       - name: Check core/proprietary boundary
         run: npm run boundary:check
+
+      # `item_type_configs` holds one row per item type for the whole instance.
+      # A suite that overrides one in `beforeAll` writes outside the gate
+      # transaction, so the row outlives the run and the next one inherits it —
+      # which is how a test came to assert on file order. Six suites did it;
+      # this catches the seventh.
+      - name: Check test config hygiene
+        run: npm run test:hygiene:check
+
+      # A documented request body must be an enforced one. Forty-three routes
+      # declared a schema in their OpenAPI annotation and ran none of it, so
+      # the spec described a contract the server did not have. `body:` now
+      # both validates and documents; this keeps the next annotation honest.
+      - name: Check annotated request bodies
+        run: npm run bodies:check
+
+      # And a declared permission tuple must be one a role can hold. `manage`
+      # sits on no item-type resource, so `['documents', 'manage']` was a route
+      # that answered 403 to everyone including the Administrator for as long
+      # as it existed — a dead endpoint is indistinguishable from a tight one
+      # from the outside, and its own suite minted a role to reach it. Reasons
+      # over ROLE_DEFINITIONS, which is the whole universe of principals: there
+      # is no role-creation route and API key scopes only narrow.
+      - name: Check permission tuples are satisfiable
+        run: npm run permissions:check
 
       # Since v0.5 the committed migrations under apps/*/drizzle are the
       # upgrade path for real installs. If the schema changed and drizzle-kit
@@ -67,10 +106,9 @@ jobs:
       - name: Check schema/migration drift
         run: |
           npm run db:generate
-          CASCADIA_APP=cascadia npm run db:generate
-          if [ -n "$(git status --porcelain apps/cascadia/drizzle apps/cascadia-enterprise/drizzle)" ]; then
-            git status --porcelain apps/cascadia/drizzle apps/cascadia-enterprise/drizzle
-            echo "::error::Schema changed without a committed migration. Run 'npm run db:generate' and 'CASCADIA_APP=cascadia npm run db:generate', then commit the new files under apps/*/drizzle."
+          if [ -n "$(git status --porcelain apps/cascadia/drizzle)" ]; then
+            git status --porcelain apps/cascadia/drizzle
+            echo "::error::Schema changed without a committed migration. Run 'npm run db:generate', then commit the new files under apps/cascadia/drizzle."
             exit 1
           fi
 
@@ -99,6 +137,116 @@ jobs:
       # `npm run openapi:snapshot` being committed alongside.
       - name: Verify OpenAPI snapshot is up to date
         run: npm run openapi:check
+
+      - name: Verify generated API types match the snapshot
+        run: npm run types:openapi:check
+
+  # Since v0.5 the committed migrations under apps/*/drizzle are the upgrade
+  # path for every real install, and until now nothing ever ran them. The drift
+  # gate in Lint proves a migration *exists* for each schema change; it says
+  # nothing about whether the SQL applies. This job applies both editions'
+  # migrations to their own empty database and then seeds the enterprise one,
+  # which is the fresh-install sequence docs/deployment/upgrading.md documents.
+  #
+  # Runs on push as well as pull_request, like Lint: it is cheap, and two
+  # migrations that each apply cleanly alone can still collide once merged —
+  # exactly the semantic conflict the post-merge run exists for.
+  #
+  # An empty database is also the one thing a data-dependent migration cannot
+  # be judged on: a backfill UPDATE matches nothing and a guard that is meant to
+  # abort has nothing to abort on, so both are green here for the wrong reason.
+  # The last step therefore replays the journal against *seeded* databases —
+  # see scripts/check-migration-backfills.mjs.
+  migrations:
+    name: Migrations Apply
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cascadia_migrate
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Step-level DATABASE_URL overrides the workflow-level one, which names
+      # cascadia_test — a database this job's service does not create. A real
+      # environment variable wins over the repo's .env because dotenv does not
+      # overwrite (scripts/drizzle.mjs).
+      - name: Apply enterprise migrations to an empty database
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_migrate
+
+      # The other half of "Fresh installs" in upgrading.md: migrate, then seed.
+      # Seeding a migrated database is what proves the migrations produce the
+      # schema the application actually writes to.
+      - name: Seed the migrated database
+        run: npm run db:seed
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_migrate
+
+      # Applying without throwing is not the same as arriving at the right
+      # schema. This pushes `modules.schema.ts` to a second database and diffs
+      # the two: a migration that drifted from the declared schema — a dropped
+      # statement, a column the schema later renamed — produces a database that
+      # is fine in dev (pushed) and wrong on a real install (migrated).
+      - name: Create a database to push the declared schema into
+        run: psql -h localhost -U postgres -c 'CREATE DATABASE cascadia_pushed'
+        env:
+          PGPASSWORD: postgres
+      - name: The migrations build the schema the code declares
+        run: npm run db:check-migrations
+        env:
+          MIGRATED_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_migrate
+          PUSHED_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_pushed
+      - name: Create a database for the community edition
+        run: psql -h localhost -U postgres -c 'CREATE DATABASE cascadia_migrate_community'
+        env:
+          PGPASSWORD: postgres
+
+      # The published edition has its own journal, and nothing else in CI runs
+      # it. CASCADIA_APP is the edition override (scripts/edition.mjs).
+      - name: Apply community migrations to an empty database
+        run: CASCADIA_APP=cascadia npm run db:migrate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_migrate_community
+
+      # Everything above applies migrations to empty databases, which is the
+      # fresh-install path. This is the upgrade path: stage the journal to the
+      # tag before the one under test, seed the shape of data that tag's SQL
+      # exists to handle, then apply it and assert what it did. It also fails
+      # when a new migration touches rows and registers no scenario, so the gap
+      # cannot reopen on the next backfill.
+      #
+      # No CASCADIA_APP prefix: the script resolves the edition itself, so this
+      # step is correct in the published tree too, where only apps/cascadia
+      # exists.
+      - name: Create a database to replay the migrations against rows
+        run: psql -h localhost -U postgres -c 'CREATE DATABASE cascadia_migrate_backfills'
+        env:
+          PGPASSWORD: postgres
+      - name: The data-dependent migrations do what they document
+        run: npm run db:check-backfills
+        env:
+          BACKFILL_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_migrate_backfills
 
   unit-tests:
     name: Unit Tests
@@ -129,6 +277,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Deliberately still `push`, while E2E builds its schema with `migrate`.
+      # Push is the dev and demo loop (db:drop:seed, the demo stack), so one job
+      # on each path keeps both continuously exercised; the drift gate in Lint
+      # already pins the two representations together, and Migrations Apply
+      # covers the migrations themselves.
       - name: Setup database schema
         run: npm run db:push
 
@@ -139,6 +292,35 @@ jobs:
       # party. Nothing consumed the report, so nothing generates it.
       - name: Run unit tests
         run: npm run test
+
+      # The Python workers' shared database layer rides this job rather than a
+      # tenth one. It needs exactly what is already standing here — the postgres
+      # service and the real jobs/job_logs schema `db:push` just built — so a
+      # separate job would duplicate both to save nothing, and would be a new
+      # required context that only a repo-admin ruleset re-import could enforce.
+      # Appended here it is binding the moment it merges, because Unit Tests
+      # already is.
+      #
+      # Scope is workers/py-common only. The cad-converter and cad-generator
+      # suites stay local: they import pythonocc-core and cadquery, which are
+      # conda-only, so running them here would mean a third-party setup action
+      # and a multi-hundred-megabyte solve for pure-geometry unit tests. Their
+      # results belong in the pull request body instead. py-common needs pip and
+      # nothing else.
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python worker test dependencies
+        run: pip install -r workers/py-common/requirements-dev.txt
+
+      # TEST_DATABASE_URL comes from the workflow-level env. Its absence is an
+      # error rather than a skip under CI (tests/conftest.py) — a suite that
+      # silently skipped every database assertion would be a green check
+      # gating nothing.
+      - name: Run Python worker tests
+        run: pytest workers/py-common
 
   e2e-tests:
     name: E2E Tests
@@ -185,8 +367,10 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # E2E is the closest thing CI has to a production boot, so it builds its
+      # schema the way a real install does. Roughly the same wall time as push.
       - name: Setup database schema
-        run: npm run db:push
+        run: npm run db:migrate
 
       - name: Seed database
         run: npm run db:seed
@@ -286,6 +470,56 @@ jobs:
           POSTGRES_PASSWORD: ci-validation-only
           PGADMIN_PASSWORD: ci-validation-only
         run: docker compose -f docker-compose.yml config --quiet
+
+  docker-build-smoke:
+    name: Docker Build Smoke
+    runs-on: ubuntu-latest
+    # `compose-config` above validates the YAML that *references* these images.
+    # Nothing validated the images themselves, and both of them spent weeks
+    # unbuildable: their workspace-manifest COPY lists named
+    # `packages/cad-generation` after the package was deleted, and Docker fails
+    # a COPY whose source is missing. Every check in this workflow stayed
+    # green throughout, because not one of them ran a docker build.
+    #
+    # Deliberately unfiltered — no `if:`, no `paths:`. This is a required
+    # context, and a required check that does not report on a run leaves the
+    # pull request permanently *pending* rather than red: there is no failure
+    # to read and nothing to override. A path filter would buy back a few
+    # minutes on doc-only PRs and cost exactly that.
+    steps:
+      - uses: actions/checkout@v4
+
+      # The `deps` target stops after the workspace manifests and `npm ci`. It
+      # is the whole of the class this job exists for: the manifest list is one
+      # stage (see the Dockerfiles), building it resolves every path in that
+      # list, and `npm ci` then proves the list and the lockfile agree.
+      #
+      # Stopping there is the deliberate trade. `builder` runs a full Vite
+      # build of the edition — ten-plus minutes on top of what `Build` already
+      # spends, failing for reasons `Build` reports first and faster. What
+      # stays uncovered is the production stage's copies out of the builder;
+      # those name build outputs rather than workspaces, and both files are
+      # checked statically when this tree is assembled for publication.
+      #
+      # No buildx, no cache action: every workflow here uses first-party
+      # `actions/*` only, and BuildKit is already the default builder on
+      # ubuntu-latest. The two builds share a daemon, and the manifests and
+      # deps stages are instruction-identical between the two files, so the
+      # second one hits the first one's layers and the job costs roughly one
+      # cold `npm ci` rather than two. That is a property of the current
+      # Dockerfiles, not a guarantee — if the two lists ever diverge the second
+      # build pays for itself, which is the correct price for having diverged.
+      #
+      # Measured on the first run of this job: 51 seconds end to end, 46 of
+      # them the app build and under one second the worker build. Budget for a
+      # minute, not the five-to-eight this was estimated at — and do not
+      # "optimise" it away or bolt a cache action onto it on the strength of
+      # that estimate.
+      - name: Build app image dependency stage
+        run: docker build --target deps -f docker/app.Dockerfile .
+
+      - name: Build jobs worker image dependency stage
+        run: docker build --target deps -f workers/node/Dockerfile .
 
   large-files:
     name: Large File Guard

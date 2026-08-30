@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   Background,
   Controls,
@@ -22,10 +23,9 @@ import type { VersionContext } from '@/lib/hooks/useVersionContext'
 import type {
   CommitGraphData,
   CommitGraphNode,
-  CommitGraphResponse,
 } from '@/lib/versioning/graph-types'
 import { FullscreenGraphWrapper } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
+import { designHistoryGraphQuery } from '@/lib/query'
 import { useTheme } from '@/lib/theme'
 
 // ID for the main HEAD pseudo-node
@@ -56,37 +56,15 @@ function CommitGraphViewInner({
   onViewHistoricalState,
 }: CommitGraphViewProps) {
   const { theme } = useTheme()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [graphData, setGraphData] = useState<CommitGraphData | null>(null)
 
-  // Fetch graph data
-  useEffect(() => {
-    async function fetchGraph() {
-      setLoading(true)
-      setError(null)
-
-      try {
-        const params = new URLSearchParams()
-        if (branchId) {
-          params.set('branchId', branchId)
-        }
-        params.set('limit', '50')
-
-        const response = await apiFetch<CommitGraphResponse>(
-          `/api/v1/designs/${designId}/history/graph?${params.toString()}`,
-        )
-
-        setGraphData(response.data)
-      } catch {
-        setError('Failed to load commit graph. Please try again.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchGraph()
-  }, [designId, branchId])
+  const {
+    data: graphData = null,
+    isPending: loading,
+    error: loadError,
+  } = useQuery(designHistoryGraphQuery<CommitGraphData>(designId, branchId))
+  const error = loadError
+    ? 'Failed to load commit graph. Please try again.'
+    : null
 
   // Handle commit click
   const handleCommitClick = useCallback(

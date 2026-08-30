@@ -5,12 +5,14 @@ import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../adapter'
+import type { RebaseResult } from '@/lib/services/ConflictDetectionService'
+import type { ErrorResponse } from '@/lib/errors/api'
 import { ConflictDetectionService } from '@/lib/services/ConflictDetectionService'
 import { apiHandler } from '@/lib/api/handler'
 import { db } from '@/lib/db'
 import { branchItems } from '@/lib/db/schema'
 import { requireBranchAccess } from '@/lib/auth/access'
-import { NotFoundError } from '@/lib/errors'
+import { ErrorCode, NotFoundError, ValidationError } from '@/lib/errors'
 
 const adapt = tagged('Branch Items')
 
@@ -53,33 +55,32 @@ const app = new Hono()
 app.post(
   '/:id/pull-from-main',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      await requireAccessToBranchItem(user.id, params.id)
-
-      const body = await request.json()
-      const validated = pullFromMainSchema.parse(body)
-
-      const result = await ConflictDetectionService.pullChangesFromMain(
-        params.id,
-        validated.mainItemId,
-        user.id,
-      )
-
-      if (!result.success) {
-        return new Response(
-          JSON.stringify({
-            error: result.error || 'Pull from main failed',
-            data: result,
-          }),
-          {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' },
-          },
+    apiHandler<{ id: string }, z.infer<typeof pullFromMainSchema>>(
+      {
+        access: ({ params, user }) =>
+          requireAccessToBranchItem(user.id, params.id),
+        body: pullFromMainSchema,
+      },
+      async ({ params, body, user }) => {
+        const result = await ConflictDetectionService.pullChangesFromMain(
+          params.id,
+          body.mainItemId,
+          user.id,
         )
-      }
 
-      return result
-    }),
+        if (!result.success) {
+          // Thrown, not hand-written: `apiHandler` turns an `AppError` into
+          // the documented envelope, and this response used to be a bare
+          // `{ error: '<message>' }` — the one shape a client reading
+          // `error.code` gets `undefined` from. The service's failures here
+          // ("Could not find required items") are the caller naming a row
+          // that is not there, so they are the caller's fault and stay 400.
+          throw new ValidationError(result.error ?? 'Pull from main failed')
+        }
+
+        return result
+      },
+    ),
   ),
 )
 
@@ -87,49 +88,54 @@ app.post(
 app.post(
   '/:id/rebase',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      await requireAccessToBranchItem(user.id, params.id)
+    apiHandler<{ id: string }, z.infer<typeof rebaseSchema>>(
+      {
+        access: ({ params, user }) =>
+          requireAccessToBranchItem(user.id, params.id),
+        body: rebaseSchema,
+      },
+      async ({ params, body, user, requestId }) => {
+        const result = await ConflictDetectionService.rebaseItem(
+          params.id,
+          body.newBaseItemId,
+          user.id,
+          body.resolutions,
+        )
 
-      const body = await request.json()
-      const validated = rebaseSchema.parse(body)
-
-      const result = await ConflictDetectionService.rebaseItem(
-        params.id,
-        validated.newBaseItemId,
-        user.id,
-        validated.resolutions,
-      )
-
-      if (!result.success && result.manualResolutionRequired) {
-        // Return 409 Conflict with the field conflicts that need resolution
-        return new Response(
-          JSON.stringify({
-            error: 'Manual resolution required',
-            fieldConflicts: result.fieldConflicts,
+        if (!result.success && result.manualResolutionRequired) {
+          // The one rejection here that cannot simply throw: the field
+          // conflicts *are* the answer — a resolution UI handed only a
+          // message would have to re-run the rebase to learn what to show,
+          // and `createErrorResponse` writes the envelope and nothing else.
+          // So the envelope is built by hand and the payload rides beside it
+          // in the same `data` sibling a success would use. Typed as
+          // `ErrorResponse` so it cannot drift from what
+          // `errorResponseSchema` documents, and MERGE_CONFLICT is already
+          // the 409 in the status map.
+          const conflictBody: ErrorResponse & { data: RebaseResult } = {
+            error: {
+              code: ErrorCode.MERGE_CONFLICT,
+              message: 'Manual resolution required',
+              requestId,
+              timestamp: new Date().toISOString(),
+            },
             data: result,
-          }),
-          {
+          }
+
+          return new Response(JSON.stringify(conflictBody), {
             status: 409,
             headers: { 'Content-Type': 'application/json' },
-          },
-        )
-      }
+          })
+        }
 
-      if (!result.success) {
-        return new Response(
-          JSON.stringify({
-            error: result.error || 'Rebase failed',
-            data: result,
-          }),
-          {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' },
-          },
-        )
-      }
+        if (!result.success) {
+          // Same reasoning as pull-from-main above.
+          throw new ValidationError(result.error ?? 'Rebase failed')
+        }
 
-      return result
-    }),
+        return result
+      },
+    ),
   ),
 )
 

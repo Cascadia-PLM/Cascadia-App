@@ -34,11 +34,10 @@ hashed in the database, so no signing key exists to configure or rotate.
 
 Cascadia stores uploaded files (CAD models, documents, drawings) in a vault. By default, the vault uses local filesystem storage.
 
-| Variable            | Default           | Description                            |
-| ------------------- | ----------------- | -------------------------------------- |
-| `VAULT_TYPE`        | `local`           | Storage backend: `local` or `s3`       |
-| `VAULT_ROOT`        | `./vault`         | Root directory for local vault storage |
-| `FILE_STORAGE_PATH` | `./storage/files` | General file storage path              |
+| Variable     | Default   | Description                            |
+| ------------ | --------- | -------------------------------------- |
+| `VAULT_TYPE` | `local`   | Storage backend: `local` or `s3`       |
+| `VAULT_ROOT` | `./vault` | Root directory for local vault storage |
 
 #### S3 storage
 

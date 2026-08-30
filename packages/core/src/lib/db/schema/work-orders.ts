@@ -3,16 +3,18 @@
 
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import { users } from './users'
 import { programs } from './programs'
 import { items, workInstructions } from './items'
@@ -222,10 +224,44 @@ export const instructionExecutions = pgTable(
     currentStepIndex: integer('current_step_index').notNull().default(0),
   },
   (table) => [
+    /**
+     * One open run per technician per line per unit. Partial on the
+     * 'In Progress' status, because that is exactly the set a resume looks in
+     * — a completed run must not stop the same person opening the next one.
+     *
+     * `start()` checked for an open run and then inserted, which is a TOCTOU
+     * window: two requests that both read "no open run" both insert, and the
+     * traveler's countable tally
+     * (`WorkOrderInstructionService.deriveStatus`, `completedCount >=
+     * line.requiredCount`) then counts one physical run twice — toward the
+     * gate that says a work order may be completed. Same shape, and the same
+     * fix, as `uq_wf_votes_active` on the approval votes.
+     *
+     * COALESCE because SQL treats two NULL unit labels as distinct while the
+     * traveler does not. It is safe: `start()` stores `unitLabel || null`, so
+     * the empty string is never persisted and cannot collide with a real one.
+     */
+    uniqueIndex('uq_instr_exec_open_run')
+      .on(
+        table.workOrderInstructionId,
+        table.executedBy,
+        sql`COALESCE(${table.unitLabel}, '')`,
+      )
+      .where(sql`${table.status} = 'In Progress'`),
     index('idx_instr_execution_line').on(table.workOrderInstructionId),
     index('idx_instr_execution_user').on(table.executedBy),
     index('idx_instr_execution_status').on(table.status),
     index('idx_instr_execution_started').on(table.startedAt),
+    /**
+     * The six literals the column comment enumerates. The countable tally
+     * counts `status IN ('Complete','Approved')`, so a value outside this set
+     * is not a bad label — it is a run that silently does not count toward the
+     * work order's completion gate.
+     */
+    check(
+      'ck_instr_exec_status',
+      sql`${table.status} IN ('In Progress', 'Complete', 'Incomplete', 'Pending Approval', 'Approved', 'Rejected')`,
+    ),
   ],
 )
 

@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, CheckCircle, Plus, Wrench, X } from 'lucide-react'
 import { strings } from '../strings'
 import type { KnownToolSubtype, Tool } from '@/lib/items/types/tool'
+import { itemCollectionQuery, useInvalidateResources } from '@/lib/query'
 import { TOOL_SUBTYPES } from '@/lib/items/types/tool'
 import { ToolForm } from '@/components/tools/ToolForm'
 import {
@@ -44,25 +46,15 @@ function makeAndModel(tool: Tool): string {
 }
 
 export function ToolsStep({ onCompleted }: ToolsStepProps) {
-  const [tools, setTools] = useState<Array<Tool>>([])
+  const invalidate = useInvalidateResources()
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   // Existing tools, so re-running the wizard shows what's already there.
-  useEffect(() => {
-    let cancelled = false
-    fetch('/api/v1/items?itemType=Tool&limit=100')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((json) => {
-        if (cancelled || !json) return
-        setTools((json.data?.items ?? []) as Array<Tool>)
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const { data: tools = [] } = useQuery(
+    itemCollectionQuery<Tool>({ itemType: 'Tool' }, 100),
+  )
 
   const handleCreate = async (tool: Tool) => {
     setSaving(true)
@@ -77,9 +69,7 @@ export function ToolsStep({ onCompleted }: ToolsStepProps) {
         const json = await response.json().catch(() => ({}))
         throw new Error(json.error?.message ?? 'Failed to create tool')
       }
-      const json = await response.json()
-      const created = (json.data?.item ?? json.data) as Tool
-      setTools((prev) => [...prev, created])
+      await invalidate('items')
       // Collapse back to the list; the button re-opens a blank form.
       setShowForm(false)
     } catch (err) {

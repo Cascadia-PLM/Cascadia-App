@@ -16,6 +16,7 @@ import {
   items,
   workflowInstances,
 } from '../../db/schema'
+import { ecoAccessScopeCondition, notDeleted } from '../../db/filters'
 import { BranchService } from '../../services/BranchService'
 import { CheckoutService } from '../../services/CheckoutService'
 import { CommitService } from '../../services/CommitService'
@@ -24,7 +25,17 @@ import { ChangeOrderMergeService } from '../../services/ChangeOrderMergeService'
 import { LifecycleService } from '../../services/LifecycleService'
 import { RevisionService } from '../../services/RevisionService'
 import { FileService } from '../../vault/services/FileService'
-import { ConflictError, NotFoundError, ValidationError } from '../../errors'
+import {
+  ConflictError,
+  NotFoundError,
+  PermissionDeniedError,
+  ValidationError,
+} from '../../errors'
+import {
+  asPostgresError,
+  constraintOf,
+  isUniqueViolation,
+} from '../../errors/pg'
 import { CHANGE_ACTION_LABELS } from '../types/change-order'
 import { copyTypeSpecificData } from '../type-handlers/copy'
 import { ItemService } from './ItemService'
@@ -46,7 +57,28 @@ import type { FinalKind, TransitionResult } from '../../workflows/types'
 import type { WorkflowService as WorkflowServiceType } from '../../workflows/WorkflowService'
 import type { ConflictDetectionService as ConflictDetectionServiceType } from '../../services/ConflictDetectionService'
 import type { ItemTypeRegistry as ItemTypeRegistryType } from '../registry'
+import type { requireEcoAccess as requireEcoAccessType } from '../../auth/access'
 import { takeFirst } from '@/lib/db/take-first'
+
+/**
+ * The arbiter for `uq_coai_change_order_master` — the partial unique index
+ * that makes "one scope row per master per change order" a database fact
+ * rather than three separate read-then-write guards.
+ *
+ * The predicate has to travel with the target. Postgres infers a *partial*
+ * unique index only from an `ON CONFLICT` clause carrying an index predicate
+ * that implies the index's own; hand it the columns alone and it matches no
+ * index and raises 42P10, turning a race that used to duplicate a row into
+ * one that 500s. Keep this in step with the `.where()` on the index in
+ * `schema/items.ts`.
+ */
+const AFFECTED_ITEM_MASTER_CONFLICT = {
+  target: [
+    changeOrderAffectedItems.changeOrderId,
+    changeOrderAffectedItems.affectedItemMasterId,
+  ],
+  where: isNotNull(changeOrderAffectedItems.affectedItemMasterId),
+}
 
 export interface AffectedItemInput {
   affectedItemId?: string | null
@@ -79,6 +111,20 @@ async function getWorkflowService() {
     _WorkflowService = module.WorkflowService
   }
   return _WorkflowService
+}
+
+/**
+ * Lazily imported for the same reason as the services above: access.ts pulls
+ * in FileService statically, and loading that eagerly here would close a
+ * require cycle through the item services.
+ */
+let _requireEcoAccess: typeof requireEcoAccessType | null = null
+async function getRequireEcoAccess() {
+  if (!_requireEcoAccess) {
+    const module = await import('../../auth/access')
+    _requireEcoAccess = module.requireEcoAccess
+  }
+  return _requireEcoAccess
 }
 
 let _ConflictDetectionService: typeof ConflictDetectionServiceType | null = null
@@ -183,7 +229,10 @@ export class ChangeOrderService {
    * One row per item per change order is the invariant: two rows for the same
    * item (say 'revise' and 'obsolete') each validate on their own, and the
    * merge processes them in unspecified table order, so the released state
-   * depended on which came back first.
+   * depended on which came back first. The invariant is now held by
+   * `uq_coai_change_order_master`, the partial unique index on
+   * (change_order_id, affected_item_master_id); this lookup is what turns a
+   * hit into an answer each caller can use, not what makes it true.
    *
    * `addAffectedItem` treats a hit as an error and `addAffectedItemsBatch`
    * treats it as already-done — the same question with two policies, which is
@@ -368,33 +417,57 @@ export class ChangeOrderService {
         }
       }
 
-      const affectedItemRecord = takeFirst(
-        await tx
-          .insert(changeOrderAffectedItems)
-          .values({
-            changeOrderId,
-            affectedItemId: item.affectedItemId || null,
-            affectedItemMasterId:
-              item.affectedItemMasterId || (affectedItem?.masterId ?? null),
-            changeAction: item.changeAction,
-            // Snapshot the item's real state at add-time rather than trusting
-            // the caller's copy of it
-            currentState: affectedItem?.state ?? item.currentState ?? null,
-            currentRevision:
-              affectedItem?.revision ?? item.currentRevision ?? null,
-            targetState,
-            targetRevision,
-            replacementItemId: item.replacementItemId || null,
-            newItemData: item.newItemData || null,
-            newItemType: item.newItemType || null,
-            changeDescription: item.changeDescription || null,
-            workingCopyId,
-            createdBy: userId,
-          })
-          .returning(),
-      )
+      try {
+        const affectedItemRecord = takeFirst(
+          await tx
+            .insert(changeOrderAffectedItems)
+            .values({
+              changeOrderId,
+              affectedItemId: item.affectedItemId || null,
+              affectedItemMasterId:
+                item.affectedItemMasterId || (affectedItem?.masterId ?? null),
+              changeAction: item.changeAction,
+              // Snapshot the item's real state at add-time rather than trusting
+              // the caller's copy of it
+              currentState: affectedItem?.state ?? item.currentState ?? null,
+              currentRevision:
+                affectedItem?.revision ?? item.currentRevision ?? null,
+              targetState,
+              targetRevision,
+              replacementItemId: item.replacementItemId || null,
+              newItemData: item.newItemData || null,
+              newItemType: item.newItemType || null,
+              changeDescription: item.changeDescription || null,
+              workingCopyId,
+              createdBy: userId,
+            })
+            .returning(),
+        )
 
-      return affectedItemRecord as AffectedItem
+        return affectedItemRecord as AffectedItem
+      } catch (error) {
+        // The `findExistingAffectedItem` check above is a fast path with a
+        // sentence a user can act on, not a guarantee: another request — a
+        // second Add dialog, a checkout of the same item onto this ECO — can
+        // land its row between that read and this insert. Losing that race is
+        // the same condition the check reports, so it gets the same answer
+        // rather than a 500 naming `uq_coai_change_order_master`.
+        //
+        // No `onConflictDoNothing` here, unlike the two registration paths:
+        // this one owes its caller the row it created, and doing nothing
+        // returns none.
+        const pgError = asPostgresError(error)
+        if (
+          isUniqueViolation(error) &&
+          pgError !== null &&
+          constraintOf(pgError) === 'uq_coai_change_order_master'
+        ) {
+          throw new ValidationError(
+            `${affectedItem?.itemNumber ?? 'That item'} is already an affected item of this change order. Remove it first to change its action.`,
+          )
+        }
+        throw error
+      }
     })
   }
 
@@ -558,7 +631,7 @@ export class ChangeOrderService {
             ? sql`${items.designId} != ${affectedItem.designId}`
             : sql`true`,
           eq(items.isCurrent, true),
-          eq(items.isDeleted, false),
+          notDeleted(),
         ),
       )
 
@@ -882,7 +955,18 @@ export class ChangeOrderService {
     tx?: TransactionClient,
   ): Promise<void> {
     const client = tx ?? db
-    const branch = await BranchService.getById(branchId)
+    // Resolved through the caller's transaction, not the pool. Three write
+    // paths enter here from inside an open transaction —
+    // `createRevisionWorkingCopy`, `createOnBranch`, `deleteOnBranch`, plus
+    // `adoptWorkspaceIntoEco` once per adopted row — and a pool-bound read
+    // made every one of them need a SECOND connection while the first was
+    // still held. N concurrent writers then want 2N connections and each can
+    // sit on one while queueing for another, which is a livelock on a bounded
+    // pool rather than a queue. `branches` is never written by any of these
+    // transactions, so reading it through `tx` returns the same row and
+    // changes nothing visible; `CommitService.create` already resolves the
+    // branch this way.
+    const branch = await BranchService.getById(branchId, tx)
     if (!branch || branch.branchType !== 'eco' || !branch.changeOrderItemId) {
       return
     }
@@ -930,9 +1014,38 @@ export class ChangeOrderService {
       .then((r) => r.at(0)?.changeType)
 
     const isNewOnBranch = branchChangeType === 'added'
+    // A master the branch records as deleted is retired by the merge, so the
+    // scope row that describes it is `obsolete`. Recorded unconditionally,
+    // with no check that the item's lifecycle configures an obsolete action:
+    // the merge's branch path is what actually applies the deletion and it
+    // handles the unmapped case on purpose ("Free lifecycles: the deleted
+    // item keeps its state and is marked deleted only"), and
+    // `applyRemainingActions` skips every master the merged branch already
+    // handled — so this row is scope paperwork the reviewers read, not an
+    // instruction anything executes. Skipping it would leave branch content
+    // the affected-items list does not show, which `findUnlistedBranchContent`
+    // reports and `assertScopeMatchesBranchContent` refuses at release, with
+    // no in-app way out.
+    const isDeletedOnBranch = branchChangeType === 'deleted'
+    // The two `LifecycleService` reads below (`inferChangeAction` here,
+    // `getRevisionScheme` for `targetRevision`) stay on the pool, on purpose.
+    // Both resolve through `ItemTypeRegistry.getLifecycleForType`, which
+    // memoises per item type for the life of the process and is invalidated
+    // by every path that can change a definition — so they touch a connection
+    // only on a cold cache, at most once per item type per process. Neither
+    // runs on the delete path at all (a 'deleted' branch row short-circuits
+    // to 'obsolete' and leaves `targetRevision` undefined), and the create
+    // path's entry already warms the same cache entry via
+    // `getInitialStateId` before its transaction opens. Threading `tx` down
+    // instead would feed a process-wide cache from an uncommitted read: a
+    // transaction that later rolls back could leave a value nothing ever
+    // committed cached for every subsequent caller. Closing the cold-cache
+    // window belongs in a startup warm of the lifecycle cache, not here.
     const changeAction = isNewOnBranch
       ? 'release'
-      : await this.inferChangeAction(item.itemType, item.state)
+      : isDeletedOnBranch
+        ? 'obsolete'
+        : await this.inferChangeAction(item.itemType, item.state)
     if (!changeAction) return
 
     // The revision the merge will assign, so the affected-items list predicts
@@ -943,17 +1056,26 @@ export class ChangeOrderService {
         )
       : undefined
 
-    await client.insert(changeOrderAffectedItems).values({
-      changeOrderId,
-      affectedItemId: item.id,
-      affectedItemMasterId: itemMasterId,
-      changeAction,
-      currentState: item.state,
-      currentRevision: item.revision,
-      targetRevision,
-      isDirectlyAffected: true,
-      createdBy: userId,
-    })
+    // The `existing` read above short-circuits the common case; this absorbs
+    // the race it cannot. Eight callers checking the same item out of the same
+    // ECO all read "not registered" and all arrive here, and the scope row
+    // they each want is identical — so the loser wanting nothing to happen is
+    // exactly what happened. Idempotent is this method's contract, and a
+    // conflict is the strongest evidence it was already met.
+    await client
+      .insert(changeOrderAffectedItems)
+      .values({
+        changeOrderId,
+        affectedItemId: item.id,
+        affectedItemMasterId: itemMasterId,
+        changeAction,
+        currentState: item.state,
+        currentRevision: item.revision,
+        targetRevision,
+        isDirectlyAffected: true,
+        createdBy: userId,
+      })
+      .onConflictDoNothing(AFFECTED_ITEM_MASTER_CONFLICT)
   }
 
   /**
@@ -979,7 +1101,11 @@ export class ChangeOrderService {
     tx?: TransactionClient,
   ): Promise<void> {
     const client = tx ?? db
-    const branch = await BranchService.getById(branchId)
+    // Through the caller's transaction, for the reason `registerBranchChange`
+    // gives: `deleteOnBranch` calls this from inside its transaction on the
+    // branch-added path, and a pool read here would make that transaction
+    // hold two connections at once.
+    const branch = await BranchService.getById(branchId, tx)
     if (!branch || branch.branchType !== 'eco' || !branch.changeOrderItemId) {
       return
     }
@@ -1536,6 +1662,48 @@ export class ChangeOrderService {
   }
 
   /**
+   * Refuse to *advance* a change order the caller can only see part of.
+   *
+   * Reach on a change order is not one rule, it is three, and they widen for
+   * reading and narrow for acting:
+   *
+   * - **Read** it: reaching *any* linked design is enough. The designs out of
+   *   reach are redacted (`resolveEcoDesignScope`), which is what lets a member
+   *   of one program review the half that is theirs.
+   * - **Vote** on it: membership with `canApproveEco` in *every* linked
+   *   program (`requireEcoApprovalAccess` in the change-orders route module).
+   * - **Advance** it — submit, release, cancel: reach to every linked design,
+   *   which is this.
+   *
+   * Advancing is grouped with voting rather than with reading because of what
+   * a final transition does, not what it is called. A release merges every
+   * linked design's branch and stamps permanent revision letters across all of
+   * them — and does so with per-item access checks deliberately disabled
+   * (`skipAccessCheck` in ChangeOrderMergeService), on the strength of exactly
+   * this gate. A cancel archives every linked branch, discarding in-flight
+   * work in a program the caller cannot open. Neither is undoable. Submit is
+   * included because it locks the ECO's scope, and because it is the cheap,
+   * reversible end of the same rule — rework back to an initial state clears
+   * the lock again.
+   *
+   * The approval vote is not a backstop for any of this: `approvalRequirement`
+   * defaults to zero wherever a transition declares none, and workflows are
+   * user-authored, so a releasing transition that requires no votes at all is
+   * a legal configuration. This is the only gate on that path.
+   *
+   * `hasRestricted` is already false whenever the caller has cross-program
+   * authority, so that bypass needs no branch here.
+   */
+  private static assertWholeEcoReach(
+    scope: { hasRestricted: boolean },
+    action: 'submit' | 'advance',
+  ): void {
+    if (scope.hasRestricted) {
+      throw new PermissionDeniedError('the whole change order', action)
+    }
+  }
+
+  /**
    * Execute a change-order workflow transition with correct final-state
    * semantics. This is THE entry point for CO transitions — the API route,
    * the AI tools, and submit/approve/reject all funnel through here so a
@@ -1568,6 +1736,14 @@ export class ChangeOrderService {
     mergeResult?: Awaited<ReturnType<typeof ChangeOrderMergeService.merge>>
     cancelled?: boolean
   }> {
+    // Program-membership gate, here rather than only on the route, because the
+    // doc comment above is the reason: this is THE entry point, shared by the
+    // API route, the AI tools and submit/approve/reject. A route-only check
+    // would leave every other caller ungated — and a releasing transition is
+    // the single most consequential thing a change order does.
+    const requireEcoAccess = await getRequireEcoAccess()
+    const scope = await requireEcoAccess(userId, changeOrderId)
+
     const WorkflowService = await getWorkflowService()
 
     const instance = await WorkflowService.getInstanceByItemId(changeOrderId)
@@ -1585,6 +1761,12 @@ export class ChangeOrderService {
 
     // Non-final transitions need no release orchestration
     if (targetState?.isFinal !== true) {
+      // …but leaving the initial state is still an advancing transition. See
+      // `assertWholeEcoReach` below: submit locks the ECO's scope, and the
+      // scope this caller would lock is not the scope they were shown.
+      if (leavingInitialState) {
+        this.assertWholeEcoReach(scope, 'submit')
+      }
       const result = await WorkflowService.transition(
         instance.id,
         toStateId,
@@ -1596,6 +1778,12 @@ export class ChangeOrderService {
       }
       return { result }
     }
+
+    // Ending a change order — released or cancelled — reaches every design it
+    // links, so the caller has to. Checked before the finalKind validation
+    // below so a partial reader is refused on access rather than being told
+    // about the workflow's configuration.
+    this.assertWholeEcoReach(scope, 'advance')
 
     // Fail closed: a final state without explicit semantics cannot complete
     const finalKind = targetState.finalKind
@@ -1713,8 +1901,13 @@ export class ChangeOrderService {
       )
       return result
     } catch (error) {
-      // A missing workflow is a caller error, not a failed transition
+      // A missing workflow is a caller error, not a failed transition — and
+      // neither is a refusal. Collapsing PermissionDeniedError into
+      // `{ success: false }` would report "Transition failed" to a caller who
+      // is actually being told they may not touch this change order, and
+      // would cost the route its 403.
       if (error instanceof NotFoundError) throw error
+      if (error instanceof PermissionDeniedError) throw error
       return {
         success: false,
         fromState: '',
@@ -1785,8 +1978,36 @@ export class ChangeOrderService {
    * - It has no workflow instance (newly created), OR
    * - Its workflow instance has scopeLocked = false AND completedAt IS NULL
    * Also filters by designId if provided (via changeOrderDesigns association).
+   *
+   * `accessDesignIds` is the caller's reach, and it is **required** rather
+   * than optional for the reason `PhysicalPartService.search` makes the same
+   * argument required: for as long as it was absent this method took no user
+   * at all, so the ECO picker behind it answered with every editable change
+   * order on the instance — id, number, name and state — to anyone holding
+   * `change_orders:read`, which every built-in role carries. Its sibling
+   * `ItemService.search` has been bounded since AUTH-1; this list was simply
+   * missed. Requiring the argument costs the single production caller one
+   * line and makes any future caller state its scope rather than inherit
+   * "everything" by omitting it.
+   *
+   * `null` is cross-program authority, matching
+   * `AccessControlService.getAccessibleDesignIds`. An empty array is **not**
+   * null: it says the caller reaches no design, and the guard below is on
+   * truthiness for exactly that reason — `inArray(col, [])` compiles to
+   * `false`, so `[]` correctly yields nothing, while a `.length > 0` guard
+   * would skip the predicate and hand the whole table to the caller with the
+   * least reach of all.
+   *
+   * The predicate is `ecoAccessScopeCondition`, the same expression
+   * `accessScopeCondition` scopes `GET /api/v1/items` and
+   * `GET /api/v1/change-orders` on, and the one-query twin of
+   * `requireEcoAccess`. Reusing it is what keeps this list from answering the
+   * ECO boundary question a second, drifting way — including its deliberate
+   * treatment of a link-less ECO, which stays visible to cross-program
+   * authority alone so the row can be repaired.
    */
-  static async getEditableChangeOrders(options?: {
+  static async getEditableChangeOrders(options: {
+    accessDesignIds: Array<string> | null
     designId?: string
     limit?: number
   }): Promise<
@@ -1800,7 +2021,7 @@ export class ChangeOrderService {
   > {
     const conditions = [
       eq(items.itemType, 'ChangeOrder'),
-      eq(items.isDeleted, false),
+      notDeleted(),
       eq(items.isCurrent, true),
       // Either no workflow instance, or scope is not locked and workflow is not completed
       or(
@@ -1811,6 +2032,10 @@ export class ChangeOrderService {
         ),
       ),
     ]
+
+    if (options.accessDesignIds) {
+      conditions.push(ecoAccessScopeCondition(options.accessDesignIds))
+    }
 
     // Build the base query with LEFT JOIN on workflowInstances
     let query = db
@@ -1826,7 +2051,7 @@ export class ChangeOrderService {
       .leftJoin(workflowInstances, eq(items.id, workflowInstances.itemId))
 
     // If filtering by designId, join through changeOrderDesigns
-    if (options?.designId) {
+    if (options.designId) {
       query = query.innerJoin(
         changeOrderDesigns,
         eq(items.id, changeOrderDesigns.changeOrderId),
@@ -1836,7 +2061,7 @@ export class ChangeOrderService {
 
     const results = await query
       .where(and(...conditions))
-      .limit(options?.limit ?? 50)
+      .limit(options.limit ?? 50)
 
     return results.map((r) => ({
       id: r.id,
@@ -2055,18 +2280,27 @@ export class ChangeOrderService {
             )
           : undefined
 
-      await db.insert(changeOrderAffectedItems).values({
-        changeOrderId,
-        affectedItemId: itemId,
-        affectedItemMasterId: item.masterId,
-        changeAction: inferredAction,
-        currentState: item.state,
-        currentRevision: item.revision,
-        targetRevision,
-        workingCopyId,
-        isDirectlyAffected: true,
-        createdBy: userId,
-      })
+      // Nothing on this path runs in a transaction — the read above and this
+      // write are separate statements on the pool — so the conflict clause is
+      // the only thing standing between two concurrent checkouts of the same
+      // item and two scope rows for it. Same reasoning as
+      // `registerBranchChange`: the row the loser wanted is the row that is
+      // there, and this step is "add if not already there".
+      await db
+        .insert(changeOrderAffectedItems)
+        .values({
+          changeOrderId,
+          affectedItemId: itemId,
+          affectedItemMasterId: item.masterId,
+          changeAction: inferredAction,
+          currentState: item.state,
+          currentRevision: item.revision,
+          targetRevision,
+          workingCopyId,
+          isDirectlyAffected: true,
+          createdBy: userId,
+        })
+        .onConflictDoNothing(AFFECTED_ITEM_MASTER_CONFLICT)
     }
 
     return { branchItem, branch }
@@ -2430,8 +2664,12 @@ export class ChangeOrderService {
       changeOrder: changeOrder as unknown as typeof items.$inferSelect,
       designs: designSummaries,
       totalItemsAffected,
-      // Nothing this caller may act on can be released by them alone while
-      // part of the ECO is outside their reach — see `canAdvance`.
+      // Nothing this caller may act on can be submitted or released by them
+      // alone while part of the ECO is outside their reach. These two are the
+      // hint; `assertWholeEcoReach`, called from executeWorkflowTransition, is
+      // the gate that enforces it. (This used to point at a `canAdvance`
+      // helper that was never written, which is how the hint and the server
+      // came to disagree.)
       canSubmit: canSubmit && !hasRestricted,
       canRelease: canRelease && !hasRestricted,
       hasRestricted,

@@ -2,22 +2,18 @@
 
 The Files API manages the vault file system in Cascadia PLM. It provides file upload, download, versioning, check-out/check-in, and lock management for CAD files, documents, and other binary assets.
 
-## Endpoints Overview
+## Endpoints
 
-| Method | Endpoint                             | Description             |
-| ------ | ------------------------------------ | ----------------------- |
-| GET    | `/api/v1/files`                      | List all files          |
-| DELETE | `/api/v1/files/:fileId`              | Delete a file           |
-| GET    | `/api/v1/files/:fileId/download`     | Download a file         |
-| GET    | `/api/v1/files/:fileId/metadata`     | Get file metadata       |
-| GET    | `/api/v1/files/:fileId/versions`     | List file versions      |
-| POST   | `/api/v1/files/:fileId/checkout`     | Check out a file        |
-| POST   | `/api/v1/files/:fileId/checkin`      | Check in a file         |
-| GET    | `/api/v1/files/:fileId/lock-status`  | Get file lock status    |
-| POST   | `/api/v1/files/batch-checkout`       | Batch file checkout     |
-| POST   | `/api/v1/files/batch-checkin`        | Batch file checkin      |
-| GET    | `/api/v1/items/:itemId/files`        | List files for an item  |
-| POST   | `/api/v1/items/:itemId/files/upload` | Upload files to an item |
+This page explains behaviour; it is not an endpoint inventory. Three generated
+surfaces carry that, and none of them can drift from the routes the way a
+hand-written table does:
+
+- `GET /api/docs` — the interactive Scalar UI
+- `GET /openapi.json` — the live spec, regenerated from route metadata per request
+- [`openapi.v1.json`](./openapi.v1.json) — the frozen v1 contract, the one external
+  consumers should build against
+
+See [the API README](./README.md) for the versioning policy that governs all three.
 
 ## List Files
 
@@ -551,7 +547,7 @@ Recommended workflow for CAD tools integrating with Cascadia:
 3. **Save changes to Cascadia** -- upload files and update metadata:
 
    ```
-   POST /api/v1/items/:id/files/upload
+   POST /api/v1/items/:itemId/files/upload
    PUT /api/v1/items/:id
    ```
 

@@ -22,6 +22,7 @@ The file vault is Cascadia's enterprise file management system. It provides PDM-
 - [Primary File Designation](#primary-file-designation)
 - [Multiple Files Per Item](#multiple-files-per-item)
 - [File Metadata](#file-metadata)
+  - [Extracted Metadata](#extracted-metadata)
   - [File Categories](#file-categories)
   - [Correcting a Category](#correcting-a-category)
   - [Image Gallery](#image-gallery)
@@ -633,6 +634,36 @@ Every file record in the vault contains:
 | `thumbnailFileId`  | UUID or null      | Reference to a thumbnail image file                         |
 | `deletedAt`        | timestamp or null | Soft-delete timestamp                                       |
 | `deletedBy`        | UUID or null      | User who deleted the file                                   |
+
+### Extracted Metadata
+
+Every upload and check-in writes a small set of derived keys into the `metadata`
+JSONB column, alongside whatever the caller supplied (the caller's values win on
+a collision):
+
+| Key                | When                       | Value                                        |
+| ------------------ | -------------------------- | -------------------------------------------- |
+| `extension`        | always                     | Lowercased file extension, e.g. `.pdf`       |
+| `category`         | always                     | Broad MIME class, e.g. `pdf`, `image`, `cad` |
+| `detectedCategory` | always                     | The detected file category (see below)       |
+| `cadFormat`        | CAD extensions             | Format name, e.g. `STEP`, `SolidWorks`       |
+| `isViewable`       | CAD extensions             | Whether the in-app 3D viewer can render it   |
+| `pageCount`        | `.pdf` under 32 MB         | Number of pages                              |
+| `title` / `author` | `.pdf` under 32 MB, if set | PDF document properties                      |
+| `pdfProducer`      | `.pdf` under 32 MB, if set | Producing application                        |
+
+PDF extraction is gated on the **file extension**, never the caller-supplied
+`mimeType`, and is bounded: files over 32 MB are not opened, and any parse
+failure is swallowed so a malformed or vendor-mangled PDF still uploads with the
+rest of its metadata intact. Extraction is not retroactive — files uploaded
+before this existed keep the keys they were given.
+
+Image EXIF and native CAD property parsing are deliberately out of scope. EXIF
+would mean a native binary dependency (`sharp`, `exif-parser`) in the published
+AGPL core package for fields nothing reads; CAD properties for converted models
+already arrive in the typed `cadMetadata` column from the converter worker (see
+[CAD Metadata](#cad-metadata)), and the vendor formats that are never converted
+would need a vendor SDK.
 
 ### File Categories
 

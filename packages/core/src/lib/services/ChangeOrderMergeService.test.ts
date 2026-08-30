@@ -43,6 +43,7 @@ import {
   itemRelationships,
   items,
   parts,
+  programMembers,
   programs,
   tags,
   upstreamChanges,
@@ -178,6 +179,16 @@ describe('ChangeOrderMergeService', () => {
     )
 
     programId = program.id
+
+    // The creator is not automatically a member when the row is inserted
+    // directly (ProgramService.create is what enrols them), and reaching a
+    // change order now requires reaching one of its designs.
+    await testDb.db.insert(programMembers).values({
+      programId,
+      userId: user.id,
+      role: 'admin',
+      invitedBy: user.id,
+    })
 
     // Create test design with main branch
     const design = await DesignService.create(
@@ -1519,6 +1530,78 @@ describe('ChangeOrderMergeService', () => {
       ).toBe(rows[0]!.newRevision)
     })
 
+    it('a route-style eager-minted checkout stays releasable: the mint registers its own scope', async () => {
+      // Regression: POST /items/:id/checkout mints the working copy before
+      // taking the lock, so CheckoutService.checkout finds the row and takes
+      // the claim path — which deliberately never registers on the change
+      // order (that is the row-creator's job). The mint was the row creator
+      // and registered nothing, so the branch carried modified content the
+      // affected-items list did not show, and the preview refused the
+      // release with no way forward short of re-adding the item by hand.
+      const eco = await createChangeOrder()
+      const part = await createPart('eager-mint', 'Released')
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+      await testDb.db.insert(changeOrderDesigns).values({
+        changeOrderId: eco.id,
+        designId,
+        branchId: branch.id,
+        mergeStatus: 'pending',
+      })
+      // Main tracks the released row, the way a design's main branch does
+      const mainBranch = await BranchService.getMainBranch(designId)
+      await testDb.db.insert(branchItems).values({
+        branchId: mainBranch!.id,
+        itemMasterId: part.masterId!,
+        currentItemId: part.id,
+        baseItemId: part.id,
+        changeType: null,
+      })
+
+      await CheckoutService.ensureRevisionWorkingCopy(part, branch.id, user.id)
+      await CheckoutService.checkout(
+        { itemMasterId: part.masterId!, branchId: branch.id },
+        user.id,
+      )
+
+      // What reviewers see: the mint registered the item, as 'revise' (the
+      // action the released row implies — approveEco's backstop sync below
+      // must find nothing left to register)
+      const affected = await ChangeOrderService.getAffectedItems(eco.id)
+      const listed = affected.filter(
+        (a) => a.affectedItemMasterId === part.masterId,
+      )
+      expect(listed).toHaveLength(1)
+      expect(listed[0]!.changeAction).toBe('revise')
+
+      // The reviewer's preview (still in Draft, so not yet releasable for
+      // workflow-reachability reasons) reports no unlisted branch content
+      const draftPreview = await ChangeOrderMergeService.previewMerge(eco.id)
+      expect(
+        draftPreview.validationIssues.some((i) =>
+          i.includes('not in its affected items list'),
+        ),
+      ).toBe(false)
+
+      // Once approved, the preview says it will release...
+      await approveEco(eco.id)
+      const preview = await ChangeOrderMergeService.previewMerge(eco.id)
+      expect(preview.canRelease).toBe(true)
+      const previewed = preview.designs
+        .flatMap((d) => d.items)
+        .filter((i) => i.itemNumber === part.itemNumber)
+      expect(previewed).toHaveLength(1)
+
+      // ...and the release assigns the letter the preview promised
+      const merged = await ChangeOrderMergeService.merge(eco.id, user.id)
+      expect(
+        merged.designs[0]!.mergeResult.revisionsAssigned[part.itemNumber],
+      ).toBe(previewed[0]!.newRevision)
+    })
+
     it('previews nothing once the change order has released', async () => {
       // Regression: the ECO branch's rows survive the merge, and their
       // current item IS the row now released on main - so previewing a
@@ -1948,39 +2031,39 @@ describe('ChangeOrderMergeService', () => {
     })
   })
 
-  describe('affected-item actions alongside a merging branch', () => {
-    // Give Parts a promote mapping for this scenario. The test transaction
-    // rolls back, so this is local to the test — but the registry memoizes
-    // lifecycle definitions, so a write straight to the table has to drop the
-    // memo the way WorkflowService.update does.
-    async function enablePromoteOnParts() {
-      const lifecycle = takeFirst(
-        await testDb.db
-          .select()
-          .from(workflowDefinitions)
-          .where(eq(workflowDefinitions.id, LIFECYCLE_IDS.part)),
-      )
-      const definition = lifecycle.definition as Record<string, unknown>
+  // Give Parts a promote mapping (Released → Obsolete, assigns revision).
+  // The test transaction rolls back, so this is local to the test — but the
+  // registry memoizes lifecycle definitions, so a write straight to the table
+  // has to drop the memo the way WorkflowService.update does.
+  async function enablePromoteOnParts() {
+    const lifecycle = takeFirst(
       await testDb.db
-        .update(workflowDefinitions)
-        .set({
-          definition: {
-            ...definition,
-            changeActionMappings: {
-              ...(definition.changeActionMappings as Record<string, unknown>),
-              promote: {
-                fromState: 'Released',
-                toState: 'Obsolete',
-                assignsRevision: true,
-              },
+        .select()
+        .from(workflowDefinitions)
+        .where(eq(workflowDefinitions.id, LIFECYCLE_IDS.part)),
+    )
+    const definition = lifecycle.definition as Record<string, unknown>
+    await testDb.db
+      .update(workflowDefinitions)
+      .set({
+        definition: {
+          ...definition,
+          changeActionMappings: {
+            ...(definition.changeActionMappings as Record<string, unknown>),
+            promote: {
+              fromState: 'Released',
+              toState: 'Obsolete',
+              assignsRevision: true,
             },
           },
-        })
-        .where(eq(workflowDefinitions.id, LIFECYCLE_IDS.part))
+        },
+      })
+      .where(eq(workflowDefinitions.id, LIFECYCLE_IDS.part))
 
-      ItemTypeRegistry.invalidateLifecycleCache()
-    }
+    ItemTypeRegistry.invalidateLifecycleCache()
+  }
 
+  describe('affected-item actions alongside a merging branch', () => {
     // An ECO branch carrying real content, so the branch merge runs and the
     // affected-items fallback path is skipped.
     async function ecoWithBranchContent() {
@@ -3808,6 +3891,90 @@ describe('ChangeOrderMergeService', () => {
 
       const coverage = await RequirementService.getCoverage(designId)
       expect(coverage.satisfied).toBe(1)
+    })
+  })
+
+  describe('previewMerge predicts exactly what release assigns', () => {
+    // The invariant: for every affected item the preview lists, the revision
+    // it shows is the revision the release then mints. The stored
+    // `targetRevision` is a prediction stamped when the item was added and
+    // the merge pointedly never reads it — so neither may the preview, or a
+    // reviewer approves letters the release will not assign.
+
+    it('revise: ignores a stale stored targetRevision and predicts the computed next revision', async () => {
+      // Released at A, then independently revised to B — the story where the
+      // stored prediction goes stale: it was stamped 'B' when the item stood
+      // at A, and B is now the *current* revision, so the true next is C.
+      const part = await createPart('stale-revise', 'Released')
+      const revB = await ItemService.revise(part.id, 'B', user.id)
+      const revBId = revB.id!
+      await testDb.db
+        .update(items)
+        .set({ state: 'Released' })
+        .where(eq(items.id, revBId))
+
+      const eco = await createChangeOrder()
+      await testDb.db.insert(changeOrderAffectedItems).values({
+        changeOrderId: eco.id,
+        affectedItemId: revBId,
+        affectedItemMasterId: part.masterId,
+        changeAction: 'revise',
+        currentState: 'Released',
+        currentRevision: 'B',
+        targetRevision: 'B', // stale add-time prediction
+        createdBy: user.id,
+      })
+      await approveEco(eco.id)
+
+      const preview = await ChangeOrderMergeService.previewMerge(eco.id)
+      const previewRow = preview.designs
+        .flatMap((d) => d.items)
+        .find((i) => i.itemId === revBId)
+      expect(previewRow?.newRevision).toBe('C')
+
+      await ChangeOrderMergeService.merge(eco.id, user.id)
+
+      const current = takeFirst(
+        await testDb.db
+          .select()
+          .from(items)
+          .where(
+            and(eq(items.masterId, part.masterId), eq(items.isCurrent, true)),
+          ),
+      )
+      expect(current.revision).toBe(previewRow?.newRevision)
+    })
+
+    it('promote: predicts via the lifecycle authority, not the stale stored targetRevision', async () => {
+      await enablePromoteOnParts()
+
+      const part = await createPart('stale-promote', 'Released')
+      const eco = await createChangeOrder()
+      await testDb.db.insert(changeOrderAffectedItems).values({
+        changeOrderId: eco.id,
+        affectedItemId: part.id,
+        affectedItemMasterId: part.masterId,
+        changeAction: 'promote',
+        currentState: 'Released',
+        currentRevision: 'A',
+        // Stale: claims the promote leaves the revision alone, but the
+        // mapping assigns one (A → B).
+        targetRevision: 'A',
+        createdBy: user.id,
+      })
+      await approveEco(eco.id)
+
+      const preview = await ChangeOrderMergeService.previewMerge(eco.id)
+      const previewRow = preview.designs
+        .flatMap((d) => d.items)
+        .find((i) => i.itemId === part.id)
+      expect(previewRow?.newRevision).toBe('B')
+
+      await ChangeOrderMergeService.merge(eco.id, user.id)
+
+      const promoted = await ItemService.findById(part.id)
+      expect(promoted?.revision).toBe(previewRow?.newRevision)
+      expect(promoted?.state).toBe('Obsolete')
     })
   })
 })

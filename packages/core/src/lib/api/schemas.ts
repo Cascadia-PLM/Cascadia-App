@@ -13,53 +13,27 @@
 
 import { z } from 'zod'
 import { changeOrderTypeSchema } from '@/lib/items/types/change-order'
+import { testStepSchema } from '@/lib/items/types/testcase'
+import {
+  issueCategories,
+  issuePriorities,
+  issueSeverities,
+} from '@/lib/items/types/issue'
+import { workOrderUpdateSchema } from '@/lib/items/types/work-order'
 
 // =============================================================================
 // User Schemas
 // =============================================================================
 
 /**
- * Schema for creating a new user.
+ * User create/update schemas live in `lib/auth/types.ts`, not here.
+ *
+ * A second pair used to sit in this file with a `passwordConfirm` field and no
+ * `provider`/`active`. Nothing enforced it — `UserService` parses the
+ * `lib/auth/types` pair, and `UserForm` validates against the same — so the
+ * copy here was a shape that had never matched the API's actual contract. It
+ * is gone rather than reconciled: one schema per resource is the whole point.
  */
-export const userCreateSchema = z
-  .object({
-    email: z.string().email('Valid email is required'),
-    name: z.string().min(1, 'Name is required').max(200),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
-    passwordConfirm: z.string().optional(),
-  })
-  .refine(
-    (data) => !data.passwordConfirm || data.password === data.passwordConfirm,
-    {
-      message: 'Passwords do not match',
-      path: ['passwordConfirm'],
-    },
-  )
-
-/**
- * Schema for updating a user.
- * Password is optional - only update if provided.
- */
-export const userUpdateSchema = z
-  .object({
-    email: z.string().email('Valid email is required').optional(),
-    name: z.string().min(1).max(200).optional(),
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .optional(),
-    passwordConfirm: z.string().optional(),
-  })
-  .refine(
-    (data) => !data.passwordConfirm || data.password === data.passwordConfirm,
-    {
-      message: 'Passwords do not match',
-      path: ['passwordConfirm'],
-    },
-  )
-
-export type UserCreate = z.infer<typeof userCreateSchema>
-export type UserUpdate = z.infer<typeof userUpdateSchema>
 
 // =============================================================================
 // Part Schemas
@@ -91,22 +65,41 @@ export const partCreateSchema = z.object({
 
 /**
  * Schema for updating a part.
- * All fields optional for PATCH-style updates.
+ *
+ * All fields optional for PATCH-style updates — and `null` is accepted
+ * wherever the column is nullable, because that is how the edit form clears a
+ * field and how a read hands the value back. The detail page echoes the whole
+ * part (`{ ...part, attributes }`), so anything a read can return this must
+ * accept, or saving an untouched part becomes a 400.
+ *
+ * What is deliberately absent is what `ItemService.update` never writes
+ * (`itemNumber`, timestamps, lock state) or refuses to change (`revision`,
+ * `isCurrent`, `designId`). Those are stripped now rather than travelling
+ * into the service to be ignored or rejected there.
  */
 export const partUpdateSchema = z.object({
-  name: z.string().max(500).optional(),
-  description: z.string().max(5000).optional(),
+  name: z.string().max(500).nullable().optional(),
+  description: z.string().max(5000).nullable().optional(),
   partType: z
     .enum(['Manufacture', 'Purchase', 'Software', 'Phantom'])
+    .nullable()
     .optional(),
+  // NOT NULL with a default in the database, so a read never returns null.
   trackingMode: z.enum(['none', 'lot', 'serial']).optional(),
-  material: z.string().max(100).optional(),
-  weight: z.string().optional(),
-  weightUnit: z.string().max(10).optional(),
-  cost: z.string().optional(),
-  costCurrency: z.string().length(3).optional(),
-  leadTimeDays: z.number().int().min(0).optional(),
+  material: z.string().max(100).nullable().optional(),
+  weight: z.string().nullable().optional(),
+  weightUnit: z.string().max(10).nullable().optional(),
+  cost: z.string().nullable().optional(),
+  costCurrency: z.string().length(3).nullable().optional(),
+  leadTimeDays: z.number().int().min(0).nullable().optional(),
+  // Echoed by whole-item form saves. `ItemService.update` tolerates an
+  // identical value and rejects a changed one — a state change goes through
+  // the lifecycle, not through here.
   state: z.string().max(50).optional(),
+  // Free-form extension bag on the items row. Typed `Record<string, unknown>`
+  // in the schema, so the values are not narrowed to strings here either: a
+  // PUT echoes back whatever a read returned.
+  attributes: z.record(z.string(), z.unknown()).optional(),
   commitMessage: z.string().max(500).optional(),
 })
 
@@ -183,7 +176,6 @@ export const requirementCreateSchema = z.object({
   priority: requirementPrioritySchema.optional(),
   verificationMethod: verificationMethodSchema.optional(),
   acceptanceCriteria: z.string().max(10000).optional(),
-  rationale: z.string().max(5000).optional(),
   branchId: z.string().uuid().optional(),
 })
 
@@ -192,12 +184,15 @@ export const requirementCreateSchema = z.object({
  */
 export const requirementUpdateSchema = z.object({
   name: z.string().max(500).optional(),
+  // The column is `type`; `requirementType` is the older API spelling and is
+  // kept as an alias, resolved in items/type-handlers/requirement.ts. Neither
+  // is narrowed to an enum - the column is a plain varchar(50).
+  type: z.string().max(50).optional(),
   requirementType: z.string().max(50).optional(),
   description: z.string().max(10000).optional(),
   priority: requirementPrioritySchema.optional(),
   verificationMethod: verificationMethodSchema.optional(),
   acceptanceCriteria: z.string().max(10000).optional(),
-  rationale: z.string().max(5000).optional(),
   state: z.string().max(50).optional(),
   commitMessage: z.string().max(500).optional(),
 })
@@ -221,7 +216,6 @@ export const taskCreateSchema = z.object({
   revision: z.string().min(1).max(10).optional(),
   name: z.string().max(500).optional(),
   designId: z.string().uuid().optional(), // Optional for tasks
-  taskType: z.string().max(50).optional(),
   description: z.string().max(10000).optional(),
   priority: taskPrioritySchema.optional(),
   dueDate: z.coerce.date().optional(),
@@ -234,7 +228,6 @@ export const taskCreateSchema = z.object({
  */
 export const taskUpdateSchema = z.object({
   name: z.string().max(500).optional(),
-  taskType: z.string().max(50).optional(),
   description: z.string().max(10000).optional(),
   priority: taskPrioritySchema.optional(),
   dueDate: z.coerce.date().optional(),
@@ -295,6 +288,182 @@ export const changeOrderUpdateSchema = z.object({
 
 export type ChangeOrderCreate = z.infer<typeof changeOrderCreateSchema>
 export type ChangeOrderUpdate = z.infer<typeof changeOrderUpdateSchema>
+
+// =============================================================================
+// Per-type update schemas for the generic PUT /items/:id
+//
+// The generic item update serves every registered type, so its body schema is
+// resolved at request time from the stored item's type — a static union here
+// would reject nothing (every field optional in some branch) and document a
+// shape no single request has.
+//
+// Conventions, following partUpdateSchema above: every field optional
+// (PATCH-style), `null` accepted wherever the column is nullable — the detail
+// pages echo whole read payloads back, so anything a read can return must
+// parse. `state` stays optional (ItemService.update tolerates an echoed
+// identical value and rejects a changed one). Server-managed fields — identity
+// columns, flow-managed pointers like a software item's manifest ids or a
+// physical part's as-built pin — are deliberately absent: they are stripped
+// here rather than travelling into the service to be ignored or rejected.
+// =============================================================================
+
+/** Base-item fields every type's update accepts. */
+const itemUpdateBaseFields = {
+  name: z.string().max(500).nullable().optional(),
+  state: z.string().max(50).optional(),
+  attributes: z.record(z.string(), z.unknown()).optional(),
+  commitMessage: z.string().max(500).optional(),
+}
+
+/**
+ * Fallback for an item type without a dedicated update schema. Base fields
+ * only — the parameterized test over `ITEM_TYPE_RESOURCES` fails the moment a
+ * new type registers without a schema here, so this never silently strips a
+ * real type's extension fields in production.
+ */
+export const baseItemUpdateSchema = z.object({ ...itemUpdateBaseFields })
+
+export const testPlanUpdateSchema = z.object({
+  ...itemUpdateBaseFields,
+  scope: z.string().max(5000).nullable().optional(),
+  environment: z.string().max(100).nullable().optional(),
+  entryCriteria: z.string().max(5000).nullable().optional(),
+  exitCriteria: z.string().max(5000).nullable().optional(),
+})
+
+export const testCaseUpdateSchema = z.object({
+  ...itemUpdateBaseFields,
+  testPlanId: z.string().uuid().nullable().optional(),
+  testType: z
+    .enum(['Unit', 'Integration', 'System', 'Acceptance'])
+    .nullable()
+    .optional(),
+  preconditions: z.string().max(5000).nullable().optional(),
+  steps: z.array(testStepSchema).nullable().optional(),
+  executionStatus: z
+    .enum(['NotRun', 'Passed', 'Failed', 'Blocked'])
+    .nullable()
+    .optional(),
+  lastExecutedAt: z.coerce.date().nullable().optional(),
+  lastExecutedBy: z.string().uuid().nullable().optional(),
+  environment: z.string().max(100).nullable().optional(),
+})
+
+export const workInstructionUpdateSchema = z.object({
+  ...itemUpdateBaseFields,
+  description: z.string().max(10000).nullable().optional(),
+  estimatedTime: z.number().int().min(0).nullable().optional(),
+  difficulty: z.enum(['Easy', 'Medium', 'Hard']).nullable().optional(),
+  safetyNotes: z.string().max(10000).nullable().optional(),
+  requiredTools: z.string().max(5000).nullable().optional(),
+})
+
+export const issueUpdateSchema = z.object({
+  ...itemUpdateBaseFields,
+  description: z.string().max(10000).nullable().optional(),
+  severity: z.enum(issueSeverities).nullable().optional(),
+  priority: z.enum(issuePriorities).nullable().optional(),
+  category: z.enum(issueCategories).nullable().optional(),
+  reportedBy: z.string().uuid().nullable().optional(),
+  reportedDate: z.coerce.date().nullable().optional(),
+  assignedTo: z.string().uuid().nullable().optional(),
+  resolution: z.string().max(10000).nullable().optional(),
+  resolvedDate: z.coerce.date().nullable().optional(),
+  rootCause: z.string().max(10000).nullable().optional(),
+  // The program the issue is scoped on, and the only way to set one on a row
+  // that has none. Creation derives it from the chosen designs, which leaves
+  // every issue predating that derivation reachable by cross-program authority
+  // alone — so this field is the repair path, not a convenience: without it a
+  // row with no design and no links would be visible to an administrator and
+  // still unfixable through any route. Writing it is a write *into* the
+  // destination program and is membership-checked at the route, the rule
+  // `PUT /api/v1/work-orders/:id` applies to a reassignment.
+  programId: z.string().uuid().nullable().optional(),
+  // Junction-table associations the type handler replaces wholesale.
+  designIds: z.array(z.string().uuid()).optional(),
+  affectedItemIds: z.array(z.string().uuid()).optional(),
+})
+
+export const toolUpdateSchema = z.object({
+  ...itemUpdateBaseFields,
+  toolType: z.string().max(50).nullable().optional(),
+  toolSubtype: z.string().max(50).nullable().optional(),
+  manufacturer: z.string().max(200).nullable().optional(),
+  model: z.string().max(200).nullable().optional(),
+  // Structured per-subtype capabilities; shape varies, validated on use.
+  capabilities: z.record(z.string(), z.unknown()).nullable().optional(),
+  location: z.string().max(500).nullable().optional(),
+  notes: z.string().max(5000).nullable().optional(),
+})
+
+export const softwareUpdateSchema = z.object({
+  ...itemUpdateBaseFields,
+  description: z.string().max(10000).nullable().optional(),
+  softwareType: z
+    .enum(['firmware', 'application', 'library', 'configuration', 'fpga'])
+    .nullable()
+    .optional(),
+  // NOT NULL with a default, so never null on a read.
+  sourceMode: z.enum(['internal', 'external']).optional(),
+  version: z.string().max(50).nullable().optional(),
+  targetHardware: z.string().max(200).nullable().optional(),
+  toolchain: z.string().max(200).nullable().optional(),
+  buildArtifactFileId: z.string().uuid().nullable().optional(),
+  // manifestId / draftManifestId are deliberately absent: the source store
+  // (checkout, draft, commit) is the only writer of those pointers.
+})
+
+/**
+ * WorkOrder: the type-route's own schema plus the base-item fields. completedAt
+ * is deliberately absent — completion is a flow, not a field edit.
+ */
+export const workOrderItemUpdateSchema = workOrderUpdateSchema.extend({
+  ...itemUpdateBaseFields,
+})
+
+/**
+ * PhysicalPart: mirrors the physical-parts route's update contract. Identity
+ * (serial/lot/kind/part lineage) and the produce-flow pins (asBuiltItemId,
+ * producingWorkOrderId) are deliberately absent.
+ */
+export const physicalPartItemUpdateSchema = z.object({
+  ...itemUpdateBaseFields,
+  manufacturerPartId: z.string().uuid().nullable().optional(),
+  erpRef: z.string().max(200).nullable().optional(),
+  notes: z.string().max(5000).nullable().optional(),
+})
+
+const ITEM_UPDATE_SCHEMAS: Record<string, z.ZodType> = {
+  Part: partUpdateSchema,
+  Document: documentUpdateSchema,
+  Requirement: requirementUpdateSchema,
+  Task: taskUpdateSchema,
+  ChangeOrder: changeOrderUpdateSchema,
+  TestPlan: testPlanUpdateSchema,
+  TestCase: testCaseUpdateSchema,
+  WorkInstruction: workInstructionUpdateSchema,
+  Issue: issueUpdateSchema,
+  Tool: toolUpdateSchema,
+  Software: softwareUpdateSchema,
+  WorkOrder: workOrderItemUpdateSchema,
+  PhysicalPart: physicalPartItemUpdateSchema,
+}
+
+/**
+ * The update schema `PUT /items/:id` runs for a given item type.
+ *
+ * Always returns a schema: an unknown type gets the base-item schema, which
+ * accepts the fields every item carries and strips the rest — and the
+ * parameterized test over every registered type guarantees "unknown" cannot
+ * happen for a type that actually exists.
+ */
+export function itemUpdateSchemaFor(
+  itemType: string,
+): z.ZodType<Record<string, unknown>> {
+  return (ITEM_UPDATE_SCHEMAS[itemType] ?? baseItemUpdateSchema) as z.ZodType<
+    Record<string, unknown>
+  >
+}
 
 // =============================================================================
 // Program Schemas (re-exported from ProgramService for API consistency)
@@ -465,9 +634,11 @@ export const batchCheckinRequestSchema = z.object({
  * Schema for batch file checkout operations (CAD plugin workflow).
  */
 export const batchFileCheckoutRequestSchema = z.object({
+  // The cap was a hand-rolled check in the handler; here it names the field.
   fileIds: z
     .array(z.string().uuid())
-    .min(1, 'At least one file ID is required'),
+    .min(1, 'At least one file ID is required')
+    .max(100, 'Batch size limited to 100 files'),
 })
 
 /**
@@ -475,9 +646,11 @@ export const batchFileCheckoutRequestSchema = z.object({
  * Note: New versions must be uploaded individually via the single file checkin endpoint.
  */
 export const batchFileCheckinRequestSchema = z.object({
+  // The cap was a hand-rolled check in the handler; here it names the field.
   fileIds: z
     .array(z.string().uuid())
-    .min(1, 'At least one file ID is required'),
+    .min(1, 'At least one file ID is required')
+    .max(100, 'Batch size limited to 100 files'),
 })
 
 export type BatchCreateItem = z.infer<typeof batchCreateItemSchema>
@@ -536,3 +709,247 @@ export const itemListSchema = paginationSchema
 export type Pagination = z.infer<typeof paginationSchema>
 export type VersionContext = z.infer<typeof versionContextSchema>
 export type ItemListQuery = z.infer<typeof itemListSchema>
+
+// =============================================================================
+// Workflow Definition Schemas
+// =============================================================================
+
+/**
+ * A workflow definition is the most deeply nested body the API accepts, and
+ * the lifecycle editor is its only real client. These schemas mirror the
+ * interfaces in `lib/workflows/types.ts` and `lib/types/lifecycle.ts` field
+ * for field, with these notes:
+ *
+ * - Guards and actions are discriminated unions on `type`, so a `field_value`
+ *   guard cannot carry a `user_role` config. `GuardEvaluator` narrows the same
+ *   way when it runs them.
+ * - Editor-only presentation fields (`position`, `labelPosition`, `color`)
+ *   are accepted because the editor round-trips them; they are persisted with
+ *   the definition and mean nothing to the engine.
+ */
+
+export const revisionSchemeSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('alpha'), uppercase: z.boolean().optional() }),
+  z.object({ type: z.literal('numeric') }),
+  z.object({ type: z.literal('prefixed-numeric'), prefix: z.string().max(20) }),
+  z.object({ type: z.literal('none') }),
+])
+
+const pointSchema = z.object({ x: z.number(), y: z.number() })
+
+export const workflowStateSchema = z.object({
+  id: z.string().min(1).max(100),
+  name: z.string().min(1).max(200),
+  color: z.string().max(50).optional(),
+  description: z.string().max(2000).optional(),
+  isInitial: z.boolean().optional(),
+  isFinal: z.boolean().optional(),
+  // The release-vs-cancel decision is made from this alone, never from the
+  // state's name — so an unknown value here is a 400, not a default.
+  finalKind: z.enum(['release', 'cancel', 'complete']).optional(),
+  position: pointSchema.optional(),
+  phaseId: z.string().max(100).optional(),
+  /** Instance-level states carry reviewer instructions; definitions ignore it. */
+  instructions: z.string().max(5000).optional(),
+})
+
+/** `config` is a union keyed by `type`; both arms are spelled out. */
+const transitionGuardSchema = z.discriminatedUnion('type', [
+  z.object({
+    id: z.string().min(1).max(100),
+    name: z.string().min(1).max(200),
+    type: z.literal('field_value'),
+    config: z.object({
+      fieldName: z.string().min(1).max(100),
+      operator: z.enum([
+        'equals',
+        'not_equals',
+        'contains',
+        'is_empty',
+        'is_not_empty',
+        'greater_than',
+        'less_than',
+        'greater_or_equal',
+        'less_or_equal',
+      ]),
+      value: z
+        .union([z.string().max(1000), z.number(), z.boolean()])
+        .optional(),
+    }),
+    errorMessage: z.string().max(1000).optional(),
+  }),
+  z.object({
+    id: z.string().min(1).max(100),
+    name: z.string().min(1).max(200),
+    type: z.literal('user_role'),
+    config: z.object({
+      requiredRoles: z.array(z.string().max(200)).max(100),
+      requireAll: z.boolean().optional(),
+    }),
+    errorMessage: z.string().max(1000).optional(),
+  }),
+])
+
+const transitionActionSchema = z.discriminatedUnion('type', [
+  z.object({
+    id: z.string().min(1).max(100),
+    name: z.string().min(1).max(200),
+    type: z.literal('send_notification'),
+    executeOn: z.enum(['before', 'after']),
+    config: z.object({
+      recipients: z
+        .array(
+          z.object({
+            type: z.enum(['user', 'role']),
+            id: z.string().max(200),
+          }),
+        )
+        .max(100),
+      // The only template there is; a typo used to reach the notifier.
+      templateId: z.literal('workflow_transition'),
+    }),
+  }),
+  z.object({
+    id: z.string().min(1).max(100),
+    name: z.string().min(1).max(200),
+    type: z.literal('update_field'),
+    executeOn: z.enum(['before', 'after']),
+    config: z.object({
+      fieldName: z.string().min(1).max(100),
+      value: z.union([z.string().max(1000), z.number(), z.boolean()]),
+    }),
+  }),
+])
+
+export const workflowTransitionSchema = z.object({
+  id: z.string().min(1).max(100),
+  name: z.string().min(1).max(200),
+  fromStateId: z.string().min(1).max(100),
+  toStateId: z.string().min(1).max(100),
+  description: z.string().max(2000).optional(),
+  guards: z.array(transitionGuardSchema).max(50).optional(),
+  actions: z.array(transitionActionSchema).max(50).optional(),
+  labelPosition: pointSchema.optional(),
+  approvalRequirement: z
+    .object({ requiredCount: z.number().int().min(0).max(100) })
+    .optional(),
+})
+
+const stateChangeActionMappingSchema = z.object({
+  fromState: z.string().min(1).max(100),
+  toState: z.string().min(1).max(100),
+  assignsRevision: z.boolean(),
+})
+
+export const changeActionMappingsSchema = z.object({
+  release: stateChangeActionMappingSchema.optional(),
+  revise: z
+    .object({
+      fromState: z.string().min(1).max(100),
+      newVersionState: z.string().min(1).max(100),
+      oldVersionState: z.string().min(1).max(100),
+      assignsRevision: z.literal(true),
+    })
+    .optional(),
+  obsolete: stateChangeActionMappingSchema.optional(),
+  promote: stateChangeActionMappingSchema
+    .extend({ resetRevision: z.boolean().optional() })
+    .optional(),
+})
+
+export const lifecyclePhaseSchema = z.object({
+  id: z.string().min(1).max(100),
+  name: z.string().min(1).max(200),
+  revisionScheme: revisionSchemeSchema.optional(),
+  resetRevisionOnEntry: z.boolean().optional(),
+  color: z.string().max(50).optional(),
+  order: z.number().int().min(0).max(1000),
+})
+
+/** Fields shared by the create and update bodies. */
+const workflowDefinitionFields = {
+  description: z.string().max(5000).optional(),
+  applicableItemTypes: z.array(z.string().max(100)).max(100).optional(),
+  transitions: z.array(workflowTransitionSchema).max(500).optional(),
+  changeActionMappings: changeActionMappingsSchema.optional(),
+  isActive: z.boolean().optional(),
+  lifecycleType: z.enum(['Free', 'Driven', 'Driving']).optional(),
+  drivers: z.array(z.string().max(100)).max(100).optional(),
+  revisionScheme: revisionSchemeSchema.optional(),
+  phases: z.array(lifecyclePhaseSchema).max(100).optional(),
+}
+
+export const workflowDefinitionCreateSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(200),
+  // Legacy input resolved through normalize.ts when lifecycleType is absent.
+  workflowType: z.enum(['strict', 'flexible']).optional(),
+  states: z.array(workflowStateSchema).max(500).optional(),
+  ...workflowDefinitionFields,
+})
+
+export const workflowDefinitionUpdateSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  states: z.array(workflowStateSchema).max(500).optional(),
+  ...workflowDefinitionFields,
+})
+
+/**
+ * One approver on a workflow state — a user or a role, by id.
+ *
+ * `isRequired` defaults to true here rather than in each route: the column
+ * defaults to true, the add-one route defaulted it in the handler, and the
+ * replace-all route passed `undefined` through and got the column default by
+ * accident. One default, in one place, and the two routes now agree.
+ */
+export const stateApproverInputSchema = z.object({
+  type: z.enum(['user', 'role']),
+  id: z.string().uuid(),
+  isRequired: z.boolean().default(true),
+})
+
+export const stateApproversReplaceSchema = z.object({
+  approvers: z.array(stateApproverInputSchema).max(100),
+})
+
+export const stateApproverPatchSchema = z.object({
+  isRequired: z.boolean(),
+})
+
+// =============================================================================
+// AI Settings Schemas
+// =============================================================================
+
+/**
+ * The provider list is shared, deliberately.
+ *
+ * `admin.ts` and `ai.ts` both write the `ai_settings` row, and their two
+ * hand-rolled validations had drifted: admin accepted openai / anthropic /
+ * gemini / ollama, while `POST /api/v1/ai/settings` rejected anything but
+ * openai and anthropic — so a Gemini configuration saved from one surface was
+ * unsavable from the other. One enum now, in one place.
+ */
+export const aiProviderTypeSchema = z.enum([
+  'openai',
+  'anthropic',
+  'gemini',
+  'ollama',
+])
+
+export const aiProviderConfigSchema = z.object({
+  provider: aiProviderTypeSchema,
+  apiKey: z.string().max(2000).optional(),
+  // Present but possibly empty — an empty model falls back at call time.
+  model: z.string().max(200),
+  baseURL: z.string().max(2000).optional(),
+  // Monthly token ceiling for this row's scope (program row: that program;
+  // global row: the whole instance). Enforced at 429 by loadProviderConfig;
+  // unset means unlimited.
+  monthlyTokenBudget: z.number().int().positive().optional(),
+})
+
+/** Body of the admin and per-program AI settings writes. */
+export const aiSettingsUpdateSchema = z.object({
+  enabled: z.boolean(),
+  provider: aiProviderTypeSchema,
+  config: aiProviderConfigSchema,
+})

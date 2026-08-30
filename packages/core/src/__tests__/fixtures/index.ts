@@ -8,15 +8,10 @@
  *
  * @example
  * ```typescript
- * import {
- *   createTestUser,
- *   createTestPart,
- *   TestDataBuilder
- * } from '@test/fixtures'
+ * import { createTestUser, createTestPart } from '@test/fixtures'
  * ```
  */
 
 export * from './users'
 export * from './items'
-export * from './builder'
 export * from './lifecycles'

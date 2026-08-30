@@ -4,13 +4,13 @@
 /**
  * Navigation E2E Smoke Tests
  *
- * Tier 1: Critical path tests that run on every PR.
+ * Critical-path smoke tests.
  * Tests that authenticated users can navigate to main routes.
  */
 
 import { expect, test } from './fixtures'
 
-test.describe('Navigation - Smoke Tests @tier1', () => {
+test.describe('Navigation - Smoke Tests', () => {
   test('can open sidebar navigation', async ({ authenticatedPage: page }) => {
     await page.goto('/')
 

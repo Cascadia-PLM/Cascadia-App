@@ -20,7 +20,12 @@
  * cannot quietly defeat it, because there is no pattern to fall out of date.
  *
  * String-literal package ids get a second, separate pass, since no amount of
- * import resolution will catch `usePackageEnabled('advanced-auditing')`.
+ * import resolution will catch `usePackageEnabled(<a quoted module id>)`.
+ * (Which is why this file spells no id in quotes — it scans itself.)
+ *
+ * The same resolver then answers a second question, one package outward: does
+ * any module package import *another* module package without declaring it?
+ * See "Cross-module dependency honesty" below.
  *
  * This is a stopgap with a known replacement. Phase 2 splits the workspace, at
  * which point CI can build and test `apps/cascadia` with the proprietary
@@ -31,13 +36,18 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
-import { editionOf, normalize } from './edition-manifest.mjs'
+import { MODULE_PACKAGES, editionOf, normalize } from './edition-manifest.mjs'
+
+// Both lists derive from the edition manifest so a new module package is
+// covered the day its packages/<name>/** pattern lands in PROPRIETARY.
+// The old hardcoded copies here had already drifted: they omitted the
+// odoo-integration package entirely, so a core import under it — or its
+// quoted package id — passed this check silently. (No quoted ids in this
+// file: since .mjs is scanned, the checker checks itself.)
 
 /** Entitlement ids that belong to a proprietary package. */
-const PROPRIETARY_PACKAGE_IDS = ['advanced-auditing']
+const PROPRIETARY_PACKAGE_IDS = MODULE_PACKAGES
 
-/** The module packages, in the order `@/` searches them after core. */
-const MODULE_PACKAGES = ['advanced-auditing', 'design-engine', 'cad-generation']
 const MODULE_SRC = MODULE_PACKAGES.map((p) => `packages/${p}/src`)
 
 /**
@@ -74,7 +84,7 @@ const KNOWN_PENDING = new Map([
   // the work that justified it lands.
 ])
 
-const EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx']
+const EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs']
 
 function candidateFiles() {
   const out = execFileSync(
@@ -171,7 +181,9 @@ function record(file, detail) {
   else violations.set(file, [detail])
 }
 
-for (const file of candidateFiles()) {
+const allFiles = candidateFiles()
+
+for (const file of allFiles) {
   if (editionOf(file) !== 'core') continue
   if (ENTRY_POINTS.includes(file)) continue
   coreFilesScanned++
@@ -189,6 +201,103 @@ for (const file of candidateFiles()) {
     if (source.includes(`'${id}'`) || source.includes(`"${id}"`)) {
       record(file, `names the package id '${id}'`)
     }
+  }
+}
+
+// ── Alias-root collisions ────────────────────────────────────────────────
+//
+// The `@/` alias resolves core first, then the module packages, and modules
+// deliberately contribute files in core-owned namespaces (server/routes,
+// lib/jobs/definitions, ...). That ordering means a core file later created
+// at the same relative path silently SHADOWS the module file everywhere it
+// is imported — no error, the module's contribution just stops loading. So
+// the same relative path may exist under at most one alias root.
+//
+// Comparison is extension- and index-stripped, because both resolvers try
+// the extension candidates: core lib/x.ts shadows module lib/x.tsx too.
+//
+// The composition-root filenames are the one structural exception: every
+// module package has them by convention, and they are only ever imported
+// root-pinned as `@cascadia/<pkg>/register.*`, never through `@/`. This
+// allowlist stays closed — a new structural filename needs a deliberate
+// entry here, which is the point.
+const COLLISION_ALLOWLIST = new Set(['register.server', 'register.client'])
+
+const ALIAS_ROOTS = ['packages/core/src', ...MODULE_SRC]
+const byRelativePath = new Map()
+for (const file of allFiles) {
+  const root = ALIAS_ROOTS.find((r) => file.startsWith(`${r}/`))
+  if (!root) continue
+  let rel = file.slice(root.length + 1)
+  const ext = EXTENSIONS.find((e) => rel.endsWith(e))
+  if (ext) rel = rel.slice(0, -ext.length)
+  if (rel.endsWith('/index')) rel = rel.slice(0, -'/index'.length)
+  if (COLLISION_ALLOWLIST.has(rel)) continue
+  if (!byRelativePath.has(rel)) byRelativePath.set(rel, new Set())
+  byRelativePath.get(rel).add(root)
+}
+const collisions = [...byRelativePath].filter(([, roots]) => roots.size > 1)
+
+// ── Cross-module dependency honesty ──────────────────────────────────────
+//
+// A module package may import core. It may import itself. It may import
+// another module package **only if it says so in its own package.json.**
+//
+// This exists because `cad-generation` and `design-engine` imported each other
+// at runtime for months while neither declared the other — the `@/` alias
+// searches every module root, so an undeclared cross-module import resolves
+// and runs, and nothing notices until someone tries to publish, delete, or
+// license one of them independently. BND-4 merged those two rather than
+// declaring the edge; this pass is what stops the next pair drifting into the
+// same state.
+//
+// A declared edge is fine — it is a fact recorded where npm and a human can
+// both see it. What is refused is an *undeclared* one.
+const moduleOf = (file) =>
+  MODULE_PACKAGES.find((name) => file.startsWith(`packages/${name}/`)) ?? null
+
+/** Module package → the module packages its package.json admits to needing. */
+const declaredDeps = new Map(
+  MODULE_PACKAGES.map((name) => {
+    const manifestPath = `packages/${name}/package.json`
+    const manifest = existsSync(manifestPath)
+      ? JSON.parse(readFileSync(manifestPath, 'utf8'))
+      : {}
+    const all = {
+      ...manifest.dependencies,
+      ...manifest.devDependencies,
+      ...manifest.peerDependencies,
+    }
+    return [
+      name,
+      new Set(
+        MODULE_PACKAGES.filter((other) =>
+          Object.hasOwn(all, `@cascadia/${other}`),
+        ),
+      ),
+    ]
+  }),
+)
+
+/** file → list of undeclared cross-module imports */
+const undeclared = new Map()
+
+for (const file of allFiles) {
+  const from = moduleOf(file)
+  if (!from) continue
+
+  const source = readFileSync(file, 'utf8')
+  for (const specifier of specifiersIn(source)) {
+    const target = resolveSpecifier(specifier, file)
+    if (!target) continue
+    const to = moduleOf(target)
+    if (!to || to === from) continue
+    if (declaredDeps.get(from)?.has(to)) continue
+
+    const existing = undeclared.get(file)
+    const detail = `imports ${specifier}  →  ${target}  (${to}, undeclared)`
+    if (existing) existing.push(detail)
+    else undeclared.set(file, [detail])
   }
 }
 
@@ -229,6 +338,44 @@ if (stale.length > 0) {
   console.error(
     '\nThis file is clean now. Delete its entry from KNOWN_PENDING in\n' +
       'scripts/check-core-boundary.mjs — the list only ever shrinks.',
+  )
+  process.exit(1)
+}
+
+if (collisions.length > 0) {
+  console.error(
+    `\n✗ ${collisions.length} relative path(s) exist under more than one @/ alias root:\n`,
+  )
+  for (const [rel, roots] of collisions) {
+    console.error(`   ${rel}`)
+    for (const root of roots) console.error(`      ${root}/${rel}.*`)
+    console.error('')
+  }
+  console.error(
+    'The @/ alias resolves core first, then the modules — whichever file\n' +
+      'loses the ordering is silently shadowed everywhere it is imported.\n' +
+      'Rename one side (or, for a new structural convention imported only\n' +
+      'root-pinned via @cascadia/<pkg>/..., add a deliberate\n' +
+      'COLLISION_ALLOWLIST entry in scripts/check-core-boundary.mjs).',
+  )
+  process.exit(1)
+}
+
+if (undeclared.size > 0) {
+  console.error(
+    `\n✗ ${undeclared.size} file(s) import another module package without declaring it:\n`,
+  )
+  for (const [file, details] of undeclared) {
+    console.error(`   ${file}`)
+    for (const d of details) console.error(`      ${d}`)
+    console.error('')
+  }
+  console.error(
+    'The @/ alias searches every module root, so an undeclared cross-module\n' +
+      'import resolves and runs — and nothing notices until someone tries to\n' +
+      'publish, delete, or license one of those packages on its own.\n' +
+      'Either add the dependency to the importing package.json (and accept\n' +
+      'that the two now ship together), or invert it through a registry.',
   )
   process.exit(1)
 }

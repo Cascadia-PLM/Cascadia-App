@@ -7,10 +7,6 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { tagged } from '../adapter'
 import type { ChangeOrder } from '@/lib/items/types/change-order'
 import type { ConflictResolution } from '@/components/change-orders/MergeConflictDialog'
-import type {
-  InstanceWorkflowTransition,
-  WorkflowState,
-} from '@/lib/workflows/types'
 import type { SessionUser } from '@/lib/auth/session'
 import { ApprovalRegistry } from '@/lib/workflows/approval-registry'
 import {
@@ -48,6 +44,12 @@ import {
   resolveEcoDesignScope,
 } from '@/lib/auth/access'
 import { markConflictReviewedRequestSchema } from '@/lib/services/types/conflict-review'
+import {
+  changeOrderUpdateSchema,
+  stateApproverInputSchema,
+  workflowStateSchema,
+  workflowTransitionSchema,
+} from '@/lib/api/schemas'
 import { db } from '@/lib/db'
 import { branchItems } from '@/lib/db/schema'
 import {
@@ -236,8 +238,7 @@ app.get(
         // The unfiltered list below is bounded by nothing else, so the
         // caller's own reach is what bounds it. Resolved once and shared with
         // the counts, which must agree with the rows they sit above.
-        const accessDesignIds =
-          await AccessControlService.getAccessibleDesignIds(user.id)
+        const accessScope = await AccessControlService.getAccessScope(user.id)
 
         if (designId) {
           const ecoDesignRecords = await db
@@ -312,7 +313,7 @@ app.get(
         const result = await ItemService.search('ChangeOrder', {
           limit,
           offset,
-          accessDesignIds,
+          accessScope,
         })
 
         const response: Record<string, unknown> = {
@@ -326,17 +327,43 @@ app.get(
 )
 
 // GET /api/change-orders/editable
+//
+// The ECO picker's feed — the change orders still accepting affected items.
+// Scoped on the same axis, and with the same two moves, as the sibling list
+// above: a named `designId` is a design-scoped read and is gated as one, and
+// the query is bounded by the caller's accessible designs whether or not a
+// filter is given, so omitting every parameter cannot mean "no scoping at
+// all". Until this landed the route took no user at all and answered with
+// every editable ECO on the instance to anyone holding `change_orders:read`,
+// which every built-in role does.
+//
+// The `designId` gate is `requireDesignAccess`, not an empty list, and that
+// differs from the reasoning `GET /api/v1/physical-parts` records for its
+// `partMasterId` filter. There the refusal would have been an existence
+// oracle, because the by-id gate answers NotFound for a lineage that does not
+// exist and PermissionDenied for one that does. `requireDesignAccess` has no
+// such split — it throws PermissionDeniedError identically for a design that
+// is absent and one that is merely out of reach — so the refusal discloses
+// nothing, and matching the sibling matters more than matching the other
+// route's shape.
 app.get(
   '/editable',
   adapt(
     apiHandler(
       { permission: ['change_orders', 'read'] },
-      async ({ request }) => {
+      async ({ request, user }) => {
         const url = new URL(request.url)
         const designId = url.searchParams.get('designId') ?? undefined
 
+        if (designId) {
+          await requireDesignAccess(user.id, designId)
+        }
+
         const editable = await ChangeOrderService.getEditableChangeOrders({
           designId,
+          accessDesignIds: await AccessControlService.getAccessibleDesignIds(
+            user.id,
+          ),
         })
 
         return { changeOrders: editable }
@@ -363,17 +390,13 @@ app.post(
   adapt(
     apiHandler(
       {
+        body: createChangeOrderSchema,
         permission: ['change_orders', 'create'],
         openapi: {
           summary: 'Create a change order against one or more designs',
-          request: { body: { schema: createChangeOrderSchema } },
         },
       },
-      async ({ request, user }) => {
-        const { designIds, ...data } = createChangeOrderSchema.parse(
-          await request.json(),
-        )
-
+      async ({ body: { designIds, ...data }, user }) => {
         // Per design, not once for a nominated one: the designs are equal, so
         // creating an ECO that reaches into a program means being entitled to
         // create there. The equivalent check on the items route hung off
@@ -453,13 +476,16 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
+    apiHandler<{ id: string }, z.infer<typeof changeOrderUpdateSchema>>(
+      {
+        permission: ['change_orders', 'update'],
+        body: changeOrderUpdateSchema,
+        access: ({ params, user }) => requireEcoAccess(user.id, params.id),
+      },
+      async ({ params, body, user }) => {
         const changeOrder = await ItemService.update<ChangeOrder>(
           params.id,
-          data,
+          body,
           user.id,
         )
         return { changeOrder }
@@ -475,6 +501,7 @@ app.delete(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'delete'] },
       async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
         await ItemService.delete(params.id, user.id)
         return { success: true }
       },
@@ -512,17 +539,17 @@ app.get(
 app.post(
   '/:id/affected-items',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof addAffectedItemsRequestSchema>>(
       {
+        body: addAffectedItemsRequestSchema,
         permission: ['change_orders', 'update'],
         openapi: {
           summary: 'Add one or more affected items to a change order',
-          request: { body: { schema: addAffectedItemsRequestSchema } },
         },
+        access: ({ params, user }) => requireEcoAccess(user.id, params.id),
       },
-      async ({ params, request, user }) => {
+      async ({ body: data, params, user }) => {
         const { id } = params
-        const data = addAffectedItemsRequestSchema.parse(await request.json())
 
         if ('items' in data) {
           const affectedItems = await ChangeOrderService.addAffectedItemsBatch(
@@ -546,31 +573,31 @@ app.post(
   ),
 )
 
+/**
+ * Body of the affected-items preview. It was written out twice — once in the
+ * annotation and once in the handler — which is the drift this option exists
+ * to make impossible.
+ */
+const previewActionsSchema = z.object({
+  itemIds: z.array(z.string().uuid()).min(1).max(500),
+})
+
 // POST /api/change-orders/:id/affected-items/preview - what adding these
 // items would do, resolved from each item's lifecycle. Read-only; POST so a
 // large selection is not squeezed into a query string.
 app.post(
   '/:id/affected-items/preview',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof previewActionsSchema>>(
       {
+        body: previewActionsSchema,
         permission: ['change_orders', 'read'],
         openapi: {
           summary: 'Preview the change actions available for items',
-          request: {
-            body: {
-              schema: z.object({
-                itemIds: z.array(z.string().uuid()).min(1).max(500),
-              }),
-            },
-          },
         },
+        access: ({ params, user }) => requireEcoAccess(user.id, params.id),
       },
-      async ({ params, request }) => {
-        const { itemIds } = z
-          .object({ itemIds: z.array(z.string().uuid()).min(1).max(500) })
-          .parse(await request.json())
-
+      async ({ body: { itemIds }, params }) => {
         const options = await ChangeOrderService.getChangeActionOptions(
           params.id,
           itemIds,
@@ -588,7 +615,8 @@ app.delete(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
-      async ({ params, request }) => {
+      async ({ params, request, user }) => {
+        await requireEcoAccess(user.id, params.id)
         const url = new URL(request.url)
         const affectedItemId = url.searchParams.get('itemId')
 
@@ -619,6 +647,7 @@ app.get(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
         // Get the workflow instance for this change order
         const instance = await WorkflowService.getInstanceByItemId(params.id)
 
@@ -653,6 +682,7 @@ app.get(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
         // Get the workflow instance for this change order
         const instance = await WorkflowService.getInstanceByItemId(params.id)
 
@@ -686,20 +716,43 @@ app.get(
   ),
 )
 
+/**
+ * An approval vote.
+ *
+ * **Passthrough, deliberately.** `ApprovalRegistry.buildExtras` hands the raw
+ * body to every registered interceptor, and the advanced-auditing module reads
+ * `password` and `signatureMeaning` off it to build the digital signature. A
+ * schema that stripped unknown keys would leave a signed instance quietly
+ * unable to sign — the vote would land, unsigned, with no error anywhere. Core
+ * validates what core reads and lets the modules' own fields through.
+ */
+const approvalVoteSchema = z
+  .object({
+    vote: z.enum(['approved', 'rejected'], {
+      message: "vote must be 'approved' or 'rejected'",
+    }),
+    roleId: z.string().uuid().optional(),
+    comments: z.string().max(10000).optional(),
+  })
+  .passthrough()
+
 // POST /api/change-orders/:id/approvals
 app.post(
   '/:id/approvals',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ request, params, user, requestId }) => {
-        const data = await request.json()
-
-        if (!data.vote || !['approved', 'rejected'].includes(data.vote)) {
-          throw new ValidationError("vote must be 'approved' or 'rejected'")
-        }
-
-        await requireEcoApprovalAccess(user.id, params.id)
+    apiHandler<{ id: string }, z.infer<typeof approvalVoteSchema>>(
+      {
+        permission: ['change_orders', 'update'],
+        body: approvalVoteSchema,
+        access: ({ params, user }) =>
+          requireEcoApprovalAccess(user.id, params.id),
+      },
+      async ({ request, body: data, params, user, requestId }) => {
+        // Reach before body. A caller outside every design this ECO touches
+        // gets 403, not a 400 telling them what a valid vote looks like.
+        // The body schema runs first now, so a malformed vote from someone
+        // with no reach answers 400 rather than 403 — the access check still
+        // runs before anything is written, which is what it guards.
 
         // Get the workflow instance for this change order
         const instance = await WorkflowService.getInstanceByItemId(params.id)
@@ -741,6 +794,7 @@ app.get(
     apiHandler<{ id: string; stateId: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
         // Get the workflow instance for this change order
         const instance = await WorkflowService.getInstanceByItemId(params.id)
 
@@ -778,16 +832,18 @@ app.get(
 app.post(
   '/:id/approvals/:stateId',
   adapt(
-    apiHandler<{ id: string; stateId: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ request, params, user, requestId }) => {
-        const data = await request.json()
-
-        if (!data.vote || !['approved', 'rejected'].includes(data.vote)) {
-          throw new ValidationError("vote must be 'approved' or 'rejected'")
-        }
-
-        await requireEcoApprovalAccess(user.id, params.id)
+    apiHandler<
+      { id: string; stateId: string },
+      z.infer<typeof approvalVoteSchema>
+    >(
+      {
+        permission: ['change_orders', 'update'],
+        body: approvalVoteSchema,
+        access: ({ params, user }) =>
+          requireEcoApprovalAccess(user.id, params.id),
+      },
+      async ({ request, body: data, params, user, requestId }) => {
+        // Reach before write; see the sibling route above.
 
         // Get the workflow instance for this change order
         const instance = await WorkflowService.getInstanceByItemId(params.id)
@@ -839,14 +895,14 @@ const addBomChangeSchema = z.object({
 app.post(
   '/:id/bom-changes',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ params, request, user }) => {
+    apiHandler<{ id: string }, z.infer<typeof addBomChangeSchema>>(
+      {
+        permission: ['change_orders', 'update'],
+        body: addBomChangeSchema,
+        access: ({ params, user }) => requireEcoAccess(user.id, params.id),
+      },
+      async ({ params, body: data, user }) => {
         const changeOrderId = params.id
-
-        // Parse and validate request body
-        const body = await request.json()
-        const data = addBomChangeSchema.parse(body)
 
         // Verify the ECO exists
         const eco = await db
@@ -995,8 +1051,6 @@ app.post(
             message: 'BOM relationship updated.',
           }
         }
-
-        throw new ValidationError('Invalid action')
       },
     ),
   ),
@@ -1009,6 +1063,7 @@ app.delete(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ params, request, user }) => {
+        await requireEcoAccess(user.id, params.id)
         const changeOrderId = params.id
 
         // Parse query params for relationshipId
@@ -1118,7 +1173,10 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => EcoBranchHistoryService.getTimeline(params.id),
+      async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
+        return EcoBranchHistoryService.getTimeline(params.id)
+      },
     ),
   ),
 )
@@ -1129,7 +1187,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ request, params }) => {
+      async ({ request, params, user }) => {
+        await requireEcoAccess(user.id, params.id)
         const url = new URL(request.url, 'http://localhost')
         const limitParam = url.searchParams.get('limit')
         return EcoBranchHistoryService.getGraph(params.id, {
@@ -1149,14 +1208,14 @@ app.get(
 app.post(
   '/:id/checkout',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ request, params, user }) => {
-        const { itemId } = await request.json()
-
-        if (!itemId) {
-          throw new ValidationError('itemId is required')
-        }
+    apiHandler<{ id: string }, { itemId: string }>(
+      {
+        permission: ['change_orders', 'update'],
+        body: z.object({ itemId: z.string().uuid() }),
+        access: ({ params, user }) => requireEcoAccess(user.id, params.id),
+      },
+      async ({ body, params, user }) => {
+        const { itemId } = body
 
         const result = await ChangeOrderService.checkoutItemToEco(
           params.id,
@@ -1180,7 +1239,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
         const reviews = await ConflictReviewService.getReviewsForEco(params.id)
 
         return reviews
@@ -1193,12 +1253,16 @@ app.get(
 app.post(
   '/:id/conflict-reviews',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ request, params, user }) => {
-        const body = await request.json()
-        const parsed = markConflictReviewedRequestSchema.parse(body)
-
+    apiHandler<
+      { id: string },
+      z.infer<typeof markConflictReviewedRequestSchema>
+    >(
+      {
+        permission: ['change_orders', 'update'],
+        body: markConflictReviewedRequestSchema,
+        access: ({ params, user }) => requireEcoAccess(user.id, params.id),
+      },
+      async ({ body: parsed, params, user }) => {
         // Get the current conflict to compute signature
         const conflictResult =
           await ConflictDetectionService.detectConflictsForEco(params.id)
@@ -1242,7 +1306,8 @@ app.delete(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
-      async ({ params, request }) => {
+      async ({ params, request, user }) => {
+        await requireEcoAccess(user.id, params.id)
         // Get review ID from query params
         const url = new URL(request.url)
         const reviewId = url.searchParams.get('reviewId')
@@ -1333,14 +1398,14 @@ app.get(
 app.post(
   '/:id/designs',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ request, params, user }) => {
-        const { designId } = await request.json()
-
-        if (!designId) {
-          throw new ValidationError('designId is required')
-        }
+    apiHandler<{ id: string }, { designId: string }>(
+      {
+        permission: ['change_orders', 'update'],
+        body: z.object({ designId: z.string().uuid() }),
+        access: ({ params, user }) => requireEcoAccess(user.id, params.id),
+      },
+      async ({ body, params, user }) => {
+        const { designId } = body
 
         const ecoDesign = await ChangeOrderService.addDesignToEco(
           params.id,
@@ -1430,21 +1495,29 @@ app.get(
 app.post(
   '/:id/impact-assessment',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ params, request, user }) => {
-        const { id } = params
-        await requireWholeEco(user.id, id)
-        const body = await request.json().catch(() => ({}))
-
-        const options = {
-          maxDepth: body.maxDepth || 15,
-          includeDocuments: body.includeDocuments !== false,
-          includeCrossChanges: body.includeCrossChanges !== false,
-        }
-
+    apiHandler<
+      { id: string },
+      {
+        maxDepth: number
+        includeDocuments: boolean
+        includeCrossChanges: boolean
+      }
+    >(
+      {
+        permission: ['change_orders', 'update'],
+        // An empty body is the ordinary case: every field has a default, and
+        // the traversal depth is capped so a request cannot ask for a walk of
+        // the whole graph.
+        body: z.object({
+          maxDepth: z.number().int().min(1).max(50).default(15),
+          includeDocuments: z.boolean().default(true),
+          includeCrossChanges: z.boolean().default(true),
+        }),
+        access: ({ params, user }) => requireWholeEco(user.id, params.id),
+      },
+      async ({ params, body: options }) => {
         const impactAnalysis = await ImpactAssessmentService.analyzeImpact(
-          id,
+          params.id,
           options,
         )
 
@@ -1464,7 +1537,8 @@ app.get(
   adapt(
     apiHandler<{ id: string; itemId: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params, request }) => {
+      async ({ params, request, user }) => {
+        await requireEcoAccess(user.id, params.id)
         const { id: changeOrderId, itemId } = params
 
         // Get designId from query params
@@ -1548,7 +1622,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
         const preview = await ChangeOrderMergeService.previewMerge(params.id)
 
         return preview
@@ -1561,27 +1636,30 @@ app.get(
 // Resolve conflicts
 // ============================================
 
-interface ResolveConflictRequest {
-  resolutions: Array<{
-    itemId: string // itemMasterId
-    resolution: ConflictResolution
-  }>
-}
+const resolveConflictsSchema = z.object({
+  resolutions: z
+    .array(
+      z.object({
+        // itemMasterId, despite the name the dialog sends.
+        itemId: z.string().uuid(),
+        resolution: z.enum(['keep_ours', 'keep_theirs', 'skip']),
+      }),
+    )
+    .max(1000),
+})
 
 // POST /api/change-orders/:id/resolve-conflicts
 app.post(
   '/:id/resolve-conflicts',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ request, params }) => {
+    apiHandler<{ id: string }, z.infer<typeof resolveConflictsSchema>>(
+      {
+        permission: ['change_orders', 'update'],
+        body: resolveConflictsSchema,
+        access: ({ params, user }) => requireEcoAccess(user.id, params.id),
+      },
+      async ({ body, params }) => {
         const changeOrderId = params.id
-
-        const body: ResolveConflictRequest = await request.json()
-
-        if (!Array.isArray(body.resolutions)) {
-          throw new ValidationError('resolutions array is required')
-        }
 
         // Get all ECO designs with branches
         const ecoDesigns = await ChangeOrderService.getEcoDesigns(changeOrderId)
@@ -1742,7 +1820,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
         const { id } = params
 
         const risks = await ChangeOrderService.getRisks(id)
@@ -1760,6 +1839,7 @@ app.post(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'update'] },
       async ({ params, request, user }) => {
+        await requireEcoAccess(user.id, params.id)
         const url = new URL(request.url)
         const riskId = url.searchParams.get('riskId')
 
@@ -1812,7 +1892,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
         const instance = await WorkflowService.getInstanceByItemId(params.id)
 
         if (!instance) {
@@ -1833,7 +1914,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
         const instance = await WorkflowService.getInstanceByItemId(params.id)
         if (!instance) {
           throw new NotFoundError('Workflow instance', params.id)
@@ -1853,13 +1935,27 @@ app.get(
   ),
 )
 
+/**
+ * A flexible instance's own states and transitions. Instance states add
+ * reviewer `instructions` to the definition shape; instance transitions carry
+ * the same fields as definition ones.
+ */
+const instanceStructureSchema = z.object({
+  states: z.array(workflowStateSchema).max(500),
+  transitions: z.array(workflowTransitionSchema).max(500),
+})
+
 // PUT /api/change-orders/:id/workflow/structure
 app.put(
   '/:id/workflow/structure',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ request, params, user }) => {
+    apiHandler<{ id: string }, z.infer<typeof instanceStructureSchema>>(
+      {
+        permission: ['change_orders', 'update'],
+        body: instanceStructureSchema,
+        access: ({ params, user }) => requireEcoAccess(user.id, params.id),
+      },
+      async ({ body, params, user }) => {
         const instance = await WorkflowService.getInstanceByItemId(params.id)
         if (!instance) {
           throw new NotFoundError('Workflow instance', params.id)
@@ -1873,15 +1969,6 @@ app.put(
           throw new ValidationError(
             'Workflow is not flexible or is already completed',
           )
-        }
-
-        const body = (await request.json()) as Partial<{
-          states: Array<WorkflowState>
-          transitions: Array<InstanceWorkflowTransition>
-        }>
-
-        if (!body.states || !body.transitions) {
-          throw new ValidationError('states and transitions are required')
         }
 
         const result = await WorkflowService.updateInstanceStructure(
@@ -1910,7 +1997,8 @@ app.get(
   adapt(
     apiHandler<{ id: string; stateId: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
         const instance = await WorkflowService.getInstanceByItemId(params.id)
         if (!instance) {
           throw new NotFoundError('Workflow instance', params.id)
@@ -1931,9 +2019,18 @@ app.get(
 app.put(
   '/:id/workflow/states/:stateId/approvers',
   adapt(
-    apiHandler<{ id: string; stateId: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ request, params, user }) => {
+    apiHandler<
+      { id: string; stateId: string },
+      { approvers: Array<z.infer<typeof stateApproverInputSchema>> }
+    >(
+      {
+        permission: ['change_orders', 'update'],
+        body: z.object({
+          approvers: z.array(stateApproverInputSchema).max(100),
+        }),
+        access: ({ params, user }) => requireEcoAccess(user.id, params.id),
+      },
+      async ({ body, params, user }) => {
         const instance = await WorkflowService.getInstanceByItemId(params.id)
         if (!instance) {
           throw new NotFoundError('Workflow instance', params.id)
@@ -1950,27 +2047,6 @@ app.put(
           )
         }
 
-        const body = (await request.json()) as {
-          approvers?: Array<{
-            type?: string
-            id?: string
-            isRequired?: boolean
-          }>
-        }
-        if (!Array.isArray(body.approvers)) {
-          throw new ValidationError('approvers must be an array')
-        }
-        for (const approver of body.approvers) {
-          if (
-            (approver.type !== 'user' && approver.type !== 'role') ||
-            !approver.id
-          ) {
-            throw new ValidationError(
-              "each approver needs a type of 'user' or 'role' and an id",
-            )
-          }
-        }
-
         // The state must exist on the instance's effective structure
         const structure = await WorkflowService.getEffectiveStructure(
           instance.id,
@@ -1984,11 +2060,7 @@ app.put(
         const approvers = await WorkflowApprovalService.setInstanceApprovers(
           instance.id,
           params.stateId,
-          body.approvers.map((a) => ({
-            type: a.type as 'user' | 'role',
-            id: a.id!,
-            isRequired: a.isRequired ?? true,
-          })),
+          body.approvers,
           user.id,
         )
 
@@ -2005,6 +2077,7 @@ app.get(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
         const instance = await WorkflowService.getInstanceByItemId(params.id)
 
         if (!instance) {
@@ -2032,19 +2105,27 @@ app.get(
   ),
 )
 
+/**
+ * A workflow transition request. Both the executing and the validating route
+ * take the same body — the second is the dry run of the first, and a schema
+ * they did not share would let the preview accept what the execution rejects.
+ */
+const transitionSchema = z.object({
+  toStateId: z.string().min(1).max(100),
+  comments: z.string().max(10000).optional(),
+})
+
 // POST /api/change-orders/:id/workflow/transition
 app.post(
   '/:id/workflow/transition',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
-
-        if (!data.toStateId) {
-          throw new ValidationError('toStateId is required')
-        }
-
+    apiHandler<{ id: string }, z.infer<typeof transitionSchema>>(
+      {
+        permission: ['change_orders', 'update'],
+        body: transitionSchema,
+        access: ({ params, user }) => requireEcoAccess(user.id, params.id),
+      },
+      async ({ params, body: data, user }) => {
         // All orchestration (finalKind resolution, release claim, merge or
         // cancel interlock) lives in the service so every entry point — this
         // route, the AI tools, submit/approve/reject — shares one behavior
@@ -2087,15 +2168,13 @@ app.post(
 app.post(
   '/:id/workflow/validate-transition',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'read'] },
-      async ({ request, params, user }) => {
-        const data = await request.json()
-
-        if (!data.toStateId) {
-          throw new ValidationError('toStateId is required')
-        }
-
+    apiHandler<{ id: string }, z.infer<typeof transitionSchema>>(
+      {
+        permission: ['change_orders', 'read'],
+        body: transitionSchema,
+        access: ({ params, user }) => requireEcoAccess(user.id, params.id),
+      },
+      async ({ body: data, params, user }) => {
         // Get workflow instance
         const instance = await WorkflowService.getInstanceByItemId(params.id)
         if (!instance) {
@@ -2260,7 +2339,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['change_orders', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireEcoAccess(user.id, params.id)
         const instance = await WorkflowService.getInstanceByItemId(params.id)
 
         if (!instance) {
@@ -2300,11 +2380,13 @@ app.get(
 app.post(
   '/:id/workflow',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ request, params, user }) => {
-        const data = await request.json()
-
+    apiHandler<{ id: string }, { workflowDefinitionId: string }>(
+      {
+        permission: ['change_orders', 'update'],
+        body: z.object({ workflowDefinitionId: z.string().uuid() }),
+        access: ({ params, user }) => requireEcoAccess(user.id, params.id),
+      },
+      async ({ body: data, params, user }) => {
         // Check if workflow already exists
         const existingInstance = await WorkflowService.getInstanceByItemId(
           params.id,

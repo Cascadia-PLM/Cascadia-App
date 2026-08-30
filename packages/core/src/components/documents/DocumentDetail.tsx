@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeft,
   Edit,
@@ -57,8 +58,12 @@ import {
 } from '@/components/ui'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import {
+  branchDetailQuery,
+  designDetailQuery,
+  useInvalidateResources,
+} from '@/lib/query'
+import { itemAtContextQuery } from '@/lib/query/options/items'
 import { StateBadge } from '@/components/items/StateBadge'
 import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
 
@@ -106,6 +111,22 @@ const formatFileSize = (bytes?: number) => {
   return `${bytes} B`
 }
 
+/**
+ * The tabs this detail view renders. The route's search schema derives its
+ * `tab` enum from this list, so the URL contract and the rendered tabs
+ * cannot drift apart; the `onValueChange` cast below is the one seam where
+ * Radix's `string` meets it, and the triggers are rendered from the same
+ * source of truth.
+ */
+export const DOCUMENT_DETAIL_TABS = [
+  'details',
+  'preview',
+  'gallery',
+  'relationships',
+  'history',
+] as const
+export type DocumentDetailTab = (typeof DOCUMENT_DETAIL_TABS)[number]
+
 interface DocumentDetailProps {
   document?: Document
   designs?: Array<Design>
@@ -114,8 +135,8 @@ interface DocumentDetailProps {
   onDelete?: () => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
-  activeTab?: 'details' | 'preview' | 'gallery' | 'relationships' | 'history'
-  onTabChange?: (tab: string) => void
+  activeTab?: DocumentDetailTab
+  onTabChange?: (tab: DocumentDetailTab) => void
 }
 
 export function DocumentDetail({
@@ -130,6 +151,7 @@ export function DocumentDetail({
   onTabChange,
 }: DocumentDetailProps) {
   const invalidate = useInvalidateResources()
+  const navigate = useNavigate()
   const { confirm } = useAlertDialog()
   const { handleError, showSuccess } = useErrorHandler()
 
@@ -145,113 +167,49 @@ export function DocumentDetail({
   const [isEditing, setIsEditing] = useState(isCreateMode)
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false)
 
-  const [displayedDocument, setDisplayedDocument] = useState<Document>(document)
-  const [isLoadingVersion, setIsLoadingVersion] = useState(false)
-
-  const [mainBranchId, setMainBranchId] = useState<string | undefined>(
-    undefined,
-  )
-  const [isWorkspaceContext, setIsWorkspaceContext] = useState(false)
-
   const { context, contextLabel, isEditable, setContext } = useVersionContext(
     isCreateMode ? undefined : document.designId,
   )
 
+  // The document as it stood at the selected version context. Viewing `main`
+  // addresses nothing, so the query stays disabled and the caller's copy is
+  // shown — the rule every detail page follows.
+  const { data: versionAtContext, isFetching: isLoadingVersion } = useQuery(
+    itemAtContextQuery<Document>(
+      document.id ?? '',
+      context,
+      !isCreateMode && Boolean(document.designId),
+    ),
+  )
+  const displayedDocument = isCreateMode
+    ? document
+    : (versionAtContext ?? document)
+
+  // The design's main branch, for the checkout targets below.
+  const { data: parentDesign } = useQuery(
+    designDetailQuery(
+      document.designId,
+      !isCreateMode && Boolean(document.designId),
+    ),
+  )
+  // `defaultBranchId` is nullable on the row; the props below take undefined.
+  const mainBranchId = parentDesign?.defaultBranchId ?? undefined
+
+  // Whether the viewing context is a workspace branch, read through the
+  // shared cache rather than a per-mount probe.
+  const { data: contextBranch } = useQuery(
+    branchDetailQuery(
+      context.type === 'branch' ? (context.branchId ?? '') : '',
+      !isCreateMode,
+    ),
+  )
+  const isWorkspaceContext = contextBranch?.branchType === 'workspace'
+
   useEffect(() => {
     if (initialDocument) {
       setDocument(initialDocument)
-      setDisplayedDocument(initialDocument)
     }
   }, [initialDocument])
-
-  useEffect(() => {
-    async function fetchMainBranchId() {
-      if (!document.designId) {
-        setMainBranchId(undefined)
-        return
-      }
-      try {
-        const response = await fetch(`/api/v1/designs/${document.designId}`)
-        if (response.ok) {
-          // Responses are wrapped as { data: { design } }
-          const body = await response.json()
-          setMainBranchId(body.data?.design?.defaultBranchId)
-        }
-      } catch (err) {
-        console.error('Error fetching design:', err)
-      }
-    }
-    if (!isCreateMode) {
-      fetchMainBranchId()
-    }
-  }, [document.designId, isCreateMode])
-
-  useEffect(() => {
-    async function fetchVersionAtContext() {
-      if (isCreateMode || !document.designId || context.type === 'main') {
-        setDisplayedDocument(document)
-        return
-      }
-
-      setIsLoadingVersion(true)
-      try {
-        const params = new URLSearchParams()
-        if (context.type === 'commit' && context.commitId) {
-          params.set('commitId', context.commitId)
-        } else if (context.type === 'tag' && context.tagId) {
-          params.set('tagId', context.tagId)
-        } else if (context.type === 'branch' && context.branchId) {
-          params.set('branchId', context.branchId)
-        }
-
-        const queryString = params.toString()
-        if (!queryString) {
-          setDisplayedDocument(document)
-          return
-        }
-
-        const response = await apiFetch<{
-          data: { item: Document | null; existsAtContext: boolean }
-        }>(`/api/v1/items/${document.id}/at-context?${queryString}`)
-
-        if (response.data.item) {
-          setDisplayedDocument(response.data.item)
-        } else {
-          setDisplayedDocument(document)
-        }
-      } catch (err) {
-        console.error('Failed to fetch item at context:', err)
-        setDisplayedDocument(document)
-      } finally {
-        setIsLoadingVersion(false)
-      }
-    }
-
-    fetchVersionAtContext()
-  }, [document, context, isCreateMode])
-
-  useEffect(() => {
-    async function checkIfWorkspace() {
-      if (context.type !== 'branch' || !context.branchId) {
-        setIsWorkspaceContext(false)
-        return
-      }
-
-      try {
-        const response = await apiFetch<{
-          data: { branch: { branchType: string } }
-        }>(`/api/v1/branches/${context.branchId}`)
-        setIsWorkspaceContext(response.data.branch.branchType === 'workspace')
-      } catch (error) {
-        console.error('Failed to check branch type:', error)
-        setIsWorkspaceContext(false)
-      }
-    }
-
-    if (!isCreateMode) {
-      checkIfWorkspace()
-    }
-  }, [context, isCreateMode])
 
   const currentDocument = isCreateMode ? document : displayedDocument
 
@@ -320,10 +278,25 @@ export function DocumentDetail({
     setIsEditing(true)
   }
 
-  const handleCheckoutComplete = (branchId: string) => {
-    setContext({ type: 'branch', branchId })
+  // A revise-checkout mints the branch working copy up front, so editing
+  // belongs on that row's page: the route-level save PUTs the id in the URL,
+  // and from the released row's page it would target the released version and
+  // be refused (BRANCH_PROTECTED). Navigate there in edit mode — the route
+  // component survives the param change, so `isEditing` carries over and the
+  // working copy drops into the form via the initialDocument effect above.
+  const handleCheckoutComplete = (branchId: string, currentItemId?: string) => {
     setDocument(currentDocument)
     setIsEditing(true)
+    if (currentItemId && currentItemId !== currentDocument.id) {
+      navigate({
+        to: '/documents/$id',
+        params: { id: currentItemId },
+        search: { branch: branchId, tab: activeTab },
+      } as any)
+      return
+    }
+    // The branch still tracks the row this page is showing — edit in place.
+    setContext({ type: 'branch', branchId })
   }
 
   const handleSave = async () => {
@@ -554,7 +527,11 @@ export function DocumentDetail({
         )}
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => onTabChange?.(value as DocumentDetailTab)}
+        className="w-full"
+      >
         <TabsList
           className={`grid w-full ${tabGridCols(isCreateMode, hasPreview, hasGallery)}`}
         >

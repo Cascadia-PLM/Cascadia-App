@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
-import { and, eq, gte, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
+import { and, eq, gte, inArray, notInArray, sql } from 'drizzle-orm'
 import { tagged } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -11,7 +11,7 @@ import { ProgramService } from '@/lib/services/ProgramService'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { db } from '@/lib/db'
 import { items, parts, tasks } from '@/lib/db/schema'
-import { accessScopeCondition } from '@/lib/db/filters'
+import { accessScopeCondition, notDeleted } from '@/lib/db/filters'
 import { LifecycleService } from '@/lib/services/LifecycleService'
 import '@/lib/items/registerItemTypes.server'
 
@@ -27,10 +27,11 @@ app.get(
       // Every tile is a count of things the caller may open. Passing
       // `programIds: null` here meant "all programs" — the admin scope — so
       // the home page reported the whole instance to everyone.
-      const [accessDesignIds, programIds] = await Promise.all([
-        AccessControlService.getAccessibleDesignIds(user.id),
-        AccessControlService.getAccessibleProgramIds(user.id),
-      ])
+      const accessScope = await AccessControlService.getAccessScope(user.id)
+      // One resolve, both axes: the design tiles and the program tiles have
+      // to answer for the same caller, and a `null` scope is the same
+      // cross-program authority on either.
+      const programIds = accessScope === null ? null : accessScope.programIds
 
       const [
         partsResult,
@@ -41,11 +42,11 @@ app.get(
         designsResult,
         programsResult,
       ] = await Promise.all([
-        ItemService.search('Part', { limit: 1, accessDesignIds }),
-        ItemService.search('Document', { limit: 1, accessDesignIds }),
-        ItemService.search('ChangeOrder', { limit: 1, accessDesignIds }),
-        ItemService.search('Requirement', { limit: 1, accessDesignIds }),
-        ItemService.search('Task', { limit: 1, accessDesignIds }),
+        ItemService.search('Part', { limit: 1, accessScope }),
+        ItemService.search('Document', { limit: 1, accessScope }),
+        ItemService.search('ChangeOrder', { limit: 1, accessScope }),
+        ItemService.search('Requirement', { limit: 1, accessScope }),
+        ItemService.search('Task', { limit: 1, accessScope }),
         DesignService.search({ limit: 1, programIds }),
         ProgramService.search({ limit: 1, programIds }),
       ])
@@ -77,10 +78,8 @@ app.get(
       // Same bound as /stats: these charts count rows, and a count is a
       // disclosure. `undefined` for cross-program authority drops out of the
       // `and(...)` below, leaving the query as it was.
-      const accessDesignIds = await AccessControlService.getAccessibleDesignIds(
-        user.id,
-      )
-      const inScope = accessScopeCondition(accessDesignIds) ?? undefined
+      const accessScope = await AccessControlService.getAccessScope(user.id)
+      const inScope = accessScopeCondition(accessScope) ?? undefined
 
       // Derived per-lifecycle state sets: what a Part release stamps, and
       // where the Task flow ends. Names come from configuration, not code.
@@ -106,7 +105,7 @@ app.get(
             and(
               eq(items.itemType, 'ChangeOrder'),
               gte(items.createdAt, sevenDaysAgo),
-              or(isNull(items.isDeleted), eq(items.isDeleted, false)),
+              notDeleted(),
               inScope,
             ),
           )
@@ -126,7 +125,7 @@ app.get(
               // States a release stamps on new versions, per the Part lifecycle
               inArray(items.state, releaseTargetStates),
               gte(items.modifiedAt, sevenDaysAgo),
-              or(isNull(items.isDeleted), eq(items.isDeleted, false)),
+              notDeleted(),
               inScope,
             ),
           )
@@ -141,12 +140,7 @@ app.get(
           })
           .from(parts)
           .innerJoin(items, eq(parts.itemId, items.id))
-          .where(
-            and(
-              or(isNull(items.isDeleted), eq(items.isDeleted, false)),
-              inScope,
-            ),
-          )
+          .where(and(notDeleted(), inScope))
           .groupBy(parts.partType),
 
         // Tasks by priority (non-completed only)
@@ -159,7 +153,7 @@ app.get(
           .innerJoin(items, eq(tasks.itemId, items.id))
           .where(
             and(
-              or(isNull(items.isDeleted), eq(items.isDeleted, false)),
+              notDeleted(),
               // Open work = anything not in a final state of the Task flow
               taskFinalStates.length > 0
                 ? notInArray(items.state, taskFinalStates)

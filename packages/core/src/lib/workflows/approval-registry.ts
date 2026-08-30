@@ -125,8 +125,21 @@ export interface ApprovalInterceptor {
 export class ApprovalRegistry {
   private static interceptors: Array<ApprovalInterceptor> = []
 
-  /** Register an interceptor. Called from a composition root, never from core. */
+  /**
+   * Register an interceptor. Called from a composition root, never from core.
+   *
+   * Names are unique: two interceptors under one name means a module was
+   * registered twice, or two modules collided, and either way one of them
+   * would silently run twice while reading as a single entry in
+   * {@link registered}. Modules guard their own registration once, so this
+   * throws rather than deduplicating.
+   */
   static register(interceptor: ApprovalInterceptor): void {
+    if (this.interceptors.some((i) => i.name === interceptor.name)) {
+      throw new Error(
+        `Approval interceptor "${interceptor.name}" is already registered`,
+      )
+    }
     this.interceptors.push(interceptor)
   }
 

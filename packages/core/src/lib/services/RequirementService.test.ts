@@ -37,6 +37,7 @@ import {
   branchItems,
   itemRelationships,
   items,
+  programMembers,
   programs,
 } from '@/lib/db/schema'
 import { itemVersions } from '@/lib/db/schema/versioning'
@@ -82,6 +83,18 @@ describe('RequirementService', () => {
         })
         .returning(),
     )
+
+    // The program's creator is not automatically a member when the row is
+    // inserted directly (ProgramService.create is what enrols them), and
+    // ItemService.update/delete now refuse a write to a design the caller
+    // cannot reach. Enrol the acting user so these cases exercise their own
+    // subject rather than the program boundary.
+    await testDb.db.insert(programMembers).values({
+      programId: program.id,
+      userId: user.id,
+      role: 'admin',
+      invitedBy: user.id,
+    })
 
     const design = await DesignService.create(
       {

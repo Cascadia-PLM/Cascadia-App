@@ -204,7 +204,8 @@ Handled by `LifecycleService.transitionFreeItem()`:
 
 - **Lazy workflow instance.** The item gets a workflow instance on its first transition, so history, guards, approvals, and the hardened transition engine all apply. If the item's stored state predates the endpoint and diverges from the fresh instance, the instance **adopts** it first (recorded in history as `state_adopted`).
 - **Released lineage is refused in both directions** with a clear error — a Driven item enters its release targets only at change-order release, and once it is released lineage nothing moves it by hand (revise it through a change order). A Driven lifecycle that declares no transitions (the default Part/Document lifecycles) therefore offers nothing here. Change orders are refused too (they have their own workflow endpoint).
-- **Reopening is allowed.** Completed-instance terminality applies to Driving lifecycles only; a Free lifecycle that defines a transition out of a final state (Closed → Open) can reopen, clearing `completedAt`.
+- **Type-specific completion semantics ride this path, not the caller's.** A work order entering a `finalKind: 'complete'` state is gated on its traveler (every non-skipped line complete or explicitly skipped) and has `completedAt` stamped on the way in — here, so `PUT /api/v1/work-orders/:id/status`, this endpoint and the `transition_item_state` tool all give the same answer. Both halves used to live in `WorkOrderService.updateStatus`, where the other two doors walked past them into a Complete order with an open traveler that no route could repair.
+- **Reopening is allowed.** Completed-instance terminality applies to Driving lifecycles only; a Free lifecycle that defines a transition out of a final state (Closed → Open) can reopen, clearing the workflow instance's own `completedAt` (a distinct column from the work order's, above).
 
 The Issue detail page's transition buttons and the AI `transition_item_state` tool both go through this path.
 
@@ -336,12 +337,35 @@ Revision schemes control how revision identifiers are generated when items are r
 
 ### Available Schemes
 
-| Scheme             | Format                  | Example Sequence  | Use Case                        |
-| ------------------ | ----------------------- | ----------------- | ------------------------------- |
-| `alpha`            | A, B, C, ..., Z, AA, AB | A -> B -> C       | Traditional PLM (default)       |
-| `numeric`          | 1, 2, 3, ...            | 1 -> 2 -> 3       | Prototype/pre-production        |
-| `prefixed-numeric` | X1, X2, X3, ...         | X1 -> X2 -> X3    | Prototype revisions with prefix |
-| `none`             | No change               | (stays unchanged) | Items without revision tracking |
+| Scheme             | Format                  | Example Sequence | Use Case                        |
+| ------------------ | ----------------------- | ---------------- | ------------------------------- |
+| `alpha`            | A, B, C, ..., Z, AA, AB | A -> B -> C      | Traditional PLM (default)       |
+| `numeric`          | 1, 2, 3, ...            | 1 -> 2 -> 3      | Prototype/pre-production        |
+| `prefixed-numeric` | X1, X2, X3, ...         | X1 -> X2 -> X3   | Prototype revisions with prefix |
+| `none`             | Fixed marker `N/A`      | N/A -> N/A       | Items without revision tracking |
+
+### `none` is a released revision, not the absence of one
+
+A released item still carries a revision under `none` -- the fixed marker
+`N/A` (`NO_REVISION_MARKER` in `lib/types/lifecycle.ts`, re-exported as
+`RevisionService.NO_REVISION`). It simply never advances.
+
+The marker has to be non-empty. `''` is a working marker to both
+`RevisionService.isWorkingRevision` and its SQL counterpart
+`notWorkingRevision()`, so an item released at `''` is filtered out of every
+released-item query -- released in name and unreleased to `VersionResolver`
+and to design baselines alike. Its shape is pinned by the database:
+`items.revision` is `varchar(10)` and `ck_items_revision_working_marker`
+rejects anything starting with `-` that is not `-` or `-{8 hex}`.
+
+**`none` is only valid where releasing does not create a new version.** A
+Driven lifecycle mints a new `items` row per release, and
+`(item_number, revision, design_id, item_type)` is unique across rows -- so a
+revision that never changes makes the second release of any item a unique
+violation inside the merge transaction. `WorkflowService.validateDefinition`
+therefore rejects a lifecycle-level `none` on a Driven definition
+(`NONE_SCHEME_ON_DRIVEN`). Free lifecycles and phase-level `promote`
+overrides update the item in place and are unaffected.
 
 ### Type Definitions
 

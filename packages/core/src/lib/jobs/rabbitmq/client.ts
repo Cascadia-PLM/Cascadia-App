@@ -3,7 +3,7 @@
 
 import amqp from 'amqplib'
 import { RABBITMQ_CONFIG } from './types'
-import type { Channel, ConsumeMessage } from 'amqplib'
+import type { Channel } from 'amqplib'
 import type { JobMessage } from '../types'
 import { rabbitmqLogger } from '@/lib/logging/logger'
 
@@ -22,6 +22,32 @@ export class RabbitMQClient {
   private static channel: Channel | null = null
   private static isConnecting = false
   private static connectionPromise: Promise<void> | null = null
+  private static onConnectionLost: (() => void) | null = null
+
+  /**
+   * Register the one callback fired when an established connection drops.
+   *
+   * Worker-context only: `JobWorker.start` wires its reconnect loop here,
+   * while the API server deliberately stays unwired — it keeps the lazy
+   * reconnect-on-publish behavior (the next `publish` finds no connection
+   * and re-dials), and giving every web process a broker supervision loop
+   * would be a job none of them wants.
+   */
+  static setOnConnectionLost(callback: (() => void) | null): void {
+    this.onConnectionLost = callback
+  }
+
+  /**
+   * amqplib fires 'error' and then 'close' for the same loss; whichever
+   * lands first nulls the refs and fires the callback, and the second finds
+   * them already null and does nothing.
+   */
+  private static handleConnectionLoss(): void {
+    if (this.connection === null && this.channel === null) return
+    this.connection = null
+    this.channel = null
+    this.onConnectionLost?.()
+  }
 
   /**
    * Initialize connection to RabbitMQ.
@@ -66,14 +92,12 @@ export class RabbitMQClient {
     // Handle connection errors
     conn.on('error', (err: Error) => {
       rabbitmqLogger.error({ err }, 'Connection error')
-      this.connection = null
-      this.channel = null
+      this.handleConnectionLoss()
     })
 
     conn.on('close', () => {
       rabbitmqLogger.warn('Connection closed')
-      this.connection = null
-      this.channel = null
+      this.handleConnectionLoss()
     })
 
     rabbitmqLogger.info('Connected and exchanges set up')
@@ -158,14 +182,19 @@ export class RabbitMQClient {
    * Close connection gracefully.
    */
   static async close(): Promise<void> {
+    // Take the refs down before closing: the driver fires 'close' during the
+    // awaits below, and handleConnectionLoss must find an already-cleared
+    // client so a deliberate shutdown never masquerades as a connection loss.
+    const channel = this.channel
+    const connection = this.connection
+    this.channel = null
+    this.connection = null
     try {
-      if (this.channel) {
-        await this.channel.close()
-        this.channel = null
+      if (channel) {
+        await channel.close()
       }
-      if (this.connection) {
-        await this.connection.close()
-        this.connection = null
+      if (connection) {
+        await connection.close()
       }
       rabbitmqLogger.info('Connection closed')
     } catch (error) {
@@ -178,23 +207,5 @@ export class RabbitMQClient {
    */
   static isConnected(): boolean {
     return this.connection !== null && this.channel !== null
-  }
-
-  /**
-   * Acknowledge a message.
-   */
-  static ack(msg: ConsumeMessage): void {
-    if (this.channel) {
-      this.channel.ack(msg)
-    }
-  }
-
-  /**
-   * Negative acknowledge - requeue or send to DLX.
-   */
-  static nack(msg: ConsumeMessage, requeue = false): void {
-    if (this.channel) {
-      this.channel.nack(msg, false, requeue)
-    }
   }
 }

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   Background,
   Controls,
@@ -19,7 +20,6 @@ import type {
   ProgramCommitGraphNode,
   ProgramCommitNodeData,
   ProgramGraphData,
-  ProgramGraphResponse,
 } from '@/lib/versioning/graph-types'
 import type { MainHeadNodeType } from '@/components/versioning/MainHeadNode'
 import { FullscreenGraphWrapper } from '@/components/ui'
@@ -33,7 +33,7 @@ import {
   computeBranchColumns,
   computeDagrePositions,
 } from '@/components/versioning/graph-layout'
-import { apiFetch } from '@/lib/api/client'
+import { programHistoryGraphQuery } from '@/lib/query'
 
 interface ProgramHistoryGraphViewProps {
   programId: string
@@ -202,37 +202,15 @@ function ProgramHistoryGraphViewInner({
   designIds,
 }: ProgramHistoryGraphViewProps) {
   const { theme } = useTheme()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [graphData, setGraphData] = useState<ProgramGraphData | null>(null)
 
-  // Fetch graph data
-  useEffect(() => {
-    async function fetchGraph() {
-      setLoading(true)
-      setError(null)
-
-      try {
-        const params = new URLSearchParams()
-        if (designIds && designIds.length > 0) {
-          params.set('designIds', designIds.join(','))
-        }
-        params.set('limit', '50')
-
-        const response = await apiFetch<ProgramGraphResponse>(
-          `/api/v1/programs/${programId}/history/graph?${params.toString()}`,
-        )
-
-        setGraphData(response.data)
-      } catch {
-        setError('Failed to load program history graph. Please try again.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchGraph()
-  }, [programId, designIds])
+  const {
+    data: graphData = null,
+    isPending: loading,
+    error: loadError,
+  } = useQuery(programHistoryGraphQuery<ProgramGraphData>(programId, designIds))
+  const error = loadError
+    ? 'Failed to load program history graph. Please try again.'
+    : null
 
   // Process nodes and edges
   const { nodes, allEdges } = useMemo(() => {

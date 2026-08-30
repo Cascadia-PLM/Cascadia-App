@@ -123,6 +123,65 @@ export async function seedPartItemTypeConfig(
 }
 
 /**
+ * Point an item type at a lifecycle for the duration of a suite, and give back
+ * the undo.
+ *
+ * `item_type_configs` holds **one row per item type for the whole instance**,
+ * so an override is not scoped to the suite that wrote it: written in
+ * `beforeAll` it is outside the per-test gate transaction, and it outlives the
+ * run. Six suites did exactly that and never wrote the row back, so a test
+ * database carried, say, Task-linked-to-Driven from whichever suite last
+ * touched it — and the next run's expectations depended on file order.
+ *
+ * Capture-then-write, and call the returned `restore()` in `afterAll` *before*
+ * `testDb.teardown()`. It puts the original row back, or deletes the row if
+ * there was none, and reloads the registry either way.
+ *
+ * This fixes pollution **across runs**. It cannot fix contention *within* one:
+ * forks share the database, so two suites overriding the same item type at the
+ * same time still race, and a suite that needs a link must seed it itself
+ * rather than trusting one another suite left behind.
+ */
+export async function overrideItemTypeConfig(
+  db: TestDbInstance,
+  itemType: string,
+  config: Record<string, unknown>,
+  systemUserId: string = SYSTEM_USER_ID,
+): Promise<() => Promise<void>> {
+  const [previous] = await db
+    .select()
+    .from(itemTypeConfigs)
+    .where(eq(itemTypeConfigs.itemType, itemType))
+    .limit(1)
+
+  await db
+    .insert(itemTypeConfigs)
+    .values({ itemType, config, modifiedBy: systemUserId })
+    .onConflictDoUpdate({
+      target: itemTypeConfigs.itemType,
+      set: { config, modifiedBy: systemUserId },
+    })
+  await ItemTypeRegistry.reload()
+
+  return async () => {
+    if (previous) {
+      await db
+        .update(itemTypeConfigs)
+        .set({
+          config: previous.config,
+          modifiedBy: previous.modifiedBy,
+        })
+        .where(eq(itemTypeConfigs.itemType, itemType))
+    } else {
+      await db
+        .delete(itemTypeConfigs)
+        .where(eq(itemTypeConfigs.itemType, itemType))
+    }
+    await ItemTypeRegistry.reload()
+  }
+}
+
+/**
  * Convenience: seed system user + Part lifecycle + Part item-type link in one
  * call. Most tests only need this bundle; more complex tests (ECO/ChangeOrder
  * workflow) should keep their workflow-specific seeding inline.

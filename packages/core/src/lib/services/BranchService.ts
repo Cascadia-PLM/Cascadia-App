@@ -57,6 +57,32 @@ export class BranchService {
   }
 
   /**
+   * Get branch by ID, holding a row lock on it for the rest of the transaction.
+   *
+   * `getById` above is what almost every caller wants. This one exists for the
+   * writers that read a branch and then write it back, where the read's answer
+   * has to still be true when the write lands. `CommitService.create` is the
+   * case that forced it: it reads `headCommitId`, parents the new commit on it,
+   * and writes the new head — a check-then-act that two concurrent commits on
+   * one branch both perform against the same head, the second silently
+   * orphaning the first.
+   *
+   * `tx` is required, not optional: a row lock taken on the pooled handle is
+   * released the moment the statement's implicit transaction ends, which would
+   * make this an ordinary read wearing lock syntax.
+   */
+  static async getByIdForUpdate(id: string, tx: TransactionClient) {
+    const result = await tx
+      .select()
+      .from(branches)
+      .where(eq(branches.id, id))
+      .limit(1)
+      .for('update')
+
+    return result.at(0) || null
+  }
+
+  /**
    * Get branch by name within a design
    */
   static async getByName(
@@ -346,13 +372,24 @@ export class BranchService {
           : [],
       )
 
-      // Delete the actual items
+      // Delete the actual items — tracking rows first, then the rows they
+      // point at, the order removeWorkspaceItem already keeps. Deleting the
+      // items first left branch_items rows on the archived branch pointing
+      // at nothing (the danglers DBI-6's FKs now reject outright).
       const itemIds = workspaceOnlyItems
         .filter((bi) => !referencedMasters.has(bi.itemMasterId))
         .map((bi) => bi.currentItemId)
         .filter((id): id is string => id !== null)
 
       if (itemIds.length > 0) {
+        await tx
+          .delete(branchItems)
+          .where(
+            and(
+              eq(branchItems.branchId, branchId),
+              inArray(branchItems.currentItemId, itemIds),
+            ),
+          )
         await tx.delete(items).where(inArray(items.id, itemIds))
       }
 

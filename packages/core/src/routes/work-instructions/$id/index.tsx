@@ -59,7 +59,10 @@ import {
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import {
+  authSessionQuery,
+  itemEditContextQuery,
   useInvalidateResources,
+  useResourceMutation,
   workInstructionAlertCountQuery,
   workInstructionDetailQuery,
   workInstructionOperationsQuery,
@@ -69,8 +72,18 @@ import { apiFetch } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 import { StateBadge } from '@/components/items/StateBadge'
 
+/** The tabs the work-instruction page renders; the search schema derives from this list. */
+const WORK_INSTRUCTION_DETAIL_TABS = [
+  'details',
+  'steps',
+  'parts',
+  'alerts',
+  'usage',
+] as const
+type WorkInstructionDetailTab = (typeof WORK_INSTRUCTION_DETAIL_TABS)[number]
+
 const searchSchema = z.object({
-  tab: z.enum(['details', 'steps', 'parts', 'alerts', 'usage']).optional(),
+  tab: z.enum(WORK_INSTRUCTION_DETAIL_TABS).optional(),
   edit: z.boolean().optional(),
 })
 
@@ -130,16 +143,19 @@ function WorkInstructionDetailView({
   // are rejected by the server, so the page never starts in edit mode.
   const [isEditing, setIsEditing] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [steps, setSteps] = useState<Array<WorkInstructionStep>>(
-    workInstruction.steps,
-  )
-  const [operations, setOperations] = useState<Array<WorkInstructionOperation>>(
-    workInstruction.operations || [],
-  )
-  const [editContext, setEditContext] = useState<WiEditContext | null>(null)
-  const [currentUserId, setCurrentUserId] = useState<string | undefined>()
   const [checkoutDialogOpen, setCheckoutDialogOpen] = useState(false)
   const [autoEditAttempted, setAutoEditAttempted] = useState(false)
+
+  // Steps and operations are read straight off the query-backed prop the
+  // parent composed from `workInstructionDetailQuery` +
+  // `workInstructionOperationsQuery`. They were mirrored into `useState` and
+  // patched by hand after every write, which meant a concurrent edit — or any
+  // write whose response shape differed from the row the server stored —
+  // showed one thing here and another after a reload. Every write below
+  // invalidates `work-instructions` instead, so the refetch is the only thing
+  // that moves what is on screen.
+  const steps = workInstruction.steps
+  const operations = workInstruction.operations ?? []
 
   const hasOperations = operations.length > 0
 
@@ -147,36 +163,22 @@ function WorkInstructionDetailView({
     workInstructionAlertCountQuery(workInstruction.id ?? ''),
   )
 
-  // Who am I (for "checked out by you")
-  useEffect(() => {
-    apiFetch<{ data: { authenticated: boolean; user?: { id: string } } }>(
-      '/api/v1/auth/session',
-    )
-      .then((res) => setCurrentUserId(res.data.user?.id))
-      .catch(() => {})
-  }, [])
+  // Who am I (for "checked out by you") — read from the session the root
+  // route already primed, not a per-page probe.
+  const { data: session } = useQuery(authSessionQuery())
+  const currentUserId = session?.user?.id
 
   // Where the edit lock for this version lives (branch working copy, or
   // unprotected main); null lockBranchId + isMainProtected means "revise
   // through an ECO/workspace branch" (CheckoutDialog).
+  const { data: editContext = null, refetch: refetchEditContext } = useQuery(
+    itemEditContextQuery<WiEditContext>(workInstruction.id ?? ''),
+  )
   const loadEditContext =
     useCallback(async (): Promise<WiEditContext | null> => {
-      if (!workInstruction.id) return null
-      try {
-        const res = await apiFetch<{ data: { editContext: WiEditContext } }>(
-          `/api/v1/items/${workInstruction.id}/edit-context`,
-        )
-        setEditContext(res.data.editContext)
-        return res.data.editContext
-      } catch {
-        setEditContext(null)
-        return null
-      }
-    }, [workInstruction.id])
-
-  useEffect(() => {
-    void loadEditContext()
-  }, [loadEditContext])
+      const { data } = await refetchEditContext()
+      return data ?? null
+    }, [refetchEditContext])
 
   const heldByMe = !!(
     editContext?.checkedOutBy &&
@@ -253,8 +255,15 @@ function WorkInstructionDetailView({
     }
     void loadEditContext()
     setIsEditing(false)
-    router.invalidate()
-  }, [editContext, loadEditContext, workInstruction.id, router])
+    // Cancelling the checkout is not a local change: it clears the lock, and
+    // when nothing was edited it also deletes the branch row and the
+    // working-copy item that the checkout created. A bare `router.invalidate()`
+    // only re-runs the loaders, and those read through `ensureQueryData` — so
+    // inside `staleTime` nothing refetched at all, and branch pickers on other
+    // pages kept offering a branch that no longer exists. Name all three
+    // resources so the caches that hold them go stale together.
+    await invalidate('work-instructions', 'branches', 'items')
+  }, [editContext, loadEditContext, workInstruction.id, invalidate])
 
   // After a CheckoutDialog revise-checkout, the working copy lives on the
   // chosen branch — navigate to it in edit mode.
@@ -293,12 +302,12 @@ function WorkInstructionDetailView({
     handleStartEditing,
   ])
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab: WorkInstructionDetailTab) => {
     router.navigate({
       to: '/work-instructions/$id',
       params: { id: workInstruction.id ?? '' },
       search: {
-        tab: tab as 'details' | 'steps' | 'parts' | 'alerts',
+        tab,
         edit: isEditing,
       },
       replace: true,
@@ -356,45 +365,78 @@ function WorkInstructionDetailView({
     })
   }
 
-  // Step management handlers
+  // Step management. The four writes are `useResourceMutation`s so the
+  // invalidation is registered by the hook rather than remembered at each call
+  // site; the thin wrappers below exist because the editors call these props
+  // un-awaited (StepEditor debounces content edits behind a timer), and a
+  // rejecting promise there would be an unhandled rejection. Each wrapper
+  // therefore reports the failure and resolves.
+  const addStep = useResourceMutation({
+    mutationFn: (stepData: Partial<WorkInstructionStep>) =>
+      apiFetch(`/api/v1/work-instructions/${workInstruction.id}/steps`, {
+        method: 'POST',
+        body: JSON.stringify(stepData),
+      }),
+    invalidates: ['work-instructions'],
+  })
+
+  const updateStep = useResourceMutation({
+    mutationFn: ({
+      stepId,
+      data,
+    }: {
+      stepId: string
+      data: Partial<WorkInstructionStep>
+    }) =>
+      apiFetch(
+        `/api/v1/work-instructions/${workInstruction.id}/steps/${stepId}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        },
+      ),
+    invalidates: ['work-instructions'],
+  })
+
+  const deleteStep = useResourceMutation({
+    mutationFn: (stepId: string) =>
+      apiFetch(
+        `/api/v1/work-instructions/${workInstruction.id}/steps/${stepId}`,
+        { method: 'DELETE' },
+      ),
+    invalidates: ['work-instructions'],
+    onSuccess: () => showSuccess('Step deleted', 'The step has been removed'),
+  })
+
+  const reorderSteps = useResourceMutation({
+    mutationFn: (reordered: Array<{ id: string; orderIndex: number }>) =>
+      apiFetch(`/api/v1/work-instructions/${workInstruction.id}/steps`, {
+        method: 'PUT',
+        body: JSON.stringify({ steps: reordered }),
+      }),
+    invalidates: ['work-instructions'],
+  })
+
   const handleAddStep = useCallback(
     async (stepData: Partial<WorkInstructionStep>) => {
       try {
-        const result = await apiFetch<{ data: { step: WorkInstructionStep } }>(
-          `/api/v1/work-instructions/${workInstruction.id}/steps`,
-          {
-            method: 'POST',
-            body: JSON.stringify(stepData),
-          },
-        )
-        setSteps((prev) => [...prev, result.data.step])
-        await invalidate('work-instructions')
+        await addStep.mutateAsync(stepData)
       } catch (error) {
         handleError(error, { title: 'Failed to add step' })
       }
     },
-    [workInstruction.id, handleError, invalidate],
+    [addStep.mutateAsync, handleError],
   )
 
   const handleUpdateStep = useCallback(
     async (stepId: string, data: Partial<WorkInstructionStep>) => {
       try {
-        const result = await apiFetch<{ data: { step: WorkInstructionStep } }>(
-          `/api/v1/work-instructions/${workInstruction.id}/steps/${stepId}`,
-          {
-            method: 'PUT',
-            body: JSON.stringify(data),
-          },
-        )
-        setSteps((prev) =>
-          prev.map((s) => (s.id === stepId ? result.data.step : s)),
-        )
-        await invalidate('work-instructions')
+        await updateStep.mutateAsync({ stepId, data })
       } catch (error) {
         handleError(error, { title: 'Failed to update step' })
       }
     },
-    [workInstruction.id, handleError, invalidate],
+    [updateStep.mutateAsync, handleError],
   )
 
   const handleDeleteStep = useCallback(
@@ -407,39 +449,39 @@ function WorkInstructionDetailView({
         variant: 'destructive',
         onConfirm: async () => {
           try {
-            await apiFetch(
-              `/api/v1/work-instructions/${workInstruction.id}/steps/${stepId}`,
-              { method: 'DELETE' },
-            )
-            setSteps((prev) => prev.filter((s) => s.id !== stepId))
-            await invalidate('work-instructions')
-            showSuccess('Step deleted', 'The step has been removed')
+            await deleteStep.mutateAsync(stepId)
           } catch (error) {
             handleError(error, { title: 'Failed to delete step' })
           }
         },
       })
     },
-    [workInstruction.id, handleError, showSuccess, confirm, invalidate],
+    [deleteStep.mutateAsync, handleError, confirm],
   )
 
   const handleReorderSteps = useCallback(
     async (reorderedSteps: Array<{ id: string; orderIndex: number }>) => {
       try {
-        const result = await apiFetch<{
-          data: { steps: Array<WorkInstructionStep> }
-        }>(`/api/v1/work-instructions/${workInstruction.id}/steps`, {
-          method: 'PUT',
-          body: JSON.stringify({ steps: reorderedSteps }),
-        })
-        setSteps(result.data.steps)
-        await invalidate('work-instructions')
+        await reorderSteps.mutateAsync(reorderedSteps)
       } catch (error) {
         handleError(error, { title: 'Failed to reorder steps' })
       }
     },
-    [workInstruction.id, handleError, invalidate],
+    [reorderSteps.mutateAsync, handleError],
   )
+
+  // The "organize steps into operations" hint below creates the first
+  // operation; OperationEditor owns every operation write once one exists.
+  const addFirstOperation = useResourceMutation({
+    mutationFn: () =>
+      apiFetch(`/api/v1/work-instructions/${workInstruction.id}/operations`, {
+        method: 'POST',
+        body: JSON.stringify({ title: 'New Operation' }),
+      }),
+    invalidates: ['work-instructions'],
+    onError: (error) =>
+      handleError(error, { title: 'Failed to add operation' }),
+  })
 
   const formatTime = (minutes?: number) => {
     if (!minutes) return '-'
@@ -554,7 +596,12 @@ function WorkInstructionDetailView({
       />
 
       {/* Tabs */}
-      <Tabs value={search.tab ?? 'steps'} onValueChange={handleTabChange}>
+      <Tabs
+        value={search.tab ?? 'steps'}
+        onValueChange={(value) =>
+          handleTabChange(value as WorkInstructionDetailTab)
+        }
+      >
         <TabsList>
           <TabsTrigger value="steps">Steps ({steps.length})</TabsTrigger>
           <TabsTrigger value="details">Details</TabsTrigger>
@@ -584,8 +631,6 @@ function WorkInstructionDetailView({
                   operations={operations}
                   steps={steps}
                   workInstructionId={workInstruction.id ?? ''}
-                  onOperationsChange={setOperations}
-                  onStepsChange={setSteps}
                   onAddStep={handleAddStep}
                   onUpdateStep={handleUpdateStep}
                   onDeleteStep={handleDeleteStep}
@@ -616,26 +661,8 @@ function WorkInstructionDetailView({
                     Want to organize steps into operations?{' '}
                     <button
                       className="text-sky-600 dark:text-sky-400 hover:underline"
-                      onClick={async () => {
-                        try {
-                          const result = await apiFetch<{
-                            data: { operation: WorkInstructionOperation }
-                          }>(
-                            `/api/v1/work-instructions/${workInstruction.id}/operations`,
-                            {
-                              method: 'POST',
-                              body: JSON.stringify({
-                                title: 'New Operation',
-                              }),
-                            },
-                          )
-                          setOperations([result.data.operation])
-                        } catch (error) {
-                          handleError(error, {
-                            title: 'Failed to add operation',
-                          })
-                        }
-                      }}
+                      disabled={addFirstOperation.isPending}
+                      onClick={() => addFirstOperation.mutate()}
                     >
                       Add an operation
                     </button>
@@ -788,9 +815,6 @@ function WorkInstructionDetailView({
             workInstructionId={workInstruction.id ?? ''}
             onError={(error) => handleError(error, { title: 'Alert error' })}
             onSuccess={(message) => showSuccess('Success', message)}
-            onCountsChange={() => {
-              void invalidate('work-instructions')
-            }}
           />
         </TabsContent>
 

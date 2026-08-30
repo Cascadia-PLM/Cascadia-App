@@ -74,3 +74,38 @@ export function jobDetailQuery(id: string, enabled = true) {
     enabled,
   })
 }
+
+/** A job's live progress, as the non-admin `/api/v1/jobs/:id` reports it. */
+export interface JobStatusSnapshot<TResult> {
+  id: string
+  status: JobStatus
+  progress: number
+  progressMessage: string | null
+  result: TResult | null
+  error: string | null
+}
+
+/**
+ * One job's own status, from the endpoint any user may read for a job they
+ * started — as opposed to `jobDetailQuery`, which reads the admin endpoint
+ * and carries the handler's log lines.
+ *
+ * Callers watching work in flight layer a `refetchInterval` on this and let
+ * it return `false` once the job reaches a terminal status; that replaces a
+ * hand-rolled `setInterval` and stops on unmount without a cleanup to forget.
+ */
+export function jobStatusQuery<TResult = Record<string, unknown>>(
+  id: string | null,
+  enabled = true,
+) {
+  return queryOptions({
+    queryKey: qk.detail('jobs', `status:${id ?? ''}`),
+    queryFn: async (): Promise<JobStatusSnapshot<TResult>> => {
+      const result = await apiFetch<{ data: JobStatusSnapshot<TResult> }>(
+        `/api/v1/jobs/${id}`,
+      )
+      return result.data
+    },
+    enabled: enabled && Boolean(id),
+  })
+}

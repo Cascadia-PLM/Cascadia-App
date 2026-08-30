@@ -8,8 +8,13 @@ import type { Requirement } from '@/lib/items/types/requirement'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { RequirementService } from '@/lib/services/RequirementService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
-import { requireBranchAccess, requireDesignAccess } from '@/lib/auth/access'
+import {
+  requireBranchAccess,
+  requireDesignAccess,
+  requireItemAccess,
+} from '@/lib/auth/access'
 import { apiHandler, created } from '@/lib/api/handler'
+import { requirementUpdateSchema } from '@/lib/api/schemas'
 // Register item types (server-side version)
 import '@/lib/items/registerItemTypes.server'
 
@@ -96,8 +101,9 @@ app.get(
   '/:id',
   adapt(
     apiHandler<{ id: string }>(
-      { permission: ['parts', 'read'] },
-      async ({ params }) => {
+      { permission: ['requirements', 'read'] },
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const { id } = params
         const requirement = await ItemService.findById(id)
         if (!requirement) throw new NotFoundError('Requirement', id)
@@ -112,13 +118,18 @@ app.put(
   '/:id',
   adapt(
     apiHandler<{ id: string }>(
-      { permission: ['parts', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
-        const { id } = params
+      {
+        permission: ['requirements', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: requirementUpdateSchema,
+      },
+      async ({ params, body, user }) => {
+        // The schema permits `null` where the column is nullable, which the
+        // Requirement interface spells as an absent optional; the service and
+        // the type handler both read null as "clear the column".
         const requirement = await ItemService.update<Requirement>(
-          id,
-          data,
+          params.id,
+          body as Partial<Requirement>,
           user.id,
         )
         return { requirement }
@@ -132,8 +143,9 @@ app.delete(
   '/:id',
   adapt(
     apiHandler<{ id: string }>(
-      { permission: ['parts', 'delete'] },
+      { permission: ['requirements', 'delete'] },
       async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const { id } = params
         await ItemService.delete(id, user.id)
         return { success: true }
@@ -146,13 +158,17 @@ app.delete(
 app.get(
   '/:id/derive',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params }) => {
-      const { id } = params
-      const childRequirements =
-        await RequirementService.getChildRequirements(id)
+    apiHandler<{ id: string }>(
+      { permission: ['requirements', 'read'] },
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
+        const { id } = params
+        const childRequirements =
+          await RequirementService.getChildRequirements(id)
 
-      return { requirements: childRequirements }
-    }),
+        return { requirements: childRequirements }
+      },
+    ),
   ),
 )
 
@@ -160,22 +176,31 @@ app.get(
 app.post(
   '/:id/derive',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof deriveRequirementSchema>>(
       {
+        // Deriving a child is an item *create*, so it owes the same RBAC verb
+        // the generic item-create route charges for a Requirement. Left off,
+        // this handler was auth-only: role permissions were skipped entirely
+        // and an API key's scope narrowing had nothing to intersect against.
+        permission: ['requirements', 'create'],
+        body: deriveRequirementSchema,
         openapi: {
           summary: 'Derive a child requirement from a requirement',
-          request: { body: { schema: deriveRequirementSchema } },
         },
       },
-      async ({ params, request, user }) => {
-        const body = await request.json()
-        const { branchId, commitMessage, ...childData } =
-          deriveRequirementSchema.parse(body)
+      async ({
+        body: { branchId, commitMessage, ...childData },
+        params,
+        user,
+      }) => {
         const { id } = params
 
         // This route creates an item, so it owes the same design check the
         // item routes do — reaching the parent's design is what entitles a
-        // caller to add a requirement to it.
+        // caller to add a requirement to it. apiHandler validates the body
+        // after auth and permission but before the handler, so a caller who
+        // cannot reach the parent is still refused rather than told what a
+        // well-formed derive request would have looked like.
         const parent = await ItemService.findById(id)
         if (!parent || parent.itemType !== 'Requirement') {
           throw new NotFoundError('Requirement', id)
@@ -183,6 +208,7 @@ app.post(
         if (parent.designId) {
           await requireDesignAccess(user.id, parent.designId)
         }
+
         if (branchId) {
           await requireBranchAccess(user.id, branchId)
         }
@@ -207,13 +233,17 @@ app.post(
 app.get(
   '/:id/parent',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params }) => {
-      const { id } = params
-      const parentRequirement =
-        await RequirementService.getParentRequirement(id)
+    apiHandler<{ id: string }>(
+      { permission: ['requirements', 'read'] },
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
+        const { id } = params
+        const parentRequirement =
+          await RequirementService.getParentRequirement(id)
 
-      return { parent: parentRequirement }
-    }),
+        return { parent: parentRequirement }
+      },
+    ),
   ),
 )
 
@@ -221,12 +251,16 @@ app.get(
 app.get(
   '/:id/satisfy',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params }) => {
-      const { id } = params
-      const satisfyingItems = await RequirementService.getSatisfyingItems(id)
+    apiHandler<{ id: string }>(
+      { permission: ['requirements', 'read'] },
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
+        const { id } = params
+        const satisfyingItems = await RequirementService.getSatisfyingItems(id)
 
-      return { items: satisfyingItems }
-    }),
+        return { items: satisfyingItems }
+      },
+    ),
   ),
 )
 
@@ -234,17 +268,28 @@ app.get(
 app.post(
   '/:id/satisfy',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
-      const body = await request.json()
-      const { itemIds, branchId } = linkSatisfactionSchema.parse(body)
-      const { id } = params
+    apiHandler<{ id: string }, z.infer<typeof linkSatisfactionSchema>>(
+      {
+        // Rewiring the traceability graph is an edit of the requirement the
+        // links hang off, so it charges the requirement's own resource with
+        // `update` — the treatment relationship edge writes already get. Left
+        // off, these handlers were auth-only: role RBAC was skipped wholesale
+        // and an API key's scope narrowing had nothing to intersect against,
+        // so a View Only program member could link and unlink at will.
+        permission: ['requirements', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: linkSatisfactionSchema,
+      },
+      async ({ params, body: { itemIds, branchId }, user }) => {
+        const { id } = params
 
-      await RequirementService.linkSatisfaction(id, itemIds, user.id, {
-        branchId,
-      })
+        await RequirementService.linkSatisfaction(id, itemIds, user.id, {
+          branchId,
+        })
 
-      return { success: true }
-    }),
+        return { success: true }
+      },
+    ),
   ),
 )
 
@@ -252,17 +297,27 @@ app.post(
 app.delete(
   '/:id/satisfy',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
-      const body = await request.json()
-      const { itemId, branchId } = unlinkSatisfactionSchema.parse(body)
-      const { id } = params
+    apiHandler<{ id: string }, z.infer<typeof unlinkSatisfactionSchema>>(
+      {
+        // `update`, not `delete`: removing a link edits the requirement, it
+        // does not delete one. Charging `requirements:delete` would hand
+        // requirement-deletion power to everyone who needs to unlink, and
+        // would lock out the stock Approver role, which holds update but not
+        // delete — while the same panel does both halves of the pair.
+        permission: ['requirements', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: unlinkSatisfactionSchema,
+      },
+      async ({ params, body: { itemId, branchId }, user }) => {
+        const { id } = params
 
-      await RequirementService.unlinkSatisfaction(id, itemId, user.id, {
-        branchId,
-      })
+        await RequirementService.unlinkSatisfaction(id, itemId, user.id, {
+          branchId,
+        })
 
-      return { success: true }
-    }),
+        return { success: true }
+      },
+    ),
   ),
 )
 
@@ -272,6 +327,7 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       {
+        permission: ['requirements', 'read'],
         openapi: {
           summary: 'List the items a requirement is allocated to',
           request: { params: z.object({ id: z.string().uuid() }) },
@@ -280,7 +336,8 @@ app.get(
           },
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const items = await RequirementService.getAllocatedItems(params.id)
 
         return { items }
@@ -293,8 +350,10 @@ app.get(
 app.post(
   '/:id/allocate',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof allocateSchema>>(
       {
+        permission: ['requirements', 'update'],
+        body: allocateSchema,
         openapi: {
           summary: 'Allocate a requirement to design items',
           description:
@@ -304,16 +363,14 @@ app.post(
             'and is refused once the design has released items.',
           request: {
             params: z.object({ id: z.string().uuid() }),
-            body: { schema: allocateSchema },
           },
           responses: {
             201: { schema: z.object({ success: z.boolean() }) },
           },
         },
       },
-      async ({ params, request, user }) => {
-        const body = await request.json()
-        const { itemIds, branchId } = allocateSchema.parse(body)
+      async ({ body: { itemIds, branchId }, params, user }) => {
+        await requireItemAccess(user.id, params.id)
 
         for (const itemId of itemIds) {
           await RequirementService.allocateToDesign(
@@ -334,22 +391,22 @@ app.post(
 app.delete(
   '/:id/allocate',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof deallocateSchema>>(
       {
+        permission: ['requirements', 'update'],
+        body: deallocateSchema,
         openapi: {
           summary: 'Remove a requirement allocation',
           request: {
             params: z.object({ id: z.string().uuid() }),
-            body: { schema: deallocateSchema },
           },
           responses: {
             200: { schema: z.object({ success: z.boolean() }) },
           },
         },
       },
-      async ({ params, request, user }) => {
-        const body = await request.json()
-        const { itemId, branchId } = deallocateSchema.parse(body)
+      async ({ body: { itemId, branchId }, params, user }) => {
+        await requireItemAccess(user.id, params.id)
 
         await RequirementService.removeAllocation(params.id, itemId, user.id, {
           branchId,
@@ -365,17 +422,21 @@ app.delete(
 app.post(
   '/:id/verify',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const body = await request.json()
-      const { testCaseIds, branchId } = linkVerificationSchema.parse(body)
+    apiHandler<{ id: string }, z.infer<typeof linkVerificationSchema>>(
+      {
+        permission: ['requirements', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: linkVerificationSchema,
+      },
+      async ({ params, body: { testCaseIds, branchId }, user }) => {
+        const { id } = params
+        await RequirementService.linkVerification(id, testCaseIds, user.id, {
+          branchId,
+        })
 
-      const { id } = params
-      await RequirementService.linkVerification(id, testCaseIds, user.id, {
-        branchId,
-      })
-
-      return created({ success: true })
-    }),
+        return created({ success: true })
+      },
+    ),
   ),
 )
 
@@ -383,21 +444,25 @@ app.post(
 app.delete(
   '/:id/verify',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const url = new URL(request.url)
-      const testCaseId = url.searchParams.get('testCaseId')
+    apiHandler<{ id: string }>(
+      { permission: ['requirements', 'update'] },
+      async ({ request, params, user }) => {
+        await requireItemAccess(user.id, params.id)
+        const url = new URL(request.url)
+        const testCaseId = url.searchParams.get('testCaseId')
 
-      if (!testCaseId) {
-        throw new ValidationError('testCaseId query parameter is required')
-      }
+        if (!testCaseId) {
+          throw new ValidationError('testCaseId query parameter is required')
+        }
 
-      const { id } = params
-      await RequirementService.unlinkVerification(id, testCaseId, user.id, {
-        branchId: url.searchParams.get('branchId') ?? undefined,
-      })
+        const { id } = params
+        await RequirementService.unlinkVerification(id, testCaseId, user.id, {
+          branchId: url.searchParams.get('branchId') ?? undefined,
+        })
 
-      return { success: true }
-    }),
+        return { success: true }
+      },
+    ),
   ),
 )
 
@@ -405,12 +470,16 @@ app.delete(
 app.get(
   '/:id/verifying-tests',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params }) => {
-      const { id } = params
-      const tests = await RequirementService.getVerifyingTests(id)
+    apiHandler<{ id: string }>(
+      { permission: ['requirements', 'read'] },
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
+        const { id } = params
+        const tests = await RequirementService.getVerifyingTests(id)
 
-      return { tests }
-    }),
+        return { tests }
+      },
+    ),
   ),
 )
 

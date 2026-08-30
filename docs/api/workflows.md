@@ -7,20 +7,18 @@ Cascadia supports two workflow categories:
 - **Lifecycle** workflows -- govern item state transitions (e.g., Draft -> In Review -> Released)
 - **Workflow** (approval) workflows -- govern change order approval processes (e.g., In Work -> Submitted -> Approved)
 
-## Endpoints Overview
+## Endpoints
 
-| Method | Endpoint                                                      | Description                  |
-| ------ | ------------------------------------------------------------- | ---------------------------- |
-| GET    | `/api/v1/workflows`                                           | List workflow definitions    |
-| POST   | `/api/v1/workflows`                                           | Create a workflow definition |
-| GET    | `/api/v1/workflows/:id`                                       | Get a workflow definition    |
-| PUT    | `/api/v1/workflows/:id`                                       | Update a workflow definition |
-| DELETE | `/api/v1/workflows/:id`                                       | Delete a workflow definition |
-| GET    | `/api/v1/workflows/:id/approvers`                             | Get approvers for all states |
-| GET    | `/api/v1/workflows/:id/states/:stateId/approvers`             | Get approvers for a state    |
-| POST   | `/api/v1/workflows/:id/states/:stateId/approvers`             | Add approver to a state      |
-| DELETE | `/api/v1/workflows/:id/states/:stateId/approvers/:approverId` | Remove approver              |
-| POST   | `/api/v1/workflows/:id/validate`                              | Validate workflow definition |
+This page explains behaviour; it is not an endpoint inventory. Three generated
+surfaces carry that, and none of them can drift from the routes the way a
+hand-written table does:
+
+- `GET /api/docs` — the interactive Scalar UI
+- `GET /openapi.json` — the live spec, regenerated from route metadata per request
+- [`openapi.v1.json`](./openapi.v1.json) — the frozen v1 contract, the one external
+  consumers should build against
+
+See [the API README](./README.md) for the versioning policy that governs all three.
 
 For workflow instances on change orders, see the [Change Orders API](./change-orders.md).
 

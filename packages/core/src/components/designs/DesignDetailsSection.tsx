@@ -2,10 +2,12 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Tags } from 'lucide-react'
 import type { Design } from '@/lib/types/design'
 import type { Program } from '@/lib/types/program'
 import { apiFetch } from '@/lib/api/client'
+import { designFamiliesQuery } from '@/lib/query'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import {
   Badge,
@@ -24,12 +26,6 @@ import {
   ViewEditTextarea,
 } from '@/components/ui/view-edit-field'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
-
-interface FamilyDesign {
-  id: string
-  code: string
-  name: string
-}
 
 interface DesignWithDetails extends Design {
   program?: Program | null
@@ -56,8 +52,6 @@ export const DesignDetailsSection = forwardRef<
   ref,
 ) {
   const { handleError, showSuccess } = useErrorHandler()
-  const [families, setFamilies] = useState<Array<FamilyDesign>>([])
-  const [loadingFamilies, setLoadingFamilies] = useState(false)
 
   // Local edit state
   const [editValues, setEditValues] = useState({
@@ -99,33 +93,13 @@ export const DesignDetailsSection = forwardRef<
     }
   }, [isEditing, design])
 
-  // Fetch available families when programId changes in edit mode
-  useEffect(() => {
-    if (!isEditing) return
-
-    const fetchFamilies = async () => {
-      setLoadingFamilies(true)
-      try {
-        const params = editValues.programId
-          ? `?programId=${editValues.programId}`
-          : ''
-        const response = await fetch(`/api/v1/designs/families${params}`)
-        if (response.ok) {
-          const { data } = await response.json()
-          const filteredFamilies = (data?.families || []).filter(
-            (f: FamilyDesign) => f.id !== design.id,
-          )
-          setFamilies(filteredFamilies)
-        }
-      } catch {
-        setFamilies([])
-      } finally {
-        setLoadingFamilies(false)
-      }
-    }
-
-    fetchFamilies()
-  }, [editValues.programId, isEditing, design.id])
+  // The families this design could be moved under, only while editing. A
+  // design is never its own parent.
+  const { data: allFamilies = [], isFetching: loadingFamilies } = useQuery({
+    ...designFamiliesQuery(editValues.programId || undefined),
+    enabled: isEditing,
+  })
+  const families = allFamilies.filter((f) => f.id !== design.id)
 
   // Expose save to parent via ref
   useImperativeHandle(

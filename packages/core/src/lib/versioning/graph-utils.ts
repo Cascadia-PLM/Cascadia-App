@@ -1,6 +1,39 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
+/**
+ * Commit-graph consolidation — the single implementation.
+ *
+ * Three graph pipelines call `consolidateCommits`: the design history graph,
+ * the ECO branch history graph (`EcoBranchHistoryService`), and the program
+ * history graph — the first and last both via `CommitGraphService`. Each used
+ * to carry its own copy of this algorithm and they had already drifted.
+ * Everything here is pure — no `@/lib/db` import — so it stays safe to reach
+ * from client code.
+ *
+ * Two invariants the callers depend on; do not "simplify" either away:
+ *
+ *  - The consolidated node is built by spreading `firstCommit` and
+ *    `firstCommit.data`, so subtype fields survive. The program graph's
+ *    `ProgramCommitNodeData` carries `designId`/`designCode`/`designName`,
+ *    and both the pipeline (which derives the active design list) and
+ *    `ProgramHistoryGraphView` (which assigns design columns) read `designId`
+ *    off consolidated nodes. Enumerating fields explicitly would blank the
+ *    program graph.
+ *  - `shouldGroup` is the caller's extra group boundary, applied on top of the
+ *    standard branch/author/action/item-type/time-window checks.
+ *
+ * Edge remapping is keyed by `node.id`, because edge endpoints are node ids.
+ * `data.consolidatedCommitIds` is display/provenance metadata — never a remap
+ * key. Keying the map off it, as an earlier version of this function did,
+ * silently required every producer to satisfy
+ * `node.id === node.data.commitId`: a producer that
+ * prefixed its ids (`eco-${commit.id}`) would have had every edge touching a
+ * consolidated group dropped, with no throw and no type error, since both
+ * fields are `string`. That requirement was removed deliberately. A producer
+ * owns its node ids; do not reintroduce the coupling.
+ */
+
 import type { Node } from '@xyflow/react'
 import type { CommitGraphEdge, CommitNodeData } from './graph-types'
 
@@ -111,6 +144,9 @@ export function consolidateCommits<
   // Group commits that can be consolidated
   const consolidatedNodes: Array<TNode> = []
   const removedNodeIds = new Set<string>()
+  // Original node id → the consolidated node that replaced it. Populated in
+  // the same pass as `removedNodeIds` so the two cannot disagree.
+  const nodeIdMapping = new Map<string, string>()
   let i = 0
 
   while (i < sortedNodes.length) {
@@ -202,9 +238,11 @@ export function consolidateCommits<
 
       consolidatedNodes.push(consolidatedNode)
 
-      // Mark original nodes as removed
+      // Mark original nodes as removed, and point their edges at the
+      // consolidated node. Both are keyed by `node.id` — see the docblock.
       for (const node of group) {
         removedNodeIds.add(node.id)
+        nodeIdMapping.set(node.id, consolidatedNode.id)
       }
 
       i = j
@@ -212,16 +250,6 @@ export function consolidateCommits<
       // Not enough commits to consolidate, keep original
       consolidatedNodes.push(currentNode)
       i++
-    }
-  }
-
-  // Update edges to point to consolidated nodes
-  const nodeIdMapping = new Map<string, string>()
-  for (const node of consolidatedNodes) {
-    if (node.data.isConsolidated && node.data.consolidatedCommitIds) {
-      for (const originalId of node.data.consolidatedCommitIds) {
-        nodeIdMapping.set(originalId, node.id)
-      }
     }
   }
 

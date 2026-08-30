@@ -6,35 +6,18 @@ The Change Orders (ECO) API manages Engineering Change Orders, which are the pri
 
 When an ECO is created, Cascadia automatically creates a Git-style branch. Items are checked out to the ECO branch, modified in isolation, and merged back to main when the ECO is approved and released. Revision letters are assigned only at merge time.
 
-## Endpoints Overview
+## Endpoints
 
-| Method | Endpoint                                                       | Description                                  |
-| ------ | -------------------------------------------------------------- | -------------------------------------------- |
-| GET    | `/api/v1/change-orders/:id`                                    | Get a change order                           |
-| PUT    | `/api/v1/change-orders/:id`                                    | Update a change order                        |
-| DELETE | `/api/v1/change-orders/:id`                                    | Delete a change order                        |
-| GET    | `/api/v1/change-orders/editable`                               | List editable change orders                  |
-| GET    | `/api/v1/change-orders/:id/summary`                            | Get ECO summary                              |
-| GET    | `/api/v1/change-orders/:id/affected-items`                     | List affected items                          |
-| POST   | `/api/v1/change-orders/:id/affected-items`                     | Add affected items                           |
-| DELETE | `/api/v1/change-orders/:id/affected-items`                     | Remove affected item                         |
-| POST   | `/api/v1/change-orders/:id/checkout`                           | Checkout item to ECO                         |
-| GET    | `/api/v1/change-orders/:id/workflow`                           | Get workflow instance                        |
-| POST   | `/api/v1/change-orders/:id/workflow`                           | Start workflow                               |
-| GET    | `/api/v1/change-orders/:id/workflow/transition`                | Get available transitions                    |
-| POST   | `/api/v1/change-orders/:id/workflow/transition`                | Execute a transition                         |
-| POST   | `/api/v1/change-orders/:id/workflow/validate-transition`       | Validate a transition                        |
-| GET    | `/api/v1/change-orders/:id/workflow/structure`                 | Get workflow structure                       |
-| PUT    | `/api/v1/change-orders/:id/workflow/structure`                 | Update workflow structure                    |
-| GET    | `/api/v1/change-orders/:id/workflow/states/:stateId/approvers` | Get instance-level approvers for a state     |
-| PUT    | `/api/v1/change-orders/:id/workflow/states/:stateId/approvers` | Replace instance-level approvers for a state |
-| GET    | `/api/v1/change-orders/:id/workflow/history`                   | Get transition history                       |
-| GET    | `/api/v1/change-orders/:id/approvals`                          | Get approval status                          |
-| POST   | `/api/v1/change-orders/:id/approvals`                          | Submit approval vote                         |
-| GET    | `/api/v1/change-orders/:id/impact-assessment`                  | Get impact report                            |
-| POST   | `/api/v1/change-orders/:id/impact-assessment`                  | Run impact assessment                        |
-| GET    | `/api/v1/change-orders/:id/conflicts`                          | Detect merge conflicts                       |
-| GET    | `/api/v1/change-orders/:id/release`                            | Preview release/merge                        |
+This page explains behaviour; it is not an endpoint inventory. Three generated
+surfaces carry that, and none of them can drift from the routes the way a
+hand-written table does:
+
+- `GET /api/docs` — the interactive Scalar UI
+- `GET /openapi.json` — the live spec, regenerated from route metadata per request
+- [`openapi.v1.json`](./openapi.v1.json) — the frozen v1 contract, the one external
+  consumers should build against
+
+See [the API README](./README.md) for the versioning policy that governs all three.
 
 ## Create Change Order
 

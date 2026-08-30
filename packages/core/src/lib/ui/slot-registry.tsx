@@ -69,7 +69,15 @@ type AnySlotComponent = ComponentType<any>
 
 const registry = new Map<SlotName, Array<AnySlotComponent>>()
 
-/** Contribute a component to a slot. Called from a composition root. */
+/**
+ * Contribute a component to a slot. Called from a composition root.
+ *
+ * Deliberately additive, unlike the name-keyed registries (`JobTypeRegistry`,
+ * `ApprovalRegistry`, `ReleaseHookRegistry`, `registerPackage`) which throw on
+ * a duplicate. A slot is a *list* of contributions rendered in registration
+ * order — several modules decorating one extension point is the contract, not
+ * a collision, so there is nothing here that could conflict.
+ */
 export function registerSlot<TName extends SlotName>(
   name: TName,
   component: ComponentType<SlotProps[TName]>,

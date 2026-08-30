@@ -15,6 +15,7 @@ The Cascadia HTTP API is mounted under `/api/v1/` and described by an OpenAPI 3.
 
 - **v1 is frozen** as of the commit that introduced this file. The spec at `docs/api/openapi.v1.json` is the contract external consumers should rely on.
 - **Additive changes only** until v2 is cut. New endpoints, new optional fields, new response keys are fine. Removing a field, narrowing a type, or changing a required value is a **breaking change** and requires bumping to `/api/v2/`.
+- **One narrow exception: an optional request-body property the server has never stored** may be dropped from the snapshot without cutting v2. Body schemas are non-strict, so such a property is already discarded on arrival — a request that sends it succeeds identically before and after, and the only effect is that a generated client stops offering an input that was a no-op. The exception is the never-stored clause and nothing else: it does not license removing a property the server reads, narrowing a type or a `minLength`, tightening required-ness, or touching any response field. Applied so far to `rationale` on `PUT /api/v1/requirements/{id}` and `taskType` on `PUT /api/v1/tasks/{id}`; record any future use here.
 - **Breaking changes** mean a new path prefix (`/api/v2/`), a separate snapshot (`docs/api/openapi.v2.json`), and a deprecation window for `/api/v1/`. Don't mutate v1 in place.
 - **The spec's `info.version` is the contract version, not the product version.** It stays `1.0.0` for the life of v1; the product version is reported by `GET /api/v1/health`.
 

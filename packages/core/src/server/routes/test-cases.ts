@@ -5,8 +5,8 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../adapter'
 import { VerificationService } from '@/lib/services/VerificationService'
-import { ValidationError } from '@/lib/errors'
 import { apiHandler, created, parseQuery } from '@/lib/api/handler'
+import { requireItemAccess } from '@/lib/auth/access'
 import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('Test Cases')
@@ -42,34 +42,32 @@ const executionsQuerySchema = z.object({
 app.post(
   '/:id/execute',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof executeBodySchema>>(
       {
         // Recording a run is runtime metadata rather than content authoring,
         // so it needs `update` but deliberately bypasses the edit lock in
         // VerificationService — a Released test case is still runnable.
+        body: executeBodySchema,
         permission: ['test_cases', 'update'],
         openapi: {
           summary: 'Record a test case execution',
           request: {
             params: z.object({ id: z.string().uuid() }),
-            body: { schema: executeBodySchema },
           },
           responses: {
             201: { schema: z.object({ execution: executionSchema }) },
           },
         },
       },
-      async ({ request, params, user }) => {
-        const parsed = executeBodySchema.safeParse(await request.json())
-        if (!parsed.success) {
-          throw new ValidationError(
-            parsed.error.issues[0]?.message ?? 'Invalid execution payload',
-          )
-        }
+      async ({ body, params, user }) => {
+        // The access check still runs first. apiHandler validates the body
+        // after auth and permission but before the handler, so an outsider
+        // never sees the 400 either way.
+        await requireItemAccess(user.id, params.id)
 
         const execution = await VerificationService.recordExecution(
           params.id,
-          parsed.data,
+          body,
           user.id,
         )
 
@@ -99,7 +97,8 @@ app.get(
           },
         },
       },
-      async ({ request, params }) => {
+      async ({ request, params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const { limit } = parseQuery(request, executionsQuerySchema)
 
         const executions = await VerificationService.getExecutionHistory(

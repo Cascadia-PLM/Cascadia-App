@@ -366,8 +366,8 @@ with Phase 5 folded into the closing one. Deviations from the plan as written:
   consumption compare-and-set is an engine-level write in the same class as
   change-order release, documented in `WorkOrderMaterialService`, and the
   transition endpoint's state adoption reconciles it.
-- **No committed migrations:** main dropped committed DB migrations
-  ("pre-1.0 is push + seeds everywhere") during Phase 0; all schema changes
+- **Migrations:** committed migrations returned in v0.5 (they are the
+  upgrade path for released installs); during this effort all schema changes
   ship in `schema.ts` + `seed-minimal.ts`, and the dev DB was transformed in
   place (WO ids reused as item ids, so execution rows needed no rewrite).
 - **Thread swim lane:** deferred out of Phase 5 (`ThreadNode` hard-required

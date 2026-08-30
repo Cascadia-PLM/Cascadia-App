@@ -38,9 +38,11 @@ export class PartsPage extends BasePage {
   }
 
   get searchInput(): Locator {
-    return this.page.locator(
-      'input[placeholder*="Search"], input[type="search"], [data-testid="search-input"]',
-    )
+    // The grid's own search box, by its accessible name. The old
+    // placeholder selector also matched the header's global search bar, so
+    // it was a strict-mode violation the moment both had mounted — which the
+    // isVisible() guards hid by evaluating before either did.
+    return this.page.getByRole('textbox', { name: 'Search table' })
   }
 
   get partLinks(): Locator {
@@ -164,12 +166,10 @@ export class PartsPage extends BasePage {
    * Search for parts
    */
   async search(query: string): Promise<void> {
-    if (await this.searchInput.isVisible()) {
-      await this.searchInput.focus()
-      await this.searchInput.pressSequentially(query, { delay: 30 })
-      // Wait for search to filter
-      await this.page.waitForTimeout(500)
-    }
+    await this.searchInput.focus()
+    await this.searchInput.pressSequentially(query, { delay: 30 })
+    // Wait for search to filter
+    await this.page.waitForTimeout(500)
   }
 
   /**
@@ -184,17 +184,13 @@ export class PartsPage extends BasePage {
    * Navigate to BOM tab
    */
   async gotoBOM(): Promise<void> {
-    if (await this.bomTab.isVisible()) {
-      await this.bomTab.click()
-    }
+    await this.bomTab.click()
   }
 
   /**
    * Navigate to Where Used tab
    */
   async gotoWhereUsed(): Promise<void> {
-    if (await this.whereUsedTab.isVisible()) {
-      await this.whereUsedTab.click()
-    }
+    await this.whereUsedTab.click()
   }
 }

@@ -12,6 +12,7 @@ import {
   tags,
 } from '../db/schema'
 import { notDeleted, notWorkingRevision } from '../db/filters'
+import { likeContains } from '../db/like-pattern'
 import { BranchService } from './BranchService'
 import { DesignService } from './DesignService'
 
@@ -51,6 +52,11 @@ export interface PaginatedItemsResult {
 /**
  * Service for resolving item versions at different contexts
  */
+interface PositionSortableItem {
+  id: string
+  createdAt: Date | string
+}
+
 export class VersionResolver {
   /**
    * Parse version context from query parameters
@@ -213,7 +219,7 @@ export class VersionResolver {
             notDeleted(),
           ),
         )
-        .orderBy(desc(items.modifiedAt))
+        .orderBy(desc(items.modifiedAt), desc(items.createdAt), items.id)
         .limit(10)
       const first = candidates.at(0)
       if (first) {
@@ -228,7 +234,8 @@ export class VersionResolver {
 
     // Final fallback: any version of this master in this design. Scoped to
     // the design - it used to match across designs entirely, so an unrelated
-    // design's copy could answer a released-version query.
+    // design's copy could answer a released-version query. Ordered — a bare
+    // limit(1) let the heap pick between rows sharing the fallback window.
     if (!result.at(0)) {
       result = await db
         .select()
@@ -241,6 +248,7 @@ export class VersionResolver {
             notDeleted(),
           ),
         )
+        .orderBy(desc(items.modifiedAt), desc(items.createdAt), items.id)
         .limit(1)
     }
 
@@ -348,13 +356,21 @@ export class VersionResolver {
       return { items: [], total: 0 }
     }
 
-    // If main branch has commits, try commit-based resolution
+    // If main branch has commits, try commit-based resolution.
+    //
+    // The question the fallbacks answer is "did commit resolution find this
+    // design at all", so the test is the pre-pagination `total`, not whether
+    // this particular page came back with rows. Asking for rows meant that
+    // paging past the end of a released list — or any filter matching nothing
+    // — looked like missing commit data and sent the query on to the
+    // branchItems fallback to be answered from a different source, which
+    // reported `total: 0` for a design holding hundreds of items.
     if (mainBranch.headCommitId) {
       const commitResult = await this.getItemsAtCommit(
         mainBranch.headCommitId,
         filters,
       )
-      if (commitResult.items.length > 0) {
+      if (commitResult.total > 0) {
         return commitResult
       }
       // Fall through: commit exists but itemVersions may be empty (pre-release data)
@@ -396,9 +412,192 @@ export class VersionResolver {
   }
 
   /**
-   * Get all items on a branch (including unchanged items from main)
+   * Get all items on a branch (including unchanged items from main).
+   *
+   * The overlay — main's contents at its head commit, with this branch's own
+   * versions substituted in and its deletions removed — is computed in SQL
+   * when main has commit history to resolve against, and in Node otherwise.
+   * `getBranchItemsInMemory` carries the fallbacks for a design whose main
+   * branch has no usable commit data: seeded rows, pre-release data, anything
+   * `getReleasedItems` answers from `branchItems` or `isCurrent` instead.
    */
   static async getBranchItems(
+    branchId: string,
+    filters?: ItemFilters,
+  ): Promise<PaginatedItemsResult> {
+    const branch = await BranchService.getById(branchId)
+    if (!branch) {
+      return { items: [], total: 0 }
+    }
+
+    if (this.canResolveAtCommitInSql(filters)) {
+      const mainBranch = await DesignService.getDefaultBranch(branch.designId)
+      if (mainBranch?.headCommitId) {
+        const page = await this.resolveBranchItemIds(
+          branchId,
+          mainBranch.headCommitId,
+          filters,
+        )
+        // `mainResolved` is the same gate `getReleasedItems` applies: no rows
+        // from commit resolution means this design's released contents live
+        // somewhere the commit graph cannot see, and the whole merge has to
+        // happen over the fallback chain instead.
+        if (page.mainResolved > 0) {
+          if (page.ids.length === 0) {
+            return { items: [], total: page.total }
+          }
+          const rows = await db
+            .select()
+            .from(items)
+            .where(inArray(items.id, page.ids))
+          const byId = new Map(rows.map((row) => [row.id, row]))
+          return {
+            items: page.ids
+              .map((id) => byId.get(id))
+              .filter((row): row is (typeof rows)[number] => row !== undefined),
+            total: page.total,
+          }
+        }
+      }
+    }
+
+    return this.getBranchItemsInMemory(branchId, filters)
+  }
+
+  /**
+   * The item ids visible on a branch, filtered, counted and paginated by the
+   * database.
+   *
+   * `main_items` is the commit resolution `resolveItemIdsAtCommit` performs,
+   * against main's head. The overlay onto it reproduces the four cases the
+   * in-memory merge distinguishes, and the order matters:
+   *
+   * - no `branch_items` row for the master — main's version stands
+   * - `change_type = 'deleted'` — the item is gone on this branch
+   * - a row with no `current_item_id` — main's version stands (it is tracked
+   *   but not yet replaced)
+   * - otherwise the branch's own version, and *nothing* if that row has since
+   *   been deleted. Falling back to main's version there would resurrect an
+   *   item the branch is holding a deleted working copy of, which is why the
+   *   CASE yields NULL rather than `m.id`.
+   *
+   * `added` then contributes the masters that exist only on the branch —
+   * items created there, and items tracked in `branch_items` but absent from
+   * `item_versions` at all.
+   */
+  private static async resolveBranchItemIds(
+    branchId: string,
+    headCommitId: string,
+    filters?: ItemFilters,
+  ): Promise<{ ids: Array<string>; total: number; mainResolved: number }> {
+    const conditions = this.itemFilterConditions(filters, 'i')
+    const limit = filters?.limit
+    const offset = filters?.offset ?? 0
+
+    const rows = await db.execute(sql`
+      WITH RECURSIVE commit_ancestors AS (
+        SELECT c.id, c.parent_id, c.merge_parent_id, c.created_at, 0 AS depth
+        FROM commits c WHERE c.id = ${headCommitId}
+        UNION ALL
+        SELECT c.id, c.parent_id, c.merge_parent_id, c.created_at, ca.depth + 1
+        FROM commits c
+        INNER JOIN commit_ancestors ca
+          ON c.id = ca.parent_id OR c.id = ca.merge_parent_id
+      ),
+      ancestors AS (
+        SELECT DISTINCT ON (id) id, depth, created_at
+        FROM commit_ancestors
+        ORDER BY id, depth
+      ),
+      resolved AS (
+        SELECT DISTINCT ON (i.master_id)
+               i.id, i.master_id, iv.change_type
+        FROM item_versions iv
+        INNER JOIN items i ON i.id = iv.item_id
+        INNER JOIN ancestors a ON a.id = iv.commit_id
+        INNER JOIN commits target ON target.id = ${headCommitId}
+        WHERE i.design_id = target.design_id
+          AND i.is_deleted IS NOT TRUE
+        ORDER BY i.master_id,
+                 a.depth ASC, a.created_at DESC, a.id ASC,
+                 i.created_at DESC, i.id ASC
+      ),
+      main_items AS (
+        SELECT id, master_id FROM resolved WHERE change_type <> 'deleted'
+      ),
+      tracked AS (
+        SELECT item_master_id, current_item_id, change_type
+        FROM branch_items WHERE branch_id = ${branchId}
+      ),
+      overlaid AS (
+        SELECT CASE
+                 WHEN t.item_master_id IS NULL THEN m.id
+                 WHEN t.change_type = 'deleted' THEN NULL
+                 WHEN t.current_item_id IS NULL THEN m.id
+                 ELSE bv.id
+               END AS id
+        FROM main_items m
+        LEFT JOIN tracked t ON t.item_master_id = m.master_id
+        LEFT JOIN items bv
+          ON bv.id = t.current_item_id AND bv.is_deleted IS NOT TRUE
+      ),
+      added AS (
+        SELECT bv.id
+        FROM tracked t
+        INNER JOIN items bv
+          ON bv.id = t.current_item_id AND bv.is_deleted IS NOT TRUE
+        WHERE t.change_type <> 'deleted'
+          AND NOT EXISTS (
+            SELECT 1 FROM main_items m WHERE m.master_id = t.item_master_id
+          )
+      ),
+      merged AS (
+        SELECT id FROM overlaid WHERE id IS NOT NULL
+        UNION ALL
+        SELECT id FROM added
+      ),
+      filtered AS (
+        SELECT i.id, i.item_number
+        FROM merged mg
+        INNER JOIN items i ON i.id = mg.id
+        WHERE ${sql.join(conditions, sql` AND `)}
+      )
+      SELECT counted.total, counted.main_resolved, page.id
+      FROM (
+        SELECT (SELECT COUNT(*) FROM filtered) AS total,
+               (SELECT COUNT(*) FROM main_items) AS main_resolved
+      ) counted
+      LEFT JOIN (
+        SELECT id, item_number FROM filtered
+        ORDER BY item_number ASC, id ASC
+        ${limit === undefined ? sql`` : sql`LIMIT ${limit}`}
+        OFFSET ${offset}
+      ) page ON TRUE
+      ORDER BY page.item_number ASC NULLS LAST, page.id ASC
+    `)
+
+    const page = rows as unknown as Array<{
+      id: string | null
+      total: number | string
+      main_resolved: number | string
+    }>
+    const first = page[0]
+    if (!first) return { ids: [], total: 0, mainResolved: 0 }
+
+    return {
+      ids: page.map((row) => row.id).filter((id): id is string => id !== null),
+      total: Number(first.total),
+      mainResolved: Number(first.main_resolved),
+    }
+  }
+
+  /**
+   * Get all items on a branch, merged in Node.
+   *
+   * The fallback for designs whose main branch has no commit-resolvable
+   * contents, and the reference the equivalence tests compare against.
+   */
+  private static async getBranchItemsInMemory(
     branchId: string,
     filters?: ItemFilters,
   ): Promise<PaginatedItemsResult> {
@@ -481,10 +680,215 @@ export class VersionResolver {
   }
 
   /**
-   * Get all items at a specific commit
-   * Optimized to batch all queries instead of per-masterId lookups
+   * Get all items at a specific commit.
+   *
+   * Two queries: one resolves the page's item ids — ancestry walk, filtering,
+   * count and pagination all in SQL — and the second hydrates just those rows.
+   * `getItemsAtCommitInMemory` is the same computation done in Node, and stays
+   * the path for filters SQL does not express; see `canResolveAtCommitInSql`.
    */
   static async getItemsAtCommit(
+    commitId: string,
+    filters?: ItemFilters,
+  ): Promise<PaginatedItemsResult> {
+    if (!this.canResolveAtCommitInSql(filters)) {
+      return this.getItemsAtCommitInMemory(commitId, filters)
+    }
+
+    const page = await this.resolveItemIdsAtCommit(commitId, filters)
+    if (page.ids.length === 0) {
+      return { items: [], total: page.total }
+    }
+
+    const rows = await db
+      .select()
+      .from(items)
+      .where(inArray(items.id, page.ids))
+
+    // `inArray` makes no promise about the order it returns, and the page's
+    // order was decided by the query above.
+    const byId = new Map(rows.map((row) => [row.id, row]))
+    return {
+      items: page.ids
+        .map((id) => byId.get(id))
+        .filter((row): row is (typeof rows)[number] => row !== undefined),
+      total: page.total,
+    }
+  }
+
+  /**
+   * Whether `filters` is expressible in the SQL resolution path.
+   *
+   * Everything the API sends is: `itemType`, `state`, `search`,
+   * `globalSearch`, `limit`, `offset`. A `sortField` or a `columnFilters`
+   * entry routes to the in-memory path instead, and deliberately.
+   *
+   * `applyFilters` orders strings with `localeCompare`; the database orders
+   * them by whichever collation the cluster was initialised with. Those
+   * disagree on case and punctuation. No caller passes `sortField` here today,
+   * so pushing the sort down would quietly change results for a caller that
+   * does not exist yet — when one arrives, the ordering is worth choosing
+   * deliberately rather than inheriting.
+   *
+   * `columnFilters` is the same story with an extra wrinkle: in-memory, an
+   * entry naming anything outside `getItemFieldValue`'s base fields compares
+   * against `undefined` and so rejects every row. That is a quirk rather than
+   * an intent, and reproducing it in SQL would entrench it.
+   */
+  /**
+   * The SQL-expressible half of `applyFilters`, as predicates on `alias`.
+   *
+   * Always at least `TRUE`, so callers can join the list unconditionally.
+   * `canResolveAtCommitInSql` has already refused anything not covered here.
+   */
+  private static itemFilterConditions(
+    filters: ItemFilters | undefined,
+    alias: string,
+  ) {
+    const col = (name: string) => sql.raw(`${alias}.${name}`)
+    const conditions = [sql`TRUE`]
+
+    if (filters?.itemType) {
+      conditions.push(sql`${col('item_type')} = ${filters.itemType}`)
+    }
+    if (filters?.state) {
+      conditions.push(sql`${col('state')} = ${filters.state}`)
+    }
+    // `search` and `globalSearch` are the same predicate under two names, and
+    // `applyFilters` applies each independently when both are set.
+    for (const term of [filters?.search, filters?.globalSearch]) {
+      if (!term) continue
+      const pattern = likeContains(term)
+      conditions.push(
+        sql`(${col('item_number')} ILIKE ${pattern} ESCAPE '\\' OR ${col('name')} ILIKE ${pattern} ESCAPE '\\')`,
+      )
+    }
+
+    return conditions
+  }
+
+  private static canResolveAtCommitInSql(filters?: ItemFilters): boolean {
+    if (filters?.sortField) return false
+    if (
+      filters?.columnFilters &&
+      Object.keys(filters.columnFilters).length > 0
+    ) {
+      return false
+    }
+    return true
+  }
+
+  /**
+   * The item ids visible at `commitId`, filtered, counted and paginated by the
+   * database.
+   *
+   * A chain of CTEs:
+   *
+   * - `commit_ancestors` walks parents and merge parents back from the target.
+   * - `ancestors` collapses that to one row per commit at its shallowest
+   *   depth — the same de-duplication `getCommitAncestors` does.
+   * - `resolved` takes, per master, the version whose commit sits earliest in
+   *   ancestry order. The `DISTINCT ON` ORDER BY is exactly what
+   *   `compareByAncestryPosition` implements in Node, tiebreakers included:
+   *   `created_at DESC, id` for two versions of one master in one commit.
+   * - the outer query drops masters whose winning version is a delete, applies
+   *   the filters, and takes the page.
+   *
+   * `COUNT(*) OVER ()` carries the pre-pagination total on every row, so the
+   * count costs no second pass.
+   *
+   * Ordering is `item_number, id` rather than nothing. The in-memory path
+   * returns these rows unordered — it iterates a map built from an unordered
+   * `SELECT` — so its `limit`/`offset` slice a set the database is free to
+   * return in a different order each call. Paginating that is broken however
+   * it is implemented; this path orders deterministically instead.
+   */
+  private static async resolveItemIdsAtCommit(
+    commitId: string,
+    filters?: ItemFilters,
+  ): Promise<{ ids: Array<string>; total: number }> {
+    const conditions = [
+      sql`r.change_type <> 'deleted'`,
+      ...this.itemFilterConditions(filters, 'r'),
+    ]
+
+    const limit = filters?.limit
+    const offset = filters?.offset ?? 0
+
+    const rows = await db.execute(sql`
+      WITH RECURSIVE commit_ancestors AS (
+        SELECT c.id, c.parent_id, c.merge_parent_id, c.created_at, 0 AS depth
+        FROM commits c WHERE c.id = ${commitId}
+        UNION ALL
+        SELECT c.id, c.parent_id, c.merge_parent_id, c.created_at, ca.depth + 1
+        FROM commits c
+        INNER JOIN commit_ancestors ca
+          ON c.id = ca.parent_id OR c.id = ca.merge_parent_id
+      ),
+      ancestors AS (
+        SELECT DISTINCT ON (id) id, depth, created_at
+        FROM commit_ancestors
+        ORDER BY id, depth
+      ),
+      resolved AS (
+        SELECT DISTINCT ON (i.master_id)
+               i.id,
+               i.item_number,
+               i.name,
+               i.state,
+               i.item_type,
+               iv.change_type
+        FROM item_versions iv
+        INNER JOIN items i ON i.id = iv.item_id
+        INNER JOIN ancestors a ON a.id = iv.commit_id
+        INNER JOIN commits target ON target.id = ${commitId}
+        WHERE i.design_id = target.design_id
+          AND i.is_deleted IS NOT TRUE
+        ORDER BY i.master_id,
+                 a.depth ASC, a.created_at DESC, a.id ASC,
+                 i.created_at DESC, i.id ASC
+      )
+      , filtered AS (
+        SELECT r.id, r.item_number
+        FROM resolved r
+        WHERE ${sql.join(conditions, sql` AND `)}
+      )
+      SELECT counted.total, page.id
+      FROM (SELECT COUNT(*) AS total FROM filtered) counted
+      LEFT JOIN (
+        SELECT id, item_number FROM filtered
+        ORDER BY item_number ASC, id ASC
+        ${limit === undefined ? sql`` : sql`LIMIT ${limit}`}
+        OFFSET ${offset}
+      ) page ON TRUE
+      ORDER BY page.item_number ASC NULLS LAST, page.id ASC
+    `)
+
+    // The count is joined rather than taken as `COUNT(*) OVER ()` on the page.
+    // An offset past the end returns no page rows, and a window function then
+    // has nothing to report the total on — which is how the in-memory path
+    // reports it, since it counts before slicing. This shape always yields at
+    // least the count row, whose `id` is null.
+    const page = rows as unknown as Array<{
+      id: string | null
+      total: number | string
+    }>
+    const first = page[0]
+    if (!first) return { ids: [], total: 0 }
+
+    return {
+      ids: page.map((row) => row.id).filter((id): id is string => id !== null),
+      total: Number(first.total),
+    }
+  }
+
+  /**
+   * Get all items at a specific commit, resolved in Node.
+   *
+   * The fallback for filters `resolveItemIdsAtCommit` does not express, and
+   * the reference the equivalence tests compare the SQL path against.
+   */
+  private static async getItemsAtCommitInMemory(
     commitId: string,
     filters?: ItemFilters,
   ): Promise<PaginatedItemsResult> {
@@ -529,7 +933,7 @@ export class VersionResolver {
       itemsByMaster.set(item.masterId, list)
     }
 
-    // Group itemVersions by masterId, sorted by createdAt desc
+    // Group itemVersions by masterId, resolved in ancestry order
     const versionsByMaster = new Map<
       string,
       Array<{
@@ -542,12 +946,18 @@ export class VersionResolver {
       list.push(iv)
       versionsByMaster.set(iv.item.masterId, list)
     }
-    // Sort each list by item.createdAt descending
+    // Sort each list by commit-ancestry position — the order
+    // walkCommitHistory resolves in, so the grid and the detail page cannot
+    // disagree. This used to sort by item.createdAt, which served the wrong
+    // row after an in-place promotion: the promotion keeps the working
+    // copy's old createdAt while its commit moves ahead, so another ECO's
+    // earlier release out-sorted it here while walkCommitHistory correctly
+    // served the promotion.
+    const commitPositionMap = new Map<string, number>()
+    commitAncestors.forEach((c, i) => commitPositionMap.set(c.id, i))
     for (const [, list] of versionsByMaster) {
-      list.sort(
-        (a, b) =>
-          new Date(b.item.createdAt).getTime() -
-          new Date(a.item.createdAt).getTime(),
+      list.sort((a, b) =>
+        this.compareByAncestryPosition(a, b, commitPositionMap),
       )
     }
 
@@ -643,12 +1053,11 @@ export class VersionResolver {
         ),
       )
 
-    // Sort by commit ancestry position (most recent first) instead of timestamp
-    itemVersionsWithCommits.sort((a, b) => {
-      const posA = commitPositionMap.get(a.itemVersion.commitId) ?? Infinity
-      const posB = commitPositionMap.get(b.itemVersion.commitId) ?? Infinity
-      return posA - posB
-    })
+    // Sort by commit ancestry position (most recent first) instead of
+    // timestamp — shared with getItemsAtCommit so the two resolvers agree.
+    itemVersionsWithCommits.sort((a, b) =>
+      this.compareByAncestryPosition(a, b, commitPositionMap),
+    )
 
     // Find the most recent version that was committed in our history
     for (const iv of itemVersionsWithCommits) {
@@ -666,24 +1075,69 @@ export class VersionResolver {
   }
 
   /**
-   * Get all ancestor commits of a given commit (including itself)
-   * Uses a recursive CTE for efficient single-query traversal
+   * Ancestry-position order for item versions: the version whose commit sits
+   * nearest the target commit resolves first. Versions from commits outside
+   * the walked history sort last (Infinity) and are skipped by the callers'
+   * membership check either way.
+   *
+   * The tiebreakers matter: itemVersions' unique(commitId, itemId) does not
+   * prevent two *different* item rows of one master landing in one commit,
+   * and that pathological shape used to resolve in heap order. Newest
+   * item.createdAt wins there, then id — a deliberate (and now documented)
+   * choice rather than an accident of storage.
+   */
+  private static compareByAncestryPosition(
+    a: { itemVersion: { commitId: string }; item: PositionSortableItem },
+    b: { itemVersion: { commitId: string }; item: PositionSortableItem },
+    commitPositionMap: Map<string, number>,
+  ): number {
+    const posA = commitPositionMap.get(a.itemVersion.commitId) ?? Infinity
+    const posB = commitPositionMap.get(b.itemVersion.commitId) ?? Infinity
+    if (posA !== posB) return posA - posB
+    const createdA = new Date(a.item.createdAt).getTime()
+    const createdB = new Date(b.item.createdAt).getTime()
+    if (createdA !== createdB) return createdB - createdA
+    return a.item.id < b.item.id ? -1 : a.item.id > b.item.id ? 1 : 0
+  }
+
+  /**
+   * Every ancestor commit of `commitId` (including itself), as
+   * `{ id, depth }` in deterministic order: depth ascending — position 0 is
+   * always the target commit — then created_at descending, then id. Two
+   * walks of the same graph enumerate identically, so every consumer that
+   * builds a position map from this order gets a stable one; the previous
+   * version had no ORDER BY at all, which left resolution order to the heap.
+   *
+   * UNION ALL rather than UNION: commit DAGs here are acyclic and shallow
+   * (per-design linear history plus ECO merge edges), so a diamond ancestor
+   * is revisited at most once per extra path, and the DISTINCT ON collapse
+   * keeps exactly one row per commit at its shallowest depth. Raw
+   * `db.execute` rows are snake_case — the old signature cast them to full
+   * camelCase commit rows, a lie both callers survived only by reading `.id`;
+   * only the columns actually consumed are selected now.
    */
   private static async getCommitAncestors(
     commitId: string,
-  ): Promise<Array<typeof commits.$inferSelect>> {
-    // Use recursive CTE to get all ancestors in one query
+  ): Promise<Array<{ id: string; depth: number }>> {
     const result = await db.execute(sql`
       WITH RECURSIVE commit_ancestors AS (
-        SELECT c.* FROM commits c WHERE c.id = ${commitId}
-        UNION
-        SELECT c.* FROM commits c
-        INNER JOIN commit_ancestors ca ON c.id = ca.parent_id OR c.id = ca.merge_parent_id
+        SELECT c.id, c.parent_id, c.merge_parent_id, c.created_at, 0 AS depth
+        FROM commits c WHERE c.id = ${commitId}
+        UNION ALL
+        SELECT c.id, c.parent_id, c.merge_parent_id, c.created_at, ca.depth + 1
+        FROM commits c
+        INNER JOIN commit_ancestors ca
+          ON c.id = ca.parent_id OR c.id = ca.merge_parent_id
       )
-      SELECT * FROM commit_ancestors
+      SELECT id, depth FROM (
+        SELECT DISTINCT ON (id) id, depth, created_at
+        FROM commit_ancestors
+        ORDER BY id, depth
+      ) deduped
+      ORDER BY depth ASC, created_at DESC, id
     `)
 
-    return result as unknown as Array<typeof commits.$inferSelect>
+    return result as unknown as Array<{ id: string; depth: number }>
   }
 
   /**

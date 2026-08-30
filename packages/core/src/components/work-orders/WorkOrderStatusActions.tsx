@@ -14,10 +14,13 @@ interface WorkOrderStatusActionsProps {
 /**
  * Work-order state actions: whatever transitions the WO lifecycle offers from
  * the current state, straight from configuration. Each runs through the
- * work-order status endpoint rather than the generic item transition, because
- * a work order's state change carries extra semantics — the traveler gates
- * completion and completedAt is stamped — that WorkOrderService.updateStatus
- * owns.
+ * work-order status endpoint rather than the generic item transition, so the
+ * response carries the refreshed work order.
+ *
+ * Not a correctness choice any more: the traveler gate and the completedAt
+ * stamp moved onto the shared transition path, so the generic
+ * endpoint would give the same answer. Picking the right URL is no longer
+ * what holds the invariant.
  */
 export function WorkOrderStatusActions({
   workOrderId,

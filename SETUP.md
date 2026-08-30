@@ -202,7 +202,6 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | `DATABASE_URL`          | Yes      | —                       | PostgreSQL connection string        |
 | `BASE_URL`              | No       | `http://localhost:3000` | Application base URL                |
 | `NODE_ENV`              | No       | `development`           | Environment mode                    |
-| `FILE_STORAGE_PATH`     | No       | `./storage/files`       | Local file storage path             |
 | `VAULT_ROOT`            | No       | `./vault`               | Vault root directory                |
 | `VAULT_TYPE`            | No       | `local`                 | Storage backend (`local` or `s3`)   |
 | `RABBITMQ_URL`          | No       | —                       | RabbitMQ connection URL             |
@@ -222,9 +221,10 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ## Database Management
 
 ```bash
-npm run db:push       # Push schema directly (the pre-1.0 path everywhere: dev, CI, compose)
-npm run db:generate   # Mint migration SQL (unused pre-1.0 — no committed migrations)
-npm run db:migrate    # Run pending migrations (none exist pre-1.0)
+npm run db:push       # Diff-apply schema directly (dev/CI/demo only — NOT the upgrade path)
+npm run db:generate   # Mint migration SQL for a schema change
+npm run db:migrate    # Apply committed migrations (the upgrade path for released installs)
+npm run db:baseline   # One-time stamp for a pre-v0.5 push-created database
 npm run db:studio     # Open Drizzle Studio GUI
 npm run db:seed       # Minimal seed (admin, roles, program, standard library)
 npm run db:reset      # Truncate all tables

@@ -2,11 +2,13 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import cascadiaLogo from '/cascadia-plm-logo-icon.svg'
 import { ThemeToggle } from './ThemeToggle'
 import { Sidebar } from './Sidebar'
 import type { UserInfo } from './types'
+import { authSessionQuery } from '@/lib/query'
+import { apiFetch } from '@/lib/api/client'
 import { useSidebar } from '@/lib/sidebar-context'
 import { useChatPanel } from '@/lib/ai/chat-context'
 import { ProfileDropdown } from '@/components/ProfileDropdown'
@@ -21,29 +23,27 @@ export function Header() {
     collapsedWidth: sidebarCollapsedWidth,
   } = useSidebar()
   const { isOpen: chatPanelOpen, width: chatPanelWidth } = useChatPanel()
-  const [user, setUser] = useState<UserInfo | null>(null)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
 
-  // Check authentication status on mount
-  useEffect(() => {
-    fetch('/api/v1/auth/session')
-      .then((res) => res.json())
-      .then((response) => {
-        if (response.data?.authenticated) {
-          setUser(response.data.user)
-        }
-      })
-      .catch(() => {
-        // Ignore errors
-      })
-  }, [])
+  // The root route's beforeLoad already primed this, so the header reads the
+  // cache rather than firing its own /auth/session on every mount.
+  const { data: session } = useQuery(authSessionQuery())
+  const sessionUser = session?.authenticated ? session.user : undefined
+  const user: UserInfo | null = sessionUser
+    ? {
+        id: sessionUser.id,
+        email: sessionUser.email,
+        ...(sessionUser.name !== null ? { name: sessionUser.name } : {}),
+      }
+    : null
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/v1/auth/logout', { method: 'POST' })
-      setUser(null)
+      await apiFetch('/api/v1/auth/logout', { method: 'POST' })
+      await queryClient.invalidateQueries({ queryKey: ['auth'] })
       navigate({ to: '/login' })
     } catch {
       // Silently fail - user will see they're still logged in

@@ -16,6 +16,7 @@ import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
 import { ProgramService } from '@/lib/services/ProgramService'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
+import { requireItemAccess } from '@/lib/auth/access'
 
 /**
  * Helper to resolve a design identifier to a UUID.
@@ -265,6 +266,14 @@ export const getItemDetailsHandler = withPermissionAndAudit(
 
     if (input.id) {
       item = await ItemService.findById(input.id)
+      // The by-number branch below has been design-scoped since it was
+      // written; the by-id branch was not, so an id was enough to read any
+      // program's item through the chatbot or MCP. The gate runs after the
+      // read rather than replacing it: `findById` applies the not-deleted
+      // filter and merges type-specific fields, neither of which
+      // `requireItemAccess` does, and the not-found message below stays the
+      // model-facing one it has always been.
+      if (item) await requireItemAccess(context.userId, item.id)
     } else if (input.itemNumber) {
       const matches = await ItemService.findMatchesByNumber(
         input.itemNumber,
@@ -272,9 +281,9 @@ export const getItemDetailsHandler = withPermissionAndAudit(
         {
           // Accepts a UUID or a design code, like search_items.
           designId: await resolveDesignId(input.designId),
-          // Scope by design the same way search_items does, so a number
-          // lookup cannot reach — or disclose — an inaccessible design.
-          designIds: await AccessControlService.getAccessibleDesignIds(
+          // Scope the same way search_items does, so a number lookup cannot
+          // reach — or disclose — anything outside the caller's programs.
+          accessScope: await AccessControlService.getAccessScope(
             context.userId,
           ),
         },
@@ -376,7 +385,7 @@ interface BomChild {
 export const getBomHandler = withPermissionAndAudit(
   'get_bom',
   { resource: 'parts', action: 'read' },
-  async (input: GetBomInput, _context: ToolContext) => {
+  async (input: GetBomInput, context: ToolContext) => {
     // Apply defaults
     const depth = input.depth ?? 1
 
@@ -385,6 +394,10 @@ export const getBomHandler = withPermissionAndAudit(
     if (!parentItem) {
       throw new Error(`Item with ID ${input.itemId} not found`)
     }
+    // Gate the root. Traversal results below stay gated at the root only,
+    // which is REST parity: the relationship-graph routes draw the boundary
+    // the same way.
+    await requireItemAccess(context.userId, parentItem.id)
 
     if (parentItem.itemType !== 'Part') {
       throw new Error(
@@ -474,7 +487,7 @@ export const getBomHandler = withPermissionAndAudit(
 export const getWhereUsedHandler = withPermissionAndAudit(
   'get_where_used',
   { resource: 'parts', action: 'read' },
-  async (input: GetWhereUsedInput, _context: ToolContext) => {
+  async (input: GetWhereUsedInput, context: ToolContext) => {
     // Apply defaults
     const maxDepth = input.maxDepth ?? 15
 
@@ -483,6 +496,8 @@ export const getWhereUsedHandler = withPermissionAndAudit(
     if (!targetItem) {
       throw new Error(`Item with ID ${input.itemId} not found`)
     }
+    // Root-gated, as in get_bom: the parents walked up to are not re-checked.
+    await requireItemAccess(context.userId, targetItem.id)
 
     // Use existing ImpactAssessmentService.findWhereUsed()
     const whereUsed = await ImpactAssessmentService.findWhereUsed(
@@ -527,7 +542,7 @@ interface Risk {
 export const analyzeChangeImpactHandler = withPermissionAndAudit(
   'analyze_change_impact',
   { resource: 'parts', action: 'read' },
-  async (input: AnalyzeChangeImpactInput, _context: ToolContext) => {
+  async (input: AnalyzeChangeImpactInput, context: ToolContext) => {
     // Apply defaults
     const includeDocuments = input.includeDocuments ?? true
     const includeRelatedChanges = input.includeRelatedChanges ?? true
@@ -537,6 +552,8 @@ export const analyzeChangeImpactHandler = withPermissionAndAudit(
     if (!item) {
       throw new Error(`Item with ID ${input.itemId} not found`)
     }
+    // Root-gated, as in get_bom.
+    await requireItemAccess(context.userId, item.id)
 
     // Get where-used data
     const whereUsed = await ImpactAssessmentService.findWhereUsed(

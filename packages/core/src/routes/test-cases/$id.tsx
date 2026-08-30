@@ -5,16 +5,22 @@ import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 import type { TestCase } from '@/lib/items/types/testcase'
+import type { TestCaseDetailTab } from '@/components/tests/TestCaseDetail'
 import { TestCaseDetail } from '@/components/tests'
+import { TEST_CASE_DETAIL_TABS } from '@/components/tests/TestCaseDetail'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { entityQuery, useInvalidateResources } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
 
+// Version-context params + tab. useVersionContext reads and writes
+// branch/tag/commit through the URL; validateSearch strips anything the
+// schema does not name, so without these a context switch (or a
+// revise-checkout navigation) silently lands back on main.
 const testCaseDetailSearchSchema = z.object({
-  tab: z
-    .enum(['details', 'executions', 'relationships', 'history'])
-    .optional()
-    .default('details'),
+  branch: z.string().uuid().optional(),
+  tag: z.string().uuid().optional(),
+  commit: z.string().uuid().optional(),
+  tab: z.enum(TEST_CASE_DETAIL_TABS).optional().default('details'),
 })
 
 export const Route = createFileRoute('/test-cases/$id')({
@@ -71,12 +77,13 @@ function TestCaseDetailPage() {
     navigate({ to: '/test-cases' })
   }
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab: TestCaseDetailTab) => {
     router.navigate({
       to: '/test-cases/$id',
       params: { id: testCase.id ?? '' },
       search: {
-        tab: tab as 'details' | 'executions' | 'relationships' | 'history',
+        ...search,
+        tab,
       },
       replace: true,
     })

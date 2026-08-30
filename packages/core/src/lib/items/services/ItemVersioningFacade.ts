@@ -257,15 +257,25 @@ export class ItemVersioningFacade {
       branchId,
       commitMessage,
       userId,
-    )
-
-    // Insert type-specific data
-    await ItemService.insertTypeSpecificData(
-      type,
-      result.item.id,
-      validatedData,
-      undefined,
-      { userId },
+      // The type-specific row is written inside the create's own transaction.
+      // Running it after — on the pool, as this did — meant a handler that
+      // throws (a `parentRequirementId` naming nothing, an `outputPartId`
+      // that is not a Part) left the base row, its branch tracking, the
+      // commit and the change order's scope row all committed with no
+      // extension row behind them, which `findById` then resolves silently as
+      // a fieldless item. `ItemService.create` has always done it this way on
+      // the main path; only the branch path split.
+      async (tx, itemId) => {
+        await ItemService.insertTypeSpecificData(
+          type,
+          itemId,
+          validatedData,
+          tx,
+          {
+            userId,
+          },
+        )
+      },
     )
 
     // Fetch complete item with type-specific data

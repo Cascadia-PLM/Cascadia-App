@@ -47,38 +47,41 @@ describe('ImpactAssessmentService where-used branch context', () => {
   beforeAll(async () => {
     await testDb.setup()
     await seedStandardPartLifecycle(testDb.db)
-    user = await insertTestUser(testDb.db, {
-      email: `impact-${Date.now()}@test.local`,
-    })
-
-    const [program] = await testDb.db
-      .insert(programs)
-      .values({
-        code: `PGM-IMP-${Date.now()}`,
-        name: 'Impact Program',
-        createdBy: user.id,
-      })
-      .returning()
-
-    const design = await DesignService.create(
-      {
-        code: `DSN-IMP-${Date.now()}`,
-        name: 'Impact Design',
-        programId: program!.id,
-        designType: 'Engineering',
-      },
-      user.id,
-    )
-    designId = design.id!
   })
 
   afterAll(async () => {
     await testDb.teardown()
   })
 
+  // The user/program/design fixtures are created INSIDE the gate transaction so
+  // they roll back with it. Anything written from beforeAll autocommits on the
+  // pool and leaks permanently — nothing truncates the test database.
   beforeEach(async () => {
     await testDb.beginTransaction()
-    uniquePrefix = `IMP${Date.now()}`
+    uniquePrefix = `IMP${Date.now()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+    user = await insertTestUser(testDb.db)
+
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          code: `PGM-${uniquePrefix}`,
+          name: 'Impact Program',
+          createdBy: user.id,
+        })
+        .returning(),
+    )
+
+    const design = await DesignService.create(
+      {
+        code: `DSN-${uniquePrefix}`,
+        name: 'Impact Design',
+        programId: program.id,
+        designType: 'Engineering',
+      },
+      user.id,
+    )
+    designId = design.id!
   })
 
   afterEach(async () => {

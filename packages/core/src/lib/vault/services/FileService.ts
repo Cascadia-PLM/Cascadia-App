@@ -23,12 +23,16 @@ import { BranchService } from '../../services/BranchService'
 import { ItemService } from '../../items/services/ItemService'
 import { THUMBNAIL_FILE_CATEGORY } from '../file-categories'
 import type { CategorySource, FileCategory } from '../file-categories'
+import type { SQL } from 'drizzle-orm'
 import type { TransactionClient } from '../../db'
 import type { FileUploadMetadata, VaultStorage } from '../storage'
+import type { AccessScope } from '@/lib/db/filters'
 import { vaultLogger } from '@/lib/logging/logger'
+import { accessScopeCondition, notDeleted } from '@/lib/db/filters'
 import { takeFirst } from '@/lib/db/take-first'
 import {
   AlreadyExistsError,
+  ConflictError,
   FileTooLargeError,
   FileTypeNotAllowedError,
   InternalError,
@@ -841,50 +845,258 @@ export class FileService {
   }
 
   /**
-   * Check out a file (lock for editing)
+   * Name the holder of a file's edit lock, and refuse.
+   *
+   * Every way of losing the lock ends here, so what a loser is told does not
+   * depend on which way they lost. The holder is named as a person rather
+   * than as the raw user id the message used to carry: `getFileLockStatus`
+   * already discloses that person's name and email to anyone who can see the
+   * file, so this reveals nothing new and reads like an answer.
    */
-  static async checkOutFile(fileId: string, userId: string): Promise<void> {
-    const file = await this.getFileMetadata(fileId)
+  private static async refuseLockedByAnother(
+    fileId: string,
+    holderId: string | null,
+  ): Promise<never> {
+    const holder = holderId
+      ? await db
+          .select({ name: users.name, email: users.email })
+          .from(users)
+          .where(eq(users.id, holderId))
+          .limit(1)
+      : []
 
-    if (!file) {
-      throw new NotFoundError('File', fileId)
-    }
+    throw new ResourceLockedError(
+      'File',
+      `already checked out by ${holder.at(0)?.name || holder.at(0)?.email || 'another user'}`,
+      { operation: 'FileService.checkOutFile', fileId },
+    )
+  }
 
-    if (file.deletedAt) {
-      throw new ValidationError('Cannot check out a deleted file')
-    }
-
-    if (file.isCheckedOut) {
-      // Auto-release expired locks
-      if (FileService.isLockExpired(file.checkedOutAt)) {
-        await FileService.forceReleaseLock(fileId, userId, 'auto-expired')
-      } else {
-        throw new ResourceLockedError(
-          'File',
-          `Already checked out by user ${file.checkedOutBy}`,
-        )
-      }
-    }
-
-    // Check out file
-    await db
+  /**
+   * Take the edit lock on a file row that is free and not deleted.
+   *
+   * `is_checked_out = false` and `deleted_at IS NULL` ride in the UPDATE's own
+   * WHERE, so the row's state at write time decides the winner. An empty
+   * `returning()` is an ordinary outcome — somebody else got there — which is
+   * why this answers `false` rather than throwing or using `takeFirst`.
+   */
+  private static async claimFileLock(
+    fileId: string,
+    userId: string,
+  ): Promise<boolean> {
+    const claimed = await db
       .update(vaultFiles)
       .set({
         isCheckedOut: true,
         checkedOutBy: userId,
         checkedOutAt: new Date(),
       })
-      .where(eq(vaultFiles.id, fileId))
+      .where(
+        and(
+          eq(vaultFiles.id, fileId),
+          eq(vaultFiles.isCheckedOut, false),
+          isNull(vaultFiles.deletedAt),
+        ),
+      )
+      .returning({ id: vaultFiles.id })
 
-    // Log checkout action
+    return claimed.at(0) !== undefined
+  }
+
+  /**
+   * Unwind one file's checkout, but only while it is still expired.
+   *
+   * `forceReleaseLock` is the admin unlock: it clears whatever is there, which
+   * is right for a person pressing the button and wrong on this path. Between
+   * reading a stale lock and releasing it, another caller can claim the row
+   * fresh, and an unconditional clear would take that brand-new lock away —
+   * reintroducing, one layer down, the very overwrite this method exists to
+   * prevent. The age predicate is `cleanupExpiredCheckouts`' own, narrowed to
+   * a single row: a lock claimed since the read carries a `checked_out_at` of
+   * now, so it cannot match, and the release becomes a no-op instead of theft.
+   *
+   * The history entry matches what `forceReleaseLock(…, 'auto-expired')`
+   * wrote, so the audit trail for an auto-expiry is unchanged.
+   */
+  private static async releaseExpiredLock(
+    fileId: string,
+    releasedBy: string,
+  ): Promise<boolean> {
+    const cutoff = new Date(
+      Date.now() - MAX_FILE_CHECKOUT_HOURS * 60 * 60 * 1000,
+    )
+
+    const released = await db
+      .update(vaultFiles)
+      .set({
+        isCheckedOut: false,
+        checkedOutBy: null,
+        checkedOutAt: null,
+      })
+      .where(
+        and(
+          eq(vaultFiles.id, fileId),
+          eq(vaultFiles.isCheckedOut, true),
+          lt(vaultFiles.checkedOutAt, cutoff),
+        ),
+      )
+      .returning({ id: vaultFiles.id })
+
+    if (!released.at(0)) return false
+
     await this.logAction({
       fileId,
-      action: 'checkout',
-      performedBy: userId,
-      details: {
-        originalFileName: file.originalFileName,
-      },
+      action: 'auto-expired',
+      performedBy: releasedBy,
+      details: { reason: 'auto-expired' },
     })
+
+    return true
+  }
+
+  /**
+   * Check out a file (lock for editing)
+   *
+   * The claim is a compare-and-set, not a decision taken from a SELECT moments
+   * earlier. It used to be the latter: read the row, conclude in JavaScript
+   * that nobody held it, then `UPDATE … WHERE id = $1` unconditionally. Two
+   * callers reaching that read together both concluded the file was free and
+   * both wrote, and the second silently overwrote the first — two people
+   * holding the same exclusive lock on a binary CAD file, which is precisely
+   * the lost work check-out exists to prevent. Nothing surfaced it: the loser
+   * got a 200 and a lock they did not have.
+   *
+   * Same shape as `CheckoutService.claimExistingCheckout` for item checkouts,
+   * down to the two passes. The second pass exists for two states only — an
+   * expired lock this call has just unwound, and a lock released between the
+   * first claim and the read that followed it. Spinning against live
+   * contention would turn a 423 into a hang.
+   */
+  static async checkOutFile(fileId: string, userId: string): Promise<void> {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const file = await this.getFileMetadata(fileId)
+
+      if (!file) {
+        throw new NotFoundError('File', fileId)
+      }
+
+      if (file.deletedAt) {
+        throw new ValidationError('Cannot check out a deleted file')
+      }
+
+      if (file.isCheckedOut) {
+        // Only an expired lock may be taken off its holder.
+        if (!FileService.isLockExpired(file.checkedOutAt)) {
+          await FileService.refuseLockedByAnother(fileId, file.checkedOutBy)
+        }
+        if (!(await FileService.releaseExpiredLock(fileId, userId))) {
+          // Somebody else unwound it first, or re-took it fresh. Either way
+          // the read above is stale — go round and decide against the truth.
+          continue
+        }
+      }
+
+      if (await FileService.claimFileLock(fileId, userId)) {
+        // Logged only on a real claim: a checkout entry for a caller who
+        // never held the lock is a lie in the file's history.
+        await this.logAction({
+          fileId,
+          action: 'checkout',
+          performedBy: userId,
+          details: {
+            originalFileName: file.originalFileName,
+          },
+        })
+        return
+      }
+    }
+
+    // Two passes and the lock is still not ours. Name whoever holds it now,
+    // or say the row was contended throughout. What must never happen is
+    // returning as though the checkout had succeeded.
+    const settled = await this.getFileMetadata(fileId)
+    if (settled?.isCheckedOut) {
+      await FileService.refuseLockedByAnother(fileId, settled.checkedOutBy)
+    }
+    throw new ResourceLockedError(
+      'File',
+      'contended by concurrent checkouts; try again',
+      { operation: 'FileService.checkOutFile', fileId },
+    )
+  }
+
+  /**
+   * Retire the current head of a file's version chain, inside the caller's
+   * transaction, and say whether this caller is the one who retired it.
+   *
+   * The same compare-and-set `checkOutFile` uses for the edit lock, applied to
+   * the version chain: `is_latest_version = true` rides the UPDATE's own WHERE
+   * and the write is read back with `.returning()`, so the row's state at write
+   * time decides who supersedes it. An empty result is an ordinary outcome —
+   * somebody else's new version already took the head — which is why this
+   * answers `false` rather than throwing. Callers pass whichever of their own
+   * read-time preconditions must still hold at write time as `guards`; a
+   * precondition checked only by an earlier SELECT is not a precondition.
+   *
+   * The lock columns are cleared alongside the flags because a superseded row
+   * is nobody's to edit. `checkInFile` used to leave `is_checked_out = true`
+   * and its holder on the row it demoted — only the no-new-data branch cleared
+   * them — so every version created by a check-in left behind a frozen row
+   * still advertising a checkout that could never be checked in. That leaked
+   * into `getFileLockStatus`, into the admin unlock list, and into
+   * `cleanupExpiredCheckouts`, which dutifully "expired" locks on history.
+   */
+  private static async demoteLatestVersion(
+    tx: TransactionClient,
+    fileId: string,
+    ...guards: Array<SQL>
+  ): Promise<boolean> {
+    const demoted = await tx
+      .update(vaultFiles)
+      .set({
+        isLatestVersion: false,
+        // The thumbnail designation moves to the new version, so it must not
+        // linger here and give the item two candidates.
+        isItemThumbnail: false,
+        isCheckedOut: false,
+        checkedOutBy: null,
+        checkedOutAt: null,
+      })
+      .where(
+        and(
+          eq(vaultFiles.id, fileId),
+          eq(vaultFiles.isLatestVersion, true),
+          ...guards,
+        ),
+      )
+      .returning({ id: vaultFiles.id })
+
+    return demoted.at(0) !== undefined
+  }
+
+  /**
+   * Drop a blob written for a version row that was never inserted.
+   *
+   * Both version-creating paths store the bytes *before* opening their
+   * transaction, because the reverse order is worse: a demote that commits and
+   * a store that then fails leaves the file with no latest version at all,
+   * which is unrecoverable without hand-editing the table. Storing first makes
+   * the failure mode an unreferenced blob instead, and nothing reaches a blob
+   * except through the row that names it — so an orphan is invisible, not
+   * corrupting. This is best effort for that reason: it tidies up when it can,
+   * and a failure here is logged rather than raised over the conflict the
+   * caller is already reporting.
+   */
+  private static async discardOrphanedBlob(storagePath: string): Promise<void> {
+    try {
+      const storage = await this.getStorage()
+      await storage.delete(storagePath)
+    } catch (error) {
+      vaultLogger.warn(
+        { err: error, storagePath },
+        'Failed to discard the blob of a superseded version write',
+      )
+    }
   }
 
   /**
@@ -927,13 +1139,6 @@ export class FileService {
         throw new NotFoundError('Item', file.itemId)
       }
 
-      // Mark current version as not latest. The thumbnail designation moves to
-      // the new version below, so it must not linger on the superseded row.
-      await db
-        .update(vaultFiles)
-        .set({ isLatestVersion: false, isItemThumbnail: false })
-        .where(eq(vaultFiles.id, fileId))
-
       // Create new version
       const newVersionNumber = file.fileVersion + 1
       const newFileId = crypto.randomUUID()
@@ -947,7 +1152,9 @@ export class FileService {
         sanitized,
       )
 
-      // Store new version
+      // Store new version first: the bytes are the side effect that cannot be
+      // rolled back, so they go outside the transaction, and the path is keyed
+      // on a fresh id that nothing else can collide with.
       const storage = await this.getStorage()
       await storage.store(storagePath, newFileData)
 
@@ -957,49 +1164,75 @@ export class FileService {
         newFileData,
       )
 
-      // Insert new version record (preserve branchId from original file)
-      const newRecord = takeFirst(
-        await db
-          .insert(vaultFiles)
-          .values({
-            id: newFileId,
-            itemId: file.itemId,
-            branchId: file.branchId,
-            fileName: sanitized,
-            originalFileName: metadata.originalFileName,
-            fileSize: newFileData.length,
-            mimeType: metadata.mimeType,
-            fileHash,
-            storageType: (process.env.VAULT_TYPE as string) || 'local',
-            storagePath,
-            fileVersion: newVersionNumber,
-            isLatestVersion: true,
-            isCheckedOut: false,
-            uploadedBy: userId,
-            metadata: { ...extractedMetadata, ...metadata },
-            // The category rides the version chain. A manual category is a
-            // person's answer about the file's role, which a new revision of
-            // the same file does not change; an auto category is re-detected,
-            // since the replacement may be a different kind of file entirely.
-            fileCategory:
-              file.categorySource === 'manual'
-                ? file.fileCategory
-                : detectFileCategory(
-                    metadata.originalFileName,
-                    metadata.mimeType,
-                  ),
-            categorySource: file.categorySource,
-            // Carry the thumbnail designation onto the new version, but only if
-            // the replacement is still a usable image
-            isItemThumbnail:
-              file.isItemThumbnail &&
-              isThumbnailableImage(
-                metadata.originalFileName,
-                metadata.mimeType,
-              ),
-          })
-          .returning(),
-      )
+      // Demote and insert as one unit. Two check-ins of the same file — a
+      // double-submitted upload is enough — each demoted the old row and each
+      // inserted a row claiming to be version N+1 and latest. Two heads of one
+      // chain is a state no reader models: `listItemFiles` shows the file
+      // twice, `listFileVersions` reports a duplicated version number, and
+      // which bytes an item's "current" drawing means depends on row order.
+      const newRecord = await db.transaction(async (tx) => {
+        // The ownership precondition read above rides into the WHERE with the
+        // chain-head predicate: the lock must still be ours at write time, not
+        // merely have been ours when we looked.
+        const won = await FileService.demoteLatestVersion(
+          tx,
+          fileId,
+          eq(vaultFiles.checkedOutBy, userId),
+        )
+        if (!won) return null
+
+        // Insert new version record (preserve branchId from original file)
+        return takeFirst(
+          await tx
+            .insert(vaultFiles)
+            .values({
+              id: newFileId,
+              itemId: file.itemId,
+              branchId: file.branchId,
+              fileName: sanitized,
+              originalFileName: metadata.originalFileName,
+              fileSize: newFileData.length,
+              mimeType: metadata.mimeType,
+              fileHash,
+              storageType: (process.env.VAULT_TYPE as string) || 'local',
+              storagePath,
+              fileVersion: newVersionNumber,
+              isLatestVersion: true,
+              isCheckedOut: false,
+              uploadedBy: userId,
+              metadata: { ...extractedMetadata, ...metadata },
+              // The category rides the version chain. A manual category is a
+              // person's answer about the file's role, which a new revision of
+              // the same file does not change; an auto category is re-detected,
+              // since the replacement may be a different kind of file entirely.
+              fileCategory:
+                file.categorySource === 'manual'
+                  ? file.fileCategory
+                  : detectFileCategory(
+                      metadata.originalFileName,
+                      metadata.mimeType,
+                    ),
+              categorySource: file.categorySource,
+              // Carry the thumbnail designation onto the new version, but only if
+              // the replacement is still a usable image
+              isItemThumbnail:
+                file.isItemThumbnail &&
+                isThumbnailableImage(
+                  metadata.originalFileName,
+                  metadata.mimeType,
+                ),
+            })
+            .returning(),
+        )
+      })
+
+      if (!newRecord) {
+        await FileService.discardOrphanedBlob(storagePath)
+        throw new ConflictError(
+          `File '${file.originalFileName}' was superseded or unlocked while this check-in was being written; check the file's current version before checking in again`,
+          { operation: 'FileService.checkInFile', fileId },
+        )
+      }
 
       newVersion = newRecord as FileRecord
     } else {
@@ -1044,6 +1277,19 @@ export class FileService {
    *
    * `action` is what lands in the file's history — 'watermark', 'sign', and so
    * on — so the trail says what the machine did, not a generic 'checkin'.
+   *
+   * All three refusals are re-checked in the demote's WHERE, so losing to a
+   * concurrent writer raises `ConflictError` (409) rather than producing a
+   * second chain head. `ConflictError` is the right class for the two callers
+   * of this method. `JobService.markFailed` does not consult an error
+   * allowlist — it re-queues *any* thrown error until `maxAttempts`, so the
+   * watermark job's retry does not depend on the class chosen here; the only
+   * allowlist in the tree, `isRetryableError`, governs the browser's fetch
+   * client, and 409 is deliberately absent from it because a superseded write
+   * must be re-read before it is re-attempted, never blindly replayed. PDF
+   * signing is a synchronous route, where 409 is what tells the caller their
+   * view of the file is stale — as distinct from the 423 this raises when a
+   * person holds the edit lock.
    */
   static async replaceContent(args: {
     fileId: string
@@ -1081,11 +1327,6 @@ export class FileService {
 
     if (!item) throw new NotFoundError('Item', file.itemId)
 
-    await db
-      .update(vaultFiles)
-      .set({ isLatestVersion: false, isItemThumbnail: false })
-      .where(eq(vaultFiles.id, fileId))
-
     const newVersionNumber = file.fileVersion + 1
     const newFileId = crypto.randomUUID()
     const fileHash = await generateFileHash(data)
@@ -1097,41 +1338,70 @@ export class FileService {
       file.fileName,
     )
 
+    // Bytes first, and deliberately so. This used to demote the current version
+    // and only then store the new one, which meant a storage failure — a full
+    // disk, an S3 timeout — committed the demote and then threw, leaving the
+    // file with no latest version at all: invisible to `listItemFiles`,
+    // undownloadable, and recoverable only by hand-editing the table. Storing
+    // first turns that same failure into an unreferenced blob and no database
+    // change whatsoever.
     const storage = await this.getStorage()
     await storage.store(storagePath, data)
 
-    const newRecord = takeFirst(
-      await db
-        .insert(vaultFiles)
-        .values({
-          id: newFileId,
-          itemId: file.itemId,
-          branchId: file.branchId,
-          fileName: file.fileName,
-          originalFileName: file.originalFileName,
-          fileSize: data.length,
-          mimeType: file.mimeType,
-          fileHash,
-          storageType: (process.env.VAULT_TYPE as string) || 'local',
-          storagePath,
-          fileVersion: newVersionNumber,
-          isLatestVersion: true,
-          isCheckedOut: false,
-          uploadedBy: userId,
-          // The rewrite replaces bytes, not meaning: the file is the same
-          // document playing the same role, so its category and description
-          // ride across verbatim rather than being re-detected.
-          metadata: {
-            ...(file.metadata as Record<string, unknown> | null),
-            [action]: { at: new Date().toISOString(), ...args.details },
-          },
-          fileCategory: file.fileCategory,
-          categorySource: file.categorySource,
-          isItemThumbnail: file.isItemThumbnail,
-          thumbnailFileId: file.thumbnailFileId,
-        })
-        .returning(),
-    )
+    const newRecord = await db.transaction(async (tx) => {
+      // Every precondition read above rides into the WHERE, because a machine
+      // rewrite runs unattended and its read can be arbitrarily stale: the row
+      // must still be the chain head, still undeleted, and still unlocked at
+      // the moment the demote lands.
+      const won = await FileService.demoteLatestVersion(
+        tx,
+        fileId,
+        isNull(vaultFiles.deletedAt),
+        eq(vaultFiles.isCheckedOut, false),
+      )
+      if (!won) return null
+
+      return takeFirst(
+        await tx
+          .insert(vaultFiles)
+          .values({
+            id: newFileId,
+            itemId: file.itemId,
+            branchId: file.branchId,
+            fileName: file.fileName,
+            originalFileName: file.originalFileName,
+            fileSize: data.length,
+            mimeType: file.mimeType,
+            fileHash,
+            storageType: (process.env.VAULT_TYPE as string) || 'local',
+            storagePath,
+            fileVersion: newVersionNumber,
+            isLatestVersion: true,
+            isCheckedOut: false,
+            uploadedBy: userId,
+            // The rewrite replaces bytes, not meaning: the file is the same
+            // document playing the same role, so its category and description
+            // ride across verbatim rather than being re-detected.
+            metadata: {
+              ...(file.metadata as Record<string, unknown> | null),
+              [action]: { at: new Date().toISOString(), ...args.details },
+            },
+            fileCategory: file.fileCategory,
+            categorySource: file.categorySource,
+            isItemThumbnail: file.isItemThumbnail,
+            thumbnailFileId: file.thumbnailFileId,
+          })
+          .returning(),
+      )
+    })
+
+    if (!newRecord) {
+      await FileService.discardOrphanedBlob(storagePath)
+      throw new ConflictError(
+        `File '${file.originalFileName}' was superseded, deleted, or checked out while its ${action} was being written; re-read the current version and retry`,
+        { operation: 'FileService.replaceContent', fileId },
+      )
+    }
 
     await this.logAction({
       fileId: newFileId,
@@ -1762,17 +2032,32 @@ export class FileService {
   }
 
   /**
-   * List all files across all items with item and uploader context
-   * Used for the vault/files browser page
+   * List files across items with item and uploader context.
+   * Used for the vault/files browser page.
+   *
+   * `accessScope` is the caller's reach, from
+   * `AccessControlService.getAccessScope`. It draws the same boundary the
+   * by-id file routes draw through `requireFileAccess`: `null`/`undefined` is
+   * cross-program authority and leaves the query untouched, an empty scope
+   * admits only files on the types that scope on nothing. Omitting it lists
+   * the whole instance, so every caller reached from a request passes it —
+   * the parameter is optional only for internal callers that have already
+   * bounded their own scope.
    */
   static async listAllFiles(
     options: {
       limit?: number
       latestOnly?: boolean
       includeDeleted?: boolean
+      accessScope?: AccessScope | null
     } = {},
   ): Promise<Array<FileRecordWithItem>> {
-    const { limit = 100, latestOnly = true, includeDeleted = false } = options
+    const {
+      limit = 100,
+      latestOnly = true,
+      includeDeleted = false,
+      accessScope,
+    } = options
 
     const conditions = [
       // Exclude thumbnail files from normal listings
@@ -1791,7 +2076,14 @@ export class FileService {
     }
 
     // Also filter out files from deleted items
-    conditions.push(eq(items.isDeleted, false))
+    conditions.push(notDeleted())
+
+    // The query already innerJoins `items`, so the shared program boundary
+    // drops straight in. Null (cross-program authority) yields no condition.
+    const inScope = accessScopeCondition(accessScope)
+    if (inScope) {
+      conditions.push(inScope)
+    }
 
     const files = await db
       .select({

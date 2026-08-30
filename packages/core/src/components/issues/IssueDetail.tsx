@@ -127,6 +127,16 @@ const createEmptyIssue = (): Issue => ({
   modifiedAt: undefined,
 })
 
+/**
+ * The tabs this detail view renders. The route's search schema derives its
+ * `tab` enum from this list, so the URL contract and the rendered tabs
+ * cannot drift apart; the `onValueChange` cast below is the one seam where
+ * Radix's `string` meets it, and the triggers are rendered from the same
+ * source of truth.
+ */
+export const ISSUE_DETAIL_TABS = ['details', 'history'] as const
+export type IssueDetailTab = (typeof ISSUE_DETAIL_TABS)[number]
+
 interface IssueDetailProps {
   issue?: Issue
   /** Available designs for the design selector */
@@ -140,8 +150,8 @@ interface IssueDetailProps {
   /** Called after a lifecycle transition succeeds (reload the issue) */
   onTransitioned?: () => void
   isSubmitting?: boolean
-  activeTab?: 'details' | 'history'
-  onTabChange?: (tab: string) => void
+  activeTab?: IssueDetailTab
+  onTabChange?: (tab: IssueDetailTab) => void
 }
 
 export function IssueDetail({
@@ -366,7 +376,11 @@ export function IssueDetail({
         </div>
       )}
 
-      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => onTabChange?.(value as IssueDetailTab)}
+        className="w-full"
+      >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>

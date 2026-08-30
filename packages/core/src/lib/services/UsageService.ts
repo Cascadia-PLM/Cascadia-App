@@ -2,11 +2,12 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { randomUUID } from 'node:crypto'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '../db'
 import { notDeleted } from '../db/filters'
 import {
   documents,
+  itemRelationships,
   items,
   parts,
   requirements,
@@ -14,7 +15,10 @@ import {
   testCases,
   testPlans,
 } from '../db/schema/items'
-import { NotFoundError } from '../errors'
+import { branchItems } from '../db/schema/versioning'
+import { designs } from '../db/schema/designs'
+import { NotFoundError, ValidationError } from '../errors'
+import { BranchService } from './BranchService'
 import { LifecycleService } from './LifecycleService'
 import type { BaseItem } from '../items/types/base'
 import type { TestStep } from '../items/types/testcase'
@@ -138,10 +142,6 @@ export class UsageService {
       { fieldName: 'cost', mode: 'copy' },
       { fieldName: 'costCurrency', mode: 'copy' },
       { fieldName: 'leadTimeDays', mode: 'copy' },
-      { fieldName: 'quantityOnHand', mode: 'usage-only' },
-      { fieldName: 'reorderPoint', mode: 'usage-only' },
-      { fieldName: 'location', mode: 'usage-only' },
-      { fieldName: 'lastInventoryCheck', mode: 'usage-only' },
     ],
   }
 
@@ -488,6 +488,210 @@ export class UsageService {
     return Number(result!.count)
   }
 
+  /**
+   * Copy an item and its BOM subtree into a target design as usages.
+   *
+   * The multi-entity write behind POST /designs/:id/items (usage_copy mode),
+   * extracted from the route (DESIGNS-1). One transaction covers usage
+   * creation, branch tracking, and BOM-edge remapping, so a mid-copy failure
+   * leaves nothing behind. Within the subtree: a definition that already has
+   * a usage in the target design is reused rather than duplicated; BOM edges
+   * whose two ends both live in the subtree are remapped onto the new usage
+   * ids; an edge whose target is external (a library item) keeps its original
+   * target. When `branchId` names an ECO branch, the created usages are
+   * tracked there with changeType 'added'; otherwise they land on the
+   * design's main branch untyped.
+   *
+   * The per-item loops are inherited as-is — their N+1 is real but
+   * deliberately out of scope for the extraction.
+   */
+  static async createUsageSubtree(
+    input: {
+      rootItemId: string
+      targetDesignId: string
+      suffixItemNumber?: boolean
+      branchId?: string
+    },
+    userId: string,
+  ): Promise<{
+    items: Array<typeof items.$inferSelect>
+    relationshipsCreated: number
+  }> {
+    const { rootItemId, targetDesignId, suffixItemNumber, branchId } = input
+
+    const design = await db
+      .select({ id: designs.id, code: designs.code })
+      .from(designs)
+      .where(eq(designs.id, targetDesignId))
+      .limit(1)
+      .then((r) => r.at(0))
+    if (!design) {
+      throw new NotFoundError('Design', targetDesignId)
+    }
+
+    const rootItem = await db
+      .select()
+      .from(items)
+      .where(and(eq(items.id, rootItemId), notDeleted()))
+      .limit(1)
+      .then((r) => r.at(0))
+    if (!rootItem) {
+      throw new NotFoundError('Item', rootItemId)
+    }
+
+    // A root already present in the target design is a caller mistake, not a
+    // reuse case — reusing it would silently no-op the whole copy.
+    const existingRootUsages = await this.getUsagesOfDefinition(rootItemId, {
+      designId: targetDesignId,
+    })
+    if (existingRootUsages.length > 0) {
+      throw new ValidationError(
+        `A usage of ${rootItem.itemNumber} already exists in this design`,
+      )
+    }
+
+    // Step 1: collect the BOM subtree via BFS.
+    const visited = new Set<string>()
+    const queue: Array<string> = [rootItemId]
+    const subtreeItemIds: Array<string> = []
+    const bomRelationships: Array<typeof itemRelationships.$inferSelect> = []
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!
+      if (visited.has(currentId)) continue
+      visited.add(currentId)
+      subtreeItemIds.push(currentId)
+
+      const childRels = await db
+        .select()
+        .from(itemRelationships)
+        .where(
+          and(
+            eq(itemRelationships.sourceId, currentId),
+            eq(itemRelationships.relationshipType, 'BOM'),
+          ),
+        )
+
+      for (const rel of childRels) {
+        bomRelationships.push(rel)
+        if (!visited.has(rel.targetId)) {
+          queue.push(rel.targetId)
+        }
+      }
+    }
+
+    const subtreeItems =
+      subtreeItemIds.length > 0
+        ? await db.select().from(items).where(inArray(items.id, subtreeItemIds))
+        : []
+
+    // Validate suffixed item numbers won't exceed column length.
+    if (suffixItemNumber && design.code) {
+      const suffix = `-${design.code}`
+      const tooLong = subtreeItems.filter(
+        (item) => item.itemNumber.length + suffix.length > 100,
+      )
+      if (tooLong.length > 0) {
+        throw new ValidationError(
+          `${tooLong.length} item number(s) would exceed 100 characters when suffixed (e.g., "${tooLong[0]!.itemNumber}${suffix}")`,
+        )
+      }
+    }
+
+    // Step 2: create usages in a transaction.
+    return db.transaction(async (tx) => {
+      // When a branchId is provided (ECO branch), use it directly; otherwise
+      // fall back to the design's main branch.
+      let trackingBranchId: string
+      let isEcoBranch = false
+
+      if (branchId) {
+        trackingBranchId = branchId
+        isEcoBranch = true
+      } else {
+        const targetMainBranch =
+          await BranchService.getMainBranch(targetDesignId)
+        if (!targetMainBranch) {
+          throw new ValidationError('Target design has no main branch')
+        }
+        trackingBranchId = targetMainBranch.id
+      }
+
+      const itemIdMap = new Map<string, string>() // sourceItemId -> newUsageId
+      const createdUsages: Array<typeof items.$inferSelect> = []
+
+      for (const sourceItem of subtreeItems) {
+        // A subtree child may already have a usage in the target design —
+        // reuse it for relationship remapping instead of duplicating.
+        const existingUsages = await this.getUsagesOfDefinition(sourceItem.id, {
+          designId: targetDesignId,
+        })
+
+        if (existingUsages.length > 0) {
+          itemIdMap.set(sourceItem.id, existingUsages[0]!.id)
+          continue
+        }
+
+        const overrides: { itemNumber?: string } = {}
+        if (suffixItemNumber && design.code) {
+          overrides.itemNumber = `${sourceItem.itemNumber}-${design.code}`
+        }
+
+        const usageResult = await this.createUsage(
+          {
+            definitionId: sourceItem.id,
+            targetDesignId,
+            ...(overrides.itemNumber ? { overrides } : {}),
+          },
+          userId,
+          tx,
+        )
+
+        itemIdMap.set(sourceItem.id, usageResult.usage.id)
+        createdUsages.push(usageResult.usage)
+
+        await tx.insert(branchItems).values({
+          branchId: trackingBranchId,
+          itemMasterId: usageResult.usage.masterId,
+          currentItemId: usageResult.usage.id,
+          baseItemId: usageResult.usage.id,
+          changeType: isEcoBranch ? 'added' : null,
+        })
+      }
+
+      // Step 3: copy BOM relationships with remapped ids.
+      let relationshipsCreated = 0
+
+      for (const rel of bomRelationships) {
+        const newSourceId = itemIdMap.get(rel.sourceId)
+        const newTargetId = itemIdMap.get(rel.targetId)
+        if (!newSourceId) continue
+
+        // Both ends in the subtree: remap. External target (e.g. a library
+        // item): preserve the original reference.
+        await tx.insert(itemRelationships).values({
+          sourceId: newSourceId,
+          targetId: newTargetId ?? rel.targetId,
+          relationshipType: rel.relationshipType,
+          quantity: rel.quantity,
+          findNumber: rel.findNumber,
+          referenceDesignator: rel.referenceDesignator,
+          metadata: rel.metadata,
+          isComposite: rel.isComposite,
+          isDirected: rel.isDirected,
+          multiplicityLower: rel.multiplicityLower,
+          multiplicityUpper: rel.multiplicityUpper,
+          usageAttributes: rel.usageAttributes,
+          createdBy: userId,
+          modifiedBy: userId,
+        })
+        relationshipsCreated++
+      }
+
+      return { items: createdUsages, relationshipsCreated }
+    })
+  }
+
   // ============================================================================
   // Helper Methods
   // ============================================================================
@@ -683,11 +887,6 @@ export class UsageService {
           cost: (data.cost as string | undefined) ?? null,
           costCurrency: (data.costCurrency as string | undefined) ?? null,
           leadTimeDays: (data.leadTimeDays as number | undefined) ?? null,
-          quantityOnHand: (data.quantityOnHand as number | undefined) ?? null,
-          reorderPoint: (data.reorderPoint as number | undefined) ?? null,
-          location: (data.location as string | undefined) ?? null,
-          lastInventoryCheck:
-            (data.lastInventoryCheck as Date | undefined) ?? null,
         })
         break
       case 'Document':

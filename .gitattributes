@@ -26,3 +26,18 @@
 #   git rm --cached -r . && git reset --hard
 #
 * text=auto eol=lf
+
+# Drizzle migration snapshots are generated, load-bearing, and enormous. Each
+# is drizzle-kit's diff base — the full schema serialized to JSON, ~12k lines
+# apiece — and CI's offline drift gate regenerates against the latest one,
+# so they must stay committed byte-for-byte. But they drown review: one
+# 21-line schema change, carrying 2 lines of migration SQL, once diffed at
+# +24,315 lines with the regenerated snapshots along for the ride.
+#
+# `linguist-generated` makes GitHub collapse these files in PR diffs and drop
+# them from language stats. Rendering only — storage, merges, and local diffs
+# are untouched. Deliberately NOT `-diff` (git would treat them as binary,
+# hiding content exactly when a concurrent-migration conflict needs a hand
+# re-mint) and deliberately not the .sql files: the SQL is the upgrade path
+# for released installs, and is precisely what review must see.
+apps/*/drizzle/meta/*.json linguist-generated=true

@@ -89,23 +89,9 @@ class JobMessage(BaseModel):
     attemptNumber: int
 
 
-class VaultFileRecord(BaseModel):
-    """Subset of vault_files row needed for conversion."""
-
-    id: str
-    item_id: str
-    branch_id: Optional[str] = None
-    file_name: str
-    storage_path: str
-    uploaded_by: str
-
-
-class JobRecord(BaseModel):
-    """Subset of jobs row needed by the worker."""
-
-    id: str
-    type: str
-    status: str
-    payload: dict
-    attempts: int = 0
-    max_attempts: int = 3
+# Row shapes live in the shared workers package (JOBS-8); re-exported here so
+# every existing `from .models import JobRecord` keeps resolving.
+from cascadia_worker_common.models import (  # noqa: E402,F401
+    JobRecord,
+    VaultFileRecord,
+)

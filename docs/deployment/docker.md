@@ -4,11 +4,11 @@ Cascadia PLM ships as a set of Docker images built from a single monorepo. The a
 
 ## Docker Images
 
-| Image                                         | Dockerfile                         | Base Image                                       | Purpose                         | Port |
-| --------------------------------------------- | ---------------------------------- | ------------------------------------------------ | ------------------------------- | ---- |
-| `ghcr.io/cascadia-plm/cascadia-app`           | `docker/app.Dockerfile`            | `node:20-alpine`                                 | Core web application (UI + API) | 3000 |
-| `ghcr.io/cascadia-plm/cascadia-jobs-worker`   | `workers/node/Dockerfile`          | `node:20-alpine`                                 | Background job workers          | 3002 |
-| `ghcr.io/cascadia-plm/cascadia-cad-converter` | `workers/cad-converter/Dockerfile` | `condaforge/miniforge3` + `debian:bookworm-slim` | STEP/IGES to STL/GLB conversion | 3003 |
+| Image                                         | Dockerfile                         | Base Image                                                       | Purpose                         | Port |
+| --------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------- | ------------------------------- | ---- |
+| `ghcr.io/cascadia-plm/cascadia-app`           | `docker/app.Dockerfile`            | `node:22-alpine`                                                 | Core web application (UI + API) | 3000 |
+| `ghcr.io/cascadia-plm/cascadia-jobs-worker`   | `workers/node/Dockerfile`          | `node:22-alpine`                                                 | Background job workers          | 3002 |
+| `ghcr.io/cascadia-plm/cascadia-cad-converter` | `workers/cad-converter/Dockerfile` | `condaforge/miniforge3` + `debian:bookworm-slim` (digest-pinned) | STEP/IGES to STL/GLB conversion | 3003 |
 
 File storage (the vault) is part of the core app process — there is no
 standalone vault image. Point the app at local disk or S3 with
@@ -29,15 +29,17 @@ docker build -t ghcr.io/cascadia-plm/cascadia-cad-converter -f workers/cad-conve
 
 ## Multi-Stage Dockerfile Builds
 
-All Node.js images use a three-stage build pattern to minimize image size and separate build-time from runtime dependencies.
+All Node.js images use a four-stage build pattern to minimize image size and separate build-time from runtime dependencies.
 
 ### Core App (`docker/app.Dockerfile`)
 
-**Stage 1 -- deps**: Installs all npm dependencies (including devDependencies needed for the build).
+**Stage 1 -- manifests**: A `FROM scratch` stage holding the root `package.json` and `package-lock.json` plus every workspace's `package.json`. Nothing runs in it; it exists so the workspace list is written once and consumed twice, by the two stages that install. CI's `Docker Build Smoke` job builds through it on every run, which is what proves each path in the list still resolves.
 
-**Stage 2 -- builder**: Copies dependencies and source, runs `npm run build:app -- "$APP"` — the `APP` build arg names the app to build (`cascadia`, the only app in this tree). Uses `NODE_OPTIONS="--max-old-space-size=4096"` because the Vite + Hono builds can be memory-intensive.
+**Stage 2 -- deps**: Takes that list with `COPY --from=manifests / ./` and installs all npm dependencies (including devDependencies needed for the build).
 
-**Stage 3 -- production**: Installs `dumb-init` for proper signal handling, copies the built `.output/` directory, Drizzle config, database schema, seed scripts, and auth modules. Creates a non-root `nodejs` user (UID 1001). Runs as that user.
+**Stage 3 -- builder**: Copies dependencies and source, runs `npm run build:app -- "$APP"` — the `APP` build arg names the app to build (`cascadia`, the only app in this tree). Uses `NODE_OPTIONS="--max-old-space-size=4096"` because the Vite + Hono builds can be memory-intensive.
+
+**Stage 4 -- production**: Reuses the same manifests stage for its production-only install, then installs `dumb-init` for proper signal handling, copies the built `.output/` directory, Drizzle config, database schema, seed scripts, and auth modules. Creates a non-root `nodejs` user (UID 1001). Runs as that user.
 
 Key details:
 
@@ -49,7 +51,7 @@ Key details:
 
 ### Jobs Server (`workers/node/Dockerfile`)
 
-Same three-stage pattern. Differences:
+Same four-stage pattern. Differences:
 
 - Production stage installs additional system packages: `imagemagick` (image processing), `ghostscript` (PDF operations). LibreOffice is available as a commented-out option for office document conversions.
 - Installs only production npm dependencies (`npm install --omit=dev`).
@@ -147,10 +149,10 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Runs PostgreSQL + the app container on one machine. The app pushes the schema on startup — pre-1.0 there are no committed migration files, so every environment applies the schema with a push:
+Runs PostgreSQL + the app container on one machine. The app applies committed migrations on startup — `scripts/boot-migrate.ts` guards the migrate so a pre-v0.5 database (tables, no journal) is refused with the one command that fixes it rather than migrated blind:
 
 ```yaml
-command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
+command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
 ```
 
 ### Production Image References
@@ -241,8 +243,8 @@ docker compose logs -f jobs-worker-dev
 # Restart a service
 docker compose restart app
 
-# Push the database schema (pre-1.0: no migration files)
-docker compose exec app npm run db:push
+# Apply committed migrations (the upgrade path; boot runs this too)
+docker compose exec app npm run db:migrate
 
 # Run seed scripts
 docker compose exec app npm run db:seed

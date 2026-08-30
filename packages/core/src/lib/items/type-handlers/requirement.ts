@@ -6,6 +6,23 @@ import { registerTypeHandler } from './index'
 import { db } from '@/lib/db'
 import { requirements } from '@/lib/db/schema'
 
+/**
+ * `requirementType` is the API's name for the column the table and the
+ * `Requirement` interface both call `type`. The create schema, the AI
+ * `create_item` tool (`lib/ai/tools/write-handlers.ts`) and the design
+ * engine's draft artifacts all spell it that way, so the alias is resolved
+ * here — in one place, honoured by every caller including
+ * `PUT /api/v1/requirements/:id` and the generic `PUT /api/v1/items/:id`,
+ * neither of which stored it before. An explicit `type` wins when a request
+ * carries both.
+ */
+function resolveType(data: {
+  type?: string | null
+  requirementType?: string | null
+}): string | null | undefined {
+  return data.type !== undefined ? data.type : data.requirementType
+}
+
 registerTypeHandler('Requirement', {
   table: requirements,
 
@@ -14,7 +31,7 @@ registerTypeHandler('Requirement', {
     await run.insert(requirements).values({
       itemId,
       description: data.description || null,
-      type: data.type || null,
+      type: resolveType(data) || null,
       priority: data.priority || null,
       acceptanceCriteria: data.acceptanceCriteria || null,
       source: data.source || null,
@@ -42,7 +59,8 @@ registerTypeHandler('Requirement', {
 
     if (data.description !== undefined)
       updateData.description = data.description || null
-    if (data.type !== undefined) updateData.type = data.type || null
+    const typeValue = resolveType(data)
+    if (typeValue !== undefined) updateData.type = typeValue || null
     if (data.priority !== undefined) updateData.priority = data.priority || null
     if (data.acceptanceCriteria !== undefined)
       updateData.acceptanceCriteria = data.acceptanceCriteria || null

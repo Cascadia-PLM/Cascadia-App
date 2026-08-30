@@ -24,10 +24,15 @@ import { VersionResolver } from './VersionResolver'
 import { DesignService } from './DesignService'
 import { BranchService } from './BranchService'
 import { CommitService } from './CommitService'
-import type { VersionContext } from './VersionResolver'
+import type {
+  ItemFilters,
+  PaginatedItemsResult,
+  VersionContext,
+} from './VersionResolver'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
+import { setTestDb } from '@/lib/db'
 import { takeFirst } from '@/lib/db/take-first'
 import {
   branchItems,
@@ -1531,6 +1536,844 @@ describe('VersionResolver', () => {
 
       const deletedItem = result.items.find((i) => i.masterId === itemMasterId)
       expect(deletedItem).toBeUndefined()
+    })
+  })
+
+  describe('deterministic commit-ancestry resolution (VER-4)', () => {
+    let designId: string
+    let mainBranchId: string
+    let initialCommitId: string
+
+    beforeEach(async () => {
+      const design = await DesignService.create(
+        {
+          programId,
+          name: 'Ancestry Design',
+          code: `${uniquePrefix}-ANC`,
+          designType: 'Engineering',
+        },
+        user.id,
+      )
+      designId = design.id!
+      mainBranchId = design.mainBranch!.id
+      initialCommitId = design.initialCommit!.id
+    })
+
+    async function insertRow(input: {
+      masterId: string
+      itemNumber: string
+      revision: string
+      name: string
+      createdAt: Date
+      isCurrent: boolean
+    }) {
+      return takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: input.masterId,
+            itemNumber: input.itemNumber,
+            revision: input.revision,
+            itemType: 'Part',
+            name: input.name,
+            state: 'Released',
+            isCurrent: input.isCurrent,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId,
+            createdAt: input.createdAt,
+          })
+          .returning(),
+      )
+    }
+
+    /**
+     * The in-place-promotion interleaving that split the grid from the
+     * detail page: ECO-1 mints a working copy at T1; ECO-2 releases rev B at
+     * T2 > T1; ECO-1's promotion then updates the T1 row in place to rev C
+     * with a NEWER commit — so the newest revision carries the OLDEST
+     * createdAt, and a createdAt sort serves rev B while the ancestry walk
+     * serves rev C.
+     */
+    async function seedPromotionInterleaving() {
+      const masterId = crypto.randomUUID()
+      const number = `${uniquePrefix}-INTERLEAVE`
+
+      const revA = await insertRow({
+        masterId,
+        itemNumber: number,
+        revision: 'A',
+        name: 'Rev A',
+        createdAt: new Date('2026-01-01T00:00:00Z'),
+        isCurrent: true,
+      })
+      await testDb.db.insert(itemVersions).values({
+        itemId: revA.id,
+        commitId: initialCommitId,
+        changeType: 'added',
+      })
+
+      // ECO-1's working copy, minted first (T1) — not current, no commit yet.
+      const workingCopy = await insertRow({
+        masterId,
+        itemNumber: number,
+        revision: '-ab12cd34',
+        name: 'ECO-1 working copy',
+        createdAt: new Date('2026-01-02T00:00:00Z'),
+        isCurrent: false,
+      })
+
+      // ECO-2 releases rev B second (T2), committing on main.
+      const revB = await insertRow({
+        masterId,
+        itemNumber: number,
+        revision: 'B',
+        name: 'Rev B',
+        createdAt: new Date('2026-01-03T00:00:00Z'),
+        isCurrent: false,
+      })
+      await testDb.db
+        .update(items)
+        .set({ isCurrent: false })
+        .where(eq(items.id, revA.id))
+      await testDb.db
+        .update(items)
+        .set({ isCurrent: true })
+        .where(eq(items.id, revB.id))
+      const commitB = await CommitService.create(
+        {
+          branchId: mainBranchId,
+          message: 'ECO-2 releases rev B',
+          itemChanges: [
+            {
+              itemId: revB.id,
+              changeType: 'modified',
+              previousItemId: revA.id,
+            },
+          ],
+        },
+        user.id,
+      )
+
+      // ECO-1's release promotes the working copy IN PLACE to rev C — its
+      // createdAt stays at T1 while its commit moves ahead of rev B's.
+      await testDb.db
+        .update(items)
+        .set({ isCurrent: false })
+        .where(eq(items.id, revB.id))
+      await testDb.db
+        .update(items)
+        .set({ revision: 'C', isCurrent: true })
+        .where(eq(items.id, workingCopy.id))
+      const commitC = await CommitService.create(
+        {
+          branchId: mainBranchId,
+          message: 'ECO-1 promotes to rev C',
+          itemChanges: [
+            {
+              itemId: workingCopy.id,
+              changeType: 'modified',
+              previousItemId: revB.id,
+            },
+          ],
+        },
+        user.id,
+      )
+
+      return {
+        masterId,
+        revA,
+        revB,
+        promoted: workingCopy,
+        commits: [initialCommitId, commitB.id, commitC.id],
+        headCommitId: commitC.id,
+      }
+    }
+
+    it('the grid and the detail page agree after an in-place promotion, on rev C', async () => {
+      const fixture = await seedPromotionInterleaving()
+
+      const single = await VersionResolver.getItemAtCommit(
+        fixture.masterId,
+        fixture.headCommitId,
+      )
+      const list = await VersionResolver.getItemsAtCommit(fixture.headCommitId)
+      const listRow = list.items.find((i) => i.masterId === fixture.masterId)
+
+      expect(single).not.toBeNull()
+      expect(listRow).toBeDefined()
+      // Same row, and it is the promotion — not the other ECO's earlier
+      // release that createdAt-ordering used to serve.
+      expect(listRow!.id).toBe(single!.id)
+      expect(listRow!.revision).toBe('C')
+      expect(listRow!.id).toBe(fixture.promoted.id)
+    })
+
+    it('getItemsAtCommit and getItemAtCommit agree at every commit in the history', async () => {
+      const fixture = await seedPromotionInterleaving()
+
+      for (const commitId of fixture.commits) {
+        const single = await VersionResolver.getItemAtCommit(
+          fixture.masterId,
+          commitId,
+        )
+        const list = await VersionResolver.getItemsAtCommit(commitId)
+        const listRow = list.items.find((i) => i.masterId === fixture.masterId)
+        expect(listRow?.id, `at commit ${commitId}`).toBe(single?.id)
+      }
+    })
+
+    it('resolves the same commit to identical item sets in identical order, repeatedly', async () => {
+      const fixture = await seedPromotionInterleaving()
+
+      const first = (
+        await VersionResolver.getItemsAtCommit(fixture.headCommitId)
+      ).items.map((i) => i.id)
+      expect(first.length).toBeGreaterThan(0)
+      for (let run = 0; run < 19; run++) {
+        const next = (
+          await VersionResolver.getItemsAtCommit(fixture.headCommitId)
+        ).items.map((i) => i.id)
+        expect(next).toEqual(first)
+      }
+    })
+
+    it('getReleasedVersion returns the same row across repeated calls when candidates tie', async () => {
+      // No commits carry this master, so resolution lands in the direct
+      // fallbacks — where two non-current rows share the sort window.
+      const masterId = crypto.randomUUID()
+      const number = `${uniquePrefix}-TIE`
+      const shared = new Date('2026-02-01T00:00:00Z')
+      for (const revision of ['A', 'B']) {
+        const row = await insertRow({
+          masterId,
+          itemNumber: number,
+          revision,
+          name: `Tie ${revision}`,
+          createdAt: shared,
+          isCurrent: false,
+        })
+        await testDb.db
+          .update(items)
+          .set({ modifiedAt: shared })
+          .where(eq(items.id, row.id))
+      }
+
+      const first = await VersionResolver.getReleasedVersion(masterId, designId)
+      expect(first).not.toBeNull()
+      for (let run = 0; run < 19; run++) {
+        const next = await VersionResolver.getReleasedVersion(
+          masterId,
+          designId,
+        )
+        expect(next?.id).toBe(first!.id)
+      }
+    })
+  })
+
+  /**
+   * VER-6 pushed commit resolution into SQL. These compare the two paths on a
+   * dataset big enough that the difference matters, and pin the statement
+   * count so a later edit cannot quietly reintroduce "load the whole design,
+   * then filter it in Node".
+   */
+  describe('SQL commit resolution matches the in-memory path', () => {
+    // The in-memory resolver is a private fallback, reached here by name
+    // because it is the reference these tests exist to compare against.
+    const resolveInMemory = (
+      VersionResolver as unknown as {
+        getItemsAtCommitInMemory: (
+          commitId: string,
+          filters?: ItemFilters,
+        ) => Promise<PaginatedItemsResult>
+      }
+    ).getItemsAtCommitInMemory.bind(VersionResolver)
+
+    const MASTERS = 200
+    let designId: string
+    let mainBranchId: string
+    let history: Array<string>
+
+    /** Ids only, so a mismatch reports something a human can read. */
+    const idsOf = (result: PaginatedItemsResult) =>
+      result.items.map((item) => item.id)
+
+    beforeEach(async () => {
+      const design = await DesignService.create(
+        {
+          programId,
+          name: 'Equivalence Design',
+          code: `${uniquePrefix}-EQV`,
+          designType: 'Engineering',
+        },
+        user.id,
+      )
+      designId = design.id
+      mainBranchId = design.mainBranch!.id
+      history = [design.initialCommit!.id]
+
+      const masterIds = Array.from({ length: MASTERS }, () =>
+        crypto.randomUUID(),
+      )
+
+      // Three revisions per master, each landing in its own commit and
+      // staggered across three lanes, so no commit holds every master and the
+      // ancestry walk reaches back a different distance for each one.
+      for (const [wave, revision] of ['A', 'B', 'C'].entries()) {
+        for (const lane of [0, 1, 2]) {
+          const changes: Array<{
+            itemId: string
+            changeType: 'added' | 'modified'
+          }> = []
+
+          for (const [index, masterId] of masterIds.entries()) {
+            if (index % 3 !== lane) continue
+            const row = takeFirst(
+              await testDb.db
+                .insert(items)
+                .values({
+                  masterId,
+                  itemNumber: `${uniquePrefix}-EQ-${String(index).padStart(4, '0')}`,
+                  revision,
+                  itemType: index % 5 === 0 ? 'Document' : 'Part',
+                  name: `Equivalence item ${index} rev ${revision}`,
+                  state: index % 4 === 0 ? 'In Work' : 'Released',
+                  isCurrent: false,
+                  createdBy: user.id,
+                  modifiedBy: user.id,
+                  designId,
+                })
+                .returning(),
+            )
+            changes.push({
+              itemId: row.id,
+              changeType: wave === 0 ? 'added' : 'modified',
+            })
+          }
+
+          const commit = await CommitService.create(
+            {
+              branchId: mainBranchId,
+              message: `wave ${wave} lane ${lane}`,
+              itemChanges: changes,
+            },
+            user.id,
+          )
+          history.push(commit.id)
+        }
+      }
+
+      // A final commit retiring a slice, so the "winning version is a delete"
+      // arm is live at the tip and absent from every commit before it.
+      const designRows = await testDb.db
+        .select()
+        .from(items)
+        .where(eq(items.designId, designId))
+      const deletions = designRows
+        .filter((row) => row.revision === 'C')
+        .slice(0, 20)
+        .map((row) => ({ itemId: row.id, changeType: 'deleted' as const }))
+
+      const deleteCommit = await CommitService.create(
+        {
+          branchId: mainBranchId,
+          message: 'retire a slice',
+          itemChanges: deletions,
+        },
+        user.id,
+      )
+      history.push(deleteCommit.id)
+    })
+
+    it('returns the same items as the in-memory path at every commit', async () => {
+      expect(history.length).toBeGreaterThanOrEqual(10)
+
+      for (const commitId of history) {
+        const sqlPath = await VersionResolver.getItemsAtCommit(commitId)
+        const oracle = await resolveInMemory(commitId)
+
+        expect(sqlPath.total, `total at ${commitId}`).toBe(oracle.total)
+        // The in-memory path returns rows in whatever order an unordered
+        // SELECT yielded, so the comparable quantity is the set.
+        expect(idsOf(sqlPath).sort(), `items at ${commitId}`).toEqual(
+          idsOf(oracle).sort(),
+        )
+      }
+    })
+
+    it('returns the same items as the in-memory path under filters', async () => {
+      const tip = history[history.length - 1]!
+      const filterSets: Array<ItemFilters> = [
+        { itemType: 'Part' },
+        { itemType: 'Document' },
+        { state: 'Released' },
+        { state: 'In Work', itemType: 'Part' },
+        { search: 'EQ-0001' },
+        { globalSearch: 'rev C' },
+        { search: 'EQ-00', state: 'Released' },
+        { search: 'no such item anywhere' },
+      ]
+
+      for (const filters of filterSets) {
+        const label = JSON.stringify(filters)
+        const sqlPath = await VersionResolver.getItemsAtCommit(tip, filters)
+        const oracle = await resolveInMemory(tip, filters)
+
+        expect(sqlPath.total, `total for ${label}`).toBe(oracle.total)
+        expect(idsOf(sqlPath).sort(), `items for ${label}`).toEqual(
+          idsOf(oracle).sort(),
+        )
+      }
+    })
+
+    it('treats LIKE wildcards in a search term as literal characters', async () => {
+      const tip = history[history.length - 1]!
+      // `_` is a single-character wildcard to ILIKE and an ordinary character
+      // to String.includes. Both paths must find nothing.
+      for (const term of ['EQ_0001', 'EQ%0001']) {
+        const sqlPath = await VersionResolver.getItemsAtCommit(tip, {
+          search: term,
+        })
+        const oracle = await resolveInMemory(tip, { search: term })
+        expect(sqlPath.total, `total for ${term}`).toBe(oracle.total)
+        expect(sqlPath.total, `${term} must not match as a wildcard`).toBe(0)
+      }
+    })
+
+    it('does not fall through to the fallback chain on an empty page', async () => {
+      // `getReleasedItems` decides whether commit resolution worked by asking
+      // whether it returned any rows. Paginate past the end and it returns
+      // none — which is not the same as "commit resolution found nothing", and
+      // used to send the query on to the branchItems fallback to be answered
+      // from a different source.
+      const all = await VersionResolver.getReleasedItems(designId)
+      expect(all.total).toBeGreaterThan(0)
+
+      const pastTheEnd = await VersionResolver.getReleasedItems(designId, {
+        limit: 50,
+        offset: all.total + 50,
+      })
+
+      expect(pastTheEnd.items).toEqual([])
+      expect(pastTheEnd.total, 'the count is of the whole set').toBe(all.total)
+    })
+
+    it('paginates over a stable order', async () => {
+      const tip = history[history.length - 1]!
+      const all = await VersionResolver.getItemsAtCommit(tip)
+
+      const pageSize = 50
+      const walked: Array<string> = []
+      for (let offset = 0; offset < all.total; offset += pageSize) {
+        const page = await VersionResolver.getItemsAtCommit(tip, {
+          limit: pageSize,
+          offset,
+        })
+        expect(page.total, 'total is the pre-pagination count').toBe(all.total)
+        expect(page.items.length).toBeLessThanOrEqual(pageSize)
+        walked.push(...idsOf(page))
+      }
+
+      // Walking the pages reproduces the whole set exactly once. That is the
+      // property an unordered LIMIT/OFFSET cannot promise, and the reason this
+      // path orders by item_number rather than by nothing.
+      expect(walked).toEqual(idsOf(all))
+      expect(new Set(walked).size).toBe(walked.length)
+    })
+
+    it('serves a page with one resolution query and no full-design read', async () => {
+      const tip = history[history.length - 1]!
+
+      // Every row the database hands back to Node, per statement. `db` is a
+      // proxy over an injectable handle, so the harness's own injection point
+      // is where a counting wrapper goes — `vi.spyOn` cannot see through it.
+      const rowsReturned: Array<number> = []
+      const inner = testDb.db
+      const count = <T>(result: T): T => {
+        if (Array.isArray(result)) rowsReturned.push(result.length)
+        return result
+      }
+
+      setTestDb(
+        new Proxy(inner, {
+          get(target, prop, receiver) {
+            const value = Reflect.get(target, prop, receiver) as unknown
+            if (prop === 'execute' && typeof value === 'function') {
+              return (...args: Array<unknown>) =>
+                (value as (...a: Array<unknown>) => Promise<unknown>)
+                  .apply(target, args)
+                  .then(count)
+            }
+            if (prop === 'select' && typeof value === 'function') {
+              return (...args: Array<unknown>) => {
+                const builder = (
+                  value as (...a: Array<unknown>) => Record<string, unknown>
+                ).apply(target, args)
+                return new Proxy(builder, {
+                  get(b, p, r) {
+                    if (p === 'then') {
+                      return (
+                        onOk?: (v: unknown) => unknown,
+                        onErr?: (e: unknown) => unknown,
+                      ) =>
+                        Promise.resolve(b as unknown as PromiseLike<unknown>)
+                          .then(count)
+                          .then(onOk, onErr)
+                    }
+                    return Reflect.get(b, p, r) as unknown
+                  },
+                })
+              }
+            }
+            return value
+          },
+        }),
+      )
+
+      try {
+        const page = await VersionResolver.getItemsAtCommit(tip, { limit: 50 })
+        expect(page.items.length).toBe(50)
+        expect(page.total).toBeGreaterThan(150)
+      } finally {
+        setTestDb(inner)
+      }
+
+      // Two statements: the resolution query and the hydration select. The
+      // in-memory path issues three, two of which return every item and every
+      // item-version in the design.
+      expect(rowsReturned.length).toBeLessThanOrEqual(3)
+
+      // Nothing came back bigger than the page. This is the property VER-6 is
+      // for: a fifty-row page no longer costs a full-design read into Node.
+      // The design here holds well over 500 item rows.
+      for (const size of rowsReturned) {
+        expect(size).toBeLessThanOrEqual(50)
+      }
+    })
+  })
+
+  /**
+   * The branch overlay — main's contents with this branch's versions
+   * substituted in — also moved into SQL. The four cases the in-memory merge
+   * distinguishes are subtle enough that these compare the two directly on a
+   * branch carrying all of them at once.
+   */
+  describe('SQL branch overlay matches the in-memory merge', () => {
+    const mergeInMemory = (
+      VersionResolver as unknown as {
+        getBranchItemsInMemory: (
+          branchId: string,
+          filters?: ItemFilters,
+        ) => Promise<PaginatedItemsResult>
+      }
+    ).getBranchItemsInMemory.bind(VersionResolver)
+
+    let designId: string
+    let ecoBranchId: string
+
+    const idsOf = (result: PaginatedItemsResult) =>
+      result.items.map((item) => item.id).sort()
+
+    beforeEach(async () => {
+      const design = await DesignService.create(
+        {
+          programId,
+          name: 'Overlay Design',
+          code: `${uniquePrefix}-OVL`,
+          designType: 'Engineering',
+        },
+        user.id,
+      )
+      designId = design.id
+      const mainBranchId = design.mainBranch!.id
+
+      // Sixty masters released on main.
+      const masterIds = Array.from({ length: 60 }, () => crypto.randomUUID())
+      const releasedIds: Array<string> = []
+      const changes: Array<{ itemId: string; changeType: 'added' }> = []
+
+      for (const [index, masterId] of masterIds.entries()) {
+        const row = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId,
+              itemNumber: `${uniquePrefix}-OV-${String(index).padStart(3, '0')}`,
+              revision: 'A',
+              itemType: index % 4 === 0 ? 'Document' : 'Part',
+              name: `Overlay item ${index}`,
+              state: 'Released',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId,
+            })
+            .returning(),
+        )
+        releasedIds.push(row.id)
+        changes.push({ itemId: row.id, changeType: 'added' })
+      }
+
+      await CommitService.create(
+        {
+          branchId: mainBranchId,
+          message: 'release the overlay set',
+          itemChanges: changes,
+        },
+        user.id,
+      )
+
+      // An ECO branch off main, then every shape a branch_items row can take.
+      const coItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: crypto.randomUUID(),
+            itemNumber: `${uniquePrefix}-OVECO-001`,
+            revision: 'A',
+            itemType: 'ChangeOrder',
+            name: 'Overlay ECO',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId,
+          })
+          .returning(),
+      )
+      await testDb.db.insert(changeOrders).values({
+        itemId: coItem.id,
+        changeType: 'ECO',
+        priority: 'Medium',
+      })
+      const ecoBranch = await BranchService.createEcoBranch(
+        designId,
+        coItem.id,
+        user.id,
+      )
+      ecoBranchId = ecoBranch.id
+
+      const workingCopy = async (index: number, deleted = false) => {
+        const row = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId: masterIds[index]!,
+              itemNumber: `${uniquePrefix}-OV-${String(index).padStart(3, '0')}`,
+              revision: '-',
+              itemType: index % 4 === 0 ? 'Document' : 'Part',
+              name: `Overlay item ${index} (working)`,
+              state: 'In Work',
+              isCurrent: false,
+              isDeleted: deleted,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId,
+            })
+            .returning(),
+        )
+        return row.id
+      }
+
+      // 0–9 modified on the branch: the branch version wins.
+      for (let index = 0; index < 10; index++) {
+        await testDb.db.insert(branchItems).values({
+          branchId: ecoBranchId,
+          itemMasterId: masterIds[index]!,
+          currentItemId: await workingCopy(index),
+          changeType: 'modified',
+        })
+      }
+
+      // 10–14 deleted on the branch: they disappear from the branch view.
+      for (let index = 10; index < 15; index++) {
+        await testDb.db.insert(branchItems).values({
+          branchId: ecoBranchId,
+          itemMasterId: masterIds[index]!,
+          currentItemId: releasedIds[index]!,
+          changeType: 'deleted',
+        })
+      }
+
+      // 15–19 tracked with no version yet: main's version still stands.
+      for (let index = 15; index < 20; index++) {
+        await testDb.db.insert(branchItems).values({
+          branchId: ecoBranchId,
+          itemMasterId: masterIds[index]!,
+          currentItemId: null,
+          changeType: 'modified',
+        })
+      }
+
+      // 20–22 point at a working copy that has since been soft-deleted. The
+      // item is not on the branch, and main's version must not resurface.
+      for (let index = 20; index < 23; index++) {
+        await testDb.db.insert(branchItems).values({
+          branchId: ecoBranchId,
+          itemMasterId: masterIds[index]!,
+          currentItemId: await workingCopy(index, true),
+          changeType: 'modified',
+        })
+      }
+
+      // Five masters that exist only on the branch.
+      for (let index = 0; index < 5; index++) {
+        const masterId = crypto.randomUUID()
+        const row = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId,
+              itemNumber: `${uniquePrefix}-OVNEW-${index}`,
+              revision: '-',
+              itemType: 'Part',
+              name: `Branch-only item ${index}`,
+              state: 'In Work',
+              isCurrent: false,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId,
+            })
+            .returning(),
+        )
+        await testDb.db.insert(branchItems).values({
+          branchId: ecoBranchId,
+          itemMasterId: masterId,
+          currentItemId: row.id,
+          changeType: 'added',
+        })
+      }
+
+      // 23–27 exist only in branch_items, never in item_versions — the shape
+      // left behind by pre-release data added straight to a branch.
+      for (let index = 23; index < 28; index++) {
+        const masterId = crypto.randomUUID()
+        const row = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId,
+              itemNumber: `${uniquePrefix}-OVUNV-${index}`,
+              revision: '-',
+              itemType: 'Part',
+              name: `Unversioned item ${index}`,
+              state: 'In Work',
+              isCurrent: false,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId,
+            })
+            .returning(),
+        )
+        await testDb.db.insert(branchItems).values({
+          branchId: ecoBranchId,
+          itemMasterId: masterId,
+          currentItemId: row.id,
+          changeType: 'modified',
+        })
+      }
+    })
+
+    it('returns the same items as the in-memory merge', async () => {
+      const sqlPath = await VersionResolver.getBranchItems(ecoBranchId)
+      const oracle = await mergeInMemory(ecoBranchId)
+
+      expect(sqlPath.total).toBe(oracle.total)
+      expect(idsOf(sqlPath)).toEqual(idsOf(oracle))
+
+      // The fixture is only meaningful if every arm actually contributed:
+      // 60 released, minus 5 deleted on the branch, minus 3 whose working copy
+      // is deleted, plus 5 branch-only and 5 unversioned.
+      expect(sqlPath.total).toBe(62)
+    })
+
+    it('returns the same items as the in-memory merge under filters', async () => {
+      const filterSets: Array<ItemFilters> = [
+        { itemType: 'Part' },
+        { itemType: 'Document' },
+        { state: 'In Work' },
+        { state: 'Released' },
+        { search: 'OVNEW' },
+        { search: 'working' },
+        { globalSearch: 'Overlay item' },
+      ]
+
+      for (const filters of filterSets) {
+        const label = JSON.stringify(filters)
+        const sqlPath = await VersionResolver.getBranchItems(
+          ecoBranchId,
+          filters,
+        )
+        const oracle = await mergeInMemory(ecoBranchId, filters)
+
+        expect(sqlPath.total, `total for ${label}`).toBe(oracle.total)
+        expect(idsOf(sqlPath), `items for ${label}`).toEqual(idsOf(oracle))
+      }
+    })
+
+    it('paginates the branch view over a stable order', async () => {
+      const all = await VersionResolver.getBranchItems(ecoBranchId)
+      const walked: Array<string> = []
+
+      for (let offset = 0; offset < all.total; offset += 20) {
+        const page = await VersionResolver.getBranchItems(ecoBranchId, {
+          limit: 20,
+          offset,
+        })
+        expect(page.total).toBe(all.total)
+        walked.push(...page.items.map((item) => item.id))
+      }
+
+      expect(walked.length).toBe(all.total)
+      expect(new Set(walked).size).toBe(walked.length)
+      expect(walked.sort()).toEqual(idsOf(all))
+    })
+
+    it('falls back to the in-memory merge when main has no commit history', async () => {
+      // A design whose items were never committed — the seeded/pre-release
+      // shape. Commit resolution finds nothing, so the fallback chain has to
+      // answer, and the SQL overlay must stand aside for it.
+      const design = await DesignService.create(
+        {
+          programId,
+          name: 'Uncommitted Design',
+          code: `${uniquePrefix}-UNC`,
+          designType: 'Engineering',
+        },
+        user.id,
+      )
+      const mainBranchId = design.mainBranch!.id
+
+      const row = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: crypto.randomUUID(),
+            itemNumber: `${uniquePrefix}-UNC-001`,
+            revision: 'A',
+            itemType: 'Part',
+            name: 'Uncommitted part',
+            state: 'Released',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId: design.id,
+          })
+          .returning(),
+      )
+      await testDb.db.insert(branchItems).values({
+        branchId: mainBranchId,
+        itemMasterId: row.masterId,
+        currentItemId: row.id,
+        changeType: 'added',
+      })
+
+      const result = await VersionResolver.getBranchItems(mainBranchId)
+      const oracle = await mergeInMemory(mainBranchId)
+
+      expect(result.total).toBe(oracle.total)
+      expect(idsOf(result)).toEqual(idsOf(oracle))
+      expect(result.items.map((item) => item.id)).toContain(row.id)
     })
   })
 })

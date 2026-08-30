@@ -12,6 +12,7 @@ import {
   testExecutions,
 } from '../db/schema/items'
 import { users } from '../db/schema/users'
+import { notDeleted } from '../db/filters'
 import { NotFoundError, ValidationError } from '../errors'
 import { ItemService } from '../items/services/ItemService'
 import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
@@ -219,7 +220,7 @@ export class VerificationService {
       .where(
         and(
           eq(testCases.testPlanId, testPlanId),
-          eq(items.isDeleted, false),
+          notDeleted(),
           eq(items.isCurrent, true),
         ),
       )

@@ -381,12 +381,61 @@ Avoid CSS selectors and index-based selectors.
 | ----------------------- | ----------------------------- |
 | `renderWithProviders()` | Render with all app providers |
 
+## Python Worker Tests
+
+The Python workers have their own suite, run with pytest rather than Vitest.
+
+`workers/py-common` — the shared jobs/vault database layer both workers import —
+is the part that runs in CI. It needs pip and nothing else:
+
+```bash
+pip install -r workers/py-common/requirements-dev.txt
+
+pytest workers/py-common                 # everything, needs a database
+pytest workers/py-common -m 'not db'     # the pure half, needs nothing
+```
+
+The `db`-marked tests read **`TEST_DATABASE_URL`**, never `DATABASE_URL`, for the
+same reason the Vitest suite does — they insert and update `jobs` rows, and
+pointed at your dev database they would write into whatever you were working on.
+Provision it once as described under [Integration Tests with
+TestDatabase](#integration-tests-with-testdatabase); the suite reuses the schema
+`npm run test:db:push` builds rather than DDL of its own, so nothing can drift.
+With no `TEST_DATABASE_URL` set the database tests skip locally, but under CI
+they fail — a suite that silently skipped every database assertion would be a
+green check gating nothing.
+
+The package is consumed via `PYTHONPATH` and never installed as a distribution
+(both worker images copy `py-common/src` alongside their own `src`), so
+`workers/py-common/pyproject.toml` carries only a `[tool.pytest.ini_options]`
+section. Its `pythonpath = ["src"]` is what makes `import cascadia_worker_common`
+resolve with no install.
+
+The `workers/cad-converter` suite is **run locally only**. It imports
+`pythonocc-core`, which is conda-only, so it needs its own environment:
+
+```bash
+conda env create -f workers/cad-converter/environment.yml
+conda run -n cad-converter pytest workers/cad-converter
+```
+
+State the run and its result in the pull request body when you change the
+converter; CI does not cover it.
+
+One file is an exception. `tests/test_worker_claim.py` covers how `_run_job`
+settles a RabbitMQ delivery and touches no geometry, so it stubs
+`pythonocc-core` when it is genuinely absent and runs under a plain
+`pip install pytest pydantic pydantic-settings`, with the worker's `src` and
+`py-common/src` on `PYTHONPATH`. An installed package always beats the stub, so
+the file behaves identically inside the conda environment.
+
 ## CI/CD
 
 Tests run in GitHub Actions with a real PostgreSQL service container. There is one
 workflow, `.github/workflows/ci.yml`, running on every PR to `main` and every push
-to `main`. Its jobs: Lint, OpenAPI Snapshot, Unit Tests, E2E Tests, Build (which
-also runs `typecheck:strict`), Compose Config Validation, and Large File Guard.
+to `main`. Its ten jobs: Lint, OpenAPI Snapshot, Core Builds Alone, Migrations
+Apply, Unit Tests, E2E Tests, Build (which also runs `typecheck:strict`), Compose
+Config Validation, Docker Build Smoke, and Large File Guard.
 
 OpenAPI Snapshot is the one job that runs on pushes to `main` only. The
 committed `docs/api/openapi.v1.json` is refreshed by the maintainers, so a

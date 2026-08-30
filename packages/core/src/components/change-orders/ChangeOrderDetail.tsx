@@ -13,6 +13,7 @@ import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { StateBadge } from '@/components/items/StateBadge'
 import { EcoHistoryGraphView } from '@/components/change-orders/EcoHistoryGraphView'
 import { useVersionContext } from '@/lib/hooks/useVersionContext'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 import { FileList, FileUploadZone } from '@/components/vault'
 import { GraphNavigator } from '@/components/items/GraphNavigator'
 import { EcoAffectedItemsPanel } from '@/components/change-orders/EcoAffectedItemsPanel'
@@ -123,15 +124,24 @@ const createEmptyChangeOrder = (): ChangeOrder => ({
   modifiedAt: undefined,
 })
 
-type TabValue =
-  | 'overview'
-  | 'affected-items'
-  | 'conflicts'
-  | 'impact'
-  | 'files'
-  | 'approvals'
-  | 'workflow'
-  | 'history'
+/**
+ * The tabs this detail view renders. The route's search schema derives its
+ * `tab` enum from this list, so the URL contract and the rendered tabs
+ * cannot drift apart; the `onValueChange` cast below is the one seam where
+ * Radix's `string` meets it, and the triggers are rendered from the same
+ * source of truth.
+ */
+export const CHANGE_ORDER_DETAIL_TABS = [
+  'overview',
+  'affected-items',
+  'conflicts',
+  'impact',
+  'files',
+  'approvals',
+  'workflow',
+  'history',
+] as const
+export type ChangeOrderDetailTab = (typeof CHANGE_ORDER_DETAIL_TABS)[number]
 
 interface ChangeOrderDetailProps {
   changeOrder?: ChangeOrder
@@ -139,8 +149,8 @@ interface ChangeOrderDetailProps {
   onDelete?: () => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
-  activeTab?: TabValue
-  onTabChange?: (tab: string) => void
+  activeTab?: ChangeOrderDetailTab
+  onTabChange?: (tab: ChangeOrderDetailTab) => void
 }
 
 export function ChangeOrderDetail({
@@ -191,6 +201,19 @@ export function ChangeOrderDetail({
   const isEditable =
     !isCreateMode &&
     (workflowStructure === undefined || currentWorkflowState?.isFinal !== true)
+
+  // Deletable only in the initial state, which is the rule the server enforces
+  // (`ItemService.requireNoRetainedEvidence`): past it the change order holds
+  // votes, workflow history and an affected-item list that a hard delete would
+  // cascade away. Read from the ChangeOrder definition rather than the
+  // instance so a change order that has no workflow instance yet — freshly
+  // created, and the one case the delete exists for — still offers it.
+  const { data: changeOrderLifecycle } = useLifecyclePhases('ChangeOrder')
+  const isDeletable =
+    !isCreateMode &&
+    (changeOrderLifecycle?.states ?? []).some(
+      (s) => s.isInitial === true && s.id === changeOrder.state,
+    )
 
   const { context, setContext } = useVersionContext(
     isCreateMode ? undefined : changeOrder.designId,
@@ -425,7 +448,7 @@ export function ChangeOrderDetail({
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </Button>
-                    {onDelete && (
+                    {onDelete && isDeletable && (
                       <Button variant="destructive" onClick={handleDelete}>
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
@@ -440,7 +463,11 @@ export function ChangeOrderDetail({
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => onTabChange?.(value as ChangeOrderDetailTab)}
+        className="w-full"
+      >
         <TabsList className={`grid w-full grid-cols-${tabs.length}`}>
           {tabs.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>
@@ -539,8 +566,8 @@ export function ChangeOrderDetail({
                       label="Description"
                       value={
                         isEditing
-                          ? (changeOrder as any).description
-                          : (currentChangeOrder as any).description
+                          ? changeOrder.description
+                          : currentChangeOrder.description
                       }
                       onChange={(v) => updateField('description', v)}
                       isEditing={isEditing}

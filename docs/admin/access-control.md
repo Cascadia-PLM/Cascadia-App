@@ -172,6 +172,8 @@ GET: apiHandler({ public: true }, async ({ params }) => { ... })
 
 Some admin endpoints use `requireRole(request, 'Administrator')` instead, which checks for an exact role name rather than a resource-action permission.
 
+A declared tuple has to be one some role in `ROLE_DEFINITIONS` grants. `npm run permissions:check` (CI's Lint job) fails on one that none does — such a route answers 403 to everyone, the Administrator included, which is indistinguishable from correct refusal and so shows up in no monitoring. `npm run permissions:check -- --audience` prints every declared tuple with the roles it admits, which is the reviewable form of the opposite question: whether a route is charging a _wider_ audience than intended.
+
 ### Database Storage Format
 
 Permissions are stored in the `roles.permissions` JSONB column as a map of resource to action arrays:

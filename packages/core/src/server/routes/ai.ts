@@ -4,9 +4,11 @@
 import { Hono } from 'hono'
 import { chat, toServerSentEventsResponse } from '@tanstack/ai'
 import { eq, isNull } from 'drizzle-orm'
+import { z } from 'zod'
 import { tagged } from '../adapter'
-import type { AIProviderConfig } from '@/lib/db/schema/ai'
+import { UsageAccumulator, recordLlmUsage } from '@/lib/ai/usage'
 import { apiHandler, created } from '@/lib/api/handler'
+import { aiSettingsUpdateSchema } from '@/lib/api/schemas'
 import {
   getAdapter,
   getAvailableProviders,
@@ -15,6 +17,9 @@ import {
 } from '@/lib/ai/adapters'
 import { knowledgeService } from '@/lib/ai/KnowledgeService'
 import { sessionService } from '@/lib/ai/SessionService'
+import { resolveChatScope } from '@/lib/ai/chat-scope'
+import { AccessControlService } from '@/lib/auth/AccessControlService'
+import { acquireStreamSlot, releaseStreamSlot } from '@/lib/ai/stream-limits'
 import { createSearchTools, createServerTools } from '@/lib/ai/tools'
 import {
   AlreadyExistsError,
@@ -32,35 +37,47 @@ import '@/lib/items/registerItemTypes.server'
 const adapt = tagged('AI')
 
 // TanStack AI request body format (from @tanstack/ai-client)
-interface ChatRequestBody {
-  messages: Array<ModelMessage>
-  data?: {
-    sessionId?: string
-    programId?: string
-    designId?: string
-    mode?: 'chat' | 'search'
-  }
-}
+/**
+ * A chat turn, in TanStack AI's request format. The transcript is capped:
+ * an unbounded array here is an unbounded prompt, and the budget chokepoint
+ * only sees the request after it has been assembled.
+ */
+const modelMessageSchema = z.object({
+  role: z.enum(['system', 'user', 'assistant']),
+  content: z.string().max(100_000).nullable(),
+})
+type ModelMessage = z.infer<typeof modelMessageSchema>
 
-// TanStack AI message format
-interface ModelMessage {
-  role: 'system' | 'user' | 'assistant'
-  content: string | null
-}
+const chatRequestSchema = z.object({
+  messages: z.array(modelMessageSchema).max(500),
+  data: z
+    .object({
+      sessionId: z.string().uuid().optional(),
+      programId: z.string().uuid().optional(),
+      designId: z.string().uuid().optional(),
+      mode: z.enum(['chat', 'search']).optional(),
+    })
+    .optional(),
+})
 
-// Request body for creating a session
-interface CreateSessionRequest {
-  programId?: string
-  designId?: string
-}
+const createSessionSchema = z.object({
+  programId: z.string().uuid().optional(),
+  designId: z.string().uuid().optional(),
+})
 
-// Request body for creating/updating settings
-interface SettingsRequest {
-  programId?: string
-  provider: string
-  config: AIProviderConfig
-  enabled?: boolean
-}
+/**
+ * The per-program settings write. `provider` used to be checked here against
+ * `['openai', 'anthropic']` while admin.ts accepted four — so a Gemini or
+ * Ollama configuration was savable from one surface and not the other. Both
+ * now share `aiSettingsUpdateSchema`; this adds the optional `programId` that
+ * scopes the row.
+ */
+const aiSettingsWriteSchema = aiSettingsUpdateSchema
+  .extend({
+    programId: z.string().uuid().optional(),
+    enabled: z.boolean().optional(),
+  })
+  .strict()
 
 /**
  * Get user roles from database
@@ -87,242 +104,288 @@ const app = new Hono()
 app.post(
   '/chat',
   adapt(
-    apiHandler({}, async ({ request, user, requestId }) => {
-      // Parse request body (TanStack AI format)
-      const body: ChatRequestBody = await request.json()
-      const { messages: clientMessages, data } = body
-      const sessionId = data?.sessionId
-      const programId = data?.programId
-      const designId = data?.designId
-      const mode = data?.mode || 'chat'
+    apiHandler(
+      { body: chatRequestSchema },
+      async ({ request, body, user, requestId }) => {
+        const { messages: clientMessages, data } = body
+        const sessionId = data?.sessionId
+        const programId = data?.programId
+        const designId = data?.designId
+        const mode = data?.mode || 'chat'
 
-      const userMessages = clientMessages.filter((m) => m.role === 'user')
-      const latestUserMessage = userMessages[userMessages.length - 1]
+        const userMessages = clientMessages.filter((m) => m.role === 'user')
+        const latestUserMessage = userMessages[userMessages.length - 1]
 
-      if (!latestUserMessage?.content) {
-        throw new ValidationError('Message is required')
-      }
-
-      const message = latestUserMessage.content
-
-      // Check if AI is enabled
-      const aiEnabled = await isAIEnabled(programId)
-      if (!aiEnabled) {
-        return new Response(
-          JSON.stringify({
-            error: {
-              code: 'FEATURE_DISABLED',
-              message:
-                'AI assistant is not enabled. Please configure AI settings or set API keys.',
-            },
-          }),
-          { status: 503, headers: { 'Content-Type': 'application/json' } },
-        )
-      }
-
-      // Load or create session
-      let session
-      if (sessionId) {
-        // Verify session ownership
-        const isOwner = await sessionService.verifySessionOwnership(
-          sessionId,
-          user.id,
-        )
-        if (!isOwner) {
-          throw new PermissionDeniedError('session', 'access')
+        if (!latestUserMessage?.content) {
+          throw new ValidationError('Message is required')
         }
-        session = await sessionService.getSession(sessionId)
-      }
 
-      if (!session) {
-        session = await sessionService.createSession(
+        const message = latestUserMessage.content
+
+        // Scope first. Everything below spends against a program — the API
+        // key, the monthly token budget, the usage row, the program name in
+        // the system prompt — and the body's programId is a claim, not a
+        // fact. resolveChatScope turns it into the program this caller may
+        // actually use, preferring an existing session's own scope.
+        const scope = await resolveChatScope(
           user.id,
-          programId,
-          designId,
+          { sessionId, programId, designId },
+          sessionService,
         )
-      }
+        const effectiveProgramId = scope.programId ?? undefined
 
-      // Load provider configuration
-      const providerConfig = await loadProviderConfig(programId)
-      const adapter = getAdapter(providerConfig)
+        // Check if AI is enabled
+        const aiEnabled = await isAIEnabled(effectiveProgramId)
+        if (!aiEnabled) {
+          return new Response(
+            JSON.stringify({
+              error: {
+                code: 'FEATURE_DISABLED',
+                message:
+                  'AI assistant is not enabled. Please configure AI settings or set API keys.',
+              },
+            }),
+            { status: 503, headers: { 'Content-Type': 'application/json' } },
+          )
+        }
 
-      // Build schema context and system prompt
-      const schemaContext = await knowledgeService.generateSchemaContext(
-        session.programId || undefined,
-        session.designId || undefined,
-      )
+        // Load or create session. Ownership was verified inside
+        // resolveChatScope, which is also what decided the scope below.
+        let session = scope.sessionId
+          ? await sessionService.getSession(scope.sessionId)
+          : null
 
-      const roles = await getUserRoles(user.id)
+        if (!session) {
+          session = await sessionService.createSession(
+            user.id,
+            effectiveProgramId,
+            scope.designId ?? undefined,
+          )
+        }
 
-      const promptContext = {
-        schemaContext,
-        user: {
-          id: user.id,
-          username: user.name || user.email,
-          email: user.email,
-          roles,
-        },
-        programName: session.program?.name,
-        designName: session.design?.name,
-      }
+        // Load provider configuration
+        const providerConfig = await loadProviderConfig(effectiveProgramId)
+        const adapter = getAdapter(providerConfig)
 
-      const systemPrompt =
-        mode === 'search'
-          ? knowledgeService.buildSearchPrompt(promptContext)
-          : knowledgeService.buildSystemPrompt(promptContext)
+        // Build schema context and system prompt
+        const schemaContext = await knowledgeService.generateSchemaContext(
+          session.programId || undefined,
+          session.designId || undefined,
+        )
 
-      // Get message history
-      const history = await sessionService.getMessageHistory(session.id)
+        const roles = await getUserRoles(user.id)
 
-      // Save user message
-      await sessionService.addMessage(session.id, {
-        role: 'user',
-        content: message,
-      })
+        const promptContext = {
+          schemaContext,
+          user: {
+            id: user.id,
+            username: user.name || user.email,
+            email: user.email,
+            roles,
+          },
+          programName: session.program?.name,
+          designName: session.design?.name,
+        }
 
-      // Build messages array in model format
-      const messages: Array<ModelMessage> = [
-        { role: 'system', content: systemPrompt },
-        ...history.map((msg) => ({
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content,
-        })),
-        { role: 'user', content: message },
-      ]
+        const systemPrompt =
+          mode === 'search'
+            ? knowledgeService.buildSearchPrompt(promptContext)
+            : knowledgeService.buildSystemPrompt(promptContext)
 
-      // Create abort controller for request cancellation
-      const abortController = new AbortController()
+        // Get message history
+        const history = await sessionService.getMessageHistory(session.id)
 
-      // Handle client disconnect
-      request.signal.addEventListener('abort', () => {
-        abortController.abort()
-      })
+        // Save user message
+        await sessionService.addMessage(session.id, {
+          role: 'user',
+          content: message,
+        })
 
-      // Create AI tools with user context for permission checking
-      const toolContext = {
-        userId: user.id,
-        sessionId: session.id,
-        programId: session.programId || undefined,
-        designId: session.designId || undefined,
-      }
-      const tools =
-        mode === 'search'
-          ? createSearchTools(toolContext)
-          : createServerTools(toolContext)
+        // Build messages array in model format
+        const messages: Array<ModelMessage> = [
+          { role: 'system', content: systemPrompt },
+          ...history.map((msg) => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+          })),
+          { role: 'user', content: message },
+        ]
 
-      // Stream chat response with tools.
-      // The local ModelMessage shape matches at runtime; TanStack AI's
-      // ConstrainedModelMessage narrows role/content in a way this plain
-      // {role, content} list doesn't satisfy structurally.
-      const stream = chat({
-        adapter,
-        messages: messages as Parameters<typeof chat>[0]['messages'],
-        tools,
-        abortController,
-      })
+        // Create abort controller for request cancellation
+        const abortController = new AbortController()
 
-      // Track assistant response for persistence
-      let fullResponse = ''
-      // Tool-call arguments stream in incrementally as JSON fragments keyed by
-      // `chunk.index`; accumulate them and finalize once the stream completes.
-      const toolCallAccum = new Map<
-        number,
-        { id: string; name: string; args: string }
-      >()
-      // tool_result chunks carry no tool name — resolve it from the tool_call.
-      const toolCallIdToName = new Map<string, string>()
-      const collectedToolResults: Array<{
-        toolCallId: string
-        toolName: string
-        content: string
-      }> = []
+        // Handle client disconnect
+        request.signal.addEventListener('abort', () => {
+          abortController.abort()
+        })
 
-      // Transform stream to save response after completion
-      const transformedStream = async function* () {
+        // Create AI tools with user context for permission checking
+        const toolContext = {
+          userId: user.id,
+          sessionId: session.id,
+          programId: session.programId || undefined,
+          designId: session.designId || undefined,
+        }
+        const tools =
+          mode === 'search'
+            ? createSearchTools(toolContext)
+            : createServerTools(toolContext)
+
+        // Concurrent-stream cap: take a per-user slot before opening the LLM
+        // stream (429 at the cap), and release it exactly once however the
+        // stream ends — the transformed stream's finally covers completion,
+        // abort, and error alike.
+        acquireStreamSlot(user.id)
+        let streamSlotReleased = false
+        const releaseSlotOnce = () => {
+          if (!streamSlotReleased) {
+            streamSlotReleased = true
+            releaseStreamSlot(user.id)
+          }
+        }
+
+        // Stream chat response with tools.
+        // The local ModelMessage shape matches at runtime; TanStack AI's
+        // ConstrainedModelMessage narrows role/content in a way this plain
+        // {role, content} list doesn't satisfy structurally.
+        let stream: ReturnType<typeof chat>
         try {
-          for await (const chunk of stream) {
-            // Track text content (TanStack AI 'content' chunks contain full accumulated text)
-            if (chunk.type === 'content') {
-              fullResponse = chunk.content // Replace, not append - content is cumulative
-            }
+          stream = chat({
+            adapter,
+            messages: messages as Parameters<typeof chat>[0]['messages'],
+            tools,
+            abortController,
+          })
+        } catch (error) {
+          releaseSlotOnce()
+          throw error
+        }
 
-            // Accumulate streamed tool-call fragments (id/name arrive on the
-            // first fragment; arguments concatenate across fragments per index).
-            if (chunk.type === 'tool_call') {
-              const entry = toolCallAccum.get(chunk.index) ?? {
-                id: '',
-                name: '',
-                args: '',
-              }
-              if (chunk.toolCall.id) entry.id = chunk.toolCall.id
-              if (chunk.toolCall.function.name) {
-                entry.name = chunk.toolCall.function.name
-              }
-              entry.args += chunk.toolCall.function.arguments
-              toolCallAccum.set(chunk.index, entry)
-              if (entry.id && entry.name) {
-                toolCallIdToName.set(entry.id, entry.name)
-              }
-            }
+        // Token usage, summed across the model turns of this one request
+        const usage = new UsageAccumulator()
+        const streamStartedAt = Date.now()
 
-            // Track tool results (name looked up via the toolCallId map).
-            if (chunk.type === 'tool_result') {
-              collectedToolResults.push({
-                toolCallId: chunk.toolCallId,
-                toolName: toolCallIdToName.get(chunk.toolCallId) ?? '',
-                content: chunk.content,
+        // Track assistant response for persistence
+        let fullResponse = ''
+        // Tool-call arguments stream in incrementally as JSON fragments keyed by
+        // `chunk.index`; accumulate them and finalize once the stream completes.
+        const toolCallAccum = new Map<
+          number,
+          { id: string; name: string; args: string }
+        >()
+        // tool_result chunks carry no tool name — resolve it from the tool_call.
+        const toolCallIdToName = new Map<string, string>()
+        const collectedToolResults: Array<{
+          toolCallId: string
+          toolName: string
+          content: string
+        }> = []
+
+        // Transform stream to save response after completion
+        const transformedStream = async function* () {
+          try {
+            for await (const chunk of stream) {
+              usage.observe(chunk)
+
+              // Track text content (TanStack AI 'content' chunks contain full accumulated text)
+              if (chunk.type === 'content') {
+                fullResponse = chunk.content // Replace, not append - content is cumulative
+              }
+
+              // Accumulate streamed tool-call fragments (id/name arrive on the
+              // first fragment; arguments concatenate across fragments per index).
+              if (chunk.type === 'tool_call') {
+                const entry = toolCallAccum.get(chunk.index) ?? {
+                  id: '',
+                  name: '',
+                  args: '',
+                }
+                if (chunk.toolCall.id) entry.id = chunk.toolCall.id
+                if (chunk.toolCall.function.name) {
+                  entry.name = chunk.toolCall.function.name
+                }
+                entry.args += chunk.toolCall.function.arguments
+                toolCallAccum.set(chunk.index, entry)
+                if (entry.id && entry.name) {
+                  toolCallIdToName.set(entry.id, entry.name)
+                }
+              }
+
+              // Track tool results (name looked up via the toolCallId map).
+              if (chunk.type === 'tool_result') {
+                collectedToolResults.push({
+                  toolCallId: chunk.toolCallId,
+                  toolName: toolCallIdToName.get(chunk.toolCallId) ?? '',
+                  content: chunk.content,
+                })
+              }
+
+              yield chunk
+            }
+          } finally {
+            releaseSlotOnce()
+            // Finalize accumulated tool calls (parse the completed argument JSON).
+            const collectedToolCalls = Array.from(toolCallAccum.values())
+              .filter((e) => e.id && e.name)
+              .map((e) => {
+                let args: Record<string, unknown> = {}
+                try {
+                  const parsed: unknown = JSON.parse(e.args || '{}')
+                  if (typeof parsed === 'object' && parsed !== null) {
+                    args = parsed as Record<string, unknown>
+                  }
+                } catch {
+                  args = {}
+                }
+                return { id: e.id, name: e.name, arguments: args }
+              })
+
+            // Save assistant message with tool calls after stream completes
+            if (fullResponse || collectedToolCalls.length > 0) {
+              await sessionService.addMessage(session.id, {
+                role: 'assistant',
+                content: fullResponse || '',
+                toolCalls:
+                  collectedToolCalls.length > 0
+                    ? collectedToolCalls
+                    : undefined,
               })
             }
 
-            yield chunk
-          }
-        } finally {
-          // Finalize accumulated tool calls (parse the completed argument JSON).
-          const collectedToolCalls = Array.from(toolCallAccum.values())
-            .filter((e) => e.id && e.name)
-            .map((e) => {
-              let args: Record<string, unknown> = {}
-              try {
-                const parsed: unknown = JSON.parse(e.args || '{}')
-                if (typeof parsed === 'object' && parsed !== null) {
-                  args = parsed as Record<string, unknown>
-                }
-              } catch {
-                args = {}
-              }
-              return { id: e.id, name: e.name, arguments: args }
-            })
+            // Save tool result messages
+            for (const result of collectedToolResults) {
+              await sessionService.addMessage(session.id, {
+                role: 'tool',
+                content: result.content,
+                toolCallId: result.toolCallId,
+                toolName: result.toolName,
+              })
+            }
 
-          // Save assistant message with tool calls after stream completes
-          if (fullResponse || collectedToolCalls.length > 0) {
-            await sessionService.addMessage(session.id, {
-              role: 'assistant',
-              content: fullResponse || '',
-              toolCalls:
-                collectedToolCalls.length > 0 ? collectedToolCalls : undefined,
-            })
-          }
-
-          // Save tool result messages
-          for (const result of collectedToolResults) {
-            await sessionService.addMessage(session.id, {
-              role: 'tool',
-              content: result.content,
-              toolCallId: result.toolCallId,
-              toolName: result.toolName,
+            // One usage row per request, whatever the stream did — including
+            // an abort partway through, which is precisely when the spend must
+            // still be recorded. recordLlmUsage never throws.
+            await recordLlmUsage({
+              userId: user.id,
+              sessionId: session.id,
+              programId: session.programId ?? null,
+              provider: providerConfig.provider,
+              model: providerConfig.model,
+              ...usage.totals,
+              durationMs: Date.now() - streamStartedAt,
             })
           }
         }
-      }
 
-      // Return SSE stream response
-      return toServerSentEventsResponse(transformedStream(), {
-        headers: {
-          'X-Request-Id': requestId,
-          'X-Session-Id': session.id,
-        },
-      })
-    }),
+        // Return SSE stream response
+        return toServerSentEventsResponse(transformedStream(), {
+          headers: {
+            'X-Request-Id': requestId,
+            'X-Session-Id': session.id,
+          },
+        })
+      },
+    ),
   ),
 )
 
@@ -342,18 +405,27 @@ app.get(
 app.post(
   '/sessions',
   adapt(
-    apiHandler({}, async ({ request, user }) => {
-      const body: CreateSessionRequest = await request.json()
-      const { programId, designId } = body
+    apiHandler(
+      { body: createSessionSchema },
+      async ({ body: { programId, designId }, user }) => {
+        // Same rule as POST /chat: a session may only be scoped to a program
+        // and design the caller can actually reach, because that scope is what
+        // later requests spend against.
+        const scope = await resolveChatScope(
+          user.id,
+          { programId, designId },
+          sessionService,
+        )
 
-      const session = await sessionService.createSession(
-        user.id,
-        programId,
-        designId,
-      )
+        const session = await sessionService.createSession(
+          user.id,
+          scope.programId ?? undefined,
+          scope.designId ?? undefined,
+        )
 
-      return created({ session })
-    }),
+        return created({ session })
+      },
+    ),
   ),
 )
 
@@ -424,13 +496,22 @@ app.get(
 app.get(
   '/settings',
   adapt(
-    apiHandler({}, async ({ request }) => {
+    apiHandler({}, async ({ request, user }) => {
       const url = new URL(request.url)
       const programId = url.searchParams.get('programId')
 
       // Get settings
       let settings
       if (programId) {
+        // A program's AI settings row names its provider, model, enabled flag
+        // and — masked, but present — that it holds a key at all. Reading it
+        // is reading the program, so membership decides. Writes stay on
+        // system:manage (POST below).
+        if (
+          !(await AccessControlService.canAccessProgram(user.id, programId))
+        ) {
+          throw new PermissionDeniedError('program', 'access')
+        }
         settings = await db.query.aiSettings.findFirst({
           where: eq(aiSettings.programId, programId),
         })
@@ -476,17 +557,9 @@ app.post(
       // resource no role declares - so this endpoint 403'd for everyone,
       // administrators included. Admin config is 'system' everywhere else,
       // including admin.ts's own AI provider routes.
-      { permission: ['system', 'manage'] },
-      async ({ request }) => {
-        const body: SettingsRequest = await request.json()
+      { permission: ['system', 'manage'], body: aiSettingsWriteSchema },
+      async ({ body }) => {
         const { programId, provider, config, enabled = true } = body
-
-        // Validate provider
-        if (!['openai', 'anthropic'].includes(provider)) {
-          throw new ValidationError(
-            'Invalid provider. Must be one of: openai, anthropic',
-          )
-        }
 
         // Check if settings already exist
         const existing = programId
@@ -541,9 +614,8 @@ app.put(
     apiHandler(
       // See POST /settings above: 'ai_settings' is not a ResourceType, so this
       // denied everyone. Admin config is 'system' everywhere else.
-      { permission: ['system', 'manage'] },
-      async ({ request }) => {
-        const body: SettingsRequest = await request.json()
+      { permission: ['system', 'manage'], body: aiSettingsWriteSchema },
+      async ({ body }) => {
         const { programId, provider, config, enabled } = body
 
         // Find existing settings
@@ -561,18 +633,11 @@ app.put(
           )
         }
 
-        // Validate provider if provided
-        if (provider && !['openai', 'anthropic'].includes(provider)) {
-          throw new ValidationError(
-            'Invalid provider. Must be one of: openai, anthropic',
-          )
-        }
-
         // Update settings
         const [updated] = await db
           .update(aiSettings)
           .set({
-            provider: provider || existing.provider,
+            provider,
             config,
             enabled: enabled !== undefined ? enabled : existing.enabled,
             updatedAt: new Date(),

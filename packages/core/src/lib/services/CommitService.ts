@@ -16,7 +16,6 @@ import {
 } from '../db/schema'
 import { takeFirst } from '../db/take-first'
 import { NotFoundError, ValidationError } from '../errors'
-import { notDeleted } from '../db/filters'
 import { BranchService } from './BranchService'
 import type { TransactionClient } from '../db'
 
@@ -139,11 +138,18 @@ export class CommitService {
     const limit = options?.limit || 50
     const offset = options?.offset || 0
 
+    // Ordered by (created_at, id), not created_at alone. created_at comes from
+    // defaultNow() — the transaction timestamp — so commits written in one
+    // transaction share it exactly. That makes created_at a partial order, and
+    // LIMIT/OFFSET over a partial order is unstable: each page is sorted
+    // independently (top-N heapsort, whose tie order varies with N), so a row
+    // can repeat on one page and be skipped on the next. The id is arbitrary
+    // but unique and stable, which is all a tiebreak has to be.
     return db
       .select()
       .from(commits)
       .where(eq(commits.branchId, branchId))
-      .orderBy(desc(commits.createdAt))
+      .orderBy(desc(commits.createdAt), desc(commits.id))
       .limit(limit)
       .offset(offset)
   }
@@ -184,13 +190,30 @@ export class CommitService {
     // Otherwise, create a new transaction.
     const run = outerTx ?? db
     return run.transaction(async (tx) => {
-      // Get the branch inside the transaction. Two things depend on this read
-      // seeing the transaction's own state: a branch created by the caller's
-      // still-uncommitted transaction (a pool read would NotFound it), and
-      // `headCommitId` when this is the second commit the caller has put on
-      // one branch — a pool read would return the pre-transaction head, mis-
-      // parenting the commit and clobbering the head update.
-      const branch = await BranchService.getById(validated.branchId, tx)
+      // Get the branch inside the transaction, under a row lock. Two things
+      // depend on this read seeing the transaction's own state: a branch
+      // created by the caller's still-uncommitted transaction (a pool read
+      // would NotFound it), and `headCommitId` when this is the second commit
+      // the caller has put on one branch — a pool read would return the
+      // pre-transaction head, mis-parenting the commit and clobbering the head
+      // update.
+      //
+      // The lock is for the third: `headCommitId` is read here and rewritten at
+      // step 4, and every caller but `saveChanges` opens a plain READ COMMITTED
+      // transaction. Two commits landing on one branch at once both read the
+      // same head, both parent on it, and whichever UPDATE runs second wins —
+      // leaving the loser's commit row in place but unreachable, because
+      // walking parents back from the branch head never visits it. Its item
+      // versions disappear from history along with it, and the item rows it
+      // stamped with `commitId` point at a commit no longer on the branch.
+      // FOR UPDATE makes the second caller queue behind the first and read the
+      // head that was actually written. Under `saveChanges`' REPEATABLE READ
+      // the loser cannot see that newer row and gets a 40001 instead, which
+      // `handleApiError` already reports as a retryable conflict.
+      const branch = await BranchService.getByIdForUpdate(
+        validated.branchId,
+        tx,
+      )
       if (!branch) {
         throw new NotFoundError('Branch', validated.branchId, {
           operation: 'createCommit',
@@ -289,37 +312,56 @@ export class CommitService {
     // TypeScript validates the structure at compile time
     const validated = data
 
-    // Get both branches
-    const [targetBranch, sourceBranch] = await Promise.all([
-      BranchService.getById(validated.targetBranchId),
-      BranchService.getById(validated.sourceBranchId),
-    ])
-
-    if (!targetBranch) {
-      throw new NotFoundError('Branch', validated.targetBranchId, {
-        operation: 'createMergeCommit',
-      })
-    }
-    if (!sourceBranch) {
-      throw new NotFoundError('Branch', validated.sourceBranchId, {
-        operation: 'createMergeCommit',
-      })
-    }
-
-    // Source must be same design
-    if (targetBranch.designId !== sourceBranch.designId) {
-      throw new ValidationError('Cannot merge branches from different designs')
-    }
-
-    // Target is typically main
-    if (targetBranch.branchType !== 'main') {
-      throw new ValidationError('Merge target must be the main branch')
-    }
-
     // Inside a caller's transaction this runs as part of it; the serializable
     // retry then belongs to the caller, because replaying only this part of its
     // work would be wrong.
     const body = async (tx: TransactionClient) => {
+      // Both branches are read here rather than before the transaction opens,
+      // and the target under a row lock. Standalone, this function is wrapped
+      // in `withSerializableRetry`: a read that happened before the retry loop
+      // is replayed from the first attempt's answer, so a retry provoked by
+      // another release landing on main would parent this merge commit on the
+      // head that release just superseded — the very lost update the retry
+      // exists to avoid. Reading inside the body means every attempt sees the
+      // state its own transaction opened on.
+      //
+      // Only the target is locked. It is the row this writes back (step 4), so
+      // it needs the same read-then-write serialization `create` does; the
+      // source is read and never written, and locking it too would have this
+      // hold two branch rows where the merge path already takes the source's
+      // exclusive lock later, when it archives the branch.
+      const targetBranch = await BranchService.getByIdForUpdate(
+        validated.targetBranchId,
+        tx,
+      )
+      if (!targetBranch) {
+        throw new NotFoundError('Branch', validated.targetBranchId, {
+          operation: 'createMergeCommit',
+        })
+      }
+
+      const sourceBranch = await BranchService.getById(
+        validated.sourceBranchId,
+        tx,
+      )
+      if (!sourceBranch) {
+        throw new NotFoundError('Branch', validated.sourceBranchId, {
+          operation: 'createMergeCommit',
+        })
+      }
+
+      // Source must be same design
+      if (targetBranch.designId !== sourceBranch.designId) {
+        throw new ValidationError(
+          'Cannot merge branches from different designs',
+        )
+      }
+
+      // Target is typically main
+      if (targetBranch.branchType !== 'main') {
+        throw new ValidationError('Merge target must be the main branch')
+      }
+
       // 1. Get item changes - use provided changes or collect from source branch
       const itemChangesToRecord =
         validated.itemChanges && validated.itemChanges.length > 0
@@ -401,7 +443,9 @@ export class CommitService {
       .select()
       .from(commits)
       .where(and(...conditions))
-      .orderBy(desc(commits.createdAt))
+      // Total order, for the same reason getByBranch needs one — this slices
+      // per call, so two calls that disagree on tie order repeat or skip rows.
+      .orderBy(desc(commits.createdAt), desc(commits.id))
 
     const offset = options?.offset || 0
     const limit = options?.limit || 100
@@ -410,6 +454,15 @@ export class CommitService {
 
   /**
    * Get all commits that affected a specific item
+   *
+   * Deliberately delete-inclusive. History is an audit read, and the row that
+   * records a released deletion is the one the merge just soft-deleted:
+   * ChangeOrderMergeService stamps `isDeleted` on the released main-branch row
+   * and writes the merge commit's own `deleted` item_version against that same
+   * row. Filtering soft-deleted rows out of this query therefore erases
+   * precisely the event the reader opened the history for, and takes every
+   * earlier commit that touched the released row with it.
+   *
    * @param itemMasterId - The master ID of the item
    * @param designId - The design ID
    * @param options - Optional filtering options
@@ -426,7 +479,8 @@ export class CommitService {
   ): Promise<Array<ItemHistoryEntry>> {
     const { untilCommitId, branchId } = options || {}
 
-    // Get all items with this masterId in this design
+    // Get all items with this masterId in this design — soft-deleted rows
+    // included, see the note on this method.
     const itemVersionsList = await db
       .select({
         itemId: items.id,
@@ -434,11 +488,7 @@ export class CommitService {
       })
       .from(items)
       .where(
-        and(
-          eq(items.masterId, itemMasterId),
-          eq(items.designId, designId),
-          notDeleted(),
-        ),
+        and(eq(items.masterId, itemMasterId), eq(items.designId, designId)),
       )
 
     if (itemVersionsList.length === 0) {
@@ -630,7 +680,20 @@ export class CommitService {
   }
 
   /**
-   * Compare two tags and return the commits between them
+   * Compare two tags and return the commits between them.
+   *
+   * **Precondition: the two tags must share a lineage** — one tag's commit has
+   * to be an ancestor of the other's, walking both `parentId` and
+   * `mergeParentId`. The result is then the newer commit's ancestry minus the
+   * older commit's ancestry (a two-dot comparison); a tag compared with itself
+   * is a shared lineage and yields an empty list.
+   *
+   * A divergent pair — neither commit an ancestor of the other — is **rejected**
+   * with `ValidationError`, not compared against a merge base. Returning a
+   * one-sided diff for a divergent pair would make the answer depend on
+   * argument order, which is worse than refusing. A merge-base ("three-dot")
+   * mode would need its own symmetric-difference and ordering contract and can
+   * be added later as an explicit opt-in without changing this behaviour.
    */
   static async compareTags(
     tagId1: string,
@@ -694,6 +757,16 @@ export class CommitService {
     if (!commit1IsAncestorOf2 && !commit2IsAncestorOf1) {
       throw new ValidationError(
         'Tags are on divergent branches and cannot be compared',
+        undefined,
+        {
+          operation: 'compareTags',
+          tagId1,
+          tagId2,
+          tagName1: tag1.name,
+          tagName2: tag2.name,
+          commitId1: commit1.id,
+          commitId2: commit2.id,
+        },
       )
     }
 

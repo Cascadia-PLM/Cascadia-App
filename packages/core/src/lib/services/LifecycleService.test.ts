@@ -34,11 +34,11 @@ import {
   insertTestRequirement,
 } from '@/__tests__/fixtures/items'
 import { workflowDefinitions } from '@/lib/db/schema/workflows'
-import { itemTypeConfigs } from '@/lib/db/schema/config'
 import { items } from '@/lib/db/schema'
 import { ItemTypeRegistry } from '@/lib/items/registry'
 import {
   SYSTEM_USER_ID,
+  overrideItemTypeConfig,
   seedStandardPartLifecycle,
 } from '@/__tests__/fixtures/lifecycles'
 import { ValidationError } from '@/lib/errors'
@@ -75,6 +75,7 @@ const freeLifecycleDefinition = {
 
 describe('LifecycleService Free-lifecycle transitions', () => {
   const testDb = new TestDatabase()
+  let restoreItemTypeConfig: (() => Promise<void>) | undefined
   let user: TestUser
   let uniquePrefix: string
 
@@ -102,25 +103,19 @@ describe('LifecycleService Free-lifecycle transitions', () => {
         },
       })
 
-    await testDb.db
-      .insert(itemTypeConfigs)
-      .values({
-        itemType: 'Issue',
-        config: { lifecycleDefinitionId: FREE_LIFECYCLE_ID },
-        modifiedBy: SYSTEM_USER_ID,
-      })
-      .onConflictDoUpdate({
-        target: itemTypeConfigs.itemType,
-        set: {
-          config: { lifecycleDefinitionId: FREE_LIFECYCLE_ID },
-          modifiedBy: SYSTEM_USER_ID,
-        },
-      })
+    restoreItemTypeConfig = await overrideItemTypeConfig(
+      testDb.db,
+      'Issue',
+      { lifecycleDefinitionId: FREE_LIFECYCLE_ID },
+      SYSTEM_USER_ID,
+    )
 
     await ItemTypeRegistry.reload()
   })
 
   afterAll(async () => {
+    // Shared row: put back what this suite found before it wrote.
+    await restoreItemTypeConfig?.()
     await testDb.teardown()
   })
 
@@ -330,6 +325,7 @@ describe('LifecycleService Free-lifecycle transitions', () => {
 // on the Driven lifecycle; an empty list stays permissive as documented.
 describe('LifecycleService drivers allow-list (WI-4.4)', () => {
   const testDb = new TestDatabase()
+  let restoreItemTypeConfig: (() => Promise<void>) | undefined
 
   // This file claims the 'Tool' item type for its Driven fixture — each
   // itemType may be configured by at most one test file (shared row)
@@ -422,25 +418,19 @@ describe('LifecycleService drivers allow-list (WI-4.4)', () => {
         },
       })
 
-    await testDb.db
-      .insert(itemTypeConfigs)
-      .values({
-        itemType: 'Tool',
-        config: { lifecycleDefinitionId: TOOL_LIFECYCLE_ID },
-        modifiedBy: SYSTEM_USER_ID,
-      })
-      .onConflictDoUpdate({
-        target: itemTypeConfigs.itemType,
-        set: {
-          config: { lifecycleDefinitionId: TOOL_LIFECYCLE_ID },
-          modifiedBy: SYSTEM_USER_ID,
-        },
-      })
+    restoreItemTypeConfig = await overrideItemTypeConfig(
+      testDb.db,
+      'Tool',
+      { lifecycleDefinitionId: TOOL_LIFECYCLE_ID },
+      SYSTEM_USER_ID,
+    )
 
     await ItemTypeRegistry.reload()
   })
 
   afterAll(async () => {
+    // Shared row: put back what this suite found before it wrote.
+    await restoreItemTypeConfig?.()
     await testDb.teardown()
   })
 
@@ -511,6 +501,7 @@ describe('LifecycleService drivers allow-list (WI-4.4)', () => {
 // used to forbid — its replacement is mappings-must-reference-IDs.
 describe('LifecycleService state identity is IDs (WI-5.1)', () => {
   const testDb = new TestDatabase()
+  let restoreItemTypeConfig: (() => Promise<void>) | undefined
 
   // This file claims the 'Task' item type for its id!==name fixture
   const REQ_LIFECYCLE_ID = '00000000-0000-4000-8000-000000000316'
@@ -581,25 +572,19 @@ describe('LifecycleService state identity is IDs (WI-5.1)', () => {
         },
       })
 
-    await testDb.db
-      .insert(itemTypeConfigs)
-      .values({
-        itemType: 'Task',
-        config: { lifecycleDefinitionId: REQ_LIFECYCLE_ID },
-        modifiedBy: SYSTEM_USER_ID,
-      })
-      .onConflictDoUpdate({
-        target: itemTypeConfigs.itemType,
-        set: {
-          config: { lifecycleDefinitionId: REQ_LIFECYCLE_ID },
-          modifiedBy: SYSTEM_USER_ID,
-        },
-      })
+    restoreItemTypeConfig = await overrideItemTypeConfig(
+      testDb.db,
+      'Task',
+      { lifecycleDefinitionId: REQ_LIFECYCLE_ID },
+      SYSTEM_USER_ID,
+    )
 
     await ItemTypeRegistry.reload()
   })
 
   afterAll(async () => {
+    // Shared row: put back what this suite found before it wrote.
+    await restoreItemTypeConfig?.()
     await testDb.teardown()
   })
 
@@ -676,6 +661,7 @@ describe('LifecycleService state identity is IDs (WI-5.1)', () => {
 
 describe('LifecycleService.resolveActionTarget', () => {
   const testDb = new TestDatabase()
+  let restoreItemTypeConfig: (() => Promise<void>) | undefined
 
   // This file claims the 'TestCase' item type for its numeric-scheme fixture
   const NUMERIC_LIFECYCLE_ID = '00000000-0000-4000-8000-000000000317'
@@ -748,25 +734,19 @@ describe('LifecycleService.resolveActionTarget', () => {
         },
       })
 
-    await testDb.db
-      .insert(itemTypeConfigs)
-      .values({
-        itemType: 'TestCase',
-        config: { lifecycleDefinitionId: NUMERIC_LIFECYCLE_ID },
-        modifiedBy: SYSTEM_USER_ID,
-      })
-      .onConflictDoUpdate({
-        target: itemTypeConfigs.itemType,
-        set: {
-          config: { lifecycleDefinitionId: NUMERIC_LIFECYCLE_ID },
-          modifiedBy: SYSTEM_USER_ID,
-        },
-      })
+    restoreItemTypeConfig = await overrideItemTypeConfig(
+      testDb.db,
+      'TestCase',
+      { lifecycleDefinitionId: NUMERIC_LIFECYCLE_ID },
+      SYSTEM_USER_ID,
+    )
 
     await ItemTypeRegistry.reload()
   })
 
   afterAll(async () => {
+    // Shared row: put back what this suite found before it wrote.
+    await restoreItemTypeConfig?.()
     await testDb.teardown()
   })
 
@@ -867,6 +847,7 @@ describe('LifecycleService.resolveActionTarget', () => {
 
 describe('lifecycle definition memoization', () => {
   const testDb = new TestDatabase()
+  let restoreItemTypeConfig: (() => Promise<void>) | undefined
 
   // This file claims the 'Issue' item type elsewhere; use its own here
   const MEMO_LIFECYCLE_ID = '00000000-0000-4000-8000-000000000318'
@@ -914,25 +895,19 @@ describe('lifecycle definition memoization', () => {
         },
       })
 
-    await testDb.db
-      .insert(itemTypeConfigs)
-      .values({
-        itemType: 'TestPlan',
-        config: { lifecycleDefinitionId: MEMO_LIFECYCLE_ID },
-        modifiedBy: SYSTEM_USER_ID,
-      })
-      .onConflictDoUpdate({
-        target: itemTypeConfigs.itemType,
-        set: {
-          config: { lifecycleDefinitionId: MEMO_LIFECYCLE_ID },
-          modifiedBy: SYSTEM_USER_ID,
-        },
-      })
+    restoreItemTypeConfig = await overrideItemTypeConfig(
+      testDb.db,
+      'TestPlan',
+      { lifecycleDefinitionId: MEMO_LIFECYCLE_ID },
+      SYSTEM_USER_ID,
+    )
 
     await ItemTypeRegistry.reload()
   })
 
   afterAll(async () => {
+    // Shared row: put back what this suite found before it wrote.
+    await restoreItemTypeConfig?.()
     await testDb.teardown()
   })
 

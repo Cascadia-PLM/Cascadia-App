@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
+import { z } from 'zod'
 import { tagged } from '../adapter'
 import { BranchService } from '@/lib/services/BranchService'
 import { ProgramService } from '@/lib/services/ProgramService'
@@ -29,41 +30,56 @@ app.get(
   ),
 )
 
+/**
+ * Branch flags. Both are tri-state on the wire: absent leaves the flag alone,
+ * `true` and `false` mean lock/unlock. Archiving is one-way — `isArchived:
+ * false` has never un-archived anything and the schema does not pretend it
+ * does.
+ */
+const branchFlagsSchema = z.object({
+  isLocked: z.boolean().optional(),
+  isArchived: z.literal(true).optional(),
+})
+
 // PUT /api/branches/:id
 app.put(
   '/:id',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
-      const { id } = params
-      const branch = await BranchService.getById(id)
-      if (!branch) throw new NotFoundError('Branch', id)
+    apiHandler<{ id: string }, z.infer<typeof branchFlagsSchema>>(
+      { body: branchFlagsSchema },
+      async ({ params, body: data, user }) => {
+        const { id } = params
+        const branch = await BranchService.getById(id)
+        if (!branch) throw new NotFoundError('Branch', id)
 
-      const design = await DesignService.getById(branch.designId)
-      if (!design) throw new NotFoundError('Design', branch.designId)
+        const design = await DesignService.getById(branch.designId)
+        if (!design) throw new NotFoundError('Design', branch.designId)
 
-      // Need lead/admin access to lock/unlock
-      if (design.programId) {
-        const role = await ProgramService.getUserRole(user.id, design.programId)
-        if (role !== 'admin' && role !== 'lead') {
-          throw new PermissionDeniedError('branch', 'update')
+        // Need lead/admin access to lock/unlock
+        if (design.programId) {
+          const role = await ProgramService.getUserRole(
+            user.id,
+            design.programId,
+          )
+          if (role !== 'admin' && role !== 'lead') {
+            throw new PermissionDeniedError('branch', 'update')
+          }
         }
-      }
 
-      const data = await request.json()
+        if (data.isLocked === true) {
+          await BranchService.lockBranch(id)
+        } else if (data.isLocked === false) {
+          await BranchService.unlockBranch(id)
+        }
 
-      if (data.isLocked === true) {
-        await BranchService.lockBranch(id)
-      } else if (data.isLocked === false) {
-        await BranchService.unlockBranch(id)
-      }
+        if (data.isArchived === true) {
+          await BranchService.archiveBranch(id)
+        }
 
-      if (data.isArchived === true) {
-        await BranchService.archiveBranch(id)
-      }
-
-      const updatedBranch = await BranchService.getById(id)
-      return { branch: updatedBranch }
-    }),
+        const updatedBranch = await BranchService.getById(id)
+        return { branch: updatedBranch }
+      },
+    ),
   ),
 )
 

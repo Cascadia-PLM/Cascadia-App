@@ -43,25 +43,34 @@ export {
   entitySubQuery,
 } from './options/entities'
 export {
+  itemAvailableContextsQuery,
   itemCollectionQuery,
   itemCountsQuery,
+  itemEditContextQuery,
   itemGridQuery,
   itemListQuery,
 } from './options/items'
 export type { ItemFilters } from './options/items'
 export {
   designBranchesQuery,
+  designEcosQuery,
   designCountsQuery,
   designDetailQuery,
   designFamiliesQuery,
+  designGapAnalysisQuery,
+  designHistoryGraphQuery,
   designGridQuery,
   designListQuery,
+  designStructureQuery,
   designTagsQuery,
 } from './options/designs'
 export type {
   DesignBranch,
   DesignCounts,
+  DesignEco,
   DesignFamily,
+  DesignStructure,
+  DesignStructureContext,
   DesignTag,
 } from './options/designs'
 export {
@@ -96,7 +105,7 @@ export type {
   ModelVersionFile,
   ModelVersionFileSource,
 } from './options/model-versions'
-export { designItemsGridQuery } from './options/design-items'
+export { designItemsGridQuery, designItemsQuery } from './options/design-items'
 export type { DesignItem, DesignItemsContext } from './options/design-items'
 export { authSessionQuery, currentUserPermissionsQuery } from './options/auth'
 export type {
@@ -108,6 +117,7 @@ export {
   programCountsQuery,
   programDetailQuery,
   programGridQuery,
+  programHistoryGraphQuery,
   programListQuery,
   programMembersQuery,
 } from './options/programs'
@@ -126,8 +136,10 @@ export type {
 } from './options/workspaces'
 export {
   workInstructionAlertCountQuery,
+  workInstructionAlertsQuery,
   workInstructionDetailQuery,
   workInstructionOperationsQuery,
+  workInstructionResolvedParametricsQuery,
   workInstructionUsageQuery,
 } from './options/work-instructions'
 export {
@@ -185,12 +197,17 @@ export type {
   DashboardStats,
 } from './options/dashboard'
 export {
+  itemTransitionsQuery,
   lifecycleListQuery,
   lifecycleByItemTypeQuery,
   releasedFamilyStateIds,
 } from './options/lifecycles'
 export type { ItemTypeLifecycle } from './options/lifecycles'
-export { aiSettingsQuery, vaultConfigQuery } from './options/admin'
+export {
+  aiSettingsQuery,
+  settingQuery,
+  vaultConfigQuery,
+} from './options/admin'
 export type {
   AiProviderSettings,
   AiSettings,
@@ -232,8 +249,8 @@ export type {
   CatalogEntryPage,
   CatalogEntrySearch,
 } from './options/component-catalog'
-export { jobDetailQuery, jobListQuery } from './options/jobs'
-export type { Job, JobDetail, JobLog } from './options/jobs'
+export { jobDetailQuery, jobListQuery, jobStatusQuery } from './options/jobs'
+export type { Job, JobDetail, JobLog, JobStatusSnapshot } from './options/jobs'
 export { packageListQuery } from './options/packages'
 export { itemCheckoutQuery } from './options/checkout'
 export {
@@ -241,6 +258,7 @@ export {
   itemGraphQuery,
   itemRelationshipsQuery,
   itemWhereUsedQuery,
+  threadComparisonTargetsQuery,
 } from './options/relationships'
 export type {
   ItemGraph,
@@ -248,10 +266,16 @@ export type {
   ItemGraphParams,
   ItemRelationshipContext,
 } from './options/relationships'
-export { designStatusQuery } from './options/branches'
-export type { DesignStatus } from './options/branches'
-export { searchResultsGridQuery } from './options/enterprise-search'
+export { branchDetailQuery, designStatusQuery } from './options/branches'
+export type { BranchDetail, DesignStatus } from './options/branches'
+export {
+  enterpriseSearchQuery,
+  searchResultsGridQuery,
+} from './options/enterprise-search'
 export type { SearchResultRow } from './options/enterprise-search'
-export { itemSearchQuery } from './options/item-search'
+export { itemSearchQuery, itemTextSearchQuery } from './options/item-search'
 export type { ItemSearchParams } from './options/item-search'
-export { itemRevisionHistoryQuery } from './options/item-history'
+export { itemHistoryQuery } from './options/item-history'
+export { workflowDefinitionQuery } from './options/workflows'
+export { upstreamChangesQuery } from './options/mbom'
+export type { UpstreamChange } from './options/mbom'

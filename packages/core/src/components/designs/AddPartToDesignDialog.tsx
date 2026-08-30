@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { ChevronRight } from 'lucide-react'
 import {
   Dialog,
@@ -25,6 +26,14 @@ import {
 } from '@/components/ui/Select'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { apiFetch } from '@/lib/api/client'
+import {
+  designBranchesQuery,
+  designListQuery,
+  itemSearchQuery,
+  itemTextSearchQuery,
+  programListQuery,
+} from '@/lib/query'
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
 import { StateBadge } from '@/components/items/StateBadge'
 
 interface Item {
@@ -38,11 +47,6 @@ interface Item {
   designCode?: string | null
   designName?: string | null
   isExternal?: boolean
-}
-
-interface ProgramOption {
-  id: string
-  name: string
 }
 
 interface DesignOption {
@@ -75,11 +79,8 @@ export function AddPartToDesignDialog({
 }: AddPartToDesignDialogProps) {
   const { alert } = useAlertDialog()
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<Array<Item>>([])
   const [selectedItems, setSelectedItems] = useState<Array<Item>>([])
   const [loading, setLoading] = useState(false)
-  const [searching, setSearching] = useState(false)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Add mode: usage_copy (default) or cross_design_ref
   const [addMode, setAddMode] = useState<'usage_copy' | 'cross_design_ref'>(
@@ -90,50 +91,58 @@ export function AddPartToDesignDialog({
   const [suffixItemNumbers, setSuffixItemNumbers] = useState(false)
 
   // Breadcrumb state
-  const [programs, setPrograms] = useState<Array<ProgramOption>>([])
-  const [designs, setDesigns] = useState<Array<DesignOption>>([])
-  const [branches, setBranches] = useState<Array<BranchOption>>([])
   const [selectedProgramId, setSelectedProgramId] = useState('')
   const [selectedDesignId, setSelectedDesignId] = useState('')
   const [selectedBranchId, setSelectedBranchId] = useState('')
 
-  // Search for parts via API
-  const fetchParts = async (query: string) => {
-    setSearching(true)
-    try {
-      const params = new URLSearchParams({ itemType: 'Part', limit: '50' })
-      if (query.trim()) {
-        params.set('q', query.trim())
-        params.set('types', 'Part')
-      }
+  // The three breadcrumb lists, each enabled by the one above it.
+  const { data: programs = [] } = useQuery({
+    ...programListQuery(),
+    enabled: open,
+  })
+  const { data: designs = [] } = useQuery({
+    ...designListQuery<DesignOption>(selectedProgramId || undefined),
+    enabled: open && Boolean(selectedProgramId),
+  })
+  const { data: branches = [] } = useQuery(
+    designBranchesQuery<BranchOption>(
+      selectedDesignId,
+      true,
+      open && Boolean(selectedDesignId),
+    ),
+  )
 
-      // Apply breadcrumb filters
-      if (selectedDesignId) {
-        params.set('designScope', 'current')
-        params.set('contextDesignId', selectedDesignId)
-      } else if (selectedProgramId && designs.length > 0) {
-        // Program selected but no specific design — filter by all designs in the program
-        const programDesignIds = designs.map((d) => d.id).join(',')
-        params.set('designIds', programDesignIds)
-      }
+  // Which designs the search is confined to, following the breadcrumb: a
+  // chosen design narrows to itself, a chosen program to everything under it.
+  const scope = selectedDesignId
+    ? { designScope: 'current' as const, contextDesignId: selectedDesignId }
+    : selectedProgramId && designs.length > 0
+      ? { designIds: designs.map((d) => d.id).join(',') }
+      : {}
 
-      const response = await fetch(`/api/v1/items/search?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        // Filter out parts already in this design
-        const availableParts = (data.data?.items ?? []).filter(
-          (item: Item) => item.designId !== designId,
-        )
-        setSearchResults(availableParts)
-      }
-    } catch {
-      // Silently fail - search results will remain empty
-    } finally {
-      setSearching(false)
-    }
-  }
+  // An empty box lists parts by type; typing switches to the ranked text
+  // search. The endpoint serves one or the other, so exactly one is enabled.
+  const debouncedQuery = useDebouncedValue(searchQuery.trim())
+  const { data: partsByType = [], isFetching: listing } = useQuery(
+    itemSearchQuery<Item>(
+      { itemType: 'Part', limit: 50, ...scope },
+      !debouncedQuery,
+    ),
+  )
+  const { data: partsByText = [], isFetching: textSearching } = useQuery(
+    itemTextSearchQuery<Item>(
+      { q: debouncedQuery, types: ['Part'], limit: 50, ...scope },
+      Boolean(debouncedQuery),
+    ),
+  )
+  const searching = debouncedQuery ? textSearching : listing
 
-  // Fetch programs when dialog opens
+  // A part already in this design is not a candidate for adding to it.
+  const searchResults = (debouncedQuery ? partsByText : partsByType).filter(
+    (item) => item.designId !== designId,
+  )
+
+  // Start every visit from a clean form.
   useEffect(() => {
     if (open) {
       setSelectedItems([])
@@ -143,68 +152,18 @@ export function AddPartToDesignDialog({
       setSelectedProgramId('')
       setSelectedDesignId('')
       setSelectedBranchId('')
-      setDesigns([])
-      setBranches([])
-
-      // Fetch programs
-      fetch('/api/v1/programs')
-        .then((r) => r.json())
-        .then((data) => setPrograms(data.data?.programs ?? data.data ?? []))
-        .catch(() => setPrograms([]))
-
-      fetchParts('')
     }
   }, [open])
 
-  // Fetch designs when program changes
+  // A narrower breadcrumb level cannot outlive the choice above it.
   useEffect(() => {
-    if (!open) return
     setSelectedDesignId('')
     setSelectedBranchId('')
-    setBranches([])
+  }, [selectedProgramId])
 
-    if (selectedProgramId) {
-      fetch(`/api/v1/designs?programId=${selectedProgramId}`)
-        .then((r) => r.json())
-        .then((data) => setDesigns(data.data?.designs ?? data.data ?? []))
-        .catch(() => setDesigns([]))
-    } else {
-      setDesigns([])
-    }
-  }, [selectedProgramId, open])
-
-  // Fetch branches when design changes
   useEffect(() => {
-    if (!open) return
     setSelectedBranchId('')
-
-    if (selectedDesignId) {
-      fetch(`/api/v1/designs/${selectedDesignId}/branches`)
-        .then((r) => r.json())
-        .then((data) => setBranches(data.data?.branches ?? data.data ?? []))
-        .catch(() => setBranches([]))
-    } else {
-      setBranches([])
-    }
-  }, [selectedDesignId, open])
-
-  // Re-trigger search when breadcrumb selection changes
-  useEffect(() => {
-    if (!open) return
-    fetchParts(searchQuery)
-  }, [selectedProgramId, selectedDesignId])
-
-  // Debounced search when query changes
-  useEffect(() => {
-    if (!open) return
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      fetchParts(searchQuery)
-    }, 300)
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [searchQuery])
+  }, [selectedDesignId])
 
   const toggleItemSelection = (item: Item) => {
     setSelectedItems((prev) => {

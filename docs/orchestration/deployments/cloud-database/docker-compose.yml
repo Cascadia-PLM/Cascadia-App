@@ -57,8 +57,10 @@ services:
     networks:
       - cascadia-app
 
-    # Push the schema on startup (pre-1.0: no migration files; safe for cloud DBs)
-    command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
+    # Apply the committed migrations, then serve. boot-migrate.ts refuses to
+    # start a database that has tables but no migration journal (pre-v0.5);
+    # see docs/deployment/upgrading.md for the one-time db:baseline stamp.
+    command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
 
 volumes:
   app_storage:

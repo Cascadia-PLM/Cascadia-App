@@ -7,6 +7,8 @@ import type { Document } from '@/lib/items/types/document'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { NotFoundError } from '@/lib/errors'
 import { apiHandler } from '@/lib/api/handler'
+import { documentUpdateSchema } from '@/lib/api/schemas'
+import { requireItemAccess } from '@/lib/auth/access'
 // Register item types (server-side version)
 import '@/lib/items/registerItemTypes.server'
 
@@ -20,8 +22,9 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['documents', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
         const { id } = params
+        await requireItemAccess(user.id, id)
         const document = await ItemService.findById(id)
         if (!document) throw new NotFoundError('Document', id)
         return { document }
@@ -35,12 +38,17 @@ app.put(
   '/:id',
   adapt(
     apiHandler<{ id: string }>(
-      { permission: ['documents', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
+      {
+        permission: ['documents', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: documentUpdateSchema,
+      },
+      // The schema permits `null` where the column is nullable, which the
+      // Document interface spells as an absent optional.
+      async ({ params, body, user }) => {
         const document = await ItemService.update<Document>(
           params.id,
-          data,
+          body as Partial<Document>,
           user.id,
         )
         return { document }
@@ -56,6 +64,7 @@ app.delete(
     apiHandler<{ id: string }>(
       { permission: ['documents', 'delete'] },
       async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         await ItemService.delete(params.id, user.id)
         return { success: true }
       },

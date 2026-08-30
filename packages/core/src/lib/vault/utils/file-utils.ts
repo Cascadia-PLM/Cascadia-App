@@ -451,14 +451,28 @@ export function isCADViewable(filename: string): boolean {
 
 /**
  * Extract basic metadata from a file.
- * Currently returns extension, MIME category, detected file category, and CAD format info.
- * Full content-based extraction (PDF properties, image EXIF, CAD polygon counts) is deferred to Phase 1.5.
+ *
+ * Returns extension, MIME category, detected file category, CAD format info for
+ * CAD extensions, and — for PDFs under the parser's size cap — page count and
+ * document properties.
+ *
+ * Content-based extraction stops there, deliberately:
+ *
+ * - **No image EXIF.** Reading it needs `sharp` or `exif-parser`, neither in the
+ *   tree, and both native. This module lives in `packages/core`, the published
+ *   AGPL package, so that binary would land in every community-edition install —
+ *   for fields nothing in the app reads today.
+ * - **No native CAD property parsing.** Converted CAD already gets units,
+ *   polygon count and bounding box written to the typed `cadMetadata` column by
+ *   the Python converter worker. What is left is vendor formats (`.sldprt`,
+ *   `.catpart`, `.ipt`) that no in-tree parser reads and that realistically need
+ *   a vendor SDK.
  */
-export function extractFileMetadata(
+export async function extractFileMetadata(
   filename: string,
   mimeType: string,
-  _data: Buffer,
-): Record<string, any> {
+  data: Buffer,
+): Promise<Record<string, any>> {
   const metadata: Record<string, any> = {
     extension: getFileExtension(filename),
     category: getMimeTypeCategory(mimeType),
@@ -474,10 +488,17 @@ export function extractFileMetadata(
     metadata.isViewable = isCADViewable(filename)
   }
 
-  // TODO: Phase 1.5 - Add metadata extraction
-  // - PDF: Use pdf-parse to extract title, author, page count
-  // - Images: Use sharp/exif-parser for EXIF data
-  // - CAD: Integration with CAD parsers for properties (polygon count, dimensions)
+  // Extension, never the caller-supplied mimeType — the browser asserts that at
+  // upload time, while the extension has already passed the allowlist above.
+  // The import is dynamic on purpose: this module is imported by client
+  // components for `formatFileSize`, and a static pdf-lib import here would pull
+  // the PDF stack into the browser bundle. `node-handlers/watermark.ts` does the
+  // same for the same reason.
+  if (getFileExtension(filename) === '.pdf') {
+    const { extractPdfMetadata } = await import('../pdf/metadata')
+    const pdf = await extractPdfMetadata(data)
+    if (pdf) Object.assign(metadata, pdf)
+  }
 
   return metadata
 }

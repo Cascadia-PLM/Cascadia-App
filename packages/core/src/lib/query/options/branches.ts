@@ -5,6 +5,34 @@ import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
 import { apiFetch } from '@/lib/api/client'
 
+/** One branch, as `/api/v1/branches/:id` returns it. */
+export interface BranchDetail {
+  id: string
+  name: string
+  branchType: string
+  designId: string | null
+}
+
+/**
+ * One branch by id.
+ *
+ * Keyed under `branches`, so a checkout, a merge, or a workspace conversion
+ * refreshes every reader — the pages that only wanted to know "is this a
+ * workspace?" used to each fetch it themselves.
+ */
+export function branchDetailQuery(branchId: string, enabled = true) {
+  return queryOptions({
+    queryKey: qk.detail('branches', branchId),
+    queryFn: async (): Promise<BranchDetail> => {
+      const result = await apiFetch<{ data: { branch: BranchDetail } }>(
+        `/api/v1/branches/${branchId}`,
+      )
+      return result.data.branch
+    },
+    enabled: enabled && Boolean(branchId),
+  })
+}
+
 /**
  * Whether a design's main branch is under change control, and which branch
  * types may be created against it.

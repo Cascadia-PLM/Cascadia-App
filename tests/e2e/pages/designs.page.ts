@@ -24,13 +24,11 @@ export class DesignsPage extends BasePage {
    */
   async navigateViaMenu(): Promise<void> {
     await this.openSidebar()
-    // Click the expand button first
-    const expandBtn = this.page.locator('[data-testid="nav-designs-expand"]')
-    if (await expandBtn.isVisible()) {
-      await expandBtn.click()
-      // Wait for submenu to appear and click All Designs
-      await this.page.locator('[data-testid="nav-designs"]').click()
-    }
+    // Expand the Designs section, then take its All Designs entry. Both are
+    // awaited clicks: Playwright waits for actionability, so a missing entry
+    // fails here rather than leaving the caller on the wrong page.
+    await this.page.locator('[data-testid="nav-designs-expand"]').click()
+    await this.page.locator('[data-testid="nav-designs"]').click()
   }
 
   async waitForReady(): Promise<void> {
@@ -52,9 +50,11 @@ export class DesignsPage extends BasePage {
   }
 
   get searchInput(): Locator {
-    return this.page.locator(
-      'input[placeholder*="Search"], input[type="search"], [data-testid="search-input"]',
-    )
+    // The grid's own search box, by its accessible name. The old
+    // placeholder selector also matched the header's global search bar, so
+    // it was a strict-mode violation the moment both had mounted — which the
+    // isVisible() guards hid by evaluating before either did.
+    return this.page.getByRole('textbox', { name: 'Search table' })
   }
 
   // ===== Detail Page Locators =====
@@ -113,11 +113,9 @@ export class DesignsPage extends BasePage {
    * Search for designs
    */
   async search(query: string): Promise<void> {
-    if (await this.searchInput.isVisible()) {
-      await this.searchInput.focus()
-      await this.searchInput.pressSequentially(query, { delay: 30 })
-      await this.page.waitForTimeout(500)
-    }
+    await this.searchInput.focus()
+    await this.searchInput.pressSequentially(query, { delay: 30 })
+    await this.page.waitForTimeout(500)
   }
 
   /**
@@ -132,45 +130,35 @@ export class DesignsPage extends BasePage {
    * Navigate to Items tab
    */
   async gotoItems(): Promise<void> {
-    if (await this.itemsTab.isVisible()) {
-      await this.itemsTab.click()
-    }
+    await this.itemsTab.click()
   }
 
   /**
    * Navigate to ECOs tab
    */
   async gotoECOs(): Promise<void> {
-    if (await this.ecosTab.isVisible()) {
-      await this.ecosTab.click()
-    }
+    await this.ecosTab.click()
   }
 
   /**
    * Navigate to Baselines tab
    */
   async gotoBaselines(): Promise<void> {
-    if (await this.baselinesTab.isVisible()) {
-      await this.baselinesTab.click()
-    }
+    await this.baselinesTab.click()
   }
 
   /**
    * Navigate to History tab
    */
   async gotoHistory(): Promise<void> {
-    if (await this.historyTab.isVisible()) {
-      await this.historyTab.click()
-    }
+    await this.historyTab.click()
   }
 
   /**
    * Open branch selector dropdown
    */
   async openBranchSelector(): Promise<void> {
-    if (await this.branchSelector.isVisible()) {
-      await this.branchSelector.click()
-    }
+    await this.branchSelector.click()
   }
 
   /**
@@ -180,12 +168,20 @@ export class DesignsPage extends BasePage {
   async switchToECOBranch(): Promise<boolean> {
     await this.openBranchSelector()
     const ecoBranch = this.ecoBranchOptions.first()
-    if (await ecoBranch.isVisible()) {
-      await ecoBranch.click()
-      await this.page.waitForTimeout(500)
-      return true
+    // The boolean is the contract: this design may genuinely have no ECO
+    // branch. Expressed as a bounded wait rather than an isVisible branch —
+    // the caller decides what "none" means, and nothing here swallows a
+    // failed click.
+    const available = await ecoBranch
+      .waitFor({ state: 'visible', timeout: 2000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!available) {
+      await this.page.keyboard.press('Escape')
+      return false
     }
-    await this.page.keyboard.press('Escape')
-    return false
+    await ecoBranch.click()
+    await this.page.waitForTimeout(500)
+    return true
   }
 }

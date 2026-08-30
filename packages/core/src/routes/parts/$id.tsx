@@ -5,9 +5,10 @@ import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 import type { Part } from '@/lib/items/types/part'
-import { PartDetail } from '@/components/parts/PartDetail'
+import type { PartDetailTab } from '@/components/parts/PartDetail'
+import { PART_DETAIL_TABS, PartDetail } from '@/components/parts/PartDetail'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { entityQuery, useInvalidateResources } from '@/lib/query'
+import { entityQuery, useResourceMutation } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
 
 // Search schema for version context URL params and tab
@@ -15,17 +16,7 @@ const partDetailSearchSchema = z.object({
   branch: z.string().uuid().optional(),
   tag: z.string().uuid().optional(),
   commit: z.string().uuid().optional(),
-  tab: z
-    .enum([
-      'details',
-      'gallery',
-      'relationships',
-      'sources',
-      'work-instructions',
-      'history',
-    ])
-    .optional()
-    .default('details'),
+  tab: z.enum(PART_DETAIL_TABS).optional().default('details'),
 })
 
 export const Route = createFileRoute('/parts/$id')({
@@ -39,57 +30,62 @@ function PartDetailPage() {
   const router = useRouter()
   const navigate = useNavigate()
   const { showSuccess } = useErrorHandler()
-  const invalidate = useInvalidateResources()
   const { id } = Route.useParams()
   const { data: part } = useQuery(entityQuery<Part>('parts', id, 'part'))
   const search = Route.useSearch()
+
+  const save = useResourceMutation({
+    mutationFn: (updated: Part) =>
+      apiFetch(`/api/v1/parts/${updated.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updated),
+      }),
+    invalidates: ['parts'],
+    onSuccess: (_data, updated) => {
+      showSuccess(
+        'Part updated',
+        `${updated.itemNumber} has been updated successfully`,
+      )
+    },
+  })
+
+  // The navigation is why this one is a mutation rather than a plain handler:
+  // `useResourceMutation` registers the invalidation before running onSuccess,
+  // so /parts is already refetching when we land on it instead of rendering the
+  // pre-delete cache and then flickering.
+  const remove = useResourceMutation({
+    mutationFn: (deleted: Part) =>
+      apiFetch(`/api/v1/parts/${deleted.id}`, { method: 'DELETE' }),
+    invalidates: ['parts'],
+    onSuccess: (_data, deleted) => {
+      showSuccess('Part deleted', `${deleted.itemNumber} has been deleted`)
+      navigate({ to: '/parts' })
+    },
+  })
 
   if (!part) return null
 
   const handleSave = async (updatedPart: Part) => {
     if (!part.id) return
-
-    await apiFetch(`/api/v1/parts/${part.id}`, {
-      method: 'PUT',
-      body: JSON.stringify(updatedPart),
-    })
-
-    showSuccess(
-      'Part updated',
-      `${updatedPart.itemNumber} has been updated successfully`,
-    )
-    await invalidate('parts')
+    await save.mutateAsync(updatedPart)
   }
 
   const handleDelete = async () => {
     if (!part.id) return
-
-    await apiFetch(`/api/v1/parts/${part.id}`, {
-      method: 'DELETE',
-    })
-
-    showSuccess('Part deleted', `${part.itemNumber} has been deleted`)
-    await invalidate('parts')
-    navigate({ to: '/parts' })
+    await remove.mutateAsync(part)
   }
 
   const handleCancel = () => {
     navigate({ to: '/parts' })
   }
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab: PartDetailTab) => {
     router.navigate({
       to: '/parts/$id',
       params: { id: part.id ?? '' },
       search: {
         ...search,
-        tab: tab as
-          | 'details'
-          | 'gallery'
-          | 'relationships'
-          | 'sources'
-          | 'work-instructions'
-          | 'history',
+        tab,
       },
       replace: true,
     })

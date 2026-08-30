@@ -3,7 +3,12 @@
 
 import { Hono } from 'hono'
 import { tagged } from '../adapter'
-import { MbomService } from '@/lib/services/MbomService'
+import type { z } from 'zod'
+import {
+  MbomService,
+  createMbomSchema,
+  reviewUpstreamChangeSchema,
+} from '@/lib/services/MbomService'
 import { DesignService } from '@/lib/services/DesignService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { requireDesignAccess } from '@/lib/auth/access'
@@ -17,15 +22,13 @@ const app = new Hono()
 app.post(
   '/',
   adapt(
-    apiHandler(
-      { permission: ['designs', 'create'] },
-      async ({ request, user }) => {
-        const data = await request.json()
-
+    apiHandler<Record<string, string>, z.infer<typeof createMbomSchema>>(
+      { permission: ['designs', 'create'], body: createMbomSchema },
+      async ({ body, user }) => {
         // Verify user has access to the source design
-        await requireDesignAccess(user.id, data.sourceDesignId)
+        await requireDesignAccess(user.id, body.sourceDesignId)
 
-        const result = await MbomService.createFromEbom(data, user.id)
+        const result = await MbomService.createFromEbom(body, user.id)
 
         return created(result)
       },
@@ -64,30 +67,29 @@ app.get(
 app.post(
   '/:designId/upstream-changes/:id/review',
   adapt(
-    apiHandler<{ designId: string; id: string }>(
-      {},
-      async ({ request, params, user }) => {
-        const { designId, id } = params
+    apiHandler<
+      { designId: string; id: string },
+      z.infer<typeof reviewUpstreamChangeSchema>
+    >({ body: reviewUpstreamChangeSchema }, async ({ body, params, user }) => {
+      const { designId, id } = params
 
-        // Verify design exists and is a Manufacturing design
-        const design = await DesignService.getById(designId)
-        if (!design) {
-          throw new NotFoundError('Design', designId)
-        }
+      // Verify design exists and is a Manufacturing design
+      const design = await DesignService.getById(designId)
+      if (!design) {
+        throw new NotFoundError('Design', designId)
+      }
 
-        if (design.designType !== 'Manufacturing') {
-          throw new ValidationError('Design is not a Manufacturing design')
-        }
+      if (design.designType !== 'Manufacturing') {
+        throw new ValidationError('Design is not a Manufacturing design')
+      }
 
-        // Verify user has access to the design
-        await requireDesignAccess(user.id, designId)
+      // Verify user has access to the design
+      await requireDesignAccess(user.id, designId)
 
-        const data = await request.json()
-        const result = await MbomService.reviewUpstreamChange(id, data, user.id)
+      const result = await MbomService.reviewUpstreamChange(id, body, user.id)
 
-        return result
-      },
-    ),
+      return result
+    }),
   ),
 )
 

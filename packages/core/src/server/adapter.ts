@@ -2,9 +2,11 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { uniqueSymbol } from 'hono-openapi'
+import { getConnInfo } from '@hono/node-server/conninfo'
 import type { Context, Handler } from 'hono'
 import type { OpenApiMetadata } from '@/lib/api/openapi-helpers'
 import { metadataToSpec } from '@/lib/api/openapi-helpers'
+import { recordSocketAddress } from '@/lib/api/client-ip'
 
 type LegacyHandler<TParams = Record<string, string>> = (ctx: {
   params: TParams
@@ -13,6 +15,29 @@ type LegacyHandler<TParams = Record<string, string>> = (ctx: {
 
 type AnnotatableHandler<TParams = Record<string, string>> =
   LegacyHandler<TParams> & { openapi?: OpenApiMetadata }
+
+/**
+ * Note the peer address for this request, if the runtime has one to give.
+ *
+ * This is the only place it is available: `apiHandler` is handed a fetch
+ * `Request`, which carries headers and nothing about the connection that
+ * delivered them, so without this step the only answer to "who sent this" is
+ * whatever the sender wrote in `X-Forwarded-For`. See `lib/api/client-ip`.
+ *
+ * `getConnInfo` reads the address off the Node `IncomingMessage` behind the
+ * request, which exists only when @hono/node-server is serving — both editions
+ * do (each app's `src/server/prod.ts`), but a Hono `app.request()` in a test
+ * does not, and it throws there. That is not a failure worth reporting: an
+ * unrecorded request resolves to `'unknown'`, which is exactly what the
+ * header-only predecessor produced for a request with no headers.
+ */
+function recordPeerAddress(c: Context, request: Request): void {
+  try {
+    recordSocketAddress(request, getConnInfo(c).remote.address)
+  } catch {
+    // No connection info in this runtime — leave the request unrecorded.
+  }
+}
 
 /**
  * Bridges a Hono route handler to the existing apiHandler() signature.
@@ -41,6 +66,7 @@ export function adapt<TParams = Record<string, string>>(
     // where that guarantee is asserted.
     const params = c.req.param() as TParams
     const request = c.req.raw
+    recordPeerAddress(c, request)
     return await handler({ params, request })
   }
   if (handler.openapi) {

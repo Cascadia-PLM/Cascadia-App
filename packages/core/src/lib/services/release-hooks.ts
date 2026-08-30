@@ -42,8 +42,18 @@ export interface ReleaseHook {
 export class ReleaseHookRegistry {
   private static hooks: Array<ReleaseHook> = []
 
-  /** Register a hook. Called from a composition root, never from core. */
+  /**
+   * Register a hook. Called from a composition root, never from core.
+   *
+   * Names are unique, for the same reason `ApprovalRegistry` requires it: a
+   * duplicate name means the hook fires twice while `registered()` reports it
+   * once. Since a hook's failure is swallowed by design, a double-fire is
+   * exactly the kind of thing that would never surface — so it throws here.
+   */
   static register(hook: ReleaseHook): void {
+    if (this.hooks.some((existing) => existing.name === hook.name)) {
+      throw new Error(`Release hook "${hook.name}" is already registered`)
+    }
     this.hooks.push(hook)
   }
 

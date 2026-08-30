@@ -5,7 +5,11 @@ import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 import type { Software } from '@/lib/items/types/software'
-import { SoftwareDetail } from '@/components/software/SoftwareDetail'
+import type { SoftwareDetailTab } from '@/components/software/SoftwareDetail'
+import {
+  SOFTWARE_DETAIL_TABS,
+  SoftwareDetail,
+} from '@/components/software/SoftwareDetail'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import {
   designListQuery,
@@ -15,7 +19,7 @@ import {
 import { apiFetch } from '@/lib/api/client'
 
 const softwareDetailSearchSchema = z.object({
-  tab: z.enum(['details', 'source', 'history']).optional().default('details'),
+  tab: z.enum(SOFTWARE_DETAIL_TABS).optional().default('details'),
 })
 
 export const Route = createFileRoute('/software/$id')({
@@ -76,12 +80,12 @@ function SoftwareDetailPage() {
     navigate({ to: '/software' })
   }
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab: SoftwareDetailTab) => {
     router.navigate({
       to: '/software/$id',
       params: { id: software.id ?? '' },
       search: {
-        tab: tab as 'details' | 'source' | 'history',
+        tab,
       },
       replace: true,
     })

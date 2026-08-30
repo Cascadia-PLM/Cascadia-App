@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, Check, CheckCheck, Clock, X } from 'lucide-react'
 import type { WorkInstructionChangeAlert } from '@/lib/items/types/work-instruction'
 import {
@@ -14,83 +15,44 @@ import {
   CardTitle,
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { apiFetch } from '@/lib/api/client'
+import { useInvalidateResources, workInstructionAlertsQuery } from '@/lib/query'
 
 interface ChangeAlertPanelProps {
   workInstructionId: string
   onError?: (error: Error) => void
   onSuccess?: (message: string) => void
-  onCountsChange?: (counts: { pending: number; total: number }) => void
 }
 
 export function ChangeAlertPanel({
   workInstructionId,
   onError,
   onSuccess,
-  onCountsChange,
 }: ChangeAlertPanelProps) {
-  const [alerts, setAlerts] = useState<Array<WorkInstructionChangeAlert>>([])
-  const [counts, setCounts] = useState({ pending: 0, total: 0 })
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string | null>(null)
+  const invalidate = useInvalidateResources()
 
-  const loadAlerts = useCallback(async () => {
-    try {
-      const url = filter
-        ? `/api/v1/work-instructions/${workInstructionId}/alerts?status=${filter}`
-        : `/api/v1/work-instructions/${workInstructionId}/alerts`
-      const response = await fetch(url)
-      if (!response.ok) throw new Error('Failed to load alerts')
-      const data = await response.json()
-      setAlerts(data.data?.alerts ?? [])
-      if (data.data?.counts) {
-        setCounts(data.data.counts)
-        onCountsChange?.(data.data.counts)
-      }
-    } catch (error) {
-      onError?.(error as Error)
-    } finally {
-      setLoading(false)
-    }
-  }, [workInstructionId, filter, onError, onCountsChange])
-
-  useEffect(() => {
-    loadAlerts()
-  }, [loadAlerts])
+  const { data, isPending: loading } = useQuery(
+    workInstructionAlertsQuery<WorkInstructionChangeAlert>(
+      workInstructionId,
+      filter ?? undefined,
+    ),
+  )
+  const alerts = data?.alerts ?? []
+  const counts = data?.counts ?? { pending: 0, total: 0 }
 
   const handleAction = async (
     alertId: string,
     action: 'acknowledge' | 'dismiss',
   ) => {
     try {
-      const response = await fetch(
-        `/api/v1/work-instructions/${workInstructionId}/alerts`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ alertId, action }),
-        },
-      )
-      if (!response.ok) throw new Error(`Failed to ${action} alert`)
-
-      // Update local state
-      setAlerts((prev) =>
-        prev.map((a) =>
-          a.id === alertId
-            ? {
-                ...a,
-                status: action === 'acknowledge' ? 'acknowledged' : 'dismissed',
-              }
-            : a,
-        ),
-      )
-      setCounts((prev) => ({
-        ...prev,
-        pending: Math.max(0, prev.pending - 1),
-      }))
-      onCountsChange?.({
-        ...counts,
-        pending: Math.max(0, counts.pending - 1),
+      await apiFetch(`/api/v1/work-instructions/${workInstructionId}/alerts`, {
+        method: 'PUT',
+        body: JSON.stringify({ alertId, action }),
       })
+      // Refreshes this list and the tab badge together — both hang off the
+      // work instruction.
+      await invalidate('work-instructions')
       onSuccess?.(
         `Alert ${action === 'acknowledge' ? 'acknowledged' : 'dismissed'}`,
       )
@@ -101,17 +63,14 @@ export function ChangeAlertPanel({
 
   const handleBulkAcknowledge = async () => {
     try {
-      const response = await fetch(
+      const result = await apiFetch<{ data?: { acknowledged?: number } }>(
         `/api/v1/work-instructions/${workInstructionId}/alerts`,
         { method: 'POST' },
       )
-      if (!response.ok) throw new Error('Failed to acknowledge alerts')
-      const data = await response.json()
-
-      // Reload
-      await loadAlerts()
+      await invalidate('work-instructions')
+      const acknowledged = result.data?.acknowledged ?? 0
       onSuccess?.(
-        `${data.data?.acknowledged ?? 0} alert${data.data?.acknowledged !== 1 ? 's' : ''} acknowledged`,
+        `${acknowledged} alert${acknowledged !== 1 ? 's' : ''} acknowledged`,
       )
     } catch (error) {
       onError?.(error as Error)

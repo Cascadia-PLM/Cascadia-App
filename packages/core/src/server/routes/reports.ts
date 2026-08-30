@@ -3,12 +3,16 @@
 
 import { Hono } from 'hono'
 import { tagged } from '../adapter'
+import type { z } from 'zod'
 import { ReportService } from '@/lib/reports/ReportService'
 import { reportExecutionOptionsSchema, reportSchema } from '@/lib/reports/types'
 import { NotFoundError } from '@/lib/errors'
 import { apiHandler, created } from '@/lib/api/handler'
 
 const adapt = tagged('Reports')
+
+/** Update takes the same shape, all optional. */
+const reportUpdateSchema = reportSchema.partial()
 
 const app = new Hono()
 
@@ -45,14 +49,9 @@ app.post(
   '/',
   adapt(
     apiHandler(
-      { permission: ['reports', 'create'] },
-      async ({ request, user }) => {
-        const data = await request.json()
-
-        // Validate input
-        const validatedData = reportSchema.parse(data)
-
-        const report = await ReportService.create(validatedData, user.id)
+      { permission: ['reports', 'create'], body: reportSchema },
+      async ({ body, user }) => {
+        const report = await ReportService.create(body, user.id)
 
         return created({ report })
       },
@@ -87,21 +86,12 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['reports', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
-
-        // Validate input (partial validation for update)
-        const validatedData = reportSchema.partial().parse(data)
-
+    apiHandler<{ id: string }, z.infer<typeof reportUpdateSchema>>(
+      { permission: ['reports', 'update'], body: reportUpdateSchema },
+      async ({ params, body, user }) => {
         await ReportService.requireWritable(params.id, user.id, 'update')
 
-        const report = await ReportService.update(
-          params.id,
-          validatedData,
-          user.id,
-        )
+        const report = await ReportService.update(params.id, body, user.id)
 
         return { report }
       },
@@ -130,19 +120,19 @@ app.post(
   '/:id/execute',
   adapt(
     apiHandler<{ id: string }>(
-      { permission: ['reports', 'read'] },
-      async ({ params, request, user }) => {
-        const { id } = params
-
-        let options = {}
-        try {
-          const body = await request.json()
-          options = reportExecutionOptionsSchema.parse(body)
-        } catch {
-          // Use default options if body is empty or invalid
-        }
-
-        const result = await ReportService.execute(id, options, user.id)
+      {
+        permission: ['reports', 'read'],
+        // Optional, because running a report with no options is the ordinary
+        // case. A *malformed* body is now a 400 rather than being swallowed
+        // into the defaults, which is the point of validating it at all.
+        body: reportExecutionOptionsSchema.optional(),
+      },
+      async ({ params, body, user }) => {
+        const result = await ReportService.execute(
+          params.id,
+          body ?? {},
+          user.id,
+        )
 
         return { result }
       },
@@ -155,20 +145,15 @@ app.post(
   '/:id/export',
   adapt(
     apiHandler<{ id: string }>(
-      { permission: ['reports', 'read'] },
-      async ({ params, request, user }) => {
+      {
+        permission: ['reports', 'read'],
+        body: reportExecutionOptionsSchema.optional(),
+      },
+      async ({ params, body, user }) => {
         const { id } = params
 
-        let options = {}
-        try {
-          const body = await request.json()
-          options = reportExecutionOptionsSchema.parse(body)
-        } catch {
-          // Use default options if body is empty or invalid
-        }
-
         // Execute the report first
-        const result = await ReportService.execute(id, options, user.id)
+        const result = await ReportService.execute(id, body ?? {}, user.id)
 
         // Convert to CSV
         const csv = ReportService.exportToCSV(result)

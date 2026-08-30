@@ -40,10 +40,9 @@ import {
   workflowDefinitions,
   workflowInstances,
 } from '@/lib/db/schema/workflows'
-import { itemTypeConfigs } from '@/lib/db/schema/config'
-import { ItemTypeRegistry } from '@/lib/items/registry'
 import {
   SYSTEM_USER_ID,
+  overrideItemTypeConfig,
   seedStandardPartLifecycle,
 } from '@/__tests__/fixtures/lifecycles'
 import { NotFoundError, ValidationError } from '@/lib/errors'
@@ -207,6 +206,7 @@ const changeOrderWorkflowDefinition = {
 
 describe('ChangeOrderService', () => {
   const testDb = new TestDatabase()
+  let restoreItemTypeConfig: (() => Promise<void>) | undefined
   let user: TestUser
   let designId: string
 
@@ -239,42 +239,25 @@ describe('ChangeOrderService', () => {
       })
 
     // Link ChangeOrder item type to the ECO workflow
-    await testDb.db
-      .insert(itemTypeConfigs)
-      .values({
-        itemType: 'ChangeOrder',
-        config: {
-          lifecycleDefinitionId: TEST_WORKFLOW_ID,
-          workflowsByChangeType: {
-            ECO: TEST_WORKFLOW_ID,
-            ECN: TEST_WORKFLOW_ID,
-            Deviation: TEST_WORKFLOW_ID,
-            MCO: TEST_WORKFLOW_ID,
-          },
+    restoreItemTypeConfig = await overrideItemTypeConfig(
+      testDb.db,
+      'ChangeOrder',
+      {
+        lifecycleDefinitionId: TEST_WORKFLOW_ID,
+        workflowsByChangeType: {
+          ECO: TEST_WORKFLOW_ID,
+          ECN: TEST_WORKFLOW_ID,
+          Deviation: TEST_WORKFLOW_ID,
+          MCO: TEST_WORKFLOW_ID,
         },
-        modifiedBy: SYSTEM_USER_ID,
-      })
-      .onConflictDoUpdate({
-        target: itemTypeConfigs.itemType,
-        set: {
-          config: {
-            lifecycleDefinitionId: TEST_WORKFLOW_ID,
-            workflowsByChangeType: {
-              ECO: TEST_WORKFLOW_ID,
-              ECN: TEST_WORKFLOW_ID,
-              Deviation: TEST_WORKFLOW_ID,
-              MCO: TEST_WORKFLOW_ID,
-            },
-          },
-          modifiedBy: SYSTEM_USER_ID,
-        },
-      })
-
-    // Reload ItemTypeRegistry to pick up the test workflow configuration
-    await ItemTypeRegistry.reload()
+      },
+      SYSTEM_USER_ID,
+    )
   })
 
   afterAll(async () => {
+    // Shared row: put back what this suite found before it wrote.
+    await restoreItemTypeConfig?.()
     await testDb.teardown()
   })
 
@@ -320,18 +303,8 @@ describe('ChangeOrderService', () => {
         .returning(),
     )
 
-    const initialCommit = takeFirst(
-      await testDb.db
-        .insert(commits)
-        .values({
-          designId: createdDesign.id,
-          branchId: createdDesign.id,
-          message: 'Initial commit',
-          createdBy: user.id,
-        })
-        .returning(),
-    )
-
+    // Branch first, then the commit on it — commits.branch_id is a real FK
+    // now, so the old placeholder-then-fixup order cannot insert.
     const mainBranch = takeFirst(
       await testDb.db
         .insert(branches)
@@ -339,17 +312,27 @@ describe('ChangeOrderService', () => {
           designId: createdDesign.id,
           name: 'main',
           branchType: 'main',
-          headCommitId: initialCommit.id,
-          baseCommitId: initialCommit.id,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
+
+    const initialCommit = takeFirst(
+      await testDb.db
+        .insert(commits)
+        .values({
+          designId: createdDesign.id,
+          branchId: mainBranch.id,
+          message: 'Initial commit',
           createdBy: user.id,
         })
         .returning(),
     )
 
     await testDb.db
-      .update(commits)
-      .set({ branchId: mainBranch.id })
-      .where(eq(commits.id, initialCommit.id))
+      .update(branches)
+      .set({ headCommitId: initialCommit.id, baseCommitId: initialCommit.id })
+      .where(eq(branches.id, mainBranch.id))
 
     const [updated] = await testDb.db
       .update(designs)
@@ -425,17 +408,6 @@ describe('ChangeOrderService', () => {
         })
         .returning(),
     )
-    const c = takeFirst(
-      await testDb.db
-        .insert(commits)
-        .values({
-          designId: d.id,
-          branchId: d.id,
-          message: 'Initial commit',
-          createdBy: user.id,
-        })
-        .returning(),
-    )
     const b = takeFirst(
       await testDb.db
         .insert(branches)
@@ -443,16 +415,25 @@ describe('ChangeOrderService', () => {
           designId: d.id,
           name: 'main',
           branchType: 'main',
-          headCommitId: c.id,
-          baseCommitId: c.id,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
+    const c = takeFirst(
+      await testDb.db
+        .insert(commits)
+        .values({
+          designId: d.id,
+          branchId: b.id,
+          message: 'Initial commit',
           createdBy: user.id,
         })
         .returning(),
     )
     await testDb.db
-      .update(commits)
-      .set({ branchId: b.id })
-      .where(eq(commits.id, c.id))
+      .update(branches)
+      .set({ headCommitId: c.id, baseCommitId: c.id })
+      .where(eq(branches.id, b.id))
     await testDb.db
       .update(designs)
       .set({ defaultBranchId: b.id })
@@ -1178,7 +1159,7 @@ describe('ChangeOrderService', () => {
           .values({
             masterId: part.masterId,
             itemNumber: part.itemNumber,
-            revision: '-wc12345',
+            revision: '-abc12345',
             itemType: 'Part',
             name: part.name,
             state: 'Draft',
@@ -1771,6 +1752,17 @@ describe('ChangeOrderService', () => {
         } as any,
         user.id,
       )
+      // Reaching a change order means reaching one of its designs, and the
+      // relation that decides that is change_order_designs — `items.designId`,
+      // which createChangeOrder sets, is NULL on every ECO the application
+      // builds. Linked directly rather than through addDesignToEco so the
+      // fixture does not also create a branch and a commit. The design carries
+      // no programId, so membership is not what is under test here.
+      await testDb.db.insert(changeOrderDesigns).values({
+        changeOrderId: changeOrder.id,
+        designId,
+        mergeStatus: 'pending',
+      })
 
       await expect(
         ChangeOrderService.transitionWorkflow(
@@ -1872,6 +1864,17 @@ describe('ChangeOrderService', () => {
       })
 
       const changeOrder = await createChangeOrder()
+      // Reaching a change order means reaching one of its designs, and the
+      // relation that decides that is change_order_designs — `items.designId`,
+      // which createChangeOrder sets, is NULL on every ECO the application
+      // builds. Linked directly rather than through addDesignToEco so the
+      // fixture does not also create a branch and a commit. The design carries
+      // no programId, so membership is not what is under test here.
+      await testDb.db.insert(changeOrderDesigns).values({
+        changeOrderId: changeOrder.id,
+        designId,
+        mergeStatus: 'pending',
+      })
       await testDb.db
         .update(workflowInstances)
         .set({ workflowDefinitionId: defId })

@@ -122,20 +122,11 @@ export const uploadLimiter = new RateLimiter({
   maxRequests: limitFromEnv('RATE_LIMIT_UPLOAD_PER_MINUTE', 100),
 })
 
-/**
- * Extract client IP from request headers.
- * Checks X-Forwarded-For (set by reverse proxies) first.
+/*
+ * Keying is not this module's job. `getClientIp` used to live here and read
+ * the leftmost `X-Forwarded-For` entry — a value the caller writes, so
+ * rotating it minted a fresh bucket per request and the budget above stopped
+ * meaning anything. `resolveClientIp` in `./client-ip` replaced it: it trusts
+ * only as many forwarded hops as `TRUSTED_PROXY_COUNT` declares, and otherwise
+ * the TCP peer address.
  */
-export function getClientIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded) {
-    // Take the first IP (original client) from the chain
-    const first = forwarded.split(',')[0]?.trim()
-    if (first) return first
-  }
-  const realIp = request.headers.get('x-real-ip')
-  if (realIp) {
-    return realIp.trim()
-  }
-  return 'unknown'
-}

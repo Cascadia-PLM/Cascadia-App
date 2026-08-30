@@ -5,6 +5,8 @@ import { and, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { PhysicalPart } from '@/lib/items/types/physical-part'
 import { db } from '@/lib/db'
+import { physicalPartAccessScopeCondition } from '@/lib/db/filters'
+import { likeContains } from '@/lib/db/like-pattern'
 import { items, parts, physicalParts } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -207,18 +209,55 @@ export class PhysicalPartService {
     return (row as PhysicalPartRecord | undefined) ?? null
   }
 
+  /**
+   * The index for physical instances.
+   *
+   * `accessDesignIds` is the caller's reach, and it is **required** rather than
+   * optional on purpose. Every other field here is a user-supplied filter, and
+   * for as long as this one was absent the only list path for the type ran with
+   * no boundary at all: one request returned every serial, lot, ERP reference
+   * and technician note in the instance to anyone holding `physical_parts:read`
+   * — which all five seeded roles do. Requiring it costs the single production
+   * caller one argument and makes a future caller state its scope rather than
+   * inherit "everything" by omission. `WorkOrderService.search` takes the same
+   * axis optionally; that shape fails open, and is not worth copying.
+   *
+   * `null` is cross-program authority, matching
+   * `AccessControlService.getAccessibleDesignIds`. An empty array is **not**
+   * null and must not be treated as one: it says the caller reaches no design,
+   * and the guard below is on truthiness for exactly that reason. `[]` still
+   * builds the predicate — `inArray(col, [])` compiles to `false`, so the
+   * lineage disjunct goes false while the design-less disjunct keeps admitting
+   * the units the by-id gate ungates. A `.length > 0` guard here would skip the
+   * predicate entirely and hand the whole table to the one caller with the
+   * least reach of all.
+   *
+   * The predicate itself is `physicalPartAccessScopeCondition`, the same
+   * expression `accessScopeCondition` scopes `GET /api/v1/items` on and the
+   * one-query twin of `requirePhysicalPartAccess`. Reusing it rather than
+   * hand-rolling the rule is what keeps this list and the by-id routes from
+   * answering one question two ways — including its deliberate fail-*open* on
+   * a lineage that carries no design.
+   */
   static async search(criteria: {
     q?: string
     partMasterId?: string
     instanceKind?: 'unit' | 'lot'
     state?: string
+    accessDesignIds: Array<string> | null
     limit?: number
   }): Promise<Array<PhysicalPartRecord>> {
     const limit = Math.min(criteria.limit ?? 100, 500)
     const conditions = []
 
+    if (criteria.accessDesignIds) {
+      conditions.push(
+        physicalPartAccessScopeCondition(criteria.accessDesignIds),
+      )
+    }
+
     if (criteria.q) {
-      const term = `%${criteria.q}%`
+      const term = likeContains(criteria.q)
       conditions.push(
         or(
           ilike(physicalParts.serialNumber, term),

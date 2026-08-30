@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { and, count, desc, eq, sql } from 'drizzle-orm'
+import { and, count, desc, eq, isNull, sql } from 'drizzle-orm'
 import { LifecycleService } from './LifecycleService'
 import type { ExecutionStatus } from '@/lib/items/types/work-order'
 import { db } from '@/lib/db'
@@ -14,6 +14,11 @@ import {
   workOrders,
 } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'
+import {
+  asPostgresError,
+  constraintOf,
+  isUniqueViolation,
+} from '@/lib/errors/pg'
 import { takeFirst } from '@/lib/db/take-first'
 
 /**
@@ -137,20 +142,59 @@ export class InstructionExecutionService {
       }
     }
 
-    const execution = takeFirst(
-      await db
-        .insert(instructionExecutions)
-        .values({
-          workOrderInstructionId: lineId,
-          executedBy: userId,
-          unitLabel: unitLabel || null,
-          status: 'In Progress',
-          stepData: {},
-          currentStepIndex: 0,
-        })
-        .returning(),
-    )
-    return { execution, resumed: false }
+    try {
+      const execution = takeFirst(
+        await db
+          .insert(instructionExecutions)
+          .values({
+            workOrderInstructionId: lineId,
+            executedBy: userId,
+            unitLabel: unitLabel || null,
+            status: 'In Progress',
+            stepData: {},
+            currentStepIndex: 0,
+          })
+          .returning(),
+      )
+      return { execution, resumed: false }
+    } catch (error) {
+      // The resume SELECT above is a fast path, not a guarantee: two requests
+      // can both read "no open run" and both insert. `uq_instr_exec_open_run`
+      // makes the loser fail rather than open a second run that the traveler's
+      // countable tally would count twice toward the work-order completion
+      // gate. Re-read and hand back the winner, so a race is indistinguishable
+      // from a resume — the PhysicalPartService.register shape.
+      //
+      // Catch-and-reselect rather than ON CONFLICT: the index is partial, and
+      // this does not depend on drizzle's `targetWhere` support.
+      const pgError = asPostgresError(error)
+      const isOpenRunConflict =
+        isUniqueViolation(error) &&
+        pgError !== null &&
+        constraintOf(pgError) === 'uq_instr_exec_open_run'
+      if (!isOpenRunConflict) throw error
+
+      const winner = (
+        await db
+          .select()
+          .from(instructionExecutions)
+          .where(
+            and(
+              eq(instructionExecutions.workOrderInstructionId, lineId),
+              eq(instructionExecutions.executedBy, userId),
+              eq(instructionExecutions.status, 'In Progress'),
+              // Exactly the row the index collided on, so a labelled run is
+              // never handed back for an unlabelled start.
+              unitLabel
+                ? eq(instructionExecutions.unitLabel, unitLabel)
+                : isNull(instructionExecutions.unitLabel),
+            ),
+          )
+          .limit(1)
+      )[0]
+      if (winner) return { execution: winner, resumed: true }
+      throw error
+    }
   }
 
   static async updateStepData(

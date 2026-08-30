@@ -106,10 +106,6 @@ export interface TestPart {
   cost: string | null
   costCurrency: string | null
   leadTimeDays: number | null
-  quantityOnHand: number | null
-  reorderPoint: number | null
-  location: string | null
-  lastInventoryCheck: Date | null
 }
 
 export interface TestDocument {
@@ -252,9 +248,6 @@ export interface CreatePartInput extends CreateBaseItemInput {
   cost?: number
   costCurrency?: string
   leadTimeDays?: number
-  quantityOnHand?: number
-  reorderPoint?: number
-  location?: string
 }
 
 /**
@@ -266,7 +259,7 @@ export function createTestPart(
   overrides: CreatePartInput = {},
 ): {
   item: TestBaseItem
-  part: Omit<TestPart, 'lastInventoryCheck'> & { lastInventoryCheck?: Date }
+  part: TestPart
 } {
   const item = createBaseItem('Part', designId, userId, overrides)
 
@@ -282,9 +275,6 @@ export function createTestPart(
       cost: overrides.cost?.toString() ?? null,
       costCurrency: overrides.costCurrency ?? 'USD',
       leadTimeDays: overrides.leadTimeDays ?? null,
-      quantityOnHand: overrides.quantityOnHand ?? 0,
-      reorderPoint: overrides.reorderPoint ?? null,
-      location: overrides.location ?? null,
     },
   }
 }
@@ -336,9 +326,6 @@ export async function insertTestPart(
         cost: partData.cost,
         costCurrency: partData.costCurrency,
         leadTimeDays: partData.leadTimeDays,
-        quantityOnHand: partData.quantityOnHand,
-        reorderPoint: partData.reorderPoint,
-        location: partData.location,
       })
       .returning(),
   )
@@ -350,10 +337,7 @@ export async function insertTestPart(
       modifiedAt: insertedItem.modifiedAt,
       lockedAt: insertedItem.lockedAt,
     },
-    part: {
-      ...insertedPart,
-      lastInventoryCheck: insertedPart.lastInventoryCheck,
-    },
+    part: insertedPart,
   }
 }
 

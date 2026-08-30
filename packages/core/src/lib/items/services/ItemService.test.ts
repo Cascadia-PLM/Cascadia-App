@@ -25,11 +25,29 @@ import type { Part } from '@/lib/items/types/part'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+import {
+  NotFoundError,
+  PermissionDeniedError,
+  ValidationError,
+} from '@/lib/errors'
 import { RevisionService } from '@/lib/services/RevisionService'
+import { LifecycleService } from '@/lib/services/LifecycleService'
 import { seedWorkOrderLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { branches, commits, designs } from '@/lib/db/schema'
+import { LIFECYCLE_IDS } from '@/lib/items/lifecycle-ids'
+import {
+  branches,
+  changeOrders,
+  commits,
+  designs,
+  requirements,
+  workOrderInstructions,
+  workflowHistory,
+  workflowInstances,
+} from '@/lib/db/schema'
 import { takeFirst } from '@/lib/db/take-first'
+import { DesignService } from '@/lib/services/DesignService'
+import { ProgramService } from '@/lib/services/ProgramService'
+import { permissionService } from '@/lib/auth/permission-service'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'
@@ -77,20 +95,9 @@ describe('ItemService', () => {
         .returning(),
     )
 
-    // Create initial commit
-    const initialCommit = takeFirst(
-      await testDb.db
-        .insert(commits)
-        .values({
-          designId: createdDesign.id,
-          branchId: createdDesign.id, // Temporary
-          message: 'Initial commit',
-          createdBy: user.id,
-        })
-        .returning(),
-    )
-
-    // Create main branch
+    // Create main branch first (head unset), then the initial commit on it —
+    // commits.branch_id is a real FK now, so the old placeholder-then-fixup
+    // order cannot insert.
     const mainBranch = takeFirst(
       await testDb.db
         .insert(branches)
@@ -98,18 +105,27 @@ describe('ItemService', () => {
           designId: createdDesign.id,
           name: 'main',
           branchType: 'main',
-          headCommitId: initialCommit.id,
-          baseCommitId: initialCommit.id,
           createdBy: user.id,
         })
         .returning(),
     )
 
-    // Update commit with correct branchId
+    const initialCommit = takeFirst(
+      await testDb.db
+        .insert(commits)
+        .values({
+          designId: createdDesign.id,
+          branchId: mainBranch.id,
+          message: 'Initial commit',
+          createdBy: user.id,
+        })
+        .returning(),
+    )
+
     await testDb.db
-      .update(commits)
-      .set({ branchId: mainBranch.id })
-      .where(eq(commits.id, initialCommit.id))
+      .update(branches)
+      .set({ headCommitId: initialCommit.id, baseCommitId: initialCommit.id })
+      .where(eq(branches.id, mainBranch.id))
 
     // Update design with default branch
     const [updated] = await testDb.db
@@ -550,14 +566,14 @@ describe('ItemService', () => {
         const scoped = await ItemService.findMatchesByNumber(
           itemNumber,
           undefined,
-          { designIds: [mbomDesignId] },
+          { accessScope: { designIds: [mbomDesignId], programIds: [] } },
         )
         expect(scoped.map((m) => m.designId)).toEqual([mbomDesignId])
 
         const unscoped = await ItemService.findMatchesByNumber(
           itemNumber,
           undefined,
-          { designIds: [] },
+          { accessScope: { designIds: [], programIds: [] } },
         )
         expect(unscoped).toEqual([])
       })
@@ -615,6 +631,90 @@ describe('ItemService', () => {
 
       expect(updated.partType).toBe('Purchase')
       expect(updated.material).toBe('Steel')
+    })
+
+    // The three names below are documented on their PUT bodies and were
+    // accepted-and-dropped: the update landed nowhere and a re-read returned
+    // the old value. Assert the stored value, not the call.
+    it('stores a requirement type sent under the API name requirementType', async () => {
+      const created = await ItemService.create(
+        'Requirement',
+        {
+          itemNumber: `REQ-${uniquePrefix}-ALIAS-001`,
+          revision: 'A',
+          name: 'Alias Requirement',
+          designId,
+        } as any,
+        user.id,
+      )
+
+      await ItemService.update(
+        created.id,
+        { requirementType: 'Performance' } as any,
+        user.id,
+      )
+
+      const stored = takeFirst(
+        await testDb.db
+          .select()
+          .from(requirements)
+          .where(eq(requirements.itemId, created.id)),
+      )
+      expect(stored.type).toBe('Performance')
+    })
+
+    it('prefers an explicit type over the requirementType alias', async () => {
+      const created = await ItemService.create(
+        'Requirement',
+        {
+          itemNumber: `REQ-${uniquePrefix}-ALIAS-002`,
+          revision: 'A',
+          name: 'Alias Precedence Requirement',
+          designId,
+        } as any,
+        user.id,
+      )
+
+      await ItemService.update(
+        created.id,
+        { type: 'Security', requirementType: 'Performance' } as any,
+        user.id,
+      )
+
+      const stored = takeFirst(
+        await testDb.db
+          .select()
+          .from(requirements)
+          .where(eq(requirements.itemId, created.id)),
+      )
+      expect(stored.type).toBe('Security')
+    })
+
+    it('round-trips a change order description', async () => {
+      const created = await ItemService.create(
+        'ChangeOrder',
+        {
+          revision: 'A',
+          name: 'Described Change Order',
+          changeType: 'ECO',
+          designId,
+        } as any,
+        user.id,
+      )
+
+      await ItemService.update(
+        created.id,
+        { description: 'Why this change exists' } as any,
+        user.id,
+      )
+
+      const stored = takeFirst(
+        await testDb.db
+          .select()
+          .from(changeOrders)
+          .where(eq(changeOrders.itemId, created.id)),
+      )
+      expect(stored.description).toBe('Why this change exists')
     })
 
     it('throws NotFoundError when item does not exist', async () => {
@@ -872,6 +972,228 @@ describe('ItemService', () => {
       await expect(
         ItemService.delete('00000000-0000-0000-0000-000000000000', user.id),
       ).resolves.not.toThrow()
+    })
+
+    // The hard delete cascades from items.id — version rows, workflow
+    // instance, its history and approvals, affected-item lists, traveler
+    // lines. These pin what it is no longer allowed to take. Every state ID
+    // below is read from lifecycle configuration, never written as a literal.
+    describe('evidence the delete must not destroy', () => {
+      /**
+       * A state is put on the row directly: `ItemService.update` refuses to
+       * write `state` at all (transitions go through the lifecycle), and the
+       * transition machinery is not what these tests are about.
+       */
+      async function putInState(itemId: string, state: string): Promise<void> {
+        const { items: itemsTable } = await import('@/lib/db/schema')
+        await testDb.db
+          .update(itemsTable)
+          .set({ state })
+          .where(eq(itemsTable.id, itemId))
+      }
+
+      /** The governing definition's first state matching `match`. */
+      async function governingState(
+        itemType: string,
+        match: (s: {
+          id: string
+          isInitial?: boolean
+          isFinal?: boolean
+          finalKind?: string
+        }) => boolean,
+      ): Promise<string> {
+        const governing =
+          await LifecycleService.getGoverningDefinition(itemType)
+        const found = governing?.states.find(match)
+        if (!found) {
+          throw new Error(`No matching ${itemType} state in configuration`)
+        }
+        return found.id
+      }
+
+      it('refuses a change order that has left its initial state, and keeps its vote record', async () => {
+        const inReview = await governingState(
+          'ChangeOrder',
+          (s) => s.isInitial !== true && s.isFinal !== true,
+        )
+
+        const eco = await ItemService.create(
+          'ChangeOrder',
+          {
+            revision: 'A',
+            name: 'Delete Gate ECO',
+            changeType: 'ECO',
+            priority: 'medium',
+            reasonForChange: 'Test reason',
+            designId,
+          } as any,
+          user.id,
+        )
+
+        const instance = takeFirst(
+          await testDb.db
+            .insert(workflowInstances)
+            .values({
+              workflowDefinitionId: LIFECYCLE_IDS.changeOrder,
+              itemId: eco.id,
+              currentState: inReview,
+              context: { actorId: user.id },
+            })
+            .returning(),
+        )
+        await testDb.db.insert(workflowHistory).values({
+          instanceId: instance.id,
+          toState: inReview,
+          action: 'Submit for Review',
+          actorId: user.id,
+        })
+        await putInState(eco.id, inReview)
+
+        await expect(ItemService.delete(eco.id, user.id)).rejects.toThrow(
+          ValidationError,
+        )
+
+        expect(await ItemService.findById(eco.id)).not.toBeNull()
+        expect(
+          await testDb.db
+            .select()
+            .from(workflowInstances)
+            .where(eq(workflowInstances.itemId, eco.id)),
+        ).toHaveLength(1)
+        expect(
+          await testDb.db
+            .select()
+            .from(workflowHistory)
+            .where(eq(workflowHistory.instanceId, instance.id)),
+        ).toHaveLength(1)
+      })
+
+      it('refuses a change order that has reached a release final state', async () => {
+        const approved = await governingState(
+          'ChangeOrder',
+          (s) => s.finalKind === 'release',
+        )
+
+        const eco = await ItemService.create(
+          'ChangeOrder',
+          {
+            revision: 'A',
+            name: 'Released ECO',
+            changeType: 'ECO',
+            priority: 'medium',
+            reasonForChange: 'Test reason',
+            designId,
+          } as any,
+          user.id,
+        )
+        await putInState(eco.id, approved)
+
+        await expect(ItemService.delete(eco.id, user.id)).rejects.toThrow(
+          ValidationError,
+        )
+        expect(await ItemService.findById(eco.id)).not.toBeNull()
+      })
+
+      // The regression pin: ChangeOrderService.create deletes a change order
+      // it has just failed to link to a design, and that cleanup must survive
+      // the gate. A change order in the state `create` gave it is still
+      // deletable.
+      it('still deletes a change order in its initial state', async () => {
+        const eco = await ItemService.create(
+          'ChangeOrder',
+          {
+            revision: 'A',
+            name: 'Draft ECO',
+            changeType: 'ECO',
+            priority: 'medium',
+            reasonForChange: 'Test reason',
+            designId,
+          } as any,
+          user.id,
+        )
+
+        await ItemService.delete(eco.id, user.id)
+
+        expect(await ItemService.findById(eco.id)).toBeNull()
+      })
+
+      // Released lineage. Branch protection already refuses this for a part
+      // inside a design that has released — this arm is what answers for the
+      // design-less rows that skip that gate entirely, and states the rule
+      // once for any lifecycle whose release family is reachable.
+      it('refuses a released item', async () => {
+        const released = (
+          await LifecycleService.getReleasedFamilyStates('Part')
+        ).at(0)
+        expect(released).toBeDefined()
+
+        const part = await ItemService.create(
+          'Part',
+          {
+            itemNumber: `PN-${uniquePrefix}-DELETE-RELEASED`,
+            revision: 'A',
+            name: 'Released Part',
+            designId,
+          } as any,
+          user.id,
+        )
+        // A design-less row — the legacy shape the codebase still repairs by
+        // adoption — is what reaches this arm: `requireContentEditable`
+        // returns early without a design, so branch protection never runs.
+        const { items: itemsTable } = await import('@/lib/db/schema')
+        await testDb.db
+          .update(itemsTable)
+          .set({ state: released, designId: null })
+          .where(eq(itemsTable.id, part.id))
+
+        await expect(ItemService.delete(part.id, user.id)).rejects.toThrow(
+          ValidationError,
+        )
+
+        expect(await ItemService.findById(part.id)).not.toBeNull()
+      })
+
+      it('refuses a completed work order, and keeps its traveler lines', async () => {
+        const complete = await governingState(
+          'WorkOrder',
+          (s) => s.finalKind === 'complete',
+        )
+
+        const workOrder = await ItemService.create(
+          'WorkOrder',
+          {
+            revision: 'A',
+            name: 'Completed Work Order',
+            designId,
+            quantity: 1,
+          } as any,
+          user.id,
+        )
+        const line = takeFirst(
+          await testDb.db
+            .insert(workOrderInstructions)
+            .values({
+              workOrderId: workOrder.id,
+              title: 'Torque the fasteners',
+              snapshot: { operations: [], steps: [] } as any,
+              createdBy: user.id,
+            })
+            .returning(),
+        )
+        await putInState(workOrder.id, complete)
+
+        await expect(ItemService.delete(workOrder.id, user.id)).rejects.toThrow(
+          ValidationError,
+        )
+
+        expect(await ItemService.findById(workOrder.id)).not.toBeNull()
+        expect(
+          await testDb.db
+            .select()
+            .from(workOrderInstructions)
+            .where(eq(workOrderInstructions.id, line.id)),
+        ).toHaveLength(1)
+      })
     })
   })
 
@@ -2478,6 +2800,149 @@ describe('ItemService', () => {
         expect(result.name).toBe('New Name')
         expect((result as any).description).toBe('Original description')
       })
+    })
+  })
+
+  /**
+   * Security gate. Type-level RBAC answers "may this user update parts?" and
+   * says nothing about *which* parts; program membership is what scopes that.
+   * Until this gate existed, PUT and DELETE on every by-id type route wrote
+   * straight across the program boundary — RBAC alone was the whole check.
+   *
+   * The suite's own design has no programId, and an unassigned design is
+   * readable by everyone by deliberate design, so these cases seed a
+   * program-assigned design of their own.
+   */
+  describe('design access on update and delete', () => {
+    let member: TestUser
+    let outsider: TestUser
+    let scopedDesignId: string
+
+    beforeEach(async () => {
+      permissionService.clearCache()
+
+      member = await insertTestUser(testDb.db)
+      outsider = await insertTestUser(testDb.db)
+
+      // create() enrolls the creator as an admin member, which is exactly the
+      // membership under test — no addMember needed.
+      const program = await ProgramService.create(
+        { name: 'Scoped Program', code: `SCOPE-${uniquePrefix}` },
+        member.id,
+      )
+
+      const design = await DesignService.create(
+        {
+          programId: program.id,
+          name: 'Scoped Design',
+          code: `SCOPED-${uniquePrefix}`,
+          designType: 'Engineering',
+        },
+        member.id,
+      )
+      scopedDesignId = design.id
+    })
+
+    async function scopedPart(suffix: string) {
+      return ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-${suffix}`,
+          revision: 'A',
+          name: 'Scoped Part',
+          designId: scopedDesignId,
+        } as any,
+        member.id,
+      )
+    }
+
+    it('refuses an update from someone outside the program', async () => {
+      const part = await scopedPart('OUT-U')
+
+      await expect(
+        ItemService.update(part.id, { name: 'Renamed' }, outsider.id),
+      ).rejects.toThrow(PermissionDeniedError)
+
+      const unchanged = await ItemService.findById(part.id)
+      expect(unchanged!.name).toBe('Scoped Part')
+    })
+
+    it('refuses a delete from someone outside the program', async () => {
+      const part = await scopedPart('OUT-D')
+
+      await expect(ItemService.delete(part.id, outsider.id)).rejects.toThrow(
+        PermissionDeniedError,
+      )
+
+      expect(await ItemService.findById(part.id)).not.toBeNull()
+    })
+
+    it('allows a program member through', async () => {
+      const part = await scopedPart('IN')
+
+      const updated = await ItemService.update(
+        part.id,
+        { name: 'Renamed' },
+        member.id,
+      )
+      expect(updated.name).toBe('Renamed')
+
+      await ItemService.delete(part.id, member.id)
+      expect(await ItemService.findById(part.id)).toBeNull()
+    })
+
+    it('refuses before reporting which fields are immutable', async () => {
+      const part = await scopedPart('ORDER')
+
+      // A lifecycle field an outsider may not write either way. Authorization
+      // has to answer first, or the 400 tells them the item exists and what
+      // shape it has.
+      await expect(
+        ItemService.update(part.id, { state: 'Released' } as any, outsider.id),
+      ).rejects.toThrow(PermissionDeniedError)
+    })
+
+    it('lets the release machinery through with skipAccessCheck', async () => {
+      const part = await scopedPart('BYPASS')
+
+      // What ChangeOrderMergeService passes: a releaser may legitimately reach
+      // only a subset of a multi-design ECO's designs, so the release decides
+      // authorization once on the ECO rather than per item.
+      const updated = await ItemService.update(
+        part.id,
+        { name: 'Released by machinery' },
+        outsider.id,
+        { skipAccessCheck: true },
+      )
+      expect(updated.name).toBe('Released by machinery')
+
+      await ItemService.delete(part.id, outsider.id, { skipAccessCheck: true })
+      expect(await ItemService.findById(part.id)).toBeNull()
+    })
+
+    it('leaves design-less items alone', async () => {
+      // Change orders carry designId NULL, so there is no design to check and
+      // this gate must not become an accidental block on them. Their own
+      // routes are gated separately.
+      const changeOrder = await ItemService.create(
+        'ChangeOrder',
+        {
+          revision: 'A',
+          name: 'Design-less ECO',
+          changeType: 'ECO',
+          priority: 'medium',
+          reasonForChange: 'Covering the design-less path',
+        } as any,
+        member.id,
+      )
+      expect(changeOrder.designId).toBeNull()
+
+      const updated = await ItemService.update(
+        changeOrder.id,
+        { name: 'Renamed by an outsider' },
+        outsider.id,
+      )
+      expect(updated.name).toBe('Renamed by an outsider')
     })
   })
 })

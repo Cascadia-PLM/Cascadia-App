@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Package, Search } from 'lucide-react'
 import {
   Dialog,
@@ -17,6 +18,7 @@ import { Badge } from '@/components/ui/Badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { apiFetch } from '@/lib/api/client'
+import { designListQuery, useResourceMutation } from '@/lib/query'
 import { cn } from '@/lib/utils'
 
 interface DesignOption {
@@ -48,48 +50,22 @@ export function AddMemberDialog({
 }: AddMemberDialogProps) {
   const { alert } = useAlertDialog()
   const [searchQuery, setSearchQuery] = useState('')
-  const [availableDesigns, setAvailableDesigns] = useState<Array<DesignOption>>(
-    [],
-  )
   const [selectedDesignId, setSelectedDesignId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [searching, setSearching] = useState(false)
 
-  // Fetch available designs (same program, no parent, not already a member)
-  useEffect(() => {
-    const fetchDesigns = async () => {
-      if (!open) return
+  const { data: designs = [], isPending: searching } = useQuery({
+    ...designListQuery<DesignOption>(programId ?? undefined),
+    enabled: open,
+  })
 
-      setSearching(true)
-      try {
-        const params = programId ? `?programId=${programId}` : ''
-        const response = await fetch(`/api/v1/designs${params}`)
-        if (response.ok) {
-          const { data } = await response.json()
-          // Filter to designs that can be added:
-          // - Same program
-          // - Type 'design' (not family or library)
-          // - No existing parent (standalone)
-          // - Not already a member
-          // - Not the family itself
-          const eligible = (data?.designs || []).filter(
-            (d: DesignOption) =>
-              d.designType === 'Engineering' &&
-              d.parentDesignId === null &&
-              !existingMemberIds.includes(d.id) &&
-              d.id !== familyDesignId,
-          )
-          setAvailableDesigns(eligible)
-        }
-      } catch {
-        setAvailableDesigns([])
-      } finally {
-        setSearching(false)
-      }
-    }
-
-    fetchDesigns()
-  }, [open, programId, existingMemberIds, familyDesignId])
+  // Eligible members are standalone engineering designs in the same program
+  // that are not already members, and never the family itself.
+  const availableDesigns = designs.filter(
+    (d) =>
+      d.designType === 'Engineering' &&
+      d.parentDesignId === null &&
+      !existingMemberIds.includes(d.id) &&
+      d.id !== familyDesignId,
+  )
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -106,27 +82,29 @@ export function AddMemberDialog({
       d.name.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  const handleAdd = async () => {
-    if (!selectedDesignId) return
-
-    setLoading(true)
-    try {
-      await apiFetch(`/api/v1/designs/${familyDesignId}/members`, {
+  const addMember = useResourceMutation({
+    mutationFn: (designId: string) =>
+      apiFetch(`/api/v1/designs/${familyDesignId}/members`, {
         method: 'POST',
-        body: JSON.stringify({ designId: selectedDesignId }),
-      })
-
+        body: JSON.stringify({ designId }),
+      }),
+    invalidates: ['designs'],
+    onSuccess: () => {
       onSuccess()
       onOpenChange(false)
-    } catch (error) {
+    },
+    onError: (error: Error) => {
       alert({
         title: 'Error',
-        description: `Failed to add design to family: ${(error as Error).message}`,
+        description: `Failed to add design to family: ${error.message}`,
         variant: 'destructive',
       })
-    } finally {
-      setLoading(false)
-    }
+    },
+  })
+
+  const handleAdd = () => {
+    if (!selectedDesignId) return
+    addMember.mutate(selectedDesignId)
   }
 
   return (
@@ -217,9 +195,9 @@ export function AddMemberDialog({
           <Button
             type="button"
             onClick={handleAdd}
-            disabled={!selectedDesignId || loading}
+            disabled={!selectedDesignId || addMember.isPending}
           >
-            {loading ? 'Adding...' : 'Add to Family'}
+            {addMember.isPending ? 'Adding...' : 'Add to Family'}
           </Button>
         </DialogFooter>
       </DialogContent>

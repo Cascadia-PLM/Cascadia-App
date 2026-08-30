@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Check, ChevronDown, Clock, GitBranch, Tag } from 'lucide-react'
 import type { VersionContext } from '@/lib/hooks/useVersionContext'
 import {
@@ -22,7 +23,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
 import { Badge } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
+import {
+  designBranchesQuery,
+  designTagsQuery,
+  itemAvailableContextsQuery,
+} from '@/lib/query'
 
 interface Branch {
   id: string
@@ -66,62 +71,35 @@ export function VersionContextSelector({
   itemId,
   variant = 'default',
 }: VersionContextSelectorProps) {
-  const [branches, setBranches] = useState<Array<Branch>>([])
-  const [tags, setTags] = useState<Array<Tag>>([])
-  const [loading, setLoading] = useState(true)
+  // On an item detail page the picker offers only contexts where the item
+  // exists; elsewhere it offers the design's branches and tags. Exactly one
+  // of these pairs is enabled at a time.
+  const { data: itemContexts, isFetching: loadingItemContexts } = useQuery(
+    itemAvailableContextsQuery<Branch, Tag>(
+      itemId ?? '',
+      Boolean(designId) && Boolean(itemId),
+    ),
+  )
+  const { data: designBranches = [], isFetching: loadingBranches } = useQuery({
+    ...designBranchesQuery<Branch>(designId),
+    enabled: Boolean(designId) && !itemId,
+  })
+  const { data: designTags = [], isFetching: loadingTags } = useQuery({
+    ...designTagsQuery<Tag>(designId),
+    enabled: Boolean(designId) && !itemId,
+  })
 
-  // Fetch branches and tags when designId or itemId changes
-  useEffect(() => {
-    if (!designId) {
-      setBranches([])
-      setTags([])
-      setLoading(false)
-      return
-    }
-
-    async function fetchData() {
-      setLoading(true)
-      try {
-        let fetchedBranches: Array<Branch> = []
-        let fetchedTags: Array<Tag> = []
-
-        if (itemId) {
-          // Fetch available contexts filtered by item existence
-          const res = await apiFetch<{
-            data: {
-              branches: Array<Branch>
-              tags: Array<Tag>
-            }
-          }>(`/api/v1/items/${itemId}/available-contexts`)
-          // Only include contexts where item exists
-          fetchedBranches = res.data.branches.filter((b) => b.exists !== false)
-          fetchedTags = res.data.tags.filter((t) => t.exists !== false)
-        } else {
-          // Fetch all branches and tags (original behavior)
-          const [branchesRes, tagsRes] = await Promise.all([
-            apiFetch<{ data: { branches: Array<Branch> } }>(
-              `/api/v1/designs/${designId}/branches`,
-            ),
-            apiFetch<{ data: { tags: Array<Tag> } }>(
-              `/api/v1/designs/${designId}/tags`,
-            ).catch(() => ({ data: { tags: [] } })),
-          ])
-          fetchedBranches = branchesRes.data.branches
-          fetchedTags = tagsRes.data.tags
-        }
-
-        setBranches(fetchedBranches)
-        setTags(fetchedTags)
-      } catch {
-        setBranches([])
-        setTags([])
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [designId, itemId])
+  const branches = itemId
+    ? (itemContexts?.branches ?? []).filter((b) => b.exists !== false)
+    : designBranches
+  const tags = itemId
+    ? (itemContexts?.tags ?? []).filter((t) => t.exists !== false)
+    : designTags
+  const loading = designId
+    ? itemId
+      ? loadingItemContexts
+      : loadingBranches || loadingTags
+    : false
 
   // Auto-select a valid context when current selection is unavailable
   // This is separate from the fetch effect to properly react to value/branches changes

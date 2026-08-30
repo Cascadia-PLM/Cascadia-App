@@ -19,36 +19,8 @@
 
 import { expect, test } from '../fixtures'
 import { PhysicalPartsPage, WorkOrdersPage } from '../pages'
-import type { Page } from '@playwright/test'
-
-interface SeededPart {
-  id: string
-  masterId?: string
-  itemNumber: string
-}
-
-async function seedPart(
-  page: Page,
-  designId: string,
-  data: {
-    itemNumber: string
-    name: string
-    trackingMode: 'none' | 'lot' | 'serial'
-  },
-): Promise<SeededPart> {
-  const response = await page.request.post('/api/v1/items', {
-    data: {
-      itemType: 'Part',
-      designId,
-      revision: 'A',
-      partType: 'Manufacture',
-      ...data,
-    },
-  })
-  expect(response.ok(), `part seed failed: ${await response.text()}`).toBe(true)
-  const body = await response.json()
-  return body.data.item as SeededPart
-}
+import { seedFreshDesign } from '../seed'
+import { seedPart } from '../helpers/test-data'
 
 test.describe('Physical Traceability Workflow', () => {
   test('WO → consume serial + lot → produce serials → genealogy, qualification, thread lane', async ({
@@ -57,15 +29,9 @@ test.describe('Physical Traceability Workflow', () => {
     const workOrders = new WorkOrdersPage(page)
     const physicalParts = new PhysicalPartsPage(page)
 
-    // ---- Seed: a design and three parts (built, component, feedstock) ----
-    const designsResponse = await page.request.get('/api/v1/designs')
-    const designs = (await designsResponse.json()).data?.designs ?? []
-    // Hard requirement, not a skip: global setup guarantees a design exists.
-    expect(
-      designs.length,
-      'no designs in the database — e2e global setup should have created one',
-    ).toBeGreaterThan(0)
-    const designId: string = designs[0].id
+    // ---- Seed: a fresh design and three parts (built, component, feedstock) ----
+    const designId: string = (await seedFreshDesign(page, 'E2E Traceability'))
+      .id
 
     const ts = Date.now()
     const builtPart = await seedPart(page, designId, {

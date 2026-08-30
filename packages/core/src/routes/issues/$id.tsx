@@ -5,7 +5,8 @@ import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 import type { Issue } from '@/lib/items/types/issue'
-import { IssueDetail } from '@/components/issues/IssueDetail'
+import type { IssueDetailTab } from '@/components/issues/IssueDetail'
+import { ISSUE_DETAIL_TABS, IssueDetail } from '@/components/issues/IssueDetail'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import {
   designListQuery,
@@ -15,7 +16,7 @@ import {
 import { apiFetch } from '@/lib/api/client'
 
 const issueDetailSearchSchema = z.object({
-  tab: z.enum(['details', 'history']).optional().default('details'),
+  tab: z.enum(ISSUE_DETAIL_TABS).optional().default('details'),
 })
 
 export const Route = createFileRoute('/issues/$id')({
@@ -74,12 +75,12 @@ function IssueDetailPage() {
     navigate({ to: '/issues' })
   }
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab: IssueDetailTab) => {
     router.navigate({
       to: '/issues/$id',
       params: { id: issue.id ?? '' },
       search: {
-        tab: tab as 'details' | 'history',
+        tab,
       },
       replace: true,
     })

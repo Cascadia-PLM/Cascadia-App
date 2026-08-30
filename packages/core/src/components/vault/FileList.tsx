@@ -24,6 +24,7 @@ import type { FileCategory } from '@/lib/vault/file-categories'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
+import { useSystemAccess } from '@/lib/hooks/usePermissions'
 import { useInvalidateResources } from '@/lib/query'
 import { itemFilesQuery } from '@/lib/query/options/item-files'
 import { FileCategoryMenu } from '@/components/vault/FileCategoryMenu'
@@ -73,7 +74,6 @@ interface FileListProps {
   /** Called after the item's thumbnail is set or cleared */
   onThumbnailChanged?: () => void
   className?: string
-  isAdmin?: boolean
 }
 
 export function FileList({
@@ -87,10 +87,14 @@ export function FileList({
   onPreviewFile,
   onThumbnailChanged,
   className,
-  isAdmin = false,
 }: FileListProps) {
   const { alert, confirm } = useAlertDialog()
   const invalidate = useInvalidateResources()
+  // Offer Force Unlock to exactly the population the route charges for it:
+  // `system:manage`, the same grant POST /items/:id/unlock's force branch
+  // requires. This used to be an `isAdmin` prop that no call site ever
+  // passed, so the control had never rendered anywhere in the app.
+  const { canManage } = useSystemAccess()
   const [previewFile, setPreviewFile] = useState<FileRecord | null>(null)
 
   const {
@@ -602,7 +606,7 @@ export function FileList({
             >
               <Unlock className="w-4 h-4" />
             </Button>
-            {isAdmin && (
+            {canManage && (
               <Button
                 variant="ghost"
                 size="icon"

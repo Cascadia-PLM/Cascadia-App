@@ -71,10 +71,6 @@ export {
 // Request/response schemas
 export {
   // User schemas
-  userCreateSchema,
-  userUpdateSchema,
-  type UserCreate,
-  type UserUpdate,
 
   // Part schemas
   partCreateSchema,

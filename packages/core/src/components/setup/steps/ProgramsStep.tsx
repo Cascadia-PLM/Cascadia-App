@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   CheckCircle,
   Database,
@@ -11,6 +12,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { strings } from '../strings'
+import { designListQuery, programListQuery } from '@/lib/query'
 import {
   Button,
   Card,
@@ -69,8 +71,10 @@ async function readErrorMessage(
 }
 
 export function ProgramsStep({ onCompleted }: ProgramsStepProps) {
-  const [programs, setPrograms] = useState<Array<CreatedProgram>>([])
-  const [designs, setDesigns] = useState<Array<CreatedDesign>>([])
+  const [createdPrograms, setCreatedPrograms] = useState<Array<CreatedProgram>>(
+    [],
+  )
+  const [createdDesigns, setCreatedDesigns] = useState<Array<CreatedDesign>>([])
 
   // Program form
   const [programForm, setProgramForm] = useState({ name: '', code: '' })
@@ -109,26 +113,23 @@ export function ProgramsStep({ onCompleted }: ProgramsStepProps) {
   } | null>(null)
   const [catalogError, setCatalogError] = useState('')
 
-  useEffect(() => {
-    let cancelled = false
-    Promise.all([
-      fetch('/api/v1/programs').then((r) => (r.ok ? r.json() : null)),
-      fetch('/api/v1/designs').then((r) => (r.ok ? r.json() : null)),
-    ])
-      .then(([programJson, designJson]) => {
-        if (cancelled) return
-        const programList = (programJson?.data?.programs ??
-          []) as Array<CreatedProgram>
-        const designList = (designJson?.data?.designs ??
-          []) as Array<CreatedDesign>
-        setPrograms(programList)
-        setDesigns(designList)
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  // What already exists, so re-running the wizard shows it. Both lists are
+  // the same cache entries the rest of the app reads.
+  const { data: fetchedPrograms = [] } = useQuery(programListQuery())
+  const { data: fetchedDesigns = [] } =
+    useQuery(designListQuery<CreatedDesign>())
+
+  // What the server has, plus anything created in this session that the
+  // list may not have picked up yet — deduped by id.
+  const byId = <T extends { id: string }>(rows: Array<T>, extra: Array<T>) => {
+    const seen = new Set(rows.map((r) => r.id))
+    return [...rows, ...extra.filter((r) => !seen.has(r.id))]
+  }
+  const programs = byId(
+    fetchedPrograms as unknown as Array<CreatedProgram>,
+    createdPrograms,
+  )
+  const designs = byId(fetchedDesigns, createdDesigns)
 
   const handleCreateProgram = async () => {
     if (!programForm.name.trim() || !programForm.code.trim()) {
@@ -153,7 +154,7 @@ export function ProgramsStep({ onCompleted }: ProgramsStepProps) {
       }
       const json = await response.json()
       const created = (json.data?.program ?? json.data) as CreatedProgram
-      setPrograms((prev) => [...prev, created])
+      setCreatedPrograms((prev) => [...prev, created])
       setProgramForm({ name: '', code: '' })
       // Pre-select the new program for the design form.
       setDesignForm((d) => ({ ...d, programId: created.id }))
@@ -189,7 +190,7 @@ export function ProgramsStep({ onCompleted }: ProgramsStepProps) {
       }
       const json = await response.json()
       const created = (json.data?.design ?? json.data) as CreatedDesign
-      setDesigns((prev) => [...prev, created])
+      setCreatedDesigns((prev) => [...prev, created])
       setDesignForm({ ...designForm, name: '', code: '' })
       setPartForm((p) => ({ ...p, designId: created.id }))
     } catch (err) {

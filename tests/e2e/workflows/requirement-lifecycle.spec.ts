@@ -2,371 +2,145 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * Requirement Lifecycle E2E Workflow Tests
+ * Requirement Lifecycle E2E Journey
  *
- * Tier 2: Core workflow tests that run on merge to main.
- * Tests requirement management including:
- * Create Requirement → Link to Parts → View Traceability
+ * One journey, end to end, in the eco-workflow.spec.ts style: create a
+ * requirement through the UI, drive its lifecycle through whatever transition
+ * the seeded default lifecycle offers, and assert the move in both places it
+ * is visible — the badge and the API row.
+ *
+ * No state name appears here, deliberately. Lifecycle states are
+ * configuration: the transition's own `name` and `toStateName` come from the
+ * API, so this spec asserts that the lifecycle is wired up without asserting
+ * what anyone called its states. Nor does it look for a `status` field —
+ * requirements have none; it was absorbed into lifecycle flags.
+ *
+ * What it replaces: eighteen tests wrapped in `if (await …isVisible())`, most
+ * of which opened `/requirements` and used whatever row happened to be first.
  */
 
 import { expect, test } from '../fixtures'
-import type { Page } from '@playwright/test'
+import { seedFreshDesign } from '../seed'
+import { seedPart, seedRequirement } from '../helpers/test-data'
 
-/**
- * Helper to fill a form field
- * Uses fill() which is more reliable for React controlled inputs
- */
-async function fillField(
-  page: Page,
-  selector: string,
-  value: string,
-): Promise<void> {
-  const field = page.locator(selector)
-  await field.waitFor({ state: 'visible' })
-  await field.fill(value)
-}
+test.describe('Requirement Lifecycle Journey', () => {
+  test('create a requirement → transition it → its state moves everywhere it is shown', async ({
+    authenticatedPage: page,
+  }) => {
+    const ts = Date.now()
+    const design = await seedFreshDesign(page, 'E2E Requirement Journey')
+    const itemNumber = `REQ-E2E-${ts}`
+    const name = `E2E Requirement ${ts}`
 
-test.describe('Requirement Lifecycle @tier2', () => {
-  // Store created requirement ID for cleanup
-  let createdRequirementId: string | null = null
+    // ---- Create through the UI ----
+    // The create page renders the detail view in create mode, so the fields
+    // are ViewEdit ones — reachable by their labels, which is what FE-11 gave
+    // them.
+    await page.goto('/requirements/new')
+    await page.getByRole('combobox', { name: 'Design' }).click()
+    await page
+      .getByRole('option')
+      .filter({ hasText: design.name })
+      .first()
+      .click()
+    await page.getByRole('textbox', { name: 'Item Number' }).fill(itemNumber)
+    await page.getByRole('textbox', { name: 'Name' }).fill(name)
 
-  test.afterEach(async ({ authenticatedPage: page }) => {
-    // Cleanup
-    if (createdRequirementId) {
-      try {
-        await page.goto(`/requirements/${createdRequirementId}`)
-        const deleteButton = page.locator('button:has-text("Delete")')
-        if (await deleteButton.isVisible()) {
-          await deleteButton.click()
-          const confirmButton = page.locator(
-            'button:has-text("Confirm"), button:has-text("Delete")',
-          )
-          if (await confirmButton.isVisible()) {
-            await confirmButton.click()
-          }
-        }
-      } catch {
-        // Ignore cleanup errors
-      }
-      createdRequirementId = null
+    const [createResponse] = await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.url().includes('/api/v1/items') && r.request().method() === 'POST',
+        { timeout: 15000 },
+      ),
+      page.getByRole('button', { name: 'Create Requirement' }).click(),
+    ])
+    expect(
+      createResponse.ok(),
+      `requirement create failed: ${await createResponse.text()}`,
+    ).toBe(true)
+    const created = (await createResponse.json()).data.item as {
+      id: string
+      state: string
     }
+
+    await page.waitForURL(/\/requirements\/[a-f0-9-]+/, { timeout: 15000 })
+
+    // ---- The detail page shows it, in its lifecycle's initial state ----
+    const main = page.locator('main')
+    await expect(main).toContainText(itemNumber, { timeout: 15000 })
+
+    // ---- Drive one transition through whatever the lifecycle offers ----
+    const transitionsResponse = await page.request.get(
+      `/api/v1/items/${created.id}/transitions`,
+    )
+    expect(transitionsResponse.ok()).toBe(true)
+    const { transitions } = (await transitionsResponse.json()).data as {
+      transitions: Array<{ name: string; toStateName: string }>
+    }
+    expect(
+      transitions.length,
+      'the seeded Requirement lifecycle offers no transition from its initial state',
+    ).toBeGreaterThan(0)
+    const move = transitions[0]!
+
+    await page.getByRole('button', { name: move.name, exact: true }).click()
+
+    // The badge moves, and so does the row the API returns — either one
+    // agreeing on its own proves nothing.
+    await expect(main).toContainText(move.toStateName, { timeout: 15000 })
+    const afterResponse = await page.request.get(
+      `/api/v1/requirements/${created.id}`,
+    )
+    expect(afterResponse.ok()).toBe(true)
+    const after = (await afterResponse.json()).data.requirement as {
+      state: string
+    }
+    expect(after.state).not.toBe(created.state)
   })
 
-  test.describe('Requirements List', () => {
-    test('can navigate to requirements page', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/')
-
-      // Open sidebar
-      await page.click('[data-testid="menu-button"]')
-
-      // Click Requirements link
-      const reqLink = page.locator(
-        '[data-testid="nav-requirements"], a:has-text("Requirements")',
-      )
-      if (await reqLink.isVisible()) {
-        await reqLink.click()
-        await expect(page).toHaveURL(/\/requirements/)
-      }
+  test('linking a part to a requirement is readable from both ends', async ({
+    authenticatedPage: page,
+  }) => {
+    const ts = Date.now()
+    const designId = (await seedFreshDesign(page, 'E2E Requirement Link')).id
+    const requirement = await seedRequirement(page, designId, {
+      itemNumber: `REQ-E2E-LINK-${ts}`,
+      name: `E2E Linked Requirement ${ts}`,
+    })
+    const part = await seedPart(page, designId, {
+      itemNumber: `PN-E2E-SAT-${ts}`,
+      name: `E2E Satisfying Part ${ts}`,
     })
 
-    test('requirements list displays correctly', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/requirements')
+    // Linked over the API: the edge *direction* is what is under test, and
+    // driving the picker would test the picker instead.
+    const linkResponse = await page.request.post(
+      `/api/v1/requirements/${requirement.id}/satisfy`,
+      { data: { itemIds: [part.id] } },
+    )
+    expect(
+      linkResponse.ok(),
+      `satisfy link failed: ${await linkResponse.text()}`,
+    ).toBe(true)
 
-      // Verify table/list is visible
-      const list = page.locator(
-        'table, [data-testid="requirements-table"], [data-testid="requirements-list"]',
-      )
-      await expect(list).toBeVisible({ timeout: 5000 })
+    // The part's Relationships tab names the requirement. The edge belongs to
+    // the part — SATISFIES points part → requirement — so this is the side
+    // that renders it; the requirement's own page shows verification rather
+    // than satisfaction, which is worth knowing and is why this assertion is
+    // here rather than there.
+    await page.goto(`/parts/${part.id}?tab=relationships`)
+    await page.getByRole('tab', { name: 'Table View' }).click()
+    await expect(page.locator('main')).toContainText(requirement.itemNumber, {
+      timeout: 15000,
     })
 
-    test('can search requirements', async ({ authenticatedPage: page }) => {
-      await page.goto('/requirements')
-
-      // Look for search input
-      const searchInput = page.locator(
-        'input[placeholder*="Search"], input[type="search"], [data-testid="search-input"]',
-      )
-      if (await searchInput.isVisible()) {
-        await searchInput.focus()
-        await page.waitForTimeout(100)
-        await searchInput.pressSequentially('REQ', { delay: 30 })
-
-        // Give time for search to filter
-        await page.waitForTimeout(500)
-      }
-    })
-
-    test('can filter requirements by priority', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/requirements')
-
-      // Look for priority filter
-      const priorityFilter = page.locator(
-        '[data-testid="priority-filter"], select:has-text("Priority"), button:has-text("Priority")',
-      )
-      if (await priorityFilter.isVisible()) {
-        await priorityFilter.click()
-
-        // Look for filter options (MoSCoW: Must, Should, Could, Won't)
-        const filterOptions = page.locator('[role="option"], [role="menuitem"]')
-        await expect(filterOptions.first()).toBeVisible({ timeout: 3000 })
-      }
-    })
-  })
-
-  test.describe('Create Requirement', () => {
-    test('can navigate to create requirement page', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/requirements')
-
-      // Click create requirement button
-      const createButton = page.locator(
-        '[data-testid="create-requirement-button"], button:has-text("New Requirement"), button:has-text("Create")',
-      )
-      if (await createButton.isVisible()) {
-        await createButton.click()
-
-        // Should navigate to new requirement page
-        await expect(page).toHaveURL(/\/requirements\/new/)
-      }
-    })
-
-    test('requirement form displays all fields', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/requirements/new')
-
-      // Verify form is visible
-      await expect(
-        page.locator('[data-testid="requirement-form"]'),
-      ).toBeVisible()
-
-      // Verify key form fields
-      await expect(
-        page.locator('[data-testid="design-selector"]'),
-      ).toBeVisible()
-      await expect(
-        page.locator('[data-testid="requirement-item-number"]'),
-      ).toBeVisible()
-      await expect(
-        page.locator('[data-testid="requirement-name"]'),
-      ).toBeVisible()
-    })
-
-    test('can create a new requirement', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/requirements/new')
-
-      // Select a design
-      const designSelector = page.locator('[data-testid="design-selector"]')
-      await designSelector.click()
-
-      const designOptions = page
-        .locator('[role="option"]')
-        .filter({ hasNotText: 'No Design' })
-      // Hard requirement, not a skip: global setup guarantees a selectable design.
-      expect(
-        await designOptions.count(),
-        'no selectable design — e2e global setup should have created one',
-      ).toBeGreaterThan(0)
-      await designOptions.first().click()
-
-      // Fill in requirement details
-      const timestamp = Date.now()
-      const itemNumber = `REQ-E2E-${timestamp}`
-      const reqName = 'E2E Test Requirement'
-
-      await fillField(
-        page,
-        '[data-testid="requirement-item-number"]',
-        itemNumber,
-      )
-      await fillField(page, '[data-testid="requirement-name"]', reqName)
-
-      // Fill description if field exists
-      const descField = page.locator(
-        '[data-testid="requirement-description"], textarea[name="description"]',
-      )
-      if (await descField.isVisible()) {
-        await fillField(
-          page,
-          '[data-testid="requirement-description"], textarea[name="description"]',
-          'E2E test requirement description',
-        )
-      }
-
-      // Submit the form
-      await page.click(
-        '[data-testid="requirement-submit"], button[type="submit"]',
-      )
-
-      // Should navigate to requirement detail page
-      await expect(page).toHaveURL(/\/requirements\/[a-f0-9-]+(\?.*)?$/, {
-        timeout: 10000,
-      })
-
-      // Extract ID for cleanup
-      const url = page.url()
-      createdRequirementId = url.split('/').pop() || null
-
-      // Verify requirement was created. Use first() because the item number
-      // appears in both the banner and the heading.
-      await expect(page.locator(`text=${itemNumber}`).first()).toBeVisible({
-        timeout: 5000,
-      })
-    })
-  })
-
-  test.describe('Requirement Detail', () => {
-    test('can view requirement details', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/requirements')
-
-      // Click on first requirement in list
-      const reqLink = page
-        .locator('table tr a, [data-testid="requirement-link"]')
-        .first()
-      if (await reqLink.isVisible()) {
-        await reqLink.click()
-
-        // Should be on requirement detail page
-        await expect(page).toHaveURL(/\/requirements\/[a-f0-9-]+/, {
-          timeout: 5000,
-        })
-      }
-    })
-
-    test('requirement detail shows priority', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/requirements')
-
-      const reqLink = page
-        .locator('table tr a, [data-testid="requirement-link"]')
-        .first()
-      if (await reqLink.isVisible()) {
-        await reqLink.click()
-
-        // Look for priority badge or field
-        const priority = page.locator(
-          '[data-testid="requirement-priority"], .badge:has-text("Must"), .badge:has-text("Should"), .badge:has-text("Could")',
-        )
-        if (await priority.first().isVisible()) {
-          await expect(priority.first()).toBeVisible()
-        }
-      }
-    })
-  })
-
-  test.describe('Requirement Traceability', () => {
-    test('can view Satisfied By tab', async ({ authenticatedPage: page }) => {
-      await page.goto('/requirements')
-
-      const reqLink = page
-        .locator('table tr a, [data-testid="requirement-link"]')
-        .first()
-      if (await reqLink.isVisible()) {
-        await reqLink.click()
-
-        // Look for Satisfied By or Traceability tab
-        const satisfiedTab = page.locator(
-          'button:has-text("Satisfied"), button:has-text("Traceability"), [data-testid="satisfied-tab"]',
-        )
-        if (await satisfiedTab.isVisible()) {
-          await satisfiedTab.click()
-
-          // Verify section is visible
-          const satisfiedSection = page.locator(
-            '[data-testid="satisfied-by"], .traceability-panel',
-          )
-          await expect(satisfiedSection).toBeVisible({ timeout: 5000 })
-        }
-      }
-    })
-
-    test('can link requirement to part', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/requirements')
-
-      const reqLink = page
-        .locator('table tr a, [data-testid="requirement-link"]')
-        .first()
-      if (await reqLink.isVisible()) {
-        await reqLink.click()
-
-        // Look for Add Satisfaction or Link button
-        const linkButton = page.locator(
-          'button:has-text("Add Satisfaction"), button:has-text("Link Part"), [data-testid="add-satisfaction"]',
-        )
-        if (await linkButton.isVisible()) {
-          await linkButton.click()
-
-          // Should show dialog to select parts
-          const dialog = page.locator(
-            '[role="dialog"], [data-testid="link-dialog"]',
-          )
-          await expect(dialog).toBeVisible({ timeout: 5000 })
-        }
-      }
-    })
-
-    test('can view derived requirements', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/requirements')
-
-      const reqLink = page
-        .locator('table tr a, [data-testid="requirement-link"]')
-        .first()
-      if (await reqLink.isVisible()) {
-        await reqLink.click()
-
-        // Look for Derived or Children tab
-        const derivedTab = page.locator(
-          'button:has-text("Derived"), button:has-text("Children"), [data-testid="derived-tab"]',
-        )
-        if (await derivedTab.isVisible()) {
-          await derivedTab.click()
-
-          // Verify section is visible
-          const derivedSection = page.locator(
-            '[data-testid="derived-requirements"], .derived-panel',
-          )
-          await expect(derivedSection).toBeVisible({ timeout: 5000 })
-        }
-      }
-    })
-  })
-
-  test.describe('Requirement State', () => {
-    test('requirement shows state badge', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/requirements')
-
-      const reqLink = page
-        .locator('table tr a, [data-testid="requirement-link"]')
-        .first()
-      if (await reqLink.isVisible()) {
-        await reqLink.click()
-
-        // Look for state indicator
-        const stateBadge = page.locator(
-          '[data-testid="item-state"], .state-badge, .badge',
-        )
-        if (await stateBadge.first().isVisible()) {
-          await expect(stateBadge.first()).toBeVisible()
-        }
-      }
-    })
+    // …and the part's own satisfied-requirements read names the requirement.
+    // Both directions matter: the edge belongs to one row and is read from the
+    // other, which is exactly where a direction mistake hides.
+    const satisfiedResponse = await page.request.get(
+      `/api/v1/items/${part.id}/satisfied-requirements`,
+    )
+    expect(satisfiedResponse.ok()).toBe(true)
+    expect(await satisfiedResponse.text()).toContain(requirement.itemNumber)
   })
 })

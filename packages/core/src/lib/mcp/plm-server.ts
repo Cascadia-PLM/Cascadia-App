@@ -34,8 +34,11 @@ scoped to what the authenticated user can access.
 Write tools (create_item, update_item, create_relationship,
 transition_item_state, create_change_order, create_program) use a two-step
 confirmation flow: the first call returns { requiresConfirmation: true }
-with a summary of what will happen. Show that summary to the user, and only
-after they approve, repeat the call with "confirmed": true.
+with a summary of what will happen and a single-use "confirmationToken".
+Show the summary to the user, and only after they approve, repeat the exact
+same call with that confirmationToken added. The token expires after a few
+minutes, is bound to those exact parameters, and works once — changing any
+parameter or reusing a token yields a fresh preview instead of executing.
 
 Cascadia uses ECO-as-Branch versioning: released items in protected designs
 cannot be modified directly. When a write tool responds with

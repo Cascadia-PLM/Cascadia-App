@@ -15,6 +15,7 @@ import type { z } from 'zod'
 import type { TransactionClient } from '@/lib/db'
 import { db, withTx } from '@/lib/db'
 import { authEvents, roles, userRoles, users } from '@/lib/db/schema/users'
+import { likeContains } from '@/lib/db/like-pattern'
 import { takeFirst } from '@/lib/db/take-first'
 import {
   AlreadyExistsError,
@@ -118,10 +119,15 @@ export class UserService {
     })
 
     if (defaultRole) {
-      await db.insert(userRoles).values({
-        userId: user.id,
-        roleId: defaultRole.id,
-      })
+      // Idempotent under the composite PK: a repeat assignment is a no-op,
+      // never a 500.
+      await db
+        .insert(userRoles)
+        .values({
+          userId: user.id,
+          roleId: defaultRole.id,
+        })
+        .onConflictDoNothing()
     }
 
     return toSafeUser(user)
@@ -251,7 +257,7 @@ export class UserService {
     const conditions: Array<SQL<unknown>> = []
 
     if (filters?.search) {
-      const term = `%${filters.search}%`
+      const term = likeContains(filters.search)
       conditions.push(
         or(ilike(users.email, term), ilike(users.name, term)) as SQL<unknown>,
       )
@@ -303,12 +309,18 @@ export class UserService {
       throw new NotFoundError('User', userId)
     }
 
+    // Membership is a set: a duplicated id in the caller's list is the same
+    // assignment named twice, not two assignments — collapse it up front so
+    // the existence check below compares distinct ids (a duplicate used to
+    // trip its length comparison and surface as "Role not found").
+    const uniqueRoleIds = [...new Set(roleIds)]
+
     // Verify all roles exist
     const existingRoles = await db.query.roles.findMany({
-      where: inArray(roles.id, roleIds),
+      where: inArray(roles.id, uniqueRoleIds),
     })
 
-    if (existingRoles.length !== roleIds.length) {
+    if (existingRoles.length !== uniqueRoleIds.length) {
       throw new NotFoundError('Role', 'specified roles')
     }
 
@@ -316,13 +328,18 @@ export class UserService {
     await db.delete(userRoles).where(eq(userRoles.userId, userId))
 
     // Insert new role assignments
-    if (roleIds.length > 0) {
-      await db.insert(userRoles).values(
-        roleIds.map((roleId) => ({
-          userId,
-          roleId,
-        })),
-      )
+    if (uniqueRoleIds.length > 0) {
+      // onConflictDoNothing: under the composite PK a concurrent assignment
+      // of the same pair is a no-op, never a 500.
+      await db
+        .insert(userRoles)
+        .values(
+          uniqueRoleIds.map((roleId) => ({
+            userId,
+            roleId,
+          })),
+        )
+        .onConflictDoNothing()
     }
 
     // Clear permission cache for this user

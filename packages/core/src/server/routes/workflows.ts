@@ -6,8 +6,15 @@ import { z } from 'zod'
 import { tagged } from '../adapter'
 import { WorkflowService } from '@/lib/workflows/WorkflowService'
 import { WorkflowApprovalService } from '@/lib/workflows/WorkflowApprovalService'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+import { NotFoundError } from '@/lib/errors'
 import { apiHandler, created, parseQuery } from '@/lib/api/handler'
+import {
+  stateApproverInputSchema,
+  stateApproverPatchSchema,
+  stateApproversReplaceSchema,
+  workflowDefinitionCreateSchema,
+  workflowDefinitionUpdateSchema,
+} from '@/lib/api/schemas'
 
 const adapt = tagged('Workflows')
 
@@ -54,29 +61,23 @@ app.get(
 app.post(
   '/',
   adapt(
-    apiHandler({ permission: ['workflows', 'create'] }, async ({ request }) => {
-      const data = await request.json()
+    apiHandler(
+      {
+        permission: ['workflows', 'create'],
+        body: workflowDefinitionCreateSchema,
+      },
+      async ({ body }) => {
+        const workflow = await WorkflowService.create({
+          ...body,
+          workflowType: body.workflowType ?? 'strict',
+          states: body.states ?? [],
+          transitions: body.transitions ?? [],
+          isActive: body.isActive ?? true,
+        })
 
-      const workflow = await WorkflowService.create({
-        name: data.name,
-        workflowType: data.workflowType || 'strict',
-        description: data.description,
-        applicableItemTypes: data.applicableItemTypes,
-        states: data.states || [],
-        transitions: data.transitions || [],
-        isActive: data.isActive ?? true,
-        // The lifecycle editor sends all of these; dropping them here made
-        // its saves silently dishonest (every UI-created lifecycle landed
-        // as 'Free' with no drivers/mappings/phases)
-        lifecycleType: data.lifecycleType,
-        drivers: data.drivers,
-        changeActionMappings: data.changeActionMappings,
-        revisionScheme: data.revisionScheme,
-        phases: data.phases,
-      })
-
-      return created({ workflow })
-    }),
+        return created({ workflow })
+      },
+    ),
   ),
 )
 
@@ -97,26 +98,15 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['workflows', 'manage'] },
-      async ({ params, request }) => {
-        const data = await request.json()
-        const { id } = params
-        const workflow = await WorkflowService.update(id, {
-          name: data.name,
-          description: data.description,
-          applicableItemTypes: data.applicableItemTypes,
-          states: data.states,
-          transitions: data.transitions,
-          isActive: data.isActive,
-          // Same passthrough as create: absent keys keep the stored value,
-          // provided keys persist what the editor actually shows
-          lifecycleType: data.lifecycleType,
-          drivers: data.drivers,
-          changeActionMappings: data.changeActionMappings,
-          revisionScheme: data.revisionScheme,
-          phases: data.phases,
-        })
+    apiHandler<{ id: string }, z.infer<typeof workflowDefinitionUpdateSchema>>(
+      {
+        permission: ['workflows', 'manage'],
+        body: workflowDefinitionUpdateSchema,
+      },
+      // Absent keys keep the stored value; provided keys persist what the
+      // editor actually shows.
+      async ({ params, body }) => {
+        const workflow = await WorkflowService.update(params.id, body)
         return { workflow }
       },
     ),
@@ -171,20 +161,20 @@ app.get(
 app.put(
   '/:id/states/:stateId/approvers',
   adapt(
-    apiHandler<{ id: string; stateId: string }>(
-      { permission: ['workflows', 'manage'] },
-      async ({ request, params, user }) => {
-        const data = await request.json()
-
-        if (!Array.isArray(data.approvers)) {
-          throw new ValidationError('approvers must be an array')
-        }
-
+    apiHandler<
+      { id: string; stateId: string },
+      z.infer<typeof stateApproversReplaceSchema>
+    >(
+      {
+        permission: ['workflows', 'manage'],
+        body: stateApproversReplaceSchema,
+      },
+      async ({ body, params, user }) => {
         const { id, stateId } = params
         const approvers = await WorkflowApprovalService.setStateApprovers(
           id,
           stateId,
-          data.approvers,
+          body.approvers,
           user.id,
         )
 
@@ -198,24 +188,20 @@ app.put(
 app.post(
   '/:id/states/:stateId/approvers',
   adapt(
-    apiHandler<{ id: string; stateId: string }>(
-      { permission: ['workflows', 'manage'] },
-      async ({ request, params, user }) => {
-        const data = await request.json()
-
-        if (!data.type || !data.id) {
-          throw new ValidationError('type and id are required')
-        }
-
+    apiHandler<
+      { id: string; stateId: string },
+      z.infer<typeof stateApproverInputSchema>
+    >(
+      {
+        permission: ['workflows', 'manage'],
+        body: stateApproverInputSchema,
+      },
+      async ({ body, params, user }) => {
         const { id, stateId } = params
         const approver = await WorkflowApprovalService.addStateApprover(
           id,
           stateId,
-          {
-            type: data.type,
-            id: data.id,
-            isRequired: data.isRequired ?? true,
-          },
+          body,
           user.id,
         )
 
@@ -229,19 +215,18 @@ app.post(
 app.patch(
   '/:id/states/:stateId/approvers/:approverId',
   adapt(
-    apiHandler<{ id: string; stateId: string; approverId: string }>(
-      { permission: ['workflows', 'manage'] },
-      async ({ request, params }) => {
-        const data = await request.json()
-
-        if (typeof data.isRequired !== 'boolean') {
-          throw new ValidationError('isRequired must be a boolean')
-        }
-
-        const { approverId } = params
+    apiHandler<
+      { id: string; stateId: string; approverId: string },
+      z.infer<typeof stateApproverPatchSchema>
+    >(
+      {
+        permission: ['workflows', 'manage'],
+        body: stateApproverPatchSchema,
+      },
+      async ({ body, params }) => {
         const approver = await WorkflowApprovalService.updateStateApprover(
-          approverId,
-          data.isRequired,
+          params.approverId,
+          body.isRequired,
         )
 
         return { approver }

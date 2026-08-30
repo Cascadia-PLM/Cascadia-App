@@ -91,7 +91,7 @@ An approved execution of one traveler line was never evidence that a unit left t
 ## 3. Schema
 
 Replaced `work_instruction_executions` with two tables (`packages/core/src/lib/db/schema/work-orders.ts`;
-pre-1.0 `db:push`, no migration files — the old table is dropped):
+the migration drops the old table):
 
 ```
 work_order_instructions
@@ -144,7 +144,17 @@ repeat a procedure at different sequence points. `populate` dedupes; manual adds
   auto-starts the order), `updateStepData`, `updateProgress`, `complete` (sign-off
   routing via the instance's order), `abandon`, `submitSignOff`, `resubmitForApproval`,
   finders by instance / work order / template.
-- **`WorkOrderService.updateStatus`** — gates `finalKind: 'complete'` transitions on the traveler and stamps `completedAt`; the lifecycle's own transitions validate the target.
+- **`LifecycleService.transitionFreeItem`** — the one write path for Free-lifecycle
+  state, and where a work order's completion semantics live: entry into a
+  `finalKind: 'complete'` state is gated on the traveler
+  (`assertReadyForCompletion`) and stamps `completedAt` on the way in. Every door
+  gets the same answer — `PUT /work-orders/:id/status`, the generic
+  `POST /items/:id/transition`, and the `transition_item_state` AI tool all arrive
+  here. It used to live in `WorkOrderService.updateStatus`, which left the other two
+  able to mark an order Complete over an unfinished traveler and produce a row no
+  route could repair.
+- **`WorkOrderService.updateStatus`** — a thin caller of the above; returns the
+  refreshed work order in its legacy shape.
 - **`WorkOrderMaterialService.produce`** — syncs `quantityCompleted` from produced units.
 - **`ParametricResolutionService.resolveBlocks`** — resolves parametric blocks from
   snapshot content (shared by the template path).

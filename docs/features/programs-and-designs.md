@@ -138,7 +138,35 @@ Permissions flow downward through the hierarchy:
 2. **Program membership** -- Required to access any design in a program. The membership role determines what actions are available.
 3. **Design access** -- Checked via `requireDesignAccess()`. If a design has a `programId`, the user must be a member of that program (or hold cross-program authority).
 4. **Design operations** -- Creating/updating/deleting designs within a program requires the `canManageDesigns` flag on the membership.
-5. **ECO operations** -- Creating ECOs requires `canCreateEco`; approving requires `canApproveEco`.
+5. **ECO operations** -- Creating ECOs requires `canCreateEco`; approving requires `canApproveEco`; advancing one through its workflow requires reach to every design it links (see below).
+
+#### A change order spans designs, so its reach rule has three tiers
+
+A change order can list designs in more than one program, and the designs are
+equal. How much of it you must reach depends on what you are doing to it -- the
+rule is widest for reading and narrowest for acting:
+
+| Doing this                                 | Requires                                                                                                                                            |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Reading** it                             | Reach to **any one** linked design. What you cannot reach is redacted, and `hasRestricted` says something was withheld -- never how much, or whose. |
+| **Voting** on it                           | Membership with `canApproveEco` in **every** linked program. Approving half a change order is not a thing.                                          |
+| **Advancing** it (submit, release, cancel) | Reach to **every** linked design.                                                                                                                   |
+
+Advancing sits with voting rather than with reading because of what a final
+transition does: a release merges every linked design's branch and assigns
+permanent revision letters across all of them, and a cancel archives every
+linked branch. Neither is undoable, and neither can be scoped down to the half
+of the ECO you can see. The approval vote is not a fallback here -- a workflow
+may legally declare a releasing transition requiring no votes at all -- so the
+reach check is the gate. Submit is included because it locks the ECO's scope;
+unlike the other two it is reversible, since rework back to an initial state
+clears the lock again.
+
+Designs outside any program (Library and Unassigned) are reachable by everyone,
+so they never make an ECO unadvanceable. Cross-program authority bypasses all
+three tiers. A partial-reach caller who needs to advance an ECO has two
+remedies, both immediate: be added to the other program, or have someone with
+cross-program authority do it.
 
 ```
 programs:manage? ──yes──> Full access

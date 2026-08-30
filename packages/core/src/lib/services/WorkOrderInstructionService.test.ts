@@ -10,8 +10,10 @@
  *   it, and re-freezing is impossible once execution has begun
  * - executions always belong to a line; line status derives from countable
  *   runs (Complete/Approved) vs requiredCount, never stored
- * - a work order cannot complete while a non-skipped line is open; skip is
- *   the audited escape hatch and cannot erase completed work
+ * - a work order cannot complete while a non-skipped line is open, by any
+ *   route — the gate and the completedAt stamp both ride the one shared
+ *   transition path; skip is the audited escape hatch and cannot erase
+ *   completed work
  * - sign-off routing follows the order's requiresSignOff, and approval no
  *   longer fabricates completed quantity
  *
@@ -30,6 +32,7 @@ import {
 import { eq } from 'drizzle-orm'
 import { ItemService } from '../items/services/ItemService'
 import { DesignService } from './DesignService'
+import { LifecycleService } from './LifecycleService'
 import { WorkOrderService } from './WorkOrderService'
 import { WorkOrderInstructionService } from './WorkOrderInstructionService'
 import { InstructionExecutionService } from './InstructionExecutionService'
@@ -41,6 +44,7 @@ import { ValidationError } from '@/lib/errors'
 import {
   itemRelationships,
   items,
+  programMembers,
   programs,
   workInstructionPartAttachments,
   workInstructionSteps,
@@ -83,6 +87,18 @@ describe('WorkOrderInstructionService', () => {
         })
         .returning(),
     )
+
+    // The program's creator is not automatically a member when the row is
+    // inserted directly (ProgramService.create is what enrols them), and
+    // ItemService.update/delete now refuse a write to a design the caller
+    // cannot reach. Enrol the acting user so these cases exercise their own
+    // subject rather than the program boundary.
+    await testDb.db.insert(programMembers).values({
+      programId: program.id,
+      userId: user.id,
+      role: 'admin',
+      invitedBy: user.id,
+    })
 
     const design = await DesignService.create(
       {
@@ -184,6 +200,14 @@ describe('WorkOrderInstructionService', () => {
       .from(items)
       .where(eq(items.id, workOrderId))
     return row?.state
+  }
+
+  async function completedAt(workOrderId: string) {
+    const [row] = await testDb.db
+      .select({ completedAt: workOrders.completedAt })
+      .from(workOrders)
+      .where(eq(workOrders.itemId, workOrderId))
+    return row?.completedAt ?? null
   }
 
   async function completeRun(lineId: string) {
@@ -580,6 +604,7 @@ describe('WorkOrderInstructionService', () => {
         user.id,
       )
       expect(updated.status).toBe('Complete')
+      expect(await completedAt(wo.id)).not.toBeNull()
     })
 
     it('a completed line cannot be skipped (history is not erasable)', async () => {
@@ -600,6 +625,60 @@ describe('WorkOrderInstructionService', () => {
           'trying to hide work',
         ),
       ).rejects.toThrow(ValidationError)
+    })
+
+    it('gates the generic transition path identically, and stamps completedAt when it clears', async () => {
+      // The invariant is route-independent: no work order reaches a
+      // `finalKind: 'complete'` state over an unfinished traveler, by any
+      // door. POST /api/v1/items/:id/transition and the
+      // transition_item_state AI tool both reach transitionFreeItem with
+      // nothing of their own in between, so the shared path is what is
+      // asserted here rather than each caller.
+      const template = await createTemplate('Weld', ['Run bead'])
+      const optional = await createTemplate('Optional inspection', ['Inspect'])
+      const wo = await createWorkOrder()
+      const mainLine = await WorkOrderInstructionService.instantiate(
+        wo.id,
+        { workInstructionId: template.id },
+        user.id,
+      )
+      const optionalLine = await WorkOrderInstructionService.instantiate(
+        wo.id,
+        { workInstructionId: optional.id },
+        user.id,
+      )
+
+      // In Progress, so the lifecycle genuinely offers the edge to Complete:
+      // a refusal below is the traveler gate, not the transition map.
+      await completeRun(mainLine.id)
+      expect(await woState(wo.id)).toBe('In Progress')
+
+      await expect(
+        LifecycleService.transitionFreeItem(wo.id, 'Complete', user.id),
+      ).rejects.toThrow(ValidationError)
+
+      // Asserted on the row, not on which error was raised — and on
+      // completedAt too, since a Complete order with a NULL stamp is the
+      // half of the defect that silently drops out of cycle-time reports.
+      expect(await woState(wo.id)).toBe('In Progress')
+      expect(await completedAt(wo.id)).toBeNull()
+
+      await WorkOrderInstructionService.skip(
+        wo.id,
+        optionalLine.id,
+        user.id,
+        'Inspection waived for this batch',
+      )
+      await LifecycleService.transitionFreeItem(wo.id, 'Complete', user.id)
+
+      expect(await woState(wo.id)).toBe('Complete')
+      const stamped = await completedAt(wo.id)
+      expect(stamped).not.toBeNull()
+
+      // Re-asserting the goal is a no-op: it must not slide the completion
+      // timestamp of a record that is already closed.
+      await LifecycleService.transitionFreeItem(wo.id, 'Complete', user.id)
+      expect((await completedAt(wo.id))?.getTime()).toBe(stamped!.getTime())
     })
 
     it('cancellation is not gated by the traveler', async () => {

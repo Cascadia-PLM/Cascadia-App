@@ -73,20 +73,15 @@ app.post(
   '/documents',
   adapt(
     apiHandler(
-      { permission: ['documents', 'create'] },
-      async ({ request, user }) => {
+      {
+        permission: ['documents', 'create'],
+        body: importDocumentsRequestSchema,
+      },
+      async ({ body, request, user }) => {
         const userId = user.id
 
         // Parse and validate request body
-        const body = await request.json()
-        const parseResult = importDocumentsRequestSchema.safeParse(body)
-
-        if (!parseResult.success) {
-          throw ValidationError.fromZodError(parseResult.error)
-        }
-
-        const { designId, branchId, rows, bypassBranchProtection } =
-          parseResult.data
+        const { designId, branchId, rows, bypassBranchProtection } = body
 
         // Verify design access
         await requireDesignAccess(user.id, designId)
@@ -205,19 +200,12 @@ app.post(
   '/issues',
   adapt(
     apiHandler(
-      { permission: ['issues', 'create'] },
-      async ({ request, user }) => {
+      { permission: ['issues', 'create'], body: importIssuesRequestSchema },
+      async ({ body, user }) => {
         const userId = user.id
 
         // Parse and validate request body
-        const body = await request.json()
-        const parseResult = importIssuesRequestSchema.safeParse(body)
-
-        if (!parseResult.success) {
-          throw ValidationError.fromZodError(parseResult.error)
-        }
-
-        const { programId, rows } = parseResult.data
+        const { programId, rows } = body
 
         // Verify program membership if programId is provided
         if (programId) {
@@ -325,25 +313,21 @@ app.post(
   '/parts',
   adapt(
     apiHandler(
-      { permission: ['parts', 'create'] },
-      async ({ request, user }) => {
+      {
+        permission: ['parts', 'create'],
+        body: importPartsWithBomRequestSchema,
+      },
+      async ({ body, request, user }) => {
         const userId = user.id
 
         // Parse and validate request body (supports BOM relationships)
-        const body = await request.json()
-        const parseResult = importPartsWithBomRequestSchema.safeParse(body)
-
-        if (!parseResult.success) {
-          throw ValidationError.fromZodError(parseResult.error)
-        }
-
         const {
           designId,
           branchId,
           rows,
           bypassBranchProtection,
           bomRelationships,
-        } = parseResult.data
+        } = body
 
         // Verify design access
         await requireDesignAccess(user.id, designId)

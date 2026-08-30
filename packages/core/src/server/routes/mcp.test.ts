@@ -16,7 +16,7 @@
  *  - a scoped API key narrows tool access (read allowed, write denied)
  *    even when the user's role would allow the write
  *  - a full-scope key cannot widen access beyond the user's roles
- *  - write tools do not mutate without an explicit confirmed=true call
+ *  - write tools do not mutate without a redeemed confirmation token
  *
  * Two schema-contract invariants ride along, because the tool schema is the
  * only thing an external agent can see:
@@ -348,7 +348,7 @@ describe('MCP endpoint — authentication and scoping gates', () => {
 
   // ── Write confirmation flow ───────────────────────────────────────────
 
-  it('write tools require an explicit confirmed=true before mutating', async () => {
+  it('write tools preview (with a token) before mutating; legacy confirmed=true gets the same preview', async () => {
     const key = await mintKey(admin.id)
 
     const res = await rpc(
@@ -361,8 +361,25 @@ describe('MCP endpoint — authentication and scoping gates', () => {
     const body = (await res.json()) as JsonRpcResponse
     expect(body.result?.isError).toBeFalsy()
     expect(body.result?.structuredContent?.requiresConfirmation).toBe(true)
+    expect(body.result?.structuredContent?.confirmationToken).toBeTruthy()
     // Nothing was created on the unconfirmed pass
     expect(body.result?.structuredContent?.itemId).toBeUndefined()
+
+    // The old model-supplied flag no longer executes anything — it degrades
+    // to a fresh preview (AI-3).
+    const legacyRes = await rpc(
+      callToolRequest('create_item', {
+        itemType: 'Part',
+        name: 'Unconfirmed part',
+        confirmed: true,
+      }),
+      { Authorization: `Bearer ${key}` },
+    )
+    const legacyBody = (await legacyRes.json()) as JsonRpcResponse
+    expect(legacyBody.result?.structuredContent?.requiresConfirmation).toBe(
+      true,
+    )
+    expect(legacyBody.result?.structuredContent?.itemId).toBeUndefined()
   })
 
   it('names the offending field when a write fails validation', async () => {
@@ -373,12 +390,21 @@ describe('MCP endpoint — authentication and scoping gates', () => {
     // wrong and retries the same call.
     const key = await mintKey(admin.id)
 
+    // Two-step flow: take the preview's token, then execute with it.
+    const params = {
+      itemType: 'Requirement',
+      name: 'Requirement with no design',
+    }
+    const previewRes = await rpc(callToolRequest('create_item', params), {
+      Authorization: `Bearer ${key}`,
+    })
+    const previewBody = (await previewRes.json()) as JsonRpcResponse
+    const confirmationToken =
+      previewBody.result?.structuredContent?.confirmationToken
+    expect(confirmationToken).toBeTruthy()
+
     const res = await rpc(
-      callToolRequest('create_item', {
-        itemType: 'Requirement',
-        name: 'Requirement with no design',
-        confirmed: true,
-      }),
+      callToolRequest('create_item', { ...params, confirmationToken }),
       { Authorization: `Bearer ${key}` },
     )
     const body = (await res.json()) as JsonRpcResponse

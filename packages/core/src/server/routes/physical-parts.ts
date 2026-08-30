@@ -18,6 +18,11 @@ import { LifecycleService } from '@/lib/services/LifecycleService'
 import { ThreadComparisonService } from '@/lib/services/ThreadComparisonService'
 import { NotFoundError } from '@/lib/errors'
 import { apiHandler, created } from '@/lib/api/handler'
+import { AccessControlService } from '@/lib/auth/AccessControlService'
+import {
+  requirePartMasterAccess,
+  requirePhysicalPartAccess,
+} from '@/lib/auth/access'
 import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('PhysicalParts')
@@ -38,15 +43,27 @@ app.post(
   adapt(
     apiHandler(
       {
+        body: physicalPartRegisterSchema,
         permission: ['physical_parts', 'create'],
         openapi: {
           summary:
             'Register a physical instance (find-or-create by part + serial/lot)',
-          request: { body: { schema: physicalPartRegisterSchema } },
         },
       },
-      async ({ request, user }) => {
-        const input = physicalPartRegisterSchema.parse(await request.json())
+      async ({ body: input, user }) => {
+        // Naming a part master is a read of it, and this route answers about it
+        // three ways before it writes anything: NotFoundError if the lineage
+        // does not exist, ValidationError naming the part's number and its
+        // trackingMode if it does but disagrees, and 201 echoing the part's
+        // name if it agrees. `physical_parts:create` alone therefore turned a
+        // guessed master id into readable part data, and registered a serial
+        // against a lineage in a program the caller cannot reach.
+        //
+        // The gate belongs here and not in `PhysicalPartService.register`:
+        // `WorkOrderMaterialService` and `InstructionExecutionService` both call
+        // that method internally, after `requireWorkOrderAccess` has already
+        // decided the question, and must not acquire a second one.
+        await requirePartMasterAccess(user.id, input.partMasterId)
         const result = await PhysicalPartService.register(input, user.id)
         // 201 even for idempotent hits — `created` in the body disambiguates.
         return created(result)
@@ -56,6 +73,17 @@ app.post(
 )
 
 // GET /api/v1/physical-parts?q=&partMasterId=&kind=&state=&limit=
+//
+// The index, bounded by the caller's designs. Every parameter above is a user
+// filter, so omitting all of them has to mean "everything you may read" and
+// never "everything" — the read verb narrows nothing here, since all five
+// seeded roles carry `physical_parts:read`.
+//
+// Naming a `partMasterId` is deliberately *not* pre-checked with
+// `requirePartMasterAccess` the way `GET /api/v1/work-orders` pre-checks a
+// named `programId`. The predicate already returns an empty list for an
+// unreachable lineage, and a 403 would answer that the master exists — turning
+// a filter into the existence oracle the scoping is here to remove.
 app.get(
   '/',
   adapt(
@@ -64,7 +92,7 @@ app.get(
         permission: ['physical_parts', 'read'],
         openapi: { summary: 'Search physical parts (units and lots)' },
       },
-      async ({ request }) => {
+      async ({ request, user }) => {
         const url = new URL(request.url, 'http://localhost')
         const kindParam = url.searchParams.get('kind')
         const limitRaw = url.searchParams.get('limit')
@@ -75,6 +103,9 @@ app.get(
           instanceKind:
             kindParam === 'unit' || kindParam === 'lot' ? kindParam : undefined,
           state: url.searchParams.get('state') ?? undefined,
+          accessDesignIds: await AccessControlService.getAccessibleDesignIds(
+            user.id,
+          ),
           limit: Number.isNaN(limit) ? undefined : limit,
         })
         return { physicalParts }
@@ -85,6 +116,10 @@ app.get(
 
 // GET /api/v1/physical-parts/recall?serialNumber=&lotNumber=&partMasterId=
 // Registered before '/:id' so the static segment wins.
+//
+// Scoped on the same axis as the index above, and in the same change: this is
+// the second unscoped list surface on the type, and closing only the first
+// would have left the whole disclosure reachable one route over.
 app.get(
   '/recall',
   adapt(
@@ -96,12 +131,15 @@ app.get(
             'Recall query: end items reachable from matching serials/lots',
         },
       },
-      async ({ request }) => {
+      async ({ request, user }) => {
         const url = new URL(request.url, 'http://localhost')
         const results = await GenealogyService.recall({
           serialNumber: url.searchParams.get('serialNumber') ?? undefined,
           lotNumber: url.searchParams.get('lotNumber') ?? undefined,
           partMasterId: url.searchParams.get('partMasterId') ?? undefined,
+          accessDesignIds: await AccessControlService.getAccessibleDesignIds(
+            user.id,
+          ),
         })
         return { results }
       },
@@ -122,7 +160,8 @@ app.get(
           request: { params: z.object({ id: z.string().uuid() }) },
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requirePhysicalPartAccess(user.id, params.id)
         return GenealogyService.forPhysicalPart(params.id)
       },
     ),
@@ -142,7 +181,8 @@ app.get(
           request: { params: z.object({ id: z.string().uuid() }) },
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requirePhysicalPartAccess(user.id, params.id)
         return ThreadComparisonService.compareAsBuilt(params.id)
       },
     ),
@@ -155,7 +195,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['physical_parts', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requirePhysicalPartAccess(user.id, params.id)
         const evidence = await QualificationService.listEvidence(params.id)
         return { evidence }
       },
@@ -167,19 +208,17 @@ app.get(
 app.post(
   '/:id/evidence',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof addEvidenceSchema>>(
       {
+        body: addEvidenceSchema,
         permission: ['physical_parts', 'update'],
         openapi: {
           summary:
             "Assert that this instance's documents evidence a requirement",
-          request: { body: { schema: addEvidenceSchema } },
         },
       },
-      async ({ params, request, user }) => {
-        const { requirementId, note } = addEvidenceSchema.parse(
-          await request.json(),
-        )
+      async ({ body: { requirementId, note }, params, user }) => {
+        await requirePhysicalPartAccess(user.id, params.id)
         const link = await QualificationService.addEvidence(
           params.id,
           requirementId,
@@ -198,7 +237,8 @@ app.delete(
   adapt(
     apiHandler<{ id: string; edgeId: string }>(
       { permission: ['physical_parts', 'update'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requirePhysicalPartAccess(user.id, params.id)
         await QualificationService.removeEvidence(params.id, params.edgeId)
         return { success: true }
       },
@@ -218,7 +258,8 @@ app.get(
           request: { params: z.object({ id: z.string().uuid() }) },
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requirePhysicalPartAccess(user.id, params.id)
         const physicalPart = await PhysicalPartService.getById(params.id)
         return { physicalPart }
       },
@@ -230,19 +271,19 @@ app.get(
 app.patch(
   '/:id',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof physicalPartUpdateSchema>>(
       {
+        body: physicalPartUpdateSchema,
         permission: ['physical_parts', 'update'],
         openapi: {
           summary: 'Update a physical part (state, notes, source, ERP ref)',
           request: {
             params: z.object({ id: z.string().uuid() }),
-            body: { schema: physicalPartUpdateSchema },
           },
         },
       },
-      async ({ params, request, user }) => {
-        const data = physicalPartUpdateSchema.parse(await request.json())
+      async ({ body: data, params, user }) => {
+        await requirePhysicalPartAccess(user.id, params.id)
         const existing = await ItemService.findById(params.id)
         if (!existing || existing.itemType !== 'PhysicalPart') {
           throw new NotFoundError('PhysicalPart', params.id)

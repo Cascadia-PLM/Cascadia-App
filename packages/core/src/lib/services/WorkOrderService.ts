@@ -1,20 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  ilike,
-  inArray,
-  isNull,
-  or,
-} from 'drizzle-orm'
+import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { LifecycleService } from './LifecycleService'
-import { WorkOrderInstructionService } from './WorkOrderInstructionService'
 import type {
   WorkOrder,
   WorkOrderCreateInput,
@@ -22,7 +11,8 @@ import type {
   WorkOrderUpdateInput,
 } from '@/lib/items/types/work-order'
 import { db } from '@/lib/db'
-import { items, programs, workOrders } from '@/lib/db/schema'
+import { likeContains } from '@/lib/db/like-pattern'
+import { designs, items, programs, workOrders } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors'
 import { ItemService } from '@/lib/items/services/ItemService'
 
@@ -77,10 +67,44 @@ const legacyShape = (row: {
 })
 
 export class WorkOrderService {
+  /**
+   * The program a work order belongs to when the caller named none.
+   *
+   * A work order is gated on the program it names, and a program-less row now
+   * fails closed (`requireWorkOrderAccess`), so the program has to come from
+   * somewhere. The part being built already sits in a design and the design
+   * already names a program — deriving it here is what keeps the fail-closed
+   * rule from hiding ordinary work, because `programId` is optional on the v1
+   * body and the create form does not require it.
+   *
+   * Resolves to `null` for a part in a Library or unassigned design, which
+   * legitimately has no program. That row is then an administrator's to
+   * repair, which is why the column stays nullable.
+   *
+   * Public because the routes ask the same question for the opposite reason:
+   * when a body names a part *and* a program, they compare this answer against
+   * the program given, so the invariant creation establishes by deriving is
+   * enforced on the path that supplies one too.
+   */
+  static async deriveProgramId(partId: string): Promise<string | null> {
+    const rows = await db
+      .select({ programId: designs.programId })
+      .from(items)
+      .innerJoin(designs, eq(items.designId, designs.id))
+      .where(eq(items.id, partId))
+      .limit(1)
+
+    return rows[0]?.programId ?? null
+  }
+
   static async create(
     data: WorkOrderCreateInput,
     userId: string,
   ): Promise<WorkOrder> {
+    const programId =
+      data.programId ??
+      (data.partId ? await this.deriveProgramId(data.partId) : null)
+
     const created = await ItemService.create(
       'WorkOrder',
       {
@@ -95,7 +119,7 @@ export class WorkOrderService {
         customerOrder: data.customerOrder,
         notes: data.notes,
         assignedTo: data.assignedTo,
-        programId: data.programId,
+        programId,
         requiresSignOff: data.requiresSignOff,
       } as never,
       userId,
@@ -173,16 +197,17 @@ export class WorkOrderService {
     const conditions = [eq(items.itemType, 'WorkOrder')]
 
     // A work order names its program directly, so the scope is one condition.
-    // Program-less work orders stay visible: they sit outside every program,
-    // so there is no membership that could gate them.
+    // A program-less work order is *not* admitted: it is a data gap, not a
+    // row that sits outside every boundary, and it fails closed so that this
+    // list and the by-id gate answer the same question. `accessProgramIds ===
+    // null` is cross-program authority and skips this arm entirely, so an
+    // administrator still sees those rows — which is the only way they get
+    // repaired.
     if (criteria.accessProgramIds) {
       conditions.push(
-        (criteria.accessProgramIds.length > 0
-          ? or(
-              inArray(workOrders.programId, criteria.accessProgramIds),
-              isNull(workOrders.programId),
-            )
-          : isNull(workOrders.programId))!,
+        criteria.accessProgramIds.length > 0
+          ? inArray(workOrders.programId, criteria.accessProgramIds)
+          : sql`false`,
       )
     }
 
@@ -196,10 +221,11 @@ export class WorkOrderService {
       conditions.push(eq(workOrders.programId, criteria.programId))
     }
     if (criteria.search) {
+      const pattern = likeContains(criteria.search)
       conditions.push(
         or(
-          ilike(items.itemNumber, `%${criteria.search}%`),
-          ilike(workOrders.customerOrder, `%${criteria.search}%`),
+          ilike(items.itemNumber, pattern),
+          ilike(workOrders.customerOrder, pattern),
         )!,
       )
     }
@@ -257,28 +283,18 @@ export class WorkOrderService {
     const current = await this.findById(id)
     if (!current) throw new NotFoundError('Work Order', id)
 
-    // Successful completion is whatever final state the lifecycle flags
-    // finalKind: 'complete' — never a state name. The traveler gates it:
-    // every non-skipped instruction line must be complete (or explicitly
-    // skipped with a reason) first. Cancel-kind finals abort without the
-    // gate, and a final that declares no kind ends the flow ungated.
-    const targetKind = await LifecycleService.getFinalKind(
-      'WorkOrder',
-      newStatus,
-    )
-    if (targetKind === 'complete') {
-      await WorkOrderInstructionService.assertReadyForCompletion(id)
-    }
-
     // Sanctioned Free-lifecycle write path (remediation WI-2.1/2.2): the
     // lifecycle's own transitions decide what moves are legal, so no
     // hand-rolled transition map here.
+    //
+    // Thin by design. The traveler gate and the completedAt stamp
+    // used to live in this method, which left the generic
+    // POST /api/v1/items/:id/transition and the transition_item_state AI
+    // tool — both of which reach transitionFreeItem directly — able to mark
+    // an order Complete over an unfinished traveler, and the row they
+    // produced could not be repaired by any route. Both halves now live on
+    // the shared path, so this endpoint cannot drift away from it again.
     await LifecycleService.transitionFreeItem(id, newStatus, userId)
-
-    if (targetKind === 'complete') {
-      // completedAt is a work_orders type field, not lifecycle-controlled.
-      await ItemService.update(id, { completedAt: new Date() } as never, userId)
-    }
 
     const updated = await this.findById(id)
     return updated!

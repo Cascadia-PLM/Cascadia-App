@@ -61,7 +61,7 @@ services:
     networks:
       - cascadia-internal
     # Push the schema on startup (pre-1.0: no migration files)
-    command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
+    command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
 
   # Optional: pgAdmin for database management
   pgadmin:

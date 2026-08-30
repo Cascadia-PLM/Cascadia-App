@@ -17,25 +17,18 @@ import {
   Label,
 } from '@/components/ui'
 import { apiFetch } from '@/lib/api/client'
+import { authSessionQuery } from '@/lib/query'
 
 export const Route = createFileRoute('/profile/')({
   component: ProfilePage,
-  beforeLoad: async () => {
-    // Check if user is authenticated
-    try {
-      const response = await fetch('/api/v1/auth/session')
-      const data = await response.json()
-      if (!data.data?.authenticated) {
-        throw redirect({
-          to: '/login',
-        })
-      }
-      return { user: data.data.user }
-    } catch (error) {
-      throw redirect({
-        to: '/login',
-      })
+  beforeLoad: async ({ context }) => {
+    // Read the session through the shared cache the root route already
+    // primed, rather than firing a second /auth/session for this page.
+    const session = await context.queryClient.fetchQuery(authSessionQuery())
+    if (!session.authenticated || !session.user) {
+      throw redirect({ to: '/login' })
     }
+    return { user: session.user }
   },
 })
 

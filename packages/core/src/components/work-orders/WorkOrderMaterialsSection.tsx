@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { PackageCheck, ScanLine, Trash2 } from 'lucide-react'
@@ -24,7 +24,9 @@ import {
 } from '@/components/ui'
 import { apiFetch } from '@/lib/api/client'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
 import {
+  itemTextSearchQuery,
   useInvalidateResources,
   workOrderMaterialsQuery,
   workOrderProducedQuery,
@@ -60,7 +62,6 @@ export function WorkOrderMaterialsSection({
   const { handleError, showSuccess } = useErrorHandler()
   const invalidate = useInvalidateResources()
   const [query, setQuery] = useState('')
-  const [suggestions, setSuggestions] = useState<Array<PartSuggestion>>([])
   const [selectedPart, setSelectedPart] = useState<SelectedPart | null>(null)
   const [identity, setIdentity] = useState('')
   const [quantity, setQuantity] = useState('1')
@@ -68,25 +69,13 @@ export function WorkOrderMaterialsSection({
 
   const { data: materials } = useQuery(workOrderMaterialsQuery(workOrderId))
 
-  useEffect(() => {
-    if (selectedPart || query.trim().length < 2) {
-      setSuggestions([])
-      return
-    }
-    const t = setTimeout(async () => {
-      try {
-        const result = await apiFetch<{
-          data: { items: Array<PartSuggestion> }
-        }>(
-          `/api/v1/items/search?q=${encodeURIComponent(query.trim())}&types=Part&limit=8`,
-        )
-        setSuggestions(result.data.items)
-      } catch {
-        setSuggestions([])
-      }
-    }, 250)
-    return () => clearTimeout(t)
-  }, [query, selectedPart])
+  const debouncedQuery = useDebouncedValue(query.trim(), 250)
+  const { data: suggestions = [] } = useQuery(
+    itemTextSearchQuery<PartSuggestion>(
+      { q: debouncedQuery, types: ['Part'], limit: 8 },
+      !selectedPart && debouncedQuery.length >= 2,
+    ),
+  )
 
   const selectPart = async (suggestion: PartSuggestion) => {
     try {
@@ -108,7 +97,6 @@ export function WorkOrderMaterialsSection({
         name: part.name,
         trackingMode: part.trackingMode ?? 'none',
       })
-      setSuggestions([])
     } catch (error) {
       handleError(error)
     }

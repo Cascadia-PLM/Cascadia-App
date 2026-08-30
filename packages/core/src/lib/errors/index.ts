@@ -570,6 +570,29 @@ export class SignatureIdentityMismatchError extends AppError {
 }
 
 // ============================================================================
+// Secrets
+// ============================================================================
+
+/**
+ * Thrown when a stored secret cannot be decrypted.
+ *
+ * Almost always a configuration problem rather than a data problem: the
+ * ciphertext was written under a different ENCRYPTION_KEY, or the variable is
+ * no longer set at all. Failing here is deliberate — the alternative, handing
+ * the caller raw ciphertext to use as a bearer token, turns a config error into
+ * a chase after someone else's 401s.
+ */
+export class SecretDecryptionError extends AppError {
+  constructor(reason: string, context?: ErrorContext) {
+    super(
+      ErrorCode.SECRET_DECRYPTION_FAILED,
+      `Could not decrypt a stored secret: ${reason}. Check that ENCRYPTION_KEY is set to the same value used to encrypt it; if it was rotated, re-save the secret in admin settings.`,
+      { context, isOperational: false },
+    )
+  }
+}
+
+// ============================================================================
 // Utility Functions
 // ============================================================================
 

@@ -2,22 +2,45 @@
 # Background job processing workers
 
 # =============================================================================
-# Stage 1: Dependencies
+# Stage 1: Workspace manifests
 # =============================================================================
-FROM node:20-alpine AS deps
+# The single copy of the manifest list. Two stages below install from it, and
+# each used to carry its own transcription of it — so a workspace that was
+# renamed or deleted had to be fixed in two places, and the deleted
+# `packages/cad-generation` duly outlived its package in both. An empty base
+# image because nothing here runs: this stage is a file list the other stages
+# read, not a layer either of them inherits.
+FROM scratch AS manifests
+
+COPY package.json package-lock.json ./
+
+# Workspace manifests, before the install: `npm ci` in a workspace root reads
+# them to know what each workspace depends on. Without them it succeeds and
+# quietly installs only the root's dependencies. Listed one per line rather than
+# globbed because `COPY packages/*/…` flattens the paths. A new workspace
+# belongs here too.
+COPY packages/core/package.json ./packages/core/
+COPY apps/cascadia/package.json ./apps/cascadia/
+
+# =============================================================================
+# Stage 2: Dependencies
+# =============================================================================
+FROM node:22-alpine AS deps
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Root manifests plus every workspace manifest, from the stage that owns the
+# list. Building this stage alone therefore proves the whole list resolves,
+# which is what CI's Docker Build Smoke job does on every run.
+COPY --from=manifests / ./
 
 # Install all dependencies
 RUN npm ci
 
 # =============================================================================
-# Stage 2: Builder
+# Stage 3: Builder
 # =============================================================================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -32,9 +55,9 @@ ARG APP=cascadia
 RUN npm run build:app -- "$APP"
 
 # =============================================================================
-# Stage 3: Production
+# Stage 4: Production
 # =============================================================================
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 WORKDIR /app
 
@@ -48,8 +71,10 @@ RUN apk add --no-cache \
     # For PDF operations
     ghostscript
 
-# Copy package files
-COPY package.json package-lock.json ./
+# The same manifest list the deps stage installed from — see stage 1. This
+# install differs only in its flags, never in what it is told the workspaces
+# are.
+COPY --from=manifests / ./
 
 # Install only production dependencies
 RUN npm ci --omit=dev && \

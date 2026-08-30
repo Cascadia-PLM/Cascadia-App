@@ -20,6 +20,7 @@ import { z } from 'zod'
 import { assertSafeUrl, fetchPageText } from './html-to-text'
 import type { FetchedPage } from './html-to-text'
 import { getAdapter, isAIEnabled, loadProviderConfig } from '@/lib/ai/adapters'
+import { UsageAccumulator, recordLlmUsage } from '@/lib/ai/usage'
 import { ValidationError } from '@/lib/errors'
 
 export type EnrichableItemType = 'Part' | 'Tool'
@@ -72,8 +73,12 @@ const MAX_ATTRIBUTES = 20
 export async function enrichItemFromUrl(params: {
   url: string
   itemType: EnrichableItemType
+  /** Whose spend this is — the extraction's usage row is written against it. */
+  userId: string
+  /** Caller's abort signal, chained into the extraction request. */
+  signal?: AbortSignal
 }): Promise<ItemEnrichmentResult> {
-  const { url, itemType } = params
+  const { url, itemType, userId, signal } = params
 
   // Validate the URL early (also blocks SSRF) so a bad drop fails fast even
   // when AI is off and we would otherwise just echo the link back.
@@ -94,7 +99,7 @@ export async function enrichItemFromUrl(params: {
     return { aiEnabled: true, link: url, fields: {}, attributes: {} }
   }
 
-  const raw = await runExtraction(itemType, url, page)
+  const raw = await runExtraction(itemType, url, page, userId, signal)
   const parsed = parseJsonResponse(raw)
 
   const fieldSchemas = itemType === 'Part' ? partFieldSchemas : toolFieldSchemas
@@ -112,13 +117,36 @@ export async function enrichItemFromUrl(params: {
   }
 }
 
+/**
+ * The one model call this feature makes.
+ *
+ * Global provider config on purpose: enrichment runs *before* the item exists,
+ * so there is no program to scope it to and the global row is the honest
+ * answer. The usage row is written in a `finally` and carries a null
+ * `programId` for the same reason — a failed or aborted extraction still spent
+ * what the provider had already billed for, and these rows are what
+ * `enforceMonthlyTokenBudget` sums.
+ */
 async function runExtraction(
   itemType: EnrichableItemType,
   url: string,
   page: FetchedPage,
+  userId: string,
+  signal?: AbortSignal,
 ): Promise<string> {
+  const usage = new UsageAccumulator()
+  const startedAt = Date.now()
+  let usageProvider: { provider: string | null; model: string | null } = {
+    provider: null,
+    model: null,
+  }
+
   try {
     const providerConfig = await loadProviderConfig()
+    usageProvider = {
+      provider: providerConfig.provider,
+      model: providerConfig.model,
+    }
     const adapter = getAdapter(providerConfig)
 
     const messages: any = [
@@ -126,9 +154,18 @@ async function runExtraction(
       { role: 'user', content: buildUserPrompt(url, page) },
     ]
 
-    const stream = chat({ adapter, messages, maxTokens: 1024 })
+    // Own controller, aborted by the caller's signal: `chat` takes a
+    // controller, not a signal.
+    const abortController = new AbortController()
+    if (signal) {
+      if (signal.aborted) abortController.abort()
+      else signal.addEventListener('abort', () => abortController.abort())
+    }
+
+    const stream = chat({ adapter, messages, maxTokens: 1024, abortController })
     let fullResponse = ''
     for await (const chunk of stream) {
+      usage.observe(chunk)
       if (chunk.type === 'content' && chunk.content) {
         fullResponse = chunk.content
       }
@@ -137,6 +174,19 @@ async function runExtraction(
   } catch {
     // Provider/network failure — degrade gracefully to "link only".
     return ''
+  } finally {
+    const totals = usage.totals
+    await recordLlmUsage({
+      userId,
+      sessionId: null,
+      // No program: the item this enriches does not exist yet.
+      programId: null,
+      provider: usageProvider.provider,
+      model: usageProvider.model,
+      inputTokens: totals.inputTokens,
+      outputTokens: totals.outputTokens,
+      durationMs: Date.now() - startedAt,
+    })
   }
 }
 

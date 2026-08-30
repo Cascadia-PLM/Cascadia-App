@@ -196,7 +196,10 @@ describe('GenealogyService', () => {
   it('recall by lot returns end items only', async () => {
     const chain = await buildChain()
 
-    const results = await GenealogyService.recall({ lotNumber: 'LOT-A' })
+    const results = await GenealogyService.recall({
+      lotNumber: 'LOT-A',
+      accessDesignIds: null,
+    })
     expect(results).toHaveLength(1)
     expect(results[0]!.physicalPart.lotNumber).toBe('LOT-A')
 

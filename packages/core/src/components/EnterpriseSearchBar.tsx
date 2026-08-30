@@ -2,10 +2,13 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { ArrowRight, Loader2, Search } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { cn } from '@/lib/utils'
+import { enterpriseSearchQuery } from '@/lib/query'
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
 import {
   getItemDetailPath,
   getItemTypeIconByName,
@@ -59,8 +62,6 @@ function getShortcutHint(): string {
 export function EnterpriseSearchBar() {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-  const [results, setResults] = useState<SearchResults | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [shortcutHint, setShortcutHint] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
@@ -95,39 +96,18 @@ export function EnterpriseSearchBar() {
       })
   }, [])
 
+  // One request per typing pause, keyed on the settled term — a repeated
+  // search resolves from cache instead of hitting the endpoint again.
+  const debouncedQuery = useDebouncedValue(query)
+  const { data: results = null, isFetching: isLoading } = useQuery(
+    enterpriseSearchQuery<SearchResults>(debouncedQuery),
+  )
+
   // Flatten results for keyboard navigation
   const flatResults =
     results?.results.flatMap((group) =>
       group.items.map((item) => ({ ...item, itemType: group.itemType })),
     ) || []
-
-  // Debounced search
-  useEffect(() => {
-    if (query.length < 2) {
-      setResults(null)
-      setIsOpen(false)
-      return
-    }
-
-    setIsLoading(true)
-    const timer = setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `/api/v1/enterprise-search?q=${encodeURIComponent(query)}&limit=20`,
-        )
-        const data = await response.json()
-        setResults(data.data)
-        setIsOpen(true)
-        setSelectedIndex(0)
-      } catch {
-        setResults(null)
-      } finally {
-        setIsLoading(false)
-      }
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [query])
 
   // Close dropdown when clicking outside
   useEffect(() => {

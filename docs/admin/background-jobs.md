@@ -363,6 +363,8 @@ Attempt 3 fails -> retryDelays[2] (or last element if array is shorter)
 
 Example for workflow notifications: `[30000, 60000, 120000]` = 30 seconds, 1 minute, 2 minutes.
 
+The schedule is copied onto the job row (`jobs.retry_delays`) when the job is submitted, so both the Node and the Python workers park a failed job on the type's own delays. Two consequences worth knowing: editing a job type's `retryDelays` applies to jobs submitted afterwards, not to rows already queued (the admin **Retry** button re-reads the current config); and jobs that predate this column keep the workers' built-in 30s/60s/120s fallback until they drain.
+
 ## Timeout Handling
 
 Each job execution is wrapped in a timeout. If the handler does not complete within the configured timeout:
@@ -540,7 +542,7 @@ This ensures that in-progress jobs are not abruptly killed during deployments or
 
 ### Common Issues
 
-**Jobs stuck in `queued` status**: The worker is not running or cannot connect to RabbitMQ. Check worker logs and RabbitMQ connectivity.
+**Jobs stuck in `queued` status**: The worker is not running or cannot connect to RabbitMQ. Check worker logs and RabbitMQ connectivity. A row whose message was lost rather than merely unconsumed — a worker that acknowledged a delivery without claiming it, a broker that dropped it — is re-published automatically once its `queued_at` is older than `JOB_QUEUED_STALE_MS` (default 10 minutes), so a `queued` backlog that never drains means nothing is consuming the queue at all.
 
 **Jobs stuck in `pending` with `next_retry_at` set**: The retry scheduler needs to re-publish these jobs. This happens automatically when the worker checks for retryable jobs.
 

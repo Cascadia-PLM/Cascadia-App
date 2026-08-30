@@ -4,7 +4,7 @@
 /**
  * Authentication E2E Smoke Tests
  *
- * Tier 1: Critical path tests that run on every PR.
+ * Critical-path smoke tests.
  * Tests login flow, session persistence, and protected route access.
  */
 
@@ -44,7 +44,33 @@ async function loginViaUI(
   await submitButton.click()
 }
 
-test.describe('Authentication - Smoke Tests @tier1', () => {
+/*
+ * These tests are about signing in, so they need a browser that has not.
+ * Every other spec inherits the signed-in state the setup project saves; this
+ * file opts out of it.
+ */
+test.use({ storageState: { cookies: [], origins: [] } })
+
+/*
+ * Discarding the saved state also discards the `cascadia-e2e-test` localStorage
+ * key that state carries, and that key is what suppresses the first-run setup
+ * wizard: an admin whose instance has no `system.setup_completed` setting — a
+ * seeded E2E database — is redirected from any page to /setup by the root
+ * route's beforeLoad. The redirect fires once `GET /auth/session` resolves, so
+ * a test that signs in and then reloads was racing that fetch and landing on
+ * /setup often enough to redden a run that had nothing to do with auth.
+ *
+ * An init script rather than a `page.evaluate` after navigation: it runs before
+ * the app's scripts on every navigation *and* every reload, which is exactly
+ * the case that was failing.
+ */
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('cascadia-e2e-test', 'true')
+  })
+})
+
+test.describe('Authentication - Smoke Tests', () => {
   test.describe('Login Flow', () => {
     test('displays login form with all required elements', async ({ page }) => {
       await page.goto('/login')

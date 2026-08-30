@@ -25,22 +25,26 @@ export function generateKubernetesManifests(
   // 3. Secrets
   files.push(generateSecrets(config))
 
-  // 4. Deployment
+  // 4. Migration Job — emitted after the ConfigMap and Secret it reads, and
+  //    before the Deployment it has to precede at apply time.
+  files.push(generateMigrateJob(config))
+
+  // 5. Deployment
   files.push(generateDeployment(config))
 
-  // 5. Service
+  // 6. Service
   files.push(generateService(config))
 
-  // 6. HPA (Horizontal Pod Autoscaler)
+  // 7. HPA (Horizontal Pod Autoscaler)
   files.push(generateHPA(config))
 
-  // 7. Ingress
+  // 8. Ingress
   files.push(generateIngress(config))
 
-  // 8. Kustomization
+  // 9. Kustomization
   files.push(generateKustomization(config))
 
-  // 9. README
+  // 10. README
   files.push(generateReadme(config))
 
   return files
@@ -129,6 +133,118 @@ function generateSecrets(config: KubernetesConfig): GeneratedFile {
     path: 'secrets.yaml',
     content: `# WARNING: This file contains secrets. Do not commit to version control!\n# Consider using sealed-secrets or external-secrets in production.\n${YAML.stringify(manifest)}`,
     isSecret: true,
+  }
+}
+
+/**
+ * One-shot Job that brings the database to the committed schema.
+ *
+ * Mirrors the committed manifest at
+ * `docs/orchestration/deployments/kubernetes/migrate-job.yaml`; the two are
+ * meant to stay in step, so a change to one belongs in the other.
+ *
+ * Nothing else in this generated bundle migrates. The Deployment overrides no
+ * command, so its pods run the image's bare server entry point — the
+ * migrate-on-boot wrapper is something the compose generator applies, and it
+ * would race across replicas here anyway.
+ *
+ * Kept out of `generateKustomization()`'s resources deliberately: a Job's pod
+ * template is immutable, so `kubectl apply -k .` on an upgrade would fail on
+ * this object rather than re-run it. The README's Quick Start carries the
+ * delete-apply-wait sequence instead.
+ */
+function generateMigrateJob(config: KubernetesConfig): GeneratedFile {
+  const manifest = {
+    apiVersion: 'batch/v1',
+    kind: 'Job',
+    metadata: {
+      name: 'cascadia-migrate',
+      namespace: config.namespace,
+      labels: {
+        'app.kubernetes.io/name': 'cascadia',
+        'app.kubernetes.io/component': 'migrate',
+      },
+    },
+    spec: {
+      // Two retries, then stop: boot-migrate.ts exits non-zero on a pre-v0.5
+      // database and prints the one command that fixes it. Retrying forever
+      // would bury that message.
+      backoffLimit: 2,
+      template: {
+        metadata: {
+          labels: {
+            'app.kubernetes.io/name': 'cascadia',
+            'app.kubernetes.io/component': 'migrate',
+          },
+        },
+        spec: {
+          restartPolicy: 'Never',
+          securityContext: {
+            runAsNonRoot: true,
+            runAsUser: 1001,
+            fsGroup: 1001,
+          },
+          containers: [
+            {
+              name: 'migrate',
+              image: `${config.imageRepository}:${config.imageTag}`,
+              // Replaces the image CMD, not its ENTRYPOINT.
+              command: ['npx', 'tsx', 'scripts/boot-migrate.ts'],
+              env: [
+                // NODE_ENV is load-bearing here, not cosmetic: with no
+                // `?sslmode=` in the URL it decides whether the connection
+                // requires TLS, so a Job without it can fail to reach a
+                // managed database that the app pods connect to happily.
+                {
+                  name: 'NODE_ENV',
+                  valueFrom: {
+                    configMapKeyRef: {
+                      name: 'cascadia-config',
+                      key: 'NODE_ENV',
+                    },
+                  },
+                },
+                {
+                  name: 'DATABASE_URL',
+                  valueFrom: {
+                    secretKeyRef: {
+                      name: 'cascadia-secrets',
+                      key: 'database-url',
+                    },
+                  },
+                },
+              ],
+              resources: {
+                requests: { cpu: '100m', memory: '256Mi' },
+                limits: { cpu: '500m', memory: '512Mi' },
+              },
+            },
+          ],
+        },
+      },
+    },
+  }
+
+  // The warning rides in the file rather than only in the README, because the
+  // file is what an operator opens when `kubectl apply -k .` did not migrate.
+  const header = [
+    '# Database migration Job — run this before the app Deployment, on the',
+    '# first install and again on every upgrade. Nothing else here migrates.',
+    '#',
+    '# Deliberately NOT a kustomization.yaml resource: a Job pod template is',
+    '# immutable, so an upgrade has to delete the previous run before applying',
+    '# this one. That also means the kustomization `images:` tag override does',
+    '# not reach this file — pin the same tag in both places.',
+    '#',
+    `#   kubectl delete job cascadia-migrate -n ${config.namespace} --ignore-not-found`,
+    '#   kubectl apply -f migrate-job.yaml',
+    `#   kubectl wait --for=condition=complete job/cascadia-migrate -n ${config.namespace} --timeout=300s`,
+    '',
+  ].join('\n')
+
+  return {
+    path: 'migrate-job.yaml',
+    content: `${header}${YAML.stringify(manifest)}`,
   }
 }
 
@@ -417,6 +533,8 @@ function generateKustomization(config: KubernetesConfig): GeneratedFile {
     apiVersion: 'kustomize.config.k8s.io/v1beta1',
     kind: 'Kustomization',
     namespace: config.namespace,
+    // migrate-job.yaml is absent on purpose — see generateMigrateJob(). It is
+    // applied by hand, before this, on install and on every upgrade.
     resources: [
       'namespace.yaml',
       'configmap.yaml',
@@ -451,19 +569,44 @@ Generated: ${new Date().toISOString()}
 ## Quick Start
 
 1. Review and update \`secrets.yaml\` with your actual secrets
-2. Apply the manifests:
+2. Create the namespace, config and secrets:
+
+\`\`\`bash
+kubectl apply -f namespace.yaml
+kubectl apply -f configmap.yaml
+kubectl apply -f secrets.yaml
+\`\`\`
+
+3. Run the database migration Job and wait for it to complete:
+
+\`\`\`bash
+kubectl delete job cascadia-migrate -n ${config.namespace} --ignore-not-found
+kubectl apply -f migrate-job.yaml
+kubectl wait --for=condition=complete job/cascadia-migrate -n ${config.namespace} --timeout=300s
+kubectl logs job/cascadia-migrate -n ${config.namespace}
+\`\`\`
+
+Nothing else applies migrations — the app pods run the bare server. Run this on
+the first install **and on every upgrade**, before the new image serves traffic,
+and delete the previous run first because a Job's pod template is immutable.
+The Job is not a kustomize resource, so \`kustomization.yaml\`'s image tag
+override does not reach it: pin the same tag in both places.
+
+4. Apply the rest of the manifests:
 
 \`\`\`bash
 # Using kustomize
 kubectl apply -k .
 
 # Or apply individually
-kubectl apply -f namespace.yaml
-kubectl apply -f configmap.yaml
-kubectl apply -f secrets.yaml
 kubectl apply -f app/
 kubectl apply -f ingress.yaml
 \`\`\`
+
+The app's health endpoint reports process liveness only — it does not touch the
+database — so pods started against an unmigrated database pass their readiness
+probe, join the Service, and serve 500s. Step 3 is what prevents that; the
+probes will not.
 
 ## Configuration
 
@@ -479,6 +622,7 @@ kubectl apply -f ingress.yaml
 | \`namespace.yaml\` | Kubernetes namespace |
 | \`configmap.yaml\` | Non-sensitive configuration |
 | \`secrets.yaml\` | Sensitive data (DO NOT COMMIT) |
+| \`migrate-job.yaml\` | One-shot database migration Job — run before the app, on install and every upgrade (not a kustomize resource) |
 | \`app/deployment.yaml\` | Application deployment |
 | \`app/service.yaml\` | Internal service |
 | \`app/hpa.yaml\` | Horizontal Pod Autoscaler |

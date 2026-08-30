@@ -87,8 +87,8 @@ describe('copyTypeSpecificData', () => {
     const source = await createItemRow('Part', 'SRC')
     const target = await createItemRow('Part', 'TGT')
 
-    // Deliberately spans the columns the two old hand-written copies each
-    // forgot: trackingMode on one side, the inventory trio on the other.
+    // Deliberately spans columns a hand-written copy once forgot
+    // (trackingMode), plus every remaining nullable column.
     const sourceValues = {
       itemId: source.id,
       description: 'Bracket, machined',
@@ -100,9 +100,6 @@ describe('copyTypeSpecificData', () => {
       cost: '42.50',
       costCurrency: 'USD',
       leadTimeDays: 14,
-      quantityOnHand: 7,
-      reorderPoint: 3,
-      location: 'Bin A-14',
     }
     await testDb.db.insert(parts).values(sourceValues)
 

@@ -153,7 +153,7 @@ Password changes require the current password for verification (even when perfor
 
 **Password validation**: minimum 8 characters, maximum 128 characters.
 
-**Note**: There is no admin-initiated password reset that bypasses the current password requirement. This is a security limitation -- see the issues log at `docs/issues/admin.md`.
+**Note**: There is no admin-initiated password reset that bypasses the current password requirement. A user who cannot supply their current password cannot be recovered through the UI; the account has to be reset at the database level.
 
 ## Authentication
 
@@ -257,6 +257,7 @@ Cascadia implements brute-force protection with automatic account lockout:
 4. After the lockout period, the next login attempt proceeds normally
 5. A successful login resets both `failed_login_attempts` (to 0) and `locked_until` (to null)
 6. Changing a password also resets the lockout state
+7. The counter is shared by every password prompt, not just the sign-in form -- re-entering a password to sign an approval spends from the same ten attempts, and a correct one there resets it. The `metadata.source` on each event says which prompt it came from (`login` or `signature`)
 
 ### Lockout Events
 

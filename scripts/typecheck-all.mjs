@@ -24,7 +24,6 @@ const PROJECTS = [
   ['packages/core', 'tsconfig.typecheck.json', null],
   ['packages/advanced-auditing', 'tsconfig.json', null],
   ['packages/design-engine', 'tsconfig.typecheck.json', null],
-  ['packages/cad-generation', 'tsconfig.json', null],
   ['packages/odoo-integration', 'tsconfig.json', null],
   ['apps/cascadia', 'tsconfig.json', 'apps/cascadia/src/routeTree.gen.ts'],
   [

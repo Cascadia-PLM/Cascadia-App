@@ -553,6 +553,11 @@ export class WorkOrderInstructionService {
   /**
    * The work order completion gate: every non-skipped line must have
    * reached its requiredCount. Throws with the open line titles.
+   *
+   * Called from LifecycleService.transitionFreeItem, the one write path for
+   * Free-lifecycle state, so every door into a `finalKind: 'complete'` state
+   * passes through it — not from WorkOrderService.updateStatus, which
+   * is only one of those doors.
    */
   static async assertReadyForCompletion(workOrderId: string) {
     const lines = await this.list(workOrderId)

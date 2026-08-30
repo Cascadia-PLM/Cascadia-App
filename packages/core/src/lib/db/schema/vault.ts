@@ -13,7 +13,7 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import { users } from './users'
 import { items } from './items'
 import { branches } from './versioning'
@@ -81,10 +81,20 @@ export const vaultFiles = pgTable(
     index('idx_vault_files_branch_id').on(table.branchId),
     index('idx_vault_files_hash').on(table.fileHash),
     index('idx_vault_files_checked_out_by').on(table.checkedOutBy),
-    index('idx_vault_files_latest').on(table.isLatestVersion),
+    // Partial, on itemId: FileService always asks "the latest version of this
+    // item's files", never "every latest-version row in the instance". A
+    // two-value btree over the whole table answered neither.
+    index('idx_vault_files_latest')
+      .on(table.itemId)
+      .where(sql`${table.isLatestVersion}`),
     index('idx_vault_files_deleted').on(table.deletedAt),
     index('idx_vault_files_category').on(table.fileCategory),
-    index('idx_vault_files_primary').on(table.isPrimaryModel),
+    // Partial, on itemId, for the same reason: the primary model is looked up
+    // per item. Nullable, so the predicate has to be explicit rather than a
+    // bare column reference.
+    index('idx_vault_files_primary')
+      .on(table.itemId)
+      .where(sql`${table.isPrimaryModel}`),
     index('idx_vault_files_thumbnail').on(table.thumbnailFileId),
     index('idx_vault_files_item_thumbnail').on(table.isItemThumbnail),
   ],

@@ -196,27 +196,52 @@ host    cascadia    cascadia    10.0.0.0/8    scram-sha-256
 
 ### Initial Setup
 
-All Cascadia services share the same database schema. Push it from Core App:
+All Cascadia services share the same database schema, brought to the current
+version from Core App by applying the committed migrations under
+`apps/*/drizzle/`. How that happens depends on the deployment shape:
 
 ```bash
-# Docker Compose
-docker-compose exec app npm run db:push
+# Docker Compose — the compose templates already do this at boot, through
+# scripts/boot-migrate.ts; this is the same thing run by hand
+docker compose exec app npm run db:migrate
 
-# Kubernetes
-kubectl exec -it deployment/cascadia-app -- npm run db:push
+# Kubernetes — nothing migrates automatically; run the cascadia-migrate Job
+kubectl delete job cascadia-migrate -n cascadia --ignore-not-found
+kubectl apply -f migrate-job.yaml
+kubectl wait --for=condition=complete job/cascadia-migrate -n cascadia --timeout=300s
 
 # Direct (with DATABASE_URL set)
-npm run db:push
+npm run db:migrate
 ```
+
+The Kubernetes Job is a one-shot `batch/v1` Job named `cascadia-migrate` in the
+`cascadia` namespace, defined in
+`docs/orchestration/deployments/kubernetes/migrate-job.yaml`. The delete comes
+first because a Job's pod template is immutable, and the Job is deliberately
+outside `kustomization.yaml` for the same reason. See
+[kubernetes.md](../deployment/kubernetes.md#step-4-apply-the-database-migration-job)
+for the install and upgrade sequence and
+[Applying migrations](../deployment/kubernetes.md#applying-migrations) for
+re-running it out of band or from inside a running pod.
+
+This is the only path onto a persistent database — `db:push` is not an
+alternative here; see Migration Strategy below.
 
 ### Migration Strategy
 
-Pre-1.0 there are no committed migration files — every environment (dev, CI,
-production) applies the schema with `db:push`. `db:generate`/`db:migrate` only
-become the mechanism once a release mints a migration baseline.
+Released installs upgrade with the committed migrations under
+`apps/*/drizzle/` — `npm run db:migrate`, which the app also runs at boot
+(`scripts/boot-migrate.ts`). `db:push` diff-applies the schema directly, records
+nothing, and is for dev/CI/demo databases only. A pre-v0.5 database that has
+tables but no migration journal is stamped once with `npm run db:baseline`;
+[upgrading.md](../deployment/upgrading.md) is the canonical statement of all of
+this and carries the full stamp procedure.
 
 ```bash
-# Apply the schema (the pre-1.0 path everywhere)
+# Upgrade a persistent database (the released path)
+npm run db:migrate
+
+# Diff-apply the schema directly (dev/CI/demo only)
 npm run db:push
 
 # View current schema

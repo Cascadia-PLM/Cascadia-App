@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
   Ban,
@@ -21,22 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
-import { apiFetch } from '@/lib/api/client'
+import { designEcosQuery } from '@/lib/query'
 import { StateBadge } from '@/components/items/StateBadge'
 import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
-
-interface ECOSummary {
-  id: string
-  itemNumber: string
-  name: string
-  state: string
-  reasonForChange: string
-  itemCount: number
-  owner: { id: string; name: string }
-  createdAt: string
-  submittedAt?: string
-  releasedAt?: string
-}
 
 interface ECOsTabProps {
   designId: string
@@ -50,39 +38,16 @@ export function ECOsTab({
   isHistoricalView,
   onCreateECO,
 }: ECOsTabProps) {
-  const [loading, setLoading] = useState(true)
-  const [ecos, setEcos] = useState<Array<ECOSummary>>([])
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [error, setError] = useState<string | null>(null)
 
-  // Fetch ECOs
-  useEffect(() => {
-    async function fetchECOs() {
-      setLoading(true)
-      setError(null)
-      try {
-        const params = new URLSearchParams()
-        if (statusFilter !== 'all') {
-          params.set('status', statusFilter)
-        }
-
-        const response = await apiFetch<{
-          data: { ecos: Array<ECOSummary>; total: number }
-        }>(`/api/v1/designs/${designId}/ecos?${params.toString()}`)
-
-        setEcos(response.data.ecos)
-      } catch {
-        setError(
-          'Failed to load ECOs. The API endpoint may not be implemented yet.',
-        )
-        setEcos([])
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchECOs()
-  }, [designId, statusFilter])
+  const {
+    data: ecos = [],
+    isPending: loading,
+    error: loadError,
+  } = useQuery(designEcosQuery(designId))
+  const error = loadError
+    ? 'Failed to load ECOs. The API endpoint may not be implemented yet.'
+    : null
 
   // Filter ECOs by status
   const filteredECOs = useMemo(() => {

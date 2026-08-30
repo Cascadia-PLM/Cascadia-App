@@ -107,16 +107,12 @@ app.post(
   adapt(
     apiHandler(
       {
+        body: createWorkspaceSchema,
         openapi: {
           summary: 'Create a workspace branch on a design',
-          request: { body: { schema: createWorkspaceSchema } },
         },
       },
-      async ({ request, user }) => {
-        const { designId, workspaceName } = createWorkspaceSchema.parse(
-          await request.json(),
-        )
-
+      async ({ body: { designId, workspaceName }, user }) => {
         // A workspace branch can only be opened on a design the user can access
         await requireDesignAccess(user.id, designId)
 
@@ -279,21 +275,23 @@ app.delete(
 app.post(
   '/:id/convert-to-eco',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof convertToEcoSchema>>(
       {
+        body: convertToEcoSchema,
         permission: ['change_orders', 'create'],
         openapi: {
           summary: 'Create a new ECO carrying this workspace’s content',
           request: {
             params: z.object({ id: z.string().uuid() }),
-            body: { schema: convertToEcoSchema },
           },
         },
       },
-      async ({ request, params, user }) => {
+      async ({
+        body: { ecoTitle, ecoDescription, changeType, deleteWorkspace },
+        params,
+        user,
+      }) => {
         const workspace = await requireOwnedWorkspace(user.id, params.id)
-        const { ecoTitle, ecoDescription, changeType, deleteWorkspace } =
-          convertToEcoSchema.parse(await request.json())
 
         // Refuse before creating the ECO, not after
         const counts = await BranchService.getWorkspaceItemCounts(workspace.id)
@@ -360,22 +358,19 @@ app.post(
 app.post(
   '/:id/merge-to-eco',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof mergeToEcoSchema>>(
       {
+        body: mergeToEcoSchema,
         permission: ['change_orders', 'update'],
         openapi: {
           summary: 'Move this workspace’s content into an existing ECO',
           request: {
             params: z.object({ id: z.string().uuid() }),
-            body: { schema: mergeToEcoSchema },
           },
         },
       },
-      async ({ request, params, user }) => {
+      async ({ body: { ecoId, deleteWorkspace }, params, user }) => {
         const workspace = await requireOwnedWorkspace(user.id, params.id)
-        const { ecoId, deleteWorkspace } = mergeToEcoSchema.parse(
-          await request.json(),
-        )
 
         const eco = await ItemService.findById(ecoId)
         if (!eco || eco.itemType !== 'ChangeOrder') {

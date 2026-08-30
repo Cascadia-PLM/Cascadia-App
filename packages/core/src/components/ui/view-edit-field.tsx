@@ -21,6 +21,46 @@ interface BaseFieldProps {
   required?: boolean
 }
 
+/**
+ * The `<dt>` half of a field, associated with its control.
+ *
+ * How the association is made depends on what the control actually renders. A
+ * native `<input>`/`<textarea>` takes `htmlFor` — and a `<label>` inside a
+ * `<dt>` is valid HTML. A Radix `SelectTrigger` renders a `<button>`, and
+ * `htmlFor` → button association is unreliable across assistive technology, so
+ * those pass `labelId` instead and set `aria-labelledby` on the trigger.
+ *
+ * In view mode there is nothing to associate: the value sits in the `<dd>`,
+ * which the definition list already pairs with this `<dt>`.
+ */
+function FieldLabel({
+  label,
+  isEditing,
+  required,
+  htmlFor,
+  labelId,
+}: {
+  label: string
+  isEditing: boolean
+  required?: boolean
+  htmlFor?: string
+  labelId?: string
+}) {
+  const marker =
+    required && isEditing ? <span className="text-red-500 ml-1">*</span> : null
+
+  return (
+    <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+      {isEditing && htmlFor ? (
+        <label htmlFor={htmlFor}>{label}</label>
+      ) : (
+        <span id={labelId}>{label}</span>
+      )}
+      {marker}
+    </dt>
+  )
+}
+
 // Text Field
 interface ViewEditTextProps extends BaseFieldProps {
   value: string | null | undefined
@@ -43,15 +83,20 @@ export function ViewEditText({
   required,
   'data-testid': testId,
 }: ViewEditTextProps) {
+  const id = React.useId()
+
   return (
     <div className={className}>
-      <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-        {label}
-        {required && isEditing && <span className="text-red-500 ml-1">*</span>}
-      </dt>
+      <FieldLabel
+        label={label}
+        isEditing={isEditing}
+        required={required}
+        htmlFor={id}
+      />
       <dd className="mt-1">
         {isEditing ? (
           <Input
+            id={id}
             type={inputType ?? 'text'}
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
@@ -89,15 +134,20 @@ export function ViewEditTextarea({
   className,
   required,
 }: ViewEditTextareaProps) {
+  const id = React.useId()
+
   return (
     <div className={className}>
-      <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-        {label}
-        {required && isEditing && <span className="text-red-500 ml-1">*</span>}
-      </dt>
+      <FieldLabel
+        label={label}
+        isEditing={isEditing}
+        required={required}
+        htmlFor={id}
+      />
       <dd className="mt-1">
         {isEditing ? (
           <Textarea
+            id={id}
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
@@ -142,17 +192,20 @@ export function ViewEditSelect({
   'data-testid': testId,
 }: ViewEditSelectProps) {
   const selectedOption = options.find((opt) => opt.value === value)
+  const labelId = React.useId()
 
   return (
     <div className={className} data-testid={testId}>
-      <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-        {label}
-        {required && isEditing && <span className="text-red-500 ml-1">*</span>}
-      </dt>
+      <FieldLabel
+        label={label}
+        isEditing={isEditing}
+        required={required}
+        labelId={labelId}
+      />
       <dd className="mt-1">
         {isEditing ? (
           <Select value={value || ''} onValueChange={onChange}>
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full" aria-labelledby={labelId}>
               <SelectValue placeholder={placeholder} />
             </SelectTrigger>
             <SelectContent>
@@ -210,16 +263,21 @@ export function ViewEditNumber({
       ? `${value}${unit ? ` ${unit}` : ''}${unitValue ? ` ${unitValue}` : ''}`
       : emptyText
 
+  const id = React.useId()
+
   return (
     <div className={className}>
-      <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-        {label}
-        {required && isEditing && <span className="text-red-500 ml-1">*</span>}
-      </dt>
+      <FieldLabel
+        label={label}
+        isEditing={isEditing}
+        required={required}
+        htmlFor={id}
+      />
       <dd className="mt-1">
         {isEditing ? (
           <div className="flex gap-2">
             <Input
+              id={id}
               type="number"
               value={value ?? ''}
               onChange={(e) => onChange(e.target.value)}
@@ -231,7 +289,7 @@ export function ViewEditNumber({
             />
             {unitOptions && onUnitChange ? (
               <Select value={unitValue || ''} onValueChange={onUnitChange}>
-                <SelectTrigger className="w-24">
+                <SelectTrigger className="w-24" aria-label={`${label} unit`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -287,18 +345,25 @@ export function ViewEditCurrency({
       ? `${currency} ${parseFloat(String(value)).toFixed(2)}`
       : emptyText
 
+  const id = React.useId()
+
   return (
     <div className={className}>
-      <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-        {label}
-        {required && isEditing && <span className="text-red-500 ml-1">*</span>}
-      </dt>
+      <FieldLabel
+        label={label}
+        isEditing={isEditing}
+        required={required}
+        htmlFor={id}
+      />
       <dd className="mt-1">
         {isEditing ? (
           <div className="flex gap-2">
             {currencyOptions && onCurrencyChange ? (
               <Select value={currency} onValueChange={onCurrencyChange}>
-                <SelectTrigger className="w-24">
+                <SelectTrigger
+                  className="w-24"
+                  aria-label={`${label} currency`}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -315,6 +380,7 @@ export function ViewEditCurrency({
               </span>
             )}
             <Input
+              id={id}
               type="number"
               value={value ?? ''}
               onChange={(e) => onChange(e.target.value)}
@@ -363,18 +429,20 @@ export function ViewEditBadge({
   const selectedOption = options.find((opt) => opt.value === value)
   const badgeVariant = variant ? variant(value || '') : 'default'
 
+  const labelId = React.useId()
+
   return (
     <div className={className}>
-      <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-        {label}
-        {required && isEditing && !readOnly && (
-          <span className="text-red-500 ml-1">*</span>
-        )}
-      </dt>
+      <FieldLabel
+        label={label}
+        isEditing={isEditing && !readOnly}
+        required={required}
+        labelId={labelId}
+      />
       <dd className="mt-1">
         {isEditing && !readOnly ? (
           <Select value={value || ''} onValueChange={onChange}>
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full" aria-labelledby={labelId}>
               <SelectValue placeholder={placeholder} />
             </SelectTrigger>
             <SelectContent>
@@ -411,9 +479,7 @@ export function ViewEditStatic({
 }: ViewEditStaticProps) {
   return (
     <div className={className}>
-      <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-        {label}
-      </dt>
+      <FieldLabel label={label} isEditing={false} />
       <dd
         className={cn(
           'mt-1 text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-md inline-block',

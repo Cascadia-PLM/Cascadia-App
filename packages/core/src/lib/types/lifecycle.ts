@@ -14,13 +14,41 @@
 // ============================================
 
 /**
+ * The revision a released item carries under the `none` scheme.
+ *
+ * `none` means "released, but the revision never advances" — it does not mean
+ * "unreleased". The marker has to be a real, non-empty revision string for
+ * that distinction to survive the released-item queries: the empty string is
+ * read as a working marker by both `RevisionService.isWorkingRevision` and its
+ * SQL counterpart `notWorkingRevision()`, so an item released at `''` is
+ * invisible to every released-item fallback (`VersionResolver`, design
+ * baselines) — released in name and unreleased in every query.
+ *
+ * Constrained by the database, not by taste: `items.revision` is
+ * `varchar(10)`, `ck_items_revision_working_marker` rejects any value starting
+ * with '-' that is not '-' or '-{8 hex}', and 'DRAFT'/'' are the legacy
+ * working markers. 'N/A' satisfies all of that and reads correctly in a
+ * revision column.
+ *
+ * Lives here rather than on `RevisionService` so the client-side scheme
+ * selector can show the real marker without importing server code;
+ * `RevisionService.NO_REVISION` re-exports it for server callers.
+ */
+export const NO_REVISION_MARKER = 'N/A'
+
+/**
  * Configurable revision scheme for lifecycle definitions.
  * Determines how revision identifiers are generated when items are released/revised.
  *
  * - alpha: A, B, C, ..., Z, AA, AB, ... (default, traditional PLM)
  * - numeric: 1, 2, 3, ... (common for prototype/pre-production)
  * - prefixed-numeric: X1, X2, X3, ... (prefix + numeric, e.g., prototype revisions)
- * - none: No revision tracking (revision stays unchanged)
+ * - none: No revision tracking — a released item sits at the fixed
+ *   `NO_REVISION_MARKER` and stays there. Valid only for lifecycles that
+ *   update items in place (Free, and phase-level `promote` overrides): a
+ *   Driven lifecycle mints a new version row per release and two versions of
+ *   one item cannot share a revision, so `WorkflowService.validateDefinition`
+ *   refuses that combination.
  */
 export type RevisionScheme =
   | { type: 'alpha'; uppercase?: boolean }

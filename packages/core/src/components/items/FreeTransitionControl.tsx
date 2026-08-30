@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { FinalKind } from '@/lib/workflows/types'
 import { Button } from '@/components/ui'
 import { apiFetch } from '@/lib/api/client'
+import { itemTransitionsQuery } from '@/lib/query'
 
 export interface FreeTransitionOption {
   id: string
@@ -24,8 +26,8 @@ interface FreeTransitionControlProps {
   onTransitioned?: () => void
   /**
    * Where to send the transition. Defaults to the generic item transition
-   * endpoint. Types whose state change carries extra semantics (work orders:
-   * the traveler gate, completedAt) pass their own.
+   * endpoint, which enforces every type's rules. Types with a typed endpoint
+   * whose response they want (work orders) pass their own.
    */
   transition?: (option: FreeTransitionOption) => Promise<unknown>
   className?: string
@@ -48,28 +50,14 @@ export function FreeTransitionControl({
   transition,
   className,
 }: FreeTransitionControlProps) {
-  const [transitions, setTransitions] = useState<Array<FreeTransitionOption>>(
-    [],
-  )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
-    setTransitions([])
-    apiFetch<{ data: { transitions: Array<FreeTransitionOption> } }>(
-      `/api/v1/items/${itemId}/transitions`,
-    )
-      .then((res) => {
-        if (!cancelled) setTransitions(res.data.transitions)
-      })
-      .catch(() => {
-        // Non-fatal: without the list the control simply doesn't render
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [itemId, state])
+  // Non-fatal by design: without the list the control simply doesn't render.
+  // `state` rides the key, so a transition re-asks what is available next.
+  const { data: transitions = [] } = useQuery(
+    itemTransitionsQuery<FreeTransitionOption>(itemId, state),
+  )
 
   const run = async (option: FreeTransitionOption) => {
     setBusy(true)

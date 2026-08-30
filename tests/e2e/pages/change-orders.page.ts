@@ -4,9 +4,13 @@
 /**
  * Change Orders (ECO) Page Object Model
  *
- * Handles ECO list, create, and workflow transitions.
+ * Locators and actions for the ECO release journey: create, checkout, and
+ * workflow transitions. Every action here is a hard step — the guarded
+ * methods this file used to carry (isVisible checks that silently skipped
+ * the step) went out with the conditional tests that needed them.
  */
 
+import { expect } from '@playwright/test'
 import { BasePage } from './base.page'
 import type { Locator, Page } from '@playwright/test'
 
@@ -23,10 +27,6 @@ export class ChangeOrdersPage extends BasePage {
     await this.page.goto('/change-orders/new')
   }
 
-  async waitForReady(): Promise<void> {
-    await this.table.or(this.form).waitFor({ state: 'visible', timeout: 10000 })
-  }
-
   // ===== List Page Locators =====
 
   get table(): Locator {
@@ -35,36 +35,10 @@ export class ChangeOrdersPage extends BasePage {
     )
   }
 
-  get ecoLinks(): Locator {
-    return this.page.locator('table tr a, [data-testid="eco-link"]')
-  }
-
   get createButton(): Locator {
     return this.page.locator(
       '[data-testid="create-eco-button"], button:has-text("New"), button:has-text("Create")',
     )
-  }
-
-  get searchInput(): Locator {
-    return this.page.locator(
-      'input[placeholder*="Search"], input[type="search"], [data-testid="search-input"]',
-    )
-  }
-
-  get stateFilter(): Locator {
-    return this.page.locator(
-      '[data-testid="state-filter"], select:has-text("State"), button:has-text("Filter")',
-    )
-  }
-
-  get draftBadges(): Locator {
-    return this.page.locator(
-      '.badge:has-text("Draft"), [data-testid="state-badge"]:has-text("Draft")',
-    )
-  }
-
-  get draftRows(): Locator {
-    return this.page.locator('tr:has(.badge:has-text("Draft"))')
   }
 
   // ===== Form Locators =====
@@ -86,68 +60,19 @@ export class ChangeOrdersPage extends BasePage {
     return this.page.locator('[data-testid="design-option"]')
   }
 
-  // ===== Detail Page Locators =====
-
-  get workflowStatus(): Locator {
-    return this.page.locator(
-      '[data-testid="workflow-status"], .workflow-status, [data-testid="item-state"]',
-    )
-  }
-
-  get workflowActions(): Locator {
-    return this.page.locator(
-      '[data-testid="workflow-actions"], button:has-text("Submit"), button:has-text("Promote")',
-    )
-  }
-
-  get promoteButton(): Locator {
-    return this.page.locator(
-      'button:has-text("Submit"), [data-testid="submit-eco"]',
-    )
-  }
-
-  get affectedItemsTab(): Locator {
-    return this.page.locator(
-      'button:has-text("Affected"), [data-testid="affected-items-tab"]',
-    )
-  }
-
-  get addAffectedItemButton(): Locator {
-    return this.page.locator(
-      'button:has-text("Add Item"), button:has-text("Add Affected"), [data-testid="add-affected-item"]',
-    )
-  }
-
   // ===== Actions =====
 
   /**
-   * Click create ECO button
+   * Pick a specific design in the affected-designs picker — the options
+   * carry their design id, so the test selects the design it seeded into
+   * rather than whichever row sorts first.
    */
-  async clickCreate(): Promise<void> {
-    await this.createButton.click()
-    await this.form.waitFor({ state: 'visible', timeout: 5000 })
-  }
-
-  /**
-   * Fill in ECO form fields.
-   *
-   * The item number is auto-generated, but at least one affected design is
-   * required: a change order is placed inside a program by the designs it
-   * links, so one with none belongs to no program and would be readable by
-   * everyone. Submit stays disabled until one is picked.
-   */
-  async fillECOForm(name: string): Promise<void> {
-    await this.fillField(this.nameInput, name)
-    await this.selectFirstDesign()
-  }
-
-  /**
-   * Pick the first available affected design, which is what enables submit.
-   */
-  async selectFirstDesign(): Promise<void> {
-    const first = this.designOptions.first()
-    await first.waitFor({ state: 'visible', timeout: 10000 })
-    await first.click()
+  async selectDesign(designId: string): Promise<void> {
+    const option = this.page.locator(
+      `[data-testid="design-option"][data-design-id="${designId}"]`,
+    )
+    await option.waitFor({ state: 'visible', timeout: 10000 })
+    await option.click()
   }
 
   /**
@@ -158,63 +83,68 @@ export class ChangeOrdersPage extends BasePage {
   }
 
   /**
-   * Create a new ECO (full flow)
+   * Create a new ECO against a specific design and land on its detail page.
    */
-  async createECO(name: string): Promise<void> {
-    await this.fillECOForm(name)
+  async createECO(name: string, designId: string): Promise<void> {
+    await this.fillField(this.nameInput, name)
+    await this.selectDesign(designId)
     await this.submit()
-    await this.page.waitForURL(/\/change-orders\/[a-f0-9-]+$/, {
-      timeout: 10000,
+    await this.page.waitForURL(/\/change-orders\/[a-f0-9-]+(\?.*)?$/, {
+      timeout: 15000,
     })
   }
 
   /**
-   * Search for ECOs
+   * Complete the checkout dialog onto the (single) active ECO branch: pick
+   * the Existing Change Order option, select the branch, confirm. Assumes
+   * the dialog is already open (the part page's Revise button opens it).
    */
-  async search(query: string): Promise<void> {
-    if (await this.searchInput.isVisible()) {
-      await this.searchInput.focus()
-      await this.searchInput.pressSequentially(query, { delay: 30 })
-      await this.page.waitForTimeout(500)
-    }
-  }
+  async checkoutToEco(page: Page): Promise<void> {
+    await page.locator('[data-testid="checkout-option-eco"]').click()
 
-  /**
-   * Click on first ECO in the list
-   */
-  async clickFirstECO(): Promise<void> {
-    await this.ecoLinks.first().click()
-    await this.page.waitForURL(/\/change-orders\/[a-f0-9-]+/, { timeout: 5000 })
-  }
-
-  /**
-   * Click on first Draft ECO in the list
-   */
-  async clickFirstDraftECO(): Promise<void> {
-    const row = this.draftRows.first()
-    if (await row.isVisible()) {
-      await row.locator('a').first().click()
-      await this.page.waitForURL(/\/change-orders\/[a-f0-9-]+/, {
-        timeout: 5000,
+    // Radix Select locks pointer events on everything outside its open
+    // listbox, so the click that successfully opened it can still be
+    // reported as intercepted and spin until timeout. Fire the click with a
+    // short leash and let the listbox option's own hard wait be the truth —
+    // nothing is skipped: if the select genuinely never opened, the option
+    // wait below fails the test.
+    const trigger = page.locator('[data-testid="checkout-eco-branch-select"]')
+    const branchOption = page
+      .locator('[data-testid="checkout-eco-branch-option"]')
+      .first()
+    await trigger.click({ timeout: 3000 }).catch(() => {})
+    // One retry if the listbox did not open on the first click. Expressed as
+    // a short wait rather than an isVisible branch: the hard wait below is
+    // still the verdict, so nothing here can silently skip the selection.
+    await branchOption
+      .waitFor({ state: 'visible', timeout: 2000 })
+      .catch(async () => {
+        await trigger.click({ timeout: 3000 }).catch(() => {})
       })
-    }
+    await branchOption.waitFor({ state: 'visible', timeout: 5000 })
+    await branchOption.click()
+
+    const confirm = page.locator('[data-testid="checkout-confirm"]')
+    await expect(confirm).toBeEnabled({ timeout: 5000 })
+    await confirm.click()
   }
 
   /**
-   * Navigate to Affected Items tab
+   * Fire a workflow transition by its name — the transition buttons render
+   * the transition's own name as their label, backed by
+   * POST /change-orders/:id/workflow/transition — and confirm it in the
+   * transition dialog.
    */
-  async gotoAffectedItems(): Promise<void> {
-    if (await this.affectedItemsTab.isVisible()) {
-      await this.affectedItemsTab.click()
-    }
-  }
-
-  /**
-   * Open filter dropdown
-   */
-  async openStateFilter(): Promise<void> {
-    if (await this.stateFilter.isVisible()) {
-      await this.stateFilter.click()
-    }
+  async transition(name: string): Promise<void> {
+    await this.page.getByRole('button', { name, exact: true }).click()
+    const confirm = this.page.getByRole('button', {
+      name: 'Confirm Transition',
+    })
+    await confirm.waitFor({ state: 'visible', timeout: 10000 })
+    // The dialog disables Confirm while its transition data (and, for a
+    // releasing transition, the release preview) loads — wait for enabled
+    // rather than clicking into the disabled window.
+    await expect(confirm).toBeEnabled({ timeout: 20000 })
+    await confirm.click()
   }
 }

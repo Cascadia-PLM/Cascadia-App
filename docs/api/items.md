@@ -2,24 +2,18 @@
 
 The Items API provides CRUD operations for all PLM item types (Part, Document, Requirement, Task, ChangeOrder, etc.). Items are the fundamental data objects in Cascadia and follow a two-table pattern: shared fields in the `items` table and type-specific fields in dedicated tables (`parts`, `documents`, etc.).
 
-## Endpoints Overview
+## Endpoints
 
-| Method | Endpoint                       | Description                     |
-| ------ | ------------------------------ | ------------------------------- |
-| GET    | `/api/v1/items`                | List items with version context |
-| POST   | `/api/v1/items`                | Create an item                  |
-| GET    | `/api/v1/items/:id`            | Get item by ID                  |
-| PUT    | `/api/v1/items/:id`            | Update an item                  |
-| DELETE | `/api/v1/items/:id`            | Delete an item                  |
-| GET    | `/api/v1/items/:id/at-context` | Get item at a specific version  |
-| GET    | `/api/v1/items/:id/history`    | Get version history             |
-| GET    | `/api/v1/items/search`         | Search items                    |
-| POST   | `/api/v1/items/batch-create`   | Batch create items              |
-| POST   | `/api/v1/items/batch-update`   | Batch update items              |
-| POST   | `/api/v1/items/batch-delete`   | Batch delete items              |
-| GET    | `/api/v1/parts/:id`            | Get part by ID                  |
-| PUT    | `/api/v1/parts/:id`            | Update a part                   |
-| DELETE | `/api/v1/parts/:id`            | Delete a part                   |
+This page explains behaviour; it is not an endpoint inventory. Three generated
+surfaces carry that, and none of them can drift from the routes the way a
+hand-written table does:
+
+- `GET /api/docs` — the interactive Scalar UI
+- `GET /openapi.json` — the live spec, regenerated from route metadata per request
+- [`openapi.v1.json`](./openapi.v1.json) — the frozen v1 contract, the one external
+  consumers should build against
+
+See [the API README](./README.md) for the versioning policy that governs all three.
 
 ## List Items
 

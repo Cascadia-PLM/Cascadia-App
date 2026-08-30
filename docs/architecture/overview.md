@@ -185,7 +185,7 @@ lib/
 ├── errors/              # Typed error hierarchy (AppError, NotFoundError, ValidationError, ...)
 ├── ai/                  # AI chatbot tools, adapters, session service
 ├── design-engine/       # Collaborative design engine (stages, tools, materialization)
-├── cad-generation/      # CAD generation pipeline (Zoo API, KCL)
+├── cad-generation/      # CAD generation pipeline (Zoo API, KCL) — same package
 └── sysml/               # SysML v2 serialization
 ```
 

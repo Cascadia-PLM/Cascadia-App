@@ -2,8 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { CheckCircle, Loader2, Plus, UserPlus, Users } from 'lucide-react'
 import { strings } from '../strings'
+import { roleListQuery } from '@/lib/query'
 import {
   Badge,
   Button,
@@ -17,11 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui'
-
-interface RoleSummary {
-  id: string
-  name: string
-}
 
 interface UserDraft {
   email: string
@@ -49,32 +46,22 @@ interface UsersStepProps {
 }
 
 export function UsersStep({ onCompleted }: UsersStepProps) {
-  const [roles, setRoles] = useState<Array<RoleSummary>>([])
   const [draft, setDraft] = useState<UserDraft>(EMPTY_DRAFT)
   const [creating, setCreating] = useState(false)
   const [created, setCreated] = useState<Array<CreatedUser>>([])
   const [error, setError] = useState('')
 
+  const { data: roles = [] } = useQuery(roleListQuery())
+
+  // Pre-select a sensible role once the list arrives, without overriding a
+  // choice the user has already made.
   useEffect(() => {
-    let cancelled = false
-    fetch('/api/v1/roles')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((json) => {
-        if (cancelled || !json) return
-        const list = (json.data?.roles ?? []) as Array<RoleSummary>
-        setRoles(list)
-        if (list.length > 0 && !draft.roleId) {
-          const defaultRole = list.find((r) => r.name === 'User') ?? list[0]
-          if (defaultRole) {
-            setDraft((d) => ({ ...d, roleId: defaultRole.id }))
-          }
-        }
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
+    if (roles.length === 0 || draft.roleId) return
+    const defaultRole = roles.find((r) => r.name === 'User') ?? roles[0]
+    if (defaultRole) {
+      setDraft((d) => ({ ...d, roleId: defaultRole.id }))
     }
-  }, [])
+  }, [roles, draft.roleId])
 
   const handleAdd = async () => {
     if (!draft.email.trim() || !draft.name.trim() || !draft.password) {

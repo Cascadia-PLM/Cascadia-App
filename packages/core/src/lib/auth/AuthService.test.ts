@@ -161,6 +161,88 @@ describe('AuthService', () => {
     })
   })
 
+  /**
+   * Security gate. The lockout policy moved out of `login()` into reusable
+   * statics so the signature path could share one failure budget with it
+   * (AA2-4); these pin down that the login endpoint still behaves exactly as
+   * it did — same counter, same threshold, same reset, and still its own
+   * `AuthenticationError` rather than the generic `AccountLockedError` the
+   * other password prompts now throw.
+   */
+  describe('login lockout', () => {
+    async function readLockoutState(userId: string) {
+      const row = (
+        await testDb.db
+          .select({
+            failedLoginAttempts: users.failedLoginAttempts,
+            lockedUntil: users.lockedUntil,
+          })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1)
+      )[0]
+      if (!row) throw new Error('test user row vanished')
+      return row
+    }
+
+    it('increments the failure counter on a wrong password', async () => {
+      await expect(
+        AuthService.login({ username: user.email, password: 'wrongpassword' }),
+      ).rejects.toThrow(AuthenticationError)
+
+      expect((await readLockoutState(user.id)).failedLoginAttempts).toBe(1)
+    })
+
+    it('locks the account on the MAX_FAILED_ATTEMPTS-th consecutive failure', async () => {
+      // Seeded one short of the threshold: Argon2id is deliberately expensive
+      // and driving all ten proves nothing the arithmetic does not.
+      await testDb.db
+        .update(users)
+        .set({ failedLoginAttempts: AuthService.MAX_FAILED_ATTEMPTS - 1 })
+        .where(eq(users.id, user.id))
+
+      await expect(
+        AuthService.login({ username: user.email, password: 'wrongpassword' }),
+      ).rejects.toThrow(AuthenticationError)
+
+      const state = await readLockoutState(user.id)
+      expect(state.failedLoginAttempts).toBe(AuthService.MAX_FAILED_ATTEMPTS)
+      expect(state.lockedUntil).toBeInstanceOf(Date)
+      expect(state.lockedUntil?.getTime() ?? 0).toBeGreaterThan(Date.now())
+    })
+
+    it('refuses the correct password while the account is locked', async () => {
+      await testDb.db
+        .update(users)
+        .set({
+          failedLoginAttempts: AuthService.MAX_FAILED_ATTEMPTS,
+          lockedUntil: new Date(Date.now() + 5 * 60 * 1000),
+        })
+        .where(eq(users.id, user.id))
+
+      await expect(
+        AuthService.login({ username: user.email, password: testPassword }),
+      ).rejects.toThrow(AuthenticationError)
+    })
+
+    it('resets the counter and the lock on a successful login', async () => {
+      await testDb.db
+        .update(users)
+        .set({
+          failedLoginAttempts: 4,
+          // Already expired, so the login is allowed to proceed and clear it.
+          lockedUntil: new Date(Date.now() - 60 * 1000),
+        })
+        .where(eq(users.id, user.id))
+
+      await AuthService.login({ username: user.email, password: testPassword })
+
+      const state = await readLockoutState(user.id)
+      expect(state.failedLoginAttempts).toBe(0)
+      expect(state.lockedUntil).toBeNull()
+    })
+  })
+
   describe('logout', () => {
     it('invalidates session successfully', async () => {
       // First login to get a session

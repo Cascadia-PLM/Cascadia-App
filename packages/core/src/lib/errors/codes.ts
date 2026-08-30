@@ -56,6 +56,7 @@ export enum ErrorCode {
   INTERNAL_ERROR = 'INTERNAL_ERROR',
   NOT_IMPLEMENTED = 'NOT_IMPLEMENTED',
   RATE_LIMITED = 'RATE_LIMITED',
+  SECRET_DECRYPTION_FAILED = 'SECRET_DECRYPTION_FAILED',
 
   // Licensing (10xxx)
   PACKAGE_NOT_LICENSED = 'PACKAGE_NOT_LICENSED',
@@ -128,6 +129,7 @@ export const errorCodeToHttpStatus: Record<ErrorCode, number> = {
   [ErrorCode.INTERNAL_ERROR]: 500,
   [ErrorCode.NOT_IMPLEMENTED]: 501,
   [ErrorCode.RATE_LIMITED]: 429,
+  [ErrorCode.SECRET_DECRYPTION_FAILED]: 500,
 
   // Licensing → 403
   [ErrorCode.PACKAGE_NOT_LICENSED]: 403,

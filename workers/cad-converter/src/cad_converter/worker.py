@@ -11,10 +11,16 @@ import os
 import signal
 import socket
 import tempfile
+import threading
 import time
 from datetime import datetime
 from typing import Optional
 
+from cascadia_worker_common.watchdog import (
+    CancelHandle,
+    make_poison_exit,
+    start_job_watchdog,
+)
 import pika
 import pika.channel
 import pika.spec
@@ -23,15 +29,15 @@ from .assembly import decompose_step_assembly
 from .config import settings
 from .converter import convert_single, convert_single_with_colors
 from .db import (
+    JobCancelled,
     add_job_log,
+    claim_job,
     close_connection,
     compute_file_hash,
-    get_job,
     get_vault_file,
     insert_vault_file,
     mark_job_completed,
     mark_job_failed,
-    mark_job_started,
     update_job_progress,
     update_vault_file_thumbnail,
 )
@@ -58,6 +64,9 @@ BINDING_PATTERN = "jobs.conversion.cad.#"
 _shutdown_requested = False
 _active_jobs = 0
 _connection: Optional[pika.BlockingConnection] = None
+# Bounds in-flight job threads; sized with basic_qos prefetch (see
+# _process_message). Module-level because settings are import-time fixed.
+_worker_slots = threading.Semaphore(settings.worker_concurrency)
 _channel: Optional[pika.channel.Channel] = None
 
 
@@ -114,32 +123,205 @@ def _process_message(
     properties: pika.spec.BasicProperties,
     body: bytes,
 ) -> None:
-    """Process a single job message from RabbitMQ."""
+    """Dispatch a delivery to a worker thread and return immediately.
+
+    The job must NOT run on pika's connection thread: a long job blocks the
+    I/O loop, so no heartbeat frames flow, the broker times the connection
+    out (~2x heartbeat) and redelivers the job mid-run. The callback only
+    takes a concurrency slot and hands off; the main thread stays inside
+    start_consuming(), pumping heartbeats.
+
+    The semaphore matches basic_qos prefetch, so acquire never actually
+    blocks: the broker never has more than worker_concurrency deliveries
+    outstanding, and a slot frees before the ack that lets the next one in.
+    It exists as a backstop so a prefetch misconfiguration degrades to
+    waiting instead of unbounded threads.
+    """
+    _worker_slots.acquire()
+    threading.Thread(
+        target=_run_job,
+        args=(ch, method.delivery_tag, body),
+        daemon=True,
+        name=f"cad-conv-{method.delivery_tag}",
+    ).start()
+
+
+def _schedule_ack(ch: pika.channel.Channel, delivery_tag: int) -> None:
+    """Always ACK (retries are handled via DB status, not requeue) — but only
+    ever from the connection thread. If the connection died mid-job the ack
+    is lost, and that is correct: the broker already requeued the delivery
+    when the channel closed, and the atomic claim refuses the redelivery.
+    """
+
+    def _ack() -> None:
+        try:
+            if ch.is_open:
+                ch.basic_ack(delivery_tag=delivery_tag)
+            else:
+                logger.warning(
+                    "Channel closed before ack; broker will redeliver "
+                    "and the claim refuses it"
+                )
+        except Exception as ack_err:
+            logger.warning("Ack failed: %s", ack_err)
+
+    conn = _connection
+    if conn is None or not conn.is_open:
+        logger.warning(
+            "Connection gone before ack; broker will redeliver "
+            "and the claim refuses it"
+        )
+        return
+    try:
+        conn.add_callback_threadsafe(_ack)
+    except Exception as sched_err:
+        logger.warning("Could not schedule ack: %s", sched_err)
+
+
+def _schedule_nack(
+    ch: pika.channel.Channel, delivery_tag: int, requeue: bool
+) -> None:
+    """Negatively acknowledge a delivery — from the connection thread only.
+
+    `requeue=True` puts the job back on the queue. That is the right answer
+    only when the worker never found out whether the job was claimable: the
+    delivery is the job's ONLY copy, so acking it there would discard the
+    job. `requeue=False` routes the message to the queue's dead-letter
+    exchange, for a body no amount of retrying can fix.
+
+    Losing the nack is as harmless as losing an ack, and for the same
+    reason: the broker requeues everything unacknowledged on a channel when
+    that channel dies, and the atomic claim refuses the redelivery.
+    """
+
+    def _nack() -> None:
+        try:
+            if ch.is_open:
+                ch.basic_nack(delivery_tag=delivery_tag, requeue=requeue)
+            else:
+                logger.warning(
+                    "Channel closed before nack; broker will redeliver "
+                    "and the claim refuses it"
+                )
+        except Exception as nack_err:
+            logger.warning("Nack failed: %s", nack_err)
+
+    conn = _connection
+    if conn is None or not conn.is_open:
+        logger.warning(
+            "Connection gone before nack; broker will redeliver "
+            "and the claim refuses it"
+        )
+        return
+    try:
+        conn.add_callback_threadsafe(_nack)
+    except Exception as sched_err:
+        logger.warning("Could not schedule nack: %s", sched_err)
+
+
+def _run_job(
+    ch: pika.channel.Channel, delivery_tag: int, body: bytes
+) -> None:
+    """Execute one job on a worker thread.
+
+    Everything here may block for minutes; the one rule is that no pika call
+    happens on this thread — the settlement is scheduled back onto the
+    connection thread via add_callback_threadsafe, the only thread-safe pika
+    entry point.
+
+    The body runs in three phases — parse, claim, execute — and each settles
+    `outcome`, which the single `finally` dispatches exactly once. The phases
+    exist because the delivery is the job's only copy, so the three failure
+    modes need three different answers: an unparseable body is a poison
+    message and goes to the dead-letter exchange; a claim that could not even
+    be attempted (a database outage) is requeued, because the row is still
+    'queued' and nothing else will ever pick it up; and everything from a
+    successful claim onward is settled in the database, so it acks — retries
+    are scheduled by status, never by requeueing.
+    """
     global _active_jobs
     _active_jobs += 1
 
+    # 'ack' | 'nack_requeue' | 'nack_dlq'. Ack is the default because it is
+    # the outcome of every path that reached the database, including failure.
+    outcome = "ack"
+
+    # Started once the claim succeeds and cancelled in the `finally` below,
+    # whichever way the job ends. None until then: a delivery that never
+    # reached phase 3 has no deadline to enforce.
+    watchdog: Optional[CancelHandle] = None
+
     try:
-        # Parse message
-        raw = json.loads(body)
-        msg = JobMessage(**raw)
+        # Phase 1 — parse. A body that will not parse will never parse, so
+        # requeueing it would spin the queue forever and acking it would hide
+        # it: dead-letter it instead, which is what the Node worker does with
+        # the same input. `msg` is bound from here on, which is what lets the
+        # handlers below name it unconditionally.
+        try:
+            raw = json.loads(body)
+            msg = JobMessage(**raw)
+        except Exception as parse_err:
+            logger.error(
+                "Unparseable message body, dead-lettering: %s", parse_err
+            )
+            outcome = "nack_dlq"
+            return
+
         logger.info("Received job %s (type=%s, attempt=%d)", msg.jobId, msg.type, msg.attemptNumber)
 
-        # Fetch full job record from database
-        job = get_job(msg.jobId)
+        # Phase 2 — atomically claim the job: one UPDATE flips pending/queued
+        # to running and counts the attempt, so a duplicate delivery, a job
+        # cancelled while queued, one another worker already claimed, and one
+        # already settled all refuse in the same place. Do NOT ack here — the
+        # `finally` block below settles the delivery. Acking twice makes the
+        # broker close the channel with 406 PRECONDITION_FAILED (unknown
+        # delivery tag), which tears down the consumer and reconnects on
+        # every skipped message.
+        try:
+            job = claim_job(msg.jobId)
+        except Exception as claim_err:
+            # The claim never landed, so the row is still 'queued' —
+            # mark_job_failed is guarded to 'running' and would no-op, and
+            # acking would consume the job's only delivery and strand the row
+            # at 'queued' forever. Requeue instead, after a pause so a
+            # database outage redelivers on a slow cadence rather than
+            # spinning. Sleeping here is allowed: this is the worker thread,
+            # not pika's, and the slot it holds is released in the `finally`.
+            logger.warning(
+                "Could not claim job %s (%s); requeueing the delivery",
+                msg.jobId,
+                claim_err,
+            )
+            time.sleep(settings.claim_retry_delay_seconds)
+            outcome = "nack_requeue"
+            return
+
         if not job:
-            # Do NOT ack here — the `finally` block below always acks. Acking
-            # twice makes the broker close the channel with 406
-            # PRECONDITION_FAILED (unknown delivery tag), which tears down the
-            # consumer and reconnects on every skipped message.
-            logger.error("Job %s not found in database, skipping", msg.jobId)
+            logger.info(
+                "Job %s not claimable (missing, cancelled, or already "
+                "claimed/settled), skipping",
+                msg.jobId,
+            )
             return
 
-        if job.status == "cancelled":
-            logger.info("Job %s is cancelled, skipping", msg.jobId)
-            return
+        # Phase 3 — execute. The row is 'running' and ours; every exit from
+        # here is recorded in the database, so every exit acks — and the
+        # deadline becomes enforceable, because stage one of the watchdog is
+        # the same guarded 'running'-only mark every other failure uses.
+        # Stage two exits the process, but only if this thread is still alive
+        # a grace period after that: a native call wedged inside pythonocc or
+        # CadQuery is unreachable by any cooperative signal, so there is no
+        # third option. See cascadia_worker_common.watchdog.
+        watchdog = start_job_watchdog(
+            job_id=msg.jobId,
+            timeout_ms=settings.job_timeout,
+            poison_grace_ms=settings.poison_exit_grace_ms,
+            job_thread_alive=threading.current_thread().is_alive,
+            on_poison=make_poison_exit(
+                msg.jobId, enabled=settings.exit_on_hung_job
+            ),
+        )
 
-        # Mark as running
-        mark_job_started(msg.jobId)
         add_job_log(msg.jobId, "info", "CAD conversion started", {"worker": socket.gethostname()})
 
         # Parse payload
@@ -157,19 +339,41 @@ def _process_message(
         })
         logger.info("Job %s completed: %d parts, %d polygons", msg.jobId, result.totalParts, result.polygonCount)
 
-    except Exception as e:
-        logger.exception("Job %s failed: %s", msg.jobId if 'msg' in dir() else 'unknown', e)
+    except JobCancelled:
+        # The row is already terminal ('cancelled' in another process) —
+        # log and ack, never mark_job_failed; the status guards on the mark
+        # functions protect the row regardless.
+        logger.info("Job %s cancelled in another process; stopping", msg.jobId)
         try:
-            if 'msg' in dir():
-                mark_job_failed(msg.jobId, str(e))
-                add_job_log(msg.jobId, "error", f"CAD conversion failed: {e}")
+            add_job_log(msg.jobId, "info", "CAD conversion stopped: job was cancelled")
+        except Exception as db_err:
+            logger.error("Failed to log cancellation: %s", db_err)
+
+    except Exception as e:
+        # Only reachable from phase 3, so `msg` is bound and the row is
+        # 'running' — which is why this can name msg.jobId outright where it
+        # used to probe `'msg' in dir()`.
+        logger.exception("Job %s failed: %s", msg.jobId, e)
+        try:
+            mark_job_failed(msg.jobId, str(e))
+            add_job_log(msg.jobId, "error", f"CAD conversion failed: {e}")
         except Exception as db_err:
             logger.error("Failed to update job status in DB: %s", db_err)
 
     finally:
+        # First, and before the slot is released: past this point the job is
+        # over, and a watchdog that fired now would fail a settled row and —
+        # worse — take the whole process down over a job that finished.
+        if watchdog is not None:
+            watchdog.cancel()
         _active_jobs -= 1
-        # Always ACK the message (retries are handled via DB status, not requeue)
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+        _worker_slots.release()
+        if outcome == "ack":
+            _schedule_ack(ch, delivery_tag)
+        else:
+            _schedule_nack(
+                ch, delivery_tag, requeue=outcome == "nack_requeue"
+            )
 
 
 def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConversionResult:
@@ -497,8 +701,26 @@ def run_worker() -> None:
     if _active_jobs > 0:
         logger.info("Waiting for %d active job(s) to finish (max 30s)...", _active_jobs)
         deadline = time.monotonic() + 30
+        # Pump the connection's I/O loop while waiting: worker threads
+        # schedule their acks onto it, and a plain sleep would strand
+        # those acks unsent (harmless — the claim refuses the redelivery
+        # — but every job finished during shutdown would come back once
+        # after restart).
         while _active_jobs > 0 and time.monotonic() < deadline:
-            time.sleep(0.5)
+            if _connection is not None and _connection.is_open:
+                try:
+                    _connection.process_data_events(time_limit=0.5)
+                except Exception:
+                    time.sleep(0.5)
+            else:
+                time.sleep(0.5)
+    # One final pump so acks scheduled by the last finishing thread
+    # go out before the channel closes.
+    if _connection is not None and _connection.is_open:
+        try:
+            _connection.process_data_events(time_limit=1)
+        except Exception:
+            pass
 
     # Close connections
     try:

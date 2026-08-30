@@ -2,18 +2,18 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useForm, useStore } from '@tanstack/react-form'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Info } from 'lucide-react'
 import type { Requirement } from '@/lib/items/types/requirement'
 import type { Design } from '@/lib/types/design'
-import type { DesignStatus } from '@/components/versioning/DesignPhaseIndicator'
 import { requirementSchema } from '@/lib/items/types/requirement'
 import { DesignSelector } from '@/components/versioning/DesignSelector'
 import { DesignPhaseIndicator } from '@/components/versioning/DesignPhaseIndicator'
 import { BranchSelector } from '@/components/versioning/BranchSelector'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
 import { ItemNumberField } from '@/components/items/ItemNumberField'
-import { apiFetch } from '@/lib/api/client'
+import { designStatusQuery } from '@/lib/query'
 import { zodValidator } from '@/lib/form-validation'
 import {
   Button,
@@ -48,9 +48,7 @@ export function RequirementForm({
   isSubmitting,
 }: RequirementFormProps) {
   // Track selected design's protection status
-  const [designStatus, setDesignStatus] = useState<DesignStatus | null>(null)
   const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>()
-  const [loadingStatus, setLoadingStatus] = useState(false)
   const [attributes, setAttributes] = useState<Record<string, string>>(
     requirement?.attributes ?? {},
   )
@@ -103,33 +101,18 @@ export function RequirementForm({
     },
   })
 
-  // Watch for design changes and fetch status
+  // The design the form currently targets; its status decides whether a
+  // branch must be chosen.
   const currentDesignId = useStore(form.store, (state) => state.values.designId)
 
+  const { data: designStatus = null, isFetching: loadingStatus } = useQuery(
+    designStatusQuery(currentDesignId, Boolean(currentDesignId)),
+  )
+
+  // A different design means a different set of branches, so the pick the
+  // user made against the previous one no longer means anything.
   useEffect(() => {
-    if (!currentDesignId) {
-      setDesignStatus(null)
-      setSelectedBranchId(undefined)
-      return
-    }
-
-    async function fetchDesignStatus() {
-      setLoadingStatus(true)
-      try {
-        const result = await apiFetch<{ data: DesignStatus }>(
-          `/api/v1/designs/${currentDesignId}/status`,
-        )
-        setDesignStatus(result.data)
-        // Clear branch selection when design changes
-        setSelectedBranchId(undefined)
-      } catch {
-        setDesignStatus(null)
-      } finally {
-        setLoadingStatus(false)
-      }
-    }
-
-    fetchDesignStatus()
+    setSelectedBranchId(undefined)
   }, [currentDesignId])
 
   // Check if we're in post-release phase and need branch selection

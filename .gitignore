@@ -40,3 +40,25 @@ coverage/
 
 # VS Code Counter extension output
 .VSCodeCounter/
+
+# Generated attribution. `npm run build` writes it into dist/ and .output/ for
+# the images; `npm run notices` writes it here for a look. Derived entirely
+# from the lockfile and the installed tree, so a committed copy would be one
+# more artefact to drift out of date with what it credits.
+/THIRD-PARTY-NOTICES.txt
+
+# Python bytecode (workers)
+__pycache__/
+*.pyc
+
+# pytest's run cache. It drops a .gitignore of its own, so this is belt and
+# braces — but the directory is also listed in .prettierignore, and keeping
+# both statements next to their subject is cheaper than remembering why only
+# one of them exists.
+.pytest_cache/
+
+# Docker build transcripts. Two were once committed by an accidental redirect
+# into the repo root — 10,631 lines of `docker build` output that no gate
+# objects to, since build output is ordinary text with nothing sensitive in
+# it. Ignored so a stray redirect cannot repeat that.
+.build_*.log

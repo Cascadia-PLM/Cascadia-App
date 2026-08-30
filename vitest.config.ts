@@ -18,27 +18,48 @@ const tsconfigProjects = [
   './packages/core/tsconfig.json',
   './packages/advanced-auditing/tsconfig.json',
   './packages/design-engine/tsconfig.json',
-  './packages/cad-generation/tsconfig.json',
   './packages/odoo-integration/tsconfig.json',
 ].filter((project) => existsSync(project))
 
 export default defineConfig({
   plugins: [viteTsConfigPaths({ projects: tsconfigProjects }), viteReact()],
   test: {
-    // Environment
-    environment: 'jsdom',
-
-    // Global setup/teardown
-    globalSetup: './packages/core/src/__tests__/global-setup.ts',
-    setupFiles: ['./packages/core/src/__tests__/setup.ts'],
-
-    // Include patterns. `publish/` is not a package, but the overlay that turns
-    // this tree into the public one is exactly the sort of thing that rots
-    // unnoticed — nothing else exercises it until a publish.
-    include: [
-      'packages/*/src/**/*.{test,spec}.{ts,tsx}',
-      'publish/*.{test,spec}.ts',
+    // Two projects, split by environment (TEST-4). The suite is ~97% service
+    // and route tests that never touch a DOM; only the .test.tsx component
+    // files get jsdom. The split is the file extension — name a component
+    // test `.test.tsx` or it runs under node and `document` is undefined.
+    // Include patterns: `publish/` is not a package, but the overlay that
+    // turns this tree into the public one is exactly the sort of thing that
+    // rots unnoticed — nothing else exercises it until a publish. `scripts/`
+    // is there for the same reason.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'node',
+          environment: 'node',
+          setupFiles: ['./packages/core/src/__tests__/setup.node.ts'],
+          include: [
+            'packages/*/src/**/*.{test,spec}.ts',
+            'publish/*.{test,spec}.ts',
+            'scripts/*.{test,spec}.ts',
+          ],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'dom',
+          environment: 'jsdom',
+          setupFiles: ['./packages/core/src/__tests__/setup.dom.ts'],
+          include: ['packages/*/src/**/*.{test,spec}.tsx'],
+        },
+      },
     ],
+
+    // Global setup/teardown (root-level: runs once, before any project)
+    globalSetup: './packages/core/src/__tests__/global-setup.ts',
+
     exclude: ['node_modules', 'dist', '.output'],
 
     // Coverage configuration

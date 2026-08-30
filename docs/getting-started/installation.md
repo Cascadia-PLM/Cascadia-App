@@ -103,11 +103,11 @@ npm run db:push
 
 This is an interactive command that uses `drizzle-kit push` to apply the schema directly. It will prompt to confirm table creation. For development, this is the fastest way to get started.
 
-> **Note**: Pre-1.0, `db:push` is the path in _every_ environment — dev, CI, and
-> compose. There are no committed migrations, and `db:generate` / `db:migrate` are
-> unused. At the first production release, mint a baseline migration with
-> `npm run db:generate` (it emits the full schema as `0000`) and switch persistent
-> environments to `npm run db:migrate` from there. See
+> **Note**: `db:push` is for development, CI, and demo stacks only. Released
+> installs upgrade with the committed migrations (`npm run db:migrate`), which
+> every schema change mints for both editions (`npm run db:generate` and
+> `CASCADIA_APP=cascadia npm run db:generate`). A pre-v0.5 database that has
+> tables but no migration journal is stamped once with `npm run db:baseline`. See
 > [Database Patterns](../development/database-patterns.md).
 
 ## Seed the database
@@ -205,10 +205,10 @@ Node.js handles forward/backward slashes automatically, but some tools may not. 
 
 ```bash
 # Good
-FILE_STORAGE_PATH=./storage/files
+VAULT_ROOT=./vault
 
 # Avoid
-FILE_STORAGE_PATH=.\storage\files
+VAULT_ROOT=.\vault
 ```
 
 ### Missing `tsx` command

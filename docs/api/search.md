@@ -2,12 +2,18 @@
 
 Cascadia provides two search mechanisms: enterprise-wide search across all item types, and type-specific item search with design scoping.
 
-## Endpoints Overview
+## Endpoints
 
-| Method | Endpoint                    | Description                  |
-| ------ | --------------------------- | ---------------------------- |
-| GET    | `/api/v1/enterprise-search` | Search across all item types |
-| GET    | `/api/v1/items/search`      | Type-specific item search    |
+This page explains behaviour; it is not an endpoint inventory. Three generated
+surfaces carry that, and none of them can drift from the routes the way a
+hand-written table does:
+
+- `GET /api/docs` — the interactive Scalar UI
+- `GET /openapi.json` — the live spec, regenerated from route metadata per request
+- [`openapi.v1.json`](./openapi.v1.json) — the frozen v1 contract, the one external
+  consumers should build against
+
+See [the API README](./README.md) for the versioning policy that governs all three.
 
 ## Enterprise Search
 
@@ -15,14 +21,14 @@ Cascadia provides two search mechanisms: enterprise-wide search across all item 
 GET /api/v1/enterprise-search
 ```
 
-Searches across all registered item types simultaneously and returns results grouped by type. Respects the user's program membership, so only items in accessible designs and library designs are returned. Auth required.
+Searches every item type the caller may read simultaneously and returns results grouped by type. Two gates apply, as they do on the results endpoint below: RBAC decides which item types are searched at all, and program membership decides which rows come back, so only items in accessible designs and library designs are returned. Auth required.
 
 ### Query Parameters
 
-| Parameter | Type    | Required | Default | Description                                    |
-| --------- | ------- | -------- | ------- | ---------------------------------------------- |
-| `q`       | string  | Yes      | -       | Search query (searches item numbers and names) |
-| `limit`   | integer | No       | 50      | Maximum results per type                       |
+| Parameter | Type    | Required | Default | Description                                      |
+| --------- | ------- | -------- | ------- | ------------------------------------------------ |
+| `q`       | string  | Yes      | -       | Search query (searches item numbers and names)   |
+| `limit`   | integer | No       | 50      | Maximum results per type; 1-100, otherwise a 400 |
 
 ### Response
 
@@ -75,6 +81,7 @@ curl /api/v1/enterprise-search?q=PRT-001&limit=10
 
 - Searches item numbers and names using prefix/substring matching.
 - Results are grouped by item type; types with zero results are omitted.
+- Only item types the caller holds `read` on are searched — a withheld type contributes no group at all, and a caller with no read grants gets an empty `results`.
 - The `limit` is distributed across all types (e.g., limit=50 with 5 types gives ~10 per type).
 - Items are enriched with design metadata (`designCode`, `designName`).
 - Only items in the user's accessible designs (via program membership) and library designs are included.

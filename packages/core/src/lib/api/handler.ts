@@ -4,10 +4,11 @@
 import {
   RateLimiter,
   apiLimiter,
-  getClientIp,
   loginLimiter,
   uploadLimiter,
 } from './rate-limit'
+import { applySecurityHeaders, getAllowedOrigins } from './cors'
+import { resolveClientIp } from './client-ip'
 import type { RateLimitConfig } from './rate-limit'
 import type { OpenApiMetadata } from './openapi-helpers'
 import type { z } from 'zod'
@@ -21,33 +22,8 @@ import { db } from '@/lib/db'
 import { authEvents } from '@/lib/db/schema/users'
 import { ErrorCode } from '@/lib/errors/codes'
 import { getRequestId, handleApiError } from '@/lib/errors/handleApiError'
-import { RateLimitedError } from '@/lib/errors'
-
-/**
- * Security headers applied to all API responses as defense-in-depth.
- * CSP and HSTS are left to the reverse proxy / ingress for proper tuning.
- */
-const SECURITY_HEADERS: Record<string, string> = {
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-}
-
-/**
- * Parse allowed origins from CORS_ALLOWED_ORIGINS env var.
- * Returns null if not set (same-origin only).
- */
-function getAllowedOrigins(): Set<string> | null {
-  const raw = process.env.CORS_ALLOWED_ORIGINS
-  if (!raw) return null
-  return new Set(
-    raw
-      .split(',')
-      .map((o) => o.trim())
-      .filter(Boolean),
-  )
-}
+import { AppError, RateLimitedError, ValidationError } from '@/lib/errors'
+import { createErrorResponse } from '@/lib/errors/api'
 
 /**
  * Validate the Origin header for state-changing requests (CSRF protection).
@@ -92,66 +68,49 @@ function validateOrigin(request: Request): boolean {
   return false
 }
 
-/**
- * Build CORS headers for a request. Same-origin only by default;
- * set CORS_ALLOWED_ORIGINS env var to allow specific external origins.
- */
-function getCorsHeaders(request: Request): Record<string, string> {
-  const origin = request.headers.get('origin')
-  if (!origin) return {}
-
-  const requestUrl = new URL(request.url, 'http://localhost')
-
-  // Same-origin always allowed
-  if (origin === requestUrl.origin) {
-    return {
-      'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400',
-    }
-  }
-
-  // Check env-configured allowed origins
-  const allowed = getAllowedOrigins()
-  if (allowed && allowed.has(origin)) {
-    return {
-      'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400',
-    }
-  }
-
-  // Origin not allowed — omit CORS headers (browser will block)
-  return {}
-}
-
-function applySecurityHeaders(response: Response, request?: Request): Response {
-  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
-    if (!response.headers.has(key)) {
-      response.headers.set(key, value)
-    }
-  }
-  if (request) {
-    for (const [key, value] of Object.entries(getCorsHeaders(request))) {
-      if (!response.headers.has(key)) {
-        response.headers.set(key, value)
-      }
-    }
-  }
-  return response
-}
-
-interface HandlerOptions {
+interface HandlerOptions<TParams = Record<string, string>, TBody = unknown> {
   /** Permission check: [resource, action]. Omit for auth-only. */
   permission?: [ResourceType, PermissionAction]
   /** Set to true to skip auth entirely (e.g., session check, health). */
   public?: boolean
   /** Rate limit preset or custom config. Defaults to general API limiter. Set 'none' to disable. */
   rateLimit?: 'login' | 'upload' | 'none' | RateLimitConfig
+  /**
+   * Request-body schema. When set, the body is read, JSON-parsed and validated
+   * before the handler runs, and the result arrives as `ctx.body` — so the
+   * handler never calls `request.json()` itself, and a body that does not
+   * conform never reaches it. A failure is a `ZodError`, which
+   * `handleApiError` already turns into the 400 + `fieldErrors` envelope.
+   *
+   * This is also the documented body: the same schema is written into the
+   * route's OpenAPI metadata below, so the spec cannot drift from what runs.
+   */
+  body?: z.ZodType<TBody>
+  /**
+   * Route-level access gate — program membership, design or ECO reach —
+   * checked after RBAC and **before the body is read**.
+   *
+   * RBAC answers "may this role do this verb at all"; this answers "may this
+   * user touch this row". The second question needs the route's params, so it
+   * used to be the first statement of each handler — which put it *after* the
+   * body parse once `body:` existed, and turned a caller with no reach from a
+   * 403 into a 400 describing the body they are not allowed to send. Declaring
+   * it here makes the ordering structural instead of a convention every author
+   * has to remember, and `program-isolation.permissions.test.ts` holds it.
+   *
+   * Throw to refuse — the `require*Access` helpers in `lib/auth/access` already
+   * throw `PermissionDeniedError`, so most gates are a one-line call. Any
+   * return value is awaited and discarded: several of those helpers return the
+   * scope they resolved, and a handler that needs it calls them again (they
+   * are the same query the gate just ran, and correctness beats one round
+   * trip here).
+   */
+  access?: (ctx: {
+    request: Request
+    params: TParams
+    user: SessionUser
+    requestId: string
+  }) => unknown
   /** Optional OpenAPI metadata; consumed by `adapt()` to attach a describeRoute middleware. */
   openapi?: OpenApiMetadata
 }
@@ -162,16 +121,114 @@ export type AnnotatedHandler<TParams = Record<string, string>> = ((args: {
   request: Request
 }) => Promise<Response>) & { openapi?: OpenApiMetadata }
 
-interface HandlerContext<TParams = Record<string, string>> {
+interface HandlerContext<TParams = Record<string, string>, TBody = unknown> {
   request: Request
   params: TParams
+  /**
+   * The validated request body when the route declares `body:`, and
+   * `undefined` (typed `unknown`) when it does not. A route that declares a
+   * schema must read the body from here: the wrapper has already consumed the
+   * stream, so `request.json()` would find it empty.
+   */
+  body: TBody
   user: SessionUser
   requestId: string
 }
 
-type HandlerFn<TParams = Record<string, string>> = (
-  ctx: HandlerContext<TParams>,
+type HandlerFn<TParams = Record<string, string>, TBody = unknown> = (
+  ctx: HandlerContext<TParams, TBody>,
 ) => Promise<object | Response>
+
+/**
+ * The context a `public: true` route gets: everything a private one gets,
+ * except that `user` is `null` — because there is no authenticated user, and
+ * a route that skipped auth has no business reading one.
+ */
+type PublicHandlerFn<TParams = Record<string, string>, TBody = unknown> = (
+  ctx: Omit<HandlerContext<TParams, TBody>, 'user'> & { user: null },
+) => Promise<object | Response>
+
+/**
+ * Is the rate limiter armed in this process?
+ *
+ * Production always. Anywhere else only on an explicit opt-in, because the E2E
+ * suite drives `npm run dev` (playwright.config.ts) and a throttled login would
+ * make it flake. That gate is narrower than it looks: both editions' built
+ * entrypoints hard-set `NODE_ENV='production'` before importing the app, so the
+ * only deployment that lands here unarmed is one running the dev server.
+ * `RATE_LIMIT_ENFORCE=true` is for exactly that case — a staging box that wants
+ * the login budget enforced without pretending to be production.
+ *
+ * Read per request rather than captured at module load, so a test can arm it
+ * in-process and a config change does not need a rebuild to take effect.
+ */
+function rateLimitingEnabled(): boolean {
+  return (
+    process.env.NODE_ENV === 'production' ||
+    process.env.RATE_LIMIT_ENFORCE === 'true'
+  )
+}
+
+/**
+ * Reclassify errors that are really the caller's fault before they reach
+ * handleApiError.
+ *
+ * A malformed request body surfaces as the SyntaxError that
+ * `await request.json()` throws inside a handler. Left alone it matches
+ * nothing in handleApiError and falls into the unknown-error branch: a 500
+ * logged at CRITICAL for what is nothing more than a bad body. The
+ * reclassification lives here rather than in handleApiError so it is scoped to
+ * API routes — a JSON.parse failure over data we stored ourselves is a genuine
+ * 500 and keeps it. The parser's own message is preserved in context so the
+ * warn-level log still says where the body went wrong.
+ */
+function asClientError(error: unknown): unknown {
+  if (error instanceof SyntaxError) {
+    return new ValidationError('Malformed JSON in request body', undefined, {
+      parseError: error.message,
+    })
+  }
+  return error
+}
+
+/**
+ * Read a request body as JSON for schema validation.
+ *
+ * `text()` rather than `json()` so an absent body is `undefined` rather than a
+ * parse failure: a schema that accepts it (`.optional()`, the shape
+ * `POST /files/:id/convert` needs) then runs on its defaults, and one that
+ * does not rejects with the same 400 as any other missing field. A body that
+ * is present but malformed still throws `SyntaxError`, which `asClientError`
+ * reclassifies.
+ */
+async function readJsonBody(request: Request): Promise<unknown> {
+  const raw = await request.text()
+  if (raw === '') return undefined
+  return JSON.parse(raw)
+}
+
+/**
+ * Make the schema that runs be the schema that is documented.
+ *
+ * The runtime schema wins over anything the annotation declares, keeping the
+ * flags around it (`description`, `mediaType`, `required`) — so a route cannot
+ * validate one shape and advertise another, which is the state
+ * `PUT /parts/:id` was in: an annotation naming `partUpdateSchema` over a
+ * handler that took whatever it was sent.
+ */
+function documentBody(
+  openapi: OpenApiMetadata,
+  body: z.ZodType | undefined,
+): OpenApiMetadata {
+  if (!body) return openapi
+  return {
+    ...openapi,
+    request: {
+      ...openapi.request,
+      body: { ...openapi.request?.body, schema: body },
+    },
+  }
+}
 
 /**
  * Wraps an API handler with auth, error handling, and response serialization.
@@ -187,10 +244,29 @@ type HandlerFn<TParams = Record<string, string>> = (
  *   return { part }
  * })
  * ```
+ *
+ * @example Validating the request body
+ * ```typescript
+ * PUT: apiHandler<{ id: string }, PartUpdate>(
+ *   { permission: ['parts', 'update'], body: partUpdateSchema },
+ *   async ({ params, body, user }) => ItemService.update(params.id, body, user.id),
+ * )
+ * ```
+ * Naming `TParams` switches off inference for the rest, so a route with both
+ * params and a body names both type arguments; a route with only a body
+ * (`apiHandler({ body: schema }, ...)`) has `TBody` inferred from the schema.
  */
-export function apiHandler<TParams = Record<string, string>>(
-  options: HandlerOptions,
-  handler: HandlerFn<TParams>,
+export function apiHandler<TParams = Record<string, string>, TBody = unknown>(
+  options: HandlerOptions<TParams, TBody> & { public: true },
+  handler: PublicHandlerFn<TParams, TBody>,
+): AnnotatedHandler<TParams>
+export function apiHandler<TParams = Record<string, string>, TBody = unknown>(
+  options: HandlerOptions<TParams, TBody>,
+  handler: HandlerFn<TParams, TBody>,
+): AnnotatedHandler<TParams>
+export function apiHandler<TParams = Record<string, string>, TBody = unknown>(
+  options: HandlerOptions<TParams, TBody>,
+  handler: HandlerFn<TParams, TBody> | PublicHandlerFn<TParams, TBody>,
 ): AnnotatedHandler<TParams> {
   // Built once per route, not per request. A limiter constructed inside the
   // handler starts every request with an empty window — it can never reject —
@@ -204,19 +280,17 @@ export function apiHandler<TParams = Record<string, string>>(
   const wrapped: AnnotatedHandler<TParams> = async ({ params, request }) => {
     const requestId = getRequestId(request)
     try {
-      // Handle CORS preflight
-      if (request.method === 'OPTIONS') {
-        return applySecurityHeaders(
-          new Response(null, { status: 204 }),
-          request,
-        )
-      }
+      // CORS preflight is not handled here: route modules register concrete
+      // methods only, so Hono never dispatches OPTIONS to a wrapped handler.
+      // The reachable answer is `app.options('/api/*')` in server/index.ts,
+      // built by buildPreflightResponse from the same getCorsHeaders that
+      // applySecurityHeaders uses below.
 
-      // Rate limiting (IP-based) — disabled outside production to avoid E2E test flakiness
-      if (
-        options.rateLimit !== 'none' &&
-        process.env.NODE_ENV === 'production'
-      ) {
+      // Rate limiting, keyed on the address the deployment vouches for rather
+      // than on whatever the caller wrote in X-Forwarded-For — see
+      // lib/api/client-ip. Off outside production unless RATE_LIMIT_ENFORCE
+      // says otherwise; see rateLimitingEnabled.
+      if (options.rateLimit !== 'none' && rateLimitingEnabled()) {
         let limiter: RateLimiter
         if (options.rateLimit === 'login') {
           limiter = loginLimiter
@@ -227,19 +301,18 @@ export function apiHandler<TParams = Record<string, string>>(
         } else {
           limiter = apiLimiter
         }
-        const clientIp = getClientIp(request)
+        const clientIp = resolveClientIp(request)
         const result = limiter.check(clientIp)
         if (!result.allowed) {
           throw new RateLimitedError(result.retryAfterSeconds)
         }
       }
 
-      const placeholderUser: SessionUser = {
-        id: '',
-        email: '',
-        active: false,
-      }
-      let user: SessionUser = placeholderUser
+      // A public route has no user, and now says so. This was a fabricated
+      // SessionUser with an empty-string id and active: false — a value that
+      // satisfies `user.id` silently, so a public handler reaching for one
+      // would have written rows owned by '' rather than failing to compile.
+      let user: SessionUser | null = null
 
       if (!options.public) {
         // Unified credential resolution: session cookie or API key
@@ -264,10 +337,19 @@ export function apiHandler<TParams = Record<string, string>>(
         // API key/bearer token requests skip CSRF because browsers don't
         // auto-attach Authorization headers on cross-origin requests.
         if (credentials.authMethod === 'session' && !validateOrigin(request)) {
+          // Built like every other error rather than hand-rolled: this was
+          // the one response in the API whose body was a bare string, so a
+          // client reading `error.code` — which is every client, and what the
+          // document promises — got `undefined` for the one rejection it is
+          // most likely to hit while a proxy is misconfigured.
           return applySecurityHeaders(
-            new Response(
-              JSON.stringify({ error: 'Cross-origin request rejected' }),
-              { status: 403, headers: { 'Content-Type': 'application/json' } },
+            createErrorResponse(
+              new AppError(
+                ErrorCode.PERMISSION_DENIED,
+                'Cross-origin request rejected',
+                { context: { requestId } },
+              ),
+              requestId,
             ),
             request,
           )
@@ -291,7 +373,7 @@ export function apiHandler<TParams = Record<string, string>>(
               await db.insert(authEvents).values({
                 userId: user.id,
                 eventType: 'permission_denied',
-                ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+                ipAddress: resolveClientIp(request),
                 metadata: {
                   resource,
                   action,
@@ -324,7 +406,7 @@ export function apiHandler<TParams = Record<string, string>>(
               await db.insert(authEvents).values({
                 userId: user.id,
                 eventType: 'permission_denied',
-                ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+                ipAddress: resolveClientIp(request),
                 metadata: {
                   resource,
                   action,
@@ -350,7 +432,34 @@ export function apiHandler<TParams = Record<string, string>>(
       }
       // Public routes skip CSRF — no authenticated session to hijack.
 
-      const result = await handler({ request, params, user, requestId })
+      // Row-level reach, before the body is touched: a caller with no reach
+      // must not learn the shape of the body from a 400. See `access` above.
+      if (options.access) {
+        await options.access({
+          request,
+          params,
+          user: user as SessionUser,
+          requestId,
+        })
+      }
+
+      // After auth, permission and access, so a caller who cannot reach the
+      // route cannot use the shape of a 400 to learn what it accepts, and
+      // before the handler, so nothing downstream sees an unvalidated body.
+      const body = options.body
+        ? options.body.parse(await readJsonBody(request))
+        : (undefined as TBody)
+
+      const result = await (handler as HandlerFn<TParams, TBody>)({
+        request,
+        params,
+        body,
+        // Assigned above for every non-public route — that branch either sets
+        // it from resolved credentials or throws — and null for a public one,
+        // which is what the public overload tells its handler.
+        user: user as SessionUser,
+        requestId,
+      })
 
       // If the handler returned a raw Response, pass it through
       if (result instanceof Response)
@@ -365,12 +474,16 @@ export function apiHandler<TParams = Record<string, string>>(
       )
     } catch (error) {
       return applySecurityHeaders(
-        handleApiError(error, request, requestId),
+        handleApiError(asClientError(error), request, requestId),
         request,
       )
     }
   }
-  if (options.openapi) wrapped.openapi = options.openapi
+  // A route with a body schema documents it even without any other openapi
+  // metadata — enforcement without documentation is the inverse of the drift
+  // documentBody exists to prevent.
+  if (options.openapi || options.body)
+    wrapped.openapi = documentBody(options.openapi ?? {}, options.body)
   return wrapped
 }
 

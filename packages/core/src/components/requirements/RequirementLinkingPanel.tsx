@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { ExternalLink, Link as LinkIcon, Plus, Trash2 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import type { DataGridColumn } from '@/components/ui/DataGrid'
@@ -23,6 +24,13 @@ import {
 } from '@/components/ui'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { apiFetch } from '@/lib/api/client'
+import {
+  entitySubQuery,
+  itemSearchQuery,
+  itemTextSearchQuery,
+  useInvalidateResources,
+} from '@/lib/query'
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
 
 interface SatisfiedRequirement {
   id: string
@@ -64,90 +72,54 @@ export function RequirementLinkingPanel({
   onUpdate,
 }: RequirementLinkingPanelProps) {
   const { alert, confirm } = useAlertDialog()
-  const [requirements, setRequirements] = useState<Array<SatisfiedRequirement>>(
-    [],
-  )
-  const [loading, setLoading] = useState(true)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<
-    Array<RequirementSearchResult>
-  >([])
-  const [searchLoading, setSearchLoading] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [adding, setAdding] = useState(false)
+  const invalidate = useInvalidateResources()
 
-  // Load requirements satisfied by this item
-  const loadRequirements = useCallback(async () => {
-    try {
-      const response = await apiFetch<{
-        data: { requirements: Array<SatisfiedRequirement> }
-      }>(`/api/v1/items/${itemId}/satisfied-requirements`)
-      setRequirements(response.data.requirements)
-    } catch {
-      // Failed to load requirements
-    } finally {
-      setLoading(false)
-    }
-  }, [itemId])
+  // Requirements this item satisfies
+  const { data: requirements = [], isPending: loading } = useQuery(
+    entitySubQuery<SatisfiedRequirement>(
+      'items',
+      itemId,
+      'satisfied-requirements',
+      'requirements',
+    ),
+  )
 
-  useEffect(() => {
-    loadRequirements()
-  }, [loadRequirements])
-
-  // Search requirements. With no query typed yet, auto-populate with the
-  // first few requirements instead of leaving the dialog empty.
-  useEffect(() => {
-    if (!addDialogOpen) {
-      setSearchResults([])
-      return
-    }
-
-    if (searchQuery.length === 1) {
-      setSearchResults([])
-      return
-    }
-
-    const runSearch = async () => {
-      setSearchLoading(true)
-      try {
-        const params = new URLSearchParams({
-          limit: searchQuery ? '20' : '5',
-        })
-        if (searchQuery) {
-          params.set('q', searchQuery)
-          params.set('types', 'Requirement')
-        } else {
-          params.set('itemType', 'Requirement')
-        }
-        if (designId) {
-          // `designIds` (CSV) is the param the endpoint reads; a singular
-          // `designId` was silently ignored, leaving this search unscoped.
-          params.set('designIds', designId)
-        }
-
-        const response = await apiFetch<{
-          data: { items: Array<RequirementSearchResult> }
-        }>(`/api/v1/items/search?${params}`)
-
-        // Filter out already linked requirements
-        const linkedIds = new Set(requirements.map((r) => r.id))
-        const filtered = response.data.items.filter((r) => !linkedIds.has(r.id))
-        setSearchResults(filtered)
-      } catch {
-        setSearchResults([])
-      } finally {
-        setSearchLoading(false)
-      }
-    }
-
-    if (searchQuery.length >= 2) {
-      const timer = setTimeout(runSearch, 300)
-      return () => clearTimeout(timer)
-    }
-
-    runSearch()
-  }, [searchQuery, addDialogOpen, designId, requirements])
+  // Two search modes, one live at a time: a typed term searches by text,
+  // and an empty box browses the first few so the dialog is never blank. A
+  // single character searches nothing, as before. `designIds` (CSV) is the
+  // param the endpoint reads — a singular `designId` was silently ignored,
+  // leaving this search unscoped.
+  const debouncedSearch = useDebouncedValue(searchQuery)
+  const { data: textHits = [], isFetching: textSearching } = useQuery(
+    itemTextSearchQuery<RequirementSearchResult>(
+      {
+        q: debouncedSearch,
+        types: ['Requirement'],
+        limit: 20,
+        designIds: designId,
+      },
+      addDialogOpen && debouncedSearch.length >= 2,
+    ),
+  )
+  const { data: browseHits = [], isFetching: browsing } = useQuery(
+    itemSearchQuery<RequirementSearchResult>(
+      { itemType: 'Requirement', limit: 5, designIds: designId },
+      addDialogOpen && debouncedSearch.length === 0,
+    ),
+  )
+  const searchLoading = textSearching || browsing
+  const linkedIds = new Set(requirements.map((r) => r.id))
+  const searchResults = (
+    debouncedSearch.length >= 2
+      ? textHits
+      : debouncedSearch.length === 0
+        ? browseHits
+        : []
+  ).filter((r) => !linkedIds.has(r.id))
 
   const handleRemoveLink = (requirementId: string) => {
     confirm({
@@ -163,7 +135,7 @@ export function RequirementLinkingPanel({
             method: 'DELETE',
             body: JSON.stringify({ itemId }),
           })
-          await loadRequirements()
+          await invalidate('items')
           onUpdate?.()
         } catch {
           alert({
@@ -198,7 +170,7 @@ export function RequirementLinkingPanel({
           body: JSON.stringify({ itemIds: [itemId] }),
         })
       }
-      await loadRequirements()
+      await invalidate('items')
       setAddDialogOpen(false)
       setSelectedIds(new Set())
       setSearchQuery('')

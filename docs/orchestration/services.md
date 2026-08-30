@@ -39,15 +39,15 @@ docker build -t ghcr.io/cascadia-plm/cascadia-app -f docker/app.Dockerfile .
 
 ### Environment Variables
 
-| Variable       | Required | Default                 | Description                          |
-| -------------- | -------- | ----------------------- | ------------------------------------ |
-| `DATABASE_URL` | Yes      | -                       | PostgreSQL connection string         |
-| `BASE_URL`     | No       | `http://localhost:3000` | Public URL for the app               |
-| `NODE_ENV`     | No       | `production`            | Environment mode                     |
-| `VAULT_TYPE`   | No       | `local`                 | Vault storage backend: `local`, `s3` |
-| `VAULT_ROOT`   | No       | `./vault`               | Root directory for local storage     |
-| `JOBS_MODE`    | No       | `embedded`              | `embedded`, `service`, or `disabled` |
-| `RABBITMQ_URL` | If Jobs  | -                       | AMQP connection string               |
+| Variable       | Required | Default                 | Description                                                                                                                         |
+| -------------- | -------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL` | Yes      | -                       | PostgreSQL connection string                                                                                                        |
+| `BASE_URL`     | No       | `http://localhost:3000` | Public URL for the app                                                                                                              |
+| `NODE_ENV`     | No       | `production`            | Environment mode                                                                                                                    |
+| `VAULT_TYPE`   | No       | `local`                 | Vault storage backend: `local`, `s3`                                                                                                |
+| `VAULT_ROOT`   | No       | `./vault`               | Root directory for local storage                                                                                                    |
+| `JOBS_MODE`    | No       | —                       | Set by the compose templates only — the app reads no such variable. Run a separate jobs worker (or not); nothing else to configure. |
+| `RABBITMQ_URL` | If Jobs  | -                       | AMQP connection string                                                                                                              |
 
 Sessions are opaque random tokens stored hashed in the database — there is no
 session-secret variable to set.
@@ -224,16 +224,15 @@ DATABASE_URL=postgresql://user:pass@server.postgres.database.azure.com:5432/casc
 
 ### Schema Management
 
-All services share the same database schema. It is pushed from Core App —
-pre-1.0 there are no committed migration files:
+All services share the same database schema, applied from Core App. Released
+installs upgrade with the committed migrations (also run at boot):
 
 ```bash
-# Apply schema changes
-docker exec cascadia-app npm run db:push
+# Apply committed migrations (the upgrade path)
+docker exec cascadia-app npm run db:migrate
 
-# Mint migration SQL into the app's own drizzle/ dir
-# (unused pre-1.0; the first release mints per-edition baselines)
-docker exec cascadia-app npm run db:generate
+# Diff-apply the schema directly (dev/CI/demo only)
+docker exec cascadia-app npm run db:push
 ```
 
 ---

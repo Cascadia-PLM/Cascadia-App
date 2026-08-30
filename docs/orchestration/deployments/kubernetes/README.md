@@ -65,6 +65,7 @@ kubernetes/
 ├── namespace.yaml
 ├── secrets.yaml.example
 ├── configmap.yaml
+├── migrate-job.yaml
 ├── app/
 │   ├── deployment.yaml
 │   ├── service.yaml
@@ -99,14 +100,32 @@ kubectl apply -f secrets.yaml
 kubectl apply -f configmap.yaml
 ```
 
-### 4. Deploy Services
+### 4. Run the Migration Job
+
+Nothing on Kubernetes migrates the database for you — the Deployment overrides
+no command, so its pods run the bare server. Run this before the app, and again
+on every upgrade:
+
+```bash
+kubectl delete job cascadia-migrate -n cascadia --ignore-not-found
+kubectl apply -f migrate-job.yaml
+kubectl wait --for=condition=complete job/cascadia-migrate -n cascadia --timeout=300s
+kubectl logs job/cascadia-migrate -n cascadia
+```
+
+The delete comes first because a Job's pod template is immutable. That
+immutability is also why `migrate-job.yaml` is not a `kustomization.yaml`
+resource, and why the `images:` tag override there does not reach it — pin the
+Job and the Deployment to the same tag.
+
+### 5. Deploy Services
 
 ```bash
 kubectl apply -f app/
 kubectl apply -f jobs/    # Optional: if using job workers
 ```
 
-### 5. Configure Ingress
+### 6. Configure Ingress
 
 ```bash
 kubectl apply -f ingress.yaml
@@ -117,6 +136,10 @@ kubectl apply -f ingress.yaml
 ```bash
 kubectl apply -k .
 ```
+
+Kustomize covers steps 1, 3, 5 and 6 — secrets and the migration Job are both
+outside `kustomization.yaml`. Step 4 still has to be run by hand: before this on
+an install, and before the new image serves traffic on an upgrade.
 
 ## Configuration
 
@@ -198,6 +221,12 @@ All deployments include liveness and readiness probes:
 
 - Liveness: Restart unhealthy pods
 - Readiness: Remove from service during startup/issues
+
+Both probe `/api/v1/health`, which reports process liveness and the app version
+without opening a database connection. It cannot tell you the database is
+reachable or migrated — a pod pointed at an unmigrated database reads as Ready
+and serves 500s. Sequence the migration Job yourself (step 4); readiness will
+not do it for you.
 
 ### Prometheus Metrics (Future)
 

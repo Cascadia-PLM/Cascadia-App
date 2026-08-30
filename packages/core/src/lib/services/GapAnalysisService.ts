@@ -5,6 +5,7 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
 import { designs, itemRelationships, items, requirements } from '../db/schema'
+import { notDeleted } from '../db/filters'
 import { NotFoundError } from '../errors'
 import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
 import { LifecycleService } from './LifecycleService'
@@ -224,7 +225,7 @@ export class GapAnalysisService {
           eq(items.designId, designId),
           eq(items.itemType, 'Requirement'),
           eq(items.isCurrent, true),
-          eq(items.isDeleted, false),
+          notDeleted(),
         ),
       )
 
@@ -360,7 +361,7 @@ export class GapAnalysisService {
           eq(items.designId, designId),
           eq(items.itemType, 'Part'),
           eq(items.isCurrent, true),
-          eq(items.isDeleted, false),
+          notDeleted(),
         ),
       )
 
@@ -486,7 +487,7 @@ export class GapAnalysisService {
           eq(items.designId, designId),
           eq(items.itemType, 'Part'),
           eq(items.isCurrent, true),
-          eq(items.isDeleted, false),
+          notDeleted(),
         ),
       )
 
@@ -555,7 +556,7 @@ export class GapAnalysisService {
           eq(items.designId, designId),
           eq(items.itemType, 'Requirement'),
           eq(items.isCurrent, true),
-          eq(items.isDeleted, false),
+          notDeleted(),
         ),
       )
 
@@ -596,7 +597,7 @@ export class GapAnalysisService {
           eq(items.designId, designId),
           eq(items.itemType, 'Part'),
           eq(items.isCurrent, true),
-          eq(items.isDeleted, false),
+          notDeleted(),
         ),
       )
 
@@ -641,7 +642,7 @@ export class GapAnalysisService {
             eq(items.designId, designId),
             eq(items.itemType, 'Part'),
             eq(items.isCurrent, true),
-            eq(items.isDeleted, false),
+            notDeleted(),
           ),
         )
 

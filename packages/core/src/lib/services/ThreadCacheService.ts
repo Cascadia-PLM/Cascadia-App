@@ -321,15 +321,18 @@ export class ThreadCacheService {
    * Get cache statistics for monitoring.
    */
   static async getStats(): Promise<CacheStats> {
-    const now = new Date()
-
-    // Get counts
+    // Compare against the database clock, not a bound JS Date. Drizzle
+    // interpolates a Date into a raw fragment as an untyped parameter and
+    // postgres-js cannot serialize one on that path — the same failure the
+    // cache write above works around, which took this whole query (and with
+    // it the cache-cleanup job, which reads stats first) down with a 500.
+    // now() also drops app/db clock skew out of the comparison.
     const [stats] = await db
       .select({
         totalEntries: sql<number>`count(*)::int`,
-        validEntries: sql<number>`count(*) filter (where ${threadPathCache.invalidatedAt} is null and (${threadPathCache.expiresAt} is null or ${threadPathCache.expiresAt} > ${now}))::int`,
+        validEntries: sql<number>`count(*) filter (where ${threadPathCache.invalidatedAt} is null and (${threadPathCache.expiresAt} is null or ${threadPathCache.expiresAt} > now()))::int`,
         invalidatedEntries: sql<number>`count(*) filter (where ${threadPathCache.invalidatedAt} is not null)::int`,
-        expiredEntries: sql<number>`count(*) filter (where ${threadPathCache.expiresAt} is not null and ${threadPathCache.expiresAt} <= ${now})::int`,
+        expiredEntries: sql<number>`count(*) filter (where ${threadPathCache.expiresAt} is not null and ${threadPathCache.expiresAt} <= now())::int`,
         totalHits: sql<number>`coalesce(sum(${threadPathCache.hitCount}), 0)::int`,
         avgComputationTimeMs: sql<
           number | null

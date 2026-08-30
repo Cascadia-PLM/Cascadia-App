@@ -130,7 +130,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'SCOPE',
       itemTypes: ['Part'],
-      accessDesignIds: [designAId],
+      accessScope: { designIds: [designAId], programIds: [] },
     })
 
     expect(result.items.map((i) => i.itemNumber)).toEqual(['SCOPE-001'])
@@ -143,7 +143,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'SCOPE',
       itemTypes: ['Part'],
-      accessDesignIds: [],
+      accessScope: { designIds: [], programIds: [] },
     })
 
     expect(result.items).toEqual([])
@@ -160,7 +160,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'SCOPE',
       itemTypes: ['Part'],
-      accessDesignIds: null,
+      accessScope: null,
     })
 
     expect(result.items.map((i) => i.itemNumber).sort()).toEqual([
@@ -174,11 +174,11 @@ describe('ItemSearchService.searchGlobal', () => {
   it('keeps design-less items in scope however narrow the scope', async () => {
     await insertItem({ itemNumber: 'SCOPE-ORPHAN', designId: null })
 
-    for (const accessDesignIds of [[], [designAId]]) {
+    for (const designIds of [[], [designAId]]) {
       const result = await ItemSearchService.searchGlobal({
         query: 'SCOPE-ORPHAN',
         itemTypes: ['Part'],
-        accessDesignIds,
+        accessScope: { designIds, programIds: [] },
       })
       expect(result.items.map((i) => i.itemNumber)).toEqual(['SCOPE-ORPHAN'])
     }
@@ -190,7 +190,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'SCOPE',
       itemTypes: [],
-      accessDesignIds: [designAId, designBId],
+      accessScope: { designIds: [designAId, designBId], programIds: [] },
     })
 
     expect(result.items).toEqual([])
@@ -208,7 +208,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'TYPE',
       itemTypes: ['Document'],
-      accessDesignIds: [designAId],
+      accessScope: { designIds: [designAId], programIds: [] },
     })
 
     expect(result.items.map((i) => i.itemNumber)).toEqual(['TYPE-002'])
@@ -221,7 +221,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'PROG',
       itemTypes: ['Part'],
-      accessDesignIds: [designAId, designBId],
+      accessScope: { designIds: [designAId, designBId], programIds: [] },
       columnFilters: { program: programBId },
     })
 
@@ -249,7 +249,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'NUM-MATCH',
       itemTypes: ['Part'],
-      accessDesignIds: [designAId],
+      accessScope: { designIds: [designAId], programIds: [] },
     })
 
     expect(result.items.map((i) => i.itemNumber).sort()).toEqual([
@@ -266,7 +266,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'PAGE',
       itemTypes: ['Part'],
-      accessDesignIds: [designAId],
+      accessScope: { designIds: [designAId], programIds: [] },
       limit: 2,
       offset: 0,
     })
@@ -295,7 +295,7 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: 'CUR',
       itemTypes: ['Part'],
-      accessDesignIds: [designAId],
+      accessScope: { designIds: [designAId], programIds: [] },
     })
 
     expect(result.items.map((i) => i.itemNumber).sort()).toEqual([
@@ -310,11 +310,162 @@ describe('ItemSearchService.searchGlobal', () => {
     const result = await ItemSearchService.searchGlobal({
       query: '!!!',
       itemTypes: ['Part'],
-      accessDesignIds: [designAId],
+      accessScope: { designIds: [designAId], programIds: [] },
     })
 
     expect(result.items).toEqual([])
     expect(result.total).toBe(0)
+  })
+
+  // A search box is a contains-box, not a pattern language. `%` and `_` are
+  // ILIKE wildcards, so an unescaped term makes `A_1` match `AB1` in SQL and
+  // not in the in-memory `String.includes` path — the same query answering
+  // two different things depending on which path served it.
+  it('treats a wildcard character in the term as a literal', async () => {
+    await insertItem({ itemNumber: 'A_1', designId: designAId })
+    await insertItem({ itemNumber: 'AB1', designId: designAId })
+
+    // Two characters, so this takes the ILIKE fallback rather than tsquery.
+    const result = await ItemSearchService.searchGlobal({
+      query: 'A_',
+      itemTypes: ['Part'],
+      accessScope: { designIds: [designAId], programIds: [] },
+    })
+
+    expect(result.items.map((i) => i.itemNumber)).toEqual(['A_1'])
+  })
+
+  it('treats a wildcard character in a column filter as a literal', async () => {
+    await insertItem({ itemNumber: '10_1', designId: designAId })
+    await insertItem({ itemNumber: '1051', designId: designAId })
+
+    const result = await ItemSearchService.searchGlobal({
+      itemTypes: ['Part'],
+      accessScope: { designIds: [designAId], programIds: [] },
+      columnFilters: { itemNumber: '10_1' },
+    })
+
+    expect(result.items.map((i) => i.itemNumber)).toEqual(['10_1'])
+  })
+
+  it('does not let a bare percent term match every row', async () => {
+    await insertItem({ itemNumber: 'PCT-001', designId: designAId })
+    await insertItem({ itemNumber: 'PCT-002', designId: designAId })
+
+    const result = await ItemSearchService.searchGlobal({
+      query: '%',
+      itemTypes: ['Part'],
+      accessScope: { designIds: [designAId], programIds: [] },
+    })
+
+    expect(result.items).toEqual([])
+    expect(result.total).toBe(0)
+  })
+})
+
+/**
+ * `search` is the per-type grid query. Its global-search term takes one of two
+ * paths — a Postgres `to_tsquery` for three characters or more, an ILIKE
+ * fallback below that — and both consume user text in a language with its own
+ * syntax. A term that is punctuation is ordinary input, not an error.
+ */
+describe('ItemSearchService.search — user text in a query language', () => {
+  const testDb = new TestDatabase()
+  let user: TestUser
+  let designId: string
+
+  async function insertPart(itemNumber: string) {
+    return takeFirst(
+      await testDb.db
+        .insert(items)
+        .values({
+          masterId: crypto.randomUUID(),
+          revision: 'A',
+          itemType: 'Part',
+          state: 'Draft',
+          createdBy: user.id,
+          modifiedBy: user.id,
+          itemNumber,
+          designId,
+        })
+        .returning(),
+    )
+  }
+
+  beforeAll(async () => {
+    await testDb.setup()
+  })
+
+  afterAll(async () => {
+    await testDb.teardown()
+  })
+
+  beforeEach(async () => {
+    await testDb.beginTransaction()
+    user = await insertTestUser(testDb.db)
+
+    const uniq = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({ name: 'Program', code: `PS-${uniq}`, createdBy: user.id })
+        .returning(),
+    )
+    designId = takeFirst(
+      await testDb.db
+        .insert(designs)
+        .values({
+          programId: program.id,
+          name: 'Design',
+          code: `DS-${uniq}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    ).id
+  })
+
+  afterEach(async () => {
+    await testDb.rollback()
+  })
+
+  // `foo)` is unbalanced tsquery syntax. Unsanitised it reached Postgres and
+  // raised a syntax error, so an ordinary typed character answered 500.
+  it('answers a tsquery-invalid term with no rows rather than an error', async () => {
+    await insertPart('TSQ-001')
+
+    const result = await ItemSearchService.search('Part', {
+      designId,
+      globalSearch: 'foo)',
+    })
+
+    expect(result.items).toEqual([])
+    expect(result.total).toBe(0)
+  })
+
+  it('matches nothing when sanitising strips the whole term', async () => {
+    await insertPart('TSQ-001')
+
+    const result = await ItemSearchService.search('Part', {
+      designId,
+      globalSearch: '!!!!',
+    })
+
+    expect(result.items).toEqual([])
+    expect(result.total).toBe(0)
+  })
+
+  it('treats a wildcard character in the ILIKE fallback as a literal', async () => {
+    await insertPart('A_1')
+    await insertPart('AB1')
+
+    const result = await ItemSearchService.search('Part', {
+      designId,
+      globalSearch: 'A_',
+    })
+
+    expect(
+      result.items.map((i: { itemNumber: string }) => i.itemNumber),
+    ).toEqual(['A_1'])
   })
 })
 

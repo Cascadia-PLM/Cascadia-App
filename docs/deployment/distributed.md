@@ -153,14 +153,15 @@ Note that PostgreSQL is configured with `listen_addresses='*'` and `max_connecti
 
 ### Step 2: Initialize the Database
 
-Before starting any app servers, push the schema to PostgreSQL:
+Before starting any app servers, apply the committed migrations to PostgreSQL:
 
 ```bash
 # From your development machine, with DATABASE_URL pointing to the infrastructure server
-DATABASE_URL=postgresql://postgres:<password>@<infra-host>:5432/cascadia npm run db:push
+DATABASE_URL=postgresql://postgres:<password>@<infra-host>:5432/cascadia npm run db:migrate
 ```
 
-Or let the first app server handle it on startup (the compose command includes `drizzle-kit push`).
+Or let the first app server handle it on startup (the compose command applies
+committed migrations through the boot guard, `scripts/boot-migrate.ts`).
 
 ### Step 3: Create the MinIO Bucket
 

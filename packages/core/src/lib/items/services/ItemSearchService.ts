@@ -15,6 +15,7 @@ import {
   sql,
 } from 'drizzle-orm'
 import { db } from '../../db'
+import { likeContains } from '../../db/like-pattern'
 import {
   changeOrders,
   designs,
@@ -31,6 +32,7 @@ import {
   workInstructions,
 } from '../../db/schema'
 import { accessScopeCondition, notDeleted } from '../../db/filters'
+import type { AccessScope } from '../../db/filters'
 import type { SQL } from 'drizzle-orm'
 import type { BaseItem } from '../types/base'
 
@@ -41,17 +43,17 @@ export interface SearchCriteria {
   designId?: string // Filter by single design
   designIds?: Array<string> // Filter by multiple designs (for cross-design search)
   /**
-   * The designs the *caller* may read, as opposed to the ones they asked for.
+   * What the *caller* may read, as opposed to what they asked for.
    *
    * A separate axis from `designIds` on purpose, and ANDed with it: a user
    * narrowing the view to one design must not thereby widen it past their
    * program memberships. `null`/omitted is unrestricted (cross-program
-   * authority); `[]` reaches only design-less items.
+   * authority); an empty scope reaches only the types that scope on nothing.
    *
    * Omitting it returns every item in the instance, so a route serving a
-   * logged-in user should pass it — see `AccessControlService`.
+   * logged-in user should pass it — see `AccessControlService.getAccessScope`.
    */
-  accessDesignIds?: Array<string> | null
+  accessScope?: AccessScope | null
   currentOnly?: boolean // Only return isCurrent=true items (default: true)
   definitionsOnly?: boolean // Only return definitions (usageOf IS NULL), excludes usages
   includeUsageCount?: boolean // Include count of usages for each definition
@@ -86,11 +88,11 @@ export interface GlobalSearchCriteria {
    */
   itemTypes: Array<string>
   /**
-   * Designs the user may see, or `null` for unrestricted (cross-program
-   * authority). An empty array reaches only design-less items — "no
-   * accessible designs" must not fall through to "search every design".
+   * What the user may see, or `null` for unrestricted (cross-program
+   * authority). An empty scope reaches only the types that scope on nothing —
+   * "no accessible designs" must not fall through to "search every design".
    */
-  accessDesignIds: Array<string> | null
+  accessScope: AccessScope | null
   limit?: number
   offset?: number
   sortField?: string
@@ -177,7 +179,7 @@ export class ItemSearchService {
       )
     }
 
-    const searchAccessScope = accessScopeCondition(criteria.accessDesignIds)
+    const searchAccessScope = accessScopeCondition(criteria.accessScope)
     if (searchAccessScope) conditions.push(searchAccessScope)
 
     // Global search: full-text search for 3+ chars, ILIKE fallback for short queries
@@ -186,17 +188,23 @@ export class ItemSearchService {
 
       if (term.length >= 3) {
         // Build tsquery with prefix matching: "PRT 001" -> "PRT:* & 001:*"
-        const tsquery = term
+        const words = term
+          .replace(/[^a-zA-Z0-9\s\-_]/g, '') // Strip tsquery-unsafe characters
           .split(/\s+/)
           .filter(Boolean)
-          .map((w) => `${w}:*`)
-          .join(' & ')
-        conditions.push(
-          sql`to_tsvector('simple', coalesce(${items.itemNumber}, '') || ' ' || coalesce(${items.name}, ''))
-            @@ to_tsquery('simple', ${tsquery})`,
-        )
+        if (words.length === 0) {
+          // A term that is nothing but punctuation matches nothing, rather
+          // than falling through and matching everything.
+          conditions.push(sql`false`)
+        } else {
+          const tsquery = words.map((w) => `${w}:*`).join(' & ')
+          conditions.push(
+            sql`to_tsvector('simple', coalesce(${items.itemNumber}, '') || ' ' || coalesce(${items.name}, ''))
+              @@ to_tsquery('simple', ${tsquery})`,
+          )
+        }
       } else {
-        const searchTerm = `%${term}%`
+        const searchTerm = likeContains(term)
         conditions.push(
           or(
             ilike(items.itemNumber, searchTerm),
@@ -373,8 +381,8 @@ export class ItemSearchService {
       itemTypes?: Array<string>
       currentOnly?: boolean
       designIds?: Array<string> // Filter by multiple designs (for cross-design search)
-      /** Designs the caller may read; `null`/omitted is unrestricted. See `SearchCriteria`. */
-      accessDesignIds?: Array<string> | null
+      /** What the caller may read; `null`/omitted is unrestricted. See `SearchCriteria`. */
+      accessScope?: AccessScope | null
     },
   ): Promise<Array<BaseItem>> {
     if (!query || query.length < 2) {
@@ -395,9 +403,10 @@ export class ItemSearchService {
       searchCondition = sql`to_tsvector('simple', coalesce(${items.itemNumber}, '') || ' ' || coalesce(${items.name}, ''))
         @@ to_tsquery('simple', ${tsquery})`
     } else {
+      const searchTerm = likeContains(query)
       searchCondition = or(
-        ilike(items.itemNumber, `%${query}%`),
-        ilike(items.name, `%${query}%`),
+        ilike(items.itemNumber, searchTerm),
+        ilike(items.name, searchTerm),
       )
     }
 
@@ -425,7 +434,7 @@ export class ItemSearchService {
       )
     }
 
-    const byNumberAccessScope = accessScopeCondition(options?.accessDesignIds)
+    const byNumberAccessScope = accessScopeCondition(options?.accessScope)
     if (byNumberAccessScope) conditions.push(byNumberAccessScope)
 
     const results = await db
@@ -476,7 +485,7 @@ export class ItemSearchService {
         ? inArray(items.itemType, criteria.itemTypes)
         : sql`false`,
     )
-    const globalAccessScope = accessScopeCondition(criteria.accessDesignIds)
+    const globalAccessScope = accessScopeCondition(criteria.accessScope)
     if (globalAccessScope) conditions.push(globalAccessScope)
 
     const textCondition = this.buildTextSearchCondition(criteria.query)
@@ -577,9 +586,10 @@ export class ItemSearchService {
         @@ to_tsquery('simple', ${tsquery})`
     }
 
+    const searchTerm = likeContains(term)
     return or(
-      ilike(items.itemNumber, `%${term}%`),
-      ilike(items.name, `%${term}%`),
+      ilike(items.itemNumber, searchTerm),
+      ilike(items.name, searchTerm),
     ) as SQL<unknown>
   }
 
@@ -846,7 +856,7 @@ export class ItemSearchService {
     // Text filter (ILIKE)
     if (typeof filterValue === 'string') {
       if (!filterValue.trim()) return null
-      return ilike(column, `%${filterValue.trim()}%`)
+      return ilike(column, likeContains(filterValue.trim()))
     }
 
     // Multi-select filter (IN)

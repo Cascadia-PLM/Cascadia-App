@@ -19,13 +19,19 @@ import {
 } from '@/components/ui'
 
 import { apiFetch } from '@/lib/api/client'
+import { useInvalidateResources } from '@/lib/query'
 
 interface OperationEditorProps {
+  /**
+   * Operations and steps as the query cache currently holds them. This
+   * component owns no copy of either: its four operation writes invalidate
+   * `work-instructions` and re-render from the refetch, so a caller cannot
+   * forget to refresh and cannot hand it a list that has drifted from the
+   * server.
+   */
   operations: Array<WorkInstructionOperation>
   steps: Array<WorkInstructionStep>
   workInstructionId: string
-  onOperationsChange: (operations: Array<WorkInstructionOperation>) => void
-  onStepsChange: (steps: Array<WorkInstructionStep>) => void
   onAddStep: (step: Partial<WorkInstructionStep>) => Promise<void>
   onUpdateStep: (
     stepId: string,
@@ -44,8 +50,6 @@ export function OperationEditor({
   operations,
   steps,
   workInstructionId,
-  onOperationsChange,
-  onStepsChange,
   onAddStep,
   onUpdateStep,
   onDeleteStep,
@@ -54,6 +58,11 @@ export function OperationEditor({
   onSuccess,
   isLoading,
 }: OperationEditorProps) {
+  const invalidate = useInvalidateResources()
+
+  // Disclosure state, not content: which operations are open and which one is
+  // being renamed inline. Both key off operation ids, so they survive the
+  // refetch that replaces the `operations` prop.
   const [expandedOps, setExpandedOps] = useState<Set<string>>(
     new Set(operations.map((o) => o.id)),
   )
@@ -79,7 +88,10 @@ export function OperationEditor({
         method: 'POST',
         body: JSON.stringify({ title: 'New Operation' }),
       })
-      onOperationsChange([...operations, result.data.operation])
+      await invalidate('work-instructions')
+      // The id is the server's, so opening the card and dropping into its
+      // title editor still land on the right operation once the refetch
+      // replaces the list.
       setExpandedOps((prev) => new Set([...prev, result.data.operation.id]))
       setEditingOpId(result.data.operation.id)
     } catch (error) {
@@ -92,15 +104,14 @@ export function OperationEditor({
     data: Partial<WorkInstructionOperation>,
   ) => {
     try {
-      const result = await apiFetch<{
-        data: { operation: WorkInstructionOperation }
-      }>(`/api/v1/work-instructions/${workInstructionId}/operations/${opId}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      })
-      onOperationsChange(
-        operations.map((o) => (o.id === opId ? result.data.operation : o)),
+      await apiFetch(
+        `/api/v1/work-instructions/${workInstructionId}/operations/${opId}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        },
       )
+      await invalidate('work-instructions')
     } catch (error) {
       onError?.(error as Error)
     }
@@ -112,13 +123,11 @@ export function OperationEditor({
         `/api/v1/work-instructions/${workInstructionId}/operations/${opId}`,
         { method: 'DELETE' },
       )
-      onOperationsChange(operations.filter((o) => o.id !== opId))
-      // Steps with this operationId become unassigned (null via DB cascade)
-      onStepsChange(
-        steps.map((s) =>
-          s.operationId === opId ? { ...s, operationId: null } : s,
-        ),
-      )
+      // Steps with this operationId become unassigned (null via DB cascade),
+      // so the refetch has to cover the step list too — invalidating
+      // `work-instructions` reaches both the detail query that carries the
+      // steps and the operations sub-query.
+      await invalidate('work-instructions')
       onSuccess?.('Operation deleted')
     } catch (error) {
       onError?.(error as Error)
@@ -143,13 +152,14 @@ export function OperationEditor({
     }))
 
     try {
-      const result = await apiFetch<{
-        data: { operations: Array<WorkInstructionOperation> }
-      }>(`/api/v1/work-instructions/${workInstructionId}/operations`, {
-        method: 'PUT',
-        body: JSON.stringify({ operations: reordered }),
-      })
-      onOperationsChange(result.data.operations)
+      await apiFetch(
+        `/api/v1/work-instructions/${workInstructionId}/operations`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ operations: reordered }),
+        },
+      )
+      await invalidate('work-instructions')
     } catch (error) {
       onError?.(error as Error)
     }
@@ -160,10 +170,10 @@ export function OperationEditor({
     operationId: string | null,
   ) => {
     try {
+      // The step write belongs to the caller — its handler invalidates
+      // `work-instructions` on its own, which is what moves the step between
+      // the cards here.
       await onUpdateStep(stepId, { operationId })
-      onStepsChange(
-        steps.map((s) => (s.id === stepId ? { ...s, operationId } : s)),
-      )
     } catch (error) {
       onError?.(error as Error)
     }

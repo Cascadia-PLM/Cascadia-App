@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { z } from 'zod'
+import { z } from 'zod'
 
 export type JobPriority = 'low' | 'normal' | 'high' | 'critical'
 export type JobStatus =
@@ -104,11 +104,23 @@ export interface JobHandler<TPayload = unknown, TResult = unknown> {
 }
 
 /**
- * Message published to RabbitMQ (lightweight reference to DB record)
+ * Message published to RabbitMQ (lightweight reference to DB record).
+ *
+ * A schema rather than a bare interface because the consume side has to
+ * *check* this, not assume it. A worker used to cast the parsed body straight
+ * to `JobMessage`, so a body that was valid JSON but not a job message
+ * travelled on: the clearest case was a `jobId` that was not a uuid, which
+ * reached `JobService.claimJob` and came back as a Postgres invalid-input
+ * error — indistinguishable, at the point the worker had to decide what to do
+ * with the delivery, from the database being down. Parsing at the boundary
+ * gives a bad body its own obvious verdict (dead-letter it) before any
+ * connection is touched.
  */
-export interface JobMessage {
-  jobId: string
-  type: string
-  priority: number
-  attemptNumber: number
-}
+export const jobMessageSchema = z.object({
+  jobId: z.string().uuid(),
+  type: z.string().min(1),
+  priority: z.number(),
+  attemptNumber: z.number(),
+})
+
+export type JobMessage = z.infer<typeof jobMessageSchema>

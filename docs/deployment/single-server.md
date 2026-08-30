@@ -167,14 +167,14 @@ services:
       - app_vault:/app/vault
     networks:
       - cascadia-internal
-    command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
+    command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
 ```
 
 Key points:
 
 - The app waits for PostgreSQL to pass its health check before starting.
-- On startup, the app runs `node scripts/drizzle.mjs push --force` to apply any pending schema changes, then starts the server.
-- `VAULT_MODE=embedded` and `JOBS_MODE=embedded` mean no external vault service or RabbitMQ is required.
+- On startup, the app applies committed migrations (`npx tsx scripts/boot-migrate.ts`), then starts the server. The guard refuses to migrate a pre-v0.5 database that has tables but no migration journal — stamp it once with `npm run db:baseline` (see [upgrading.md](./upgrading.md)).
+- No external vault service or RabbitMQ is required: the vault runs in-process (local root resolves DB setting → `VAULT_ROOT` → `./vault`), and jobs are optional. The `VAULT_MODE`/`JOBS_MODE` variables some compose templates set are read by nothing.
 - All inter-service communication happens over the `cascadia-internal` bridge network.
 
 ## Adding pgAdmin
@@ -334,13 +334,22 @@ docker compose ps
 docker compose logs postgres
 ```
 
-### Schema Push Fails
+### Migrations Fail on Startup
 
-If `drizzle-kit push` fails on startup, run it manually:
+If the boot guard refuses to start — a pre-v0.5 database has tables but no
+migration journal — stamp it once, then restart:
 
 ```bash
-docker compose exec app npm run db:push
+docker compose exec app npm run db:baseline
 ```
+
+To apply migrations manually:
+
+```bash
+docker compose exec app npm run db:migrate
+```
+
+See [upgrading.md](./upgrading.md) for the full upgrade path.
 
 ### Reset Everything
 

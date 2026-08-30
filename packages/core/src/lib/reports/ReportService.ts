@@ -15,12 +15,14 @@ import {
   lt,
   lte,
   ne,
+  notIlike,
   notInArray,
   or,
   sql,
 } from 'drizzle-orm'
 import { db } from '../db'
 import { takeFirst } from '../db/take-first'
+import { likeContains, likeEndsWith, likeStartsWith } from '../db/like-pattern'
 import { accessScopeCondition } from '../db/filters'
 import { AccessControlService } from '../auth/AccessControlService'
 import { permissionService } from '../auth/permission-service'
@@ -42,6 +44,7 @@ import {
   testCases,
   testPlans,
 } from '../db/schema'
+import type { AccessScope } from '../db/filters'
 import type { SQL } from 'drizzle-orm'
 import type {
   FilterOperator,
@@ -471,13 +474,12 @@ export class ReportService {
       // a report, and both the execute and export routes go through it, so
       // deriving the scope from `userId` at this one point means no caller can
       // forget to pass it.
-      const accessDesignIds =
-        await AccessControlService.getAccessibleDesignIds(userId)
+      const callerScope = await AccessControlService.getAccessScope(userId)
 
       const result = await this.buildAndExecuteQuery(
         report,
         options,
-        accessDesignIds,
+        callerScope,
       )
       const durationMs = Date.now() - startTime
 
@@ -527,7 +529,7 @@ export class ReportService {
   private static async buildAndExecuteQuery(
     report: Report,
     options: ReportExecutionOptions,
-    accessDesignIds: Array<string> | null,
+    callerScope: AccessScope | null,
   ): Promise<
     Omit<
       ReportExecutionResult,
@@ -554,7 +556,7 @@ export class ReportService {
     // filter can widen the result past what the caller may read. Bounds the
     // count as much as the rows: a total of "142 parts" discloses the size of
     // a program the caller cannot open.
-    const accessScope = accessScopeCondition(accessDesignIds)
+    const accessScope = accessScopeCondition(callerScope)
     if (accessScope) conditions.push(accessScope)
 
     for (const filter of allFilters) {
@@ -674,10 +676,14 @@ export class ReportService {
         return gte(field, value)
       case 'lte':
         return lte(field, value)
+      // The text operators are match MODES over a literal value, not a
+      // pattern language: `%` and `_` in a saved filter mean themselves.
       case 'like':
-        return ilike(field, `%${value}%`)
+        if (value == null) return null
+        return ilike(field, likeContains(value))
       case 'not_like':
-        return sql`${field} NOT ILIKE ${'%' + value + '%'}`
+        if (value == null) return null
+        return notIlike(field, likeContains(value))
       case 'in':
         if (value) {
           const values = value.split(',').map((v) => v.trim())
@@ -695,9 +701,11 @@ export class ReportService {
       case 'is_not_null':
         return isNotNull(field)
       case 'starts_with':
-        return ilike(field, `${value}%`)
+        if (value == null) return null
+        return ilike(field, likeStartsWith(value))
       case 'ends_with':
-        return ilike(field, `%${value}`)
+        if (value == null) return null
+        return ilike(field, likeEndsWith(value))
       case 'between':
         if (value && value2) {
           return and(gte(field, value), lte(field, value2)) ?? null

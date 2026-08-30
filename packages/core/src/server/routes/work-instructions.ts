@@ -3,7 +3,8 @@
 
 import { randomUUID } from 'node:crypto'
 import { Hono } from 'hono'
-import { and, asc, eq, gt, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import { tagged } from '../adapter'
 import type { WorkInstruction } from '@/lib/items/types/work-instruction'
 import type { StepContent } from '@/lib/db/schema/items'
@@ -13,6 +14,9 @@ import { WorkInstructionChangeAlertService } from '@/lib/services/WorkInstructio
 import { ParametricResolutionService } from '@/lib/services/ParametricResolutionService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { apiHandler } from '@/lib/api/handler'
+import { workInstructionUpdateSchema } from '@/lib/api/schemas'
+import { stepContentSchema } from '@/lib/items/types/work-instruction'
+import { requireItemAccess } from '@/lib/auth/access'
 import { db } from '@/lib/db'
 import { takeFirst } from '@/lib/db/take-first'
 import {
@@ -24,6 +28,78 @@ import {
 } from '@/lib/db/schema'
 // Register item types (server-side version)
 import '@/lib/items/registerItemTypes.server'
+
+/**
+ * Bodies for this file's own sub-resources. Operations, steps and part
+ * attachments are rows the editor writes directly rather than items, so their
+ * shapes live here rather than in `lib/items/types`.
+ */
+
+/** Acknowledge or dismiss one change alert. */
+const alertActionSchema = z.object({
+  alertId: z.string().uuid(),
+  action: z.enum(['acknowledge', 'dismiss']),
+  notes: z.string().max(5000).optional(),
+})
+
+const operationCreateSchema = z.object({
+  title: z.string().trim().min(1, 'Operation title is required').max(500),
+  description: z.string().max(10000).nullish(),
+  estimatedTime: z.number().int().min(0).max(1_000_000).nullish(),
+})
+
+const operationUpdateSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, 'Operation title cannot be empty')
+    .max(500)
+    .optional(),
+  description: z.string().max(10000).nullish(),
+  estimatedTime: z.number().int().min(0).max(1_000_000).nullish(),
+})
+
+/** Reorder: every row named, each with the index it should end up at. */
+const reorderedRowsSchema = z
+  .array(
+    z.object({
+      id: z.string().uuid(),
+      orderIndex: z.number().int().min(0).max(100000),
+    }),
+  )
+  .max(10000)
+
+const operationsReorderSchema = z.object({ operations: reorderedRowsSchema })
+const stepsReorderSchema = z.object({ steps: reorderedRowsSchema })
+
+const partAttachSchema = z.object({
+  partId: z.string().uuid(),
+  inheritToMBOM: z.boolean().optional(),
+})
+
+const partAttachmentPatchSchema = z.object({
+  partId: z.string().uuid(),
+  inheritToMBOM: z.boolean().optional(),
+  isOutput: z.boolean().optional(),
+})
+
+/** DELETE takes its target from the query string or the body; both optional. */
+const partDetachSchema = z.object({
+  partId: z.string().uuid().optional(),
+})
+
+const stepCreateSchema = z.object({
+  title: z.string().max(500).nullish(),
+  content: stepContentSchema.optional(),
+  orderIndex: z.number().int().min(0).max(100000).optional(),
+})
+
+const stepUpdateSchema = z.object({
+  title: z.string().max(500).nullish(),
+  content: stepContentSchema.optional(),
+  orderIndex: z.number().int().min(0).max(100000).optional(),
+  operationId: z.string().uuid().nullish(),
+})
 
 const adapt = tagged('Work Instructions')
 
@@ -53,7 +129,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const workInstruction = await ItemService.findById(params.id)
 
         if (!workInstruction) {
@@ -81,14 +158,19 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['work_instructions', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
-
+    apiHandler<{ id: string }, z.infer<typeof workInstructionUpdateSchema>>(
+      {
+        permission: ['work_instructions', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: workInstructionUpdateSchema,
+      },
+      async ({ params, body, user }) => {
+        // The schema permits `null` where the column is nullable, which the
+        // WorkInstruction interface spells as an absent optional; both the
+        // service and the type handler read null as "clear the column".
         const workInstruction = await ItemService.update<WorkInstruction>(
           params.id,
-          data,
+          body as Partial<WorkInstruction>,
           user.id,
         )
 
@@ -105,6 +187,7 @@ app.delete(
     apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'delete'] },
       async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         await ItemService.delete(params.id, user.id)
 
         return { success: true }
@@ -119,7 +202,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
-      async ({ params, request }) => {
+      async ({ params, request, user }) => {
+        await requireItemAccess(user.id, params.id)
         const [wi] = await db
           .select()
           .from(workInstructions)
@@ -150,18 +234,13 @@ app.get(
 app.put(
   '/:id/alerts',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['work_instructions', 'update'] },
-      async ({ request, user }) => {
-        const data = await request.json()
-
-        if (!data.alertId) {
-          throw new ValidationError('alertId is required')
-        }
-        if (!data.action || !['acknowledge', 'dismiss'].includes(data.action)) {
-          throw new ValidationError('action must be "acknowledge" or "dismiss"')
-        }
-
+    apiHandler<{ id: string }, z.infer<typeof alertActionSchema>>(
+      {
+        permission: ['work_instructions', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: alertActionSchema,
+      },
+      async ({ body: data, user }) => {
         if (data.action === 'acknowledge') {
           await WorkInstructionChangeAlertService.acknowledgeAlert(
             data.alertId,
@@ -189,6 +268,7 @@ app.post(
     apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const result = await WorkInstructionChangeAlertService.bulkAcknowledge(
           params.id,
           user.id,
@@ -214,7 +294,8 @@ app.get(
             'Where this template is instantiated: traveler lines across work orders, with progress',
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const [wi] = await db
           .select()
           .from(workInstructions)
@@ -240,7 +321,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const [wi] = await db
           .select()
           .from(workInstructions)
@@ -267,15 +349,13 @@ app.get(
 app.post(
   '/:id/operations',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['work_instructions', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
-
-        if (!data.title?.trim()) {
-          throw new ValidationError('Operation title is required')
-        }
-
+    apiHandler<{ id: string }, z.infer<typeof operationCreateSchema>>(
+      {
+        permission: ['work_instructions', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: operationCreateSchema,
+      },
+      async ({ params, body: data, user }) => {
         await requireEditableWorkInstruction(params.id, user.id)
 
         const [wi] = await db
@@ -327,15 +407,13 @@ app.post(
 app.put(
   '/:id/operations',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['work_instructions', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
-
-        if (!Array.isArray(data.operations)) {
-          throw new ValidationError('operations must be an array')
-        }
-
+    apiHandler<{ id: string }, z.infer<typeof operationsReorderSchema>>(
+      {
+        permission: ['work_instructions', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: operationsReorderSchema,
+      },
+      async ({ params, body: data, user }) => {
         await requireEditableWorkInstruction(params.id, user.id)
 
         const [wi] = await db
@@ -348,22 +426,36 @@ app.put(
           throw new NotFoundError('Work Instruction', params.id)
         }
 
-        await db.transaction(async (tx) => {
-          for (const op of data.operations) {
-            if (!op.id || op.orderIndex === undefined) {
-              throw new ValidationError(
-                'Each operation must have id and orderIndex',
-              )
-            }
-            await tx
-              .update(workInstructionOperations)
-              .set({
-                orderIndex: op.orderIndex,
-                updatedAt: new Date(),
-              })
-              .where(eq(workInstructionOperations.id, op.id))
-          }
-        })
+        // One statement, and one access boundary. The workInstructionId
+        // predicate is load-bearing: without it an id from any other work
+        // instruction named in the body would be renumbered here, escaping the
+        // access check this handler just made on params.id. Out-of-scope ids
+        // are silently ignored, matching the steps reorder below.
+        if (data.operations.length > 0) {
+          const cases = sql.join(
+            data.operations.map(
+              (op) =>
+                sql`when ${workInstructionOperations.id} = ${op.id}::uuid then ${op.orderIndex}::integer`,
+            ),
+            sql` `,
+          )
+
+          await db
+            .update(workInstructionOperations)
+            .set({
+              orderIndex: sql`case ${cases} else ${workInstructionOperations.orderIndex} end`,
+              updatedAt: new Date(),
+            })
+            .where(
+              and(
+                eq(workInstructionOperations.workInstructionId, params.id),
+                inArray(
+                  workInstructionOperations.id,
+                  data.operations.map((op) => op.id),
+                ),
+              ),
+            )
+        }
 
         const operations = await db
           .select()
@@ -381,11 +473,16 @@ app.put(
 app.put(
   '/:id/operations/:operationId',
   adapt(
-    apiHandler<{ id: string; operationId: string }>(
-      { permission: ['work_instructions', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
-
+    apiHandler<
+      { id: string; operationId: string },
+      z.infer<typeof operationUpdateSchema>
+    >(
+      {
+        permission: ['work_instructions', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: operationUpdateSchema,
+      },
+      async ({ params, body: data, user }) => {
         await requireEditableWorkInstruction(params.id, user.id)
 
         const [existing] = await db
@@ -408,10 +505,7 @@ app.put(
         }
 
         if (data.title !== undefined) {
-          if (!data.title?.trim()) {
-            throw new ValidationError('Operation title cannot be empty')
-          }
-          updateData.title = data.title.trim()
+          updateData.title = data.title
         }
         if (data.description !== undefined) {
           updateData.description = data.description || null
@@ -439,6 +533,7 @@ app.delete(
     apiHandler<{ id: string; operationId: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         await requireEditableWorkInstruction(params.id, user.id)
 
         const [existing] = await db
@@ -486,7 +581,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         // Verify work instruction exists
         const [wi] = await db
           .select()
@@ -532,15 +628,13 @@ app.get(
 app.post(
   '/:id/parts',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['work_instructions', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
-
-        if (!data.partId) {
-          throw new ValidationError('partId is required')
-        }
-
+    apiHandler<{ id: string }, z.infer<typeof partAttachSchema>>(
+      {
+        permission: ['work_instructions', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: partAttachSchema,
+      },
+      async ({ params, body: data, user }) => {
         await requireEditableWorkInstruction(params.id, user.id)
 
         // Verify work instruction exists
@@ -613,15 +707,13 @@ app.post(
 app.patch(
   '/:id/parts',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['work_instructions', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
-
-        if (!data.partId) {
-          throw new ValidationError('partId is required')
-        }
-
+    apiHandler<{ id: string }, z.infer<typeof partAttachmentPatchSchema>>(
+      {
+        permission: ['work_instructions', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: partAttachmentPatchSchema,
+      },
+      async ({ params, body: data, user }) => {
         await requireEditableWorkInstruction(params.id, user.id)
 
         const [existing] = await db
@@ -712,21 +804,17 @@ app.patch(
 app.delete(
   '/:id/parts',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['work_instructions', 'update'] },
-      async ({ params, request, user }) => {
-        // Get partId from URL search params or body
-        const url = new URL(request.url)
-        let partId = url.searchParams.get('partId')
-
-        if (!partId) {
-          try {
-            const body = await request.json()
-            partId = body.partId
-          } catch {
-            // Body might be empty
-          }
-        }
+    apiHandler<{ id: string }, z.infer<typeof partDetachSchema>>(
+      {
+        permission: ['work_instructions', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: partDetachSchema,
+      },
+      // The part comes from the query string or the body: the editor sends one
+      // and the API docs show the other, and both have always worked.
+      async ({ params, request, body, user }) => {
+        const partId =
+          new URL(request.url).searchParams.get('partId') ?? body.partId
 
         if (!partId) {
           throw new ValidationError('partId is required')
@@ -782,7 +870,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const [wi] = await db
           .select()
           .from(workInstructions)
@@ -809,7 +898,8 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['work_instructions', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         // Verify work instruction exists
         const [wi] = await db
           .select()
@@ -837,11 +927,13 @@ app.get(
 app.post(
   '/:id/steps',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['work_instructions', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
-
+    apiHandler<{ id: string }, z.infer<typeof stepCreateSchema>>(
+      {
+        permission: ['work_instructions', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: stepCreateSchema,
+      },
+      async ({ params, body: data, user }) => {
         await requireEditableWorkInstruction(params.id, user.id)
 
         // Verify work instruction exists
@@ -916,15 +1008,13 @@ app.post(
 app.put(
   '/:id/steps',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['work_instructions', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
-
-        if (!Array.isArray(data.steps)) {
-          throw new ValidationError('steps must be an array')
-        }
-
+    apiHandler<{ id: string }, z.infer<typeof stepsReorderSchema>>(
+      {
+        permission: ['work_instructions', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: stepsReorderSchema,
+      },
+      async ({ params, body: data, user }) => {
         await requireEditableWorkInstruction(params.id, user.id)
 
         // Verify work instruction exists
@@ -941,9 +1031,6 @@ app.put(
         // Update each step's orderIndex
         await db.transaction(async (tx) => {
           for (const step of data.steps) {
-            if (!step.id || step.orderIndex === undefined) {
-              throw new ValidationError('Each step must have id and orderIndex')
-            }
             await tx
               .update(workInstructionSteps)
               .set({
@@ -978,7 +1065,8 @@ app.get(
   adapt(
     apiHandler<{ id: string; stepId: string }>(
       { permission: ['work_instructions', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const [step] = await db
           .select()
           .from(workInstructionSteps)
@@ -1004,11 +1092,16 @@ app.get(
 app.put(
   '/:id/steps/:stepId',
   adapt(
-    apiHandler<{ id: string; stepId: string }>(
-      { permission: ['work_instructions', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
-
+    apiHandler<
+      { id: string; stepId: string },
+      z.infer<typeof stepUpdateSchema>
+    >(
+      {
+        permission: ['work_instructions', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: stepUpdateSchema,
+      },
+      async ({ params, body: data, user }) => {
         await requireEditableWorkInstruction(params.id, user.id)
 
         // Verify step exists and belongs to this work instruction
@@ -1063,6 +1156,7 @@ app.delete(
     apiHandler<{ id: string; stepId: string }>(
       { permission: ['work_instructions', 'update'] },
       async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         await requireEditableWorkInstruction(params.id, user.id)
 
         // Verify step exists

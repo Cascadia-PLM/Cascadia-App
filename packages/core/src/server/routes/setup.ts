@@ -9,7 +9,6 @@ import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { SettingKeys } from '@/lib/config/SettingKeys'
 import { SettingsService } from '@/lib/config/SettingsService'
 import { CatalogSeedService } from '@/lib/services/CatalogSeedService'
-import { ValidationError } from '@/lib/errors'
 
 const adapt = tagged('Setup')
 
@@ -67,29 +66,18 @@ app.post(
   '/progress',
   adapt(
     apiHandler(
-      { permission: ['system', 'manage'] },
-      async ({ request, user }) => {
-        const body = await request.json()
-        const parsed = setupProgressSchema.safeParse(body)
-        if (!parsed.success) {
-          throw new ValidationError(
-            'Invalid setup progress payload',
-            parsed.error.issues.map((issue) => ({
-              field: issue.path.join('.'),
-              message: issue.message,
-              code: issue.code,
-            })),
-          )
-        }
-
+      { permission: ['system', 'manage'], body: setupProgressSchema },
+      // The hand-rolled `safeParse` + issue-mapping this replaces produced
+      // the same 400 envelope `handleApiError` builds from a ZodError.
+      async ({ body, user }) => {
         await SettingsService.setJsonValue(
           SettingKeys.SETUP_PROGRESS,
-          parsed.data,
+          body,
           user.id,
           'First-time setup wizard progress',
         )
 
-        return { progress: parsed.data }
+        return { progress: body }
       },
     ),
   ),

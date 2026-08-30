@@ -22,6 +22,8 @@ export interface ItemFilters {
   tag?: string
   commit?: string
   state?: string
+  /** Free-text filter the endpoint applies across item number and name. */
+  search?: string
 }
 
 function applyItemFilters(
@@ -35,6 +37,7 @@ function applyItemFilters(
   if (filters.tag) qs.set('tag', filters.tag)
   if (filters.commit) qs.set('commit', filters.commit)
   if (filters.state) qs.set('state', filters.state)
+  if (filters.search) qs.set('search', filters.search)
   return qs
 }
 
@@ -147,6 +150,55 @@ function contextSearchParams(context: ItemVersionContext): string | null {
  * fall back to the version they already hold. Disabled automatically for a
  * context that addresses nothing — viewing `main` is not a request.
  */
+/**
+ * Where this item's edit lock lives — the branch working copy, or
+ * unprotected main. A null `lockBranchId` with `isMainProtected` means the
+ * caller must revise through an ECO or workspace branch instead.
+ *
+ * Keyed beneath the item, so a checkout or check-in refreshes it through the
+ * resource graph rather than each page reloading it by hand.
+ */
+export function itemEditContextQuery<T>(id: string, enabled = true) {
+  return queryOptions({
+    queryKey: qk.sub('items', id, 'edit-context'),
+    queryFn: async (): Promise<T | null> => {
+      const result = await apiFetch<{ data: { editContext?: T } }>(
+        `/api/v1/items/${id}/edit-context`,
+      )
+      return result.data.editContext ?? null
+    },
+    enabled: enabled && Boolean(id),
+  })
+}
+
+/**
+ * The branches and tags where this item actually exists.
+ *
+ * The version picker on a detail page offers only contexts that address the
+ * item; the design-wide branch/tag lists answer a different question.
+ */
+export function itemAvailableContextsQuery<TBranch, TTag>(
+  itemId: string,
+  enabled = true,
+) {
+  return queryOptions({
+    queryKey: qk.sub('items', itemId, 'available-contexts'),
+    queryFn: async (): Promise<{
+      branches: Array<TBranch>
+      tags: Array<TTag>
+    }> => {
+      const result = await apiFetch<{
+        data: { branches?: Array<TBranch>; tags?: Array<TTag> }
+      }>(`/api/v1/items/${itemId}/available-contexts`)
+      return {
+        branches: result.data.branches ?? [],
+        tags: result.data.tags ?? [],
+      }
+    },
+    enabled: enabled && Boolean(itemId),
+  })
+}
+
 export function itemAtContextQuery<T>(
   itemId: string,
   context: ItemVersionContext,

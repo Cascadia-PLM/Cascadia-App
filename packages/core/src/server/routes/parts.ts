@@ -6,11 +6,13 @@ import { z } from 'zod'
 import { eq } from 'drizzle-orm'
 import { tagged } from '../adapter'
 import type { Part } from '@/lib/items/types/part'
+import type { PartUpdate } from '@/lib/api/schemas'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { VerificationService } from '@/lib/services/VerificationService'
 import { ParametricResolutionService } from '@/lib/services/ParametricResolutionService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { apiHandler, created } from '@/lib/api/handler'
+import { requireItemAccess } from '@/lib/auth/access'
 import { mountRoutes } from '@/lib/api/route-registry'
 import { partUpdateSchema } from '@/lib/api/schemas'
 import { db } from '@/lib/db'
@@ -50,8 +52,9 @@ app.get(
           },
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
         const { id } = params
+        await requireItemAccess(user.id, id)
         const part = await ItemService.findById(id)
         if (!part) throw new NotFoundError('Part', id)
         return { part }
@@ -64,24 +67,33 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler<{ id: string }>(
+    // Both type arguments are spelled out: naming `TParams` turns off
+    // inference for the rest, so `TBody` would fall back to `unknown` and
+    // `body` would arrive untyped. Any route that declares both params and a
+    // body schema names both.
+    apiHandler<{ id: string }, PartUpdate>(
       {
         permission: ['parts', 'update'],
+        body: partUpdateSchema,
         openapi: {
           summary: 'Update a part',
-          request: {
-            params: partIdParamSchema,
-            body: { schema: partUpdateSchema },
-          },
+          request: { params: partIdParamSchema },
           responses: {
             200: { schema: z.object({ part: partResponseSchema }) },
           },
         },
       },
-      async ({ params, request, user }) => {
+      async ({ params, body, user }) => {
         const { id } = params
-        const data = await request.json()
-        const part = await ItemService.update<Part>(id, data, user.id)
+        await requireItemAccess(user.id, id)
+        // The schema permits `null` where the column is nullable, which the
+        // Part interface spells as an absent optional. `ItemService.update`
+        // and the part type handler both read null as "clear the column".
+        const part = await ItemService.update<Part>(
+          id,
+          body as Partial<Part>,
+          user.id,
+        )
         return { part }
       },
     ),
@@ -105,6 +117,7 @@ app.delete(
       },
       async ({ params, user }) => {
         const { id } = params
+        await requireItemAccess(user.id, id)
         await ItemService.delete(id, user.id)
         return { success: true }
       },
@@ -123,8 +136,9 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['parts', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
         const { id } = params
+        await requireItemAccess(user.id, id)
         const attributes =
           await ParametricResolutionService.getResolvableAttributes(id)
 
@@ -138,22 +152,24 @@ app.get(
 app.post(
   '/:id/validate',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const { id } = params
-      const body = await request.json()
-      const { testCaseIds } = body
+    apiHandler<{ id: string }, { testCaseIds: Array<string> }>(
+      {
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: z.object({
+          testCaseIds: z.array(z.string().uuid()).max(1000),
+        }),
+      },
+      async ({ params, body: { testCaseIds }, user }) => {
+        const { id } = params
 
-      if (!testCaseIds || !Array.isArray(testCaseIds)) {
-        throw new ValidationError('testCaseIds array is required')
-      }
+        // Link each test case to this part (testCase -> part)
+        for (const testCaseId of testCaseIds) {
+          await VerificationService.linkValidation(testCaseId, [id], user.id)
+        }
 
-      // Link each test case to this part (testCase -> part)
-      for (const testCaseId of testCaseIds) {
-        await VerificationService.linkValidation(testCaseId, [id], user.id)
-      }
-
-      return created({ success: true })
-    }),
+        return created({ success: true })
+      },
+    ),
   ),
 )
 
@@ -163,6 +179,7 @@ app.delete(
   adapt(
     apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
       const { id } = params
+      await requireItemAccess(user.id, id)
       const url = new URL(request.url)
       const testCaseId = url.searchParams.get('testCaseId')
 
@@ -181,8 +198,9 @@ app.delete(
 app.get(
   '/:id/validating-tests',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params }) => {
+    apiHandler<{ id: string }>({}, async ({ params, user }) => {
       const { id } = params
+      await requireItemAccess(user.id, id)
       const tests = await VerificationService.getValidatingTests(id)
 
       return { tests }
@@ -196,7 +214,7 @@ app.get(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['parts', 'read'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
         const { id } = params
         // Verify part exists
         const [part] = await db
@@ -208,6 +226,9 @@ app.get(
         if (!part || part.itemType !== 'Part') {
           throw new NotFoundError('Part', id)
         }
+
+        // The row is already in hand, so this costs no second read.
+        await requireItemAccess(user.id, part)
 
         // Get work instructions attached to this part
         const attachedWIs = await db

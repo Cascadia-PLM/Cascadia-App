@@ -11,13 +11,14 @@
 
 import { createAnthropicChat } from '@tanstack/ai-anthropic'
 import { createOpenaiChat } from '@tanstack/ai-openai'
-import { eq, isNull } from 'drizzle-orm'
+import { and, eq, gte, isNull, sql } from 'drizzle-orm'
 
 import type { AIProviderConfig, ProviderType } from '@/lib/db/schema/ai'
-import { aiSettings } from '@/lib/db/schema/ai'
+import { aiSettings, aiUsageLogs } from '@/lib/db/schema/ai'
 import { db } from '@/lib/db'
-import { decrypt, isEncryptionConfigured } from '@/lib/crypto/encryption'
+import { decryptSecret } from '@/lib/crypto/encryption'
 import { DEFAULT_MODEL } from '@/lib/ai/model-catalog'
+import { RateLimitedError } from '@/lib/errors'
 
 // Re-export types for convenience
 export type { AIProviderConfig, ProviderType }
@@ -41,21 +42,16 @@ const DEFAULT_OLLAMA_BASE_URL = 'http://localhost:11434/v1'
 export const DEFAULT_MODELS: Record<ProviderType, string> = DEFAULT_MODEL
 
 /**
- * Decrypt API key in config if it was encrypted at rest.
- * Encrypted keys are base64 and don't start with known prefixes like "sk-".
+ * Decrypt the API key in a config that was encrypted at rest.
+ *
+ * Throws SecretDecryptionError if a stored ciphertext will not decrypt, rather
+ * than passing it through: a key we cannot read is not a key, and sending the
+ * ciphertext upstream as a bearer token only converts one config error into a
+ * pile of provider 401s.
  */
 function decryptApiKey(config: AIProviderConfig): AIProviderConfig {
-  if (!config.apiKey || !isEncryptionConfigured()) return config
-  // Known plaintext prefixes from providers — skip decryption
-  if (config.apiKey.startsWith('sk-') || config.apiKey.startsWith('key-')) {
-    return config
-  }
-  try {
-    return { ...config, apiKey: decrypt(config.apiKey) }
-  } catch {
-    // If decryption fails, return as-is (may be plaintext from before encryption was enabled)
-    return config
-  }
+  if (!config.apiKey) return config
+  return { ...config, apiKey: decryptSecret(config.apiKey) }
 }
 
 /**
@@ -108,12 +104,62 @@ export function getAdapter(config: AIProviderConfig) {
 }
 
 /**
+ * Enforce the monthly token budget carried by the resolved settings row.
+ *
+ * A budget on a program's row bounds that program's month-to-date spend; a
+ * budget on the global row bounds the whole instance's. No budget (or a
+ * non-positive one) means no usage query runs at all — an unconfigured
+ * instance pays nothing per request. The check gates *new* calls: an
+ * in-flight stream that crosses the line finishes and is recorded, so an
+ * overrun of one request is accepted by design.
+ *
+ * This lives in `loadProviderConfig` because every AI surface — chat, all
+ * design-engine stages, enrichment — resolves its provider through it.
+ */
+async function enforceMonthlyTokenBudget(
+  config: AIProviderConfig,
+  programId: string | null,
+): Promise<AIProviderConfig> {
+  const budget = config.monthlyTokenBudget
+  if (typeof budget !== 'number' || budget <= 0) return config
+
+  const monthStart = sql`date_trunc('month', now())`
+  const spendWhere = programId
+    ? and(
+        eq(aiUsageLogs.programId, programId),
+        gte(aiUsageLogs.timestamp, monthStart),
+      )
+    : gte(aiUsageLogs.timestamp, monthStart)
+
+  const [row] = await db
+    .select({
+      spent: sql<number>`COALESCE(SUM(COALESCE(${aiUsageLogs.inputTokens}, 0) + COALESCE(${aiUsageLogs.outputTokens}, 0)), 0)::bigint`,
+    })
+    .from(aiUsageLogs)
+    .where(spendWhere)
+
+  const spent = Number(row?.spent ?? 0)
+  if (spent >= budget) {
+    throw new RateLimitedError(undefined, {
+      operation: 'ai.budget',
+      scope: programId ?? 'global',
+      monthlyTokenBudget: budget,
+      tokensSpentThisMonth: spent,
+    })
+  }
+  return config
+}
+
+/**
  * Load provider configuration from database or environment variables
  *
  * Priority:
  * 1. Program-specific settings (if programId provided)
  * 2. Global settings (programId = null)
  * 3. Environment variables
+ *
+ * Throws `RateLimitedError` (429) when the resolved settings row carries a
+ * `monthlyTokenBudget` the month-to-date spend has reached.
  */
 export async function loadProviderConfig(
   programId?: string,
@@ -125,7 +171,10 @@ export async function loadProviderConfig(
     })
 
     if (programSettings?.enabled) {
-      return decryptApiKey(programSettings.config)
+      return enforceMonthlyTokenBudget(
+        decryptApiKey(programSettings.config),
+        programId,
+      )
     }
   }
 
@@ -135,7 +184,7 @@ export async function loadProviderConfig(
   })
 
   if (globalSettings?.enabled) {
-    return decryptApiKey(globalSettings.config)
+    return enforceMonthlyTokenBudget(decryptApiKey(globalSettings.config), null)
   }
 
   // Fall back to environment variables

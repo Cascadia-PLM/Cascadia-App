@@ -4,6 +4,7 @@
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
+import { likeContains } from '../db/like-pattern'
 import { programMembers, programs, users } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import type { SQL } from 'drizzle-orm'
@@ -287,7 +288,7 @@ export class ProgramService {
 
     // Global search: ILIKE across code, name, description, customer
     if (criteria.globalSearch && criteria.globalSearch.trim()) {
-      const searchTerm = `%${criteria.globalSearch.trim()}%`
+      const searchTerm = likeContains(criteria.globalSearch.trim())
       conditions.push(
         or(
           ilike(programs.code, searchTerm),
@@ -353,7 +354,7 @@ export class ProgramService {
     // Text filter (ILIKE)
     if (typeof filterValue === 'string') {
       if (!filterValue.trim()) return null
-      return ilike(column, `%${filterValue.trim()}%`)
+      return ilike(column, likeContains(filterValue.trim()))
     }
 
     // Multi-select filter (IN)

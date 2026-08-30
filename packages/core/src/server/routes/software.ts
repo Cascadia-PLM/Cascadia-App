@@ -13,6 +13,8 @@ import { ItemService } from '@/lib/items/services/ItemService'
 import { SoftwareSourceService } from '@/lib/services/SoftwareSourceService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { apiHandler, parseQuery } from '@/lib/api/handler'
+import { softwareUpdateSchema } from '@/lib/api/schemas'
+import { requireItemAccess } from '@/lib/auth/access'
 import '@/lib/items/registerItemTypes.server'
 
 const adapt = tagged('Software')
@@ -20,6 +22,22 @@ const adapt = tagged('Software')
 const app = new Hono()
 
 const softwareIdParamSchema = z.object({ id: z.string().uuid() })
+
+// Request bodies. Named rather than inlined in the annotation, because the
+// same object now runs: apiHandler validates against it and the document is
+// generated from it, so the two cannot say different things.
+const saveFileSchema = z.object({
+  path: z.string().min(1),
+  content: z.string(),
+  encoding: z.enum(['utf8', 'base64']).optional(),
+})
+
+const renameFileSchema = z.object({
+  fromPath: z.string().min(1),
+  toPath: z.string().min(1),
+})
+
+const commitDraftSchema = z.object({ message: z.string().min(1) })
 
 // Version-context query params, priority: commit > tag > branch (matches
 // VersionResolver). Omitting all of them reads the item version itself.
@@ -58,7 +76,8 @@ app.get(
           request: { params: softwareIdParamSchema },
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const sw = await ItemService.findById(params.id)
         if (!sw || sw.itemType !== 'Software')
           throw new NotFoundError('Software', params.id)
@@ -75,14 +94,19 @@ app.put(
     apiHandler<{ id: string }>(
       {
         permission: ['software', 'update'],
+        access: ({ params, user }) => requireItemAccess(user.id, params.id),
+        body: softwareUpdateSchema,
         openapi: {
           summary: 'Update a software item',
           request: { params: softwareIdParamSchema },
         },
       },
-      async ({ params, request, user }) => {
-        const data = await request.json()
-        const sw = await ItemService.update<Software>(params.id, data, user.id)
+      async ({ params, body, user }) => {
+        const sw = await ItemService.update<Software>(
+          params.id,
+          body as Partial<Software>,
+          user.id,
+        )
         return { software: sw }
       },
     ),
@@ -102,6 +126,7 @@ app.delete(
         },
       },
       async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         await ItemService.delete(params.id, user.id)
         return { success: true }
       },
@@ -141,7 +166,8 @@ app.get(
           },
         },
       },
-      async ({ params, request }) => {
+      async ({ params, request, user }) => {
+        await requireItemAccess(user.id, params.id)
         const query = parseQuery(
           request,
           contextQuerySchema.extend({
@@ -188,7 +214,8 @@ app.get(
           },
         },
       },
-      async ({ params, request }) => {
+      async ({ params, request, user }) => {
+        await requireItemAccess(user.id, params.id)
         const query = parseQuery(
           request,
           contextQuerySchema.extend({
@@ -223,32 +250,19 @@ app.get(
 app.put(
   '/:id/file',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof saveFileSchema>>(
       {
+        body: saveFileSchema,
         permission: ['software', 'update'],
         openapi: {
           summary: 'Save a source file to the draft tree',
-          request: {
-            params: softwareIdParamSchema,
-            body: {
-              schema: z.object({
-                path: z.string().min(1),
-                content: z.string(),
-                encoding: z.enum(['utf8', 'base64']).optional(),
-              }),
-            },
-          },
+          request: { params: softwareIdParamSchema },
         },
       },
-      async ({ params, request, user }) => {
-        const body = (await request.json()) as {
-          path?: string
-          content?: string
-          encoding?: 'utf8' | 'base64'
-        }
-        if (!body.path || body.content === undefined) {
-          throw new ValidationError('path and content are required')
-        }
+      async ({ body, params, user }) => {
+        // Ahead of the checkout gate, so a caller outside the program gets 403
+        // rather than 409 — which should not be their answer.
+        await requireItemAccess(user.id, params.id)
         const data = Buffer.from(
           body.content,
           body.encoding === 'base64' ? 'base64' : 'utf8',
@@ -285,6 +299,7 @@ app.delete(
         },
       },
       async ({ params, request, user }) => {
+        await requireItemAccess(user.id, params.id)
         const query = parseQuery(request, z.object({ path: z.string().min(1) }))
         const { item, manifest } =
           await SoftwareSourceService.deleteFileFromDraft(
@@ -306,30 +321,17 @@ app.delete(
 app.post(
   '/:id/file/rename',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof renameFileSchema>>(
       {
+        body: renameFileSchema,
         permission: ['software', 'update'],
         openapi: {
           summary: 'Rename a source file in the draft tree',
-          request: {
-            params: softwareIdParamSchema,
-            body: {
-              schema: z.object({
-                fromPath: z.string().min(1),
-                toPath: z.string().min(1),
-              }),
-            },
-          },
+          request: { params: softwareIdParamSchema },
         },
       },
-      async ({ params, request, user }) => {
-        const body = (await request.json()) as {
-          fromPath?: string
-          toPath?: string
-        }
-        if (!body.fromPath || !body.toPath) {
-          throw new ValidationError('fromPath and toPath are required')
-        }
+      async ({ body, params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const { item, manifest } =
           await SoftwareSourceService.renameFileInDraft(
             params.id,
@@ -351,22 +353,17 @@ app.post(
 app.post(
   '/:id/commit',
   adapt(
-    apiHandler<{ id: string }>(
+    apiHandler<{ id: string }, z.infer<typeof commitDraftSchema>>(
       {
+        body: commitDraftSchema,
         permission: ['software', 'update'],
         openapi: {
           summary: 'Commit the draft source tree',
-          request: {
-            params: softwareIdParamSchema,
-            body: { schema: z.object({ message: z.string().min(1) }) },
-          },
+          request: { params: softwareIdParamSchema },
         },
       },
-      async ({ params, request, user }) => {
-        const body = (await request.json()) as { message?: string }
-        if (!body.message) {
-          throw new ValidationError('A commit message is required')
-        }
+      async ({ body, params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const { item, manifest } = await SoftwareSourceService.commitDraft(
           params.id,
           body.message,
@@ -395,6 +392,7 @@ app.post(
         },
       },
       async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const item = await SoftwareSourceService.discardDraft(
           params.id,
           user.id,
@@ -421,7 +419,10 @@ app.get(
           },
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        // Blobs are content-addressed and shared across items, so the software
+        // item in the path is the only boundary there is to check.
+        await requireItemAccess(user.id, params.id)
         if (!/^[a-f0-9]{64}$/.test(params.hash)) {
           throw new ValidationError('Invalid blob hash')
         }
@@ -448,6 +449,7 @@ app.post(
         },
       },
       async ({ params, request, user }) => {
+        await requireItemAccess(user.id, params.id)
         const contentType = request.headers.get('content-type') || ''
         if (!contentType.includes('multipart/form-data')) {
           throw new ValidationError(
@@ -509,7 +511,8 @@ app.get(
           request: { params: softwareIdParamSchema },
         },
       },
-      async ({ params }) => {
+      async ({ params, user }) => {
+        await requireItemAccess(user.id, params.id)
         const item = await ItemService.findById(params.id)
         if (!item || item.itemType !== 'Software') {
           throw new NotFoundError('Software', params.id)
@@ -550,11 +553,20 @@ app.get(
           },
         },
       },
-      async ({ params, request }) => {
+      async ({ params, request, user }) => {
+        // The item in the path first, before the query is even parsed: whether
+        // the caller may see this software does not depend on what they asked
+        // to compare it against, and a 400 about a missing `fromItemId` would
+        // otherwise confirm the item exists.
+        await requireItemAccess(user.id, params.id)
+
         const query = parseQuery(
           request,
           z.object({ fromItemId: z.string().uuid() }),
         )
+
+        // The other side is a caller-supplied id like any other.
+        await requireItemAccess(user.id, query.fromItemId)
 
         const [from, to] = await Promise.all([
           SoftwareSourceService.getTree(query.fromItemId),

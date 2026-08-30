@@ -31,7 +31,16 @@ export interface RouteContribution {
 
 const registry = new Map<RouteMountPoint, Array<RouteContribution>>()
 
-/** Contribute a sub-router. Called from a composition root at boot. */
+/**
+ * Contribute a sub-router. Called from a composition root at boot.
+ *
+ * Additive by contract, like `registerSlot` and unlike the name-keyed
+ * registries that throw on a duplicate: a mount point holds a list of
+ * sub-routers, and two modules mounting different paths under `admin` is the
+ * normal case. Two contributions claiming the *same* path is a Hono routing
+ * question rather than a registry one — first match wins there, as it does for
+ * any two overlapping routes in a single app.
+ */
 export function registerRoutes(
   mount: RouteMountPoint,
   path: string,

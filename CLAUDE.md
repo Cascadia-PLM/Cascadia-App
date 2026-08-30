@@ -153,6 +153,7 @@ npm run openapi:snapshot  # Regenerate docs/api/openapi.v1.json (maintainers —
 npm run openapi:check     # Verify the committed OpenAPI snapshot matches
 npm run license:check     # Every file carries its SPDX header (CI gate)
 npm run boundary:check    # Resolves every import and classifies the target (CI gate)
+npm run permissions:check # Every declared permission tuple is one a role holds (CI gate); -- --audience prints who each admits
 
 # Background Workers
 npm run workers:dev   # Start RabbitMQ + all workers (Node.js + Python)
@@ -566,7 +567,7 @@ const job = await JobService.submit(
 
 ### File Naming
 
-- kebab-case for files: `item-service.ts`
+- PascalCase for service classes and components: `BranchService.ts`, `PartForm.tsx`; kebab-case for other lib modules: `default-lifecycles.ts`, `item-type-definitions.ts`
 - PascalCase for components: `PartForm.tsx`
 - Routes follow TanStack conventions: `parts/$id.tsx`
 
@@ -582,7 +583,7 @@ const job = await JobService.submit(
 - Always use Drizzle ORM, never raw SQL
 - Use parameterized queries (Drizzle handles this)
 - Prefer `.returning()` for insert/update operations
-- Use transactions for multi-step operations via `db.transaction()`
+- Use transactions for multi-step operations — `withTx(tx, fn)` from `@/lib/db` when composing across services (thread the optional `tx?` through), plain `db.transaction()` at a single-service boundary
 
 ### UI Components
 
@@ -605,9 +606,10 @@ const job = await JobService.submit(
 - `tests/e2e/` - Playwright E2E tests
 - **Unit tests**: Vitest with `@testing-library/react` for components
 - **Service tests**: Run against a real Postgres via `TestDatabase` (most suites); mocking is the rare exception
+- **The suite has its own database.** It runs against `TEST_DATABASE_URL`, never `DATABASE_URL`, and refuses to start without it — it truncates tables and commits shared config rows, so pointed at the dev database it rewrites what you were working on. Provision once with `createdb -U postgres cascadia_test` then `npm run test:db:push`, and add `TEST_DATABASE_URL` to `.env`. Re-run `test:db:push` after a schema change. Nothing is derived or guessed; see `packages/core/src/__tests__/README.md`
 - **E2E tests**: Playwright with page object model pattern
 - **CI/CD**: GitHub Actions for automated testing
-- Key utilities: `TestDatabase`, `TestDataBuilder`, `renderWithProviders()`, `MockVaultStorage`
+- Key utilities: `TestDatabase` (transaction-per-test), `ConcurrentTestDatabase` (multi-connection race tests), `insertTestUser`/`insertTestUserWithRole`, `seedStandardPartLifecycle`/`overrideItemTypeConfig`
 - Tests use forked process pool for parallelization
 - Vitest globals enabled (`describe`, `it`, `expect` available without import)
 
@@ -643,11 +645,17 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cascadia
 NODE_ENV=development
 ```
 
+Required to run the test suite (a separate database — see Testing Strategy):
+
+```
+TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cascadia_test
+```
+
 Optional:
 
 ```
-FILE_STORAGE_PATH=/path/to/vault  # Default: ./vault-storage
-RABBITMQ_URL=amqp://localhost     # For background jobs
+VAULT_ROOT=/path/to/vault   # Default: ./vault (a DB storage setting overrides)
+RABBITMQ_URL=amqp://localhost  # For background jobs
 ```
 
 There is no session secret: sessions are opaque random tokens stored hashed in

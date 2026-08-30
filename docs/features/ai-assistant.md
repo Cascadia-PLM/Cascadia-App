@@ -442,11 +442,25 @@ The `context` object carries `userId`, `sessionId`, `programId`, and `designId` 
 | 7   | `search_programs`               | Read     | `programs:read`        | Search programs by name, code, customer       |
 | 8   | `search_designs`                | Read     | `designs:read`         | Search designs by name, code, program         |
 | 9   | `create_item`                   | Write    | `<type>:create`        | Create any item type except ChangeOrder       |
-| 10  | `update_item`                   | Write    | `parts:update`         | Update item properties                        |
+| 10  | `update_item`                   | Write    | `<type>:update`        | Update item properties                        |
 | 11  | `create_relationship`           | Write    | `parts:update`         | Create BOM, Document, or Affects relationship |
-| 12  | `transition_item_state`         | Write    | `change_orders:update` | Transition workflow state                     |
+| 12  | `transition_item_state`         | Write    | `<type>:update`        | Transition workflow state                     |
 | 13  | `create_change_order`           | Write    | `change_orders:create` | Create ECO with branches and affected items   |
 | 14  | `initiate_collaborative_design` | Design   | `parts:create`         | Launch collaborative design workspace         |
+
+`<type>` is the target item's own RBAC resource — `documents` for a Document,
+`tasks` for a Task, `change_orders` for a ChangeOrder — resolved through the
+same `ITEM_TYPE_RESOURCES` map the REST routes use, and fail-closed to `parts`
+for a type with no mapping. `update_item` and `transition_item_state` resolve
+it from the stored item, so the grant that admits an edit is the grant for the
+thing being edited. Routing an `update_item` through a `changeOrderId` requires
+`change_orders:update` **in addition**, because it mutates the ECO's scope.
+
+These tuples are checked in the tool wrapper, which is the only RBAC gate on
+this path: the services below it do not re-check. The wrapper also intersects
+an API key's scope with the user's role permissions, so an MCP key can narrow
+what a tool reaches but never widen it. RBAC is type-level only — the
+instance-level program and design boundaries are drawn inside each handler.
 
 ---
 

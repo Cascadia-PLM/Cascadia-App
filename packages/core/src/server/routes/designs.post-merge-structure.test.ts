@@ -38,7 +38,7 @@ import designsRoutes from './designs'
 import itemsRoutes from './items'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
-import { insertTestUser } from '@/__tests__/fixtures/users'
+import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
@@ -47,6 +47,7 @@ import { ImpactAssessmentService } from '@/lib/items/services/ImpactAssessmentSe
 import { DesignService } from '@/lib/services/DesignService'
 import { ProgramService } from '@/lib/services/ProgramService'
 import { SessionManager } from '@/lib/auth/session'
+import { permissionService } from '@/lib/auth/permission-service'
 import { ItemTypeRegistry } from '@/lib/items/registry'
 import {
   branchItems,
@@ -153,7 +154,10 @@ describe('design structure and graph after an ECO merge', () => {
     await testDb.beginTransaction()
 
     uniquePrefix = `PMS${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
-    user = await insertTestUser(testDb.db)
+    // The graph route gates on the center item's type permission, so this
+    // fixture's user needs a role that reads parts. It had none.
+    user = (await insertTestUserWithRole(testDb.db, 'User')).user
+    permissionService.clearCache()
 
     const program = await ProgramService.create(
       { name: 'Post-merge Program', code: `PMS-${uniquePrefix}` },

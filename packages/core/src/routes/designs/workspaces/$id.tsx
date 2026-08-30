@@ -32,9 +32,13 @@ import { ConvertToEcoDialog } from '@/components/workspaces/ConvertToEcoDialog'
 import { MergeToEcoDialog } from '@/components/workspaces/MergeToEcoDialog'
 import { WorkspaceItemsPanel } from '@/components/workspaces/WorkspaceItemsPanel'
 
+/** The tabs the workspace page renders; the search schema derives from this list. */
+const WORKSPACE_DETAIL_TABS = ['overview', 'items', 'commits'] as const
+type WorkspaceDetailTab = (typeof WORKSPACE_DETAIL_TABS)[number]
+
 // Search schema for tab state
 const workspaceDetailSearchSchema = z.object({
-  tab: z.enum(['overview', 'items', 'commits']).optional().default('overview'),
+  tab: z.enum(WORKSPACE_DETAIL_TABS).optional().default('overview'),
 })
 
 export const Route = createFileRoute('/designs/workspaces/$id')({
@@ -66,11 +70,11 @@ function WorkspaceDetailPage() {
   const search = Route.useSearch()
   const activeTab = search.tab
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab: WorkspaceDetailTab) => {
     router.navigate({
       to: '/designs/workspaces/$id',
       params: { id },
-      search: { tab: tab as 'overview' | 'items' | 'commits' },
+      search: { tab },
       replace: true,
     })
   }
@@ -167,7 +171,7 @@ function WorkspaceDetailPage() {
       {/* Tabs */}
       <Tabs
         value={activeTab}
-        onValueChange={handleTabChange}
+        onValueChange={(value) => handleTabChange(value as WorkspaceDetailTab)}
         className="w-full"
       >
         <TabsList className="grid w-full grid-cols-3">

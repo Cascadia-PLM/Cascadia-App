@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
   CheckCircle2,
@@ -13,6 +14,12 @@ import {
 } from 'lucide-react'
 import type { TestCase } from '@/lib/items/types/testcase'
 import { apiFetch } from '@/lib/api/client'
+import {
+  entitySubQuery,
+  itemCollectionQuery,
+  useInvalidateResources,
+} from '@/lib/query'
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import {
   Badge,
@@ -46,67 +53,36 @@ export function RequirementVerificationPanel({
   isEditable = false,
 }: RequirementVerificationPanelProps) {
   const { alert } = useAlertDialog()
-  const [verifyingTests, setVerifyingTests] = useState<Array<VerifyingTest>>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<Array<TestCase>>([])
-  const [searching, setSearching] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [linking, setLinking] = useState<string | null>(null)
   const [unlinking, setUnlinking] = useState<string | null>(null)
+  const invalidate = useInvalidateResources()
 
-  // Fetch verifying tests
-  useEffect(() => {
-    async function fetchVerifyingTests() {
-      setLoading(true)
-      try {
-        const response = await apiFetch<{
-          data: { tests: Array<VerifyingTest> }
-        }>(`/api/v1/requirements/${requirementId}/verifying-tests`)
-        setVerifyingTests(response.data.tests)
-      } catch (error) {
-        console.error('Failed to fetch verifying tests:', error)
-        setVerifyingTests([])
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchVerifyingTests()
-  }, [requirementId])
+  // The tests that verify this requirement
+  const { data: verifyingTests = [], isPending: loading } = useQuery(
+    entitySubQuery<VerifyingTest>(
+      'requirements',
+      requirementId,
+      'verifying-tests',
+      'tests',
+    ),
+  )
 
-  // Search for test cases
-  useEffect(() => {
-    if (!searchQuery.trim() || !designId) {
-      setSearchResults([])
-      return
-    }
-
-    const debounceTimer = setTimeout(async () => {
-      setSearching(true)
-      try {
-        const params = new URLSearchParams({
-          itemType: 'TestCase',
-          search: searchQuery,
-          designId,
-        })
-        const response = await apiFetch<{ data: { items: Array<TestCase> } }>(
-          `/api/v1/items?${params}`,
-        )
-        // Filter out already linked tests
-        const linkedIds = new Set(verifyingTests.map((t) => t.id))
-        setSearchResults(
-          response.data.items.filter((tc) => !linkedIds.has(tc.id)),
-        )
-      } catch (error) {
-        console.error('Failed to search test cases:', error)
-        setSearchResults([])
-      } finally {
-        setSearching(false)
-      }
-    }, 300)
-
-    return () => clearTimeout(debounceTimer)
-  }, [searchQuery, designId, verifyingTests])
+  // Candidate test cases in the same design, minus the ones already linked.
+  const debouncedSearch = useDebouncedValue(searchQuery)
+  const { data: candidates = [], isFetching: searching } = useQuery({
+    ...itemCollectionQuery<TestCase>({
+      itemType: 'TestCase',
+      designId,
+      search: debouncedSearch,
+    }),
+    enabled: Boolean(debouncedSearch.trim()) && Boolean(designId),
+  })
+  const linkedIds = new Set(verifyingTests.map((t) => t.id))
+  const searchResults = debouncedSearch.trim()
+    ? candidates.filter((tc) => !linkedIds.has(tc.id))
+    : []
 
   const handleLinkTest = async (testCaseId: string) => {
     setLinking(testCaseId)
@@ -115,13 +91,8 @@ export function RequirementVerificationPanel({
         method: 'POST',
         body: JSON.stringify({ testCaseIds: [testCaseId] }),
       })
-      // Refresh the list
-      const response = await apiFetch<{
-        data: { tests: Array<VerifyingTest> }
-      }>(`/api/v1/requirements/${requirementId}/verifying-tests`)
-      setVerifyingTests(response.data.tests)
+      await invalidate('requirements')
       setSearchQuery('')
-      setSearchResults([])
     } catch (error) {
       // A released requirement is not editable outside a change order, so
       // this legitimately refuses. Silently dropping it left the user
@@ -146,7 +117,7 @@ export function RequirementVerificationPanel({
         `/api/v1/requirements/${requirementId}/verify?testCaseId=${testCaseId}`,
         { method: 'DELETE' },
       )
-      setVerifyingTests((prev) => prev.filter((t) => t.id !== testCaseId))
+      await invalidate('requirements')
     } catch (error) {
       alert({
         title: 'Could not remove test case',
@@ -309,7 +280,6 @@ export function RequirementVerificationPanel({
                 onClick={() => {
                   setShowSearch(false)
                   setSearchQuery('')
-                  setSearchResults([])
                 }}
               >
                 Cancel

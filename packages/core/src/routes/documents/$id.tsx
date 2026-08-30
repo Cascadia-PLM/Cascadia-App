@@ -5,7 +5,11 @@ import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 import type { Document } from '@/lib/items/types/document'
-import { DocumentDetail } from '@/components/documents/DocumentDetail'
+import type { DocumentDetailTab } from '@/components/documents/DocumentDetail'
+import {
+  DOCUMENT_DETAIL_TABS,
+  DocumentDetail,
+} from '@/components/documents/DocumentDetail'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { entityQuery, useInvalidateResources } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
@@ -14,13 +18,8 @@ const documentDetailSearchSchema = z.object({
   branch: z.string().uuid().optional(),
   tag: z.string().uuid().optional(),
   commit: z.string().uuid().optional(),
-  tab: z
-    .enum(['details', 'preview', 'gallery', 'relationships', 'history'])
-    .optional()
-    .default('details'),
+  tab: z.enum(DOCUMENT_DETAIL_TABS).optional().default('details'),
 })
-
-type DocumentDetailTab = z.infer<typeof documentDetailSearchSchema>['tab']
 
 export const Route = createFileRoute('/documents/$id')({
   component: DocumentDetailPage,
@@ -75,13 +74,13 @@ function DocumentDetailPage() {
     navigate({ to: '/documents' })
   }
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab: DocumentDetailTab) => {
     router.navigate({
       to: '/documents/$id',
       params: { id: document.id ?? '' },
       search: {
         ...search,
-        tab: tab as DocumentDetailTab,
+        tab,
       },
       replace: true,
     })

@@ -2,16 +2,18 @@
 
 The Relationships API manages parent-child and other typed relationships between items. Relationships form the Bill of Materials (BOM) structure and traceability links in Cascadia PLM.
 
-## Endpoints Overview
+## Endpoints
 
-| Method | Endpoint                                | Description                     |
-| ------ | --------------------------------------- | ------------------------------- |
-| GET    | `/api/v1/relationships`                 | List relationships for a design |
-| GET    | `/api/v1/items/:id/relationships`       | List relationships for an item  |
-| POST   | `/api/v1/items/:id/relationships`       | Create a relationship           |
-| PUT    | `/api/v1/relationships/:relationshipId` | Update relationship properties  |
-| DELETE | `/api/v1/relationships/:relationshipId` | Delete a relationship           |
-| POST   | `/api/v1/relationships/batch-create`    | Batch create relationships      |
+This page explains behaviour; it is not an endpoint inventory. Three generated
+surfaces carry that, and none of them can drift from the routes the way a
+hand-written table does:
+
+- `GET /api/docs` — the interactive Scalar UI
+- `GET /openapi.json` — the live spec, regenerated from route metadata per request
+- [`openapi.v1.json`](./openapi.v1.json) — the frozen v1 contract, the one external
+  consumers should build against
+
+See [the API README](./README.md) for the versioning policy that governs all three.
 
 ## List Relationships by Design
 

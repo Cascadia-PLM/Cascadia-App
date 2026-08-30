@@ -4,11 +4,12 @@
 /**
  * Document Lifecycle E2E Workflow Tests
  *
- * Tier 2: Core workflow tests that run on merge to main.
+ * Core workflow coverage.
  * Tests the complete document lifecycle: Create → Edit → Delete
  */
 
 import { expect, test } from '../fixtures'
+import { seedFreshDesign, selectDesignByName } from '../seed'
 import type { Page } from '@playwright/test'
 
 /**
@@ -33,19 +34,10 @@ test.describe('Document Lifecycle Workflow', () => {
     // Cleanup: Try to delete the document if it was created
     if (createdDocumentId) {
       try {
-        await page.goto(`/documents/${createdDocumentId}`)
-        // Look for delete button
-        const deleteButton = page.locator('button:has-text("Delete")')
-        if (await deleteButton.isVisible()) {
-          await deleteButton.click()
-          // Confirm deletion if there's a dialog
-          const confirmButton = page.locator(
-            'button:has-text("Confirm"), button:has-text("Delete")',
-          )
-          if (await confirmButton.isVisible()) {
-            await confirmButton.click()
-          }
-        }
+        // Delete through the API, not the UI — see the note in
+        // part-lifecycle.spec.ts: a visibility-guarded click made cleanup a
+        // no-op whenever the page had no Delete button.
+        await page.request.delete(`/api/v1/documents/${createdDocumentId}`)
       } catch {
         // Ignore cleanup errors
       }
@@ -56,26 +48,11 @@ test.describe('Document Lifecycle Workflow', () => {
   test('complete document lifecycle: create, view, and verify', async ({
     authenticatedPage: page,
   }) => {
-    // 1. Navigate to create document page
+    const design = await seedFreshDesign(page, 'E2E Doc Lifecycle')
+
+    // 1. Navigate to create document page and pick the seeded design
     await page.goto('/documents/new')
-
-    // Check if designs are available
-    const designSelector = page.locator('[data-testid="design-selector"]')
-    await designSelector.click()
-
-    const designOptions = page
-      .locator('[role="option"]')
-      .filter({ hasNotText: 'No Design' })
-    const designCount = await designOptions.count()
-
-    // Hard requirement, not a skip: global setup guarantees a selectable design.
-    expect(
-      designCount,
-      'no selectable design — e2e global setup should have created one',
-    ).toBeGreaterThan(0)
-
-    // Select first design
-    await designOptions.first().click()
+    await selectDesignByName(page, design.name)
 
     // 2. Fill in document details using focus + pressSequentially
     const timestamp = Date.now()
@@ -137,22 +114,11 @@ test.describe('Document Lifecycle Workflow', () => {
   test('document appears in documents list after creation', async ({
     authenticatedPage: page,
   }) => {
-    // 1. Create a document
+    // 1. Create a document on a seeded design
+    const design = await seedFreshDesign(page, 'E2E Doc List')
+
     await page.goto('/documents/new')
-
-    const designSelector = page.locator('[data-testid="design-selector"]')
-    await designSelector.click()
-
-    const designOptions = page
-      .locator('[role="option"]')
-      .filter({ hasNotText: 'No Design' })
-    // Hard requirement, not a skip: global setup guarantees a selectable design.
-    expect(
-      await designOptions.count(),
-      'no selectable design — e2e global setup should have created one',
-    ).toBeGreaterThan(0)
-
-    await designOptions.first().click()
+    await selectDesignByName(page, design.name)
 
     const timestamp = Date.now()
     const itemNumber = `DOC-LIST-${timestamp}`
@@ -176,16 +142,14 @@ test.describe('Document Lifecycle Workflow', () => {
     await page.goto('/documents')
 
     // 3. Search for the created document (using focus + pressSequentially)
-    const searchInput = page.locator(
-      'input[placeholder*="Search"], input[type="search"]',
-    )
-    if (await searchInput.isVisible()) {
-      await searchInput.focus()
-      await page.waitForTimeout(100)
-      await searchInput.pressSequentially(itemNumber, { delay: 30 })
-      // Give time for search to filter
-      await page.waitForTimeout(500)
-    }
+    // The grid's own search box, by accessible name — the old placeholder
+    // selector also matched the header's global search bar.
+    const searchInput = page.getByRole('textbox', { name: 'Search table' })
+    await searchInput.focus()
+    await page.waitForTimeout(100)
+    await searchInput.pressSequentially(itemNumber, { delay: 30 })
+    // Give time for search to filter
+    await page.waitForTimeout(500)
 
     // 4. Verify document appears in the list
     await expect(page.locator(`text=${itemNumber}`)).toBeVisible({

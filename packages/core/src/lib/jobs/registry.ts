@@ -31,15 +31,25 @@ class JobTypeRegistry {
   /**
    * Register a job type configuration.
    * Called during app/worker startup.
+   *
+   * Re-registering the *same object* is a no-op: a definitions module can be
+   * imported more than once (a re-run of `definitions/register.ts`, a dev-server
+   * reload) without that meaning anything. A *different* config claiming a type
+   * that is already taken is a conflict and throws — the previous behaviour
+   * overwrote it silently, which loses timeout, retry and routing settings with
+   * nothing in the type system or the logs to catch it.
    */
   static register<TPayload, TResult>(
     config: JobTypeConfig<TPayload, TResult>,
   ): void {
-    if (this.codeDefinitions.has(config.type)) {
-      jobLogger.debug({ type: config.type }, 'Re-registering job type')
-    } else {
-      jobLogger.debug({ type: config.type }, 'Registered job type')
+    const existing = this.codeDefinitions.get(config.type)
+    if (existing) {
+      if (existing === (config as JobTypeConfig)) return
+      throw new Error(
+        `Job type "${config.type}" is already registered with a different configuration`,
+      )
     }
+    jobLogger.debug({ type: config.type }, 'Registered job type')
     this.codeDefinitions.set(config.type, config)
     this.mergedCache.delete(config.type)
   }
@@ -47,10 +57,21 @@ class JobTypeRegistry {
   /**
    * Register a handler for a job type.
    * Called during worker startup.
+   *
+   * Same duplicate policy as {@link register}: identical reference is a no-op,
+   * a second distinct handler for one type throws rather than winning silently.
    */
   static registerHandler<TPayload, TResult>(
     handler: JobHandler<TPayload, TResult>,
   ): void {
+    const existing = this.handlers.get(handler.type)
+    if (existing) {
+      if (existing === (handler as unknown as JobHandler<unknown, unknown>))
+        return
+      throw new Error(
+        `Job type "${handler.type}" already has a different handler registered`,
+      )
+    }
     if (!this.codeDefinitions.has(handler.type)) {
       jobLogger.warn(
         { type: handler.type },

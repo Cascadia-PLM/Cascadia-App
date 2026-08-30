@@ -5,6 +5,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
 import { itemTypeConfigs, items } from '../db/schema'
+import { notDeleted } from '../db/filters'
 import { ConflictError, NotFoundError, ValidationError } from '../errors'
 import { ItemTypeRegistry } from '../items/registry'
 import { WorkflowService } from '../workflows/WorkflowService'
@@ -325,7 +326,7 @@ export class ConfigService {
         count: sql<number>`count(*)::int`,
       })
       .from(items)
-      .where(and(eq(items.itemType, itemType), eq(items.isDeleted, false)))
+      .where(and(eq(items.itemType, itemType), notDeleted()))
       .groupBy(items.state)
 
     // Check which states are not in target lifecycle

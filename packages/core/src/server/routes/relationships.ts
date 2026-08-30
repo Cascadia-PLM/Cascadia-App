@@ -8,6 +8,7 @@ import { tagged } from '../adapter'
 import { db } from '@/lib/db'
 import { itemRelationships, items } from '@/lib/db/schema'
 import { ValidationError } from '@/lib/errors'
+import { requireDesignAccess } from '@/lib/auth/access'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
 import { apiHandler, jsonResponse } from '@/lib/api/handler'
@@ -45,6 +46,17 @@ const relationshipDataSchema = z.object({
 
 type RelationshipData = z.infer<typeof relationshipDataSchema>
 
+/**
+ * The envelope the handler enforces: at least one line, at most 500, and a
+ * boolean flag. Each *line* stays loose here on purpose — see
+ * `relationshipDataSchema` above; per-line rejection into `errors[]` is what a
+ * batch endpoint is for.
+ */
+const batchCreateBodySchema = z.object({
+  relationships: z.array(z.record(z.string(), z.unknown())).min(1).max(500),
+  replaceExisting: z.boolean().optional(),
+})
+
 const batchCreateRequestSchema = z.object({
   relationships: z.array(relationshipDataSchema).min(1).max(500),
   replaceExisting: z
@@ -78,7 +90,7 @@ const app = new Hono()
 app.get(
   '/',
   adapt(
-    apiHandler({ permission: ['parts', 'read'] }, async ({ request }) => {
+    apiHandler({ permission: ['parts', 'read'] }, async ({ request, user }) => {
       const url = new URL(request.url)
       const designId = url.searchParams.get('designId')
       const type = url.searchParams.get('type')
@@ -86,6 +98,12 @@ app.get(
       if (!designId) {
         throw new ValidationError('designId is required')
       }
+
+      // `parts:read` says the caller may read parts; the design in the query
+      // string says whose. Every by-id item read checks this; a BOM edge names
+      // two items, so listing a design's edges discloses its structure just as
+      // plainly. Handles the cross-program-authority bypass internally.
+      await requireDesignAccess(user.id, designId)
 
       // Get all items in the design
       const designItems = await db
@@ -135,6 +153,7 @@ app.post(
     apiHandler(
       {
         permission: ['parts', 'update'],
+        body: batchCreateBodySchema,
         openapi: {
           summary: 'Create relationships in bulk',
           description:
@@ -146,6 +165,10 @@ app.post(
             'status reports the outcome: 201 when every line was created, ' +
             '207 when some lines were created and others rejected, 400 when ' +
             'none were.',
+          // documented-not-enforced: per-line rejection is this endpoint's
+          // contract. Parsing the whole body against the schema would turn
+          // one malformed line into a rejection of all 500, which is what
+          // `errors[]` exists to avoid.
           request: { body: { schema: batchCreateRequestSchema } },
           responses: {
             201: { schema: batchCreateResponseSchema },
@@ -156,26 +179,14 @@ app.post(
           },
         },
       },
-      async ({ request, user }) => {
+      async ({ body: rawBody, user }) => {
         const userId = user.id
-
-        // Parse request body
-        const body = (await request.json()) as {
+        // The three shape checks that used to live here — array, non-empty,
+        // at most 500 — are the envelope schema now. Lines stay untyped
+        // until the per-line pass below rejects them individually.
+        const body = rawBody as {
           relationships: Array<RelationshipData>
           replaceExisting?: boolean
-        }
-
-        if (!Array.isArray(body.relationships)) {
-          throw new ValidationError('Relationships array is required')
-        }
-
-        if (body.relationships.length === 0) {
-          throw new ValidationError('Relationships array cannot be empty')
-        }
-
-        // Limit batch size
-        if (body.relationships.length > 500) {
-          throw new ValidationError('Batch size limited to 500 relationships')
         }
 
         // Everything below is validation of the request as given — no write
@@ -333,21 +344,36 @@ app.post(
 )
 
 // PUT /api/relationships/:relationshipId
+/**
+ * The three fields an edge's own row carries. All optional — an absent key
+ * leaves the column alone, `null` clears it.
+ *
+ * `quantity` is stored as text and a number is accepted for it (a client
+ * sending `2` rather than `"2"` has always worked), so it is coerced here
+ * rather than at the driver.
+ */
+const relationshipEditSchema = z.object({
+  quantity: z
+    .union([z.number(), z.string().max(100)])
+    .transform((v) => String(v))
+    .nullish(),
+  referenceDesignator: z.string().max(200).nullish(),
+  findNumber: z.number().int().min(0).max(1_000_000).nullish(),
+})
+
 app.put(
   '/:relationshipId',
   adapt(
-    apiHandler<{ relationshipId: string }>(
-      { permission: ['parts', 'update'] },
-      async ({ params, request, user }) => {
-        const data = await request.json()
+    apiHandler<
+      { relationshipId: string },
+      z.infer<typeof relationshipEditSchema>
+    >(
+      { permission: ['parts', 'update'], body: relationshipEditSchema },
+      async ({ params, body, user }) => {
         const updated = await ItemService.updateRelationship(
           params.relationshipId,
           user.id,
-          {
-            quantity: data.quantity,
-            referenceDesignator: data.referenceDesignator,
-            findNumber: data.findNumber,
-          },
+          body,
         )
         return { relationship: updated }
       },

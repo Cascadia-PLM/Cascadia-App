@@ -148,8 +148,10 @@ describe('RevisionService', () => {
   describe('getNextRevision - none scheme', () => {
     const scheme: RevisionScheme = { type: 'none' }
 
-    it('returns empty string for empty revision', () => {
-      expect(RevisionService.getNextRevision('', scheme)).toBe('')
+    it('lands an item with no revision on the marker, never on empty', () => {
+      expect(RevisionService.getNextRevision('', scheme)).toBe(
+        RevisionService.NO_REVISION,
+      )
     })
 
     it('returns current revision unchanged', () => {
@@ -189,8 +191,55 @@ describe('RevisionService', () => {
       ).toBe('PROTO-1')
     })
 
-    it('returns empty string for none scheme', () => {
-      expect(RevisionService.getInitialRevision({ type: 'none' })).toBe('')
+    it('returns the fixed marker for none scheme', () => {
+      expect(RevisionService.getInitialRevision({ type: 'none' })).toBe(
+        RevisionService.NO_REVISION,
+      )
+    })
+  })
+
+  // ============================================
+  // The `none` scheme's released marker
+  // ============================================
+
+  describe('NO_REVISION marker', () => {
+    it('reads as a released revision, not a working copy', () => {
+      // The whole defect: at '' the marker read as unreleased, so an item
+      // released under `none` was filtered out of every released-item query.
+      expect(
+        RevisionService.isWorkingRevision(RevisionService.NO_REVISION),
+      ).toBe(false)
+    })
+
+    it('satisfies the shape items.revision imposes on a stored revision', () => {
+      const marker: string = RevisionService.NO_REVISION
+      // varchar(10), and ck_items_revision_working_marker rejects a leading
+      // '-' that is not '-' or '-{8 hex}'. 'DRAFT'/'' are working markers.
+      expect(marker).not.toBe('')
+      expect(marker.length).toBeLessThanOrEqual(10)
+      expect(marker.startsWith('-')).toBe(false)
+      expect(marker).not.toBe('DRAFT')
+    })
+
+    it('carries no ordinal, so switching schemes mints the first revision', () => {
+      // Incrementing the marker text itself ('N/A' -> 'N/B') would invent a
+      // revision that was never released.
+      expect(
+        RevisionService.getNextRevision(RevisionService.NO_REVISION, {
+          type: 'alpha',
+        }),
+      ).toBe('A')
+      expect(
+        RevisionService.getNextRevision(RevisionService.NO_REVISION, {
+          type: 'numeric',
+        }),
+      ).toBe('1')
+      expect(
+        RevisionService.getNextRevision(RevisionService.NO_REVISION, {
+          type: 'prefixed-numeric',
+          prefix: 'X',
+        }),
+      ).toBe('X1')
     })
   })
 

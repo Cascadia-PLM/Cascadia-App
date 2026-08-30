@@ -2,18 +2,18 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
-import { and, asc, desc, eq, inArray, like, or, sql } from 'drizzle-orm'
+import { and, asc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../adapter'
-import type {
-  CommitGraphData,
-  CommitGraphEdge,
-  CommitGraphNode,
-  CommitNodeData,
-} from '@/lib/versioning/graph-types'
 import type { ScopeGraphEdge, ScopeGraphNode } from '@/lib/api/scope-graph'
 import type { BOMTreeNode, OrphanItem } from '@/lib/types/bom'
-import { DesignService, designCreateSchema } from '@/lib/services/DesignService'
+import {
+  DesignService,
+  designCreateSchema,
+  designUpdateSchema,
+  tagCreateSchema,
+} from '@/lib/services/DesignService'
+import { CommitGraphService } from '@/lib/services/CommitGraphService'
 import { ProgramService } from '@/lib/services/ProgramService'
 import { BranchService } from '@/lib/services/BranchService'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -28,6 +28,7 @@ import {
 } from '@/lib/services/GapAnalysisService'
 import { JobService } from '@/lib/jobs/JobService'
 import { requirePermission } from '@/lib/auth/server'
+import { likeContains } from '@/lib/db/like-pattern'
 import { requireDesignAccess } from '@/lib/auth/access'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import {
@@ -59,12 +60,7 @@ import {
   itemRelationships,
   items,
 } from '@/lib/db/schema/items'
-import {
-  branchItems,
-  branches,
-  commits,
-  tags,
-} from '@/lib/db/schema/versioning'
+import { branchItems, branches } from '@/lib/db/schema/versioning'
 import { users } from '@/lib/db/schema/users'
 import { designs } from '@/lib/db/schema/designs'
 import { notDeleted, notWorkingRevision } from '@/lib/db/filters'
@@ -110,663 +106,73 @@ const cloneInputSchema = z.object({
   suffixItemNumbers: z.boolean().optional(),
 })
 
-// ============================================
-// Commit Consolidation
-// ============================================
-
-/** Time window in milliseconds for consolidating commits (30 minutes) */
-const CONSOLIDATION_TIME_WINDOW_MS = 30 * 60 * 1000
-
-/** Minimum number of commits to trigger consolidation */
-const MIN_COMMITS_TO_CONSOLIDATE = 2
-
 /**
- * Check if a commit should NOT be consolidated (is "important")
+ * A design's own program members with `canManageDesigns` may act on it; anyone
+ * else needs the global RBAC permission. Four routes ask exactly this question,
+ * and it has to be answerable before a body is parsed, so it lives here rather
+ * than as the first four lines of each handler.
  */
-function isImportantCommit(data: CommitNodeData): boolean {
-  // Merge commits are always important
-  if (data.isMergeCommit) return true
-  // ECO-related commits are always important
-  if (data.changeOrderItemId || data.ecoNumber) return true
-  // Commits with tags are always important
-  if (data.tags && data.tags.length > 0) return true
-  // Initial commits are important
-  if (data.message === 'Initial commit') return true
-  // ChangeOrder commits are important - each ECO should be its own node
-  if (data.message.includes('ChangeOrder')) return true
-  return false
-}
-
-/**
- * Extract the action type from a commit message
- * Returns: 'created' | 'updated' | 'deleted' | 'other'
- */
-function extractActionType(message: string): string {
-  const lowerMsg = message.toLowerCase()
-  if (lowerMsg.includes('created') || lowerMsg.includes('added'))
-    return 'created'
-  if (lowerMsg.includes('updated') || lowerMsg.includes('modified'))
-    return 'updated'
-  if (lowerMsg.includes('deleted') || lowerMsg.includes('removed'))
-    return 'deleted'
-  return 'other'
-}
-
-/**
- * Extract the item type from a commit message (Part, Document, etc.)
- */
-function extractItemType(message: string): string {
-  // Match patterns like "Part WA-1000 created" or "Document DOC-001 updated"
-  const match = message.match(
-    /^(Part|Document|ChangeOrder|Requirement|Task)\s+/i,
-  )
-  return match?.[1] ?? 'Item'
-}
-
-/**
- * Generate a consolidated message
- */
-function generateConsolidatedMessage(
-  count: number,
-  actionType: string,
-  itemType: string,
-): string {
-  const plural = count > 1 ? 's' : ''
-  const verb =
-    actionType === 'created'
-      ? 'created'
-      : actionType === 'updated'
-        ? 'updated'
-        : actionType === 'deleted'
-          ? 'deleted'
-          : 'modified'
-  return `${count} ${itemType}${plural} ${verb}`
-}
-
-/**
- * Consolidate sequential similar commits into grouped nodes
- */
-function consolidateCommits(
-  nodes: Array<CommitGraphNode>,
-  edges: Array<CommitGraphEdge>,
-): { nodes: Array<CommitGraphNode>; edges: Array<CommitGraphEdge> } {
-  if (nodes.length < MIN_COMMITS_TO_CONSOLIDATE) {
-    return { nodes, edges }
-  }
-
-  // Sort nodes by date (oldest first) for processing
-  const sortedNodes = [...nodes].sort(
-    (a, b) => new Date(a.data.date).getTime() - new Date(b.data.date).getTime(),
-  )
-
-  // Group commits that can be consolidated
-  const consolidatedNodes: Array<CommitGraphNode> = []
-  const removedNodeIds = new Set<string>()
-  let i = 0
-
-  while (i < sortedNodes.length) {
-    // Safe: the while condition guarantees i is in bounds
-    const currentNode = sortedNodes[i]!
-
-    // If this is an important commit, don't consolidate it
-    if (isImportantCommit(currentNode.data)) {
-      consolidatedNodes.push(currentNode)
-      i++
-      continue
-    }
-
-    // Try to find consecutive commits to consolidate
-    const group: Array<CommitGraphNode> = [currentNode]
-    const currentAction = extractActionType(currentNode.data.message)
-    const currentItemType = extractItemType(currentNode.data.message)
-    const currentTime = new Date(currentNode.data.date).getTime()
-
-    let j = i + 1
-    while (j < sortedNodes.length) {
-      // Safe: the while condition guarantees j is in bounds
-      const nextNode = sortedNodes[j]!
-
-      // Stop if next commit is important
-      if (isImportantCommit(nextNode.data)) break
-
-      // Stop if different branch
-      if (nextNode.data.branchId !== currentNode.data.branchId) break
-
-      // Stop if different author
-      if (nextNode.data.author.id !== currentNode.data.author.id) break
-
-      // Stop if different action type
-      if (extractActionType(nextNode.data.message) !== currentAction) break
-
-      // Stop if different item type
-      if (extractItemType(nextNode.data.message) !== currentItemType) break
-
-      // Stop if outside time window (compare to first commit in group)
-      const nextTime = new Date(nextNode.data.date).getTime()
-      if (nextTime - currentTime > CONSOLIDATION_TIME_WINDOW_MS) break
-
-      group.push(nextNode)
-      j++
-    }
-
-    if (group.length >= MIN_COMMITS_TO_CONSOLIDATE) {
-      // Create consolidated node
-      // Safe: this branch only runs when group.length >= MIN_COMMITS_TO_CONSOLIDATE
-      const firstCommit = group[0]!
-      const lastCommit = group[group.length - 1]!
-
-      // Aggregate stats
-      const totalStats = group.reduce(
-        (acc, n) => ({
-          added: acc.added + (n.data.changeStats?.added || 0),
-          modified: acc.modified + (n.data.changeStats?.modified || 0),
-          deleted: acc.deleted + (n.data.changeStats?.deleted || 0),
-        }),
-        { added: 0, modified: 0, deleted: 0 },
-      )
-
-      const consolidatedNode: CommitGraphNode = {
-        id: `consolidated-${firstCommit.id}`,
-        type: 'commitNode',
-        position: { x: 0, y: 0 },
-        data: {
-          commitId: firstCommit.data.commitId,
-          message: generateConsolidatedMessage(
-            group.length,
-            currentAction,
-            currentItemType,
-          ),
-          author: firstCommit.data.author,
-          date: lastCommit.data.date, // Use latest date for display
-          branchId: firstCommit.data.branchId,
-          branchName: firstCommit.data.branchName,
-          branchType: firstCommit.data.branchType,
-          isMergeCommit: false,
-          changeStats: totalStats,
-          tags: [],
-          isConsolidated: true,
-          consolidatedCount: group.length,
-          consolidatedCommitIds: group.map((n) => n.data.commitId),
-          dateRangeStart: firstCommit.data.date,
-          dateRangeEnd: lastCommit.data.date,
-        },
-      }
-
-      consolidatedNodes.push(consolidatedNode)
-
-      // Mark original nodes as removed
-      for (const node of group) {
-        removedNodeIds.add(node.id)
-      }
-
-      i = j
-    } else {
-      // Not enough commits to consolidate, keep original
-      consolidatedNodes.push(currentNode)
-      i++
-    }
-  }
-
-  // Update edges to point to consolidated nodes
-  const nodeIdMapping = new Map<string, string>()
-  for (const node of consolidatedNodes) {
-    if (node.data.isConsolidated && node.data.consolidatedCommitIds) {
-      for (const originalId of node.data.consolidatedCommitIds) {
-        nodeIdMapping.set(originalId, node.id)
-      }
-    }
-  }
-
-  // Filter and remap edges
-  const consolidatedEdges: Array<CommitGraphEdge> = []
-  const seenEdges = new Set<string>()
-
-  for (const edge of edges) {
-    let sourceId = edge.source
-    let targetId = edge.target
-
-    // Skip edges between nodes that were consolidated together
-    if (removedNodeIds.has(sourceId) && removedNodeIds.has(targetId)) {
-      const newSourceId = nodeIdMapping.get(sourceId)
-      const newTargetId = nodeIdMapping.get(targetId)
-      if (newSourceId === newTargetId) continue // Same consolidated node
-    }
-
-    // Remap to consolidated node IDs
-    if (nodeIdMapping.has(sourceId)) {
-      sourceId = nodeIdMapping.get(sourceId)!
-    }
-    if (nodeIdMapping.has(targetId)) {
-      targetId = nodeIdMapping.get(targetId)!
-    }
-
-    // Skip if source or target was removed and not remapped
-    if (removedNodeIds.has(edge.source) && !nodeIdMapping.has(edge.source))
-      continue
-    if (removedNodeIds.has(edge.target) && !nodeIdMapping.has(edge.target))
-      continue
-
-    // Avoid duplicate edges
-    const edgeKey = `${sourceId}-${targetId}-${edge.data?.edgeType || 'default'}`
-    if (seenEdges.has(edgeKey)) continue
-    seenEdges.add(edgeKey)
-
-    consolidatedEdges.push({
-      ...edge,
-      id: `${sourceId}-${targetId}${edge.data?.edgeType === 'merge' ? '-merge' : ''}`,
-      source: sourceId,
-      target: targetId,
-    })
-  }
-
-  return { nodes: consolidatedNodes, edges: consolidatedEdges }
-}
-
-/**
- * Build commit graph data for visualization
- *
- * When viewing main branch: Shows main commits plus historical merged branches
- * When viewing other branch: Shows main + that branch's commits
- */
-async function buildCommitGraph(
+async function requireDesignManageOrPermission(
   designId: string,
-  selectedBranchId: string | null,
-  limit: number,
-): Promise<CommitGraphData> {
-  // 1. Get the main branch and all branches (including archived for historical reconstruction)
-  const allBranches = await DesignService.getBranches(designId, true) // Include archived
-  const mainBranch = allBranches.find((b) => b.branchType === 'main')
+  request: Request,
+  userId: string,
+  action: 'update' | 'delete',
+) {
+  const design = await DesignService.getById(designId)
+  if (!design) throw new NotFoundError('Design', designId)
 
-  if (!mainBranch) {
-    return {
-      nodes: [],
-      edges: [],
-      mainBranchId: '',
-    }
+  if (design.programId) {
+    const member = await ProgramService.getMember(design.programId, userId)
+    if (member?.canManageDesigns) return
   }
-
-  // 2. Get main branch commits
-  const mainCommits = await db
-    .select()
-    .from(commits)
-    .where(eq(commits.branchId, mainBranch.id))
-    .orderBy(desc(commits.createdAt))
-    .limit(limit)
-
-  // 3. Get selected branch commits if specified (for active branch view)
-  let branchCommits: typeof mainCommits = []
-  let selectedBranch: (typeof allBranches)[0] | null = null
-  let forkPoint: string | undefined
-
-  if (selectedBranchId && selectedBranchId !== mainBranch.id) {
-    selectedBranch = await BranchService.getById(selectedBranchId)
-    if (selectedBranch && selectedBranch.designId === designId) {
-      forkPoint = selectedBranch.baseCommitId || undefined
-
-      branchCommits = await db
-        .select()
-        .from(commits)
-        .where(eq(commits.branchId, selectedBranchId))
-        .orderBy(desc(commits.createdAt))
-        .limit(limit)
-    }
-  }
-
-  // 3b. When viewing main branch, also get all open (non-archived) ECO branches
-  const openEcoBranchCommits: typeof mainCommits = []
-  const openEcoBranchInfo = new Map<
-    string,
-    { name: string; branchType: string; baseCommitId: string | null }
-  >()
-
-  if (!selectedBranchId || selectedBranchId === mainBranch.id) {
-    // Find all non-archived ECO branches for this design
-    const openEcoBranches = allBranches.filter(
-      (b) => b.branchType === 'eco' && !b.isArchived,
-    )
-
-    for (const ecoBranch of openEcoBranches) {
-      openEcoBranchInfo.set(ecoBranch.id, {
-        name: ecoBranch.name,
-        branchType: ecoBranch.branchType,
-        baseCommitId: ecoBranch.baseCommitId,
-      })
-
-      // Get commits for this open ECO branch
-      const ecoBranchCommits = await db
-        .select()
-        .from(commits)
-        .where(eq(commits.branchId, ecoBranch.id))
-        .orderBy(desc(commits.createdAt))
-        .limit(limit)
-
-      openEcoBranchCommits.push(...ecoBranchCommits)
-    }
-  }
-
-  // 4. Find historical merged branches
-  // Look at merge commits on main and reconstruct the branches that were merged
-  // Always include these regardless of which branch is selected, so users can see
-  // the full history context including previously merged ECOs
-  const historicalBranchCommits: typeof mainCommits = []
-  const historicalBranchInfo = new Map<
-    string,
-    { name: string; branchType: string }
-  >()
-
-  // Find merge commits on main (commits with mergeParentId)
-  const mergeCommits = mainCommits.filter((c) => c.mergeParentId !== null)
-
-  if (mergeCommits.length > 0) {
-    // Get all merge parent commit IDs
-    const mergeParentIds = mergeCommits
-      .map((c) => c.mergeParentId)
-      .filter((id): id is string => id !== null)
-
-    if (mergeParentIds.length > 0) {
-      // Fetch the merge parent commits (tips of merged branches)
-      const mergeParentCommits = await db
-        .select()
-        .from(commits)
-        .where(inArray(commits.id, mergeParentIds))
-
-      // For each merge parent, trace back to find all commits in that branch
-      // until we hit a commit that's on main (the fork point)
-      for (const mergeParent of mergeParentCommits) {
-        const branchId = mergeParent.branchId
-
-        // Skip if this is somehow a main branch commit
-        if (branchId === mainBranch.id) continue
-
-        // Find the branch info
-        const branch = allBranches.find((b) => b.id === branchId)
-        if (branch) {
-          historicalBranchInfo.set(branchId, {
-            name: branch.name,
-            branchType: branch.branchType,
-          })
-        }
-
-        // Get all commits from this historical branch
-        const branchHistoryCommits = await db
-          .select()
-          .from(commits)
-          .where(eq(commits.branchId, branchId))
-          .orderBy(desc(commits.createdAt))
-
-        historicalBranchCommits.push(...branchHistoryCommits)
-      }
-    }
-  }
-
-  // 5. Collect all commits
-  const allCommits = [
-    ...mainCommits,
-    ...branchCommits,
-    ...openEcoBranchCommits,
-    ...historicalBranchCommits,
-  ]
-  // Deduplicate by commit ID
-  const uniqueCommits = Array.from(
-    new Map(allCommits.map((c) => [c.id, c])).values(),
-  )
-  const allCommitIds = uniqueCommits.map((c) => c.id)
-
-  if (allCommitIds.length === 0) {
-    return {
-      nodes: [],
-      edges: [],
-      mainBranchId: mainBranch.id,
-      selectedBranchId: selectedBranchId || undefined,
-      selectedBranchName: selectedBranch?.name,
-    }
-  }
-
-  // 6. Get tags for these commits
-  const commitTags = await db
-    .select()
-    .from(tags)
-    .where(inArray(tags.commitId, allCommitIds))
-
-  // Group tags by commit ID
-  const tagsByCommit = new Map<
-    string,
-    Array<{ id: string; name: string; tagType: string }>
-  >()
-  for (const tag of commitTags) {
-    const existing = tagsByCommit.get(tag.commitId) || []
-    existing.push({
-      id: tag.id,
-      name: tag.name,
-      tagType: tag.tagType || 'baseline',
-    })
-    tagsByCommit.set(tag.commitId, existing)
-  }
-
-  // 7. Get authors for all commits
-  const authorIds = [
-    ...new Set(uniqueCommits.map((c) => c.createdBy).filter(Boolean)),
-  ]
-  let authorMap = new Map<string, string>()
-
-  if (authorIds.length > 0) {
-    const authors = await db
-      .select({ id: users.id, name: users.name })
-      .from(users)
-      .where(inArray(users.id, authorIds))
-
-    authorMap = new Map(authors.map((a) => [a.id, a.name || 'Unknown']))
-  }
-
-  // 8. Get ECO item numbers for commits linked to change orders
-  const changeOrderIds = [
-    ...new Set(
-      uniqueCommits
-        .map((c) => c.changeOrderItemId)
-        .filter((id): id is string => id !== null),
-    ),
-  ]
-  let ecoNumberMap = new Map<string, string>()
-
-  if (changeOrderIds.length > 0) {
-    const ecoItems = await db
-      .select({ id: items.id, itemNumber: items.itemNumber })
-      .from(items)
-      .where(inArray(items.id, changeOrderIds))
-
-    ecoNumberMap = new Map(ecoItems.map((e) => [e.id, e.itemNumber]))
-  }
-
-  // 9. Build nodes
-  const nodes: Array<CommitGraphNode> = []
-  const edges: Array<CommitGraphEdge> = []
-
-  // Track commit IDs we're including (for edge filtering)
-  const includedCommitIds = new Set(allCommitIds)
-
-  for (const commit of uniqueCommits) {
-    const isMainBranch = commit.branchId === mainBranch.id
-
-    // Determine branch name and type for this commit
-    let branchName: string
-    let branchType: 'main' | 'eco' | 'workspace' | 'release'
-
-    if (isMainBranch) {
-      branchName = mainBranch.name
-      branchType = 'main'
-    } else if (selectedBranch && commit.branchId === selectedBranch.id) {
-      branchName = selectedBranch.name
-      branchType = (selectedBranch.branchType || 'eco') as
-        'eco' | 'workspace' | 'release'
-    } else {
-      // Look up from open ECO branches first, then historical branches
-      const openEcoInfo = openEcoBranchInfo.get(commit.branchId)
-      const histInfo = historicalBranchInfo.get(commit.branchId)
-      const branchInfo = openEcoInfo || histInfo
-      branchName = branchInfo?.name || 'Unknown Branch'
-      branchType = (branchInfo?.branchType || 'eco') as
-        'eco' | 'workspace' | 'release'
-    }
-
-    nodes.push({
-      id: commit.id,
-      type: 'commitNode',
-      position: { x: 0, y: 0 }, // Will be calculated by layout
-      data: {
-        commitId: commit.id,
-        message: commit.message || 'No message',
-        author: {
-          id: commit.createdBy || '',
-          name: authorMap.get(commit.createdBy || '') || 'Unknown',
-        },
-        date: commit.createdAt.toISOString(),
-        branchId: commit.branchId,
-        branchName,
-        branchType,
-        isMergeCommit: commit.mergeParentId !== null,
-        changeStats: {
-          added: commit.itemsAdded || 0,
-          modified: commit.itemsChanged || 0,
-          deleted: commit.itemsDeleted || 0,
-        },
-        tags: tagsByCommit.get(commit.id) || [],
-        changeOrderItemId: commit.changeOrderItemId || undefined,
-        ecoNumber: commit.changeOrderItemId
-          ? ecoNumberMap.get(commit.changeOrderItemId)
-          : undefined,
-        revisionsAssigned: commit.revisionsAssigned as
-          Record<string, string> | undefined,
-      },
-    })
-
-    // Parent edge (only if parent is in our set)
-    if (commit.parentId && includedCommitIds.has(commit.parentId)) {
-      edges.push({
-        id: `${commit.parentId}-${commit.id}`,
-        source: commit.parentId,
-        target: commit.id,
-        type: 'default',
-        data: { edgeType: 'parent' },
-      })
-    }
-
-    // Merge parent edge (only if merge parent is in our set)
-    if (commit.mergeParentId && includedCommitIds.has(commit.mergeParentId)) {
-      edges.push({
-        id: `${commit.mergeParentId}-${commit.id}-merge`,
-        source: commit.mergeParentId,
-        target: commit.id,
-        type: 'default',
-        data: { edgeType: 'merge' },
-        animated: true, // Dashed/animated for merge edges
-        style: { strokeDasharray: '5,5' },
-      })
-    }
-  }
-
-  // 9. Add edge from fork point to first branch commit (for selected branch)
-  if (forkPoint && selectedBranch && branchCommits.length > 0) {
-    // Find the oldest commit on the branch (closest to fork point)
-    // Safe: guarded by branchCommits.length > 0 above
-    const oldestBranchCommit = branchCommits[branchCommits.length - 1]!
-
-    // Only add if fork point is in our nodes
-    if (includedCommitIds.has(forkPoint)) {
-      // Check if edge already exists
-      const edgeId = `${forkPoint}-${oldestBranchCommit.id}`
-      if (!edges.find((e) => e.id === edgeId)) {
-        edges.push({
-          id: edgeId,
-          source: forkPoint,
-          target: oldestBranchCommit.id,
-          type: 'default',
-          data: { edgeType: 'parent' },
-        })
-      }
-    }
-  }
-
-  // 10. Add fork point edges for historical branches
-  // Connect each historical branch's first commit to its base commit on main
-  for (const [branchId] of historicalBranchInfo) {
-    const branch = allBranches.find((b) => b.id === branchId)
-    if (!branch?.baseCommitId) continue
-
-    // Find the oldest commit on this historical branch
-    const branchHistoryCommits = uniqueCommits.filter(
-      (c) => c.branchId === branchId,
-    )
-    if (branchHistoryCommits.length === 0) continue
-
-    // Sort by date ascending to find oldest (first) commit
-    const sortedCommits = [...branchHistoryCommits].sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    )
-    // Safe: guarded by branchHistoryCommits.length === 0 continue above
-    const oldestCommit = sortedCommits[0]!
-
-    // Add edge from fork point to first branch commit if not already connected
-    if (includedCommitIds.has(branch.baseCommitId)) {
-      const edgeId = `${branch.baseCommitId}-${oldestCommit.id}`
-      if (!edges.find((e) => e.id === edgeId)) {
-        edges.push({
-          id: edgeId,
-          source: branch.baseCommitId,
-          target: oldestCommit.id,
-          type: 'default',
-          data: { edgeType: 'parent' },
-        })
-      }
-    }
-  }
-
-  // 10b. Add fork point edges for open ECO branches
-  // Connect each open ECO branch's first commit to its base commit on main
-  for (const [branchId, branchInfo] of openEcoBranchInfo) {
-    if (!branchInfo.baseCommitId) continue
-
-    // Find the oldest commit on this open ECO branch
-    const ecoBranchCommits = uniqueCommits.filter(
-      (c) => c.branchId === branchId,
-    )
-    if (ecoBranchCommits.length === 0) continue
-
-    // Sort by date ascending to find oldest (first) commit
-    const sortedCommits = [...ecoBranchCommits].sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    )
-    // Safe: guarded by ecoBranchCommits.length === 0 continue above
-    const oldestCommit = sortedCommits[0]!
-
-    // Add edge from fork point to first branch commit if not already connected
-    if (includedCommitIds.has(branchInfo.baseCommitId)) {
-      const edgeId = `${branchInfo.baseCommitId}-${oldestCommit.id}`
-      if (!edges.find((e) => e.id === edgeId)) {
-        edges.push({
-          id: edgeId,
-          source: branchInfo.baseCommitId,
-          target: oldestCommit.id,
-          type: 'default',
-          data: { edgeType: 'parent' },
-        })
-      }
-    }
-  }
-
-  // 11. Consolidate sequential similar commits
-  const consolidated = consolidateCommits(nodes, edges)
-
-  return {
-    nodes: consolidated.nodes,
-    edges: consolidated.edges,
-    forkPoint,
-    mainBranchId: mainBranch.id,
-    selectedBranchId: selectedBranchId || undefined,
-    selectedBranchName: selectedBranch?.name,
-  }
+  await requirePermission(request, 'designs', action)
 }
+
+/**
+ * A new branch. Each kind needs different fields — an ECO branch needs the
+ * change order, a workspace branch a name, a release branch a name and a source
+ * tag — so this is a union on `branchType` rather than one object of optionals
+ * checked three times inside the handler.
+ */
+const createBranchSchema = z.discriminatedUnion('branchType', [
+  z.object({
+    branchType: z.literal('eco'),
+    changeOrderItemId: z.string().uuid(),
+  }),
+  z.object({
+    branchType: z.literal('workspace'),
+    name: z.string().min(1).max(200),
+  }),
+  z.object({
+    branchType: z.literal('release'),
+    name: z.string().min(1).max(200),
+    sourceTagId: z.string().uuid(),
+  }),
+])
+
+/**
+ * Pulling a cross-design reference in. Either `refId` (the legacy single-XREF
+ * form) or a non-empty `itemIds` chain — the handler used to check that with
+ * an `if`, which is what a union says better.
+ */
+const pullInCrossReferenceSchema = z
+  .object({
+    refId: z.string().uuid().optional(),
+    branchId: z.string().uuid().nullish(),
+    suffixItemNumber: z.boolean().optional(),
+    itemIds: z.array(z.string().uuid()).max(1000).optional(),
+    parentBomRelationshipId: z.string().uuid().nullish(),
+  })
+  .refine((v) => Boolean(v.refId) || (v.itemIds?.length ?? 0) > 0, {
+    message: 'Either refId or itemIds is required',
+    path: ['itemIds'],
+  })
+
+const createCrossReferenceSchema = z.object({
+  referencedItemId: z.string().uuid(),
+  branchId: z.string().uuid().nullish(),
+  notes: z.string().max(5000).optional(),
+})
 
 const app = new Hono()
 
@@ -775,14 +181,37 @@ const app = new Hono()
 // =============================================
 
 // GET /api/designs/families
+//
+// The family picker's feed. Naming a program is a program-scoped read — the
+// same gate `GET /api/v1/change-orders` and `GET /api/v1/work-orders` make for
+// their own `?programId=` filters — and the result is bounded by the caller's
+// accessible designs either way, so the program-less branch is scoped too.
+// Until this landed the handler passed the query string's programId straight
+// to the service with no membership check, so any authenticated caller could
+// read any program's family designs by naming its id.
+//
+// Refusing rather than returning an empty list is safe here for the reason the
+// `?programId=` gates elsewhere are: `canAccessProgram` answers false for a
+// program that does not exist exactly as it does for one the caller is not a
+// member of, so the 403 confirms nothing about which ids are real.
 app.get(
   '/families',
   adapt(
-    apiHandler({}, async ({ request }) => {
+    apiHandler({}, async ({ request, user }) => {
       const url = new URL(request.url, 'http://localhost')
       const programId = url.searchParams.get('programId')
 
-      const families = await DesignService.getAvailableFamilies(programId)
+      if (
+        programId &&
+        !(await AccessControlService.canAccessProgram(user.id, programId))
+      ) {
+        throw new PermissionDeniedError('program designs', 'read')
+      }
+
+      const families = await DesignService.getAvailableFamilies(
+        programId,
+        await AccessControlService.getAccessibleDesignIds(user.id),
+      )
 
       return { families }
     }),
@@ -951,6 +380,7 @@ app.post(
   adapt(
     apiHandler(
       {
+        body: designCreateSchema,
         openapi: {
           summary: 'Create a design',
           description:
@@ -958,15 +388,12 @@ app.post(
             'their membership of that program (or cross-program authority). ' +
             'Without one, the global `designs:create` permission. Creating a ' +
             'design also creates its `main` branch and initial commit.',
-          request: { body: { schema: designCreateSchema } },
           responses: {
             201: { schema: z.object({ design: designResponseSchema }) },
           },
         },
       },
-      async ({ request, user }) => {
-        const data = await request.json()
-
+      async ({ body: data, request, user }) => {
         // If programId is provided, check user has permission in that program
         // (canManageDesigns member flag, or the cross-program bypass — this
         // endpoint used to lack the bypass its sibling create endpoint has).
@@ -1176,25 +603,22 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ params, request, user }) => {
-      const { id: designId } = params
-      const design = await DesignService.getById(designId)
-      if (!design) throw new NotFoundError('Design', designId)
-
-      // Check permission
-      if (design.programId) {
-        const member = await ProgramService.getMember(design.programId, user.id)
-        if (!member || !member.canManageDesigns) {
-          await requirePermission(request, 'designs', 'update')
-        }
-      } else {
-        await requirePermission(request, 'designs', 'update')
-      }
-
-      const data = await request.json()
-      const updated = await DesignService.update(designId, data, user.id)
-      return { design: updated }
-    }),
+    apiHandler<{ id: string }, z.infer<typeof designUpdateSchema>>(
+      {
+        access: ({ params, request, user }) =>
+          requireDesignManageOrPermission(
+            params.id,
+            request,
+            user.id,
+            'update',
+          ),
+        body: designUpdateSchema,
+      },
+      async ({ params, body, user }) => {
+        const updated = await DesignService.update(params.id, body, user.id)
+        return { design: updated }
+      },
+    ),
   ),
 )
 
@@ -1325,65 +749,51 @@ app.get(
 app.post(
   '/:id/branches',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const { id: designId } = params
-      const design = await DesignService.getById(designId)
-      if (!design) {
-        throw new NotFoundError('Design', designId)
-      }
+    apiHandler<{ id: string }, z.infer<typeof createBranchSchema>>(
+      {
+        access: async ({ params, user }) => {
+          const design = await DesignService.getById(params.id)
+          if (!design) throw new NotFoundError('Design', params.id)
+          await requireDesignAccess(user.id, params.id)
+        },
+        body: createBranchSchema,
+      },
+      async ({ params, body: data, user }) => {
+        const designId = params.id
 
-      await requireDesignAccess(user.id, designId)
-
-      const data = await request.json()
-
-      let branch
-      switch (data.branchType) {
-        case 'eco':
-          if (!data.changeOrderItemId) {
-            throw new ValidationError(
-              'changeOrderItemId is required for ECO branches',
+        // The discriminated union already guarantees each arm's own fields;
+        // three sequential "X is required for Y branches" throws are gone.
+        let branch
+        switch (data.branchType) {
+          case 'eco':
+            branch = await BranchService.createEcoBranch(
+              designId,
+              data.changeOrderItemId,
+              user.id,
             )
-          }
-          branch = await BranchService.createEcoBranch(
-            designId,
-            data.changeOrderItemId,
-            user.id,
-          )
-          break
+            break
 
-        case 'workspace':
-          if (!data.name) {
-            throw new ValidationError('name is required for workspace branches')
-          }
-          branch = await BranchService.createWorkspaceBranch(
-            designId,
-            user.id,
-            data.name,
-          )
-          break
-
-        case 'release':
-          if (!data.name || !data.sourceTagId) {
-            throw new ValidationError(
-              'name and sourceTagId are required for release branches',
+          case 'workspace':
+            branch = await BranchService.createWorkspaceBranch(
+              designId,
+              user.id,
+              data.name,
             )
-          }
-          branch = await BranchService.createReleaseBranch(
-            designId,
-            data.name,
-            data.sourceTagId,
-            user.id,
-          )
-          break
+            break
 
-        default:
-          throw new ValidationError(
-            'Invalid branchType. Must be eco, workspace, or release',
-          )
-      }
+          case 'release':
+            branch = await BranchService.createReleaseBranch(
+              designId,
+              data.name,
+              data.sourceTagId,
+              user.id,
+            )
+            break
+        }
 
-      return created({ branch })
-    }),
+        return created({ branch })
+      },
+    ),
   ),
 )
 
@@ -1391,73 +801,74 @@ app.post(
 app.post(
   '/:id/clone',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const { id: designId } = params
-      // Validate source design exists
-      const sourceDesign = await DesignService.getById(designId)
-      if (!sourceDesign) {
-        throw new NotFoundError('Design', designId)
-      }
+    apiHandler<{ id: string }, z.infer<typeof cloneInputSchema>>(
+      { body: cloneInputSchema },
+      async ({ body, params, user }) => {
+        const { id: designId } = params
+        // Validate source design exists
+        const sourceDesign = await DesignService.getById(designId)
+        if (!sourceDesign) {
+          throw new NotFoundError('Design', designId)
+        }
 
-      // Check read access to source design
-      await requireDesignAccess(user.id, designId)
+        // Check read access to source design
+        await requireDesignAccess(user.id, designId)
 
-      // Parse and validate input
-      const body = await request.json()
-      const input = cloneInputSchema.parse(body)
+        const input = body
 
-      // Determine target program
-      const targetProgramId = input.programId ?? sourceDesign.programId
+        // Determine target program
+        const targetProgramId = input.programId ?? sourceDesign.programId
 
-      // Check create permission in target program
-      if (targetProgramId) {
-        const hasBypass = await AccessControlService.hasCrossProgramAccess(
-          user.id,
-        )
-        if (!hasBypass) {
-          const member = await ProgramService.getMember(
-            targetProgramId,
+        // Check create permission in target program
+        if (targetProgramId) {
+          const hasBypass = await AccessControlService.hasCrossProgramAccess(
             user.id,
           )
-          if (!member || !member.canManageDesigns) {
-            throw new PermissionDeniedError('design', 'create')
+          if (!hasBypass) {
+            const member = await ProgramService.getMember(
+              targetProgramId,
+              user.id,
+            )
+            if (!member || !member.canManageDesigns) {
+              throw new PermissionDeniedError('design', 'create')
+            }
           }
         }
-      }
 
-      // Check for duplicate code
-      const existing = await DesignService.getByCode(input.code)
-      if (existing) {
-        throw new ValidationError('Design code already exists', undefined, {
-          field: 'code',
-        })
-      }
+        // Check for duplicate code
+        const existing = await DesignService.getByCode(input.code)
+        if (existing) {
+          throw new ValidationError('Design code already exists', undefined, {
+            field: 'code',
+          })
+        }
 
-      // Cannot clone family or library designs
-      if (sourceDesign.designType !== 'Engineering') {
-        throw new ValidationError(
-          `Cannot clone ${sourceDesign.designType} designs`,
+        // Cannot clone family or library designs
+        if (sourceDesign.designType !== 'Engineering') {
+          throw new ValidationError(
+            `Cannot clone ${sourceDesign.designType} designs`,
+          )
+        }
+
+        // Submit clone job
+        const job = await JobService.submit(
+          'design.clone',
+          {
+            sourceDesignId: designId,
+            targetCode: input.code,
+            targetName: input.name,
+            targetDescription: input.description,
+            targetProgramId: targetProgramId,
+            userId: user.id,
+            suffixItemNumbers: input.suffixItemNumbers,
+          },
+          user.id,
+          { priority: 'high' },
         )
-      }
 
-      // Submit clone job
-      const job = await JobService.submit(
-        'design.clone',
-        {
-          sourceDesignId: designId,
-          targetCode: input.code,
-          targetName: input.name,
-          targetDescription: input.description,
-          targetProgramId: targetProgramId,
-          userId: user.id,
-          suffixItemNumbers: input.suffixItemNumbers,
-        },
-        user.id,
-        { priority: 'high' },
-      )
-
-      return jsonResponse({ jobId: job.id }, 202)
-    }),
+        return jsonResponse({ jobId: job.id }, 202)
+      },
+    ),
   ),
 )
 
@@ -1492,223 +903,221 @@ app.get(
 app.post(
   '/:id/cross-references',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const { id: designId } = params
-      const design = await DesignService.getById(designId)
-      if (!design) {
-        throw new NotFoundError('Design', designId)
-      }
-
-      await requireDesignAccess(user.id, designId)
-
-      const body = await request.json()
-      const {
-        refId,
-        branchId,
-        suffixItemNumber,
-        itemIds,
-        parentBomRelationshipId,
-      } = body
-
-      // Validate: need either refId (legacy) or itemIds (chain)
-      if (!refId && (!itemIds || itemIds.length === 0)) {
-        throw new ValidationError('Either refId or itemIds is required')
-      }
-
-      // If branchId is provided, validate it exists
-      if (branchId) {
-        const branch = await BranchService.getById(branchId)
-        if (!branch) {
-          throw new NotFoundError('Branch', branchId)
+    apiHandler<{ id: string }, z.infer<typeof pullInCrossReferenceSchema>>(
+      { body: pullInCrossReferenceSchema },
+      async ({ body, params, user }) => {
+        const { id: designId } = params
+        const design = await DesignService.getById(designId)
+        if (!design) {
+          throw new NotFoundError('Design', designId)
         }
-      }
 
-      // If refId provided, pull in the XREF record (remove cross-design reference)
-      // pullInReference returns null if the reference was already removed (idempotent)
-      let referencedItemId: string | undefined
-      if (refId) {
-        const pullInResult = await CrossDesignReferenceService.pullInReference(
+        await requireDesignAccess(user.id, designId)
+
+        const {
           refId,
-          branchId || null,
-          user.id,
-        )
-        referencedItemId = pullInResult?.referencedItemId
-      }
+          branchId,
+          suffixItemNumber,
+          itemIds,
+          parentBomRelationshipId,
+        } = body
 
-      // Determine the list of items to pull in
-      // Chain mode: itemIds provided (topmost ancestor first, target last)
-      // Legacy mode: just the single referenced item
-      const chainItemIds: Array<string> =
-        itemIds ?? (referencedItemId ? [referencedItemId] : [])
-
-      if (chainItemIds.length === 0) {
-        throw new ValidationError('No items to pull in')
-      }
-
-      // Fetch all chain items and assert IDs exist (items from DB always have IDs)
-      const chainItems = await Promise.all(
-        chainItemIds.map(async (id: string) => {
-          const item = await ItemService.findById(id)
-          if (!item || !item.id) throw new NotFoundError('Item', id)
-          return item
-        }),
-      )
-
-      const result = await db.transaction(async (tx) => {
-        const targetMainBranch = await BranchService.getMainBranch(designId)
-        if (!targetMainBranch) {
-          throw new ValidationError('Target design has no main branch')
+        // If branchId is provided, validate it exists
+        if (branchId) {
+          const branch = await BranchService.getById(branchId)
+          if (!branch) {
+            throw new NotFoundError('Branch', branchId)
+          }
         }
 
-        // Create usage copies for each item in the chain
-        const usageCopyMap = new Map<string, string>() // originalItemId -> usageCopyId
-        const createdUsages: Array<{ id: string; masterId: string }> = []
-
-        for (const chainItem of chainItems) {
-          // Check if a usage already exists for this item in this design
-          const existingUsages = await UsageService.getUsagesOfDefinition(
-            chainItem.id,
-            {
-              designId: designId,
-            },
-          )
-
-          if (existingUsages.length > 0) {
-            // Safe: guarded by existingUsages.length > 0
-            usageCopyMap.set(chainItem.id, existingUsages[0]!.id)
-          } else {
-            const overrides: { itemNumber?: string } = {}
-            if (suffixItemNumber && design.code) {
-              overrides.itemNumber = `${chainItem.itemNumber}-${design.code}`
-            }
-
-            const usageResult = await UsageService.createUsage(
-              {
-                definitionId: chainItem.id,
-                targetDesignId: designId,
-                ...(overrides.itemNumber ? { overrides } : {}),
-              },
+        // If refId provided, pull in the XREF record (remove cross-design reference)
+        // pullInReference returns null if the reference was already removed (idempotent)
+        let referencedItemId: string | undefined
+        if (refId) {
+          const pullInResult =
+            await CrossDesignReferenceService.pullInReference(
+              refId,
+              branchId || null,
               user.id,
-              tx,
+            )
+          referencedItemId = pullInResult?.referencedItemId
+        }
+
+        // Determine the list of items to pull in
+        // Chain mode: itemIds provided (topmost ancestor first, target last)
+        // Legacy mode: just the single referenced item
+        const chainItemIds: Array<string> =
+          itemIds ?? (referencedItemId ? [referencedItemId] : [])
+
+        if (chainItemIds.length === 0) {
+          throw new ValidationError('No items to pull in')
+        }
+
+        // Fetch all chain items and assert IDs exist (items from DB always have IDs)
+        const chainItems = await Promise.all(
+          chainItemIds.map(async (id: string) => {
+            const item = await ItemService.findById(id)
+            if (!item || !item.id) throw new NotFoundError('Item', id)
+            return item
+          }),
+        )
+
+        const result = await db.transaction(async (tx) => {
+          const targetMainBranch = await BranchService.getMainBranch(designId)
+          if (!targetMainBranch) {
+            throw new ValidationError('Target design has no main branch')
+          }
+
+          // Create usage copies for each item in the chain
+          const usageCopyMap = new Map<string, string>() // originalItemId -> usageCopyId
+          const createdUsages: Array<{ id: string; masterId: string }> = []
+
+          for (const chainItem of chainItems) {
+            // Check if a usage already exists for this item in this design
+            const existingUsages = await UsageService.getUsagesOfDefinition(
+              chainItem.id,
+              {
+                designId: designId,
+              },
             )
 
-            usageCopyMap.set(chainItem.id, usageResult.usage.id)
-            createdUsages.push(usageResult.usage)
+            if (existingUsages.length > 0) {
+              // Safe: guarded by existingUsages.length > 0
+              usageCopyMap.set(chainItem.id, existingUsages[0]!.id)
+            } else {
+              const overrides: { itemNumber?: string } = {}
+              if (suffixItemNumber && design.code) {
+                overrides.itemNumber = `${chainItem.itemNumber}-${design.code}`
+              }
 
-            await tx.insert(branchItems).values({
-              branchId: targetMainBranch.id,
-              itemMasterId: usageResult.usage.masterId,
-              currentItemId: usageResult.usage.id,
-              baseItemId: usageResult.usage.id,
-              changeType: null,
-            })
+              const usageResult = await UsageService.createUsage(
+                {
+                  definitionId: chainItem.id,
+                  targetDesignId: designId,
+                  ...(overrides.itemNumber ? { overrides } : {}),
+                },
+                user.id,
+                tx,
+              )
+
+              usageCopyMap.set(chainItem.id, usageResult.usage.id)
+              createdUsages.push(usageResult.usage)
+
+              await tx.insert(branchItems).values({
+                branchId: targetMainBranch.id,
+                itemMasterId: usageResult.usage.masterId,
+                currentItemId: usageResult.usage.id,
+                baseItemId: usageResult.usage.id,
+                changeType: null,
+              })
+            }
           }
-        }
 
-        let relationshipsCreated = 0
-        const chainItemIdSet = new Set(chainItemIds)
+          let relationshipsCreated = 0
+          const chainItemIdSet = new Set(chainItemIds)
 
-        // Find all BOM relationships between chain items (handles any topology: linear, star, etc.)
-        const intraChainRels = await db
-          .select()
-          .from(itemRelationships)
-          .where(
-            and(
-              inArray(itemRelationships.sourceId, chainItemIds),
-              inArray(itemRelationships.targetId, chainItemIds),
-              eq(itemRelationships.relationshipType, 'BOM'),
-            ),
-          )
-
-        for (const rel of intraChainRels) {
-          const parentUsageId = usageCopyMap.get(rel.sourceId)
-          const childUsageId = usageCopyMap.get(rel.targetId)
-          if (parentUsageId && childUsageId) {
-            await tx.insert(itemRelationships).values({
-              sourceId: parentUsageId,
-              targetId: childUsageId,
-              relationshipType: rel.relationshipType,
-              quantity: rel.quantity,
-              findNumber: rel.findNumber,
-              referenceDesignator: rel.referenceDesignator,
-              metadata: rel.metadata,
-              isComposite: rel.isComposite,
-              isDirected: rel.isDirected,
-              multiplicityLower: rel.multiplicityLower,
-              multiplicityUpper: rel.multiplicityUpper,
-              usageAttributes: rel.usageAttributes,
-              createdBy: user.id,
-              modifiedBy: user.id,
-            })
-            relationshipsCreated++
-          }
-        }
-
-        // For each chain item, create BOM rels from its usage copy to non-chain children
-        // (these point to the original external items, not usage copies)
-        for (const chainItemId of chainItemIds) {
-          const usageId = usageCopyMap.get(chainItemId)!
-
-          const allChildRels = await db
+          // Find all BOM relationships between chain items (handles any topology: linear, star, etc.)
+          const intraChainRels = await db
             .select()
             .from(itemRelationships)
             .where(
               and(
-                eq(itemRelationships.sourceId, chainItemId),
+                inArray(itemRelationships.sourceId, chainItemIds),
+                inArray(itemRelationships.targetId, chainItemIds),
                 eq(itemRelationships.relationshipType, 'BOM'),
               ),
             )
 
-          for (const rel of allChildRels) {
-            // Skip children that are part of the chain (already handled above)
-            if (chainItemIdSet.has(rel.targetId)) continue
-
-            await tx.insert(itemRelationships).values({
-              sourceId: usageId,
-              targetId: rel.targetId,
-              relationshipType: rel.relationshipType,
-              quantity: rel.quantity,
-              findNumber: rel.findNumber,
-              referenceDesignator: rel.referenceDesignator,
-              metadata: rel.metadata,
-              isComposite: rel.isComposite,
-              isDirected: rel.isDirected,
-              multiplicityLower: rel.multiplicityLower,
-              multiplicityUpper: rel.multiplicityUpper,
-              usageAttributes: rel.usageAttributes,
-              createdBy: user.id,
-              modifiedBy: user.id,
-            })
-            relationshipsCreated++
-          }
-        }
-
-        // If parentBomRelationshipId provided, update that BOM rel to point to
-        // the topmost chain item's usage copy
-        if (parentBomRelationshipId) {
-          // Safe: chainItemIds is non-empty (validated above)
-          const topmostUsageId = usageCopyMap.get(chainItemIds[0]!)
-          if (topmostUsageId) {
-            await tx
-              .update(itemRelationships)
-              .set({
-                targetId: topmostUsageId,
+          for (const rel of intraChainRels) {
+            const parentUsageId = usageCopyMap.get(rel.sourceId)
+            const childUsageId = usageCopyMap.get(rel.targetId)
+            if (parentUsageId && childUsageId) {
+              await tx.insert(itemRelationships).values({
+                sourceId: parentUsageId,
+                targetId: childUsageId,
+                relationshipType: rel.relationshipType,
+                quantity: rel.quantity,
+                findNumber: rel.findNumber,
+                referenceDesignator: rel.referenceDesignator,
+                metadata: rel.metadata,
+                isComposite: rel.isComposite,
+                isDirected: rel.isDirected,
+                multiplicityLower: rel.multiplicityLower,
+                multiplicityUpper: rel.multiplicityUpper,
+                usageAttributes: rel.usageAttributes,
+                createdBy: user.id,
                 modifiedBy: user.id,
               })
-              .where(eq(itemRelationships.id, parentBomRelationshipId))
-            relationshipsCreated++
+              relationshipsCreated++
+            }
           }
+
+          // For each chain item, create BOM rels from its usage copy to non-chain children
+          // (these point to the original external items, not usage copies)
+          for (const chainItemId of chainItemIds) {
+            const usageId = usageCopyMap.get(chainItemId)!
+
+            const allChildRels = await db
+              .select()
+              .from(itemRelationships)
+              .where(
+                and(
+                  eq(itemRelationships.sourceId, chainItemId),
+                  eq(itemRelationships.relationshipType, 'BOM'),
+                ),
+              )
+
+            for (const rel of allChildRels) {
+              // Skip children that are part of the chain (already handled above)
+              if (chainItemIdSet.has(rel.targetId)) continue
+
+              await tx.insert(itemRelationships).values({
+                sourceId: usageId,
+                targetId: rel.targetId,
+                relationshipType: rel.relationshipType,
+                quantity: rel.quantity,
+                findNumber: rel.findNumber,
+                referenceDesignator: rel.referenceDesignator,
+                metadata: rel.metadata,
+                isComposite: rel.isComposite,
+                isDirected: rel.isDirected,
+                multiplicityLower: rel.multiplicityLower,
+                multiplicityUpper: rel.multiplicityUpper,
+                usageAttributes: rel.usageAttributes,
+                createdBy: user.id,
+                modifiedBy: user.id,
+              })
+              relationshipsCreated++
+            }
+          }
+
+          // If parentBomRelationshipId provided, update that BOM rel to point to
+          // the topmost chain item's usage copy
+          if (parentBomRelationshipId) {
+            // Safe: chainItemIds is non-empty (validated above)
+            const topmostUsageId = usageCopyMap.get(chainItemIds[0]!)
+            if (topmostUsageId) {
+              await tx
+                .update(itemRelationships)
+                .set({
+                  targetId: topmostUsageId,
+                  modifiedBy: user.id,
+                })
+                .where(eq(itemRelationships.id, parentBomRelationshipId))
+              relationshipsCreated++
+            }
+          }
+
+          return { items: createdUsages, relationshipsCreated }
+        })
+
+        return {
+          pulledIn: true,
+          items: result.items,
+          relationshipsCreated: result.relationshipsCreated,
         }
-
-        return { items: createdUsages, relationshipsCreated }
-      })
-
-      return {
-        pulledIn: true,
-        items: result.items,
-        relationshipsCreated: result.relationshipsCreated,
-      }
-    }),
+      },
+    ),
   ),
 )
 
@@ -1716,34 +1125,32 @@ app.post(
 app.put(
   '/:id/cross-references',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const { id: designId } = params
-      const design = await DesignService.getById(designId)
-      if (!design) {
-        throw new NotFoundError('Design', designId)
-      }
+    apiHandler<{ id: string }, z.infer<typeof createCrossReferenceSchema>>(
+      { body: createCrossReferenceSchema },
+      async ({ body, params, user }) => {
+        const { id: designId } = params
+        const design = await DesignService.getById(designId)
+        if (!design) {
+          throw new NotFoundError('Design', designId)
+        }
 
-      await requireDesignAccess(user.id, designId)
+        await requireDesignAccess(user.id, designId)
 
-      const body = await request.json()
-      const { referencedItemId, branchId: inputBranchId, notes } = body
+        const { referencedItemId, branchId: inputBranchId, notes } = body
 
-      if (!referencedItemId) {
-        throw new ValidationError('referencedItemId is required')
-      }
+        const ref = await CrossDesignReferenceService.createReference(
+          {
+            referencingDesignId: designId,
+            referencedItemId,
+            branchId: inputBranchId || null,
+            notes,
+          },
+          user.id,
+        )
 
-      const ref = await CrossDesignReferenceService.createReference(
-        {
-          referencingDesignId: designId,
-          referencedItemId,
-          branchId: inputBranchId || null,
-          notes,
-        },
-        user.id,
-      )
-
-      return { reference: ref }
-    }),
+        return { reference: ref }
+      },
+    ),
   ),
 )
 
@@ -1897,6 +1304,18 @@ app.get(
 )
 
 // GET /api/designs/:id/history/graph
+/**
+ * Query params for the commit graph.
+ *
+ * `limit` reaches buildCommitGraph's commit query directly, and was
+ * `parseInt(... || '50', 10)` — so `?limit=abc` passed NaN into a LIMIT clause
+ * and `?limit=100000` was honoured. The UI only ever asks for 50.
+ */
+const commitGraphQuerySchema = z.object({
+  branchId: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(500).default(50),
+})
+
 app.get(
   '/:id/history/graph',
   adapt(
@@ -1910,13 +1329,11 @@ app.get(
       // Check access via design access control (handles the cross-program bypass)
       await requireDesignAccess(user.id, design.id)
 
-      // Parse query params
-      const url = new URL(request.url, 'http://localhost')
-      const selectedBranchId = url.searchParams.get('branchId')
-      const limit = parseInt(url.searchParams.get('limit') || '50', 10)
+      const { branchId, limit } = parseQuery(request, commitGraphQuerySchema)
+      const selectedBranchId = branchId ?? null
 
       // Build the graph data
-      const graphData = await buildCommitGraph(
+      const graphData = await CommitGraphService.buildCommitGraph(
         designId,
         selectedBranchId,
         limit,
@@ -2004,11 +1421,12 @@ app.get(
         }
 
         if (search) {
+          // ILIKE, not LIKE: the historical view of this same endpoint goes
+          // through VersionResolver, which is case-insensitive. The two paths
+          // disagreed until now.
+          const pattern = likeContains(search)
           conditions.push(
-            or(
-              like(items.itemNumber, `%${search}%`),
-              like(items.name, `%${search}%`),
-            )!,
+            or(ilike(items.itemNumber, pattern), ilike(items.name, pattern))!,
           )
         }
 
@@ -2053,252 +1471,75 @@ app.get(
   ),
 )
 
+/** Body of POST /designs/:id/items — add an item to a design. */
+const designItemAddSchema = z.object({
+  itemId: z.string().uuid(),
+  mode: z.enum(['usage_copy', 'cross_design_ref']).default('usage_copy'),
+  suffixItemNumber: z.boolean().optional(),
+  branchId: z.string().uuid().optional(),
+})
+
 // POST /api/designs/:id/items
 app.post(
   '/:id/items',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const { id: designId } = params
-      const design = await DesignService.getById(designId)
-      if (!design) {
-        throw new NotFoundError('Design', designId)
-      }
+    apiHandler<{ id: string }, z.infer<typeof designItemAddSchema>>(
+      { body: designItemAddSchema },
+      async ({ params, user, body }) => {
+        const { id: designId } = params
+        const design = await DesignService.getById(designId)
+        if (!design) {
+          throw new NotFoundError('Design', designId)
+        }
 
-      await requireDesignAccess(user.id, designId)
+        await requireDesignAccess(user.id, designId)
 
-      const body = await request.json()
-      const {
-        itemId,
-        suffixItemNumber,
-        mode = 'usage_copy',
-        branchId: bodyBranchId,
-      } = body
+        const { itemId, suffixItemNumber, mode, branchId } = body
 
-      if (!itemId) {
-        throw new ValidationError('itemId is required')
-      }
+        // Verify the root item exists
+        const rootItem = await ItemService.findById(itemId)
+        if (!rootItem) {
+          throw new NotFoundError('Item', itemId)
+        }
 
-      // Verify the root item exists
-      const rootItem = await ItemService.findById(itemId)
-      if (!rootItem) {
-        throw new NotFoundError('Item', itemId)
-      }
+        // Cross-design reference mode: a lightweight link instead of a copy
+        if (mode === 'cross_design_ref') {
+          const ref = await CrossDesignReferenceService.createReference(
+            {
+              referencingDesignId: designId,
+              referencedItemId: itemId,
+              branchId: branchId ?? null,
+            },
+            user.id,
+          )
+          return {
+            reference: {
+              id: ref.id,
+              referencedItemId: ref.referencedItemId,
+              sourceDesignId: ref.sourceDesignId,
+            },
+          }
+        }
 
-      // Cross-design reference mode: create a lightweight link instead of copying
-      if (mode === 'cross_design_ref') {
-        const ref = await CrossDesignReferenceService.createReference(
+        // Usage-copy mode (default): the whole multi-entity write lives in
+        // the service — one transaction over usage creation, branch tracking,
+        // and BOM-edge remapping.
+        const result = await UsageService.createUsageSubtree(
           {
-            referencingDesignId: designId,
-            referencedItemId: itemId,
-            branchId: bodyBranchId || null,
+            rootItemId: itemId,
+            targetDesignId: designId,
+            suffixItemNumber,
+            branchId,
           },
           user.id,
         )
+
         return {
-          reference: {
-            id: ref.id,
-            referencedItemId: ref.referencedItemId,
-            sourceDesignId: ref.sourceDesignId,
-          },
+          items: result.items,
+          relationshipsCreated: result.relationshipsCreated,
         }
-      }
-
-      // Usage-copy mode (default): duplicate item and BOM subtree
-
-      // Check if a usage of the root item already exists in this design
-      const existingRootUsages = await UsageService.getUsagesOfDefinition(
-        itemId,
-        { designId: designId },
-      )
-      if (existingRootUsages.length > 0) {
-        throw new ValidationError(
-          `A usage of ${rootItem.itemNumber} already exists in this design`,
-        )
-      }
-
-      // =====================================================================
-      // Step 1: Collect BOM subtree via BFS
-      // =====================================================================
-      const visited = new Set<string>()
-      const queue: Array<string> = [itemId]
-      const subtreeItemIds: Array<string> = []
-      const bomRelationships: Array<typeof itemRelationships.$inferSelect> = []
-
-      while (queue.length > 0) {
-        const currentId = queue.shift()!
-        if (visited.has(currentId)) continue
-        visited.add(currentId)
-        subtreeItemIds.push(currentId)
-
-        // Get BOM children of this item
-        const childRels = await db
-          .select()
-          .from(itemRelationships)
-          .where(
-            and(
-              eq(itemRelationships.sourceId, currentId),
-              eq(itemRelationships.relationshipType, 'BOM'),
-            ),
-          )
-
-        for (const rel of childRels) {
-          bomRelationships.push(rel)
-          if (!visited.has(rel.targetId)) {
-            queue.push(rel.targetId)
-          }
-        }
-      }
-
-      // Load full item records for all subtree items
-      const subtreeItems =
-        subtreeItemIds.length > 0
-          ? await db
-              .select()
-              .from(items)
-              .where(inArray(items.id, subtreeItemIds))
-          : []
-
-      // Validate suffixed item numbers won't exceed column length
-      if (suffixItemNumber && design.code) {
-        const suffix = `-${design.code}`
-        const tooLong = subtreeItems.filter(
-          (item) => item.itemNumber.length + suffix.length > 100,
-        )
-        if (tooLong.length > 0) {
-          throw new ValidationError(
-            `${tooLong.length} item number(s) would exceed 100 characters when suffixed (e.g., "${tooLong[0]!.itemNumber}${suffix}")`,
-          )
-        }
-      }
-
-      // =====================================================================
-      // Step 2: Create usages in a transaction
-      // =====================================================================
-      const txResult = await db.transaction(async (tx) => {
-        // When a branchId is provided (ECO branch), use it directly;
-        // otherwise fall back to the design's main branch
-        let trackingBranchId: string
-        let isEcoBranch = false
-
-        if (bodyBranchId) {
-          trackingBranchId = bodyBranchId
-          isEcoBranch = true
-        } else {
-          const targetMainBranch = await BranchService.getMainBranch(designId)
-          if (!targetMainBranch) {
-            throw new ValidationError('Target design has no main branch')
-          }
-          trackingBranchId = targetMainBranch.id
-        }
-
-        const itemIdMap = new Map<string, string>() // sourceItemId -> newUsageId
-        const createdUsages: Array<typeof items.$inferSelect> = []
-
-        for (const sourceItem of subtreeItems) {
-          // Check if a usage of this item already exists in the target design
-          // (for subtree children that may already be present)
-          const existingUsages = await UsageService.getUsagesOfDefinition(
-            sourceItem.id,
-            {
-              designId: designId,
-            },
-          )
-
-          if (existingUsages.length > 0) {
-            // Already exists — use the existing usage ID for relationship remapping
-            // Safe: guarded by existingUsages.length > 0
-            itemIdMap.set(sourceItem.id, existingUsages[0]!.id)
-            continue
-          }
-
-          // Compute overrides
-          const overrides: { itemNumber?: string } = {}
-          if (suffixItemNumber && design.code) {
-            overrides.itemNumber = `${sourceItem.itemNumber}-${design.code}`
-          }
-
-          // Create usage
-          const usageResult = await UsageService.createUsage(
-            {
-              definitionId: sourceItem.id,
-              targetDesignId: designId,
-              ...(overrides.itemNumber ? { overrides } : {}),
-            },
-            user.id,
-            tx,
-          )
-
-          itemIdMap.set(sourceItem.id, usageResult.usage.id)
-          createdUsages.push(usageResult.usage)
-
-          // Track on the appropriate branch
-          await tx.insert(branchItems).values({
-            branchId: trackingBranchId,
-            itemMasterId: usageResult.usage.masterId,
-            currentItemId: usageResult.usage.id,
-            baseItemId: usageResult.usage.id,
-            changeType: isEcoBranch ? 'added' : null,
-          })
-        }
-
-        // ===================================================================
-        // Step 3: Copy BOM relationships with remapped IDs
-        // ===================================================================
-        let relationshipsCreated = 0
-
-        for (const rel of bomRelationships) {
-          const newSourceId = itemIdMap.get(rel.sourceId)
-          const newTargetId = itemIdMap.get(rel.targetId)
-
-          if (newSourceId && newTargetId) {
-            // Both ends are in the subtree — remap to new usage IDs
-            await tx.insert(itemRelationships).values({
-              sourceId: newSourceId,
-              targetId: newTargetId,
-              relationshipType: rel.relationshipType,
-              quantity: rel.quantity,
-              findNumber: rel.findNumber,
-              referenceDesignator: rel.referenceDesignator,
-              metadata: rel.metadata,
-              isComposite: rel.isComposite,
-              isDirected: rel.isDirected,
-              multiplicityLower: rel.multiplicityLower,
-              multiplicityUpper: rel.multiplicityUpper,
-              usageAttributes: rel.usageAttributes,
-              createdBy: user.id,
-              modifiedBy: user.id,
-            })
-            relationshipsCreated++
-          } else if (newSourceId && !newTargetId) {
-            // Target is external (e.g., library item) — preserve reference
-            await tx.insert(itemRelationships).values({
-              sourceId: newSourceId,
-              targetId: rel.targetId,
-              relationshipType: rel.relationshipType,
-              quantity: rel.quantity,
-              findNumber: rel.findNumber,
-              referenceDesignator: rel.referenceDesignator,
-              metadata: rel.metadata,
-              isComposite: rel.isComposite,
-              isDirected: rel.isDirected,
-              multiplicityLower: rel.multiplicityLower,
-              multiplicityUpper: rel.multiplicityUpper,
-              usageAttributes: rel.usageAttributes,
-              createdBy: user.id,
-              modifiedBy: user.id,
-            })
-            relationshipsCreated++
-          }
-        }
-
-        return { items: createdUsages, relationshipsCreated }
-      })
-
-      return {
-        items: txResult.items,
-        relationshipsCreated: txResult.relationshipsCreated,
-      }
-    }),
+      },
+    ),
   ),
 )
 
@@ -2353,45 +1594,42 @@ app.delete(
 app.patch(
   '/:id/items',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const { id: designId } = params
-      const design = await DesignService.getById(designId)
-      if (!design) {
-        throw new NotFoundError('Design', designId)
-      }
+    apiHandler<{ id: string }, { itemId: string }>(
+      { body: z.object({ itemId: z.string().uuid() }) },
+      async ({ body, params, user }) => {
+        const { id: designId } = params
+        const design = await DesignService.getById(designId)
+        if (!design) {
+          throw new NotFoundError('Design', designId)
+        }
 
-      await requireDesignAccess(user.id, designId)
+        await requireDesignAccess(user.id, designId)
 
-      // Get item ID from request body
-      const body = await request.json()
-      const { itemId } = body
+        const { itemId } = body
 
-      if (!itemId) {
-        throw new ValidationError('itemId is required')
-      }
+        // Verify the item exists and belongs to this design
+        const item = await ItemService.findById(itemId)
+        if (!item) {
+          throw new NotFoundError('Item', itemId)
+        }
 
-      // Verify the item exists and belongs to this design
-      const item = await ItemService.findById(itemId)
-      if (!item) {
-        throw new NotFoundError('Item', itemId)
-      }
+        if (item.designId !== designId) {
+          throw new ValidationError('Item does not belong to this design')
+        }
 
-      if (item.designId !== designId) {
-        throw new ValidationError('Item does not belong to this design')
-      }
+        // Add back to structure by setting inDesignStructure = true
+        await db
+          .update(items)
+          .set({
+            inDesignStructure: true,
+            modifiedBy: user.id,
+            modifiedAt: new Date(),
+          })
+          .where(eq(items.id, itemId))
 
-      // Add back to structure by setting inDesignStructure = true
-      await db
-        .update(items)
-        .set({
-          inDesignStructure: true,
-          modifiedBy: user.id,
-          modifiedAt: new Date(),
-        })
-        .where(eq(items.id, itemId))
-
-      return { success: true }
-    }),
+        return { success: true }
+      },
+    ),
   ),
 )
 
@@ -2424,56 +1662,47 @@ app.get(
 app.post(
   '/:id/members',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const { id: familyDesignId } = params
-      const familyDesign = await DesignService.getById(familyDesignId)
-      if (!familyDesign) {
-        throw new NotFoundError('Design', familyDesignId)
-      }
+    apiHandler<{ id: string }, { designId: string }>(
+      { body: z.object({ designId: z.string().uuid() }) },
+      async ({ body, params, request, user }) => {
+        const { id: familyDesignId } = params
+        const familyDesign = await DesignService.getById(familyDesignId)
+        if (!familyDesign) {
+          throw new NotFoundError('Design', familyDesignId)
+        }
 
-      // Only family designs can have members
-      if (familyDesign.designType !== 'Family') {
-        throw new ValidationError('Only family designs can have members')
-      }
+        // Only family designs can have members
+        if (familyDesign.designType !== 'Family') {
+          throw new ValidationError('Only family designs can have members')
+        }
 
-      // Check permission
-      if (familyDesign.programId) {
-        const member = await ProgramService.getMember(
-          familyDesign.programId,
+        await requireDesignManageOrPermission(
+          familyDesignId,
+          request,
+          user.id,
+          'update',
+        )
+
+        const { designId } = body
+
+        // Verify the design to be added exists and is in the same program
+        const designToAdd = await DesignService.getById(designId)
+        if (!designToAdd) {
+          throw new ValidationError('Design not found', undefined, {
+            field: 'designId',
+          })
+        }
+
+        // Use setParent which handles validation
+        const updated = await DesignService.setParent(
+          designId,
+          familyDesignId,
           user.id,
         )
-        if (!member || !member.canManageDesigns) {
-          await requirePermission(request, 'designs', 'update')
-        }
-      } else {
-        await requirePermission(request, 'designs', 'update')
-      }
 
-      const { designId } = await request.json()
-
-      if (!designId) {
-        throw new ValidationError('designId is required', undefined, {
-          field: 'designId',
-        })
-      }
-
-      // Verify the design to be added exists and is in the same program
-      const designToAdd = await DesignService.getById(designId)
-      if (!designToAdd) {
-        throw new ValidationError('Design not found', undefined, {
-          field: 'designId',
-        })
-      }
-
-      // Use setParent which handles validation
-      const updated = await DesignService.setParent(
-        designId,
-        familyDesignId,
-        user.id,
-      )
-
-      return { design: updated }
-    }),
+        return { design: updated }
+      },
+    ),
   ),
 )
 
@@ -3401,19 +2630,15 @@ app.get(
 app.post(
   '/:id/tags',
   adapt(
-    apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const { id: designId } = params
-      const design = await DesignService.getById(designId)
-      if (!design) {
-        throw new NotFoundError('Design', designId)
-      }
+    apiHandler<{ id: string }, z.infer<typeof tagCreateSchema>>(
+      {
+        // Cross-program authority, or program admin/lead, can tag a design.
+        access: async ({ params, user }) => {
+          const design = await DesignService.getById(params.id)
+          if (!design) throw new NotFoundError('Design', params.id)
+          if (!design.programId) return
+          if (await AccessControlService.hasCrossProgramAccess(user.id)) return
 
-      // Check permission - cross-program authority or program admin/lead can create tags
-      if (design.programId) {
-        const hasBypass = await AccessControlService.hasCrossProgramAccess(
-          user.id,
-        )
-        if (!hasBypass) {
           const role = await ProgramService.getUserRole(
             user.id,
             design.programId,
@@ -3421,14 +2646,16 @@ app.post(
           if (role !== 'admin' && role !== 'lead') {
             throw new PermissionDeniedError('design tags', 'create')
           }
-        }
-      }
+        },
+        body: tagCreateSchema,
+      },
+      async ({ body, params, user }) => {
+        const designId = params.id
+        const tag = await DesignService.createTag(designId, body, user.id)
 
-      const data = await request.json()
-      const tag = await DesignService.createTag(designId, data, user.id)
-
-      return created({ tag })
-    }),
+        return created({ tag })
+      },
+    ),
   ),
 )
 
@@ -3440,20 +2667,17 @@ app.post(
 app.post(
   '/:designId/gap-analysis',
   adapt(
-    apiHandler<{ designId: string }>({}, async ({ request, params }) => {
-      const { designId } = params
-      const body = await request.json()
+    apiHandler<{ designId: string }, z.infer<typeof gapAnalysisRequestSchema>>(
+      { body: gapAnalysisRequestSchema },
+      async ({ body, params }) => {
+        const result = await GapAnalysisService.analyze({
+          designId: params.designId,
+          ...body,
+        })
 
-      // Validate request body
-      const validated = gapAnalysisRequestSchema.parse(body)
-
-      const result = await GapAnalysisService.analyze({
-        designId,
-        ...validated,
-      })
-
-      return result
-    }),
+        return result
+      },
+    ),
   ),
 )
 

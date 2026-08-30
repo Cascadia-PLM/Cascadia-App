@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import {
@@ -59,6 +59,7 @@ import {
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import {
+  branchDetailQuery,
   entityQuery,
   itemCollectionQuery,
   testCaseExecutionsQuery,
@@ -118,6 +119,21 @@ const createEmptyTestCase = (): TestCase => ({
   modifiedAt: undefined,
 })
 
+/**
+ * The tabs this detail view renders. The route's search schema derives its
+ * `tab` enum from this list, so the URL contract and the rendered tabs
+ * cannot drift apart; the `onValueChange` cast below is the one seam where
+ * Radix's `string` meets it, and the triggers are rendered from the same
+ * source of truth.
+ */
+export const TEST_CASE_DETAIL_TABS = [
+  'details',
+  'executions',
+  'relationships',
+  'history',
+] as const
+export type TestCaseDetailTab = (typeof TEST_CASE_DETAIL_TABS)[number]
+
 interface TestCaseDetailProps {
   /** Called after a lifecycle transition succeeds (refresh the item) */
   onTransitioned?: () => void
@@ -129,8 +145,8 @@ interface TestCaseDetailProps {
   onDelete?: () => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
-  activeTab?: 'details' | 'executions' | 'relationships' | 'history'
-  onTabChange?: (tab: string) => void
+  activeTab?: TestCaseDetailTab
+  onTabChange?: (tab: TestCaseDetailTab) => void
 }
 
 export function TestCaseDetail({
@@ -146,6 +162,7 @@ export function TestCaseDetail({
   activeTab = 'details',
   onTabChange,
 }: TestCaseDetailProps) {
+  const navigate = useNavigate()
   const { confirm } = useAlertDialog()
   const { handleError } = useErrorHandler()
 
@@ -161,8 +178,6 @@ export function TestCaseDetail({
   )
   const [isEditing, setIsEditing] = useState(isCreateMode)
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false)
-
-  const [isWorkspaceContext, setIsWorkspaceContext] = useState(false)
 
   // Execution dialog state
   const [showExecutionForm, setShowExecutionForm] = useState(false)
@@ -231,23 +246,15 @@ export function TestCaseDetail({
     }
   }, [initialTestCase])
 
-  useEffect(() => {
-    async function checkIfWorkspace() {
-      if (context.type !== 'branch' || !context.branchId) {
-        setIsWorkspaceContext(false)
-        return
-      }
-      try {
-        const response = await apiFetch<{
-          data: { branch: { branchType: string } }
-        }>(`/api/v1/branches/${context.branchId}`)
-        setIsWorkspaceContext(response.data.branch.branchType === 'workspace')
-      } catch {
-        setIsWorkspaceContext(false)
-      }
-    }
-    if (!isCreateMode) checkIfWorkspace()
-  }, [context, isCreateMode])
+  // Whether the viewing context is a workspace branch, read through the
+  // shared cache rather than a per-mount probe.
+  const { data: contextBranch } = useQuery(
+    branchDetailQuery(
+      context.type === 'branch' ? (context.branchId ?? '') : '',
+      !isCreateMode,
+    ),
+  )
+  const isWorkspaceContext = contextBranch?.branchType === 'workspace'
 
   const currentTestCase = isCreateMode ? testCase : displayedTestCase
 
@@ -294,11 +301,26 @@ export function TestCaseDetail({
     setIsEditing(true)
   }
 
-  const handleCheckoutComplete = (branchId: string) => {
-    setContext({ type: 'branch', branchId })
+  // A revise-checkout mints the branch working copy up front, so editing
+  // belongs on that row's page: the route-level save PUTs the id in the URL,
+  // and from the released row's page it would target the released version and
+  // be refused (BRANCH_PROTECTED). Navigate there in edit mode — the route
+  // component survives the param change, so `isEditing` carries over and the
+  // working copy (with its steps) drops in via the initialTestCase effect.
+  const handleCheckoutComplete = (branchId: string, currentItemId?: string) => {
     setTestCase(currentTestCase)
     setSteps(currentTestCase.steps || [])
     setIsEditing(true)
+    if (currentItemId && currentItemId !== currentTestCase.id) {
+      navigate({
+        to: '/test-cases/$id',
+        params: { id: currentItemId },
+        search: { branch: branchId, tab: activeTab },
+      } as any)
+      return
+    }
+    // The branch still tracks the row this page is showing — edit in place.
+    setContext({ type: 'branch', branchId })
   }
 
   const handleSave = async () => {
@@ -692,7 +714,11 @@ export function TestCaseDetail({
         </Card>
       )}
 
-      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => onTabChange?.(value as TestCaseDetailTab)}
+        className="w-full"
+      >
         <TabsList
           className={`grid w-full ${isCreateMode ? 'grid-cols-2' : 'grid-cols-4'}`}
         >

@@ -2,337 +2,182 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * BOM (Bill of Materials) Management E2E Workflow Tests
+ * BOM Management E2E Journey
  *
- * Tier 2: Core workflow tests that run on merge to main.
- * Tests BOM management including:
- * View BOM → Add Children → Edit Quantities → View Where-Used
+ * One journey, end to end, in the eco-workflow.spec.ts style: seed an assembly
+ * and a child over the API, build the structure through the UI, then read it
+ * back through both the UI and the relationship API — the two have to agree,
+ * because the BOM view resolving differently from the data underneath it is
+ * the failure worth catching.
+ *
+ * What it replaces: sixteen tests that opened `/parts`, took whatever row was
+ * first, and wrapped every assertion in `if (await …isVisible())`. Nothing they
+ * asserted survived an empty parts list, and on a full one they asserted things
+ * about another spec's data.
  */
 
 import { expect, test } from '../fixtures'
+import { seedFreshDesign } from '../seed'
+import { seedBomEdge, seedPart } from '../helpers/test-data'
 
-test.describe('BOM Management @tier2', () => {
-  test.describe('BOM View', () => {
-    test('can view part BOM tab', async ({ authenticatedPage: page }) => {
-      await page.goto('/parts')
+test.describe('BOM Management Journey', () => {
+  test('add a child through the UI → it reaches the BOM tree, the relationship API, and where-used', async ({
+    authenticatedPage: page,
+  }) => {
+    const ts = Date.now()
+    const designId = (await seedFreshDesign(page, 'E2E BOM Journey')).id
 
-      // Click on first part in list
-      const partLink = page
-        .locator('table tr a, [data-testid="part-link"]')
-        .first()
-      if (await partLink.isVisible()) {
-        await partLink.click()
-
-        // Look for BOM tab
-        const bomTab = page.locator(
-          'button:has-text("BOM"), button:has-text("Bill of Materials"), [data-testid="bom-tab"]',
-        )
-        if (await bomTab.isVisible()) {
-          await bomTab.click()
-
-          // Verify BOM section is visible
-          const bomSection = page.locator(
-            '[data-testid="bom-panel"], .bom-tree, [data-testid="bom-table"]',
-          )
-          await expect(bomSection.first()).toBeVisible({ timeout: 5000 })
-        }
-      }
+    const assembly = await seedPart(page, designId, {
+      itemNumber: `PN-E2E-ASM-${ts}`,
+      name: `E2E Assembly ${ts}`,
+    })
+    const child = await seedPart(page, designId, {
+      itemNumber: `PN-E2E-CHILD-${ts}`,
+      name: `E2E Child ${ts}`,
     })
 
-    test('BOM displays in tree or table format', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/parts')
+    // ---- Add the child through the UI ----
+    await page.goto(`/parts/${assembly.id}?tab=relationships`)
+    await page.getByRole('tab', { name: 'BOM Structure' }).click()
 
-      const partLink = page
-        .locator('table tr a, [data-testid="part-link"]')
-        .first()
-      if (await partLink.isVisible()) {
-        await partLink.click()
+    // Relationship edits follow the click-Edit policy: the panel is read-only
+    // until the item is checked out, and an unreleased part on main takes the
+    // lock directly.
+    await page.getByRole('button', { name: 'Edit', exact: true }).click()
+    await page.getByRole('button', { name: 'Add Relationship' }).click()
 
-        const bomTab = page.locator(
-          'button:has-text("BOM"), [data-testid="bom-tab"]',
-        )
-        if (await bomTab.isVisible()) {
-          await bomTab.click()
+    // The panel's Add opens the type chooser first — a relationship needs a
+    // type before it needs a target — so the journey picks BOM and then the
+    // item, which is the path a user actually walks.
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible({ timeout: 10000 })
+    await dialog.getByRole('combobox').first().click()
+    await page.getByRole('option', { name: 'BOM', exact: true }).click()
 
-          // Look for BOM tree or table structure
-          const bomContent = page.locator(
-            '.bom-tree, table[data-testid="bom-table"], [data-testid="bom-children"]',
-          )
-          if (await bomContent.isVisible()) {
-            await expect(bomContent).toBeVisible()
-          }
-        }
-      }
+    const search = dialog.getByPlaceholder('Search by item number or name...')
+    await expect(search).toBeVisible({ timeout: 10000 })
+    await search.fill(child.itemNumber)
+
+    const result = dialog
+      .locator('div.divide-y > button')
+      .filter({ hasText: child.itemNumber })
+      .first()
+    await expect(result).toBeVisible({ timeout: 10000 })
+    await result.click()
+
+    const confirm = dialog.getByRole('button', {
+      name: 'Add Relationship',
+      exact: true,
+    })
+    await expect(confirm).toBeEnabled({ timeout: 10000 })
+    const [createResponse] = await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.url().includes('/relationships') && r.request().method() === 'POST',
+        { timeout: 15000 },
+      ),
+      confirm.click(),
+    ])
+    expect(
+      createResponse.ok(),
+      `relationship create failed: ${await createResponse.text()}`,
+    ).toBe(true)
+
+    // ---- The tree shows it ----
+    await expect(page.locator('main')).toContainText(child.itemNumber, {
+      timeout: 15000,
     })
 
-    test('BOM shows quantity column', async ({ authenticatedPage: page }) => {
-      await page.goto('/parts')
+    // ---- And so does the API, as a BOM edge rather than some other type ----
+    const relationshipsResponse = await page.request.get(
+      `/api/v1/items/${assembly.id}/relationships`,
+    )
+    expect(relationshipsResponse.ok()).toBe(true)
+    const { relationships } = (await relationshipsResponse.json()).data as {
+      relationships: Array<{
+        relationshipType: string
+        targetItem: { id: string; itemNumber: string }
+      }>
+    }
+    expect(
+      relationships
+        .filter((r) => r.relationshipType === 'BOM')
+        .map((r) => r.targetItem.itemNumber),
+      'the edge the UI created is not in the relationship API',
+    ).toContain(child.itemNumber)
 
-      const partLink = page
-        .locator('table tr a, [data-testid="part-link"]')
-        .first()
-      if (await partLink.isVisible()) {
-        await partLink.click()
-
-        const bomTab = page.locator(
-          'button:has-text("BOM"), [data-testid="bom-tab"]',
-        )
-        if (await bomTab.isVisible()) {
-          await bomTab.click()
-
-          // Look for quantity header or column
-          const qtyColumn = page.locator(
-            'th:has-text("Qty"), th:has-text("Quantity"), [data-testid="qty-header"]',
-          )
-          if (await qtyColumn.isVisible()) {
-            await expect(qtyColumn).toBeVisible()
-          }
-        }
-      }
-    })
-  })
-
-  test.describe('Add BOM Children', () => {
-    test('can see Add Child button in BOM view', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/parts')
-
-      const partLink = page
-        .locator('table tr a, [data-testid="part-link"]')
-        .first()
-      if (await partLink.isVisible()) {
-        await partLink.click()
-
-        const bomTab = page.locator(
-          'button:has-text("BOM"), [data-testid="bom-tab"]',
-        )
-        if (await bomTab.isVisible()) {
-          await bomTab.click()
-
-          // Look for Add Child button
-          const addButton = page.locator(
-            'button:has-text("Add Child"), button:has-text("Add Component"), [data-testid="add-bom-child"]',
-          )
-          if (await addButton.isVisible()) {
-            await expect(addButton).toBeVisible()
-          }
-        }
-      }
-    })
-
-    test('Add Child button opens dialog', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/parts')
-
-      const partLink = page
-        .locator('table tr a, [data-testid="part-link"]')
-        .first()
-      if (await partLink.isVisible()) {
-        await partLink.click()
-
-        const bomTab = page.locator(
-          'button:has-text("BOM"), [data-testid="bom-tab"]',
-        )
-        if (await bomTab.isVisible()) {
-          await bomTab.click()
-
-          const addButton = page.locator(
-            'button:has-text("Add Child"), button:has-text("Add Component"), [data-testid="add-bom-child"]',
-          )
-          if (await addButton.isVisible()) {
-            await addButton.click()
-
-            // Should show dialog to add child
-            const dialog = page.locator(
-              '[role="dialog"], [data-testid="add-bom-dialog"]',
-            )
-            await expect(dialog).toBeVisible({ timeout: 5000 })
-          }
-        }
-      }
-    })
-
-    test('Add Child dialog has search functionality', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/parts')
-
-      const partLink = page
-        .locator('table tr a, [data-testid="part-link"]')
-        .first()
-      if (await partLink.isVisible()) {
-        await partLink.click()
-
-        const bomTab = page.locator(
-          'button:has-text("BOM"), [data-testid="bom-tab"]',
-        )
-        if (await bomTab.isVisible()) {
-          await bomTab.click()
-
-          const addButton = page.locator(
-            'button:has-text("Add Child"), [data-testid="add-bom-child"]',
-          )
-          if (await addButton.isVisible()) {
-            await addButton.click()
-
-            // Look for search input in dialog
-            const searchInput = page.locator(
-              '[role="dialog"] input[placeholder*="Search"], [role="dialog"] input[type="search"]',
-            )
-            if (await searchInput.isVisible()) {
-              await expect(searchInput).toBeVisible()
-            }
-          }
-        }
-      }
+    // ---- Where-used is the same edge read from the other end ----
+    await page.goto(`/parts/${child.id}?tab=relationships`)
+    await page.getByRole('tab', { name: 'Where Used' }).click()
+    await expect(page.locator('main')).toContainText(assembly.itemNumber, {
+      timeout: 15000,
     })
   })
 
-  test.describe('Where-Used View', () => {
-    test('can view Where-Used tab', async ({ authenticatedPage: page }) => {
-      await page.goto('/parts')
+  test('a seeded three-level BOM renders every level, with its quantities intact', async ({
+    authenticatedPage: page,
+  }) => {
+    // Seeded rather than built through the UI: the point here is what the tree
+    // *renders*, and driving three levels of dialog to get there would test the
+    // dialog again instead.
+    const ts = Date.now()
+    const designId = (await seedFreshDesign(page, 'E2E BOM Depth')).id
 
-      const partLink = page
-        .locator('table tr a, [data-testid="part-link"]')
-        .first()
-      if (await partLink.isVisible()) {
-        await partLink.click()
-
-        // Look for Where-Used tab
-        const whereUsedTab = page.locator(
-          'button:has-text("Where Used"), button:has-text("Used In"), [data-testid="where-used-tab"]',
-        )
-        if (await whereUsedTab.isVisible()) {
-          await whereUsedTab.click()
-
-          // Verify Where-Used section is visible
-          const whereUsedSection = page.locator(
-            '[data-testid="where-used-panel"], .where-used-tree, [data-testid="where-used-table"]',
-          )
-          await expect(whereUsedSection.first()).toBeVisible({ timeout: 5000 })
-        }
-      }
+    const top = await seedPart(page, designId, {
+      itemNumber: `PN-E2E-TOP-${ts}`,
+      name: `E2E Top ${ts}`,
     })
-
-    test('Where-Used shows parent assemblies', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/parts')
-
-      const partLink = page
-        .locator('table tr a, [data-testid="part-link"]')
-        .first()
-      if (await partLink.isVisible()) {
-        await partLink.click()
-
-        const whereUsedTab = page.locator(
-          'button:has-text("Where Used"), [data-testid="where-used-tab"]',
-        )
-        if (await whereUsedTab.isVisible()) {
-          await whereUsedTab.click()
-
-          // Look for parent items or "no parents" message
-          const content = page.locator(
-            '[data-testid="where-used-content"], .where-used-list, text=No parent',
-          )
-          await expect(content.first()).toBeVisible({ timeout: 5000 })
-        }
-      }
+    const mid = await seedPart(page, designId, {
+      itemNumber: `PN-E2E-MID-${ts}`,
+      name: `E2E Mid ${ts}`,
     })
-  })
-
-  test.describe('BOM Actions', () => {
-    test('can expand BOM tree nodes', async ({ authenticatedPage: page }) => {
-      await page.goto('/parts')
-
-      const partLink = page
-        .locator('table tr a, [data-testid="part-link"]')
-        .first()
-      if (await partLink.isVisible()) {
-        await partLink.click()
-
-        const bomTab = page.locator(
-          'button:has-text("BOM"), [data-testid="bom-tab"]',
-        )
-        if (await bomTab.isVisible()) {
-          await bomTab.click()
-
-          // Look for expand/collapse button
-          const expandButton = page.locator(
-            '[data-testid="expand-node"], button[aria-label*="expand"], .tree-expand',
-          )
-          if (await expandButton.first().isVisible()) {
-            await expandButton.first().click()
-            await page.waitForTimeout(500)
-          }
-        }
-      }
+    const leaf = await seedPart(page, designId, {
+      itemNumber: `PN-E2E-LEAF-${ts}`,
+      name: `E2E Leaf ${ts}`,
     })
+    await seedBomEdge(page, top.id, mid.id, '2')
+    await seedBomEdge(page, mid.id, leaf.id, '3')
 
-    test('can view BOM child details', async ({ authenticatedPage: page }) => {
-      await page.goto('/parts')
+    await page.goto(`/parts/${top.id}?tab=relationships`)
+    await page.getByRole('tab', { name: 'BOM Structure' }).click()
 
-      const partLink = page
-        .locator('table tr a, [data-testid="part-link"]')
-        .first()
-      if (await partLink.isVisible()) {
-        await partLink.click()
+    // The direct child is there without expanding anything.
+    const main = page.locator('main')
+    await expect(main).toContainText(mid.itemNumber, { timeout: 15000 })
 
-        const bomTab = page.locator(
-          'button:has-text("BOM"), [data-testid="bom-tab"]',
-        )
-        if (await bomTab.isVisible()) {
-          await bomTab.click()
+    // Expanding the child reveals the grandchild — a tree that stops at one
+    // level looks identical to a correct one until you open a row.
+    await page
+      .locator('[data-testid="bom-tree"], main')
+      .locator('div,tr')
+      .filter({ hasText: mid.itemNumber })
+      .last()
+      .getByRole('button')
+      .first()
+      .click()
+    await expect(main).toContainText(leaf.itemNumber, { timeout: 15000 })
 
-          // Click on a BOM child item
-          const childLink = page
-            .locator('[data-testid="bom-child-link"], .bom-item a')
-            .first()
-          if (await childLink.isVisible()) {
-            await childLink.click()
-
-            // Should navigate to child part detail
-            await expect(page).toHaveURL(/\/parts\/[a-f0-9-]+/, {
-              timeout: 5000,
-            })
-          }
-        }
-      }
-    })
-  })
-
-  test.describe('Relationships View', () => {
-    test('can navigate to Relationships tab if present', async ({
-      authenticatedPage: page,
-    }) => {
-      await page.goto('/parts')
-
-      const partLink = page
-        .locator('table tr a, [data-testid="part-link"]')
-        .first()
-      const hasParts = await partLink
-        .isVisible({ timeout: 3000 })
-        .catch(() => false)
-      if (hasParts) {
-        await partLink.click()
-
-        // Look for Relationships tab
-        const relTab = page.locator(
-          'button:has-text("Relationships"), button:has-text("Relations"), [data-testid="relationships-tab"]',
-        )
-        const hasTab = await relTab
-          .isVisible({ timeout: 3000 })
-          .catch(() => false)
-        if (hasTab) {
-          await relTab.click()
-          // Just verify tab was clicked (content structure varies)
-          await page.waitForTimeout(500)
-        }
-      }
-    })
+    // Quantities survive. A BOM whose quantities all read 1 is worse than no
+    // BOM, and the rendered page would not notice — the tree is assembled
+    // client-side from the relationship API, so that is where the number has
+    // to be right.
+    const relationshipsResponse = await page.request.get(
+      `/api/v1/items/${top.id}/relationships`,
+    )
+    expect(relationshipsResponse.ok()).toBe(true)
+    const { relationships } = (await relationshipsResponse.json()).data as {
+      relationships: Array<{
+        relationshipType: string
+        quantity: string | null
+        targetItem: { itemNumber: string }
+      }>
+    }
+    const edge = relationships.find(
+      (r) =>
+        r.relationshipType === 'BOM' &&
+        r.targetItem.itemNumber === mid.itemNumber,
+    )
+    expect(edge, 'the seeded BOM edge is missing').toBeTruthy()
+    expect(Number(edge!.quantity)).toBe(2)
   })
 })

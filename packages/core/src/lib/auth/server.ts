@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { db } from '../db'
+import { resolveClientIp } from '../api/client-ip'
 import { authEvents } from '../db/schema/users'
 import { ErrorCode } from '../errors/codes'
 import { SessionManager } from './session'
@@ -183,7 +184,7 @@ export async function requirePermission(
     await db.insert(authEvents).values({
       userId: auth.user.id,
       eventType: 'permission_denied',
-      ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+      ipAddress: resolveClientIp(request),
       metadata: {
         resource,
         action,
@@ -235,7 +236,7 @@ export async function requireRole(
     await db.insert(authEvents).values({
       userId: auth.user.id,
       eventType: 'permission_denied',
-      ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+      ipAddress: resolveClientIp(request),
       metadata: {
         requiredRole: roleName,
         authMethod: auth.authMethod,

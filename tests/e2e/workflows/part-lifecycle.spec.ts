@@ -4,11 +4,12 @@
 /**
  * Part Lifecycle E2E Workflow Tests
  *
- * Tier 2: Core workflow tests that run on merge to main.
+ * Core workflow coverage.
  * Tests the complete part lifecycle: Create → Edit → Delete
  */
 
 import { expect, test } from '../fixtures'
+import { seedFreshDesign, selectDesignByName } from '../seed'
 import type { Page } from '@playwright/test'
 
 /**
@@ -33,19 +34,10 @@ test.describe('Part Lifecycle Workflow', () => {
     // Cleanup: Try to delete the part if it was created
     if (createdPartId) {
       try {
-        await page.goto(`/parts/${createdPartId}`)
-        // Look for delete button - implementation may vary
-        const deleteButton = page.locator('button:has-text("Delete")')
-        if (await deleteButton.isVisible()) {
-          await deleteButton.click()
-          // Confirm deletion if there's a dialog
-          const confirmButton = page.locator(
-            'button:has-text("Confirm"), button:has-text("Delete")',
-          )
-          if (await confirmButton.isVisible()) {
-            await confirmButton.click()
-          }
-        }
+        // Delete through the API, not the UI: the old version clicked a
+        // Delete button only if it happened to be visible, so cleanup
+        // silently did nothing whenever the page was in a state without one.
+        await page.request.delete(`/api/v1/parts/${createdPartId}`)
       } catch {
         // Ignore cleanup errors
       }
@@ -56,26 +48,11 @@ test.describe('Part Lifecycle Workflow', () => {
   test('complete part lifecycle: create, view, and verify', async ({
     authenticatedPage: page,
   }) => {
-    // 1. Navigate to create part page
+    const design = await seedFreshDesign(page, 'E2E Part Lifecycle')
+
+    // 1. Navigate to create part page and pick the seeded design
     await page.goto('/parts/new')
-
-    // Check if designs are available
-    const designSelector = page.locator('[data-testid="design-selector"]')
-    await designSelector.click()
-
-    const designOptions = page
-      .locator('[role="option"]')
-      .filter({ hasNotText: 'No Design' })
-    const designCount = await designOptions.count()
-
-    // Hard requirement, not a skip: global setup guarantees a selectable design.
-    expect(
-      designCount,
-      'no selectable design — e2e global setup should have created one',
-    ).toBeGreaterThan(0)
-
-    // Select first design
-    await designOptions.first().click()
+    await selectDesignByName(page, design.name)
 
     // 2. Fill in part details using focus + pressSequentially
     const timestamp = Date.now()
@@ -105,22 +82,11 @@ test.describe('Part Lifecycle Workflow', () => {
   })
 
   test('can edit an existing part', async ({ authenticatedPage: page }) => {
-    // 1. First create a part
+    const design = await seedFreshDesign(page, 'E2E Part Edit')
+
+    // 1. First create a part on the seeded design
     await page.goto('/parts/new')
-
-    const designSelector = page.locator('[data-testid="design-selector"]')
-    await designSelector.click()
-
-    const designOptions = page
-      .locator('[role="option"]')
-      .filter({ hasNotText: 'No Design' })
-    // Hard requirement, not a skip: global setup guarantees a selectable design.
-    expect(
-      await designOptions.count(),
-      'no selectable design — e2e global setup should have created one',
-    ).toBeGreaterThan(0)
-
-    await designOptions.first().click()
+    await selectDesignByName(page, design.name)
 
     const timestamp = Date.now()
     const itemNumber = `PN-EDIT-${timestamp}`
@@ -142,50 +108,34 @@ test.describe('Part Lifecycle Workflow', () => {
       'button:has-text("Edit"), a:has-text("Edit")',
     )
 
-    if (await editButton.isVisible()) {
-      await editButton.click()
+    await editButton.click()
 
-      // 3. Update the part name
-      const nameInput = page.locator('[data-testid="part-name"]')
-      if (await nameInput.isVisible()) {
-        // Clear and fill with new value
-        await nameInput.focus()
-        await page.waitForTimeout(100)
-        await nameInput.clear()
-        await nameInput.pressSequentially('Updated Part Name', { delay: 30 })
-        await page.click('[data-testid="part-submit"]')
+    // 3. Update the part name
+    const nameInput = page.locator('[data-testid="part-name"]')
+    await nameInput.focus()
+    await page.waitForTimeout(100)
+    await nameInput.clear()
+    await nameInput.pressSequentially('Updated Part Name', { delay: 30 })
+    await page.click('[data-testid="part-submit"]')
 
-        // 4. Verify update was successful
-        // Use an exact match: the name also appears in the "Revision - • Updated
-        // Part Name" subtitle, so a substring match trips Playwright strict mode.
-        await expect(
-          page.getByText('Updated Part Name', { exact: true }),
-        ).toBeVisible({
-          timeout: 5000,
-        })
-      }
-    }
+    // 4. Verify update was successful
+    // Use an exact match: the name also appears in the "Revision - • Updated
+    // Part Name" subtitle, so a substring match trips Playwright strict mode.
+    await expect(
+      page.getByText('Updated Part Name', { exact: true }),
+    ).toBeVisible({
+      timeout: 5000,
+    })
   })
 
   test('part appears in parts list after creation', async ({
     authenticatedPage: page,
   }) => {
-    // 1. Create a part
+    const design = await seedFreshDesign(page, 'E2E Part List')
+
+    // 1. Create a part on the seeded design
     await page.goto('/parts/new')
-
-    const designSelector = page.locator('[data-testid="design-selector"]')
-    await designSelector.click()
-
-    const designOptions = page
-      .locator('[role="option"]')
-      .filter({ hasNotText: 'No Design' })
-    // Hard requirement, not a skip: global setup guarantees a selectable design.
-    expect(
-      await designOptions.count(),
-      'no selectable design — e2e global setup should have created one',
-    ).toBeGreaterThan(0)
-
-    await designOptions.first().click()
+    await selectDesignByName(page, design.name)
 
     const timestamp = Date.now()
     const itemNumber = `PN-LIST-${timestamp}`
@@ -205,16 +155,14 @@ test.describe('Part Lifecycle Workflow', () => {
     await page.goto('/parts')
 
     // 3. Search for the created part (using focus + pressSequentially)
-    const searchInput = page.locator(
-      'input[placeholder*="Search"], input[type="search"]',
-    )
-    if (await searchInput.isVisible()) {
-      await searchInput.focus()
-      await page.waitForTimeout(100)
-      await searchInput.pressSequentially(itemNumber, { delay: 30 })
-      // Give time for search to filter
-      await page.waitForTimeout(500)
-    }
+    // The grid's own search box, by accessible name — the old placeholder
+    // selector also matched the header's global search bar.
+    const searchInput = page.getByRole('textbox', { name: 'Search table' })
+    await searchInput.focus()
+    await page.waitForTimeout(100)
+    await searchInput.pressSequentially(itemNumber, { delay: 30 })
+    // Give time for search to filter
+    await page.waitForTimeout(500)
 
     // 4. Verify part appears in the list
     await expect(page.locator(`text=${itemNumber}`)).toBeVisible({

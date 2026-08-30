@@ -2,224 +2,208 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * ECO (Engineering Change Order) Workflow E2E Tests
+ * ECO Release Journey E2E Test
  *
- * Tier 2: Core workflow tests that run on merge to main.
- * Tests the complete ECO workflow:
- * Create ECO → Add Affected Items → Submit → Approve → Release
+ * One journey, end to end, in the physical-traceability.spec.ts style:
+ * API-seeded prerequisites, hard expects, no isVisible guards, no
+ * conditional skips — the spec cannot green by vacancy.
+ *
+ * The journey is the product's signature loop: create an ECO against a
+ * design, check a released part out to the ECO's branch, edit it there,
+ * drive the seeded default workflow (Draft → Submit for Review → In Review
+ * → Approve), and verify the release outcome — Approved is final with
+ * finalKind 'release', so completing the workflow merges the branch and
+ * assigns the next revision letter on main.
  */
 
 import { expect, test } from '../fixtures'
 import { ChangeOrdersPage } from '../pages'
-import { TEST_NAMES } from '../helpers/test-data'
+import { seedFreshDesign } from '../seed'
+import type { Page } from '@playwright/test'
 
-test.describe('ECO Workflow @tier2', () => {
-  test.describe('ECO Creation', () => {
-    test('can navigate to create change order page', async ({
-      authenticatedPage: page,
-    }) => {
-      const ecoPage = new ChangeOrdersPage(page)
-      await ecoPage.goto()
+interface SeededPart {
+  id: string
+  masterId?: string
+  itemNumber: string
+}
 
-      // Click create button
-      if (await ecoPage.createButton.isVisible()) {
-        await ecoPage.clickCreate()
-        await expect(ecoPage.form).toBeVisible({ timeout: 5000 })
-      }
-    })
-
-    test('ECO form displays required fields', async ({
-      authenticatedPage: page,
-    }) => {
-      const ecoPage = new ChangeOrdersPage(page)
-      await ecoPage.gotoNew()
-
-      // Verify form elements are present. A change order is *not* design
-      // independent: the designs it affects are what place it inside a
-      // program, so the picker is part of the form and submit stays disabled
-      // until one is chosen.
-      await expect(ecoPage.form).toBeVisible()
-      await expect(ecoPage.nameInput).toBeVisible()
-      await expect(ecoPage.submitButton).toBeVisible()
-      await expect(ecoPage.submitButton).toBeDisabled()
-
-      await ecoPage.selectFirstDesign()
-      await expect(ecoPage.submitButton).toBeEnabled()
-    })
-
-    test('can create a new ECO', async ({ authenticatedPage: page }) => {
-      const ecoPage = new ChangeOrdersPage(page)
-      await ecoPage.gotoNew()
-
-      // Verify form is visible
-      await expect(ecoPage.form).toBeVisible()
-
-      // Fill in ECO details (item number is auto-generated)
-      await ecoPage.fillECOForm(TEST_NAMES.ECO)
-
-      // Submit the form
-      await ecoPage.submit()
-
-      // Should navigate to ECO detail page or show success
-      // The URL might change to a detail page, or we might stay on the form with success
-      await page.waitForTimeout(2000)
-      const currentUrl = page.url()
-      // Either we're on a detail page or the form submitted successfully
-      expect(currentUrl).toMatch(/\/change-orders/)
-    })
+async function seedReleasedPart(
+  page: Page,
+  designId: string,
+  itemNumber: string,
+  name: string,
+): Promise<SeededPart> {
+  const response = await page.request.post('/api/v1/items', {
+    data: {
+      itemType: 'Part',
+      designId,
+      revision: 'A',
+      state: 'Released',
+      partType: 'Manufacture',
+      itemNumber,
+      name,
+    },
   })
+  expect(response.ok(), `part seed failed: ${await response.text()}`).toBe(true)
+  const body = await response.json()
+  return body.data.item as SeededPart
+}
 
-  test.describe('ECO State Transitions', () => {
-    test('newly created ECO is in Draft state', async ({
-      authenticatedPage: page,
-    }) => {
-      const ecoPage = new ChangeOrdersPage(page)
-      await ecoPage.goto()
+test.describe('ECO Release Journey', () => {
+  test('create ECO → checkout → edit → Submit for Review → Approve → revision B on main', async ({
+    authenticatedPage: page,
+  }) => {
+    const ecoPage = new ChangeOrdersPage(page)
 
-      // Look for any ECO in Draft state
-      if (await ecoPage.draftBadges.first().isVisible()) {
-        await expect(ecoPage.draftBadges.first()).toBeVisible()
-      }
+    // ---- Seed: a fresh design with one released part (API) ----
+    // A design of its own, because branch protection forbids creating items
+    // directly on main once a design has released items — a fresh design's
+    // first released part is the allowed bootstrap, and it keeps this
+    // journey's ECO from ever seeing another run's leftovers.
+    const designId: string = (await seedFreshDesign(page, 'E2E ECO Journey')).id
+    const ts = Date.now()
+    const originalName = `E2E Bracket ${ts}`
+    const revisedName = `E2E Bracket ${ts} rev-B`
+    const part = await seedReleasedPart(
+      page,
+      designId,
+      `PN-E2E-ECO-${ts}`,
+      originalName,
+    )
+
+    // ---- Create the ECO against that design (UI) ----
+    await ecoPage.gotoNew()
+    await expect(ecoPage.form).toBeVisible()
+    await ecoPage.fillField(ecoPage.nameInput, `E2E Release Journey ${ts}`)
+    await ecoPage.selectDesign(designId)
+    await expect(ecoPage.submitButton).toBeEnabled()
+    await ecoPage.submit()
+    await page.waitForURL(/\/change-orders\/[a-f0-9-]+(\?.*)?$/, {
+      timeout: 15000,
+    })
+    const ecoId = new URL(page.url()).pathname.split('/').pop()!
+    expect(ecoId).toMatch(/^[a-f0-9-]+$/)
+
+    // ---- Check the part out to the ECO's branch (UI) ----
+    await page.goto(`/parts/${part.id}`)
+    // A released item's edit affordance is Revise, which opens the checkout
+    // dialog — released lineage on main is only edited through a branch.
+    await page.getByRole('button', { name: 'Revise' }).click()
+    const [checkoutResponse] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes('/checkout') && r.request().method() === 'POST',
+        { timeout: 20000 },
+      ),
+      ecoPage.checkoutToEco(page),
+    ])
+    expect(
+      checkoutResponse.ok(),
+      `checkout failed: ${await checkoutResponse.text()}`,
+    ).toBe(true)
+    // Checking out a released item mints its branch working copy up front;
+    // the row the checkout returns points at it. Editing happens on the
+    // working copy's own page — the same place the affected-items tab's View
+    // action lands. (The checkout dialog also flips the original row's page
+    // into an in-place edit whose save targets the original id and is
+    // refused by branch protection — a product bug recorded in the
+    // remediation plan's findings, not exercised here.)
+    const checkoutBody = (await checkoutResponse.json()).data
+    const workingCopyId: string = checkoutBody.branchItem.currentItemId
+    const ecoBranchId: string = checkoutBody.branchItem.branchId
+    expect(workingCopyId).toBeTruthy()
+    expect(workingCopyId).not.toBe(part.id)
+
+    // Checking out through the part page registers the change on the ECO's
+    // affected-items list itself (a gap this journey originally surfaced:
+    // the eager working-copy mint used to skip registration, and the
+    // release then refused the unlisted branch content). Assert the
+    // registration as an invariant; the release preview below depends on
+    // it, and re-adding here would be rejected as a duplicate.
+    const affectedResponse = await page.request.get(
+      `/api/v1/change-orders/${ecoId}/affected-items`,
+    )
+    expect(affectedResponse.ok()).toBe(true)
+    const { affectedItems } = (await affectedResponse.json()).data
+    expect(
+      JSON.stringify(affectedItems),
+      'checkout did not register the revised part on the ECO',
+    ).toContain(part.itemNumber)
+
+    await page.goto(`/parts/${workingCopyId}?branch=${ecoBranchId}`)
+    await page.getByRole('button', { name: 'Edit', exact: true }).click()
+
+    // In edit mode the testid rides the input itself; in view mode it
+    // rides the value container.
+    const nameInput = page.locator('input[data-testid="part-name"]')
+    await expect(nameInput).toBeVisible({ timeout: 10000 })
+    await expect(nameInput).toHaveValue(originalName)
+
+    // ---- Edit on the branch and save (UI) ----
+    await nameInput.fill(revisedName)
+    const [saveResponse] = await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.url().includes('/api/v1/parts/') && r.request().method() === 'PUT',
+        { timeout: 15000 },
+      ),
+      page.locator('[data-testid="part-submit"]').click(),
+    ])
+    expect(
+      saveResponse.ok(),
+      `branch save failed (${saveResponse.url()}): ${await saveResponse.text()}`,
+    ).toBe(true)
+    // The save lands on the branch: the page leaves edit mode and shows the
+    // new value (the view panel renders plain definition text, no testid).
+    await expect(page.locator('main')).toContainText(revisedName, {
+      timeout: 10000,
     })
 
-    test('can view ECO workflow status', async ({
-      authenticatedPage: page,
-    }) => {
-      const ecoPage = new ChangeOrdersPage(page)
-      await ecoPage.goto()
+    // ---- Drive the workflow: Submit for Review, then Approve (UI) ----
+    await page.goto(`/change-orders/${ecoId}`)
+    await ecoPage.transition('Submit for Review')
+    // The next gate's action proves the state moved.
+    await expect(
+      page.getByRole('button', { name: 'Approve', exact: true }),
+    ).toBeVisible({ timeout: 15000 })
 
-      // Click on the first ECO in the list (if any exist)
-      const hasECOs = await ecoPage.ecoLinks
-        .first()
-        .isVisible({ timeout: 3000 })
-        .catch(() => false)
-      if (hasECOs) {
-        await ecoPage.clickFirstECO()
-        // Workflow status panel should be visible on detail page
-        const hasStatus = await ecoPage.workflowStatus
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false)
-        if (hasStatus) {
-          await expect(ecoPage.workflowStatus.first()).toBeVisible()
-        }
-      }
+    // The release preview is what arms the Approve dialog's confirm — a
+    // false canRelease here names its reasons instead of a mute disabled
+    // button.
+    const previewResponse = await page.request.get(
+      `/api/v1/change-orders/${ecoId}/release`,
+    )
+    expect(previewResponse.ok()).toBe(true)
+    const preview = (await previewResponse.json()).data
+    expect(
+      preview.canRelease,
+      `release blocked: ${JSON.stringify(preview.validationIssues)}`,
+    ).toBe(true)
+
+    await ecoPage.transition('Approve')
+    // Approved is final with finalKind 'release': the transition runs the
+    // merge before the state write — once the page reads Approved, the
+    // release has happened.
+    await expect(page.locator('main')).toContainText('Approved', {
+      timeout: 30000,
     })
 
-    test('ECO shows available workflow actions', async ({
-      authenticatedPage: page,
-    }) => {
-      const ecoPage = new ChangeOrdersPage(page)
-      await ecoPage.goto()
+    // ---- The release outcome, asserted hard ----
+    // API: main's current version of the part carries the next revision
+    // letter and the branch's edit. at-context?released=true resolves the
+    // master to its released/main version whatever row id we hold.
+    const resolvedResponse = await page.request.get(
+      `/api/v1/items/${part.id}/at-context?released=true`,
+    )
+    expect(resolvedResponse.ok()).toBe(true)
+    const resolved = (await resolvedResponse.json()).data
+    expect(resolved.item.revision).toBe('B')
+    expect(resolved.item.name).toBe(revisedName)
+    expect(resolved.item.id).not.toBe(part.id)
 
-      // Find and click on a Draft ECO
-      if (await ecoPage.draftRows.first().isVisible()) {
-        await ecoPage.clickFirstDraftECO()
-
-        // Look for workflow action buttons
-        if (await ecoPage.workflowActions.first().isVisible()) {
-          await expect(ecoPage.workflowActions.first()).toBeVisible()
-        }
-      }
-    })
-  })
-
-  test.describe('Affected Items Management', () => {
-    test('can view affected items tab', async ({ authenticatedPage: page }) => {
-      const ecoPage = new ChangeOrdersPage(page)
-      await ecoPage.goto()
-
-      // Click on the first ECO (if any exist)
-      const hasECOs = await ecoPage.ecoLinks
-        .first()
-        .isVisible({ timeout: 3000 })
-        .catch(() => false)
-      if (hasECOs) {
-        await ecoPage.clickFirstECO()
-
-        // Look for affected items section/tab
-        const hasTab = await ecoPage.affectedItemsTab
-          .isVisible({ timeout: 3000 })
-          .catch(() => false)
-        if (hasTab) {
-          await ecoPage.gotoAffectedItems()
-          // Just verify we clicked the tab (content structure varies)
-          await page.waitForTimeout(500)
-        }
-      }
-    })
-
-    test('can add item to ECO', async ({ authenticatedPage: page }) => {
-      const ecoPage = new ChangeOrdersPage(page)
-      await ecoPage.goto()
-
-      // Find a Draft ECO and navigate to it
-      if (await ecoPage.draftRows.first().isVisible()) {
-        await ecoPage.clickFirstDraftECO()
-
-        // Look for "Add Item" or "Add Affected Item" button
-        if (await ecoPage.addAffectedItemButton.isVisible()) {
-          await ecoPage.addAffectedItemButton.click()
-
-          // Should show a dialog or form to add items
-          const addDialog = page.locator(
-            '[role="dialog"], [data-testid="add-item-dialog"]',
-          )
-          await expect(addDialog).toBeVisible({ timeout: 5000 })
-        }
-      }
-    })
-  })
-
-  test.describe('ECO Submission', () => {
-    test('submit button is available for Draft ECOs', async ({
-      authenticatedPage: page,
-    }) => {
-      const ecoPage = new ChangeOrdersPage(page)
-      await ecoPage.goto()
-
-      // Find a Draft ECO
-      if (await ecoPage.draftRows.first().isVisible()) {
-        await ecoPage.clickFirstDraftECO()
-
-        // Look for Submit button
-        if (await ecoPage.promoteButton.isVisible()) {
-          await expect(ecoPage.promoteButton).toBeEnabled()
-        }
-      }
-    })
-  })
-
-  test.describe('ECO List View', () => {
-    test('change orders list displays correctly', async ({
-      authenticatedPage: page,
-    }) => {
-      const ecoPage = new ChangeOrdersPage(page)
-      await ecoPage.goto()
-
-      await expect(ecoPage.table).toBeVisible({ timeout: 5000 })
-    })
-
-    test('can filter change orders by state', async ({
-      authenticatedPage: page,
-    }) => {
-      const ecoPage = new ChangeOrdersPage(page)
-      await ecoPage.goto()
-
-      if (await ecoPage.stateFilter.isVisible()) {
-        await ecoPage.openStateFilter()
-
-        // Look for filter options
-        const filterOptions = page.locator('[role="option"], [role="menuitem"]')
-        await expect(filterOptions.first()).toBeVisible({ timeout: 3000 })
-      }
-    })
-
-    test('can search change orders', async ({ authenticatedPage: page }) => {
-      const ecoPage = new ChangeOrdersPage(page)
-      await ecoPage.goto()
-
-      await ecoPage.search('ECO')
+    // UI: the part page on main shows the released revision's content.
+    await page.goto(`/parts/${resolved.item.id}`)
+    await expect(page.locator('main')).toContainText(revisedName, {
+      timeout: 10000,
     })
   })
 })

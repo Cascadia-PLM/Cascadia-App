@@ -67,16 +67,23 @@ services:
       - app_vault:/app/vault
     networks:
       - cascadia-network
-    # Through the wrapper, not `npx drizzle-kit` directly: the config lives at
-    # `apps/<app>/drizzle.config.ts` since the Phase 2 split, so a bare call
-    # looked for `/app/drizzle.config.json`, failed, and crash-looped the
-    # container. The wrapper resolves the edition, runs from the app directory
-    # so the config's relative `schema:` resolves, and passes `--config`.
+    # Migrations, not `push --force`. Push asks drizzle to make the live
+    # database look like the schema by whatever DDL that takes, unattended,
+    # with --force answering the destructive prompts; migrations apply
+    # committed, reviewed SQL and record what they applied.
     #
-    # `npx` still fetches drizzle-kit at start: it is a devDependency and the
-    # production stage installs `--omit=dev`. That is a pre-existing wart —
-    # this container reaches the network on every boot to push schema.
-    command: sh -c "node scripts/drizzle.mjs push --force && npm run serve"
+    # boot-migrate.ts is the guard around it, because a database created
+    # before v0.5 has tables and no journal — migrating one would replay the
+    # baseline over live data. It refuses to start those and names the one
+    # command that fixes them. See scripts/boot-migrate.ts and
+    # docs/deployment/upgrading.md.
+    #
+    # In the app service rather than a one-shot: this file runs a single
+    # replica with restart: unless-stopped, and the journal makes migrate a
+    # no-op on every boot after the first, so a separate service would
+    # duplicate the whole image/env block for no concurrency this stack can
+    # have.
+    command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
 
   # RabbitMQ for background jobs
   rabbitmq:
@@ -138,7 +145,10 @@ services:
   # CAD Converter Worker (Python - pythonocc-core for STEP/IGES → STL)
   cad-converter-dev:
     build:
-      context: ./workers/cad-converter
+      # Context is ./workers so the image can carry the shared py-common
+      # package alongside the worker's own source (JOBS-8).
+      context: ./workers
+      dockerfile: cad-converter/Dockerfile
     container_name: cascadia-cad-converter-dev
     restart: unless-stopped
     profiles:

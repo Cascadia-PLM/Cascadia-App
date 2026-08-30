@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { AlertCircle, Building2, FolderKanban, GitBranch } from 'lucide-react'
 import type { ImportContext, ImportItemType } from '@/lib/import'
 import { getImportConfig } from '@/lib/import'
@@ -13,14 +14,12 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { Badge, FormField } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
-
-interface Program {
-  id: string
-  name: string
-  code: string
-  status: string
-}
+import {
+  designBranchesQuery,
+  designListQuery,
+  designStatusQuery,
+  programListQuery,
+} from '@/lib/query'
 
 interface Design {
   id: string
@@ -35,13 +34,6 @@ interface Branch {
   name: string
   branchType: 'main' | 'eco' | 'workspace' | 'release'
   isLocked: boolean
-}
-
-interface DesignStatus {
-  protection: {
-    isMainBranchProtected: boolean
-    phase: 'pre-release' | 'post-release'
-  }
 }
 
 interface ContextSelectStepProps {
@@ -68,13 +60,6 @@ export function ContextSelectStep({
   const config = getImportConfig(itemType)
   const requiresDesign = config.requiresDesign
 
-  const [programs, setPrograms] = useState<Array<Program>>([])
-  const [designs, setDesigns] = useState<Array<Design>>([])
-  const [branches, setBranches] = useState<Array<Branch>>([])
-  const [loadingPrograms, setLoadingPrograms] = useState(true)
-  const [loadingDesigns, setLoadingDesigns] = useState(false)
-  const [loadingBranches, setLoadingBranches] = useState(false)
-
   const [selectedProgramId, setSelectedProgramId] = useState<
     string | undefined
   >(initialProgramId)
@@ -84,111 +69,48 @@ export function ContextSelectStep({
   const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>(
     initialBranchId,
   )
-  const [designStatus, setDesignStatus] = useState<DesignStatus | null>(null)
 
-  // Load programs on mount
-  useEffect(() => {
-    const loadPrograms = async () => {
-      try {
-        const response = await apiFetch<{ data: { programs: Array<Program> } }>(
-          '/api/v1/programs',
-        )
-        setPrograms(response.data.programs)
-      } catch (error) {
-        console.error('Failed to load programs:', error)
-      } finally {
-        setLoadingPrograms(false)
-      }
-    }
-    loadPrograms()
-  }, [])
+  // The three cascading lists, each enabled by the one above it.
+  const { data: programs = [], isPending: loadingPrograms } =
+    useQuery(programListQuery())
+  const { data: designs = [], isFetching: loadingDesigns } = useQuery(
+    designListQuery<Design>(selectedProgramId || undefined),
+  )
+  const { data: branches = [], isFetching: loadingBranches } = useQuery(
+    designBranchesQuery<Branch>(selectedDesignId ?? ''),
+  )
+  const { data: designStatus = null } = useQuery(
+    designStatusQuery(selectedDesignId ?? '', Boolean(selectedDesignId)),
+  )
 
-  // Load designs when program changes
+  // Auto-select when a level offers exactly one choice.
   useEffect(() => {
     if (!selectedProgramId) {
-      setDesigns([])
       setSelectedDesignId(undefined)
       return
     }
+    const onlyDesign = designs.length === 1 ? designs[0] : undefined
+    if (onlyDesign) setSelectedDesignId(onlyDesign.id)
+  }, [selectedProgramId, designs])
 
-    const loadDesigns = async () => {
-      setLoadingDesigns(true)
-      try {
-        const response = await apiFetch<{ data: { designs: Array<Design> } }>(
-          `/api/v1/designs?programId=${selectedProgramId}`,
-        )
-        setDesigns(response.data.designs)
-
-        // Auto-select if only one design
-        const onlyDesign =
-          response.data.designs.length === 1
-            ? response.data.designs[0]
-            : undefined
-        if (onlyDesign) {
-          setSelectedDesignId(onlyDesign.id)
-        }
-      } catch (error) {
-        console.error('Failed to load designs:', error)
-        setDesigns([])
-      } finally {
-        setLoadingDesigns(false)
-      }
-    }
-    loadDesigns()
-  }, [selectedProgramId])
-
-  // Load branches and design status when design changes
+  // Branch defaults follow the design's phase: under change control, the one
+  // unlocked branch if there is exactly one; before release, main.
   useEffect(() => {
-    if (!selectedDesignId) {
-      setBranches([])
-      setDesignStatus(null)
+    if (!selectedDesignId || !designStatus) {
       setSelectedBranchId(undefined)
       return
     }
-
-    const loadBranchesAndStatus = async () => {
-      setLoadingBranches(true)
-      try {
-        const [branchesRes, statusRes] = await Promise.all([
-          apiFetch<{ data: { branches: Array<Branch> } }>(
-            `/api/v1/designs/${selectedDesignId}/branches`,
-          ),
-          apiFetch<{ data: DesignStatus }>(
-            `/api/v1/designs/${selectedDesignId}/status`,
-          ),
-        ])
-        setBranches(branchesRes.data.branches)
-        setDesignStatus(statusRes.data)
-
-        // If post-release and no branch selected, auto-select first unlocked branch
-        if (statusRes.data.protection.isMainBranchProtected) {
-          const unlockedBranches = branchesRes.data.branches.filter(
-            (b) => !b.isLocked && b.branchType !== 'main',
-          )
-          const onlyUnlocked =
-            unlockedBranches.length === 1 ? unlockedBranches[0] : undefined
-          if (onlyUnlocked) {
-            setSelectedBranchId(onlyUnlocked.id)
-          }
-        } else {
-          // Pre-release: auto-select main branch
-          const mainBranch = branchesRes.data.branches.find(
-            (b) => b.branchType === 'main',
-          )
-          if (mainBranch) {
-            setSelectedBranchId(mainBranch.id)
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load branches:', error)
-        setBranches([])
-        setDesignStatus(null)
-      } finally {
-        setLoadingBranches(false)
-      }
+    if (designStatus.protection.isMainBranchProtected) {
+      const unlocked = branches.filter(
+        (b) => !b.isLocked && b.branchType !== 'main',
+      )
+      const onlyUnlocked = unlocked.length === 1 ? unlocked[0] : undefined
+      if (onlyUnlocked) setSelectedBranchId(onlyUnlocked.id)
+    } else {
+      const mainBranch = branches.find((b) => b.branchType === 'main')
+      if (mainBranch) setSelectedBranchId(mainBranch.id)
     }
-    loadBranchesAndStatus()
-  }, [selectedDesignId])
+  }, [selectedDesignId, designStatus, branches])
 
   // Update context when selection changes
   useEffect(() => {

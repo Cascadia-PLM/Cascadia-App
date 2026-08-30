@@ -55,7 +55,7 @@ export class WorkInstructionInheritanceService {
       if (!targetPartId) continue
 
       // Create inherited attachment on the MBOM part
-      await tx
+      const written = await tx
         .insert(workInstructionPartAttachments)
         .values({
           workInstructionId: attachment.workInstructionId,
@@ -68,8 +68,14 @@ export class WorkInstructionInheritanceService {
           createdBy: userId,
         })
         .onConflictDoNothing() // Skip if WI already attached to this MBOM part
+        .returning({ id: workInstructionPartAttachments.id })
 
-      inherited++
+      // Count what the insert actually wrote, not what it attempted. The
+      // conflict clause returns no row when the work instruction is already
+      // attached to this MBOM part, so an unconditional increment made a
+      // re-sync of an unchanged design report attachments it had not copied —
+      // and that count is the caller's only signal that anything changed.
+      inherited += written.length
     }
 
     return { inherited }

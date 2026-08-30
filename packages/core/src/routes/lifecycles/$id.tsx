@@ -3,6 +3,7 @@
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { AlertCircle, ArrowLeft, Loader2, Save } from 'lucide-react'
 import type {
   LifecycleType,
@@ -29,6 +30,7 @@ import {
 } from '@/components/ui'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'
+import { workflowDefinitionQuery } from '@/lib/query'
 import { resolveLifecycleType } from '@/lib/workflows/normalize'
 
 export const Route = createFileRoute('/lifecycles/$id')({
@@ -41,31 +43,29 @@ function EditLifecyclePage() {
   const { id } = Route.useParams()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
-  const [loading, setLoading] = useState(true)
   const [definition, setDefinition] =
     useState<Partial<WorkflowDefinition> | null>(null)
   const [lifecycleType, setLifecycleType] = useState<LifecycleType>('Free')
   const [drivers, setDrivers] = useState<Array<string>>([])
 
-  useEffect(() => {
-    const loadLifecycle = async () => {
-      try {
-        const result = await apiFetch<{
-          data: { workflow: WorkflowDefinition }
-        }>(`/api/v1/workflows/${id}`)
-        setDefinition(result.data.workflow)
+  // The server's copy; the editable state below is seeded from it.
+  const {
+    data: saved,
+    isPending: loading,
+    error: loadError,
+  } = useQuery(workflowDefinitionQuery<WorkflowDefinition>(id))
 
-        // Legacy definitions resolve through the one sanctioned inference
-        setLifecycleType(resolveLifecycleType(result.data.workflow))
-        setDrivers(result.data.workflow.drivers || [])
-      } catch (error) {
-        handleError(error, { title: 'Failed to load lifecycle' })
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadLifecycle()
-  }, [id, handleError])
+  useEffect(() => {
+    if (!saved) return
+    setDefinition(saved)
+    // Legacy definitions resolve through the one sanctioned inference
+    setLifecycleType(resolveLifecycleType(saved))
+    setDrivers(saved.drivers || [])
+  }, [saved])
+
+  useEffect(() => {
+    if (loadError) handleError(loadError, { title: 'Failed to load lifecycle' })
+  }, [loadError, handleError])
 
   if (loading) {
     return (

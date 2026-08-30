@@ -117,8 +117,7 @@ Base fields (available for all item types) use a single name:
 Type-specific fields use dot notation with the table name:
 
 - **Part:** `parts.description`, `parts.partType`, `parts.material`,
-  `parts.weight`, `parts.cost`, `parts.leadTimeDays`, `parts.quantityOnHand`,
-  `parts.location`
+  `parts.weight`, `parts.cost`, `parts.leadTimeDays`
 - **Document:** `documents.description`, `documents.fileName`,
   `documents.fileSize`, `documents.mimeType`
 - **ChangeOrder:** `change_orders.changeType`, `change_orders.priority`,

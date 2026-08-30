@@ -5,13 +5,14 @@ import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 import type { Tool } from '@/lib/items/types/tool'
-import { ToolDetail } from '@/components/tools/ToolDetail'
+import type { ToolDetailTab } from '@/components/tools/ToolDetail'
+import { TOOL_DETAIL_TABS, ToolDetail } from '@/components/tools/ToolDetail'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { entityQuery, useInvalidateResources } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
 
 const toolDetailSearchSchema = z.object({
-  tab: z.enum(['details', 'history']).optional().default('details'),
+  tab: z.enum(TOOL_DETAIL_TABS).optional().default('details'),
 })
 
 export const Route = createFileRoute('/tools/$id')({
@@ -63,12 +64,12 @@ function ToolDetailPage() {
     navigate({ to: '/tools' })
   }
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab: ToolDetailTab) => {
     router.navigate({
       to: '/tools/$id',
       params: { id: tool.id ?? '' },
       search: {
-        tab: tab as 'details' | 'history',
+        tab,
       },
       replace: true,
     })

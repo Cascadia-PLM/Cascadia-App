@@ -66,6 +66,7 @@ kubernetes/
 +-- namespace.yaml          # cascadia namespace
 +-- configmap.yaml          # Non-sensitive configuration
 +-- secrets.yaml.example    # Template for sensitive data
++-- migrate-job.yaml        # One-shot database migration Job (run before the app)
 +-- app/
 |   +-- deployment.yaml     # App Deployment with health probes
 |   +-- service.yaml        # ClusterIP Service
@@ -76,7 +77,7 @@ kubernetes/
 
 ## Deployment Steps
 
-### 1. Create the Namespace
+### Step 1: Create the Namespace
 
 ```bash
 kubectl apply -f namespace.yaml
@@ -94,7 +95,7 @@ metadata:
     app.kubernetes.io/name: cascadia-plm
 ```
 
-### 2. Configure Secrets
+### Step 2: Configure Secrets
 
 ```bash
 cp secrets.yaml.example secrets.yaml
@@ -124,7 +125,7 @@ Apply the secrets:
 kubectl apply -f secrets.yaml
 ```
 
-### 3. Configure the ConfigMap
+### Step 3: Configure the ConfigMap
 
 Edit `configmap.yaml` for your environment:
 
@@ -153,7 +154,52 @@ Apply:
 kubectl apply -f configmap.yaml
 ```
 
-### 4. Deploy the Application
+### Step 4: Apply the Database Migration Job
+
+**Nothing on Kubernetes migrates the database for you.** Run
+`migrate-job.yaml` now, before the app, and again on every upgrade:
+
+```bash
+kubectl delete job cascadia-migrate -n cascadia --ignore-not-found
+kubectl apply -f migrate-job.yaml
+kubectl wait --for=condition=complete job/cascadia-migrate -n cascadia --timeout=300s
+kubectl logs job/cascadia-migrate -n cascadia
+```
+
+That is a one-shot `batch/v1` Job named `cascadia-migrate` in the `cascadia`
+namespace. It runs the app image with its command replaced by
+`npx tsx scripts/boot-migrate.ts`, which applies the committed migrations under
+`apps/*/drizzle/` and then exits. It reads `DATABASE_URL` from
+`cascadia-secrets` and `NODE_ENV` from `cascadia-config` — both created by the
+steps above, and `NODE_ENV` is not decoration: with no `?sslmode=` in the URL it
+is what decides whether the connection requires TLS, so a Job without it would
+fail to reach a managed database the app pods connect to happily.
+
+Three things about that sequence are deliberate:
+
+- **The `delete` comes first** because a Job's pod template is immutable.
+  Re-applying an existing `cascadia-migrate` fails instead of re-running it.
+- **The Job is not in `kustomization.yaml`.** If it were, that immutability
+  would break `kubectl apply -k .` on every upgrade. Keeping it out means the
+  Job is always run explicitly, in the sequence above.
+- **Its image tag is not covered by the `images:` override in
+  `kustomization.yaml`,** for the same reason. Pin the Job and the Deployment
+  to the same tag on an upgrade — a Job left on the previous release applies
+  the previous release's migrations and then hands a stale schema to the new
+  app image.
+
+If the Job's logs end in a refusal to start rather than `[boot] database is
+current`, the database predates v0.5: it has tables but no migration journal.
+Stamp it once and re-run the Job — see
+[Migrating a pre-v0.5 database](#migrating-a-pre-v05-database) below.
+
+The compose-based deployments do this differently: their templates override the
+container command with `sh -c "npx tsx scripts/boot-migrate.ts && npm run
+serve"`, so a single-container install migrates as it boots. That pattern is
+compose-only. The Deployment here overrides no command, so its pods run the
+image's bare server entry point and touch the schema not at all.
+
+### Step 5: Deploy the Application
 
 ```bash
 kubectl apply -f app/
@@ -165,7 +211,15 @@ This creates:
 - A **ClusterIP Service** exposing port 80 (mapped to container port 3000)
 - A **HorizontalPodAutoscaler** scaling between 2 and 10 pods
 
-### 5. Configure Ingress
+Do not run this before Step 4 has completed. The readiness probe will **not**
+protect you if you do: it requests `/api/v1/health`, which reports the process
+is up and its version and nothing else — it opens no database connection (see
+`packages/core/src/server/routes/health.ts`). A pod pointed at an unmigrated
+database therefore passes both probes, joins the Service endpoints, and serves
+500s to real traffic until the migration lands. There is no crash and no
+restart loop to alert on; the only symptom is failing requests.
+
+### Step 6: Configure Ingress
 
 Edit `ingress.yaml` to set your hostname:
 
@@ -196,12 +250,24 @@ kubectl apply -f ingress.yaml
 
 ### Using Kustomize
 
-Apply everything at once (except secrets, which must be created from the template):
+Apply everything at once (except secrets, which must be created from the
+template, and the migration Job, which is not a kustomize resource):
 
 ```bash
 kubectl apply -f secrets.yaml
+kubectl apply -f namespace.yaml -f configmap.yaml
+
+# Migrate before anything serves traffic — on install and on every upgrade.
+kubectl delete job cascadia-migrate -n cascadia --ignore-not-found
+kubectl apply -f migrate-job.yaml
+kubectl wait --for=condition=complete job/cascadia-migrate -n cascadia --timeout=300s
+
 kubectl apply -k .
 ```
+
+`kubectl apply -k .` alone is not a complete install or a complete upgrade. It
+never applies a migration, and the app pods it starts will serve 500s against a
+database whose schema is behind the image.
 
 The `kustomization.yaml` applies common labels and allows image tag overrides:
 
@@ -272,6 +338,13 @@ readinessProbe:
 
 - **Liveness probe**: restarts the pod if the app becomes unresponsive.
 - **Readiness probe**: removes the pod from the service endpoints during startup or transient issues.
+
+Both hit the same endpoint, and that endpoint is a process-liveness check, not a
+dependency check: `/api/v1/health` returns `status`, the app version, and a
+timestamp without opening a database connection. It answers "is this process
+serving HTTP?" and nothing more. In particular it cannot tell you the database
+is reachable or migrated, which is why the migration Job in Step 4 has to be
+sequenced by the operator rather than left for readiness to sort out.
 
 ### Horizontal Pod Autoscaler
 
@@ -484,17 +557,57 @@ kubectl port-forward service/cascadia-app 3000:80 -n cascadia
 kubectl exec -it deployment/cascadia-app -n cascadia -- sh
 ```
 
-### Schema Push
+### Applying Migrations
 
-Pre-1.0 there are no committed migration files — the schema is applied with a push. Run manually if the app does not push it on startup:
+Migrations are applied by the `cascadia-migrate` Job, never by the app pods —
+see [Step 4](#step-4-apply-the-database-migration-job) for the install and upgrade
+sequence and the reasoning behind it. To re-run it, or to run it out of band:
 
 ```bash
-kubectl exec -it deployment/cascadia-app -n cascadia -- npm run db:push
+kubectl delete job cascadia-migrate -n cascadia --ignore-not-found
+kubectl apply -f migrate-job.yaml
+kubectl wait --for=condition=complete job/cascadia-migrate -n cascadia --timeout=300s
+kubectl logs job/cascadia-migrate -n cascadia
 ```
+
+The Job is idempotent: with the journal already current it applies nothing and
+exits zero, so re-running it is free and is the cheapest way to find out whether
+a schema problem is a missing migration.
+
+Applying migrations from inside a running app pod is also possible and is the
+right tool when you are already in there diagnosing something:
+
+```bash
+kubectl exec -it deployment/cascadia-app -n cascadia -- npm run db:migrate
+```
+
+Prefer the Job for anything routine. `kubectl exec` runs in one replica of a
+Deployment that has others, gives you no completion condition to wait on, and
+leaves no record once the pod is replaced.
+
+### Migrating a pre-v0.5 Database
+
+A database created before v0.5 got its schema from `db:push`, which records
+nothing, so it has tables but an empty migration journal. Running migrations
+against it would replay the baseline over live tables, and `boot-migrate.ts`
+refuses rather than doing that — the Job fails, `kubectl logs` shows the
+refusal, and nothing in the database has been changed.
+
+Stamp the baseline as already applied, once, then re-run the Job:
+
+```bash
+kubectl exec -it deployment/cascadia-app -n cascadia -- npx tsx scripts/db-baseline.ts
+```
+
+`db-baseline` verifies the live schema matches the baseline before stamping and
+refuses if it does not. See [upgrading.md](./upgrading.md) for the full
+procedure.
 
 ### Common Issues
 
 - **ImagePullBackOff**: Verify the image exists in your registry and pull secrets are configured.
 - **CrashLoopBackOff**: Check logs for missing environment variables (`DATABASE_URL`).
 - **Readiness probe failing**: The app may still be starting. Check `initialDelaySeconds` and `startupProbe` if needed.
+- **Pods are Ready but every request 500s**: almost always an unmigrated or behind schema. The health endpoint does not check the database, so the pods look fine. Run the `cascadia-migrate` Job and read its logs — see [Applying Migrations](#applying-migrations).
+- **`cascadia-migrate` fails immediately**: read `kubectl logs job/cascadia-migrate -n cascadia`. A refusal naming `db:baseline` means a pre-v0.5 database ([above](#migrating-a-pre-v05-database)); a connection error usually means `NODE_ENV` differs between the Job and the Deployment, which changes whether TLS is required.
 - **HPA not scaling**: Ensure metrics-server is installed in the cluster.

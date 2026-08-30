@@ -5,6 +5,7 @@ import { memo } from 'react'
 import { Edit2, RotateCcw, Trash2 } from 'lucide-react'
 import type { Node, NodeProps } from '@xyflow/react'
 import type { LifecyclePhaseConfig } from '@/lib/types/lifecycle'
+import { NO_REVISION_MARKER } from '@/lib/types/lifecycle'
 
 interface PhaseGroupNodeData extends Record<string, unknown> {
   phase: LifecyclePhaseConfig
@@ -87,7 +88,7 @@ function revisionSchemeLabel(phase: LifecyclePhaseConfig): string | null {
     case 'prefixed-numeric':
       return `${scheme.prefix}1, ${scheme.prefix}2`
     case 'none':
-      return 'No Rev'
+      return NO_REVISION_MARKER
   }
 }
 

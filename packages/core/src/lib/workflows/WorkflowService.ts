@@ -11,6 +11,7 @@ import {
 import { items } from '../db/schema/items'
 import { ItemTypeRegistry } from '../items/registry'
 import { permissionService } from '../auth/permission-service'
+import { notDeleted } from '../db/filters'
 import { ConflictError, NotFoundError, ValidationError } from '../errors'
 import { GuardEvaluator } from './GuardEvaluator'
 import {
@@ -634,6 +635,35 @@ export class WorkflowService {
       }
     }
 
+    // A lifecycle-level `none` revision scheme is incompatible with a Driven
+    // lifecycle, and the incompatibility is structural rather than stylistic.
+    // Releasing on a Driven lifecycle mints a NEW `items` row per version,
+    // and (item_number, revision, design_id, item_type) is unique — so a
+    // scheme whose revision never advances makes the *second* release of any
+    // item a unique violation, thrown from inside the merge transaction with
+    // nothing useful to say. Refuse the configuration at save time instead of
+    // failing the release that discovers it.
+    //
+    // An error, not a warning: a warning still lets the definition be saved,
+    // and the failure it warns about lands on a different person days later.
+    //
+    // Phase-level `none` overrides stay legal. They are read only by the
+    // promote path (`LifecycleService.getEffectiveTransition`), which updates
+    // the item in place and mints no row.
+    if (
+      definition.revisionScheme?.type === 'none' &&
+      resolveLifecycleType(definition) === 'Driven'
+    ) {
+      errors.push({
+        code: 'NONE_SCHEME_ON_DRIVEN',
+        message:
+          `Revision scheme 'none' is not valid for a Driven lifecycle: each release creates a new version of the item, ` +
+          `and two versions of one item cannot share a revision. Use 'none' on a lifecycle whose items are updated in ` +
+          `place (Free), or as a phase-level override.`,
+        path: 'revisionScheme',
+      })
+    }
+
     return {
       valid: errors.length === 0,
       errors,
@@ -684,7 +714,7 @@ export class WorkflowService {
         and(
           inArray(items.itemType, itemTypesUsingLifecycle),
           inArray(items.state, removedStateIds),
-          eq(items.isDeleted, false),
+          notDeleted(),
         ),
       )
       .groupBy(items.state, items.itemType)

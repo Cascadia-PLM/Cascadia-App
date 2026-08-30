@@ -248,11 +248,19 @@ describe('PhysicalPartService', () => {
       )
       expect(byIdentity?.id).toBe(physicalPart.id)
 
-      const bySearch = await PhysicalPartService.search({ q: 'FIND-ME' })
+      // `accessDesignIds: null` is cross-program authority — this case is about
+      // the lookups, unbounded on purpose. The boundary itself is asserted end
+      // to end in `routes/program-isolation.permissions.test.ts`, against the
+      // route that resolves the scope.
+      const bySearch = await PhysicalPartService.search({
+        q: 'FIND-ME',
+        accessDesignIds: null,
+      })
       expect(bySearch.map((r) => r.id)).toContain(physicalPart.id)
 
       const byPart = await PhysicalPartService.search({
         partMasterId: part.masterId!,
+        accessDesignIds: null,
       })
       expect(byPart).toHaveLength(1)
       expect(byPart[0]!.partItemNumber).toBeTruthy()

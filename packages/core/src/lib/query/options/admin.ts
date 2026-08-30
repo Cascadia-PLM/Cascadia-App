@@ -36,6 +36,24 @@ const NO_ENV_VARS: AiSettingsEnvVars = { openai: false, anthropic: false }
  * Keyed under `admin` because writing a setting changes the *effective*
  * configuration this reports, not just the row that was written.
  */
+/**
+ * One system setting's JSON value, by key.
+ *
+ * Keyed under `admin` so a settings write refreshes every reader — the
+ * setup wizard and the admin pages read the same entries.
+ */
+export function settingQuery<T>(key: string) {
+  return queryOptions({
+    queryKey: qk.detail('admin', `setting:${key}`),
+    queryFn: async (): Promise<T | null> => {
+      const result = await apiFetch<{
+        data?: { setting?: { jsonValue?: T } }
+      }>(`/api/v1/admin/settings?key=${encodeURIComponent(key)}`)
+      return result.data?.setting?.jsonValue ?? null
+    },
+  })
+}
+
 export function vaultConfigQuery() {
   return queryOptions({
     queryKey: qk.collection('admin', 'vault-config'),

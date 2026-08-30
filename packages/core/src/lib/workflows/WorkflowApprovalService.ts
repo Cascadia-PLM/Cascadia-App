@@ -36,6 +36,7 @@ import {
   PermissionDeniedError,
   ValidationError,
 } from '@/lib/errors'
+import { isUniqueViolation } from '@/lib/errors/pg'
 import { takeFirst } from '@/lib/db/take-first'
 
 /**
@@ -156,7 +157,12 @@ export class WorkflowApprovalService {
       return []
     }
 
-    // Insert new approvers
+    // Insert new approvers. Same reason as `setInstanceApprovers` below: the
+    // replacement delete has already run, so a repeated pair inside the
+    // caller's array would abort the write under `uq_wf_state_approvers` and
+    // leave the state with no approvers at all — a wide-open gate, from a
+    // request whose meaning was never in doubt. `.returning()` then reports
+    // the rows that actually landed, which is the deduped set.
     const inserted = await db
       .insert(workflowStateApprovers)
       .values(
@@ -169,6 +175,7 @@ export class WorkflowApprovalService {
           createdBy: userId,
         })),
       )
+      .onConflictDoNothing()
       .returning()
 
     // Return with names resolved in bulk
@@ -221,19 +228,31 @@ export class WorkflowApprovalService {
       throw new ConflictError('Approver already exists for this state')
     }
 
-    const inserted = takeFirst(
-      await db
-        .insert(workflowStateApprovers)
-        .values({
-          workflowDefinitionId: definitionId,
-          stateId,
-          approverType: approver.type,
-          approverId: approver.id,
-          isRequired: approver.isRequired,
-          createdBy: userId,
-        })
-        .returning(),
-    )
+    let inserted
+    try {
+      inserted = takeFirst(
+        await db
+          .insert(workflowStateApprovers)
+          .values({
+            workflowDefinitionId: definitionId,
+            stateId,
+            approverType: approver.type,
+            approverId: approver.id,
+            isRequired: approver.isRequired,
+            createdBy: userId,
+          })
+          .returning(),
+      )
+    } catch (error) {
+      // The loser of the race the pre-check above cannot close. Same error the
+      // pre-check raises, so the caller sees 409 rather than a 500 that reads
+      // like a malfunction — the outcome it describes is true either way, the
+      // approver is on the state.
+      if (isUniqueViolation(error, { table: 'workflow_state_approvers' })) {
+        throw new ConflictError('Approver already exists for this state')
+      }
+      throw error
+    }
 
     return {
       id: inserted.id,
@@ -396,16 +415,25 @@ export class WorkflowApprovalService {
       return []
     }
 
-    await db.insert(workflowInstanceApprovers).values(
-      approvers.map((a) => ({
-        workflowInstanceId: instanceId,
-        stateId,
-        approverType: a.type,
-        approverId: a.id,
-        isRequired: a.isRequired,
-        createdBy: userId,
-      })),
-    )
+    await db
+      .insert(workflowInstanceApprovers)
+      .values(
+        approvers.map((a) => ({
+          workflowInstanceId: instanceId,
+          stateId,
+          approverType: a.type,
+          approverId: a.id,
+          isRequired: a.isRequired,
+          createdBy: userId,
+        })),
+      )
+      // The caller hands over a whole approver list, and a list naming the
+      // same person twice is a redundant request, not an invalid one — under
+      // `uq_wf_instance_approvers` it would otherwise abort the write outright
+      // and leave the state with no approvers, because the delete above
+      // already ran. Skipping the repeat is the same set this method
+      // documented before the constraint existed, minus the duplicate row.
+      .onConflictDoNothing()
 
     return this.getInstanceApprovers(instanceId, stateId)
   }
@@ -690,8 +718,15 @@ export class WorkflowApprovalService {
       roleName = validRole.name
     }
 
-    // Check if already voted (prevent race conditions). Superseded votes
-    // don't count — after rework the same user must vote again.
+    // Check if already voted. Superseded votes don't count — after rework the
+    // same user must vote again.
+    //
+    // This read is not the guarantee; the partial unique index
+    // uq_wf_votes_active is. Between this SELECT and the INSERT below, a
+    // second request from the same user can pass the same check, and two
+    // live votes then count that person twice toward a quorum. The check
+    // stays because it is what turns the common case into a clean 409
+    // without reaching the database's error path.
     const existingVote = await db
       .select()
       .from(workflowApprovalVotes)
@@ -731,19 +766,31 @@ export class WorkflowApprovalService {
     await ApprovalRegistry.beforeVote(ctx)
 
     return db.transaction(async (tx) => {
-      const inserted = takeFirst(
-        await tx
-          .insert(workflowApprovalVotes)
-          .values({
-            workflowInstanceId: instanceId,
-            stateId,
-            userId,
-            roleId: roleId || null,
-            vote,
-            comments: comments || null,
-          })
-          .returning(),
-      )
+      let inserted
+      try {
+        inserted = takeFirst(
+          await tx
+            .insert(workflowApprovalVotes)
+            .values({
+              workflowInstanceId: instanceId,
+              stateId,
+              userId,
+              roleId: roleId || null,
+              vote,
+              comments: comments || null,
+            })
+            .returning(),
+        )
+      } catch (error) {
+        // The loser of the race the pre-check cannot close. Same error the
+        // pre-check raises, so the caller sees 409 rather than a 500 that
+        // reads like a malfunction. Thrown from inside the transaction, so
+        // anything an interceptor bound to this vote rolls back with it.
+        if (isUniqueViolation(error, { table: 'workflow_approval_votes' })) {
+          throw new ConflictError('Vote already submitted')
+        }
+        throw error
+      }
 
       const contributed = await ApprovalRegistry.afterVote(inserted.id, ctx, tx)
 

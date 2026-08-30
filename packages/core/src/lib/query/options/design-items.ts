@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
+import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
 import type { GridParams, GridQuery } from '../grid-params'
 import { apiFetch } from '@/lib/api/client'
@@ -60,4 +61,33 @@ export function designItemsGridQuery(
       return { items: result.data.items, total: result.data.total }
     },
   }
+}
+
+/**
+ * Every item in a design at one version context, unpaged.
+ *
+ * The design detail page's All Items tab filters, groups and counts the whole
+ * set in the browser, so it needs the set rather than a page of it;
+ * `designItemsGridQuery` is the paged read for grids. Both key beneath the
+ * design, so a commit or merge refreshes them together.
+ */
+export function designItemsQuery(
+  designId: string,
+  context: DesignItemsContext = {},
+) {
+  return queryOptions({
+    queryKey: qk.sub('designs', designId, 'items', { all: true, ...context }),
+    queryFn: async (): Promise<Array<DesignItem>> => {
+      const qs = new URLSearchParams()
+      if (context.itemType) qs.set('type', context.itemType)
+      if (context.branch) qs.set('branch', context.branch)
+      if (context.tag) qs.set('tag', context.tag)
+      if (context.commit) qs.set('commit', context.commit)
+      const result = await apiFetch<{ data: { items: Array<DesignItem> } }>(
+        `/api/v1/designs/${designId}/items?${qs}`,
+      )
+      return result.data.items
+    },
+    enabled: Boolean(designId),
+  })
 }

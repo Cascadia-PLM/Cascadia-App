@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   AlertTriangle,
   ChevronDown,
@@ -10,62 +11,129 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import type { UpstreamChangeItem } from '@/lib/db/schema/thread'
+import type { UpstreamChange } from '@/lib/query'
 import { Button } from '@/components/ui/Button'
-
-interface UpstreamChange {
-  id: string
-  sourceDesignId: string
-  sourceDesignName: string
-  sourceDesignCode: string
-  sourceEcoNumber: string | null
-  changedItems: Array<UpstreamChangeItem>
-  status: string
-  createdAt: string
-}
+import { apiFetch } from '@/lib/api/client'
+import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { upstreamChangesQuery, useResourceMutation } from '@/lib/query'
+import { cn } from '@/lib/utils'
 
 interface UpstreamChangesBannerProps {
   designId: string
 }
 
+/**
+ * What a "Dismiss All" sweep actually managed to do.
+ *
+ * There is no bulk review endpoint, so the sweep is a sequence of independent
+ * writes and stopping half way through leaves a real partial state on the
+ * server. The outcome carries the count so the UI can say which it was
+ * instead of reporting a flat success or a flat failure.
+ */
+interface DismissOutcome {
+  /** Rows deferred before the sweep stopped. */
+  dismissed: number
+  /** Rows that were pending when it started. */
+  total: number
+  /** The error that stopped the sweep, or `null` if it got through them all. */
+  failure: unknown
+}
+
 export function UpstreamChangesBanner({
   designId,
 }: UpstreamChangesBannerProps) {
-  const [changes, setChanges] = useState<Array<UpstreamChange>>([])
-  const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { handleError } = useErrorHandler()
 
-  useEffect(() => {
-    loadChanges()
-  }, [designId])
+  const {
+    data: changes = [],
+    isPending,
+    isError,
+    isFetching,
+    refetch,
+  } = useQuery(upstreamChangesQuery(designId))
 
-  const loadChanges = async () => {
-    setLoading(true)
-    setError(null)
+  /**
+   * Review every pending change as `defer`.
+   *
+   * `defer` rather than `reject` because dismissing the banner is a statement
+   * about this reviewer's attention, not a verdict on the change. Either way
+   * the row leaves the pending list for good — `getPendingUpstreamChanges`
+   * filters `status = 'pending'` and nothing re-pends a reviewed row — so the
+   * two differ only in the label the audit trail keeps.
+   *
+   * The loop deliberately does not rethrow. Throwing would skip invalidation,
+   * leaving the banner showing rows that are already deferred on the server;
+   * returning the partial count instead lets `useResourceMutation` invalidate
+   * first and then report honestly from `onSuccess`.
+   */
+  const dismissAll = useResourceMutation<
+    DismissOutcome,
+    Error,
+    Array<UpstreamChange>
+  >({
+    mutationFn: async (pending) => {
+      let dismissed = 0
 
-    try {
-      const response = await fetch(`/api/v1/mbom/${designId}/upstream-changes`)
-      if (!response.ok) {
-        throw new Error('Failed to load upstream changes')
+      for (const change of pending) {
+        try {
+          await apiFetch(
+            `/api/v1/mbom/${designId}/upstream-changes/${change.id}/review`,
+            { method: 'POST', body: JSON.stringify({ action: 'defer' }) },
+          )
+          dismissed += 1
+        } catch (error) {
+          return { dismissed, total: pending.length, failure: error }
+        }
       }
 
-      const { data } = await response.json()
-      setChanges(data.changes || [])
-    } catch (err) {
-      setError((err as Error).message)
-    } finally {
-      setLoading(false)
-    }
-  }
+      return { dismissed, total: pending.length, failure: null }
+    },
+    invalidates: ['mbom'],
+    onSuccess: (outcome) => {
+      if (outcome.failure === null) {
+        return
+      }
 
-  // Don't show anything if loading or no changes
-  if (loading) {
+      handleError(outcome.failure, {
+        title:
+          outcome.dismissed === 0
+            ? 'Could not dismiss upstream changes'
+            : `Dismissed ${outcome.dismissed} of ${outcome.total} upstream changes`,
+      })
+    },
+  })
+
+  // Nothing to advise about while the first read is in flight.
+  if (isPending) {
     return null
   }
 
-  if (error) {
-    return null // Silently fail - not critical
+  // A failed read used to render as `null` — the same thing shown when there
+  // is genuinely nothing to review, so a broken detector was indistinguishable
+  // from good news. Say which it is.
+  if (isError) {
+    return (
+      <div className="mb-6 px-4 py-3 flex items-center gap-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+        <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+        <p className="text-sm text-amber-800 dark:text-amber-200">
+          Could not check for upstream engineering changes. This MBOM may have
+          changes awaiting review that are not shown here.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void refetch()}
+          disabled={isFetching}
+          className="ml-auto shrink-0 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900"
+        >
+          <RefreshCw
+            className={cn('h-4 w-4 mr-1', isFetching && 'animate-spin')}
+          />
+          Retry
+        </Button>
+      </div>
+    )
   }
 
   if (changes.length === 0) {
@@ -112,10 +180,13 @@ export function UpstreamChangesBanner({
           <Button
             variant="outline"
             size="sm"
-            onClick={loadChanges}
+            onClick={() => void refetch()}
+            disabled={isFetching}
             className="border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw
+              className={cn('h-4 w-4', isFetching && 'animate-spin')}
+            />
           </Button>
         </div>
       </div>
@@ -213,18 +284,18 @@ export function UpstreamChangesBanner({
           {/* Actions */}
           <div className="flex items-center gap-3 pt-2 border-t border-amber-200 dark:border-amber-800">
             <p className="text-sm text-amber-700 dark:text-amber-300">
-              Review these changes and decide whether to update the MBOM.
+              Dismissing records these changes as reviewed and clears the
+              banner. It does not update the MBOM.
             </p>
-            <div className="ml-auto flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-amber-300 dark:border-amber-700"
-              >
-                Dismiss All
-              </Button>
-              <Button size="sm">Create MCO to Update</Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => dismissAll.mutate(changes)}
+              disabled={dismissAll.isPending}
+              className="ml-auto shrink-0 border-amber-300 dark:border-amber-700"
+            >
+              {dismissAll.isPending ? 'Dismissing…' : 'Dismiss All'}
+            </Button>
           </div>
         </div>
       )}

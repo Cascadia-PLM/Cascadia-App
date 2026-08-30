@@ -4,11 +4,12 @@
 /**
  * Create Item E2E Smoke Tests
  *
- * Tier 1: Critical path tests that run on every PR.
+ * Critical-path smoke tests.
  * Tests that the create part flow works end-to-end.
  */
 
 import { expect, test } from './fixtures'
+import { seedFreshDesign, selectDesignByName } from './seed'
 import type { Page } from '@playwright/test'
 
 /**
@@ -25,7 +26,7 @@ async function fillField(
   await field.fill(value)
 }
 
-test.describe('Create Item - Smoke Tests @tier1', () => {
+test.describe('Create Item - Smoke Tests', () => {
   test.describe('Create Part Page', () => {
     test('can navigate to create part page', async ({
       authenticatedPage: page,
@@ -87,27 +88,10 @@ test.describe('Create Item - Smoke Tests @tier1', () => {
     test('can create a new part when design is available', async ({
       authenticatedPage: page,
     }) => {
+      const design = await seedFreshDesign(page, 'E2E Smoke')
+
       await page.goto('/parts/new')
-
-      // Check if there are designs available
-      const designSelector = page.locator('[data-testid="design-selector"]')
-      await designSelector.click()
-
-      // Look for design options (excluding "No Design")
-      const designOptions = page
-        .locator('[role="option"]')
-        .filter({ hasNotText: 'No Design' })
-      const designCount = await designOptions.count()
-
-      // Hard requirement, not a skip: global setup guarantees a selectable
-      // design, so an empty selector is a seeding regression to surface.
-      expect(
-        designCount,
-        'no selectable design — e2e global setup should have created one',
-      ).toBeGreaterThan(0)
-
-      // Select the first available design
-      await designOptions.first().click()
+      await selectDesignByName(page, design.name)
 
       // Fill in required fields using focus + pressSequentially
       const timestamp = Date.now()

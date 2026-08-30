@@ -1,0 +1,94 @@
+# Database migration Job — run this before the app Deployment, on the first
+# install and again on every upgrade.
+#
+# Nothing else on Kubernetes applies migrations. The compose templates start
+# the app with `sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"`, so a
+# single-container install migrates as it boots; the Deployment here overrides
+# no command, so its pods run the image's bare `CMD node .output/…/index.mjs`
+# and touch the schema not at all. This Job is the piece that closes that gap,
+# and it is a Job rather than an initContainer because the Deployment has two
+# replicas and an HPA above it — every replica would race the others through
+# drizzle's migrator, which is not proven safe to run concurrently.
+#
+# It is deliberately NOT listed in kustomization.yaml. A Job's pod template is
+# immutable, so `kubectl apply -k .` on an upgrade fails on this object instead
+# of re-running it, and a kustomize apply that fails halfway is worse than one
+# that never included it. Run it explicitly, deleting the previous run first:
+#
+#   kubectl delete job cascadia-migrate -n cascadia --ignore-not-found
+#   kubectl apply -f migrate-job.yaml
+#   kubectl wait --for=condition=complete job/cascadia-migrate -n cascadia --timeout=300s
+#
+# Because it is outside kustomization.yaml, the `images:` tag override there
+# does not reach this file. Pin the same tag in both places on an upgrade: a
+# Job still running last release's image applies last release's migrations and
+# then hands a stale schema to a new app image.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cascadia-migrate
+  namespace: cascadia
+  labels:
+    app: cascadia-migrate
+    component: migrate
+spec:
+  # Two retries, then stop and leave the failure to be read. boot-migrate.ts
+  # exits non-zero on a pre-v0.5 database (tables, no migration journal) and
+  # says which command fixes it — retrying that forever would bury the message.
+  backoffLimit: 2
+
+  # No ttlSecondsAfterFinished: the completed pod is where the migration log
+  # lives, and `kubectl logs job/cascadia-migrate -n cascadia` is the only way
+  # to see what was applied. The delete-then-apply sequence above is what
+  # cleans it up, at the moment the next run needs the name.
+  template:
+    metadata:
+      labels:
+        app: cascadia-migrate
+        component: migrate
+    spec:
+      restartPolicy: Never
+
+      # Matches app/deployment.yaml — the image's `nodejs` user is uid 1001.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+
+      containers:
+        - name: migrate
+          image: ghcr.io/cascadia-plm/cascadia-app:latest
+          imagePullPolicy: Always
+
+          # Overrides the image CMD, not its ENTRYPOINT, so this still runs
+          # under dumb-init. boot-migrate.ts applies the committed migrations
+          # under apps/*/drizzle and refuses rather than guessing when the
+          # database predates the journal.
+          command: ['npx', 'tsx', 'scripts/boot-migrate.ts']
+
+          env:
+            # Not decoration: with no `?sslmode=` in the URL, NODE_ENV is what
+            # decides whether the connection requires TLS (see resolveSslOption
+            # in packages/core/src/lib/db/index.ts). Omit it here and the Job
+            # would connect in cleartext while the app pods, which read the
+            # same key from this ConfigMap, require TLS — so against a managed
+            # database the migration fails where the app works.
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: cascadia-config
+                  key: NODE_ENV
+
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cascadia-secrets
+                  key: database-url
+
+          resources:
+            requests:
+              cpu: '100m'
+              memory: '256Mi'
+            limits:
+              cpu: '500m'
+              memory: '512Mi'

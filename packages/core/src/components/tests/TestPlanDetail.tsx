@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import {
@@ -50,8 +50,7 @@ import {
 } from '@/components/ui'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { testPlanTestCasesQuery } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { branchDetailQuery, testPlanTestCasesQuery } from '@/lib/query'
 import { itemAtContextQuery } from '@/lib/query/options/items'
 import { StateBadge } from '@/components/items/StateBadge'
 import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
@@ -74,6 +73,21 @@ const createEmptyTestPlan = (): TestPlan => ({
   modifiedAt: undefined,
 })
 
+/**
+ * The tabs this detail view renders. The route's search schema derives its
+ * `tab` enum from this list, so the URL contract and the rendered tabs
+ * cannot drift apart; the `onValueChange` cast below is the one seam where
+ * Radix's `string` meets it, and the triggers are rendered from the same
+ * source of truth.
+ */
+export const TEST_PLAN_DETAIL_TABS = [
+  'details',
+  'test-cases',
+  'relationships',
+  'history',
+] as const
+export type TestPlanDetailTab = (typeof TEST_PLAN_DETAIL_TABS)[number]
+
 interface TestPlanDetailProps {
   /** Called after a lifecycle transition succeeds (refresh the item) */
   onTransitioned?: () => void
@@ -84,8 +98,8 @@ interface TestPlanDetailProps {
   onDelete?: () => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
-  activeTab?: 'details' | 'test-cases' | 'relationships' | 'history'
-  onTabChange?: (tab: string) => void
+  activeTab?: TestPlanDetailTab
+  onTabChange?: (tab: TestPlanDetailTab) => void
 }
 
 export function TestPlanDetail({
@@ -100,6 +114,7 @@ export function TestPlanDetail({
   activeTab = 'details',
   onTabChange,
 }: TestPlanDetailProps) {
+  const navigate = useNavigate()
   const { confirm } = useAlertDialog()
   const { handleError } = useErrorHandler()
 
@@ -114,8 +129,6 @@ export function TestPlanDetail({
   )
   const [isEditing, setIsEditing] = useState(isCreateMode)
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false)
-
-  const [isWorkspaceContext, setIsWorkspaceContext] = useState(false)
 
   const { context, contextLabel, isEditable, setContext } = useVersionContext(
     isCreateMode ? undefined : testPlan.designId,
@@ -147,23 +160,15 @@ export function TestPlanDetail({
     }
   }, [initialTestPlan])
 
-  useEffect(() => {
-    async function checkIfWorkspace() {
-      if (context.type !== 'branch' || !context.branchId) {
-        setIsWorkspaceContext(false)
-        return
-      }
-      try {
-        const response = await apiFetch<{
-          data: { branch: { branchType: string } }
-        }>(`/api/v1/branches/${context.branchId}`)
-        setIsWorkspaceContext(response.data.branch.branchType === 'workspace')
-      } catch {
-        setIsWorkspaceContext(false)
-      }
-    }
-    if (!isCreateMode) checkIfWorkspace()
-  }, [context, isCreateMode])
+  // Whether the viewing context is a workspace branch, read through the
+  // shared cache rather than a per-mount probe.
+  const { data: contextBranch } = useQuery(
+    branchDetailQuery(
+      context.type === 'branch' ? (context.branchId ?? '') : '',
+      !isCreateMode,
+    ),
+  )
+  const isWorkspaceContext = contextBranch?.branchType === 'workspace'
 
   const currentTestPlan = isCreateMode ? testPlan : displayedTestPlan
 
@@ -209,10 +214,25 @@ export function TestPlanDetail({
     setIsEditing(true)
   }
 
-  const handleCheckoutComplete = (branchId: string) => {
-    setContext({ type: 'branch', branchId })
+  // A revise-checkout mints the branch working copy up front, so editing
+  // belongs on that row's page: the route-level save PUTs the id in the URL,
+  // and from the released row's page it would target the released version and
+  // be refused (BRANCH_PROTECTED). Navigate there in edit mode — the route
+  // component survives the param change, so `isEditing` carries over and the
+  // working copy drops into the form via the initialTestPlan effect above.
+  const handleCheckoutComplete = (branchId: string, currentItemId?: string) => {
     setTestPlan(currentTestPlan)
     setIsEditing(true)
+    if (currentItemId && currentItemId !== currentTestPlan.id) {
+      navigate({
+        to: '/test-plans/$id',
+        params: { id: currentItemId },
+        search: { branch: branchId, tab: activeTab },
+      } as any)
+      return
+    }
+    // The branch still tracks the row this page is showing — edit in place.
+    setContext({ type: 'branch', branchId })
   }
 
   const handleSave = async () => {
@@ -457,7 +477,11 @@ export function TestPlanDetail({
           <WorkspaceContextBanner branchId={context.branchId} />
         )}
 
-      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => onTabChange?.(value as TestPlanDetailTab)}
+        className="w-full"
+      >
         <TabsList
           className={`grid w-full ${isCreateMode ? 'grid-cols-2' : 'grid-cols-4'}`}
         >

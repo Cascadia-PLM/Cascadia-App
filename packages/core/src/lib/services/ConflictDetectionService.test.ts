@@ -22,10 +22,12 @@ import {
 } from 'vitest'
 import { and, eq } from 'drizzle-orm'
 import { ItemService } from '../items/services/ItemService'
+import { ChangeOrderService } from '../items/services/ChangeOrderService'
 import { BranchService } from './BranchService'
 import { DesignService } from './DesignService'
 import { CheckoutService } from './CheckoutService'
 import { ConflictDetectionService } from './ConflictDetectionService'
+import { RevisionService } from './RevisionService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
@@ -2176,6 +2178,305 @@ describe('ConflictDetectionService', () => {
 
       expect(branchItemAfter.baseItemId).toBe(newBase.id)
       expect(branchItemAfter.currentItemId).not.toBe(originalCurrentId)
+    })
+  })
+
+  /**
+   * Rebase and pull against the working copy an ECO actually has.
+   *
+   * Data-integrity gate. `createRevisionWorkingCopy` mints a branch-local row
+   * carrying `-{branchId8}` the moment an item joins an ECO, so that is the
+   * normal shape a rebase meets — and both `rebaseItem` and
+   * `pullChangesFromMain` used to INSERT a *second* row with the same working
+   * revision. `(item_number, revision, design_id, item_type)` is unique NULLS
+   * NOT DISTINCT, so the insert raised 23505 and the whole recovery rolled
+   * back: the ordinary case could not be rebased at all.
+   *
+   * The fixtures below go through `createRevisionWorkingCopy` rather than
+   * inserting bare `-` revision rows, which is what let the older fixtures in
+   * this file pass over the defect.
+   */
+  describe('rebase and pull onto an existing branch working copy', () => {
+    async function ecoWithWorkingCopy(label: string) {
+      const part = await createPartOnMain(`${label} Part`, 'original desc')
+      const released = takeFirst(
+        await testDb.db.select().from(items).where(eq(items.id, part.id)),
+      )
+
+      const eco = await createChangeOrder(`${label} ECO`)
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+
+      const { workingCopy, branchItem } =
+        await ChangeOrderService.createRevisionWorkingCopy(
+          released,
+          branch.id,
+          user.id,
+        )
+
+      return { part, released, branch, workingCopy, branchItem }
+    }
+
+    async function newBaseOnMain(
+      part: { masterId: string; itemNumber: string },
+      name: string,
+      revision = 'B',
+    ) {
+      return takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: part.masterId,
+            designId,
+            itemType: 'Part',
+            itemNumber: part.itemNumber,
+            revision,
+            name,
+            state: 'Draft',
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
+    }
+
+    /** Every row of this master carrying this branch's working revision. */
+    async function workingCopiesOf(masterId: string, branchId: string) {
+      return testDb.db
+        .select({ id: items.id })
+        .from(items)
+        .where(
+          and(
+            eq(items.masterId, masterId),
+            eq(items.revision, RevisionService.getWorkingRevision(branchId)),
+          ),
+        )
+    }
+
+    it('rebases the existing working copy in place instead of colliding', async () => {
+      const { part, branch, workingCopy, branchItem } =
+        await ecoWithWorkingCopy('Rebase InPlace')
+
+      // A branch edit main also made differently — a real field conflict, so
+      // the resolution path is exercised too.
+      await testDb.db
+        .update(items)
+        .set({ name: 'Branch Name' })
+        .where(eq(items.id, workingCopy.id))
+
+      const newBase = await newBaseOnMain(part, 'Main Name')
+
+      const result = await ConflictDetectionService.rebaseItem(
+        branchItem.id,
+        newBase.id,
+        user.id,
+        { name: 'Resolved Name' },
+      )
+
+      expect(result.success).toBe(true)
+      expect(result.error).toBeUndefined()
+
+      // The invariant: one working copy per master on this branch, and it is
+      // the row the branch item already pointed at.
+      const copies = await workingCopiesOf(part.masterId, branch.id)
+      expect(copies).toHaveLength(1)
+      expect(copies[0]!.id).toBe(workingCopy.id)
+
+      const after = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.id, branchItem.id)),
+      )
+      expect(after.currentItemId).toBe(workingCopy.id)
+      expect(after.baseItemId).toBe(newBase.id)
+
+      const rebased = takeFirst(
+        await testDb.db
+          .select()
+          .from(items)
+          .where(eq(items.id, workingCopy.id)),
+      )
+      expect(rebased.name).toBe('Resolved Name')
+      // Identity is untouched: a rebase re-bases a version, it does not
+      // re-identify one.
+      expect(rebased.revision).toBe(
+        RevisionService.getWorkingRevision(branch.id),
+      )
+      expect(rebased.itemNumber).toBe(part.itemNumber)
+      expect(rebased.isCurrent).toBe(false)
+    })
+
+    it('takes the new base for fields only main changed', async () => {
+      const { part, branchItem, workingCopy } =
+        await ecoWithWorkingCopy('Rebase Fields')
+
+      const newBase = await newBaseOnMain(part, 'Main Only Name')
+
+      const result = await ConflictDetectionService.rebaseItem(
+        branchItem.id,
+        newBase.id,
+        user.id,
+      )
+
+      expect(result.success).toBe(true)
+      expect(result.autoMerged).toBe(true)
+
+      const rebased = takeFirst(
+        await testDb.db
+          .select()
+          .from(items)
+          .where(eq(items.id, workingCopy.id)),
+      )
+      expect(rebased.name).toBe('Main Only Name')
+    })
+
+    it('keeps the working copy files and relationships attached', async () => {
+      const { part, branch, branchItem, workingCopy } =
+        await ecoWithWorkingCopy('Rebase Content')
+
+      await testDb.db.insert(vaultFiles).values({
+        itemId: workingCopy.id,
+        branchId: branch.id,
+        fileName: 'branch-drawing.pdf',
+        originalFileName: 'branch-drawing.pdf',
+        fileSize: 128,
+        mimeType: 'application/pdf',
+        fileHash: `hash-${Date.now()}`,
+        storagePath: `vault/${Date.now()}/branch-drawing.pdf`,
+        uploadedBy: user.id,
+      })
+      const child = await createPartOnMain('Rebase Content Child')
+      await testDb.db.insert(itemRelationships).values({
+        sourceId: workingCopy.id,
+        targetId: child.id,
+        relationshipType: 'BOM',
+        quantity: '3',
+        findNumber: 1,
+        createdBy: user.id,
+      })
+
+      const newBase = await newBaseOnMain(part, 'Content Main Name')
+
+      expect(
+        (
+          await ConflictDetectionService.rebaseItem(
+            branchItem.id,
+            newBase.id,
+            user.id,
+          )
+        ).success,
+      ).toBe(true)
+
+      // Still exactly one file and one edge, still on the same row — not
+      // duplicated by a copy from the working copy to itself.
+      const files = await testDb.db
+        .select({ id: vaultFiles.id })
+        .from(vaultFiles)
+        .where(eq(vaultFiles.itemId, workingCopy.id))
+      expect(files).toHaveLength(1)
+
+      const edges = await testDb.db
+        .select({ id: itemRelationships.id })
+        .from(itemRelationships)
+        .where(eq(itemRelationships.sourceId, workingCopy.id))
+      expect(edges).toHaveLength(1)
+    })
+
+    it('pulls main into the existing working copy in place', async () => {
+      const { part, branch, branchItem, workingCopy } =
+        await ecoWithWorkingCopy('Pull InPlace')
+
+      await testDb.db
+        .update(items)
+        .set({ name: 'Branch Name' })
+        .where(eq(items.id, workingCopy.id))
+
+      const mainItem = await newBaseOnMain(part, 'Main Wins')
+
+      const result = await ConflictDetectionService.pullChangesFromMain(
+        branchItem.id,
+        mainItem.id,
+        user.id,
+      )
+
+      expect(result.success).toBe(true)
+      expect(result.error).toBeUndefined()
+      expect(result.newItemId).toBe(workingCopy.id)
+
+      const copies = await workingCopiesOf(part.masterId, branch.id)
+      expect(copies).toHaveLength(1)
+
+      const after = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.id, branchItem.id)),
+      )
+      expect(after.currentItemId).toBe(workingCopy.id)
+      expect(after.baseItemId).toBe(mainItem.id)
+
+      const pulled = takeFirst(
+        await testDb.db
+          .select()
+          .from(items)
+          .where(eq(items.id, workingCopy.id)),
+      )
+      // Main always wins on fields in a pull.
+      expect(pulled.name).toBe('Main Wins')
+      expect(pulled.revision).toBe(
+        RevisionService.getWorkingRevision(branch.id),
+      )
+    })
+
+    it('still mints a working copy for the plain-checkout shape', async () => {
+      // The other shape: currentItemId is the shared released row, which
+      // belongs to main and must not be written in place.
+      const part = await createPartOnMain('Checkout Shape Part')
+      const eco = await createChangeOrder('Checkout Shape ECO')
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+      await CheckoutService.checkout(
+        { itemMasterId: part.masterId, branchId: branch.id },
+        user.id,
+      )
+      await CheckoutService.checkin(part.masterId, branch.id, user.id)
+
+      const branchItem = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.branchId, branch.id)),
+      )
+      const before = branchItem.currentItemId
+
+      const newBase = await newBaseOnMain(part, 'Checkout Shape Base')
+
+      expect(
+        (
+          await ConflictDetectionService.rebaseItem(
+            branchItem.id,
+            newBase.id,
+            user.id,
+          )
+        ).success,
+      ).toBe(true)
+
+      const after = takeFirst(
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(eq(branchItems.id, branchItem.id)),
+      )
+      expect(after.currentItemId).not.toBe(before)
+      expect(after.baseItemId).toBe(newBase.id)
     })
   })
 })

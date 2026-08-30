@@ -24,6 +24,21 @@
  */
 export const PROPRIETARY = []
 
+/**
+ * The proprietary module packages, derived from PROPRIETARY's
+ * `packages/<name>/**` patterns. Derived rather than written as `[]` so this
+ * says the same thing as the private manifest does: the list follows from the
+ * classification. PROPRIETARY is empty here, so this is too — `boundary:check`
+ * imports it and runs in CI.
+ */
+export const MODULE_PACKAGES = [
+  ...new Set(
+    PROPRIETARY.map((p) => /^packages\/([^/]+)\//.exec(p)?.[1]).filter(
+      (name) => name !== undefined && name !== 'core',
+    ),
+  ),
+]
+
 export const HEADERS = {
   core: [
     '// SPDX-License-Identifier: AGPL-3.0-or-later',

@@ -38,19 +38,17 @@ import {
 import { Hono } from 'hono'
 import itemsRoutes from './items'
 import type { TestUser } from '@/__tests__/fixtures/users'
+import type { Part } from '@/lib/items/types/part'
 import { TestDatabase } from '@/__tests__/helpers/db'
-import { insertTestUser } from '@/__tests__/fixtures/users'
+import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
+import { ProgramService } from '@/lib/services/ProgramService'
 import { WorkOrderService } from '@/lib/services/WorkOrderService'
 import { WorkOrderMaterialService } from '@/lib/services/WorkOrderMaterialService'
 import { SessionManager } from '@/lib/auth/session'
-import {
-  branches,
-  itemRelationships,
-  programs,
-  vaultFiles,
-} from '@/lib/db/schema'
+import { permissionService } from '@/lib/auth/permission-service'
+import { branches, itemRelationships, vaultFiles } from '@/lib/db/schema'
 import { takeFirst } from '@/lib/db/take-first'
 
 // Import to register item types
@@ -100,16 +98,18 @@ describe('GET /api/items/:id/graph — derived domains', () => {
   beforeEach(async () => {
     await testDb.beginTransaction()
 
-    user = await insertTestUser(testDb.db)
-    const program = takeFirst(
-      await testDb.db
-        .insert(programs)
-        .values({
-          name: 'Test Program',
-          code: `PROG-${Date.now()}`,
-          createdBy: user.id,
-        })
-        .returning(),
+    // The graph route now gates on the center item's type permission and on
+    // design access, so this fixture needs a role and real program membership.
+    // ProgramService.create enrols its creator; a direct insert into
+    // `programs` does not, which is why the row is no longer built by hand.
+    user = (await insertTestUserWithRole(testDb.db, 'User')).user
+    permissionService.clearCache()
+    const program = await ProgramService.create(
+      {
+        name: 'Test Program',
+        code: `PROG-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+      },
+      user.id,
     )
     const design = await DesignService.create(
       {
@@ -531,6 +531,191 @@ describe('GET /api/items/:id/graph — derived domains', () => {
         ),
       ).toBe(true)
       expect(filesOnly.nodes.map((n) => n.id)).toContain(assemblyFile.id)
+    })
+  })
+
+  describe('query param bounds', () => {
+    /** top —BOM→ mid —BOM→ leaf, so a depth cutoff has something to cut. */
+    async function buildChainOfThree() {
+      const top = await createPart('Top', 'none')
+      const mid = await createPart('Mid', 'none')
+      const leaf = await createPart('Leaf', 'none')
+      await testDb.db.insert(itemRelationships).values([
+        {
+          sourceId: top.id!,
+          targetId: mid.id!,
+          relationshipType: 'BOM',
+          createdBy: user.id,
+        },
+        {
+          sourceId: mid.id!,
+          targetId: leaf.id!,
+          relationshipType: 'BOM',
+          createdBy: user.id,
+        },
+      ])
+      return { top, mid, leaf }
+    }
+
+    /** Like fetchGraph, but without the 200 assertion. */
+    const requestGraph = (itemId: string, params: string) =>
+      app.request(`/api/v1/items/${itemId}/graph?${params}`, {
+        headers: { cookie },
+      })
+
+    it('bounds the walk at the requested depth', async () => {
+      const { top, mid, leaf } = await buildChainOfThree()
+
+      const shallow = await fetchGraph(top.id!, 'depth=1')
+      expect(shallow.nodes.map((n) => n.id)).toContain(mid.id)
+      expect(shallow.nodes.map((n) => n.id)).not.toContain(leaf.id)
+
+      const deeper = await fetchGraph(top.id!, 'depth=2')
+      expect(deeper.nodes.map((n) => n.id)).toContain(leaf.id)
+    })
+
+    it('rejects a depth that is not a number', async () => {
+      const { top } = await buildChainOfThree()
+
+      // The cutoff is `level > depth`, which is always false against NaN — so
+      // parseInt('abc') used to turn a two-hop query into a walk of the whole
+      // connected component at roughly six queries per node.
+      expect((await requestGraph(top.id!, 'depth=abc')).status).toBe(400)
+    })
+
+    it('rejects a depth past the cap rather than clamping it', async () => {
+      const { top } = await buildChainOfThree()
+
+      expect((await requestGraph(top.id!, 'depth=11')).status).toBe(400)
+      expect((await requestGraph(top.id!, 'depth=999')).status).toBe(400)
+      expect((await requestGraph(top.id!, 'depth=-1')).status).toBe(400)
+      // The cap itself is still allowed.
+      expect((await requestGraph(top.id!, 'depth=10')).status).toBe(200)
+    })
+
+    it('rejects an unknown direction and a malformed branch id', async () => {
+      const { top } = await buildChainOfThree()
+
+      expect((await requestGraph(top.id!, 'direction=sideways')).status).toBe(
+        400,
+      )
+      expect((await requestGraph(top.id!, 'branch=not-a-uuid')).status).toBe(
+        400,
+      )
+    })
+
+    it('still defaults to depth 2 when depth is omitted', async () => {
+      const { top } = await buildChainOfThree()
+
+      const omitted = await fetchGraph(top.id!, '')
+      const explicit = await fetchGraph(top.id!, 'depth=2')
+
+      expect(omitted.nodes.map((n) => n.id).sort()).toEqual(
+        explicit.nodes.map((n) => n.id).sort(),
+      )
+    })
+  })
+  describe('program isolation', () => {
+    /**
+     * A second program with its own design, and a stored relationship from the
+     * first program's part into it. The route had no access check at all, so
+     * one id and a depth returned the item, its BOM, its where-used and its
+     * files, across every program in the instance.
+     */
+    async function buildCrossProgramChain() {
+      const outsider = (await insertTestUserWithRole(testDb.db, 'User')).user
+      const crossProgram = (
+        await insertTestUserWithRole(testDb.db, 'Administrator')
+      ).user
+      permissionService.clearCache()
+
+      const otherProgram = await ProgramService.create(
+        {
+          name: 'Other Program',
+          code: `OTHER-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+        },
+        outsider.id,
+      )
+      const otherDesign = await DesignService.create(
+        {
+          programId: otherProgram.id,
+          name: 'Other Design',
+          code: `OTHERD-${Date.now()}`,
+          designType: 'Engineering',
+        },
+        outsider.id,
+      )
+
+      const mine = await createPart('Mine', 'none')
+      const theirs = await ItemService.create<Part>(
+        'Part',
+        {
+          itemType: 'Part',
+          designId: otherDesign.id,
+          revision: 'A',
+          name: 'Theirs',
+          partType: 'Manufacture',
+        },
+        outsider.id,
+      )
+
+      await testDb.db.insert(itemRelationships).values({
+        sourceId: mine.id!,
+        targetId: theirs.id!,
+        relationshipType: 'BOM',
+        createdBy: user.id,
+      })
+
+      return { mine, theirs, outsider, crossProgram }
+    }
+
+    function cookieFor(userId: string) {
+      return SessionManager.createSession(userId).then(
+        (session) => `session=${session.sessionToken}`,
+      )
+    }
+
+    it('refuses a non-member the graph of a program-assigned item', async () => {
+      const { mine, outsider } = await buildCrossProgramChain()
+
+      const response = await app.request(
+        `/api/v1/items/${mine.id}/graph?depth=2`,
+        { headers: { cookie: await cookieFor(outsider.id) } },
+      )
+
+      expect(response.status).toBe(403)
+    })
+
+    it('prunes neighbours in a program the caller cannot reach', async () => {
+      const { mine, theirs } = await buildCrossProgramChain()
+
+      const graph = await fetchGraph(mine.id!, 'depth=2')
+
+      expect(graph.nodes.map((n) => n.id)).toContain(mine.id)
+      expect(graph.nodes.map((n) => n.id)).not.toContain(theirs.id)
+      // The edge goes with the node: an edge to a node that is not there
+      // would render as a dangling line and still say the item exists.
+      expect(
+        graph.edges.some(
+          (e) => e.source === theirs.id || e.target === theirs.id,
+        ),
+      ).toBe(false)
+    })
+
+    it('keeps them for cross-program authority', async () => {
+      const { mine, theirs, crossProgram } = await buildCrossProgramChain()
+
+      const response = await app.request(
+        `/api/v1/items/${mine.id}/graph?depth=2`,
+        { headers: { cookie: await cookieFor(crossProgram.id) } },
+      )
+      expect(response.status).toBe(200)
+      const graph = (await response.json()) as {
+        nodes: Array<GraphNode>
+        edges: Array<GraphEdge>
+      }
+
+      expect(graph.nodes.map((n) => n.id)).toContain(theirs.id)
     })
   })
 })

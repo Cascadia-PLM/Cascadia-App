@@ -101,9 +101,40 @@ const { items, total, dataGridProps } = useServerDataGrid<Design>({
 })
 ```
 
-## Writing: invalidation
+## Writing: `useResourceMutation`
 
-After **every** mutation, invalidate the resources it wrote:
+**New mutation code uses `useResourceMutation`.** It is the standard for
+anything that writes:
+
+```ts
+const archive = useResourceMutation({
+  mutationFn: (id: string) =>
+    apiFetch(`/api/v1/designs/${id}/archive`, { method: 'POST' }),
+  invalidates: ['designs'],
+  onSuccess: () => {
+    showSuccess('Design archived')
+    navigate({ to: '/designs' })
+  },
+})
+
+// in a handler:
+archive.mutate(design.id)
+```
+
+Three things it gives you that the hand-rolled shape does not:
+
+- **Ordering.** `invalidates` is registered _before_ `onSuccess` runs, so a
+  navigation performed there lands on a page that is already refetching. Write
+  it by hand and the invalidate/navigate order is a coin flip that only shows
+  up as a stale flash on a slow connection.
+- **`invalidates: ReadonlyArray<Resource>` is typed.** A resource that does not
+  exist is a compile error, not an invalidation that silently reaches nothing.
+- **`isPending` for free**, instead of a `useState(false)` and a `try/finally`
+  that has to be right on every path.
+
+### The hand-rolled shape, and when it is still fine
+
+Most of the app predates the hook and writes this instead:
 
 ```ts
 const invalidate = useInvalidateResources()
@@ -113,19 +144,20 @@ showSuccess('Design created', `${data.code} has been created`)
 await invalidate('designs')
 ```
 
-`useInvalidateResources` invalidates the query cache _and_ re-runs the active
-route loaders. Both matter: the first is what makes an unmounted page refetch
-when you next navigate to it; the second rebuilds the current page.
+This is **not broken** — `useInvalidateResources` invalidates the query cache
+_and_ re-runs the active route loaders, and both matter: the first is what
+makes an unmounted page refetch when you next navigate to it, the second
+rebuilds the current page. There is no sweep planned to convert the hundreds
+of existing call sites; a mechanical rewrite of working code is all churn and
+no signal.
 
-Prefer `useResourceMutation` when the call site is already a mutation:
+The rule is **refactor-on-touch**: a PR that rewrites a mutation handler moves
+it to the hook. A PR that merely reads one leaves it alone.
 
-```ts
-const archive = useResourceMutation({
-  mutationFn: (id: string) =>
-    apiFetch(`/api/v1/designs/${id}/archive`, { method: 'POST' }),
-  invalidates: ['designs'],
-})
-```
+Enforcement is review and convention, not lint. A rule banning `apiFetch` with
+a write method outside `useResourceMutation` has too many legitimate exceptions
+— file uploads, SSE, anything reading a raw `Response` — to land at zero
+warnings.
 
 ### You do not list every affected resource
 
@@ -151,6 +183,14 @@ and nothing else — the detail page, the sidebar, and the counts stay stale.
 
 **`useEffect` + `fetch` + `useState`.** A private cache nothing can
 invalidate. Use `useQuery` with a factory from `options/`.
+
+This one is now enforced by lint: `fetch`/`apiFetch` inside a `useEffect` in
+`components/` or `routes/` is an ESLint error (`no-restricted-syntax` in
+`eslint.config.js`). The files that predate the rule are pinned in a legacy
+allowlist directly below it, which the conversion batches (FE-3..FE-6) drain —
+files may only ever be _removed_ from that list. A fetch inside a `useCallback`
+that an effect merely invokes is not matched by the selector; those go out with
+the same conversions.
 
 **Local-state surgery** (`setRows(rows.filter(r => r.id !== id))` after a
 delete). Hides staleness on one screen and diverges from the server. Delete

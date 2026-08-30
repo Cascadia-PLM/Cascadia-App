@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { ExternalLink, Loader2, Plus } from 'lucide-react'
 import type { VersionContext } from '@/lib/hooks/useVersionContext'
 import {
@@ -21,19 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
-import { apiFetch } from '@/lib/api/client'
+import { designItemsQuery } from '@/lib/query'
 import { ItemLink } from '@/components/items/ItemLink'
 import { StateBadge } from '@/components/items/StateBadge'
-
-interface Item {
-  id: string
-  itemNumber: string
-  name: string
-  revision: string
-  state: string
-  itemType: string
-  modifiedAt: string
-}
 
 interface AllItemsTabProps {
   designId: string
@@ -48,44 +39,24 @@ export function AllItemsTab({
   isHistoricalView,
   onCreateItem,
 }: AllItemsTabProps) {
-  const [loading, setLoading] = useState(true)
-  const [items, setItems] = useState<Array<Item>>([])
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [stateFilter, setStateFilter] = useState<string>('all')
-  const [error, setError] = useState<string | null>(null)
 
-  // Fetch items
-  useEffect(() => {
-    async function fetchItems() {
-      setLoading(true)
-      setError(null)
-      try {
-        // Build query params
-        const params = new URLSearchParams()
-        if (versionContext.branchId)
-          params.set('branch', versionContext.branchId)
-        if (versionContext.tagId) params.set('tag', versionContext.tagId)
-        if (versionContext.commitId)
-          params.set('commit', versionContext.commitId)
-
-        const response = await apiFetch<{
-          data: { items: Array<Item>; total: number }
-        }>(`/api/v1/designs/${designId}/items?${params.toString()}`)
-
-        setItems(response.data.items)
-      } catch {
-        setError(
-          'Failed to load items. The API endpoint may not be implemented yet.',
-        )
-        setItems([])
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchItems()
-  }, [designId, versionContext])
+  const {
+    data: items = [],
+    isPending: loading,
+    error: loadError,
+  } = useQuery(
+    designItemsQuery(designId, {
+      branch: versionContext.branchId,
+      tag: versionContext.tagId,
+      commit: versionContext.commitId,
+    }),
+  )
+  const error = loadError
+    ? 'Failed to load items. The API endpoint may not be implemented yet.'
+    : null
 
   // Filter items
   const filteredItems = useMemo(() => {

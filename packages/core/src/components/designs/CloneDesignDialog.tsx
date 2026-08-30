@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { CheckCircle2, Copy, Loader2, XCircle } from 'lucide-react'
 import {
@@ -19,6 +20,7 @@ import { Label } from '@/components/ui/Label'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Progress } from '@/components/ui/Progress'
 import { apiFetch } from '@/lib/api/client'
+import { jobStatusQuery } from '@/lib/query'
 
 interface CloneDesignDialogProps {
   open: boolean
@@ -30,21 +32,13 @@ interface CloneDesignDialogProps {
 
 type CloneStatus = 'idle' | 'submitting' | 'cloning' | 'completed' | 'failed'
 
-interface JobStatus {
-  id: string
-  status:
-    'pending' | 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
-  progress: number
-  progressMessage: string | null
-  result: {
-    designId: string
-    designCode: string
-    itemsCloned: number
-    relationshipsCloned: number
-    derivedFromCreated: number
-    filesReferenced: number
-  } | null
-  error: string | null
+interface CloneResult {
+  designId: string
+  designCode: string
+  itemsCloned: number
+  relationshipsCloned: number
+  derivedFromCreated: number
+  filesReferenced: number
 }
 
 export function CloneDesignDialog({
@@ -58,13 +52,36 @@ export function CloneDesignDialog({
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [status, setStatus] = useState<CloneStatus>('idle')
+  const [phase, setPhase] = useState<
+    'idle' | 'submitting' | 'cloning' | 'failed'
+  >('idle')
   const [jobId, setJobId] = useState<string | null>(null)
-  const [progress, setProgress] = useState(0)
-  const [progressMessage, setProgressMessage] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<JobStatus['result'] | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [suffixItemNumbers, setSuffixItemNumbers] = useState(false)
+
+  // The clone runs on a worker, so the dialog watches the job it started.
+  // `refetchInterval` returning false at a terminal status is what used to be
+  // a `setInterval` plus a `clearInterval` in three branches.
+  const { data: job } = useQuery({
+    ...jobStatusQuery<CloneResult>(jobId, phase === 'cloning'),
+    refetchInterval: (query) => {
+      const jobStatus = query.state.data?.status
+      return jobStatus === 'completed' || jobStatus === 'failed' ? false : 1000
+    },
+  })
+
+  const status: CloneStatus =
+    job?.status === 'completed'
+      ? 'completed'
+      : job?.status === 'failed'
+        ? 'failed'
+        : phase
+  const progress = job?.progress ?? 0
+  const progressMessage = job?.progressMessage ?? ''
+  const result = job?.result ?? null
+  const error =
+    submitError ??
+    (job?.status === 'failed' ? (job.error ?? 'Clone failed') : null)
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -72,53 +89,17 @@ export function CloneDesignDialog({
       setCode(`${sourceDesignCode}-COPY`)
       setName(`${sourceDesignName} (Copy)`)
       setDescription('')
-      setStatus('idle')
+      setPhase('idle')
       setJobId(null)
-      setProgress(0)
-      setProgressMessage('')
-      setError(null)
-      setResult(null)
+      setSubmitError(null)
       setSuffixItemNumbers(false)
     }
   }, [open, sourceDesignCode, sourceDesignName])
 
-  // Poll job status when cloning
-  useEffect(() => {
-    if (!jobId || status !== 'cloning') return
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/v1/jobs/${jobId}`)
-        if (!response.ok) {
-          throw new Error('Failed to get job status')
-        }
-
-        const { data } = (await response.json()) as { data: JobStatus }
-
-        setProgress(data.progress || 0)
-        setProgressMessage(data.progressMessage || '')
-
-        if (data.status === 'completed') {
-          setStatus('completed')
-          setResult(data.result)
-          clearInterval(pollInterval)
-        } else if (data.status === 'failed') {
-          setStatus('failed')
-          setError(data.error || 'Clone failed')
-          clearInterval(pollInterval)
-        }
-      } catch {
-        // Silently fail - polling will retry on next interval
-      }
-    }, 1000)
-
-    return () => clearInterval(pollInterval)
-  }, [jobId, status])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setStatus('submitting')
-    setError(null)
+    setPhase('submitting')
+    setSubmitError(null)
 
     try {
       const response = await apiFetch(
@@ -136,11 +117,19 @@ export function CloneDesignDialog({
 
       const { data } = response as { data: { jobId: string } }
       setJobId(data.jobId)
-      setStatus('cloning')
+      setPhase('cloning')
     } catch (err) {
-      setStatus('failed')
-      setError((err as Error).message || 'Failed to start clone')
+      setPhase('failed')
+      setSubmitError((err as Error).message || 'Failed to start clone')
     }
+  }
+
+  // Back to the form. The failed job has to be let go of as well, or the
+  // derived status would keep reporting its failure.
+  const handleTryAgain = () => {
+    setPhase('idle')
+    setJobId(null)
+    setSubmitError(null)
   }
 
   const handleNavigateToNewDesign = () => {
@@ -358,7 +347,7 @@ export function CloneDesignDialog({
               </p>
             </div>
             <DialogFooter className="sm:justify-center">
-              <Button variant="outline" onClick={() => setStatus('idle')}>
+              <Button variant="outline" onClick={handleTryAgain}>
                 Try Again
               </Button>
               <Button onClick={handleClose}>Close</Button>

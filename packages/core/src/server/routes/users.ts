@@ -40,6 +40,28 @@ const assignRolesSchema = z.object({
   roleIds: z.array(z.string().uuid()).max(100),
 })
 
+/**
+ * Body of PUT /users/:id.
+ *
+ * Account status is deliberately not part of it. Deactivating has to revoke
+ * the account's sessions and is gated on `users:manage`, which this route is
+ * not — so it lives at `POST /users/:id/activate` and nowhere else. Naming
+ * `active` here is refused rather than stripped, so a caller that tries is
+ * told where the operation moved instead of receiving a 200 that did nothing.
+ */
+const userUpdateBodySchema = userUpdateSchema.extend({
+  active: z
+    .never({
+      error: 'Use POST /users/:id/activate to change account status',
+    })
+    .optional()
+    .describe(
+      'Not accepted here. Account status is changed with ' +
+        'POST /users/:id/activate, which revokes the sessions of an account ' +
+        'it deactivates and is gated on users:manage.',
+    ),
+})
+
 const adapt = tagged('Users')
 
 const app = new Hono()
@@ -104,8 +126,8 @@ app.get(
 app.put(
   '/:id',
   adapt(
-    apiHandler<{ id: string }, z.infer<typeof userUpdateSchema>>(
-      { permission: ['users', 'update'], body: userUpdateSchema },
+    apiHandler<{ id: string }, z.infer<typeof userUpdateBodySchema>>(
+      { permission: ['users', 'update'], body: userUpdateBodySchema },
       async ({ params, body, user }) => {
         const updated = await UserService.updateUser(params.id, body, user.id)
         return { user: updated }
@@ -120,9 +142,9 @@ app.delete(
   adapt(
     apiHandler<{ id: string }>(
       { permission: ['users', 'delete'] },
-      async ({ params }) => {
+      async ({ params, user }) => {
         const { id } = params
-        const outcome = await UserService.deleteUser(id)
+        const outcome = await UserService.deleteUser(id, user.id)
         return { success: true, outcome }
       },
     ),
@@ -138,9 +160,13 @@ app.post(
         permission: ['users', 'manage'],
         body: z.object({ active: z.boolean() }),
       },
-      async ({ params, body: { active } }) => {
-        const user = await UserService.toggleActive(params.id, active)
-        return { user }
+      async ({ params, body: { active }, user }) => {
+        const updated = await UserService.toggleActive(
+          params.id,
+          active,
+          user.id,
+        )
+        return { user: updated }
       },
     ),
   ),
@@ -245,8 +271,8 @@ app.put(
   adapt(
     apiHandler<{ id: string }, z.infer<typeof assignRolesSchema>>(
       { permission: ['users', 'manage'], body: assignRolesSchema },
-      async ({ params, body: { roleIds } }) => {
-        await UserService.assignRoles(params.id, roleIds)
+      async ({ params, body: { roleIds }, user }) => {
+        await UserService.assignRoles(params.id, roleIds, user.id)
         return { success: true }
       },
     ),

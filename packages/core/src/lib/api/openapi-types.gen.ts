@@ -13586,7 +13586,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    active?: boolean;
+                    /** @description Not accepted here. Account status is changed with POST /users/:id/activate, which revokes the sessions of an account it deactivates and is gated on users:manage. */
+                    active?: unknown;
                     /** Format: email */
                     email?: string;
                     name?: string;

@@ -1,6 +1,6 @@
 # Proposal: Software as a First-Class Item Type
 
-**Status**: Phases 1-2 implemented. Phase 1: Software item type, content-addressed source store, import + read-only viewer. Phase 2: checkout-gated in-app editing with draft manifests, per-file `source` history rows, revision/line diff views, per-file conflict sharpening, build-artifact slot. Phases 3-4 (external repos, drift alerts) not yet started.
+**Status**: Phases 1-2 implemented. Phase 1: Software item type, content-addressed source store, import + read-only viewer. Phase 2: checkout-gated in-app editing with draft manifests, per-file `source` history rows, revision/line diff views, per-file conflict sharpening, build-artifact slot. External items can record a repository URL, pinned ref, and optional commit SHA manually. Provider-backed repository connections, ref resolution, mirroring, and drift alerts from Phases 3-4 have not yet started.
 **Scope**: Firmware/embedded software management inside Cascadia — in-app code viewing and editing, full participation in the Design/Part/Document versioning model, and integration with external repositories (GitHub, Bitbucket, GitLab).
 
 ---
@@ -81,6 +81,12 @@ Every Software item declares a `sourceMode`:
 The two modes share the viewer, the versioning behavior, and the release semantics. `external` items are read-only in-app (editing happens in the real repo); `internal` items are editable in-app. A hybrid is naturally expressible later (external repo + internal overlay), but is out of scope for v1.
 
 The key philosophical stance for `external` mode: **Cascadia does not attempt to mirror git history. The external repo is the source of truth for _development_; Cascadia is the source of truth for _what is released onto the product_.** An external Software item pins exactly one commit per Cascadia revision. When ECO-042 releases "firmware v2.3.0 onto Rev C of the controller board," the merge freezes the pinned SHA into the released item version — permanently and immutably, exactly like a released Part's weight.
+
+The currently implemented lightweight external mode records the repository URL,
+the selected ref, and an optional full commit SHA directly on the Software item.
+Those fields participate in ordinary checkout/ECO versioning and history, but
+they are not verified or synchronized with the provider. The repository-link
+subsystem described below remains the target for Phase 3.
 
 ---
 

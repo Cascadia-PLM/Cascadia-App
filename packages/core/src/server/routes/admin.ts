@@ -1173,10 +1173,13 @@ app.get(
 app.get(
   '/api-key-policy',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async () => {
-      const policy = await loadApiKeyPolicy()
-      return { policy, defaults: DEFAULT_API_KEY_POLICY }
-    }),
+    apiHandler(
+      { authMethod: 'session', permission: ['system', 'manage'] },
+      async () => {
+        const policy = await loadApiKeyPolicy()
+        return { policy, defaults: DEFAULT_API_KEY_POLICY }
+      },
+    ),
   ),
 )
 
@@ -1185,7 +1188,11 @@ app.put(
   '/api-key-policy',
   adapt(
     apiHandler(
-      { permission: ['system', 'manage'], body: apiKeyPolicySchema },
+      {
+        authMethod: 'session',
+        permission: ['system', 'manage'],
+        body: apiKeyPolicySchema,
+      },
       async ({ user, body }) => {
         const policy: ApiKeyPolicy = {
           defaultExpirationDays: body.defaultExpirationDays ?? null,
@@ -1212,10 +1219,13 @@ app.put(
 app.get(
   '/api-keys',
   adapt(
-    apiHandler({ permission: ['system', 'manage'] }, async () => {
-      const keys = await ApiKeyService.listAll()
-      return { apiKeys: keys }
-    }),
+    apiHandler(
+      { authMethod: 'session', permission: ['system', 'manage'] },
+      async () => {
+        const keys = await ApiKeyService.listAll()
+        return { apiKeys: keys }
+      },
+    ),
   ),
 )
 
@@ -1224,7 +1234,7 @@ app.get(
   '/api-keys/:keyId/activity',
   adapt(
     apiHandler<{ keyId: string }>(
-      { permission: ['system', 'manage'] },
+      { authMethod: 'session', permission: ['system', 'manage'] },
       async ({ params }) => {
         const events = await ApiKeyService.activity(params.keyId, null)
         return { events }
@@ -1240,7 +1250,11 @@ app.patch(
   '/api-keys/:keyId',
   adapt(
     apiHandler<{ keyId: string }, UpdateApiKeyInput>(
-      { permission: ['system', 'manage'], body: apiKeyUpdateSchema },
+      {
+        authMethod: 'session',
+        permission: ['system', 'manage'],
+        body: apiKeyUpdateSchema,
+      },
       async ({ params, body }) => {
         const key = await ApiKeyService.update(params.keyId, null, body)
         return { apiKey: key }
@@ -1254,7 +1268,7 @@ app.post(
   '/api-keys/:keyId/disable',
   adapt(
     apiHandler<{ keyId: string }>(
-      { permission: ['system', 'manage'] },
+      { authMethod: 'session', permission: ['system', 'manage'] },
       async ({ params }) => {
         const key = await ApiKeyService.setDisabled(params.keyId, null, true)
         return { apiKey: key }
@@ -1268,7 +1282,7 @@ app.post(
   '/api-keys/:keyId/enable',
   adapt(
     apiHandler<{ keyId: string }>(
-      { permission: ['system', 'manage'] },
+      { authMethod: 'session', permission: ['system', 'manage'] },
       async ({ params }) => {
         const key = await ApiKeyService.setDisabled(params.keyId, null, false)
         return { apiKey: key }
@@ -1282,7 +1296,7 @@ app.delete(
   '/api-keys/:keyId',
   adapt(
     apiHandler<{ keyId: string }>(
-      { permission: ['system', 'manage'] },
+      { authMethod: 'session', permission: ['system', 'manage'] },
       async ({ params }) => {
         const key = await ApiKeyService.revoke(params.keyId, null)
         return { success: true, apiKey: key }

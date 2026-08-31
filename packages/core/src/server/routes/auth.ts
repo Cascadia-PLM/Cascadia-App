@@ -196,14 +196,18 @@ app.put(
   '/password',
   adapt(
     apiHandler(
-      { rateLimit: 'login', body: changePasswordSchema },
+      {
+        // Deliberately session-only: an API key must not be able to replace
+        // the interactive credentials of its owner. This was a hand-rolled
+        // `authorization` header check, which the option now states.
+        authMethod: 'session',
+        rateLimit: 'login',
+        body: changePasswordSchema,
+      },
       async ({ request, body, user }) => {
-        // Password changes are deliberately session-only. An API key should not
-        // be able to replace the interactive credentials of its owner.
-        if (request.headers.has('authorization')) {
-          throw new AuthenticationError('Session authentication required')
-        }
-
+        // Reached only with a session, so a token is present — but it is read
+        // again here because the *current* session is the one kept alive when
+        // the change revokes the others.
         const sessionToken = getSessionTokenFromRequest(request)
         if (!sessionToken) {
           throw new AuthenticationError('Session authentication required')
@@ -396,15 +400,17 @@ app.get(
 
 // ============ API Keys ============
 //
-// Self-service: every handler is scoped to `user.id`, so a caller can only
+// Self-service is deliberately session-only: allowing an API key to create or
+// re-scope another key would let a narrowed credential recover its owner's full
+// permissions. Every handler is also scoped to `user.id`, so a caller can only
 // ever see or change their own keys. The admin equivalents live under
-// /api/v1/admin/api-keys and differ only in passing a null owner.
+// /api/v1/admin/api-keys and require a session too.
 
 // GET /api/auth/api-keys — the caller's keys, plus what they may scope to
 app.get(
   '/api-keys',
   adapt(
-    apiHandler({}, async ({ user }) => {
+    apiHandler({ authMethod: 'session' }, async ({ user }) => {
       const [keys, scopableRoles] = await Promise.all([
         ApiKeyService.listForUser(user.id),
         // A key can only ever narrow, so the roles a caller may scope to are
@@ -421,15 +427,18 @@ app.get(
 app.post(
   '/api-keys',
   adapt(
-    apiHandler({ body: createApiKeySchema }, async ({ body, user }) => {
-      const { key, rawKey } = await ApiKeyService.create(user.id, body)
+    apiHandler(
+      { authMethod: 'session', body: createApiKeySchema },
+      async ({ body, user }) => {
+        const { key, rawKey } = await ApiKeyService.create(user.id, body)
 
-      // The raw key is returned ONCE — only its hash is stored.
-      return new Response(JSON.stringify({ data: { ...key, key: rawKey } }), {
-        status: 201,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }),
+        // The raw key is returned ONCE — only its hash is stored.
+        return new Response(JSON.stringify({ data: { ...key, key: rawKey } }), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      },
+    ),
   ),
 )
 
@@ -438,7 +447,7 @@ app.patch(
   '/api-keys/:keyId',
   adapt(
     apiHandler<{ keyId: string }, z.infer<typeof updateApiKeySchema>>(
-      { body: updateApiKeySchema },
+      { authMethod: 'session', body: updateApiKeySchema },
       async ({ params, body, user }) => {
         const key = await ApiKeyService.update(params.keyId, user.id, body)
         return { apiKey: key }
@@ -451,10 +460,16 @@ app.patch(
 app.post(
   '/api-keys/:keyId/rotate',
   adapt(
-    apiHandler<{ keyId: string }>({}, async ({ params, user }) => {
-      const { key, rawKey } = await ApiKeyService.rotate(params.keyId, user.id)
-      return { apiKey: key, key: rawKey }
-    }),
+    apiHandler<{ keyId: string }>(
+      { authMethod: 'session' },
+      async ({ params, user }) => {
+        const { key, rawKey } = await ApiKeyService.rotate(
+          params.keyId,
+          user.id,
+        )
+        return { apiKey: key, key: rawKey }
+      },
+    ),
   ),
 )
 
@@ -462,10 +477,13 @@ app.post(
 app.post(
   '/api-keys/:keyId/disable',
   adapt(
-    apiHandler<{ keyId: string }>({}, async ({ params, user }) => {
-      const key = await ApiKeyService.setDisabled(params.keyId, user.id, true)
-      return { apiKey: key }
-    }),
+    apiHandler<{ keyId: string }>(
+      { authMethod: 'session' },
+      async ({ params, user }) => {
+        const key = await ApiKeyService.setDisabled(params.keyId, user.id, true)
+        return { apiKey: key }
+      },
+    ),
   ),
 )
 
@@ -473,10 +491,17 @@ app.post(
 app.post(
   '/api-keys/:keyId/enable',
   adapt(
-    apiHandler<{ keyId: string }>({}, async ({ params, user }) => {
-      const key = await ApiKeyService.setDisabled(params.keyId, user.id, false)
-      return { apiKey: key }
-    }),
+    apiHandler<{ keyId: string }>(
+      { authMethod: 'session' },
+      async ({ params, user }) => {
+        const key = await ApiKeyService.setDisabled(
+          params.keyId,
+          user.id,
+          false,
+        )
+        return { apiKey: key }
+      },
+    ),
   ),
 )
 
@@ -484,10 +509,13 @@ app.post(
 app.get(
   '/api-keys/:keyId/activity',
   adapt(
-    apiHandler<{ keyId: string }>({}, async ({ params, user }) => {
-      const events = await ApiKeyService.activity(params.keyId, user.id)
-      return { events }
-    }),
+    apiHandler<{ keyId: string }>(
+      { authMethod: 'session' },
+      async ({ params, user }) => {
+        const events = await ApiKeyService.activity(params.keyId, user.id)
+        return { events }
+      },
+    ),
   ),
 )
 
@@ -495,10 +523,13 @@ app.get(
 app.delete(
   '/api-keys/:keyId',
   adapt(
-    apiHandler<{ keyId: string }>({}, async ({ params, user }) => {
-      const key = await ApiKeyService.revoke(params.keyId, user.id)
-      return { success: true, apiKey: key }
-    }),
+    apiHandler<{ keyId: string }>(
+      { authMethod: 'session' },
+      async ({ params, user }) => {
+        const key = await ApiKeyService.revoke(params.keyId, user.id)
+        return { success: true, apiKey: key }
+      },
+    ),
   ),
 )
 

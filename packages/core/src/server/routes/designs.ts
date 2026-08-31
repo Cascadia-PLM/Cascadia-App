@@ -374,6 +374,12 @@ const designResponseSchema = z
   })
   .passthrough()
 
+const designIdParamSchema = z.object({ id: z.string().uuid() })
+
+function parseDesignId(params: { id: string }): string {
+  return designIdParamSchema.parse(params).id
+}
+
 // POST /api/designs
 app.post(
   '/',
@@ -428,7 +434,7 @@ app.get(
   '/:id',
   adapt(
     apiHandler<{ id: string }>({}, async ({ params, user }) => {
-      const { id: designId } = params
+      const designId = parseDesignId(params)
       const design = await DesignService.getById(designId)
       if (!design) throw new NotFoundError('Design', designId)
 
@@ -470,7 +476,7 @@ app.get(
           description:
             'Returns the design as a graph node, its parent program above it, and the top-level items it contains below it. Filter contained items with itemTypes (comma-separated); nested items are expanded per-node via the item graph endpoint.',
           request: {
-            params: z.object({ id: z.string().uuid() }),
+            params: designIdParamSchema,
             query: scopeGraphQuerySchema,
           },
           responses: {
@@ -479,7 +485,7 @@ app.get(
         },
       },
       async ({ params, request, user }) => {
-        const { id: designId } = params
+        const designId = parseDesignId(params)
         const { direction, itemTypes } = parseQuery(
           request,
           scopeGraphQuerySchema,
@@ -724,7 +730,7 @@ app.get(
   '/:id/branches',
   adapt(
     apiHandler<{ id: string }>({}, async ({ request, params, user }) => {
-      const { id: designId } = params
+      const designId = parseDesignId(params)
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)
@@ -2611,7 +2617,7 @@ app.get(
   '/:id/tags',
   adapt(
     apiHandler<{ id: string }>({}, async ({ params, user }) => {
-      const { id: designId } = params
+      const designId = parseDesignId(params)
       const design = await DesignService.getById(designId)
       if (!design) {
         throw new NotFoundError('Design', designId)

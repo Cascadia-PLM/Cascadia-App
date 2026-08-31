@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Download, Package, Trash2, Upload } from 'lucide-react'
 import type { Software } from '@/lib/items/types/software'
 import {
@@ -36,6 +36,55 @@ export function BuildArtifactCard({ software }: { software: Software }) {
   )
   const [artifactName, setArtifactName] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+
+  // Keep local upload/detach state in sync when navigation or a query refresh
+  // replaces the Software object without remounting this card.
+  useEffect(() => {
+    setArtifactFileId(software.buildArtifactFileId ?? null)
+  }, [software.buildArtifactFileId])
+
+  // The Software row stores only the vault-file id. Immediately after upload
+  // the browser still has File.name, but a page refresh has to recover the
+  // display name from the vault metadata rather than falling back forever to
+  // "Attached artifact".
+  useEffect(() => {
+    if (!artifactFileId) {
+      setArtifactName(null)
+      return
+    }
+
+    let cancelled = false
+
+    const loadArtifactName = async () => {
+      try {
+        const result = await apiFetch<{ data: { file: FileMetadata } }>(
+          `/api/v1/files/${artifactFileId}/metadata`,
+        )
+        if (cancelled) return
+
+        setArtifactName(
+          result.data.file.originalFileName ??
+            result.data.file.fileName ??
+            null,
+        )
+      } catch (error) {
+        if (!cancelled) {
+          // The id and download action remain useful if metadata is
+          // temporarily unavailable, so retain the fallback label and report
+          // the problem without interrupting the detail page.
+          handleError(error, {
+            title: 'Failed to load build artifact metadata',
+            presentation: 'none',
+          })
+        }
+      }
+    }
+
+    void loadArtifactName()
+    return () => {
+      cancelled = true
+    }
+  }, [artifactFileId, handleError])
 
   // Released lineage is immutable - no uploads or deletes; derived from the
   // Software lifecycle's mappings, never from a state's name (the server's

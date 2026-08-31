@@ -33,15 +33,22 @@ export const SOURCE_MODES = ['internal', 'external'] as const
 
 export type SourceMode = (typeof SOURCE_MODES)[number]
 
-const emptyValueToUndefined = (value: unknown) =>
+const emptyValueToNull = (value: unknown) =>
   value === null || (typeof value === 'string' && value.trim() === '')
-    ? undefined
+    ? null
     : value
 
-const softwareSourceFields = {
-  sourceMode: z.enum(SOURCE_MODES).optional().default('internal'),
+/**
+ * Source fields accepted by partial-update APIs. Unlike the full item schema,
+ * sourceMode has no default here: omitting it from a PATCH-style update must
+ * preserve the current mode. Blank nullable values become null so an optional
+ * commit SHA can be cleared explicitly rather than mistaken for an omitted
+ * field.
+ */
+export const softwareSourceUpdateFields = {
+  sourceMode: z.enum(SOURCE_MODES).optional(),
   externalRepositoryUrl: z.preprocess(
-    emptyValueToUndefined,
+    emptyValueToNull,
     z
       .string()
       .trim()
@@ -50,29 +57,36 @@ const softwareSourceFields = {
       .refine((value) => /^https?:\/\//i.test(value), {
         message: 'Repository URL must use http:// or https://',
       })
+      .nullable()
       .optional(),
   ),
   externalRef: z.preprocess(
-    emptyValueToUndefined,
-    z.string().trim().max(300).optional(),
+    emptyValueToNull,
+    z.string().trim().max(300).nullable().optional(),
   ),
   externalCommitSha: z.preprocess(
-    emptyValueToUndefined,
+    emptyValueToNull,
     z
       .string()
       .trim()
       .regex(/^([0-9a-f]{40}|[0-9a-f]{64})$/i, {
         message: 'Commit SHA must contain 40 or 64 hexadecimal characters',
       })
+      .nullable()
       .optional(),
   ),
+}
+
+const softwareSourceFields = {
+  ...softwareSourceUpdateFields,
+  sourceMode: z.enum(SOURCE_MODES).optional().default('internal'),
 }
 
 function requireExternalSource(
   data: {
     sourceMode?: SourceMode
-    externalRepositoryUrl?: string
-    externalRef?: string
+    externalRepositoryUrl?: string | null
+    externalRef?: string | null
   },
   ctx: RefinementCtx,
 ) {

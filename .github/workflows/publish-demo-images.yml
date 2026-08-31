@@ -154,6 +154,7 @@ jobs:
             cad_converter:
               - *pipeline
               - 'workers/cad-converter/**'
+              - 'workers/py-common/**'
 
       - name: Select images to build
         id: select
@@ -173,7 +174,7 @@ jobs:
           catalog='[
             {"name":"cascadia-app","context":".","dockerfile":"docker/app.Dockerfile","target":"production","filter":"app"},
             {"name":"cascadia-jobs-worker","context":".","dockerfile":"workers/node/Dockerfile","target":"production","filter":"jobs_worker"},
-            {"name":"cascadia-cad-converter","context":"workers/cad-converter","dockerfile":"workers/cad-converter/Dockerfile","target":"","filter":"cad_converter","freeDisk":true}
+            {"name":"cascadia-cad-converter","context":"workers","dockerfile":"workers/cad-converter/Dockerfile","target":"","filter":"cad_converter","freeDisk":true}
           ]'
 
           if [ -z "${CHANGES}" ]; then

@@ -192,7 +192,8 @@ export {
   userListQuery,
 } from './options/users'
 export type { AdminUser } from './options/users'
-export { fileListQuery } from './options/files'
+export { fileListQuery, fileMetadataQuery } from './options/files'
+export type { FileMetadata } from './options/files'
 export {
   reportDetailQuery,
   reportExecutionQuery,

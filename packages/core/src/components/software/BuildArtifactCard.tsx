@@ -2,8 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useEffect, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Download, Package, Trash2, Upload } from 'lucide-react'
 import type { Software } from '@/lib/items/types/software'
+import type { FileMetadata } from '@/lib/query'
 import {
   Button,
   Card,
@@ -14,13 +16,7 @@ import {
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'
 import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
-
-interface FileMetadata {
-  id: string
-  originalFileName?: string
-  fileName?: string
-  fileSize?: number
-}
+import { fileMetadataQuery, useInvalidateResources } from '@/lib/query'
 
 /**
  * The primary build artifact slot (proposal §5.2): one vault file
@@ -30,6 +26,7 @@ interface FileMetadata {
  */
 export function BuildArtifactCard({ software }: { software: Software }) {
   const { handleError, showSuccess } = useErrorHandler()
+  const invalidate = useInvalidateResources()
   const inputRef = useRef<HTMLInputElement>(null)
   const [artifactFileId, setArtifactFileId] = useState<string | null>(
     software.buildArtifactFileId ?? null,
@@ -41,50 +38,20 @@ export function BuildArtifactCard({ software }: { software: Software }) {
   // replaces the Software object without remounting this card.
   useEffect(() => {
     setArtifactFileId(software.buildArtifactFileId ?? null)
+    setArtifactName(null)
   }, [software.buildArtifactFileId])
 
-  // The Software row stores only the vault-file id. Immediately after upload
-  // the browser still has File.name, but a page refresh has to recover the
-  // display name from the vault metadata rather than falling back forever to
-  // "Attached artifact".
-  useEffect(() => {
-    if (!artifactFileId) {
-      setArtifactName(null)
-      return
-    }
-
-    let cancelled = false
-
-    const loadArtifactName = async () => {
-      try {
-        const result = await apiFetch<{ data: { file: FileMetadata } }>(
-          `/api/v1/files/${artifactFileId}/metadata`,
-        )
-        if (cancelled) return
-
-        setArtifactName(
-          result.data.file.originalFileName ??
-            result.data.file.fileName ??
-            null,
-        )
-      } catch (error) {
-        if (!cancelled) {
-          // The id and download action remain useful if metadata is
-          // temporarily unavailable, so retain the fallback label and report
-          // the problem without interrupting the detail page.
-          handleError(error, {
-            title: 'Failed to load build artifact metadata',
-            presentation: 'none',
-          })
-        }
-      }
-    }
-
-    void loadArtifactName()
-    return () => {
-      cancelled = true
-    }
-  }, [artifactFileId, handleError])
+  // The loader primes this same query on page entry. Immediately after an
+  // upload File.name remains the fastest display value; after refresh the
+  // shared files cache supplies the persisted original name.
+  const { data: artifactMetadata } = useQuery(
+    fileMetadataQuery(artifactFileId ?? '', artifactFileId !== null),
+  )
+  const displayedArtifactName =
+    artifactName ??
+    artifactMetadata?.originalFileName ??
+    artifactMetadata?.fileName ??
+    null
 
   // Released lineage is immutable - no uploads or deletes; derived from the
   // Software lifecycle's mappings, never from a state's name (the server's
@@ -130,6 +97,7 @@ export function BuildArtifactCard({ software }: { software: Software }) {
       setArtifactFileId(uploaded.id)
       setArtifactName(file.name)
       showSuccess('Build artifact attached', file.name)
+      await invalidate('files', 'software')
     } catch (error) {
       handleError(error, { title: 'Failed to upload build artifact' })
     } finally {
@@ -147,6 +115,7 @@ export function BuildArtifactCard({ software }: { software: Software }) {
       setArtifactFileId(null)
       setArtifactName(null)
       showSuccess('Build artifact detached', 'The vault file was kept')
+      await invalidate('software')
     } catch (error) {
       handleError(error, { title: 'Failed to detach build artifact' })
     }
@@ -170,7 +139,7 @@ export function BuildArtifactCard({ software }: { software: Software }) {
         {artifactFileId ? (
           <div className="flex items-center justify-between gap-2">
             <span className="truncate text-sm text-slate-700 dark:text-slate-300">
-              {artifactName ?? 'Attached artifact'}
+              {displayedArtifactName ?? 'Attached artifact'}
             </span>
             <div className="flex shrink-0 gap-1">
               <a href={`/api/v1/files/${artifactFileId}/download`} download>

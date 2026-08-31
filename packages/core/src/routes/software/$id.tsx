@@ -14,6 +14,7 @@ import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import {
   designListQuery,
   entityQuery,
+  fileMetadataQuery,
   useInvalidateResources,
 } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
@@ -26,12 +27,20 @@ export const Route = createFileRoute('/software/$id')({
   component: SoftwareDetailPage,
   validateSearch: softwareDetailSearchSchema,
   loader: async ({ context: { queryClient }, params }) => {
-    await Promise.all([
+    const [software] = await Promise.all([
       queryClient.ensureQueryData(
         entityQuery<Software>('software', params.id, 'software'),
       ),
       queryClient.ensureQueryData(designListQuery()),
     ])
+
+    if (software.buildArtifactFileId) {
+      // Artifact metadata is supplementary: a stale/deleted pointer should
+      // leave the detail usable with its fallback label, not fail the route.
+      await queryClient
+        .ensureQueryData(fileMetadataQuery(software.buildArtifactFileId))
+        .catch(() => undefined)
+    }
   },
 })
 

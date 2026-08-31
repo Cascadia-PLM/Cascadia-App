@@ -12,7 +12,7 @@ import { VerificationService } from '@/lib/services/VerificationService'
 import { ParametricResolutionService } from '@/lib/services/ParametricResolutionService'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { apiHandler, created } from '@/lib/api/handler'
-import { requireItemAccess } from '@/lib/auth/access'
+import { requireItemAccess, requireItemsAccess } from '@/lib/auth/access'
 import { mountRoutes } from '@/lib/api/route-registry'
 import { partUpdateSchema } from '@/lib/api/schemas'
 import { db } from '@/lib/db'
@@ -162,6 +162,10 @@ app.post(
       async ({ params, body: { testCaseIds }, user }) => {
         const { id } = params
 
+        // The test cases, which `access:` cannot reach — it runs before the
+        // body is read, and only the part is named in the path.
+        await requireItemsAccess(user.id, testCaseIds)
+
         // Link each test case to this part (testCase -> part)
         for (const testCaseId of testCaseIds) {
           await VerificationService.linkValidation(testCaseId, [id], user.id)
@@ -187,6 +191,7 @@ app.delete(
         throw new ValidationError('testCaseId query parameter is required')
       }
 
+      await requireItemsAccess(user.id, [testCaseId])
       await VerificationService.unlinkValidation(testCaseId, id, user.id)
 
       return { success: true }

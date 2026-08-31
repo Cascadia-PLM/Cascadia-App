@@ -7,8 +7,8 @@ import { z } from 'zod'
 import { tagged } from '../adapter'
 import { db } from '@/lib/db'
 import { itemRelationships, items } from '@/lib/db/schema'
-import { ValidationError } from '@/lib/errors'
-import { requireDesignAccess } from '@/lib/auth/access'
+import { NotFoundError, ValidationError } from '@/lib/errors'
+import { requireDesignAccess, requireItemsAccess } from '@/lib/auth/access'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
 import { apiHandler, jsonResponse } from '@/lib/api/handler'
@@ -85,6 +85,34 @@ const batchCreateResponseSchema = z.object({
 type BatchCreateResponse = z.infer<typeof batchCreateResponseSchema>
 
 const app = new Hono()
+
+/**
+ * Both ends of one stored edge, by the edge's own id.
+ *
+ * An edge is addressed here by an id that names neither of the items it joins,
+ * so the route has nothing to charge until it reads the row. Without this, the
+ * blanket `parts` tuple was the whole gate: any caller holding it could edit or
+ * delete any edge in the instance by id, across every program, and the service
+ * layer checks existence rather than access. Both ends are charged, because an
+ * edge is equally a fact about each.
+ */
+async function requireEdgeAccess(
+  userId: string,
+  relationshipId: string,
+): Promise<void> {
+  const [edge] = await db
+    .select({
+      sourceId: itemRelationships.sourceId,
+      targetId: itemRelationships.targetId,
+    })
+    .from(itemRelationships)
+    .where(eq(itemRelationships.id, relationshipId))
+    .limit(1)
+
+  if (!edge) throw new NotFoundError('ItemRelationship', relationshipId)
+
+  await requireItemsAccess(userId, [edge.sourceId, edge.targetId])
+}
 
 // GET /api/relationships
 app.get(
@@ -236,6 +264,19 @@ app.post(
           )
         }
 
+        // Every item the batch names, both ends of every line. Charged before
+        // anything is written and after the duplicate check, so a batch that
+        // reaches outside the caller's programs is refused whole rather than
+        // part-applied. The ids come from the body, so `access:` cannot cover
+        // them.
+        await requireItemsAccess(
+          userId,
+          candidates.flatMap(({ relData }) => [
+            relData.sourceId,
+            relData.targetId,
+          ]),
+        )
+
         // Edges already stored are skipped rather than replaced. One query for
         // the whole batch — this was a SELECT per line, 500 round trips for a
         // 500-line BOM.
@@ -370,6 +411,8 @@ app.put(
     >(
       { permission: ['parts', 'update'], body: relationshipEditSchema },
       async ({ params, body, user }) => {
+        await requireEdgeAccess(user.id, params.relationshipId)
+
         const updated = await ItemService.updateRelationship(
           params.relationshipId,
           user.id,
@@ -388,6 +431,8 @@ app.delete(
     apiHandler<{ relationshipId: string }>(
       { permission: ['parts', 'delete'] },
       async ({ params, user }) => {
+        await requireEdgeAccess(user.id, params.relationshipId)
+
         await ItemService.removeRelationship(params.relationshipId, user.id)
         return { success: true, message: 'Relationship deleted successfully' }
       },

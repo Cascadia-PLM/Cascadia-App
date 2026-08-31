@@ -19,7 +19,7 @@ import {
   impactAnalysisRequestSchema,
 } from '@/lib/services/ImpactAnalysisService'
 import { apiHandler, created } from '@/lib/api/handler'
-import { requireItemAccess } from '@/lib/auth/access'
+import { requireItemAccess, requireItemsAccess } from '@/lib/auth/access'
 import {
   calculateLockDuration,
   createLockedStatus,
@@ -667,6 +667,12 @@ app.post(
           getResourceType(item.itemType),
           'update',
         )
+
+        // The target is named in the body, so the `access:` gate cannot reach
+        // it and the source check above says nothing about it. Charged for
+        // reach only: the edge remains the source item's own structure, so the
+        // permission tuple stays the source's, per the note above.
+        await requireItemsAccess(user.id, [data.targetId])
 
         await ItemService.addRelationship(
           params.id,

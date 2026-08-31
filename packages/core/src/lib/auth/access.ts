@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { AccessControlService } from './AccessControlService'
 import { BranchService } from '@/lib/services/BranchService'
 import { FileService } from '@/lib/vault/services/FileService'
@@ -236,6 +236,47 @@ export async function requireItemAccess(
 
   if (item.designId) await requireDesignAccess(userId, item.designId)
   return item
+}
+
+/**
+ * `requireItemAccess` for a list of ids, returning the rows by id.
+ *
+ * This is the gate for items a request names in its **body** rather than its
+ * path. The `access:` handler option cannot cover those — it runs before the
+ * body is read — so a route that links, allocates or relates one item to
+ * another has to charge the far end itself, and every such route was charging
+ * only the near one. Knowing a UUID was then enough to write an edge across a
+ * program boundary, and to learn from the response that the item exists.
+ *
+ * Each id goes through `requireItemAccess` rather than a `designId` comparison,
+ * so the item types whose reach is not their design — ChangeOrder, Issue,
+ * WorkOrder, PhysicalPart — keep the rules those arms encode. A `designId`-only
+ * check would silently pass every ECO, whose `designId` is always null.
+ *
+ * Ids are de-duplicated and read in one query; the per-item checks then run on
+ * rows already in hand. An unknown id is a `NotFoundError` naming it, matching
+ * what the by-id routes answer for the same id.
+ */
+export async function requireItemsAccess(
+  userId: string,
+  itemIds: Array<string>,
+): Promise<Map<string, typeof items.$inferSelect>> {
+  const uniqueIds = [...new Set(itemIds)]
+  if (uniqueIds.length === 0) return new Map()
+
+  const rows = await db.query.items.findMany({
+    where: inArray(items.id, uniqueIds),
+  })
+  const byId = new Map(rows.map((row) => [row.id, row]))
+
+  const missing = uniqueIds.find((id) => !byId.has(id))
+  if (missing) throw new NotFoundError('Item', missing)
+
+  for (const id of uniqueIds) {
+    await requireItemAccess(userId, byId.get(id)!)
+  }
+
+  return byId
 }
 
 /**

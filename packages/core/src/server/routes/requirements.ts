@@ -12,6 +12,7 @@ import {
   requireBranchAccess,
   requireDesignAccess,
   requireItemAccess,
+  requireItemsAccess,
 } from '@/lib/auth/access'
 import { apiHandler, created } from '@/lib/api/handler'
 import { requirementUpdateSchema } from '@/lib/api/schemas'
@@ -283,6 +284,11 @@ app.post(
       async ({ params, body: { itemIds, branchId }, user }) => {
         const { id } = params
 
+        // The far end of every link, which `access:` cannot reach — it runs
+        // before the body is read.
+        await requireItemsAccess(user.id, itemIds)
+        if (branchId) await requireBranchAccess(user.id, branchId)
+
         await RequirementService.linkSatisfaction(id, itemIds, user.id, {
           branchId,
         })
@@ -310,6 +316,9 @@ app.delete(
       },
       async ({ params, body: { itemId, branchId }, user }) => {
         const { id } = params
+
+        await requireItemsAccess(user.id, [itemId])
+        if (branchId) await requireBranchAccess(user.id, branchId)
 
         await RequirementService.unlinkSatisfaction(id, itemId, user.id, {
           branchId,
@@ -371,6 +380,8 @@ app.post(
       },
       async ({ body: { itemIds, branchId }, params, user }) => {
         await requireItemAccess(user.id, params.id)
+        await requireItemsAccess(user.id, itemIds)
+        if (branchId) await requireBranchAccess(user.id, branchId)
 
         for (const itemId of itemIds) {
           await RequirementService.allocateToDesign(
@@ -407,6 +418,8 @@ app.delete(
       },
       async ({ body: { itemId, branchId }, params, user }) => {
         await requireItemAccess(user.id, params.id)
+        await requireItemsAccess(user.id, [itemId])
+        if (branchId) await requireBranchAccess(user.id, branchId)
 
         await RequirementService.removeAllocation(params.id, itemId, user.id, {
           branchId,
@@ -430,6 +443,9 @@ app.post(
       },
       async ({ params, body: { testCaseIds, branchId }, user }) => {
         const { id } = params
+        await requireItemsAccess(user.id, testCaseIds)
+        if (branchId) await requireBranchAccess(user.id, branchId)
+
         await RequirementService.linkVerification(id, testCaseIds, user.id, {
           branchId,
         })
@@ -456,8 +472,12 @@ app.delete(
         }
 
         const { id } = params
+        const branchId = url.searchParams.get('branchId') ?? undefined
+        await requireItemsAccess(user.id, [testCaseId])
+        if (branchId) await requireBranchAccess(user.id, branchId)
+
         await RequirementService.unlinkVerification(id, testCaseId, user.id, {
-          branchId: url.searchParams.get('branchId') ?? undefined,
+          branchId,
         })
 
         return { success: true }

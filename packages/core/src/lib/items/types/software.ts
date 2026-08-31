@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { z } from 'zod'
-import type { RefinementCtx } from 'zod'
 import { baseItemSchema, commonStates } from './base'
+import type { RefinementCtx } from 'zod'
 import type { BaseItem, RelationshipConfig } from './base'
 
 // ============================================================================

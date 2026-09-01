@@ -192,10 +192,11 @@ const ALLOWED_EXTENSIONS = new Set([
   '.xml',
   '.yaml',
   '.yml',
-  // Firmware build artifacts
+  // Software build artifacts
   '.bin',
   '.hex',
   '.elf',
+  '.exe',
 ])
 
 /**

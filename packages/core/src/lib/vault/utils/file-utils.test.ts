@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { detectFileCategory } from './file-utils'
+import { detectFileCategory, isFileTypeAllowed } from './file-utils'
 
 const PDF = 'application/pdf'
 
@@ -62,5 +62,13 @@ describe('detectFileCategory', () => {
     expect(
       detectFileCategory('MOTOR-SPEC.pdf', 'application/octet-stream'),
     ).toBe('specification')
+  })
+})
+
+describe('isFileTypeAllowed', () => {
+  it('allows Windows application build artifacts', () => {
+    expect(
+      isFileTypeAllowed('cascadia-installer.exe', 'application/octet-stream'),
+    ).toBe(true)
   })
 })

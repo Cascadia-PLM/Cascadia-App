@@ -51,7 +51,6 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-  ViewEditSelect,
   ViewEditStatic,
   ViewEditText,
   ViewEditTextarea,

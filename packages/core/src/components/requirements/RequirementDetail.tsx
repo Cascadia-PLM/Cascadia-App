@@ -54,10 +54,11 @@ import {
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { itemAtContextQuery } from '@/lib/query/options/items'
-import { branchDetailQuery } from '@/lib/query'
+import { branchDetailQuery, designStatusQuery } from '@/lib/query'
 import { StateBadge } from '@/components/items/StateBadge'
 import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
 import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
+import { ItemCreateDesignSection } from '@/components/items/ItemCreateDesignSection'
 
 const TYPE_OPTIONS = [
   { value: 'Functional', label: 'Functional' },
@@ -197,6 +198,16 @@ export function RequirementDetail({
   const [isEditing, setIsEditing] = useState(isCreateMode)
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false)
   const [isImpactDialogOpen, setIsImpactDialogOpen] = useState(false)
+  const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>()
+
+  const { data: createDesignStatus = null } = useQuery(
+    designStatusQuery(
+      requirement.designId,
+      isCreateMode && Boolean(requirement.designId),
+    ),
+  )
+  const createBranchRequired =
+    createDesignStatus?.protection.phase === 'post-release'
 
   const { context, contextLabel, isEditable, setContext } = useVersionContext(
     isCreateMode ? undefined : requirement.designId,
@@ -298,7 +309,11 @@ export function RequirementDetail({
   }
 
   const handleSave = async () => {
-    const branchId = context.type === 'branch' ? context.branchId : undefined
+    const branchId = isCreateMode
+      ? selectedBranchId
+      : context.type === 'branch'
+        ? context.branchId
+        : undefined
     await onSave(requirement, branchId)
     if (!isCreateMode) {
       // Leaving edit mode releases the lock (changes are kept)
@@ -441,7 +456,10 @@ export function RequirementDetail({
                 </Button>
                 <Button
                   onClick={handleSave}
-                  disabled={isSubmitting}
+                  disabled={
+                    isSubmitting ||
+                    (isCreateMode && createBranchRequired && !selectedBranchId)
+                  }
                   data-testid="requirement-submit"
                 >
                   <Save className="h-4 w-4 mr-2" />
@@ -606,21 +624,19 @@ export function RequirementDetail({
                     />
                     {(isCreateMode || !currentRequirement.designId) &&
                       designs.length > 0 && (
-                        <ViewEditSelect
-                          label="Design"
-                          value={
-                            isEditing
-                              ? requirement.designId
-                              : currentRequirement.designId
-                          }
-                          onChange={(v) => updateField('designId', v)}
-                          isEditing={isEditing && isCreateMode}
-                          options={designs.map((d) => ({
-                            value: d.id,
-                            label: `${d.code} - ${d.name}`,
-                          }))}
-                          placeholder="Select a design..."
-                          data-testid="design-selector"
+                        <ItemCreateDesignSection
+                          designs={designs}
+                          designId={requirement.designId}
+                          displayedDesignId={currentRequirement.designId}
+                          onDesignChange={(value) => {
+                            updateField('designId', value)
+                            setSelectedBranchId(undefined)
+                          }}
+                          isEditing={isEditing}
+                          isCreateMode={isCreateMode}
+                          selectedBranchId={selectedBranchId}
+                          onBranchChange={setSelectedBranchId}
+                          itemLabel="requirement"
                         />
                       )}
                   </dl>

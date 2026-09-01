@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Edit, Save, Trash2, X } from 'lucide-react'
 import { BuildArtifactCard } from './BuildArtifactCard'
@@ -36,6 +37,8 @@ import {
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { StateBadge } from '@/components/items/StateBadge'
 import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
+import { ItemCreateDesignSection } from '@/components/items/ItemCreateDesignSection'
+import { designStatusQuery } from '@/lib/query'
 
 const SOFTWARE_TYPE_OPTIONS = [
   { value: 'firmware', label: 'Firmware' },
@@ -81,7 +84,7 @@ interface SoftwareDetailProps {
   software?: Software
   designs?: Array<Design>
   defaultDesignId?: string
-  onSave: (software: Software) => Promise<void>
+  onSave: (software: Software, branchId?: string) => Promise<void>
   onDelete?: () => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
@@ -108,6 +111,7 @@ export function SoftwareDetail({
     () => initialSoftware || createEmptySoftware(defaultDesignId),
   )
   const [isEditing, setIsEditing] = useState(isCreateMode)
+  const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>()
   const [attributes, setAttributes] = useState<Record<string, unknown>>(
     initialSoftware?.attributes ?? {},
   )
@@ -121,13 +125,20 @@ export function SoftwareDetail({
 
   const current = software
   const { isReleasedFamily } = useReleasedFamily('Software', current.state)
+  const { data: designStatus = null } = useQuery(
+    designStatusQuery(
+      software.designId,
+      isCreateMode && Boolean(software.designId),
+    ),
+  )
+  const branchRequired = designStatus?.protection.phase === 'post-release'
 
   const updateField = (field: keyof Software, value: unknown) => {
     setSoftware((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleSave = async () => {
-    await onSave({ ...software, attributes })
+    await onSave({ ...software, attributes }, selectedBranchId)
     if (!isCreateMode) setIsEditing(false)
   }
 
@@ -162,11 +173,6 @@ export function SoftwareDetail({
     }
   }
 
-  const designOptions = designs.map((d) => ({
-    value: d.id,
-    label: d.name,
-  }))
-
   return (
     <PageContainer>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -199,7 +205,13 @@ export function SoftwareDetail({
                 <X className="h-4 w-4 mr-2" />
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={isSubmitting}>
+              <Button
+                onClick={handleSave}
+                disabled={
+                  isSubmitting ||
+                  (isCreateMode && branchRequired && !selectedBranchId)
+                }
+              >
                 <Save className="h-4 w-4 mr-2" />
                 {isSubmitting
                   ? 'Saving...'
@@ -285,12 +297,19 @@ export function SoftwareDetail({
                       required
                     />
                     {isCreateMode ? (
-                      <ViewEditSelect
-                        label="Design"
-                        value={software.designId}
-                        onChange={(v) => updateField('designId', v)}
+                      <ItemCreateDesignSection
+                        designs={designs}
+                        designId={software.designId}
+                        displayedDesignId={current.designId}
+                        onDesignChange={(value) => {
+                          updateField('designId', value)
+                          setSelectedBranchId(undefined)
+                        }}
                         isEditing={isEditing}
-                        options={designOptions}
+                        isCreateMode={isCreateMode}
+                        selectedBranchId={selectedBranchId}
+                        onBranchChange={setSelectedBranchId}
+                        itemLabel="software item"
                       />
                     ) : (
                       <ViewEditStatic

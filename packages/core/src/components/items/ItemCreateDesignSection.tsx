@@ -9,21 +9,24 @@ import { BranchSelector } from '@/components/versioning/BranchSelector'
 import { ViewEditSelect } from '@/components/ui'
 import { designStatusQuery } from '@/lib/query'
 
+interface ItemCreateDesignSectionProps {
+  designs: Array<Design>
+  designId: string | undefined
+  displayedDesignId: string | undefined
+  onDesignChange: (designId: string) => void
+  isEditing: boolean
+  isCreateMode: boolean
+  selectedBranchId: string | undefined
+  onBranchChange: (branchId: string | undefined) => void
+  itemLabel: string
+}
+
 /**
- * Where a new part is going: which design, and — once the design is under
- * change control — which branch.
- *
- * Rendered inside the Overview card's `<dl>`, which is why it returns a
- * fragment-shaped `<div>` rather than a Card of its own. It also shows for an
- * existing part that somehow has no design, which is the second half of the
- * condition its caller applies.
- *
- * Reads the design-status query directly rather than taking it as a prop.
- * PartDetail asks the same question to gate its submit button, and the shared
- * key means the two reads are one request — the idiom FileList and
- * ImageGallery already use for a part's files.
+ * Shared destination selector for versioned item creation. A released design
+ * is protected from writes to main, so new items must target an ECO or
+ * workspace branch.
  */
-export function PartCreateSection({
+export function ItemCreateDesignSection({
   designs,
   designId,
   displayedDesignId,
@@ -32,25 +35,24 @@ export function PartCreateSection({
   isCreateMode,
   selectedBranchId,
   onBranchChange,
-}: {
-  designs: Array<Design>
-  /** The design being edited (create mode) — drives the status query. */
-  designId: string | undefined
-  /** What to show when not editing: the part's own design. */
-  displayedDesignId: string | undefined
-  onDesignChange: (designId: string) => void
-  isEditing: boolean
-  isCreateMode: boolean
-  selectedBranchId: string | undefined
-  onBranchChange: (branchId: string | undefined) => void
-}) {
+  itemLabel,
+}: ItemCreateDesignSectionProps) {
   const { data: designStatus = null, isFetching: loadingStatus } = useQuery(
     designStatusQuery(designId ?? '', isCreateMode && Boolean(designId)),
   )
 
-  // A design under change control cannot take new parts on main.
   const branchRequired = designStatus?.protection.phase === 'post-release'
   const showBranchSelector = isCreateMode && Boolean(designId)
+  const designOptions = [...designs]
+    .sort((a, b) => {
+      const libraryOrder =
+        Number(a.designType === 'Library') - Number(b.designType === 'Library')
+      return libraryOrder || (a.code || '').localeCompare(b.code || '')
+    })
+    .map((design) => ({
+      value: design.id,
+      label: `${design.code} - ${design.name}`,
+    }))
 
   return (
     <div className="md:col-span-2 space-y-4">
@@ -60,10 +62,7 @@ export function PartCreateSection({
           value={isEditing ? designId : displayedDesignId}
           onChange={onDesignChange}
           isEditing={isEditing && isCreateMode}
-          options={designs.map((d) => ({
-            value: d.id,
-            label: `${d.code} - ${d.name}`,
-          }))}
+          options={designOptions}
           placeholder="Select a design..."
           required
           data-testid="design-selector"
@@ -92,8 +91,8 @@ export function PartCreateSection({
             <div className="flex items-start gap-2 mt-2 p-3 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-sm rounded-md">
               <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
               <span>
-                This design is under change control. New parts must be created
-                on an ECO or workspace branch.
+                This design is under change control. New {itemLabel} must be
+                created on an ECO or workspace branch.
               </span>
             </div>
           )}
@@ -101,14 +100,14 @@ export function PartCreateSection({
             <div className="flex items-start gap-2 mt-2 p-3 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-sm rounded-md">
               <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
               <span>
-                No branch selected - part will be created on the main branch.
-                Select a workspace branch for private development work.
+                No branch selected - {itemLabel} will be created on the main
+                branch. Select a workspace branch for private development work.
               </span>
             </div>
           )}
           {branchRequired && !selectedBranchId && (
             <p className="text-sm text-red-500">
-              Please select a branch to create this part on
+              Please select a branch to create this {itemLabel} on
             </p>
           )}
         </div>

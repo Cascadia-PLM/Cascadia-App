@@ -43,18 +43,22 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-  ViewEditSelect,
   ViewEditStatic,
   ViewEditText,
   ViewEditTextarea,
 } from '@/components/ui'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { branchDetailQuery, testPlanTestCasesQuery } from '@/lib/query'
+import {
+  branchDetailQuery,
+  designStatusQuery,
+  testPlanTestCasesQuery,
+} from '@/lib/query'
 import { itemAtContextQuery } from '@/lib/query/options/items'
 import { StateBadge } from '@/components/items/StateBadge'
 import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
 import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
+import { ItemCreateDesignSection } from '@/components/items/ItemCreateDesignSection'
 
 const createEmptyTestPlan = (): TestPlan => ({
   id: undefined,
@@ -129,6 +133,16 @@ export function TestPlanDetail({
   )
   const [isEditing, setIsEditing] = useState(isCreateMode)
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false)
+  const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>()
+
+  const { data: createDesignStatus = null } = useQuery(
+    designStatusQuery(
+      testPlan.designId,
+      isCreateMode && Boolean(testPlan.designId),
+    ),
+  )
+  const createBranchRequired =
+    createDesignStatus?.protection.phase === 'post-release'
 
   const { context, contextLabel, isEditable, setContext } = useVersionContext(
     isCreateMode ? undefined : testPlan.designId,
@@ -236,7 +250,11 @@ export function TestPlanDetail({
   }
 
   const handleSave = async () => {
-    const branchId = context.type === 'branch' ? context.branchId : undefined
+    const branchId = isCreateMode
+      ? selectedBranchId
+      : context.type === 'branch'
+        ? context.branchId
+        : undefined
     await onSave(testPlan, branchId)
     if (!isCreateMode) {
       // Leaving edit mode releases the lock (changes are kept)
@@ -396,7 +414,13 @@ export function TestPlanDetail({
                   <X className="h-4 w-4 mr-2" />
                   Cancel
                 </Button>
-                <Button onClick={handleSave} disabled={isSubmitting}>
+                <Button
+                  onClick={handleSave}
+                  disabled={
+                    isSubmitting ||
+                    (isCreateMode && createBranchRequired && !selectedBranchId)
+                  }
+                >
                   <Save className="h-4 w-4 mr-2" />
                   {isSubmitting
                     ? 'Saving...'
@@ -535,19 +559,19 @@ export function TestPlanDetail({
                 />
                 {(isCreateMode || !currentTestPlan.designId) &&
                   designs.length > 0 && (
-                    <ViewEditSelect
-                      label="Design"
-                      value={
-                        isEditing ? testPlan.designId : currentTestPlan.designId
-                      }
-                      onChange={(v) => updateField('designId', v)}
-                      isEditing={isEditing && isCreateMode}
-                      options={designs.map((d) => ({
-                        value: d.id,
-                        label: `${d.code} - ${d.name}`,
-                      }))}
-                      placeholder="Select a design..."
-                      data-testid="design-selector"
+                    <ItemCreateDesignSection
+                      designs={designs}
+                      designId={testPlan.designId}
+                      displayedDesignId={currentTestPlan.designId}
+                      onDesignChange={(value) => {
+                        updateField('designId', value)
+                        setSelectedBranchId(undefined)
+                      }}
+                      isEditing={isEditing}
+                      isCreateMode={isCreateMode}
+                      selectedBranchId={selectedBranchId}
+                      onBranchChange={setSelectedBranchId}
+                      itemLabel="test plan"
                     />
                   )}
               </dl>

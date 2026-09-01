@@ -31,10 +31,14 @@ function NewSoftwarePage() {
   const searchParams = Route.useSearch()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSave = async (software: Software) => {
+  const handleSave = async (software: Software, branchId?: string) => {
     setIsSubmitting(true)
     try {
-      const payload = { ...software, itemType: 'Software' }
+      const payload = {
+        ...software,
+        itemType: 'Software',
+        ...(branchId && { branchId }),
+      }
       const result = await apiFetch<{ data: { item: Software } }>(
         '/api/v1/items',
         {

@@ -34,7 +34,7 @@ import {
   PartCADHiddenPrompt,
   PartCADSection,
 } from '@/components/parts/PartCADSection'
-import { PartCreateSection } from '@/components/parts/PartCreateSection'
+import { ItemCreateDesignSection } from '@/components/items/ItemCreateDesignSection'
 import { PartDetailSidebar } from '@/components/parts/PartDetailSidebar'
 import { PartManufacturingCard } from '@/components/parts/PartManufacturingCard'
 import { useCADViewerState } from '@/components/parts/useCADViewerState'
@@ -280,8 +280,8 @@ export function PartDetail({
   const mainBranchId = parentDesign?.defaultBranchId ?? undefined
 
   // Whether a new part must name a branch — the same question
-  // PartCreateSection asks to render its selector. Shared query key, so this
-  // costs no extra request; it is read here because the submit button is
+  // ItemCreateDesignSection asks to render its selector. Shared query key, so
+  // this costs no extra request; it is read here because the submit button is
   // gated on it.
   const { data: designStatus = null } = useQuery(
     designStatusQuery(part.designId, isCreateMode && Boolean(part.designId)),
@@ -768,7 +768,7 @@ export function PartDetail({
                       {/* Where a new part is going: design, then branch */}
                       {(isCreateMode || !currentPart.designId) &&
                         designs.length > 0 && (
-                          <PartCreateSection
+                          <ItemCreateDesignSection
                             designs={designs}
                             designId={part.designId}
                             displayedDesignId={currentPart.designId}
@@ -777,6 +777,7 @@ export function PartDetail({
                             isCreateMode={isCreateMode}
                             selectedBranchId={selectedBranchId}
                             onBranchChange={setSelectedBranchId}
+                            itemLabel="part"
                           />
                         )}
                     </dl>

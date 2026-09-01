@@ -60,6 +60,7 @@ import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import {
   branchDetailQuery,
+  designStatusQuery,
   entityQuery,
   itemCollectionQuery,
   testCaseExecutionsQuery,
@@ -70,6 +71,7 @@ import { itemAtContextQuery } from '@/lib/query/options/items'
 import { StateBadge } from '@/components/items/StateBadge'
 import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
 import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
+import { ItemCreateDesignSection } from '@/components/items/ItemCreateDesignSection'
 
 const TEST_TYPE_OPTIONS = [
   { value: 'Unit', label: 'Unit' },
@@ -178,6 +180,16 @@ export function TestCaseDetail({
   )
   const [isEditing, setIsEditing] = useState(isCreateMode)
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false)
+  const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>()
+
+  const { data: createDesignStatus = null } = useQuery(
+    designStatusQuery(
+      testCase.designId,
+      isCreateMode && Boolean(testCase.designId),
+    ),
+  )
+  const createBranchRequired =
+    createDesignStatus?.protection.phase === 'post-release'
 
   // Execution dialog state
   const [showExecutionForm, setShowExecutionForm] = useState(false)
@@ -324,7 +336,11 @@ export function TestCaseDetail({
   }
 
   const handleSave = async () => {
-    const branchId = context.type === 'branch' ? context.branchId : undefined
+    const branchId = isCreateMode
+      ? selectedBranchId
+      : context.type === 'branch'
+        ? context.branchId
+        : undefined
     const dataToSave = { ...testCase, steps }
     await onSave(dataToSave, branchId)
     if (!isCreateMode) {
@@ -547,7 +563,13 @@ export function TestCaseDetail({
                   <X className="h-4 w-4 mr-2" />
                   Cancel
                 </Button>
-                <Button onClick={handleSave} disabled={isSubmitting}>
+                <Button
+                  onClick={handleSave}
+                  disabled={
+                    isSubmitting ||
+                    (isCreateMode && createBranchRequired && !selectedBranchId)
+                  }
+                >
                   <Save className="h-4 w-4 mr-2" />
                   {isSubmitting
                     ? 'Saving...'
@@ -772,19 +794,19 @@ export function TestCaseDetail({
                 />
                 {(isCreateMode || !currentTestCase.designId) &&
                   designs.length > 0 && (
-                    <ViewEditSelect
-                      label="Design"
-                      value={
-                        isEditing ? testCase.designId : currentTestCase.designId
-                      }
-                      onChange={(v) => updateField('designId', v)}
-                      isEditing={isEditing && isCreateMode}
-                      options={designs.map((d) => ({
-                        value: d.id,
-                        label: `${d.code} - ${d.name}`,
-                      }))}
-                      placeholder="Select a design..."
-                      data-testid="design-selector"
+                    <ItemCreateDesignSection
+                      designs={designs}
+                      designId={testCase.designId}
+                      displayedDesignId={currentTestCase.designId}
+                      onDesignChange={(value) => {
+                        updateField('designId', value)
+                        setSelectedBranchId(undefined)
+                      }}
+                      isEditing={isEditing}
+                      isCreateMode={isCreateMode}
+                      selectedBranchId={selectedBranchId}
+                      onBranchChange={setSelectedBranchId}
+                      itemLabel="test case"
                     />
                   )}
                 {/* Once saved the parent plan is a link; while creating it is

@@ -51,7 +51,6 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-  ViewEditSelect,
   ViewEditStatic,
   ViewEditText,
   ViewEditTextarea,
@@ -61,11 +60,13 @@ import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import {
   branchDetailQuery,
   designDetailQuery,
+  designStatusQuery,
   useInvalidateResources,
 } from '@/lib/query'
 import { itemAtContextQuery } from '@/lib/query/options/items'
 import { StateBadge } from '@/components/items/StateBadge'
 import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
+import { ItemCreateDesignSection } from '@/components/items/ItemCreateDesignSection'
 
 // Constants
 // Spelled out so Tailwind's scanner sees the class names — the tab count
@@ -166,6 +167,16 @@ export function DocumentDetail({
   )
   const [isEditing, setIsEditing] = useState(isCreateMode)
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false)
+  const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>()
+
+  const { data: createDesignStatus = null } = useQuery(
+    designStatusQuery(
+      document.designId,
+      isCreateMode && Boolean(document.designId),
+    ),
+  )
+  const createBranchRequired =
+    createDesignStatus?.protection.phase === 'post-release'
 
   const { context, contextLabel, isEditable, setContext } = useVersionContext(
     isCreateMode ? undefined : document.designId,
@@ -300,7 +311,11 @@ export function DocumentDetail({
   }
 
   const handleSave = async () => {
-    const branchId = context.type === 'branch' ? context.branchId : undefined
+    const branchId = isCreateMode
+      ? selectedBranchId
+      : context.type === 'branch'
+        ? context.branchId
+        : undefined
     await onSave(document, branchId)
     if (!isCreateMode) {
       // Leaving edit mode releases the lock (changes are kept)
@@ -442,7 +457,10 @@ export function DocumentDetail({
                 </Button>
                 <Button
                   onClick={handleSave}
-                  disabled={isSubmitting}
+                  disabled={
+                    isSubmitting ||
+                    (isCreateMode && createBranchRequired && !selectedBranchId)
+                  }
                   data-testid="document-submit"
                 >
                   <Save className="h-4 w-4 mr-2" />
@@ -605,21 +623,19 @@ export function DocumentDetail({
                     />
                     {(isCreateMode || !currentDocument.designId) &&
                       designs.length > 0 && (
-                        <ViewEditSelect
-                          label="Design"
-                          value={
-                            isEditing
-                              ? document.designId
-                              : currentDocument.designId
-                          }
-                          onChange={(v) => updateField('designId', v)}
-                          isEditing={isEditing && isCreateMode}
-                          options={designs.map((d) => ({
-                            value: d.id,
-                            label: `${d.code} - ${d.name}`,
-                          }))}
-                          placeholder="Select a design..."
-                          data-testid="design-selector"
+                        <ItemCreateDesignSection
+                          designs={designs}
+                          designId={document.designId}
+                          displayedDesignId={currentDocument.designId}
+                          onDesignChange={(value) => {
+                            updateField('designId', value)
+                            setSelectedBranchId(undefined)
+                          }}
+                          isEditing={isEditing}
+                          isCreateMode={isCreateMode}
+                          selectedBranchId={selectedBranchId}
+                          onBranchChange={setSelectedBranchId}
+                          itemLabel="document"
                         />
                       )}
                   </dl>

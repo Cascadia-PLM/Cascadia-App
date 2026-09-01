@@ -30,10 +30,14 @@ function NewRequirementPage() {
   const searchParams = Route.useSearch()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSave = async (requirement: Requirement) => {
+  const handleSave = async (requirement: Requirement, branchId?: string) => {
     setIsSubmitting(true)
     try {
-      const payload = { ...requirement, itemType: 'Requirement' }
+      const payload = {
+        ...requirement,
+        itemType: 'Requirement',
+        ...(branchId && { branchId }),
+      }
       const result = await apiFetch<{ data: { item: Requirement } }>(
         '/api/v1/items',
         {

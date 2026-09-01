@@ -104,7 +104,7 @@ export const software = pgTable(
       () => softwareManifests.id,
     ),
 
-    // Primary build artifact (vault file: .bin/.hex/.elf/.zip)
+    // Primary build artifact (vault file: .bin/.hex/.elf/.exe/.zip)
     buildArtifactFileId: uuid('build_artifact_file_id'),
   },
   (table) => [index('idx_software_manifest').on(table.manifestId)],

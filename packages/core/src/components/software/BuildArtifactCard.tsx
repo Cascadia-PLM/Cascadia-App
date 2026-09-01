@@ -24,7 +24,7 @@ interface FileMetadata {
 
 /**
  * The primary build artifact slot (proposal §5.2): one vault file
- * (.bin/.hex/.elf/.zip) attached to this software version. Vault files are
+ * (.bin/.hex/.elf/.exe/.zip) attached to this software version. Vault files are
  * branch-scoped, so an artifact uploaded on an ECO branch promotes to main
  * on release alongside the source it was built from.
  */

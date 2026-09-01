@@ -1020,7 +1020,7 @@ See `docs/features/physical-parts-and-traceability.md` for the full design.
 | `toolchain`              | varchar(200) | Compiler/toolchain identification                                           |
 | `manifest_id`            | UUID (FK)    | Immutable source-tree snapshot for **this** item version                    |
 | `draft_manifest_id`      | UUID (FK)    | Uncommitted working-copy edits; promoted by an explicit commit              |
-| `build_artifact_file_id` | UUID         | Primary build artifact in the vault (`.bin`/`.hex`/`.elf`/`.zip`)           |
+| `build_artifact_file_id` | UUID         | Primary build artifact in the vault (`.bin`/`.hex`/`.elf`/`.exe`/`.zip`)    |
 
 **States:** Draft, In Review, Approved, Released, Obsolete
 

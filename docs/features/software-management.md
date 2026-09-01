@@ -43,7 +43,7 @@ Organization → Program → Design
                            └── Software SW-001 "TDJ-25 Motor Firmware" ← the actual configuration item
                                  │
                                  ├── source manifest (internal code tree)  OR  pinned external repo ref
-                                 ├── build artifacts (vault files: .bin/.hex/.elf)
+                                 ├── build artifacts (vault files: .bin/.hex/.elf/.exe)
                                  └── metadata: semver, target hardware, toolchain
 ```
 
@@ -112,7 +112,7 @@ export const software = pgTable('software', {
   // External mode: pointer to the repo link (pin details live there)
   repoLinkId: uuid('repo_link_id').references(() => softwareRepoLinks.id),
 
-  // Primary build artifact (vault file: .bin/.hex/.elf/.zip) — vault handles branch isolation
+  // Primary build artifact (vault file: .bin/.hex/.elf/.exe/.zip) — vault handles branch isolation
   buildArtifactFileId: uuid('build_artifact_file_id'),
 })
 ```

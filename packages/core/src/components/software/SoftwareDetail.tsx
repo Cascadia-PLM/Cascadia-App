@@ -423,7 +423,6 @@ export function SoftwareDetail({
                           isEditing
                           inputType="url"
                           placeholder="https://github.com/organization/repository"
-                          required
                           className="md:col-span-2"
                         />
                         <ViewEditText
@@ -432,7 +431,6 @@ export function SoftwareDetail({
                           onChange={(v) => updateField('externalRef', v)}
                           isEditing
                           placeholder="e.g., v2.3.0, release/2.3, or a commit"
-                          required
                         />
                         <ViewEditText
                           label="Commit SHA"

@@ -3,7 +3,6 @@
 
 import { z } from 'zod'
 import { baseItemSchema, commonStates } from './base'
-import type { RefinementCtx } from 'zod'
 import type { BaseItem, RelationshipConfig } from './base'
 
 // ============================================================================
@@ -41,9 +40,9 @@ const emptyValueToNull = (value: unknown) =>
 /**
  * Source fields accepted by partial-update APIs. Unlike the full item schema,
  * sourceMode has no default here: omitting it from a PATCH-style update must
- * preserve the current mode. Blank nullable values become null so an optional
- * commit SHA can be cleared explicitly rather than mistaken for an omitted
- * field.
+ * preserve the current mode. Blank nullable values become null so optional
+ * external metadata can be cleared explicitly rather than mistaken for an
+ * omitted field. Values remain format-validated whenever they are present.
  */
 export const softwareSourceUpdateFields = {
   sourceMode: z.enum(SOURCE_MODES).optional(),
@@ -82,36 +81,8 @@ const softwareSourceFields = {
   sourceMode: z.enum(SOURCE_MODES).optional().default('internal'),
 }
 
-function requireExternalSource(
-  data: {
-    sourceMode?: SourceMode
-    externalRepositoryUrl?: string | null
-    externalRef?: string | null
-  },
-  ctx: RefinementCtx,
-) {
-  if (data.sourceMode !== 'external') return
-
-  if (!data.externalRepositoryUrl) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['externalRepositoryUrl'],
-      message: 'Repository URL is required for external source mode',
-    })
-  }
-  if (!data.externalRef) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['externalRef'],
-      message: 'Pinned reference is required for external source mode',
-    })
-  }
-}
-
 /** Source fields also used by the persistence handler for partial updates. */
-export const softwareSourceSchema = z
-  .object(softwareSourceFields)
-  .superRefine(requireExternalSource)
+export const softwareSourceSchema = z.object(softwareSourceFields)
 
 export interface Software extends BaseItem {
   itemType: 'Software'
@@ -136,21 +107,19 @@ export interface Software extends BaseItem {
   buildArtifactFileId?: string | null
 }
 
-export const softwareSchema = baseItemSchema
-  .extend({
-    itemType: z.literal('Software'),
-    designId: z.string().uuid({ message: 'Design is required' }),
-    description: z.string().max(5000).optional(),
-    softwareType: z.enum(SOFTWARE_TYPES).optional(),
-    ...softwareSourceFields,
-    version: z.string().max(50).optional(),
-    targetHardware: z.string().max(200).optional(),
-    toolchain: z.string().max(200).optional(),
-    manifestId: z.string().uuid().nullable().optional(),
-    draftManifestId: z.string().uuid().nullable().optional(),
-    buildArtifactFileId: z.string().uuid().nullable().optional(),
-  })
-  .superRefine(requireExternalSource)
+export const softwareSchema = baseItemSchema.extend({
+  itemType: z.literal('Software'),
+  designId: z.string().uuid({ message: 'Design is required' }),
+  description: z.string().max(5000).optional(),
+  softwareType: z.enum(SOFTWARE_TYPES).optional(),
+  ...softwareSourceFields,
+  version: z.string().max(50).optional(),
+  targetHardware: z.string().max(200).optional(),
+  toolchain: z.string().max(200).optional(),
+  manifestId: z.string().uuid().nullable().optional(),
+  draftManifestId: z.string().uuid().nullable().optional(),
+  buildArtifactFileId: z.string().uuid().nullable().optional(),
+})
 
 // Software uses the standard driven lifecycle (ECO-controlled), like Parts
 export const softwareStates = commonStates

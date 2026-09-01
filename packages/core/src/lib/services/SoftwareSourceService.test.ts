@@ -656,6 +656,8 @@ describe('SoftwareSourceService', () => {
           state: 'Draft',
           itemType: 'Software',
           sourceMode: 'external',
+          externalRepositoryUrl: 'https://example.com/firmware.git',
+          externalRef: 'refs/tags/v1.0.0',
         },
         user.id,
       )

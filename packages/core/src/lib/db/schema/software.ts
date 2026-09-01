@@ -89,6 +89,12 @@ export const software = pgTable(
       .notNull()
       .default('internal'),
 
+    // Lightweight external mode: manually maintained repository pin. A later
+    // provider-integration phase may replace these with a softwareRepoLink.
+    externalRepositoryUrl: text('external_repository_url'),
+    externalRef: varchar('external_ref', { length: 300 }),
+    externalCommitSha: varchar('external_commit_sha', { length: 64 }),
+
     // Version metadata (user-managed, distinct from the PLM revision letter)
     version: varchar('version', { length: 50 }),
     targetHardware: varchar('target_hardware', { length: 200 }),

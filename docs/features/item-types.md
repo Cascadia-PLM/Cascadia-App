@@ -1010,17 +1010,20 @@ See `docs/features/physical-parts-and-traceability.md` for the full design.
 
 **Lifecycle:** Driven (shares the Part lifecycle — ECO-controlled) | **Default State:** Draft | **Numbering:** `SW-000001`
 
-| Field                    | Type         | Description                                                                 |
-| ------------------------ | ------------ | --------------------------------------------------------------------------- |
-| `description`            | text         | What this item is                                                           |
-| `software_type`          | varchar(30)  | `firmware`, `application`, `library`, `configuration`, or `fpga`            |
-| `source_mode`            | varchar(20)  | `internal` (source lives in Cascadia) or `external` (pinned repo reference) |
-| `version`                | varchar(50)  | User-managed version string, distinct from the PLM revision letter          |
-| `target_hardware`        | varchar(200) | The hardware this build targets                                             |
-| `toolchain`              | varchar(200) | Compiler/toolchain identification                                           |
-| `manifest_id`            | UUID (FK)    | Immutable source-tree snapshot for **this** item version                    |
-| `draft_manifest_id`      | UUID (FK)    | Uncommitted working-copy edits; promoted by an explicit commit              |
-| `build_artifact_file_id` | UUID         | Primary build artifact in the vault (`.bin`/`.hex`/`.elf`/`.exe`/`.zip`)    |
+| Field                     | Type         | Description                                                                 |
+| ------------------------- | ------------ | --------------------------------------------------------------------------- |
+| `description`             | text         | What this item is                                                           |
+| `software_type`           | varchar(30)  | `firmware`, `application`, `library`, `configuration`, or `fpga`            |
+| `source_mode`             | varchar(20)  | `internal` (source lives in Cascadia) or `external` (pinned repo reference) |
+| `external_repository_url` | text         | Manually recorded repository URL for `external` source mode                 |
+| `external_ref`            | varchar(300) | Manually pinned branch, tag, or commit reference                            |
+| `external_commit_sha`     | varchar(64)  | Optional full SHA-1 or SHA-256 commit identifier                            |
+| `version`                 | varchar(50)  | User-managed version string, distinct from the PLM revision letter          |
+| `target_hardware`         | varchar(200) | The hardware this build targets                                             |
+| `toolchain`               | varchar(200) | Compiler/toolchain identification                                           |
+| `manifest_id`             | UUID (FK)    | Immutable source-tree snapshot for **this** item version                    |
+| `draft_manifest_id`       | UUID (FK)    | Uncommitted working-copy edits; promoted by an explicit commit              |
+| `build_artifact_file_id`  | UUID         | Primary build artifact in the vault (`.bin`/`.hex`/`.elf`/`.exe`/`.zip`)    |
 
 **States:** Draft, In Review, Approved, Released, Obsolete
 

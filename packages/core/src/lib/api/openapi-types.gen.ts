@@ -9747,6 +9747,9 @@ export interface operations {
                     /** Format: uuid */
                     designId: string;
                     draftManifestId?: string | null;
+                    externalCommitSha?: string | null;
+                    externalRef?: string | null;
+                    externalRepositoryUrl?: string | null;
                     itemNumber?: string;
                     /** @constant */
                     itemType: "Software";
@@ -13084,6 +13087,9 @@ export interface operations {
                     buildArtifactFileId?: string | null;
                     commitMessage?: string;
                     description?: string | null;
+                    externalCommitSha?: string | null;
+                    externalRef?: string | null;
+                    externalRepositoryUrl?: string | null;
                     name?: string | null;
                     softwareType?: ("firmware" | "application" | "library" | "configuration" | "fpga") | null;
                     /** @enum {string} */

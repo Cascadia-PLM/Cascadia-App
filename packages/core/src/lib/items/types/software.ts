@@ -32,12 +32,69 @@ export const SOURCE_MODES = ['internal', 'external'] as const
 
 export type SourceMode = (typeof SOURCE_MODES)[number]
 
+const emptyValueToNull = (value: unknown) =>
+  value === null || (typeof value === 'string' && value.trim() === '')
+    ? null
+    : value
+
+/**
+ * Source fields accepted by partial-update APIs. Unlike the full item schema,
+ * sourceMode has no default here: omitting it from a PATCH-style update must
+ * preserve the current mode. Blank nullable values become null so optional
+ * external metadata can be cleared explicitly rather than mistaken for an
+ * omitted field. Values remain format-validated whenever they are present.
+ */
+export const softwareSourceUpdateFields = {
+  sourceMode: z.enum(SOURCE_MODES).optional(),
+  externalRepositoryUrl: z.preprocess(
+    emptyValueToNull,
+    z
+      .string()
+      .trim()
+      .max(2048)
+      .url({ message: 'Repository URL must be a valid URL' })
+      .refine((value) => /^https?:\/\//i.test(value), {
+        message: 'Repository URL must use http:// or https://',
+      })
+      .nullable()
+      .optional(),
+  ),
+  externalRef: z.preprocess(
+    emptyValueToNull,
+    z.string().trim().max(300).nullable().optional(),
+  ),
+  externalCommitSha: z.preprocess(
+    emptyValueToNull,
+    z
+      .string()
+      .trim()
+      .regex(/^([0-9a-f]{40}|[0-9a-f]{64})$/i, {
+        message: 'Commit SHA must contain 40 or 64 hexadecimal characters',
+      })
+      .nullable()
+      .optional(),
+  ),
+}
+
+const softwareSourceFields = {
+  ...softwareSourceUpdateFields,
+  sourceMode: z.enum(SOURCE_MODES).optional().default('internal'),
+}
+
+/** Source fields also used by the persistence handler for partial updates. */
+export const softwareSourceSchema = z.object(softwareSourceFields)
+
 export interface Software extends BaseItem {
   itemType: 'Software'
   designId: string // Required - Software participates in versioning
   description?: string
   softwareType?: SoftwareType
   sourceMode?: SourceMode
+  // Manually recorded external source metadata. Provider-backed repository
+  // connections, ref resolution and mirroring remain a later phase.
+  externalRepositoryUrl?: string | null
+  externalRef?: string | null
+  externalCommitSha?: string | null
   // User-managed version metadata, distinct from the PLM revision letter
   version?: string
   targetHardware?: string
@@ -55,7 +112,7 @@ export const softwareSchema = baseItemSchema.extend({
   designId: z.string().uuid({ message: 'Design is required' }),
   description: z.string().max(5000).optional(),
   softwareType: z.enum(SOFTWARE_TYPES).optional(),
-  sourceMode: z.enum(SOURCE_MODES).optional().default('internal'),
+  ...softwareSourceFields,
   version: z.string().max(50).optional(),
   targetHardware: z.string().max(200).optional(),
   toolchain: z.string().max(200).optional(),

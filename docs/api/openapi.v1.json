@@ -12057,6 +12057,40 @@
                           }
                         ]
                       },
+                      "externalCommitSha": {
+                        "anyOf": [
+                          {
+                            "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "externalRef": {
+                        "anyOf": [
+                          {
+                            "maxLength": 300,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "externalRepositoryUrl": {
+                        "anyOf": [
+                          {
+                            "format": "uri",
+                            "maxLength": 2048,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "itemNumber": {
                         "maxLength": 100,
                         "minLength": 1,
@@ -20347,6 +20381,40 @@
                     "anyOf": [
                       {
                         "maxLength": 10000,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "externalCommitSha": {
+                    "anyOf": [
+                      {
+                        "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "externalRef": {
+                    "anyOf": [
+                      {
+                        "maxLength": 300,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "externalRepositoryUrl": {
+                    "anyOf": [
+                      {
+                        "format": "uri",
+                        "maxLength": 2048,
                         "type": "string"
                       },
                       {

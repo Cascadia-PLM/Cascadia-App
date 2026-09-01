@@ -21,6 +21,7 @@ import {
   issueSeverities,
 } from '@/lib/items/types/issue'
 import { workOrderUpdateSchema } from '@/lib/items/types/work-order'
+import { softwareSourceUpdateFields } from '@/lib/items/types/software'
 
 // =============================================================================
 // User Schemas
@@ -404,8 +405,7 @@ export const softwareUpdateSchema = z.object({
     .enum(['firmware', 'application', 'library', 'configuration', 'fpga'])
     .nullable()
     .optional(),
-  // NOT NULL with a default, so never null on a read.
-  sourceMode: z.enum(['internal', 'external']).optional(),
+  ...softwareSourceUpdateFields,
   version: z.string().max(50).nullable().optional(),
   targetHardware: z.string().max(200).nullable().optional(),
   toolchain: z.string().max(200).nullable().optional(),

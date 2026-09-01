@@ -22,6 +22,13 @@
       "when": 1788212430368,
       "tag": "0002_review_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788254169383,
+      "tag": "0003_software_external_source",
+      "breakpoints": true
     }
   ]
 }

@@ -452,10 +452,18 @@ app.get(
         }
       }
 
-      // Get default branch info
-      const defaultBranch = await DesignService.getDefaultBranch(designId)
+      const [defaultBranch, parent] = await Promise.all([
+        DesignService.getDefaultBranch(designId),
+        design.parentDesignId
+          ? DesignService.getById(design.parentDesignId)
+          : Promise.resolve(null),
+      ])
 
-      return { design: { ...design, defaultBranch } }
+      const parentDesign = parent
+        ? { id: parent.id, code: parent.code, name: parent.name }
+        : null
+
+      return { design: { ...design, defaultBranch, parentDesign } }
     }),
   ),
 )

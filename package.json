@@ -55,6 +55,7 @@
     "db:check-duplicates": "tsx scripts/check-items-duplicates.ts",
     "db:check-migrations": "node scripts/check-migration-schema.mjs",
     "db:check-backfills": "node scripts/check-migration-backfills.mjs",
+    "db:check-baseline": "node scripts/check-baseline-stamp.mjs",
     "db:push": "node scripts/drizzle.mjs push",
     "test:db:push": "node scripts/test-db-push.mjs",
     "db:studio": "node scripts/drizzle.mjs studio",

@@ -265,6 +265,26 @@ jobs:
         env:
           BACKFILL_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_migrate_backfills
 
+      # Every step above starts from an empty database, which is the one state
+      # in which `db:baseline` is never used — so nothing here exercised the
+      # upgrade path for the pre-0.5 installs it exists to rescue. This asserts
+      # the invariant that path turns on: for every prefix of the journal,
+      # push-to-there then baseline then migrate lands on exactly the schema
+      # migrate-from-empty builds. It is what catches a stamp that records a
+      # migration whose SQL never ran, which drizzle's resume-from-newest-row
+      # migrator then skips in silence rather than retrying.
+      #
+      # No CASCADIA_APP prefix, same as the step above: the script resolves the
+      # edition itself.
+      - name: Create a database to baseline and upgrade
+        run: psql -h localhost -U postgres -c 'CREATE DATABASE cascadia_baseline'
+        env:
+          PGPASSWORD: postgres
+      - name: db:baseline puts a pushed database on the migration path
+        run: npm run db:check-baseline
+        env:
+          BASELINE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_baseline
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest

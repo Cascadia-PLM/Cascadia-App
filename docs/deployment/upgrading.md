@@ -55,6 +55,18 @@ same commit as the migration. Locally:
 `createdb -U postgres cascadia_migrate_backfills`, then
 `BACKFILL_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cascadia_migrate_backfills npm run db:check-backfills`.
 
+Empty databases hide one more thing: they are the one state in which
+`db:baseline` never runs, so nothing judged the upgrade path for the pre-0.5
+installs it exists to rescue. `npm run db:check-baseline` covers that. For
+every prefix of the journal it builds a database at exactly that migration,
+baselines it, migrates it, and requires the result to equal what
+`db:migrate` builds from empty — plus the refusals, so a check that only
+proved the happy path cannot let this regress into stamping whatever it was
+handed. It runs in the Migrations Apply job against its own scratch
+database. Running it for every prefix is also what keeps the placement
+honest as migrations accumulate: a new migration `db:baseline` could not
+tell apart from the one before it would stamp one row short and fail here.
+
 If a statement genuinely cannot behave differently against rows — a
 constraint the database already enforced under another name, say — record
 the argument in that script's `CANNOT_ABORT` list rather than narrowing its
@@ -77,17 +89,48 @@ the top and fail on the first `CREATE TABLE`. **A one-time stamp bridges
 this:**
 
 ```bash
-# 1. Update the code to v0.5.0. Back up the database.
-# 2. Stamp the baseline as already applied (verifies the schema first):
-npm run db:baseline          # community edition: CASCADIA_APP=cascadia npm run db:baseline
-# 3. From now on, every upgrade is:
+# 1. Back up the database.
+# 2. See where db:baseline thinks the database sits. Writes nothing:
+npm run db:baseline -- --check   # community edition: prefix CASCADIA_APP=cascadia
+# 3. Record the migrations it already satisfies:
+npm run db:baseline
+# 4. Apply the ones it does not, and every upgrade after this:
 npm run db:migrate
 ```
 
-`db:baseline` refuses to stamp when the live schema is missing tables the
-baseline creates — that means the database was not kept current with
-`db:push` before the upgrade. Bring it to the 0.5.0 schema first (check out
-v0.5.0 and run `npm run db:push` once), then stamp.
+`db:baseline` does not take your word for where the database is. It compares
+the live schema against the snapshot committed beside each migration and
+records **only the migrations that schema actually satisfies** — the rest stay
+pending, and step 4 applies them for real. A database pushed at v0.5.0 gets
+one migration recorded; one kept current with `db:push` against a later
+release gets all of them. Either is fine, and neither needs an old checkout.
+
+That precision is not decoration. Drizzle's migrator resumes from the newest
+row in the journal rather than checking each migration off, so a migration
+recorded without having run is not retried later — `db:migrate` reports
+success, applies nothing, and the columns and constraints it skipped surface
+much later as errors nobody connects back to the upgrade.
+
+`db:baseline` refuses, rather than guessing, when the live schema matches no
+committed migration exactly. That means the database is between releases:
+bring it to a released schema (check out that release, run `npm run db:push`
+once) and run it again. `--check` reports the same verdict and exits non-zero
+on refusal, so it can gate an upgrade script before anything is written.
+
+#### If a previous stamp recorded too much
+
+Before this behaviour existed, `db:baseline` recorded the _whole_ journal
+whatever the database contained. On a v0.5.0 checkout that was the same thing
+— there was only the baseline to record — but run from a later checkout it
+marked every migration as applied, and `db:migrate` has been doing nothing
+ever since.
+
+`db:baseline` now detects this instead of blessing it: it names the migrations
+recorded without having run and prints the `DELETE` that trims the journal
+back to what the schema really satisfies. Back up first, run it, then
+`npm run db:migrate` applies the rest properly. Running `db:baseline --check`
+on any database stamped by an older build is the quickest way to find out
+whether this happened to you.
 
 ### Preflight the data-dependent migrations
 

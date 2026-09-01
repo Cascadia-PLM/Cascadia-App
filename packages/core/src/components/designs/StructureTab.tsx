@@ -257,17 +257,6 @@ export function StructureTab({
     clearSelection()
   }, [dataUpdatedAt, nonStructureItems, clearSelection])
 
-  // Adding a part to the design writes the design's item membership; adding a
-  // BOM child writes a relationship. Naming the resource each dialog actually
-  // wrote is what lets `RESOURCE_DEPENDENTS` fan the refresh out to the parts
-  // lists, the relationships panel and the mBOM views as well as to this tree.
-  const handleAddToDesignSuccess = () => {
-    void invalidate('designs')
-  }
-  const handleAddChildSuccess = () => {
-    void invalidate('relationships')
-  }
-
   // Remove a root part from the design structure (moves it to Non-Structure
   // Items). Only root parts (no relationshipId) get here; child parts are
   // managed through their parent.
@@ -1131,7 +1120,6 @@ export function StructureTab({
         designId={designId}
         designCode={designCode}
         designName={designName}
-        onSuccess={handleAddToDesignSuccess}
       />
 
       {/* Add Part to BOM Dialog (cross-design aware) */}
@@ -1143,7 +1131,6 @@ export function StructureTab({
           parentItemNumber={parentForAddChild.number}
           currentDesignId={designId}
           currentDesignCode={designCode}
-          onSuccess={handleAddChildSuccess}
         />
       )}
 

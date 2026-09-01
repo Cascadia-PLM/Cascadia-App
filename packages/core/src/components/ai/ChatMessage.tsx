@@ -11,6 +11,7 @@ import remarkGfm from 'remark-gfm'
 import { ConfirmationCard, isConfirmationResult } from './ConfirmationCard'
 import type { ConfirmationDetails } from './ConfirmationCard'
 import { Button } from '@/components/ui/Button'
+import { toAppRelativeUrl } from '@/lib/markdown/url-transform'
 import { cn } from '@/lib/utils'
 
 // UI Message part types from TanStack AI
@@ -241,6 +242,7 @@ export function ChatMessage({
               // Assistant messages: render markdown
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
+                urlTransform={toAppRelativeUrl}
                 components={{
                   // Style markdown elements
                   p: ({ children }) => (
@@ -285,27 +287,34 @@ export function ChatMessage({
                   },
                   pre: ({ children }) => <pre className="my-2">{children}</pre>,
                   a: ({ href, children }) => {
-                    const isInternal = href?.startsWith('/')
+                    // `urlTransform` has already emptied every off-origin
+                    // href, so what is left is either an in-app route or
+                    // nothing to link to. An unlinkable label still reads.
+                    if (!href) {
+                      return <span>{children}</span>
+                    }
                     return (
                       <a
                         href={href}
                         className="text-cyan-600 dark:text-cyan-400 underline"
-                        {...(isInternal
-                          ? {
-                              onClick: (e: React.MouseEvent) => {
-                                e.preventDefault()
-                                if (href) onNavigate?.(href)
-                              },
-                            }
-                          : {
-                              target: '_blank',
-                              rel: 'noopener noreferrer',
-                            })}
+                        onClick={(e: React.MouseEvent) => {
+                          e.preventDefault()
+                          onNavigate?.(href)
+                        }}
                       >
                         {children}
                       </a>
                     )
                   },
+                  img: ({ src, alt }) =>
+                    // Same gate, and React warns that an empty `src` can make
+                    // the browser re-request the current page — so an image
+                    // with nowhere left to point becomes its alt text.
+                    src ? (
+                      <img src={src} alt={alt ?? ''} className="max-w-full" />
+                    ) : (
+                      <span>{alt}</span>
+                    ),
                   strong: ({ children }) => (
                     <strong className="font-semibold">{children}</strong>
                   ),

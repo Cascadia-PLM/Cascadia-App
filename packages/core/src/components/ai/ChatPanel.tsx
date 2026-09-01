@@ -8,6 +8,7 @@
  */
 
 import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { AlertCircle, History, Plus, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -22,15 +23,13 @@ import {
   CHAT_PANEL_MIN_WIDTH,
   useChatPanel,
 } from '@/lib/ai/chat-context'
+import { apiFetch } from '@/lib/api/client'
+import {
+  aiSessionMessagesQuery,
+  aiSessionsQuery,
+  useInvalidateResources,
+} from '@/lib/query'
 import { cn } from '@/lib/utils'
-
-// Session type from API
-interface ChatSession {
-  id: string
-  title: string | null
-  createdAt: string
-  updatedAt: string
-}
 
 export function ChatPanel() {
   const {
@@ -43,10 +42,23 @@ export function ChatPanel() {
   } = useChatPanel()
 
   const navigate = useNavigate()
-  const [sessions, setSessions] = useState<Array<ChatSession>>([])
+  // Declared before useChat: the client captures `onFinish` once, on the
+  // first render, so anything that closure calls has to be stable.
+  const invalidate = useInvalidateResources()
   const [showSessions, setShowSessions] = useState(false)
-  const [loadingSessions, setLoadingSessions] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // The conversation list. Gated on the panel being open rather than
+  // refetched every time it opens — reopening inside the cache window is
+  // free, and the title a response generates arrives via `invalidate('ai')`.
+  const { data: sessions = [], isLoading: loadingSessions } = useQuery(
+    aiSessionsQuery(isOpen),
+  )
+
+  // The selected session's transcript, already in useChat's shape.
+  const { data: sessionMessages } = useQuery(
+    aiSessionMessagesQuery(currentSessionId),
+  )
 
   // Handle navigation from AI chat navigation offers
   const handleNavigate = useCallback(
@@ -73,6 +85,10 @@ export function ChatPanel() {
   // Track when we just created a session to avoid reloading messages
   const justCreatedSessionRef = useRef(false)
 
+  // The session whose transcript is currently on screen, so hydration runs
+  // once per session switch rather than on every arrival of query data.
+  const hydratedSessionRef = useRef<string | undefined>(undefined)
+
   // Keep ref in sync with state changes
   useEffect(() => {
     sessionIdRef.current = currentSessionId
@@ -98,8 +114,8 @@ export function ChatPanel() {
     onFinish: () => {
       // Reset mode back to chat after response completes
       modeRef.current = 'chat'
-      // Refresh sessions after message to get updated title
-      loadSessions()
+      // Restage the session list so the generated title appears
+      void invalidate('ai')
     },
     onError: (err) => {
       console.error('Chat error:', err)
@@ -111,25 +127,26 @@ export function ChatPanel() {
     async (message: string, mode: 'chat' | 'search') => {
       if (!sessionIdRef.current) {
         try {
-          const response = await fetch('/api/v1/ai/sessions', {
+          const result = await apiFetch<{
+            data: { session: { id: string } }
+          }>('/api/v1/ai/sessions', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({}),
           })
-          if (response.ok) {
-            const data = await response.json()
-            const newSessionId = data.data?.session?.id || data.data?.id
-            if (newSessionId) {
-              sessionIdRef.current = newSessionId
-              justCreatedSessionRef.current = true
-              setCurrentSessionId(newSessionId)
-            }
-          }
+          const newSessionId = result.data.session.id
+          sessionIdRef.current = newSessionId
+          justCreatedSessionRef.current = true
+          setCurrentSessionId(newSessionId)
         } catch (err) {
           console.error('Failed to create session:', err)
         }
       }
       modeRef.current = mode
+      // Claim this session for the live stream before the request goes out.
+      // A transcript fetch may still be in flight from the switch that
+      // selected it; without the stamp its response lands mid-stream and
+      // hydration replaces the turn being sent.
+      hydratedSessionRef.current = sessionIdRef.current
       originalSendMessage(message)
     },
     [originalSendMessage, setCurrentSessionId],
@@ -184,93 +201,29 @@ export function ChatPanel() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Load sessions when panel opens
+  // Hand the selected session's transcript to useChat.
+  //
+  // Deliberately once per session rather than on every arrival of query
+  // data: a finished response invalidates 'ai', and re-hydrating from the
+  // persisted history there would drop the tool results and confirmation
+  // cards that only ever exist in the streamed messages.
   useEffect(() => {
-    if (isOpen) {
-      loadSessions()
-    }
-  }, [isOpen])
-
-  // Load message history when session changes
-  useEffect(() => {
-    if (currentSessionId) {
-      // Skip loading if we just created this session (messages are being streamed)
-      if (justCreatedSessionRef.current) {
-        justCreatedSessionRef.current = false
-        return
-      }
-      loadSessionMessages(currentSessionId)
-    } else {
+    if (!currentSessionId) {
+      hydratedSessionRef.current = undefined
       setMessages([])
+      return
     }
-  }, [currentSessionId, setMessages])
-
-  const loadSessions = async () => {
-    setLoadingSessions(true)
-    try {
-      const response = await fetch('/api/v1/ai/sessions')
-      if (response.ok) {
-        const data = await response.json()
-        setSessions(data.data?.sessions || [])
-      }
-    } catch (err) {
-      console.error('Failed to load sessions:', err)
-    } finally {
-      setLoadingSessions(false)
+    // A session we just created is already on screen as a live stream.
+    if (justCreatedSessionRef.current) {
+      justCreatedSessionRef.current = false
+      hydratedSessionRef.current = currentSessionId
+      return
     }
-  }
-
-  const loadSessionMessages = async (sessionId: string) => {
-    try {
-      const response = await fetch(`/api/v1/ai/sessions/${sessionId}/messages`)
-      if (response.ok) {
-        const data = await response.json()
-        const msgs = data.data?.messages || []
-        // Convert to UI message format, restoring tool call parts
-        const uiMessages = msgs
-          .filter((m: any) => m.role !== 'system' && m.role !== 'tool')
-          .map((m: any) => {
-            const parts: Array<any> = []
-
-            // Add text content if present
-            if (m.content) {
-              parts.push({ type: 'text', content: m.content })
-            }
-
-            // Restore tool call parts from persisted toolCalls field
-            if (m.toolCalls && Array.isArray(m.toolCalls)) {
-              for (const tc of m.toolCalls) {
-                parts.push({
-                  type: 'tool-call',
-                  id: tc.id,
-                  name: tc.name,
-                  arguments:
-                    typeof tc.arguments === 'string'
-                      ? tc.arguments
-                      : JSON.stringify(tc.arguments),
-                  state: 'input-complete',
-                })
-              }
-            }
-
-            // Fallback: ensure at least one part
-            if (parts.length === 0) {
-              parts.push({ type: 'text', content: '' })
-            }
-
-            return {
-              id: m.id,
-              role: m.role,
-              parts,
-              createdAt: new Date(m.createdAt),
-            }
-          })
-        setMessages(uiMessages)
-      }
-    } catch (err) {
-      console.error('Failed to load messages:', err)
-    }
-  }
+    if (hydratedSessionRef.current === currentSessionId) return
+    if (!sessionMessages) return
+    hydratedSessionRef.current = currentSessionId
+    setMessages(sessionMessages)
+  }, [currentSessionId, sessionMessages, setMessages])
 
   const handleNewSession = () => {
     sessionIdRef.current = undefined // Clear ref as well
@@ -287,11 +240,11 @@ export function ChatPanel() {
 
   const handleDeleteSession = async (sessionId: string) => {
     try {
-      await fetch(`/api/v1/ai/sessions/${sessionId}`, { method: 'DELETE' })
+      await apiFetch(`/api/v1/ai/sessions/${sessionId}`, { method: 'DELETE' })
       if (sessionId === currentSessionId) {
         handleNewSession()
       }
-      loadSessions()
+      await invalidate('ai')
     } catch (err) {
       console.error('Failed to delete session:', err)
     }

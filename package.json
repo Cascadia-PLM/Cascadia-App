@@ -6,7 +6,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "repository": {
     "type": "git",
@@ -52,6 +52,7 @@
     "db:migrate": "node scripts/drizzle.mjs migrate",
     "db:baseline": "tsx scripts/db-baseline.ts",
     "db:check-orphans": "tsx scripts/check-versioning-orphans.ts",
+    "db:check-duplicates": "tsx scripts/check-items-duplicates.ts",
     "db:check-migrations": "node scripts/check-migration-schema.mjs",
     "db:check-backfills": "node scripts/check-migration-backfills.mjs",
     "db:push": "node scripts/drizzle.mjs push",

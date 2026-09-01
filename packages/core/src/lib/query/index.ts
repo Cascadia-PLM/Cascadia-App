@@ -61,6 +61,7 @@ export {
   designHistoryGraphQuery,
   designGridQuery,
   designListQuery,
+  designScopeGraphQuery,
   designStructureQuery,
   designTagsQuery,
 } from './options/designs'
@@ -69,9 +70,11 @@ export type {
   DesignCounts,
   DesignEco,
   DesignFamily,
+  DesignScopeGraphParams,
   DesignStructure,
   DesignStructureContext,
   DesignTag,
+  ScopeGraphDirection,
 } from './options/designs'
 export {
   changeActionOptionsQuery,
@@ -120,6 +123,7 @@ export {
   programHistoryGraphQuery,
   programListQuery,
   programMembersQuery,
+  programScopeGraphQuery,
 } from './options/programs'
 export type { ProgramCounts } from './options/programs'
 export {
@@ -135,6 +139,7 @@ export type {
   WorkspaceItem,
 } from './options/workspaces'
 export {
+  partWorkInstructionsQuery,
   workInstructionAlertCountQuery,
   workInstructionAlertsQuery,
   workInstructionDetailQuery,
@@ -188,7 +193,12 @@ export {
 } from './options/users'
 export type { AdminUser } from './options/users'
 export { fileListQuery } from './options/files'
-export { reportDetailQuery, reportListQuery } from './options/reports'
+export {
+  reportDetailQuery,
+  reportExecutionQuery,
+  reportListQuery,
+} from './options/reports'
+export type { ReportExecutionParams } from './options/reports'
 export { dashboardChartsQuery, dashboardStatsQuery } from './options/dashboard'
 export type {
   DashboardCategoryPoint,
@@ -257,6 +267,7 @@ export {
   itemBomTreeQuery,
   itemGraphQuery,
   itemRelationshipsQuery,
+  itemThreadQuery,
   itemWhereUsedQuery,
   threadComparisonTargetsQuery,
 } from './options/relationships'
@@ -265,6 +276,7 @@ export type {
   ItemGraphDirection,
   ItemGraphParams,
   ItemRelationshipContext,
+  ItemThreadParams,
 } from './options/relationships'
 export { branchDetailQuery, designStatusQuery } from './options/branches'
 export type { BranchDetail, DesignStatus } from './options/branches'
@@ -279,3 +291,18 @@ export { itemHistoryQuery } from './options/item-history'
 export { workflowDefinitionQuery } from './options/workflows'
 export { upstreamChangesQuery } from './options/mbom'
 export type { UpstreamChange } from './options/mbom'
+export { aiSessionMessagesQuery, aiSessionsQuery } from './options/ai'
+export type { AiChatSession } from './options/ai'
+export {
+  softwareDiffQuery,
+  softwareFileQuery,
+  softwareTreeQuery,
+  softwareVersionsQuery,
+} from './options/software'
+export type {
+  SoftwareDiffChange,
+  SoftwareFile,
+  SoftwareManifestEntry,
+  SoftwareTree,
+  SoftwareVersion,
+} from './options/software'

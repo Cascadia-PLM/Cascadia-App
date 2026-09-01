@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { z } from 'zod'
+import { jsonValueSchema } from '@/lib/items/types/base'
 
 /**
  * Single document row data for import
@@ -23,8 +24,13 @@ export const importDocumentRowSchema = z.object({
     .optional(),
   fileName: z.string().max(500).optional(),
   mimeType: z.string().max(100).optional(),
-  /** Custom attributes from unmapped columns (converted to strings) */
-  attributes: z.record(z.string(), z.string()).optional(),
+  /**
+   * Custom attributes from unmapped columns, at the cell's own type. Mirrors
+   * `baseItemSchema`, which takes any JSON document — this used to narrow to
+   * strings and the mapper coerced to match, turning every unmapped numeric
+   * and boolean column into text on the way in.
+   */
+  attributes: z.record(z.string(), jsonValueSchema).optional(),
 })
 
 export type ImportDocumentRow = z.infer<typeof importDocumentRowSchema>

@@ -443,7 +443,7 @@ The `context` object carries `userId`, `sessionId`, `programId`, and `designId` 
 | 8   | `search_designs`                | Read     | `designs:read`         | Search designs by name, code, program         |
 | 9   | `create_item`                   | Write    | `<type>:create`        | Create any item type except ChangeOrder       |
 | 10  | `update_item`                   | Write    | `<type>:update`        | Update item properties                        |
-| 11  | `create_relationship`           | Write    | `parts:update`         | Create BOM, Document, or Affects relationship |
+| 11  | `create_relationship`           | Write    | `<source type>:update` | Create BOM, Document, or Affects relationship |
 | 12  | `transition_item_state`         | Write    | `<type>:update`        | Transition workflow state                     |
 | 13  | `create_change_order`           | Write    | `change_orders:create` | Create ECO with branches and affected items   |
 | 14  | `initiate_collaborative_design` | Design   | `parts:create`         | Launch collaborative design workspace         |
@@ -455,6 +455,10 @@ for a type with no mapping. `update_item` and `transition_item_state` resolve
 it from the stored item, so the grant that admits an edit is the grant for the
 thing being edited. Routing an `update_item` through a `changeOrderId` requires
 `change_orders:update` **in addition**, because it mutates the ECO's scope.
+`create_relationship` resolves `<source type>` the same way, from the
+relationship's `sourceItemId` — the end whose relationships gain an edge. Its
+target is not charged at the type level; both ends are still gated at the
+instance level by `requireItemAccess`.
 
 These tuples are checked in the tool wrapper, which is the only RBAC gate on
 this path: the services below it do not re-check. The wrapper also intersects

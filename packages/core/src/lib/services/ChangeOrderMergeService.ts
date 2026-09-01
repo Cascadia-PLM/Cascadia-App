@@ -454,6 +454,74 @@ export class ChangeOrderMergeService {
   }
 
   /**
+   * The revision a `revise` bumps from when there is no branch content to
+   * release — the counterpart to `resolveModifiedRevision` above.
+   *
+   * `change_order_affected_items.affected_item_id` pins the item *row* that
+   * was current when the item was added to the change order, which can be
+   * months old: another change order may have released the master since. The
+   * three passes that act on affected items rather than branch content
+   * (`applyAffectedItems`, `applyRemainingActions`, and the affected-items arm
+   * of `previewMerge`) each bumped that pinned revision, so an ECO listing a
+   * master pinned at A while main had reached B minted B a second time and hit
+   * the `(itemNumber, revision, designId, itemType)` unique constraint. Pinned
+   * further behind it minted a letter *below* main's current one, which
+   * collides only where the letters in between still exist — and where they do
+   * not, `ItemService.revise` made that lower letter current, walking the
+   * master's revision backwards.
+   *
+   * These passes are also what makes the stale pin reachable: only the branch
+   * merge and the branchless working-copy arm call `supersedePriorVersions`,
+   * so a `revise` released through `ItemService.revise` leaves the row it
+   * replaced in its old state. A prior revision still sitting in the released
+   * state passes `canApplyAction`, and a second change order that pinned it
+   * releases it again.
+   *
+   * `isCurrent` is what marks the released version of a master: every writer
+   * maintains it (`supersedePriorVersions`, `ItemService.revise`, the branch
+   * merge), a working copy is created with it false and only takes it at
+   * release, and this pass's own "ensure it's tracked on the main branch" step
+   * copies it *into* `branch_items` — so main's tracking row is derived from
+   * this, never the other way round.
+   *
+   * That is why this asks the row and `resolveModifiedRevision` asks main's
+   * `branch_items`: the branch path holds a branch row and needs main's
+   * counterpart to compare it against, while these passes hold no branch row
+   * and want only "the current version of this master". Asking directly is
+   * also the fresher answer — an item that has never been through a release
+   * has no main `branch_items` row at all. The two never answer for the same
+   * master anyway: `applyRemainingActions` skips what the branch merge
+   * handled, and the preview dedupes on `seenMasterIds`.
+   *
+   * Unlike `resolveModifiedRevision` there is no working-copy short-circuit:
+   * that arm exists because a non-working branch row *is* the row being
+   * released, and these passes have no branch row at all.
+   *
+   * Call it before anything that clears `isCurrent` for the master —
+   * `supersedePriorVersions`, `ItemService.revise` — or it reads the state
+   * this release is in the middle of writing. The pinned row is the last
+   * resort, and is what all three sites used unconditionally before.
+   */
+  private static async resolveAffectedRevision(
+    item: { masterId: string; revision: string },
+    scheme: RevisionScheme | undefined,
+    tx?: TransactionClient,
+  ): Promise<{ baseRevision: string; newRevision: string }> {
+    const currentRevision = await (tx ?? db)
+      .select({ revision: items.revision })
+      .from(items)
+      .where(and(eq(items.masterId, item.masterId), eq(items.isCurrent, true)))
+      .limit(1)
+      .then((r) => r.at(0)?.revision)
+
+    const baseRevision = currentRevision ?? item.revision
+    return {
+      baseRevision,
+      newRevision: RevisionService.getNextRevision(baseRevision, scheme),
+    }
+  }
+
+  /**
    * Retire the versions of a master that are currently in service, keeping one.
    *
    * Scoped to `isCurrent = true` rather than every row of the master. An
@@ -879,6 +947,28 @@ export class ChangeOrderMergeService {
                     }
 
                     if (workingCopy) {
+                      // Calculate final revision - if placeholder (starts with
+                      // "-"), the letter comes from main's current revision,
+                      // not from `item`, which is the row pinned when this
+                      // item was added to the change order.
+                      //
+                      // Resolved before `supersedePriorVersions` below, which
+                      // clears `isCurrent` across the master - one of the
+                      // bases `resolveAffectedRevision` reads.
+                      const reviseScheme = states.revisionScheme
+                      let finalRevision = workingCopy.revision
+                      if (
+                        RevisionService.isWorkingRevision(workingCopy.revision)
+                      ) {
+                        finalRevision = (
+                          await this.resolveAffectedRevision(
+                            item,
+                            reviseScheme,
+                            tx,
+                          )
+                        ).newRevision
+                      }
+
                       // Working copy exists - transition it to new version state
                       await this.supersedePriorVersions(
                         item.masterId,
@@ -886,18 +976,6 @@ export class ChangeOrderMergeService {
                         oldVersionState,
                         tx,
                       )
-
-                      // Calculate final revision - if placeholder (starts with "-"), use next revision from source item
-                      const reviseScheme = states.revisionScheme
-                      let finalRevision = workingCopy.revision
-                      if (
-                        RevisionService.isWorkingRevision(workingCopy.revision)
-                      ) {
-                        finalRevision = RevisionService.getNextRevision(
-                          item.revision,
-                          reviseScheme,
-                        )
-                      }
 
                       // Now transition working copy with final revision and mark as current
                       await ItemService.update(
@@ -926,10 +1004,14 @@ export class ChangeOrderMergeService {
                       // made when the item was added, and preferring it meant a
                       // stale (or, while the dialogs guessed client-side, an
                       // outright invalid) value became the released revision.
-                      const targetRevision = RevisionService.getNextRevision(
-                        item.revision,
-                        states.revisionScheme,
-                      )
+                      // `item.revision` is a prediction of the same vintage -
+                      // the base comes from main's current revision instead.
+                      const { newRevision: targetRevision } =
+                        await this.resolveAffectedRevision(
+                          item,
+                          states.revisionScheme,
+                          tx,
+                        )
                       const newRev = await ItemService.revise(
                         affected.affectedItemId,
                         targetRevision,
@@ -1276,11 +1358,15 @@ export class ChangeOrderMergeService {
 
               if (action === 'revise') {
                 // Listed as a revision but with no branch content to release -
-                // create the new version the way the branchless path does.
-                const targetRevision = RevisionService.getNextRevision(
-                  item.revision,
-                  states.revisionScheme,
-                )
+                // create the new version the way the branchless path does,
+                // including basing the letter on main's current revision
+                // rather than on the row pinned in the affected-items list.
+                const { newRevision: targetRevision } =
+                  await this.resolveAffectedRevision(
+                    item,
+                    states.revisionScheme,
+                    tx,
+                  )
                 const newRev = await ItemService.revise(
                   affected.affectedItemId,
                   targetRevision,
@@ -2876,6 +2962,7 @@ export class ChangeOrderMergeService {
       const scheme = await LifecycleService.getRevisionScheme(item.itemType)
       const needsRevision = RevisionService.isWorkingRevision(item.revision)
 
+      let currentRevision = item.revision
       let newRevision = item.revision
       if (action === 'release') {
         newRevision = needsRevision
@@ -2886,8 +2973,13 @@ export class ChangeOrderMergeService {
         // merge pointedly ignores that column (a prediction stamped at
         // add-time, stale the moment another release moves the item), so a
         // preview that preferred it promised letters the release would not
-        // assign.
-        newRevision = RevisionService.getNextRevision(item.revision, scheme)
+        // assign. `item.revision` is a prediction of the same vintage, so the
+        // base comes from the helper the merge's own affected-items passes
+        // use — reporting main's current revision as "current" the way the
+        // branch arm above does, rather than the row pinned at add-time.
+        const resolved = await this.resolveAffectedRevision(item, scheme)
+        currentRevision = resolved.baseRevision
+        newRevision = resolved.newRevision
       } else if (action === 'promote') {
         // The same authority the merge uses. When it resolves to nothing the
         // merge skips the item entirely, so the preview lists nothing too.
@@ -2903,7 +2995,7 @@ export class ChangeOrderMergeService {
       const previewItem: ReleasePreviewItem = {
         itemId: item.id,
         itemNumber: item.itemNumber,
-        currentRevision: item.revision,
+        currentRevision,
         newRevision,
         changeType: 'modified',
       }

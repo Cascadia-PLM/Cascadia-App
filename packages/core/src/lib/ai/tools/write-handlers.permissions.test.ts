@@ -439,8 +439,12 @@ describe('AI write tools — program isolation', () => {
  * caller never reaches the preview that would echo the item's number and state
  * back at them, and never gets a token.
  *
- * `create_relationship` still hard-codes `parts:update` and is deliberately
- * out of scope here — a carried-forward follow-up, not an oversight.
+ * `create_relationship` was deliberately left out of the program that added
+ * this suite — realigning it changes who may attach edges to a non-Part item,
+ * a permission-surface change with a real audience rather than a mechanical
+ * refactor. It is covered below by the same mirror, charging the *source*
+ * item's type: `requireItemAccess` already gates both source and target at
+ * the instance level inside the handler, so only the type dimension was open.
  *
  * Run: npx vitest run packages/core/src/lib/ai/tools/write-handlers.permissions.test.ts
  */
@@ -658,6 +662,15 @@ describe('AI write tools — permission resource follows the target item type', 
     return row!.state
   }
 
+  /** Every edge currently hanging off a given source item. */
+  async function edgesFrom(sourceId: string): Promise<number> {
+    const rows = await testDb.db
+      .select({ id: itemRelationships.id })
+      .from(itemRelationships)
+      .where(eq(itemRelationships.sourceId, sourceId))
+    return rows.length
+  }
+
   /** Working copies this ECO has taken, across its branches. */
   async function branchItemsForEco(): Promise<number> {
     const rows = await testDb.db
@@ -790,5 +803,39 @@ describe('AI write tools — permission resource follows the target item type', 
     )) as WriteEnvelope
     expect(executed.success, 'execute with change_orders:update').toBe(true)
     expect(await branchItemsForEco()).toBe(1)
+  })
+
+  it('refuses create_relationship from a Document to a parts-only grant, and serves a documents grant', async () => {
+    const before = await edgesFrom(documentId)
+    // `Document` and `Affects` edges are unconstrained by item type (only
+    // `BOM` requires Parts on both ends), so a Document source is enough to
+    // show the resource now follows it rather than staying fixed at `parts`.
+    const input = {
+      sourceItemId: documentId,
+      targetItemId: taskId,
+      relationshipType: 'Document' as const,
+    }
+
+    // The tuple this tool used to hard-code regardless of the source's type.
+    await expectRefusedByRbac(
+      createRelationshipHandler(input, ctx(partsUser)),
+      'create_relationship from a Document as parts-only grant',
+    )
+    expect(await edgesFrom(documentId)).toBe(before)
+
+    const preview = (await createRelationshipHandler(
+      input,
+      ctx(documentsUser),
+    )) as WriteEnvelope
+    expect(preview.requiresConfirmation, 'preview').toBe(true)
+    const token = preview.confirmationToken
+    expect(typeof token, 'preview token').toBe('string')
+
+    const executed = (await createRelationshipHandler(
+      { ...input, confirmationToken: token! },
+      ctx(documentsUser),
+    )) as WriteEnvelope
+    expect(executed.success, 'execute').toBe(true)
+    expect(await edgesFrom(documentId)).toBe(before + 1)
   })
 })

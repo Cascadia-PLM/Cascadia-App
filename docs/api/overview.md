@@ -201,7 +201,7 @@ import { requireDesignAccess, requireBranchAccess } from '@/lib/auth/access'
 // Throws PermissionDeniedError if user cannot access this design
 await requireDesignAccess(user.id, designId)
 
-// Throws NotFoundError or PermissionDeniedError; returns { branch, designId }
+// Throws PermissionDeniedError if the branch is missing or unreachable; returns { branch, designId }
 const { branch, designId } = await requireBranchAccess(user.id, branchId)
 ```
 

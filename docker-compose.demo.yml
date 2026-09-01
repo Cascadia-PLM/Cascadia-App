@@ -22,8 +22,12 @@
 #
 # Notes:
 #   * Credentials below (Postgres, RabbitMQ, admin login) are hardcoded demo
-#     literals scoped to localhost. DO NOT reuse this compose file for any
+#     literals, and the app port is published on 127.0.0.1 only, so nothing here
+#     is reachable from your LAN. DO NOT reuse this compose file for any
 #     deployment past your laptop.
+#   * Running the demo on a remote VM? Set DEMO_BIND=0.0.0.0 (the admin
+#     credential above is public knowledge — do not do this on an untrusted
+#     network).
 #   * All volumes are namespaced cascadia_demo_* and the project is named
 #     cascadia-demo, so this stack does not conflict with the contributor
 #     compose (docker-compose.demo-with-build.yml) or the dev stack.
@@ -34,7 +38,7 @@ name: cascadia-demo
 
 services:
   postgres:
-    image: postgres:18-alpine
+    image: postgres:18-alpine@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
     container_name: cascadia-demo-postgres
     restart: unless-stopped
     environment:
@@ -53,7 +57,7 @@ services:
     networks: [cascadia-demo]
 
   rabbitmq:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:3-management-alpine@sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281
     container_name: cascadia-demo-rabbitmq
     restart: unless-stopped
     environment:
@@ -74,7 +78,7 @@ services:
   # volume the app reads from. `cp -rn` is no-op on rerun, so restarts are
   # cheap. The app depends on this completing successfully before booting.
   demo-data-loader:
-    image: ghcr.io/cascadia-plm/cascadia-demo-data:latest
+    image: ghcr.io/cascadia-plm/cascadia-demo-data:latest@sha256:2b1535e5a5f7c4a3ba66f02b67ef7adfd16092cba7674570ddb3e93d313ddffd
     container_name: cascadia-demo-data-loader
     volumes:
       - cascadia_demo_app_data:/out
@@ -82,7 +86,7 @@ services:
     networks: [cascadia-demo]
 
   app:
-    image: ghcr.io/cascadia-plm/cascadia-app:latest
+    image: ghcr.io/cascadia-plm/cascadia-app:latest@sha256:cedffb9848d8356882e5fc1836d14544d0825ce1b2a6e52a9bbe07e5461569fb
     container_name: cascadia-demo-app
     restart: unless-stopped
     depends_on:
@@ -100,7 +104,7 @@ services:
       RABBITMQ_URL: amqp://cascadia:cascadia@rabbitmq:5672
       DEMO_DATA_DIR: /app/demo-data
     ports:
-      - '${DEMO_APP_PORT:-3000}:3000'
+      - '${DEMO_BIND:-127.0.0.1}:${DEMO_APP_PORT:-3000}:3000'
     volumes:
       - cascadia_demo_app_storage:/app/storage
       - cascadia_demo_app_vault:/app/vault
@@ -128,7 +132,7 @@ services:
       && npm run serve"
 
   cad-converter:
-    image: ghcr.io/cascadia-plm/cascadia-cad-converter:latest
+    image: ghcr.io/cascadia-plm/cascadia-cad-converter:latest@sha256:5f781382ed95faec947d0b49f31d228f4fb91f47a374ef1d47e409857edb248e
     container_name: cascadia-demo-cad-converter
     restart: unless-stopped
     depends_on:
@@ -147,7 +151,7 @@ services:
     networks: [cascadia-demo]
 
   jobs-worker:
-    image: ghcr.io/cascadia-plm/cascadia-jobs-worker:latest
+    image: ghcr.io/cascadia-plm/cascadia-jobs-worker:latest@sha256:0be3d3020d25fce60ca4a3136de17751cd864251c1d75f7a57a87d8690119e75
     container_name: cascadia-demo-jobs-worker
     restart: unless-stopped
     depends_on:

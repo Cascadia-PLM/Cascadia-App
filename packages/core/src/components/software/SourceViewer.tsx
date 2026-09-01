@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   ChevronDown,
   ChevronRight,
@@ -25,6 +26,7 @@ import { languageFor } from './language'
 import { SourceDiffDialog } from './SourceDiffDialog'
 import type { Extension } from '@codemirror/state'
 import type { SourceDiffTarget } from './SourceDiffDialog'
+import type { SoftwareManifestEntry, SoftwareVersion } from '@/lib/query'
 import {
   Badge,
   Button,
@@ -41,55 +43,19 @@ import {
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'
+import {
+  softwareDiffQuery,
+  softwareFileQuery,
+  softwareTreeQuery,
+  softwareVersionsQuery,
+  useInvalidateResources,
+  useResourceMutation,
+} from '@/lib/query'
 import { cn } from '@/lib/utils'
 
 // ============================================================================
 // Types
 // ============================================================================
-
-interface ManifestEntry {
-  path: string
-  hash: string
-  size: number
-}
-
-interface TreeResponse {
-  itemId: string
-  revision: string
-  manifestId: string | null
-  draftManifestId: string | null
-  isDraft: boolean
-  fileCount: number
-  totalSize: number
-  entries: Array<ManifestEntry>
-}
-
-interface FileResponse {
-  file: {
-    path: string
-    hash: string
-    size: number
-    isBinary: boolean
-    content: string
-    encoding: 'utf8' | 'base64'
-  }
-}
-
-interface VersionInfo {
-  id: string
-  revision: string
-  state: string
-  isCurrent: boolean | null
-  modifiedAt: string
-  manifestId: string | null
-}
-
-interface DiffChange {
-  path: string
-  status: 'added' | 'removed' | 'modified'
-  oldHash?: string
-  newHash?: string
-}
 
 interface SourceViewerProps {
   itemId: string
@@ -109,10 +75,10 @@ interface TreeNode {
   name: string
   path: string
   children: Map<string, TreeNode>
-  entry?: ManifestEntry
+  entry?: SoftwareManifestEntry
 }
 
-function buildTree(entries: Array<ManifestEntry>): TreeNode {
+function buildTree(entries: Array<SoftwareManifestEntry>): TreeNode {
   const root: TreeNode = { name: '', path: '', children: new Map() }
   for (const entry of entries) {
     const segments = entry.path.split('/')
@@ -203,7 +169,8 @@ function CodeEditor({
 
     return () => view.destroy()
     // Recreate only when switching files or toggling edit mode - `content`
-    // is the initial doc, not a controlled value.
+    // is the initial doc, not a controlled value. A background refetch of
+    // the same file therefore leaves the user's in-progress edits alone.
   }, [path, readOnly])
 
   return <div ref={containerRef} className="max-h-[65vh] overflow-auto" />
@@ -224,7 +191,7 @@ function TreeNodeRow({
   depth: number
   selectedPath: string | null
   dirtyPaths: Set<string>
-  onSelect: (entry: ManifestEntry) => void
+  onSelect: (path: string) => void
 }) {
   const isDir = node.children.size > 0
   const [open, setOpen] = useState(depth < 2)
@@ -270,7 +237,7 @@ function TreeNodeRow({
   return (
     <button
       type="button"
-      onClick={() => node.entry && onSelect(node.entry)}
+      onClick={() => node.entry && onSelect(node.entry.path)}
       className={cn(
         'flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800',
         selectedPath === node.path
@@ -292,6 +259,65 @@ function TreeNodeRow({
 }
 
 // ============================================================================
+// Revision compare: the "which version" side of the dialog
+// ============================================================================
+
+function VersionPicker({
+  versions,
+  isLoading,
+  isError,
+  onPick,
+}: {
+  versions: Array<SoftwareVersion>
+  isLoading: boolean
+  isError: boolean
+  onPick: (version: SoftwareVersion) => void
+}) {
+  if (isLoading) {
+    return (
+      <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+        Loading versions...
+      </p>
+    )
+  }
+
+  if (isError) {
+    return (
+      <p className="py-6 text-center text-sm text-red-600 dark:text-red-400">
+        Could not load the other versions of this item.
+      </p>
+    )
+  }
+
+  if (versions.length === 0) {
+    return (
+      <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+        No other versions of this item to compare against.
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-1">
+      {versions.map((v) => (
+        <button
+          key={v.id}
+          type="button"
+          onClick={() => onPick(v)}
+          className="flex w-full items-center justify-between rounded border border-slate-200 px-3 py-2 text-left text-sm hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+        >
+          <span className="font-mono">Rev {v.revision}</span>
+          <span className="text-slate-500 dark:text-slate-400">
+            {v.state}
+            {v.isCurrent ? ' · current' : ''}
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ============================================================================
 // SourceViewer
 // ============================================================================
 
@@ -303,14 +329,12 @@ export function SourceViewer({
 }: SourceViewerProps) {
   const { handleError, showSuccess } = useErrorHandler()
   const { confirm } = useAlertDialog()
+  const invalidate = useInvalidateResources()
 
-  const [tree, setTree] = useState<TreeResponse | null>(null)
-  const [isLoadingTree, setIsLoadingTree] = useState(true)
-  const [selected, setSelected] = useState<ManifestEntry | null>(null)
-  const [fileContent, setFileContent] = useState<FileResponse['file'] | null>(
-    null,
-  )
-  const [isLoadingFile, setIsLoadingFile] = useState(false)
+  // Which file the user is looking at. Selection is local; the file read
+  // below follows it through the cache, so re-opening a file it already
+  // holds costs nothing.
+  const [selectedPath, setSelectedPath] = useState<string | null>(null)
   const [isImporting, setIsImporting] = useState(false)
 
   // Editing state: path -> edited content (differs from saved draft)
@@ -318,66 +342,56 @@ export function SourceViewer({
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [commitDialogOpen, setCommitDialogOpen] = useState(false)
   const [commitMessage, setCommitMessage] = useState('')
-  const [isCommitting, setIsCommitting] = useState(false)
   const [newFileDialogOpen, setNewFileDialogOpen] = useState(false)
   const [newFilePath, setNewFilePath] = useState('')
   const [renameDialogOpen, setRenameDialogOpen] = useState(false)
   const [renameTo, setRenameTo] = useState('')
 
-  // Revision compare state
-  const [versions, setVersions] = useState<Array<VersionInfo>>([])
+  // Revision compare: which dialog is open and which version is the other
+  // side. Both of the reads it needs hang off those two pieces of state.
   const [compareOpen, setCompareOpen] = useState(false)
-  const [compareFrom, setCompareFrom] = useState<VersionInfo | null>(null)
-  const [compareChanges, setCompareChanges] =
-    useState<Array<DiffChange> | null>(null)
+  const [compareFrom, setCompareFrom] = useState<SoftwareVersion | null>(null)
   const [diffTarget, setDiffTarget] = useState<SourceDiffTarget | null>(null)
 
   const zipInputRef = useRef<HTMLInputElement>(null)
   const filesInputRef = useRef<HTMLInputElement>(null)
 
+  const {
+    data: tree,
+    isPending: isLoadingTree,
+    isError: treeFailed,
+    refetch: refetchTree,
+  } = useQuery(softwareTreeQuery(itemId, { draft: true }))
+
+  const {
+    data: fileContent,
+    isLoading: isLoadingFile,
+    isError: fileFailed,
+  } = useQuery(softwareFileQuery(itemId, selectedPath, { draft: true }))
+
+  const {
+    data: versionList,
+    isLoading: isLoadingVersions,
+    isError: versionsFailed,
+  } = useQuery(softwareVersionsQuery(itemId, compareOpen))
+
+  const { data: compareChanges, isError: diffFailed } = useQuery(
+    softwareDiffQuery(itemId, compareFrom?.id ?? null),
+  )
+
   const hasDraft = !!tree?.draftManifestId
   const dirtyCount = dirtyFiles.size
-
-  const loadTree = useCallback(async () => {
-    setIsLoadingTree(true)
-    try {
-      const result = await apiFetch<{ data: TreeResponse }>(
-        `/api/v1/software/${itemId}/tree?draft=true`,
-      )
-      setTree(result.data)
-    } catch (error) {
-      handleError(error, { title: 'Failed to load source tree' })
-    } finally {
-      setIsLoadingTree(false)
-    }
-  }, [itemId, handleError])
-
-  useEffect(() => {
-    loadTree()
-  }, [loadTree])
 
   const rootNode = useMemo(
     () => (tree ? buildTree(tree.entries) : null),
     [tree],
   )
 
-  const handleSelect = useCallback(
-    async (entry: ManifestEntry) => {
-      setSelected(entry)
-      setIsLoadingFile(true)
-      setFileContent(null)
-      try {
-        const result = await apiFetch<{ data: FileResponse }>(
-          `/api/v1/software/${itemId}/file?path=${encodeURIComponent(entry.path)}&draft=true`,
-        )
-        setFileContent(result.data.file)
-      } catch (error) {
-        handleError(error, { title: 'Failed to load file' })
-      } finally {
-        setIsLoadingFile(false)
-      }
-    },
-    [itemId, handleError],
+  // This item is always in the list the endpoint returns; it is the side
+  // being compared against, not a candidate.
+  const versions = useMemo(
+    () => (versionList ?? []).filter((v) => v.id !== itemId),
+    [versionList, itemId],
   )
 
   // --------------------------------------------------------------------------
@@ -388,6 +402,15 @@ export function SourceViewer({
     setDirtyFiles((prev) => new Map(prev).set(path, content))
   }, [])
 
+  /**
+   * Flush every edited file into the draft tree.
+   *
+   * Stays imperative rather than moving to `useResourceMutation`: it is a
+   * loop over one PUT per dirty file, and the callers (the Save button, the
+   * auto-save interval, the commit flow) each need its boolean verdict
+   * before deciding what to do next. Invalidation happens once, after the
+   * whole batch, so a save does not restage the tree per file.
+   */
   const saveDraft = useCallback(async (): Promise<boolean> => {
     if (dirtyFiles.size === 0) return true
     setIsSavingDraft(true)
@@ -399,7 +422,7 @@ export function SourceViewer({
         })
       }
       setDirtyFiles(new Map())
-      await loadTree()
+      await invalidate('software')
       return true
     } catch (error) {
       handleError(error, { title: 'Failed to save draft' })
@@ -407,9 +430,10 @@ export function SourceViewer({
     } finally {
       setIsSavingDraft(false)
     }
-  }, [dirtyFiles, itemId, handleError, loadTree])
+  }, [dirtyFiles, itemId, handleError, invalidate])
 
-  // Auto-save dirty files every 30s (proposal §5.2)
+  // Auto-save dirty files every 30s (proposal §5.2). Nothing is dirty means
+  // no interval at all, so an idle viewer never invalidates anything.
   useEffect(() => {
     if (!canEdit || dirtyFiles.size === 0) return
     const timer = setInterval(() => {
@@ -418,35 +442,47 @@ export function SourceViewer({
     return () => clearInterval(timer)
   }, [canEdit, dirtyFiles.size, saveDraft])
 
+  const { mutate: commitSource, isPending: isCommitPending } =
+    useResourceMutation<void, Error, string>({
+      mutationFn: async (message) => {
+        await apiFetch(`/api/v1/software/${itemId}/commit`, {
+          method: 'POST',
+          body: JSON.stringify({ message }),
+        })
+      },
+      invalidates: ['software'],
+      onSuccess: (_result, message) => {
+        showSuccess('Changes committed', message)
+        setCommitDialogOpen(false)
+        setCommitMessage('')
+        onImported?.()
+      },
+      onError: (error) => handleError(error, { title: 'Failed to commit' }),
+    })
+
+  const isCommitting = isSavingDraft || isCommitPending
+
   const handleCommit = useCallback(async () => {
-    if (!commitMessage.trim()) return
-    setIsCommitting(true)
-    try {
-      const saved = await saveDraft()
-      if (!saved) return
-      await apiFetch(`/api/v1/software/${itemId}/commit`, {
+    const message = commitMessage.trim()
+    if (!message) return
+    // Uncommitted edits belong in the commit, so they have to reach the draft
+    // tree first; a failed save has already reported itself.
+    const saved = await saveDraft()
+    if (!saved) return
+    commitSource(message)
+  }, [commitMessage, saveDraft, commitSource])
+
+  const { mutate: discardDraft } = useResourceMutation({
+    mutationFn: async () => {
+      await apiFetch(`/api/v1/software/${itemId}/draft/discard`, {
         method: 'POST',
-        body: JSON.stringify({ message: commitMessage.trim() }),
       })
-      showSuccess('Changes committed', commitMessage.trim())
-      setCommitDialogOpen(false)
-      setCommitMessage('')
-      await loadTree()
-      onImported?.()
-    } catch (error) {
-      handleError(error, { title: 'Failed to commit' })
-    } finally {
-      setIsCommitting(false)
-    }
-  }, [
-    commitMessage,
-    saveDraft,
-    itemId,
-    showSuccess,
-    loadTree,
-    onImported,
-    handleError,
-  ])
+    },
+    invalidates: ['software'],
+    onSuccess: () => setDirtyFiles(new Map()),
+    onError: (error) =>
+      handleError(error, { title: 'Failed to discard draft' }),
+  })
 
   const handleDiscard = useCallback(() => {
     confirm({
@@ -456,83 +492,112 @@ export function SourceViewer({
       actionLabel: 'Discard',
       cancelLabel: 'Keep editing',
       variant: 'destructive',
-      onConfirm: async () => {
-        try {
-          await apiFetch(`/api/v1/software/${itemId}/draft/discard`, {
-            method: 'POST',
-          })
-          setDirtyFiles(new Map())
-          setSelected(null)
-          setFileContent(null)
-          await loadTree()
-        } catch (error) {
-          handleError(error, { title: 'Failed to discard draft' })
-        }
+      onConfirm: () => {
+        // Drop the selection before the write: a file that exists only in the
+        // draft stops existing the moment the discard lands, and the
+        // invalidation that follows would otherwise chase it.
+        setSelectedPath(null)
+        discardDraft()
       },
     })
-  }, [confirm, itemId, loadTree, handleError])
+  }, [confirm, discardDraft])
 
-  const handleCreateFile = useCallback(async () => {
-    const path = newFilePath.trim()
-    if (!path) return
-    try {
-      await apiFetch(`/api/v1/software/${itemId}/file`, {
-        method: 'PUT',
-        body: JSON.stringify({ path, content: '' }),
-      })
+  const { mutate: createFile } = useResourceMutation<string, Error, string>({
+    mutationFn: async (path) => {
+      const result = await apiFetch<{ data: { path: string } }>(
+        `/api/v1/software/${itemId}/file`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ path, content: '' }),
+        },
+      )
+      return result.data.path
+    },
+    invalidates: ['software'],
+    onSuccess: (storedPath) => {
       setNewFileDialogOpen(false)
       setNewFilePath('')
-      await loadTree()
-      await handleSelect({ path, hash: '', size: 0 })
-    } catch (error) {
-      handleError(error, { title: 'Failed to create file' })
-    }
-  }, [newFilePath, itemId, loadTree, handleSelect, handleError])
+      // Invalidation has already settled, so the tree holds the new file by
+      // the time the selection points at it. Select the path the server
+      // stored, not the one typed: it normalizes before writing the entry,
+      // and a read of anything else 404s.
+      setSelectedPath(storedPath)
+    },
+    onError: (error) => handleError(error, { title: 'Failed to create file' }),
+  })
 
-  const handleRename = useCallback(async () => {
-    if (!selected || !renameTo.trim()) return
-    try {
-      await apiFetch(`/api/v1/software/${itemId}/file/rename`, {
-        method: 'POST',
-        body: JSON.stringify({ fromPath: selected.path, toPath: renameTo }),
-      })
+  const handleCreateFile = useCallback(() => {
+    const path = newFilePath.trim()
+    if (!path) return
+    createFile(path)
+  }, [newFilePath, createFile])
+
+  const { mutate: renameFile } = useResourceMutation<
+    string,
+    Error,
+    { fromPath: string; toPath: string }
+  >({
+    mutationFn: async ({ fromPath, toPath }) => {
+      const result = await apiFetch<{ data: { path: string } }>(
+        `/api/v1/software/${itemId}/file/rename`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ fromPath, toPath }),
+        },
+      )
+      return result.data.path
+    },
+    invalidates: ['software'],
+    onSuccess: (storedPath) => {
       setRenameDialogOpen(false)
-      setSelected(null)
-      setFileContent(null)
-      await loadTree()
-    } catch (error) {
-      handleError(error, { title: 'Failed to rename file' })
-    }
-  }, [selected, renameTo, itemId, loadTree, handleError])
+      // Follow the file to its new name rather than dropping the user back to
+      // an empty pane. The old path was deselected before the write, so no
+      // read ever went after the name the server has just retired. The name
+      // to follow is the one the server reports storing — a typed 'src\b.c'
+      // becomes 'src/b.c' there, and only that spelling reads back.
+      setSelectedPath(storedPath)
+    },
+    onError: (error) => handleError(error, { title: 'Failed to rename file' }),
+  })
+
+  const handleRename = useCallback(() => {
+    const toPath = renameTo.trim()
+    if (selectedPath === null || !toPath) return
+    setSelectedPath(null)
+    renameFile({ fromPath: selectedPath, toPath })
+  }, [selectedPath, renameTo, renameFile])
+
+  const { mutate: deleteFile } = useResourceMutation<void, Error, string>({
+    mutationFn: async (path) => {
+      await apiFetch(
+        `/api/v1/software/${itemId}/file?path=${encodeURIComponent(path)}`,
+        { method: 'DELETE' },
+      )
+    },
+    invalidates: ['software'],
+    onError: (error) => handleError(error, { title: 'Failed to delete file' }),
+  })
 
   const handleDeleteFile = useCallback(() => {
-    if (!selected) return
+    if (selectedPath === null) return
+    const path = selectedPath
     confirm({
       title: 'Delete file',
-      description: `Delete ${selected.path} from the draft tree?`,
+      description: `Delete ${path} from the draft tree?`,
       actionLabel: 'Delete',
       cancelLabel: 'Cancel',
       variant: 'destructive',
-      onConfirm: async () => {
-        try {
-          await apiFetch(
-            `/api/v1/software/${itemId}/file?path=${encodeURIComponent(selected.path)}`,
-            { method: 'DELETE' },
-          )
-          setDirtyFiles((prev) => {
-            const next = new Map(prev)
-            next.delete(selected.path)
-            return next
-          })
-          setSelected(null)
-          setFileContent(null)
-          await loadTree()
-        } catch (error) {
-          handleError(error, { title: 'Failed to delete file' })
-        }
+      onConfirm: () => {
+        setDirtyFiles((prev) => {
+          const next = new Map(prev)
+          next.delete(path)
+          return next
+        })
+        setSelectedPath(null)
+        deleteFile(path)
       },
     })
-  }, [selected, confirm, itemId, loadTree, handleError])
+  }, [selectedPath, confirm, deleteFile])
 
   // --------------------------------------------------------------------------
   // Import (zip / files)
@@ -557,9 +622,8 @@ export function SourceViewer({
           )
         }
         showSuccess('Source imported', successMessage)
-        setSelected(null)
-        setFileContent(null)
-        await loadTree()
+        setSelectedPath(null)
+        await invalidate('software')
         onImported?.()
       } catch (error) {
         handleError(error, { title: 'Failed to import source' })
@@ -567,7 +631,7 @@ export function SourceViewer({
         setIsImporting(false)
       }
     },
-    [itemId, showSuccess, handleError, loadTree, onImported],
+    [itemId, showSuccess, handleError, invalidate, onImported],
   )
 
   const handleZipSelected = useCallback(
@@ -602,40 +666,6 @@ export function SourceViewer({
       )
     },
     [uploadFormData],
-  )
-
-  // --------------------------------------------------------------------------
-  // Revision compare
-  // --------------------------------------------------------------------------
-
-  const openCompare = useCallback(async () => {
-    setCompareOpen(true)
-    setCompareFrom(null)
-    setCompareChanges(null)
-    try {
-      const result = await apiFetch<{ data: { versions: Array<VersionInfo> } }>(
-        `/api/v1/software/${itemId}/versions`,
-      )
-      setVersions(result.data.versions.filter((v) => v.id !== itemId))
-    } catch (error) {
-      handleError(error, { title: 'Failed to load versions' })
-    }
-  }, [itemId, handleError])
-
-  const selectCompareFrom = useCallback(
-    async (version: VersionInfo) => {
-      setCompareFrom(version)
-      setCompareChanges(null)
-      try {
-        const result = await apiFetch<{
-          data: { changes: Array<DiffChange> }
-        }>(`/api/v1/software/${itemId}/diff?fromItemId=${version.id}`)
-        setCompareChanges(result.data.changes)
-      } catch (error) {
-        handleError(error, { title: 'Failed to compute diff' })
-      }
-    },
-    [itemId, handleError],
   )
 
   // --------------------------------------------------------------------------
@@ -718,7 +748,7 @@ export function SourceViewer({
     </>
   )
 
-  if (isLoadingTree && !tree) {
+  if (isLoadingTree) {
     return (
       <Card>
         <CardContent className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
@@ -728,7 +758,30 @@ export function SourceViewer({
     )
   }
 
-  if (!tree || (tree.entries.length === 0 && !hasDraft)) {
+  // A failed read used to fall through to the empty state below, which says
+  // the item has no source at all — the opposite of "we could not tell".
+  if (treeFailed && !tree) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center gap-4 py-12">
+          <p className="text-sm text-red-600 dark:text-red-400">
+            Could not load the source tree for this item.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void refetchTree()}
+          >
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Past both guards the tree is loaded: a failed *first* read returned
+  // above, and a failed refetch still has the previous tree to show.
+  if (tree.entries.length === 0 && !hasDraft) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center gap-4 py-12">
@@ -760,7 +813,11 @@ export function SourceViewer({
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={openCompare}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCompareOpen(true)}
+          >
             <FileDiff className="mr-2 h-4 w-4" />
             Compare
           </Button>
@@ -779,9 +836,9 @@ export function SourceViewer({
                   key={child.path}
                   node={child}
                   depth={0}
-                  selectedPath={selected?.path ?? null}
+                  selectedPath={selectedPath}
                   dirtyPaths={new Set(dirtyFiles.keys())}
-                  onSelect={handleSelect}
+                  onSelect={setSelectedPath}
                 />
               ))}
           </CardContent>
@@ -790,7 +847,7 @@ export function SourceViewer({
         {/* Content pane */}
         <Card className="lg:col-span-3">
           <CardContent className="p-0">
-            {!selected ? (
+            {selectedPath === null ? (
               <div className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
                 Select a file to view {canEdit ? 'or edit ' : ''}its contents
               </div>
@@ -798,8 +855,8 @@ export function SourceViewer({
               <div>
                 <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2 dark:border-slate-700">
                   <span className="font-mono text-sm text-slate-700 dark:text-slate-300">
-                    {selected.path}
-                    {dirtyFiles.has(selected.path) && (
+                    {selectedPath}
+                    {dirtyFiles.has(selectedPath) && (
                       <span className="ml-2 text-amber-500">●</span>
                     )}
                   </span>
@@ -810,7 +867,7 @@ export function SourceViewer({
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setRenameTo(selected.path)
+                            setRenameTo(selectedPath)
                             setRenameDialogOpen(true)
                           }}
                         >
@@ -825,14 +882,20 @@ export function SourceViewer({
                         </Button>
                       </>
                     )}
-                    <span className="text-xs text-slate-400">
-                      {formatSize(selected.size)}
-                    </span>
+                    {fileContent && (
+                      <span className="text-xs text-slate-400">
+                        {formatSize(fileContent.size)}
+                      </span>
+                    )}
                   </div>
                 </div>
                 {isLoadingFile ? (
                   <div className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
                     Loading file...
+                  </div>
+                ) : fileFailed ? (
+                  <div className="py-12 text-center text-sm text-red-600 dark:text-red-400">
+                    Could not load this file.
                   </div>
                 ) : fileContent?.isBinary ? (
                   <div className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
@@ -915,7 +978,7 @@ export function SourceViewer({
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename {selected?.path}</DialogTitle>
+            <DialogTitle>Rename {selectedPath}</DialogTitle>
           </DialogHeader>
           <Input
             value={renameTo}
@@ -937,34 +1000,30 @@ export function SourceViewer({
       </Dialog>
 
       {/* Revision compare dialog */}
-      <Dialog open={compareOpen} onOpenChange={setCompareOpen}>
+      <Dialog
+        open={compareOpen}
+        onOpenChange={(open) => {
+          setCompareOpen(open)
+          // Reset the chosen side on close so neither read stays enabled
+          // behind a dialog nobody is looking at.
+          if (!open) setCompareFrom(null)
+        }}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Compare revisions</DialogTitle>
           </DialogHeader>
           {!compareFrom ? (
-            versions.length === 0 ? (
-              <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                No other versions of this item to compare against.
-              </p>
-            ) : (
-              <div className="space-y-1">
-                {versions.map((v) => (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => void selectCompareFrom(v)}
-                    className="flex w-full items-center justify-between rounded border border-slate-200 px-3 py-2 text-left text-sm hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
-                  >
-                    <span className="font-mono">Rev {v.revision}</span>
-                    <span className="text-slate-500 dark:text-slate-400">
-                      {v.state}
-                      {v.isCurrent ? ' · current' : ''}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )
+            <VersionPicker
+              versions={versions}
+              isLoading={isLoadingVersions}
+              isError={versionsFailed}
+              onPick={setCompareFrom}
+            />
+          ) : diffFailed ? (
+            <p className="py-6 text-center text-sm text-red-600 dark:text-red-400">
+              Could not compare against Rev {compareFrom.revision}.
+            </p>
           ) : !compareChanges ? (
             <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
               Computing diff...

@@ -31,6 +31,10 @@
  *   into slow bouncing.
  * - WORKER_QUEUE_NAME: Override the derived queue name (default: derived from
  *   the routing patterns, so workers with the same JOB_TYPES share a queue)
+ * - DLQ_CHECK_MS: How often the dead-letter queue's depth is read for
+ *   /health, and how stale a cached depth may be (default: 30000)
+ * - DLQ_WARN_DEPTH: Depth at which the worker logs a warning that the
+ *   dead-letter queue needs draining (default: 100)
  */
 
 // Load .env file for local development
@@ -41,7 +45,7 @@ import { createHash } from 'node:crypto'
 import { JobWorker } from './lib/jobs/worker'
 import { RabbitMQClient } from './lib/jobs/rabbitmq/client'
 import { JobTypeRegistry } from './lib/jobs/registry'
-import { startRetryScheduler } from './lib/jobs/scheduler'
+import { deadLetterDepth, startRetryScheduler } from './lib/jobs/scheduler'
 import { workerLogger } from './lib/logging/logger'
 
 // Register job type definitions (configs + schemas)
@@ -57,6 +61,16 @@ import './lib/jobs/node-handlers/register'
  * RabbitMQ connection dropped consumes nothing, and reporting 200 while
  * idle-forever is how that failure stayed invisible. 503 'disconnected'
  * matches the Python workers' health shape.
+ *
+ * `dlqDepth` reports the dead-letter queue, which nothing consumes: it is the
+ * only place a poison message can be seen at all, and until it appeared here
+ * an operator had to know to open the management UI. It is deliberately not
+ * part of the health verdict — a worker with a backlog of undecodable
+ * messages is doing its job correctly, and a queue nobody drains must not
+ * make an orchestrator restart every worker in the fleet. `null` means the
+ * depth is not known yet or the broker could not answer it; a monitor should
+ * treat that as unknown rather than as zero. The value is served from a cache
+ * the scheduler refreshes, so a poll every second costs the broker nothing.
  */
 function startHealthServer(worker: JobWorker, port: number): http.Server {
   const server = http.createServer((req, res) => {
@@ -76,6 +90,7 @@ function startHealthServer(worker: JobWorker, port: number): http.Server {
               ? 'healthy'
               : 'disconnected',
           activeJobs: worker.getActiveJobCount(),
+          dlqDepth: deadLetterDepth(),
           timestamp: new Date().toISOString(),
         }),
       )

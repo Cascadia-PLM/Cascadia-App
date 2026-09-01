@@ -184,7 +184,8 @@ normally. Administrators can see which packages an instance holds at `/admin`.
 
 **Advanced Auditing** adds digital signatures on workflow approvals and has its
 own configuration — including the reverse proxy setup required for CAC/PIV
-signing. See [Advanced Auditing](../features/advanced-auditing.md#configuration-reference).
+signing — documented with the package, which is not part of this edition. See
+[Advanced Auditing](../features/advanced-auditing.md).
 
 ---
 

@@ -201,6 +201,8 @@ S3_FORCE_PATH_STYLE=false           # Set true for MinIO
 | `JOB_TIMEOUT`                 | `300000` | Default job timeout (ms)                                            |
 | `MAX_RETRIES`                 | `3`      | Default retry attempts                                              |
 | `WORKER_CLAIM_RETRY_DELAY_MS` | `5000`   | Pause before requeueing a delivery whose claim hit a database error |
+| `DLQ_CHECK_MS`                | `30000`  | How often the dead-letter queue's depth is read for `/health`       |
+| `DLQ_WARN_DEPTH`              | `100`    | Depth at which the worker warns that the DLQ needs draining         |
 
 ### Specialized Workers
 
@@ -297,6 +299,89 @@ before enforcement existed.
 Set `EXIT_ON_HUNG_JOB=false` to keep a wedged container alive for debugging.
 Timed-out jobs are still failed and retried; the worker simply keeps the lost
 concurrency slot until someone restarts it by hand.
+
+---
+
+## Dead-Letter Queue
+
+Every worker queue is declared with `x-dead-letter-exchange: jobs.dlx`, a
+fanout bound to one durable queue, `jobs.dead-letter`. A message lands there
+when a worker rejects it without requeue, which happens in exactly one case:
+the body does not parse as a job message. Both the Node worker and the Python
+CAD workers answer that input the same way, because a body no amount of
+retrying can fix must not be acknowledged into oblivion either.
+
+A message whose type this worker has no handler for is **not** dead-lettered —
+it is acknowledged, on the assumption another fleet will take it. So the
+dead-letter queue is small in a healthy deployment and grows only when
+something is producing messages the workers cannot read.
+
+Nothing consumes it. It is a holding area for messages that need a human, and
+it has no bound of its own.
+
+### Monitoring
+
+The Node jobs worker reports the depth on its health endpoint:
+
+```bash
+curl -s localhost:3002/health
+# {"status":"healthy","activeJobs":0,"dlqDepth":0,"timestamp":"..."}
+```
+
+`dlqDepth` is `null` when the broker could not be asked — read that as
+unknown, never as zero. It is deliberately not part of the health verdict: a
+backlog of unreadable messages means the workers are behaving correctly, and
+letting it turn the endpoint red would have an orchestrator restart the whole
+fleet over a queue only a person can drain.
+
+The worker also logs a warning the first time the depth goes above
+`DLQ_WARN_DEPTH` (default 100), and an informational line when it comes back
+down. That warning fires on the crossing rather than on every check: the depth
+is read every `DLQ_CHECK_MS` (default 30s) for as long as the worker runs, and
+a standing condition must not produce a standing stream of log lines.
+
+### Inspecting and draining
+
+The management UI (`http://<broker>:15672`, Queues → `jobs.dead-letter`) shows
+the depth and lets you read individual messages. From a shell on the broker:
+
+```bash
+# Peek at the oldest messages, leaving them where they are
+rabbitmqadmin get queue=jobs.dead-letter count=10 ackmode=ack_requeue_true
+
+# Once the cause is understood and the messages are worthless, empty it
+rabbitmqctl purge_queue jobs.dead-letter
+```
+
+Each body is the JSON job message the producer published, so its `jobId` ties
+it back to a row in `jobs`. Dead-lettering never moves that row: the job holds
+whatever status the database last recorded, and the queued-staleness and
+stale-running sweeps are what eventually resolve it.
+
+### Bounding it
+
+Bounds on this queue are an **operator policy**, which the broker applies to
+the queue as it already exists:
+
+```bash
+rabbitmqctl set_policy dlq-bounds '^jobs\.dead-letter$' \
+  '{"max-length":10000,"overflow":"drop-head","message-ttl":1209600000}' \
+  --apply-to queues
+```
+
+That caps the queue at 10,000 messages, dropping the oldest past the cap, and
+expires anything older than 14 days. Tune both to what the broker's disk can
+carry and how long you would realistically want to inspect a poison message.
+
+**Those bounds cannot be moved into the queue declaration.** `x-max-length`
+and `x-message-ttl` are queue _arguments_, and a declaration whose arguments
+differ from those of an existing durable queue is refused with 406
+`PRECONDITION_FAILED`. Every deployed broker already has `jobs.dead-letter`
+declared with no arguments, and the app server, the Node worker and the Python
+CAD workers all declare it on connect — so adding arguments in code would stop
+every upgraded process from connecting until an operator deleted the queue by
+hand. A policy needs no redeclaration, which is why it is the supported way to
+put a limit on this queue.
 
 ---
 

@@ -93,3 +93,29 @@ export function programDetailQuery(id: string) {
 export function programMembersQuery(id: string) {
   return entitySubQuery<ProgramMember>('programs', id, 'members', 'members')
 }
+
+/**
+ * The drill-down scope graph rooted at a program — the program node, a design
+ * node beneath it per design, and the per-item-type counts the graph view's
+ * type filter is built from.
+ *
+ * Generic in the response shape for the same reason `programHistoryGraphQuery`
+ * is: the concrete node and edge shapes are React Flow types owned by the
+ * component, and the query layer has no business importing from `components/`.
+ *
+ * Keyed beneath the program, so `invalidate('programs')` refreshes a mounted
+ * graph. The endpoint takes no parameters — the graph view's item-type filter
+ * shapes what a *design* expansion returns, not this response.
+ */
+export function programScopeGraphQuery<T>(programId: string, enabled = true) {
+  return queryOptions({
+    queryKey: qk.sub('programs', programId, 'scope-graph'),
+    queryFn: async (): Promise<T> => {
+      const result = await apiFetch<{ data: T }>(
+        `/api/v1/programs/${programId}/graph`,
+      )
+      return result.data
+    },
+    enabled: enabled && Boolean(programId),
+  })
+}

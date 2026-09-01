@@ -340,23 +340,51 @@ async function withConfirmationToken<T extends WriteToolResponse>(
  * endpoint), and the wrapper is the only RBAC gate on the tool path: neither
  * `ItemService.update` nor `LifecycleService.transitionFreeItem` re-checks it.
  *
+ * `create_relationship` shares the same shape below via
+ * `sourceItemUpdatePermission` — `ItemService.addRelationship` has no RBAC of
+ * its own either, so the wrapper is the only gate there too.
+ *
  * `getResourceType` rather than `itemTypeToResource` for the reason the item
  * routes made the same swap: it is fail-closed, charging `parts` for a type
  * with no mapping instead of skipping the check. A *missing* item falls back
  * the same way on purpose — the wrapper runs before the handler, so refusing
- * here would replace the handler's "Item with ID … not found" with a
- * permission error that tells the caller nothing, and nothing is written on
- * that path either way. A lookup that *fails* is not caught: it propagates,
- * is audit-logged by the wrapper, and no write happens.
+ * here would replace the handler's own not-found message (`update_item`'s
+ * "Item with ID … not found", `create_relationship`'s "Source item … not
+ * found") with a permission error that tells the caller nothing, and nothing
+ * is written on that path either way. A lookup that *fails* is not caught: it
+ * propagates, is audit-logged by the wrapper, and no write happens.
  */
-async function targetItemUpdatePermission(input: {
-  itemId: string
-}): Promise<PermissionSpec> {
-  const item = await ItemService.findById(input.itemId)
+async function itemOwnUpdatePermission(
+  itemId: string,
+): Promise<PermissionSpec> {
+  const item = await ItemService.findById(itemId)
   if (!item) {
     return { resource: 'parts', action: 'update' }
   }
   return { resource: getResourceType(item.itemType), action: 'update' }
+}
+
+async function targetItemUpdatePermission(input: {
+  itemId: string
+}): Promise<PermissionSpec> {
+  return itemOwnUpdatePermission(input.itemId)
+}
+
+/**
+ * `create_relationship`'s permission: the *source* item's own RBAC resource,
+ * plus `update` — the end the tool mutates (its relationships gain an edge).
+ * The target is deliberately not charged here: `requireItemAccess` inside the
+ * handler already gates both ends at the instance level, so this only narrows
+ * which *type* of item a grant may attach edges to, and charging just the
+ * source matches how the REST layer treats the owning item. A cross-type
+ * `Affects` edge (e.g. ECO → Part) therefore charges the ECO's resource, not
+ * the part's, and adding a component to an assembly still charges the
+ * assembly's `parts:update` once, not twice.
+ */
+async function sourceItemUpdatePermission(input: {
+  sourceItemId: string
+}): Promise<PermissionSpec> {
+  return itemOwnUpdatePermission(input.sourceItemId)
 }
 
 // ============================================================================
@@ -685,10 +713,11 @@ async function createRelationshipHandlerImpl(
   try {
     // Step 1: Get source and target items, and gate both.
     //
-    // `parts:update` is instance-blind, so until this gate existed a caller
-    // holding it could hang any program's part off any other program's
-    // assembly by knowing two ids — `ItemService.addRelationship` writes the
-    // edge with no boundary check of its own.
+    // The wrapper's RBAC check (`sourceItemUpdatePermission`) is type-level
+    // and instance-blind, so until this gate existed a caller holding the
+    // source's resource grant could hang any program's item off any other
+    // program's item by knowing two ids — `ItemService.addRelationship`
+    // writes the edge with no boundary check of its own.
     //
     // The gate runs after each read rather than replacing it, the shape the
     // read tools settled on: `findById` applies the not-deleted filter and
@@ -791,7 +820,9 @@ export const createRelationshipHandler = (
     WriteToolResponse & { relationshipId?: string }
   >(
     'create_relationship',
-    { resource: 'parts', action: 'update' },
+    // Permission follows the source item's own type, not a fixed `parts` —
+    // see `sourceItemUpdatePermission` above.
+    sourceItemUpdatePermission,
     createRelationshipHandlerImpl,
   )(input, context, meta)
 }

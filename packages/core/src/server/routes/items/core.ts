@@ -712,8 +712,16 @@ app.post(
           // ItemService.create, which parses the remainder against that
           // type's own schema and raises a ValidationError naming the type.
           // Running it here as well would duplicate the check and lose that
-          // message.
-          request: { body: { schema: itemCreateRequestSchema } },
+          // message. `documentsSupersetOfEnforced` is what keeps the union in
+          // the document: `createItemEnvelopeSchema` below is the deliberately
+          // looser envelope this route enforces, and every body the union
+          // describes passes it, so the document is the stricter of the two.
+          request: {
+            body: {
+              schema: itemCreateRequestSchema,
+              documentsSupersetOfEnforced: true,
+            },
+          },
           responses: {
             201: {
               schema: z.object({

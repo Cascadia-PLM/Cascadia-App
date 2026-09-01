@@ -1335,7 +1335,7 @@ describe('ChangeOrderService', () => {
           designId,
           user.id,
         ),
-      ).rejects.toThrow('Change order not found')
+      ).rejects.toThrow(NotFoundError)
     })
 
     it('throws error when change order not in Draft or InReview state', async () => {
@@ -1472,7 +1472,7 @@ describe('ChangeOrderService', () => {
           '00000000-0000-0000-0000-000000000000',
           null,
         ),
-      ).rejects.toThrow('Change order not found')
+      ).rejects.toThrow(NotFoundError)
     })
 
     it('tallies branch changes by type and counts affected items per design', async () => {
@@ -1657,7 +1657,7 @@ describe('ChangeOrderService', () => {
           part.id,
           user.id,
         ),
-      ).rejects.toThrow('Change order not found')
+      ).rejects.toThrow(NotFoundError)
     })
 
     it('throws error when item is not a change order', async () => {
@@ -1667,7 +1667,7 @@ describe('ChangeOrderService', () => {
       // Try to use a Part as change order
       await expect(
         ChangeOrderService.checkoutItemToEco(part1.id, part2.id, user.id),
-      ).rejects.toThrow('Item is not a change order')
+      ).rejects.toThrow(ValidationError)
     })
 
     it('throws error when ECO not in editable state', async () => {
@@ -1706,7 +1706,7 @@ describe('ChangeOrderService', () => {
           '00000000-0000-0000-0000-000000000000',
           user.id,
         ),
-      ).rejects.toThrow('Item not found')
+      ).rejects.toThrow(NotFoundError)
     })
   })
 

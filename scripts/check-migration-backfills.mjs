@@ -32,8 +32,15 @@
  *    deliberate abort in the last file would roll back the tags before it too.
  *
  * The ratchet at the end is the half that keeps this honest. A new migration
- * that touches rows and registers no scenario fails the check, so this hole
- * cannot quietly reopen the next time someone writes a backfill.
+ * whose outcome depends on rows already present, and which registers no
+ * scenario, fails the check — so this hole cannot quietly reopen the next time
+ * someone writes a backfill.
+ *
+ * "Depends on rows" is two families, not one: the writes, and the DDL Postgres
+ * validates against every existing row before it will commit — the statements
+ * that *abort* an upgrade rather than silently doing nothing. An empty database
+ * judges the second no better than it judges a backfill. Both are classified by
+ * `migration-row-dependence.mjs`, which has a test of its own.
  */
 
 import { readFileSync } from 'node:fs'
@@ -44,6 +51,7 @@ import { readMigrationFiles } from 'drizzle-orm/migrator'
 import postgres from 'postgres'
 
 import { resolveApp } from './edition.mjs'
+import { rowDependentStatements } from './migration-row-dependence.mjs'
 
 /* ------------------------------------------------------------------ *
  * Scratch database
@@ -218,6 +226,33 @@ async function constraintExists(sql, name) {
       where n.nspname = 'public' and c.conname = '${name}'`,
   )
   return row.n === 1
+}
+
+/**
+ * A foreign key's ON DELETE action, as the one-letter code pg_constraint
+ * stores: 'a' no action, 'r' restrict, 'c' cascade, 'n' set null, 'd' set
+ * default. A migration that re-adds a constraint under the same name changes
+ * nothing `constraintExists` can see, so the action is what has to be read.
+ */
+async function foreignKeyOnDelete(sql, name) {
+  const [row] = await sql.unsafe(
+    `select c.confdeltype from pg_constraint c
+       join pg_namespace n on n.oid = c.connamespace
+      where n.nspname = 'public' and c.conname = '${name}' and c.contype = 'f'`,
+  )
+  return row?.confdeltype ?? null
+}
+
+/** Run a statement that must be refused, and return the error it raised. */
+async function refused(sql, text) {
+  try {
+    await sql.unsafe(text)
+  } catch (error) {
+    return error
+  }
+  throw new Failed(
+    `expected this to be refused, and it was not: ${text.trim()}`,
+  )
 }
 
 /* ------------------------------------------------------------------ *
@@ -1013,6 +1048,105 @@ const SCENARIOS = [
       )
     },
   },
+
+  {
+    tag: VAULT_THUMBNAIL_TAG(),
+    name: 'dangling vault thumbnail pointers are nulled, live ones are kept',
+    async seed(sql) {
+      await exec(sql, vaultThumbnailPointerSeed())
+    },
+    async assert(sql) {
+      const untouched = await one(
+        sql,
+        `select thumbnail_file_id from vault_files where id = '${id(300)}'`,
+      )
+      expectEqual(
+        untouched.thumbnail_file_id,
+        null,
+        'a pointer that was already NULL is not residue',
+      )
+      const dangling = await one(
+        sql,
+        `select thumbnail_file_id from vault_files where id = '${id(301)}'`,
+      )
+      expectEqual(
+        dangling.thumbnail_file_id,
+        null,
+        'a pointer at a hard-deleted file is nulled',
+      )
+      const live = await one(
+        sql,
+        `select thumbnail_file_id from vault_files where id = '${id(302)}'`,
+      )
+      expectEqual(
+        live.thumbnail_file_id,
+        id(300),
+        'a pointer that resolves is left alone',
+      )
+      expect(
+        await constraintExists(
+          sql,
+          'vault_files_thumbnail_file_id_vault_files_id_fk',
+        ),
+        'the self-FK should exist once the danglers are nulled',
+      )
+    },
+  },
+
+  {
+    tag: VAULT_THUMBNAIL_TAG(),
+    name: 'duplicate item thumbnails collapse to the newest designation',
+    async seed(sql) {
+      await exec(sql, vaultThumbnailFlagSeed())
+    },
+    async assert(sql) {
+      const expected = {
+        // Item A: three flagged rows, so the newest upload wins.
+        [id(310)]: false,
+        [id(311)]: true,
+        [id(312)]: false,
+        // Item B: the only flagged row on its item, and an unflagged sibling.
+        [id(313)]: true,
+        [id(314)]: false,
+        // Item C: uploaded at the same instant, so only the id decides.
+        [id(315)]: false,
+        [id(316)]: true,
+      }
+      const why = {
+        [id(311)]: 'the newest upload is the designation a person last made',
+        [id(313)]: 'a lone flagged row on another item is untouched',
+        [id(314)]: 'an unflagged row stays unflagged',
+        [id(316)]: 'an uploaded_at tie is broken on the higher id',
+      }
+      for (const [row, flagged] of Object.entries(expected)) {
+        const found = await one(
+          sql,
+          `select is_item_thumbnail from vault_files where id = '${row}'`,
+        )
+        expectEqual(
+          found.is_item_thumbnail,
+          flagged,
+          why[row] ?? `${row} is cleared`,
+        )
+      }
+
+      const [dupes] = await sql.unsafe(`
+        select count(*)::int as n from (
+          select item_id from vault_files
+           where is_item_thumbnail group by item_id having count(*) > 1
+        ) d
+      `)
+      expectEqual(dupes.n, 0, 'no item may carry two thumbnail designations')
+
+      expect(
+        await relationExists(sql, 'uq_vault_files_item_thumbnail'),
+        'uq_vault_files_item_thumbnail should exist once the duplicates are cleared',
+      )
+    },
+  },
+
+  ...snapshotSeqScenarios(),
+  ...signingCredentialScenarios(),
 ]
 
 /**
@@ -1101,6 +1235,198 @@ function ISSUE_PROGRAM_TAG() {
     )
   }
   return found.tag
+}
+
+/**
+ * The vault-thumbnail migration, named by what it builds for the same reason
+ * as the others: the tag differs per edition. Both of its pre-cleanups — the
+ * dangling self-FK pointers and the duplicate per-item designations — ship in
+ * this one file, so both scenarios name it.
+ */
+function VAULT_THUMBNAIL_TAG() {
+  const found = migrations.find((m) =>
+    m.sql.some((s) => s.includes('uq_vault_files_item_thumbnail')),
+  )
+  if (!found) {
+    throw new Error(
+      'No migration creates uq_vault_files_item_thumbnail — the vault thumbnail scenarios name a file that no longer exists.',
+    )
+  }
+  return found.tag
+}
+
+/**
+ * The snapshot-seq scenario, or nothing at all.
+ *
+ * `design_session_snapshots` is a design-engine table, so it exists only in
+ * the enterprise journal; the community edition mints no migration for it and
+ * a scenario naming one would fail in the published tree, where this script
+ * also runs. Resolving to an empty list there is the difference between "not
+ * applicable to this edition" and "the migration went missing".
+ */
+function snapshotSeqScenarios() {
+  const found = migrations.find((m) =>
+    m.sql.some((s) => s.includes('uq_design_snapshots_session_seq')),
+  )
+  if (!found) return []
+
+  return [
+    {
+      tag: found.tag,
+      name: 'duplicate snapshot seqs are renumbered in order, clean sessions untouched',
+      async seed(sql) {
+        await exec(sql, snapshotSeqSeed())
+      },
+      async assert(sql) {
+        // The renumber is order-preserving: reading the rows by their old
+        // order gives 1..N, so the newest snapshot for a stage is still the
+        // newest and every rollback target keeps its meaning.
+        const expected = {
+          [id(340)]: 1,
+          [id(341)]: 2,
+          [id(342)]: 3,
+          [id(343)]: 4,
+          // A session with no duplicate is not touched at all, gap included.
+          [id(344)]: 1,
+          [id(345)]: 5,
+        }
+        const why = {
+          [id(341)]: 'the older of the tied pair keeps the number it had',
+          [id(342)]: 'the newer of the tied pair moves up one',
+          [id(343)]: 'everything above the tie shifts to stay above it',
+          [id(345)]: 'a clean session keeps its numbering, gaps and all',
+        }
+        for (const [row, seq] of Object.entries(expected)) {
+          const found_ = await one(
+            sql,
+            `select seq from design_session_snapshots where id = '${row}'`,
+          )
+          expectEqual(found_.seq, seq, why[row] ?? `${row} keeps seq ${seq}`)
+        }
+
+        const [dupes] = await sql.unsafe(`
+          select count(*)::int as n from (
+            select session_id, seq from design_session_snapshots
+            group by session_id, seq having count(*) > 1
+          ) d
+        `)
+        expectEqual(dupes.n, 0, 'no session may mint one seq twice')
+
+        expect(
+          await relationExists(sql, 'uq_design_snapshots_session_seq'),
+          'uq_design_snapshots_session_seq should exist once the seqs are distinct',
+        )
+      },
+    },
+  ]
+}
+
+/**
+ * The signing-credential migration, or nothing at all.
+ *
+ * `signing_credentials` and `digital_signatures` are advanced-auditing tables,
+ * so like the snapshot-seq scenario above this one exists only in the
+ * enterprise journal; resolving to an empty list in the published tree is the
+ * difference between "not applicable to this edition" and "the migration went
+ * missing".
+ *
+ * This is the migration that made the validating-DDL hole visible: its only
+ * data-dependent statements are an `ADD CONSTRAINT` and an `ADD COLUMN`, so
+ * the writes-only classifier waved it through with no scenario at all.
+ */
+function signingCredentialScenarios() {
+  // Named by the action, not just the constraint: the baseline adds this same
+  // foreign key under this same name, and it is the swap to `restrict` that
+  // this scenario is about.
+  const found = migrations.find((m) =>
+    m.sql.some(
+      (s) =>
+        s.includes('signing_credentials_user_id_users_id_fk') &&
+        /add\s+constraint/i.test(s) &&
+        /on\s+delete\s+restrict/i.test(s),
+    ),
+  )
+  if (!found) return []
+
+  return [
+    {
+      tag: found.tag,
+      name: 'an enrollment survives the restrict swap, and now blocks deleting its user',
+      async seed(sql) {
+        await exec(sql, signingCredentialSeed())
+      },
+      async assert(sql) {
+        // The migration re-adds a foreign key that already existed under the
+        // same name, so the only evidence it did anything is the action.
+        expectEqual(
+          await foreignKeyOnDelete(
+            sql,
+            'signing_credentials_user_id_users_id_fk',
+          ),
+          'r',
+          'the user foreign key is restrict, not cascade, once the migration runs',
+        )
+
+        // Validating that constraint against rows is the whole risk, so say
+        // out loud that the rows it validated are still there.
+        const [kept] = await sql.unsafe(
+          `select count(*)::int as n from signing_credentials where id in ('${id(350)}', '${id(351)}')`,
+        )
+        expectEqual(kept.n, 2, 'no enrollment is touched by the swap')
+
+        // The point of the swap: an enrollment is evidence of who held which
+        // card and when, and deleting the account must not be a way to erase
+        // it. Under the cascade this replaced, this DELETE would have
+        // succeeded and taken the enrollment with it. `UserService.deleteUser`
+        // reads exactly this violation as the signal to degrade to
+        // deactivation, so the code it raises is part of the contract:
+        // RESTRICT raises 23001, not the 23503 a plain NO ACTION would.
+        const error = await refused(sql, `delete from users where id = '${U1}'`)
+        expectEqual(error.code, '23001', 'SQLSTATE for the refused delete')
+        expectEqual(
+          error.constraint_name,
+          'signing_credentials_user_id_users_id_fk',
+          'the constraint that refused the delete',
+        )
+        const [survivor] = await sql.unsafe(
+          `select count(*)::int as n from users where id = '${U1}'`,
+        )
+        expectEqual(
+          survivor.n,
+          1,
+          'the refused delete leaves the user in place',
+        )
+
+        // A revoked enrollment is kept deliberately as history, so it protects
+        // its user too — a revoked card must not become a way to erase the
+        // record that it was ever issued.
+        const revoked = await refused(
+          sql,
+          `delete from users where id = '${U2}'`,
+        )
+        expectEqual(
+          revoked.constraint_name,
+          'signing_credentials_user_id_users_id_fk',
+          'a revoked enrollment protects its user as well',
+        )
+
+        // The other half of the file. `hash_version` is documented as needing
+        // no backfill because "the default is what an existing row reads" —
+        // which is a claim about rows that were already there, and therefore
+        // one only a populated database can check.
+        const signature = await one(
+          sql,
+          `select hash_version from digital_signatures where id = '${id(352)}'`,
+        )
+        expectEqual(
+          signature.hash_version,
+          1,
+          'a signature written before the column existed reads as version 1, ' +
+            'the format that actually produced its chain hash',
+        )
+      },
+    },
+  ]
 }
 
 /**
@@ -1383,43 +1709,207 @@ function approversSeed() {
   `
 }
 
+/**
+ * One item and three of its vault files: a row with no thumbnail, a row whose
+ * thumbnail was hard-deleted while `thumbnail_file_id` was a bare uuid, and a
+ * row whose thumbnail is still there. The cleanup has to tell the second from
+ * the third without mistaking the first for residue.
+ */
+function vaultThumbnailPointerSeed() {
+  return `
+    ${USERS}
+    insert into items
+      (id, master_id, item_number, revision, item_type, state, created_by, modified_by)
+    values
+      ('${id(303)}', '${id(304)}', 'FIX-VF-PTR', 'A', 'Part', 'Released', '${U1}', '${U1}');
+
+    insert into vault_files
+      (id, item_id, file_name, original_file_name, file_size, mime_type,
+       file_hash, storage_path, uploaded_by, thumbnail_file_id)
+    values
+      ('${id(300)}', '${id(303)}', 'a.png', 'a.png', 10, 'image/png', 'h300', 'p/300', '${U1}', null),
+      ('${id(301)}', '${id(303)}', 'b.step', 'b.step', 20, 'model/step', 'h301', 'p/301', '${U1}', '${gone(300)}'),
+      ('${id(302)}', '${id(303)}', 'c.step', 'c.step', 30, 'model/step', 'h302', 'p/302', '${U1}', '${id(300)}');
+  `
+}
+
+/**
+ * Three items, one per branch of the keep-rule: a group of three designations
+ * where the newest upload wins, a lone designation that must be left alone
+ * beside an unflagged sibling, and a pair uploaded at the same instant where
+ * only the id tie-break decides.
+ */
+function vaultThumbnailFlagSeed() {
+  return `
+    ${USERS}
+    insert into items
+      (id, master_id, item_number, revision, item_type, state, created_by, modified_by)
+    values
+      ('${id(320)}', '${id(323)}', 'FIX-VF-A', 'A', 'Part', 'Released', '${U1}', '${U1}'),
+      ('${id(321)}', '${id(324)}', 'FIX-VF-B', 'A', 'Part', 'Released', '${U1}', '${U1}'),
+      ('${id(322)}', '${id(325)}', 'FIX-VF-C', 'A', 'Part', 'Released', '${U1}', '${U1}');
+
+    insert into vault_files
+      (id, item_id, file_name, original_file_name, file_size, mime_type,
+       file_hash, storage_path, uploaded_by, uploaded_at, is_item_thumbnail)
+    values
+      -- Item A: three designations the two-statement set left standing.
+      ('${id(310)}', '${id(320)}', 'a1.png', 'a1.png', 10, 'image/png', 'h310', 'p/310', '${U1}', '2024-01-01T00:00:00Z', true),
+      ('${id(311)}', '${id(320)}', 'a2.png', 'a2.png', 10, 'image/png', 'h311', 'p/311', '${U1}', '2024-06-01T00:00:00Z', true),
+      ('${id(312)}', '${id(320)}', 'a3.png', 'a3.png', 10, 'image/png', 'h312', 'p/312', '${U1}', '2024-03-01T00:00:00Z', true),
+      -- Item B: one designation, plus an ordinary file that must stay unflagged.
+      ('${id(313)}', '${id(321)}', 'b1.png', 'b1.png', 10, 'image/png', 'h313', 'p/313', '${U1}', '2024-01-01T00:00:00Z', true),
+      ('${id(314)}', '${id(321)}', 'b2.png', 'b2.png', 10, 'image/png', 'h314', 'p/314', '${U1}', '2024-02-01T00:00:00Z', false),
+      -- Item C: uploaded to the microsecond together, so only the id decides.
+      ('${id(315)}', '${id(322)}', 'c1.png', 'c1.png', 10, 'image/png', 'h315', 'p/315', '${U1}', '2024-03-01T00:00:00Z', true),
+      ('${id(316)}', '${id(322)}', 'c2.png', 'c2.png', 10, 'image/png', 'h316', 'p/316', '${U1}', '2024-03-01T00:00:00Z', true);
+  `
+}
+
+/**
+ * Two design sessions: one whose seq was minted twice by two concurrent
+ * confirms, and one that is already correct — gap included, so a renumber that
+ * reached past the sessions with an actual duplicate would be visible.
+ */
+function snapshotSeqSeed() {
+  return `
+    ${USERS}
+    insert into programs (id, name, code, created_by) values
+      ('${id(330)}', 'Snapshot Program', 'FIX-PROG-SNAP', '${U1}');
+
+    insert into design_sessions (id, user_id, program_id, description) values
+      ('${id(331)}', '${U1}', '${id(330)}', 'Two confirms landed on one seq'),
+      ('${id(332)}', '${U1}', '${id(330)}', 'Already numbered correctly');
+
+    insert into design_session_snapshots
+      (id, session_id, stage, seq, artifacts, llm_history_length, created_at)
+    values
+      ('${id(340)}', '${id(331)}', 'requirements_review', 1, '{}'::jsonb, 0, '2024-01-01T00:00:00Z'),
+      -- The tie: both confirms read max(seq) = 1 and both wrote 2.
+      ('${id(341)}', '${id(331)}', 'bom_review', 2, '{}'::jsonb, 0, '2024-02-01T00:00:00Z'),
+      ('${id(342)}', '${id(331)}', 'bom_review', 2, '{}'::jsonb, 0, '2024-03-01T00:00:00Z'),
+      ('${id(343)}', '${id(331)}', 'cad_review', 3, '{}'::jsonb, 0, '2024-04-01T00:00:00Z'),
+      -- A session with no tie, whose numbering must not move.
+      ('${id(344)}', '${id(332)}', 'requirements_review', 1, '{}'::jsonb, 0, '2024-01-01T00:00:00Z'),
+      ('${id(345)}', '${id(332)}', 'bom_review', 5, '{}'::jsonb, 0, '2024-02-01T00:00:00Z');
+  `
+}
+
+/**
+ * Two enrolled users and one signature written before `hash_version` existed.
+ *
+ * The signature deliberately names a *third* user as its signer. Its own
+ * foreign key to `users` is ON DELETE NO ACTION, so a signer who also held an
+ * enrollment would be protected by two constraints at once and which one
+ * Postgres named in the error would be an implementation detail to depend on.
+ */
+function signingCredentialSeed() {
+  const U3 = id(353)
+  return `
+    ${USERS}
+    insert into users (id, email, name) values
+      ('${U3}', 'three@fixture.invalid', 'User Three');
+
+    insert into signing_credentials
+      (id, user_id, cert_thumbprint, cert_subject_dn, cert_issuer_dn, cert_serial, revoked_at)
+    values
+      -- An active enrollment.
+      ('${id(350)}', '${U1}', 'thumb-350', 'CN=One', 'CN=CA', '350', null),
+      -- A revoked one. Revoked rows are kept as history deliberately, so this
+      -- user is protected by the restrict too.
+      ('${id(351)}', '${U2}', 'thumb-351', 'CN=Two', 'CN=CA', '351', '2024-01-01T00:00:00Z');
+
+    insert into digital_signatures
+      (id, subject_type, subject_id, chain_scope, signer_user_id, signer_name,
+       decision, meaning, method, assurance, signed_payload, payload_hash, chain_hash)
+    values
+      ('${id(352)}', 'workflow_vote', '${id(354)}', 'global', '${U3}', 'User Three',
+       'approve', 'I approve this change', 'password', 'basic',
+       '{}'::jsonb, 'p352', 'c352');
+  `
+}
+
 /* ------------------------------------------------------------------ *
  * The ratchet
  * ------------------------------------------------------------------ */
 
-/** Strip comments and string literals, so keyword matching sees only SQL. */
-function bareSql(statement) {
-  return statement
-    .replace(/'(?:[^']|'')*'/g, "''")
-    .replace(/--[^\n]*/g, ' ')
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-}
-
-/** Does this migration contain a statement that reads or writes existing rows? */
-function touchesRows(migration) {
-  return migration.sql.some((statement) =>
-    /(^|;)\s*(update|delete|insert)\s/i.test(bareSql(statement)),
-  )
-}
+/**
+ * Statements that qualify above but provably cannot behave differently against
+ * rows than against an empty database, each with the argument for why.
+ *
+ * This exists so that the answer to an inert statement is never "narrow the
+ * classifier" — that is exactly how the writes-only version of this check came
+ * to miss a whole family. An entry is `{ tag, statement, why }`, where
+ * `statement` is one of the strings `rowDependentStatements` produces, and it
+ * is checked for staleness below: an entry naming a migration or a statement
+ * that no longer qualifies fails the run rather than sitting here unread.
+ *
+ * Prefer a scenario. An argument is only better than an execution when there
+ * is genuinely nothing to execute.
+ */
+const CANNOT_ABORT = []
 
 function runRatchet() {
   const covered = new Set(SCENARIOS.map((s) => s.tag))
-  const uncovered = migrations
-    .filter((m) => touchesRows(m) && !covered.has(m.tag))
-    .map((m) => m.tag)
-  if (uncovered.length === 0) return true
+  const qualifying = migrations
+    .map((m) => ({ tag: m.tag, statements: rowDependentStatements(m) }))
+    .filter((m) => m.statements.length > 0)
+
+  let ok = true
+
+  // A stale exemption is worse than none: it reads as a considered decision
+  // about a statement that is no longer there.
+  const stale = CANNOT_ABORT.filter(
+    (entry) =>
+      !qualifying.some(
+        (m) => m.tag === entry.tag && m.statements.includes(entry.statement),
+      ),
+  )
+  if (stale.length > 0) {
+    console.error(
+      [
+        '',
+        '✗ CANNOT_ABORT names a statement that no longer qualifies:',
+        ...stale.map((e) => `     ${e.tag}: ${e.statement}`),
+        '',
+        '   Delete the entry. Whatever it was arguing about is gone.',
+        '',
+      ].join('\n'),
+    )
+    ok = false
+  }
+
+  const uncovered = qualifying
+    .filter((m) => !covered.has(m.tag))
+    .map((m) => ({
+      tag: m.tag,
+      statements: m.statements.filter(
+        (s) => !CANNOT_ABORT.some((e) => e.tag === m.tag && e.statement === s),
+      ),
+    }))
+    .filter((m) => m.statements.length > 0)
+
+  if (uncovered.length === 0) return ok
 
   console.error(
     [
       '',
-      '✗ A migration touches rows and no scenario exercises it:',
-      ...uncovered.map((tag) => `     apps/${app}/drizzle/${tag}.sql`),
+      "✗ A migration's outcome depends on rows and no scenario exercises it:",
+      ...uncovered.flatMap((m) => [
+        `     apps/${app}/drizzle/${m.tag}.sql`,
+        `       ${m.statements.join(', ')}`,
+      ]),
       '',
       '   Applying that SQL to an empty database proves nothing — the UPDATE',
-      '   matches no rows and the DELETE removes none. Add a scenario to',
+      '   matches no rows, the DELETE removes none, and the constraint',
+      '   validates against nothing. Add a scenario to',
       '   scripts/check-migration-backfills.mjs: seed the shape of data the',
       '   statement exists to handle, then assert what it did to it. A',
       '   statement that is meant to abort gets an `expectAbort` scenario.',
+      '',
+      '   If the statement genuinely cannot behave differently against rows —',
+      '   a constraint the database already enforced, say — record the',
+      '   argument in CANNOT_ABORT rather than narrowing the classifier.',
       '',
     ].join('\n'),
   )

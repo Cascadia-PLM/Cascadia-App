@@ -25,7 +25,10 @@ import {
   ViewEditSelect,
   ViewEditTextarea,
 } from '@/components/ui/view-edit-field'
-import { AttributesEditor } from '@/components/items/AttributesEditor'
+import {
+  AttributesEditor,
+  formatAttributeValue,
+} from '@/components/items/AttributesEditor'
 
 interface DesignWithDetails extends Design {
   program?: Program | null
@@ -60,13 +63,8 @@ export const DesignDetailsSection = forwardRef<
     parentDesignId: design.parentDesignId || '',
     plannedQuantity: design.plannedQuantity?.toString() || '',
   })
-  const [attributes, setAttributes] = useState<Record<string, string>>(
-    Object.fromEntries(
-      Object.entries(design.attributes || {}).map(([key, value]) => [
-        key,
-        Array.isArray(value) ? value.join(', ') : String(value ?? ''),
-      ]),
-    ),
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
+    design.attributes || {},
   )
 
   const updateField = (field: keyof typeof editValues, value: string) => {
@@ -82,14 +80,7 @@ export const DesignDetailsSection = forwardRef<
         parentDesignId: design.parentDesignId || '',
         plannedQuantity: design.plannedQuantity?.toString() || '',
       })
-      setAttributes(
-        Object.fromEntries(
-          Object.entries(design.attributes || {}).map(([key, value]) => [
-            key,
-            Array.isArray(value) ? value.join(', ') : String(value ?? ''),
-          ]),
-        ),
-      )
+      setAttributes(design.attributes || {})
     }
   }, [isEditing, design])
 
@@ -290,9 +281,7 @@ export const DesignDetailsSection = forwardRef<
                               {key}
                             </dt>
                             <dd className="text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-md">
-                              {Array.isArray(value)
-                                ? value.join(', ')
-                                : String(value)}
+                              {formatAttributeValue(value) || '-'}
                             </dd>
                           </div>
                         ),

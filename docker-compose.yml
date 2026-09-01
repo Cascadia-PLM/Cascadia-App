@@ -1,7 +1,7 @@
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:18-alpine
+    image: postgres:18-alpine@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
     container_name: cascadia-postgres
     restart: unless-stopped
     environment:
@@ -87,7 +87,7 @@ services:
 
   # RabbitMQ for background jobs
   rabbitmq:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:3-management-alpine@sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281
     container_name: cascadia-rabbitmq
     restart: unless-stopped
     environment:
@@ -115,7 +115,7 @@ services:
   # Jobs Worker (development mode - mounts source for live reload)
   # NOTE: Uses host.docker.internal for database when postgres runs on host machine
   jobs-worker-dev:
-    image: node:22-alpine
+    image: node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
     container_name: cascadia-jobs-worker-dev
     restart: unless-stopped
     profiles:
@@ -140,7 +140,11 @@ services:
     # lives in the app (`apps/<app>/src/`) because it registers the same modules
     # the server does. scripts/workers.mjs already resolves that path for the
     # npm scripts; this service was the one call site still naming the old one.
-    command: sh -c "npm install && npm run jobs:worker:dev"
+    # --no-save because this install runs over the `.:/app` bind mount: a
+    # container-side resolution would otherwise rewrite the HOST's
+    # package-lock.json. (`npm ci` would wipe and reinstall node_modules on
+    # every restart, which `restart: unless-stopped` makes routine.)
+    command: sh -c "npm install --no-save && npm run jobs:worker:dev"
 
   # CAD Converter Worker (Python - pythonocc-core for STEP/IGES → STL)
   cad-converter-dev:
@@ -166,7 +170,7 @@ services:
     volumes:
       - ./vault:/vault
     ports:
-      - '3003:3003'
+      - '127.0.0.1:3003:3003'
     healthcheck:
       test:
         [
@@ -184,7 +188,7 @@ services:
 
   # Optional: pgAdmin for database management
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:latest@sha256:2f4ce946ddf8360680d7eff4eaba1d91859eb6b4003e6623bad5c63a322c2f4d
     container_name: cascadia-pgadmin
     restart: unless-stopped
     profiles:

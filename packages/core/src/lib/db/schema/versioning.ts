@@ -423,7 +423,11 @@ export const itemFieldChangesRelations = relations(
   }),
 )
 
-// Conflict reviews - tracks which warning conflicts have been acknowledged
+// Conflict reviews - tracks which warning conflicts have been acknowledged.
+// Append-only: every acknowledgement is its own row, so re-acknowledging a
+// conflict preserves the previous reviewer's note and timestamp. The current
+// acknowledgement for a conflict is the newest row for its
+// (changeOrderId, itemMasterId, conflictType, theirEcoId) key.
 // Note: changeOrderId and theirEcoId reference items.id but we avoid circular import
 export const conflictReviews = pgTable(
   'conflict_reviews',
@@ -464,12 +468,6 @@ export const conflictReviews = pgTable(
     notes: text('notes'),
   },
   (table) => [
-    unique('conflict_reviews_unique').on(
-      table.changeOrderId,
-      table.itemMasterId,
-      table.conflictType,
-      table.theirEcoId,
-    ),
     index('idx_conflict_reviews_change_order').on(table.changeOrderId),
     index('idx_conflict_reviews_item').on(table.itemMasterId),
     index('idx_conflict_reviews_their_eco').on(table.theirEcoId),

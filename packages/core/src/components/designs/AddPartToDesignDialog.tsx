@@ -32,6 +32,7 @@ import {
   itemSearchQuery,
   itemTextSearchQuery,
   programListQuery,
+  useResourceMutation,
 } from '@/lib/query'
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
 import { StateBadge } from '@/components/items/StateBadge'
@@ -66,7 +67,7 @@ interface AddPartToDesignDialogProps {
   designId: string
   designCode: string
   designName: string
-  onSuccess: () => void
+  onSuccess?: () => void
 }
 
 export function AddPartToDesignDialog({
@@ -80,7 +81,6 @@ export function AddPartToDesignDialog({
   const { alert } = useAlertDialog()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedItems, setSelectedItems] = useState<Array<Item>>([])
-  const [loading, setLoading] = useState(false)
 
   // Add mode: usage_copy (default) or cross_design_ref
   const [addMode, setAddMode] = useState<'usage_copy' | 'cross_design_ref'>(
@@ -176,14 +176,14 @@ export function AddPartToDesignDialog({
     })
   }
 
-  const handleAdd = async () => {
-    if (selectedItems.length === 0) return
-
-    setLoading(true)
-    try {
-      // Add each selected part to the design
+  // A fan-out of one POST per selected part, with partial-success reporting.
+  // Resolves (rather than rejects) on a partial failure so the successful
+  // writes still get invalidated; only a total failure rejects, since there
+  // is then nothing new in the cache to refresh.
+  const addParts = useResourceMutation({
+    mutationFn: async (items: Array<Item>) => {
       const results = await Promise.allSettled(
-        selectedItems.map((item) =>
+        items.map((item) =>
           apiFetch(`/api/v1/designs/${designId}/items`, {
             method: 'POST',
             body: JSON.stringify({
@@ -203,6 +203,14 @@ export function AddPartToDesignDialog({
       ).length
       const failedCount = results.filter((r) => r.status === 'rejected').length
 
+      if (successCount === 0) {
+        throw new Error('Failed to add parts to design')
+      }
+
+      return { successCount, failedCount }
+    },
+    invalidates: ['designs'],
+    onSuccess: ({ successCount, failedCount }) => {
       if (failedCount > 0) {
         alert({
           title: 'Partial Success',
@@ -210,20 +218,21 @@ export function AddPartToDesignDialog({
           variant: 'default',
         })
       }
-
-      if (successCount > 0) {
-        onSuccess()
-        onOpenChange(false)
-      }
-    } catch {
+      onSuccess?.()
+      onOpenChange(false)
+    },
+    onError: () => {
       alert({
         title: 'Error',
         description: 'Failed to add parts to design',
         variant: 'destructive',
       })
-    } finally {
-      setLoading(false)
-    }
+    },
+  })
+
+  const handleAdd = () => {
+    if (selectedItems.length === 0) return
+    addParts.mutate(selectedItems)
   }
 
   return (
@@ -481,9 +490,9 @@ export function AddPartToDesignDialog({
           <Button
             type="button"
             onClick={handleAdd}
-            disabled={selectedItems.length === 0 || loading}
+            disabled={selectedItems.length === 0 || addParts.isPending}
           >
-            {loading
+            {addParts.isPending
               ? 'Adding...'
               : `Add ${selectedItems.length > 0 ? `(${selectedItems.length})` : ''}`}
           </Button>

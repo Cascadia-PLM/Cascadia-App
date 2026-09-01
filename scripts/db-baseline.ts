@@ -25,6 +25,21 @@
  * stamping would only defer the failure to the first real migration.
  * Fresh installs never need this: `db:migrate` on an empty database applies
  * the baseline itself, journal included.
+ *
+ * **Verification is table presence only.** The live `pg_tables` set is compared
+ * against the tables the composed schema declares; columns, constraints,
+ * indexes and enum values are never compared. A database that has every table
+ * but is short a column the baseline adds therefore passes this check and
+ * fails later, at the first migration that assumes that column. That is why
+ * "check out v0.5.0 and run `db:push` once" is a *precondition* of stamping
+ * rather than an optimization — nothing here stands in for it.
+ *
+ * Stamping itself is one transaction: either every journal entry is recorded
+ * or none is. A crash mid-stamp used to leave a partial journal that the
+ * already-stamped guard below then read as "done", so the operator's next
+ * `db:migrate` replayed migrations the pushed schema already satisfied and
+ * aborted mid-upgrade. Partial journals are now unproducible here, and one
+ * left behind by an older run is detected rather than trusted.
  */
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
@@ -99,7 +114,11 @@ if (missing.length > 0) {
       missing.join('\n  ') +
       '\n\nThis database is not at the baseline. For a database kept current ' +
       'with db:push, run `npm run db:push` once to catch it up, then re-run ' +
-      'db:baseline. For a fresh database, just run `npm run db:migrate`.',
+      'db:baseline. For a fresh database, just run `npm run db:migrate`.' +
+      '\n\nNote that passing this check is not proof the schema matches: only ' +
+      'table presence is compared, never columns, constraints or indexes. ' +
+      'Bringing the database to the baseline schema first — check out v0.5.0, ' +
+      'run db:push once — is a precondition of stamping, not a shortcut.',
   )
   process.exit(1)
 }
@@ -131,22 +150,84 @@ const applied = asRows<{ count: string }>(
   ),
 )
 const appliedCount = Number(applied[0]?.count ?? '0')
-if (appliedCount > 0) {
+const expectedCount = journal.entries.length
+
+// Three outcomes, deliberately distinguished. This guard used to read *any*
+// non-zero count as "already stamped", which made a partial journal — the
+// residue of a stamp that lost its connection mid-loop, back when stamping was
+// not transactional — indistinguishable from a finished one.
+// A journal shorter than the tree's is far more often neither: an install
+// that simply has not been upgraded yet, whose answer is db:migrate.
+if (appliedCount === expectedCount) {
   console.log(
-    `Journal already has ${appliedCount} entr${appliedCount === 1 ? 'y' : 'ies'} — ` +
+    `Journal already has all ${appliedCount} entr${appliedCount === 1 ? 'y' : 'ies'} — ` +
       'this database is already stamped. Nothing to do.',
   )
   process.exit(0)
 }
+if (appliedCount > expectedCount) {
+  console.error(
+    `REFUSING to stamp: drizzle.__drizzle_migrations holds ${appliedCount} row(s), ` +
+      `more than the ${expectedCount} entr${expectedCount === 1 ? 'y' : 'ies'} the ` +
+      'journal in this tree defines. The database has been migrated past the ' +
+      'code checked out here. Check out the version it was migrated to (or a ' +
+      'newer one) and upgrade from there; do not stamp.',
+  )
+  process.exit(1)
+}
+if (appliedCount > 0) {
+  const pending = expectedCount - appliedCount
+  const plural = pending === 1 ? '' : 's'
+  console.error(
+    `Nothing to stamp: drizzle.__drizzle_migrations holds ${appliedCount} of the ` +
+      `${expectedCount} entries the journal defines, so ${pending} migration${plural} ` +
+      'never ran. That is the ordinary state of a database one or more ' +
+      'releases behind the tree checked out here — not damage, and not ' +
+      'something to stamp: db:baseline exists for a database whose journal ' +
+      'is empty, and this one has a journal already.' +
+      `\n\nRun \`npm run db:migrate\` — it applies the ${pending} ` +
+      `migration${plural} the journal is missing. Drizzle wraps all pending ` +
+      'migrations in one transaction, so a database left part-way through a ' +
+      'migrate is not a state that can exist: either they all applied, or ' +
+      'the journal still reads exactly as it does now.' +
+      '\n\nDo NOT delete these rows to get a stamp out of this script. ' +
+      'Stamping records migrations as applied without running them, so an ' +
+      `emptied journal would be re-stamped in full, the ${pending} unrun ` +
+      `migration${plural} would be recorded as done, db:migrate would no-op ` +
+      'forever, and nothing would ever report the gap. That holds even if ' +
+      'these rows are the residue of a stamp that died mid-loop, back before ' +
+      'stamping was transactional: db:migrate is still the way forward, ' +
+      'because it applies what the journal is missing and fails loudly — ' +
+      'never silently — if the live schema already has it.',
+  )
+  process.exit(1)
+}
 
-for (const entry of [...journal.entries].sort((a, b) => a.idx - b.idx)) {
-  const file = resolve(drizzleDir, `${entry.tag}.sql`)
-  const hash = createHash('sha256').update(readFileSync(file)).digest('hex')
-  await db.execute(sql`
-    INSERT INTO "drizzle"."__drizzle_migrations" (hash, created_at)
-    VALUES (${hash}, ${entry.when})
-  `)
-  console.log(`  ✓ stamped ${entry.tag}`)
+// Hash every file before opening the transaction: a missing or unreadable
+// .sql file should abort having written nothing, not roll a write back.
+const stamps = [...journal.entries]
+  .sort((a, b) => a.idx - b.idx)
+  .map((entry) => ({
+    tag: entry.tag,
+    when: entry.when,
+    hash: createHash('sha256')
+      .update(readFileSync(resolve(drizzleDir, `${entry.tag}.sql`)))
+      .digest('hex'),
+  }))
+
+// One transaction for the whole journal. Half a journal is the single state
+// this script must never leave behind — see the guard above for what it costs.
+await db.transaction(async (tx) => {
+  for (const stamp of stamps) {
+    await tx.execute(sql`
+      INSERT INTO "drizzle"."__drizzle_migrations" (hash, created_at)
+      VALUES (${stamp.hash}, ${stamp.when})
+    `)
+  }
+})
+
+for (const stamp of stamps) {
+  console.log(`  ✓ stamped ${stamp.tag}`)
 }
 
 console.log(

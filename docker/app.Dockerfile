@@ -25,7 +25,7 @@ COPY apps/cascadia/package.json ./apps/cascadia/
 # =============================================================================
 # Stage 2: Dependencies
 # =============================================================================
-FROM node:22-alpine AS deps
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS deps
 
 WORKDIR /app
 
@@ -40,7 +40,7 @@ RUN npm ci
 # =============================================================================
 # Stage 3: Builder
 # =============================================================================
-FROM node:22-alpine AS builder
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS builder
 
 WORKDIR /app
 
@@ -58,7 +58,7 @@ RUN npm run build:app -- "$APP"
 # =============================================================================
 # Stage 4: Production
 # =============================================================================
-FROM node:22-alpine AS production
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS production
 
 WORKDIR /app
 
@@ -73,6 +73,10 @@ COPY --from=manifests / ./
 # Production deps only — the server is pre-bundled (see build-server.mjs) so tsx
 # and other devDeps aren't needed at runtime. tsx + drizzle-kit are added back
 # as admin tools for running scripts/*.ts (seed, migrate, reset) via `docker exec`.
+# Lifecycle scripts stay off: no runtime dependency needs a postinstall (the
+# one native package, @node-rs/argon2, ships napi prebuilds). A dependency
+# that does need one fails at runtime with a missing binary, not at build
+# time. workers/node/Dockerfile carries the same policy.
 RUN npm ci --omit=dev --ignore-scripts && \
     npm install --no-save --no-package-lock --ignore-scripts tsx@^4 drizzle-kit@^0.31 && \
     npm cache clean --force

@@ -263,7 +263,7 @@ import { requireDesignAccess, requireBranchAccess } from '@/lib/auth/access'
 // Throws PermissionDeniedError if user cannot access this design
 await requireDesignAccess(userId, designId)
 
-// Throws NotFoundError or PermissionDeniedError
+// Throws PermissionDeniedError if the branch is missing or unreachable
 const { branch, designId } = await requireBranchAccess(userId, branchId)
 ```
 
@@ -492,9 +492,9 @@ therefore fails closed by default:
 | Certificate bound to one account       | A certificate is enrolled to exactly one user; a valid card cannot sign under another user's session                     |
 
 Deployment requirement: the proxy must overwrite the header on **every**
-request, and Cascadia must not be reachable except through that proxy. See
-[Advanced Auditing → Reverse proxy configuration](../features/advanced-auditing.md#reverse-proxy-configuration)
-for per-proxy examples.
+request, and Cascadia must not be reachable except through that proxy. The
+per-proxy examples are documented with the package that needs them, which is not
+part of this edition — see [Advanced Auditing](../features/advanced-auditing.md).
 
 ### Why the certificate is not re-challenged
 

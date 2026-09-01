@@ -22,6 +22,10 @@
  * 'running', so a worker that dies mid-execution wedges its row there
  * forever. See `sweepStaleRunningJobs`.
  *
+ * The loop also carries the one thing neither sweep can fix: the depth of the
+ * dead-letter queue, which nothing consumes and nothing bounds. See
+ * {@link checkDeadLetterDepth}.
+ *
  * One operational consequence worth knowing: Python-executed job types (CAD
  * conversion and generation) park their retries in the same table, so their
  * re-publishing also happens here, in the Node worker. If a deployment runs
@@ -32,6 +36,8 @@
 
 import { JobService } from './JobService'
 import { JobTypeRegistry } from './registry'
+import { RabbitMQClient } from './rabbitmq/client'
+import { RABBITMQ_CONFIG } from './rabbitmq/types'
 import type { JobTypeConfig } from './types'
 import { workerLogger } from '@/lib/logging/logger'
 
@@ -217,11 +223,18 @@ export async function sweepMaintenanceJobs(
  * (broker down, mid-restart) is caught per job: the row keeps the status it
  * had and the next tick retries it; one unreachable broker must not turn a
  * sweep into a crash.
+ *
+ * Rows whose type this process does not know are skipped before the publish
+ * rather than left to that catch: `requeueForRetry` throws for an
+ * unregistered type, and a foreign row stays due on every tick forever, so
+ * the catch alone spent a warning every 15 seconds on a row this process was
+ * never going to move. See {@link registeredTypeForSweep}.
  */
 export async function sweepRetryableJobs(): Promise<number> {
   const due = await JobService.getJobsForRetry()
   let requeued = 0
   for (const job of due) {
+    if (!registeredTypeForSweep(job, 'retry')) continue
     try {
       await JobService.requeueForRetry(job.id)
       requeued++
@@ -334,12 +347,148 @@ export async function sweepStaleRunningJobs(
 }
 
 /**
+ * The dead-letter depth at which this worker starts warning (env
+ * `DLQ_WARN_DEPTH`, default 100).
+ *
+ * A value that does not parse falls back to the default rather than being
+ * used as-is: every comparison against NaN is false, so a typo would mean
+ * "never warn" — the one answer an operator who set the variable cannot have
+ * intended. Raise it to something the queue will never reach to opt out
+ * deliberately.
+ *
+ * The empty string is one of those non-parsing values, and it is the one an
+ * operator actually produces: `DLQ_WARN_DEPTH=` in a `.env`, or a compose
+ * file interpolating a host variable that is unset. `Number('')` is 0, which
+ * is finite, so it has to be rejected before the parse rather than after.
+ */
+function dlqWarnDepth(): number {
+  const raw = process.env.DLQ_WARN_DEPTH
+  if (!raw) return 100
+  const configured = Number(raw)
+  return Number.isFinite(configured) ? configured : 100
+}
+
+/**
+ * How stale the cached dead-letter depth may be before a read refreshes it
+ * (env `DLQ_CHECK_MS`, default 30s).
+ *
+ * Unset, empty and unparseable all fall back to the default, for the reason
+ * given on {@link dlqWarnDepth} — and here 0 would be worse still, since a
+ * zero staleness window makes every `/health` read open a channel on the
+ * broker instead of answering from the cache.
+ */
+function dlqCheckMs(): number {
+  const raw = process.env.DLQ_CHECK_MS
+  if (!raw) return 30_000
+  const configured = Number(raw)
+  return Number.isFinite(configured) ? configured : 30_000
+}
+
+/** What the last check found — null until one has run, or when it failed. */
+let lastDeadLetterDepth: number | null = null
+/** When that check ran, so a stale read can start a fresh one. */
+let deadLetterCheckedAt = 0
+/** Whether a check is in flight, so two callers never open two channels. */
+let deadLetterRefreshing = false
+/** Whether the last known depth was above the threshold — the warn latch. */
+let deadLetterOverThreshold = false
+
+/**
+ * Read the dead-letter queue's depth, cache it for {@link deadLetterDepth},
+ * and warn when it crosses `warnDepth`.
+ *
+ * The dead-letter queue is where a poison message ends up: a body the Node
+ * worker cannot decode, and — since the Python CAD workers stopped acking
+ * what they could not parse — one of theirs too. Nothing consumes it and
+ * nothing bounds it, so a systematic producer bug fills it silently and the
+ * first symptom is a broker out of disk. Depth is the signal that turns that
+ * into something an operator can see; the bound itself is a broker policy,
+ * deliberately (see {@link RabbitMQClient.getQueueDepth} and
+ * docs/orchestration/configuration.md).
+ *
+ * The warning is edge-triggered, not level-triggered. A full dead-letter
+ * queue is a standing condition an operator drains by hand, and a line every
+ * check until they do would be a line every 30 seconds forever; the latch
+ * re-arms once the depth is back at or below the threshold, so a second fill
+ * warns again.
+ *
+ * Never throws — `getQueueDepth` answers an unreachable broker with null, and
+ * a failed check still stamps `deadLetterCheckedAt` so a broker that is down
+ * is asked on the cadence rather than on every health poll.
+ */
+export async function checkDeadLetterDepth(
+  warnDepth = dlqWarnDepth(),
+): Promise<number | null> {
+  deadLetterRefreshing = true
+  try {
+    const depth = await RabbitMQClient.getQueueDepth(RABBITMQ_CONFIG.DLQ_QUEUE)
+    lastDeadLetterDepth = depth
+    if (depth === null) return null
+
+    const over = depth > warnDepth
+    if (over !== deadLetterOverThreshold) {
+      deadLetterOverThreshold = over
+      const context = { queue: RABBITMQ_CONFIG.DLQ_QUEUE, depth, warnDepth }
+      if (over) {
+        workerLogger.warn(
+          context,
+          'Dead-letter queue is above its warning depth; these messages are jobs nothing will run until someone drains them',
+        )
+      } else {
+        workerLogger.info(
+          context,
+          'Dead-letter queue is back below its warning depth',
+        )
+      }
+    }
+    return depth
+  } finally {
+    deadLetterCheckedAt = Date.now()
+    deadLetterRefreshing = false
+  }
+}
+
+/**
+ * The last known dead-letter queue depth, for the worker's `/health`.
+ *
+ * Synchronous on purpose, and side-effecting on purpose. A health poll runs
+ * every few seconds in an orchestrator, and neither making it wait on a
+ * broker round-trip nor issuing a passive declare per poll is acceptable — so
+ * it reads whatever the last check found and, when that is older than
+ * `DLQ_CHECK_MS`, leaves a fresh one running for the next poll to pick up.
+ * The scheduler tick refreshes the same cache on the same cadence, so in a
+ * running worker this almost never has to start one itself.
+ *
+ * `null` means "not known yet, or the broker could not answer" — a monitor
+ * should read it as unknown, never as zero.
+ */
+export function deadLetterDepth(): number | null {
+  if (
+    !deadLetterRefreshing &&
+    Date.now() - deadLetterCheckedAt >= dlqCheckMs()
+  ) {
+    void checkDeadLetterDepth().catch((error: unknown) => {
+      workerLogger.warn({ err: error }, 'Dead-letter depth check failed')
+    })
+  }
+  return lastDeadLetterDepth
+}
+
+/** Drop the cached depth and re-arm the warn latch. Tests only. */
+export function resetDeadLetterDepthState(): void {
+  lastDeadLetterDepth = null
+  deadLetterCheckedAt = 0
+  deadLetterRefreshing = false
+  deadLetterOverThreshold = false
+}
+
+/**
  * Run the sweep every `intervalMs` (env `JOB_RETRY_SWEEP_MS`, default 15s)
  * until stopped. A tick that is still running when the next fires is not
  * stacked — the interval skips instead. The timer is unref'd so it never
  * keeps a shutting-down process alive.
  *
- * The same loop carries two slower cadences, each with its own last-checked
+ * The same loop carries three slower cadences, each with its own last-checked
  * stamp:
  *
  *  - The maintenance check (env `JOB_MAINTENANCE_SWEEP_MS`, default 10
@@ -349,10 +498,14 @@ export async function sweepStaleRunningJobs(
  *    each due tick reaps 'running' rows past their lease. It is far cheaper
  *    than the retry sweep's cadence would make it and nothing is urgent
  *    about it — the rows it finds have already been stranded for minutes.
+ *  - The dead-letter depth check (env `DLQ_CHECK_MS`, default 30 seconds):
+ *    each due tick reads the queue's depth for `/health` and warns when it
+ *    crosses `DLQ_WARN_DEPTH`. It publishes and reads nothing of the
+ *    database; see {@link checkDeadLetterDepth}.
  *
- * Both run on the first tick, so a fresh deployment gets its cleanup jobs
- * and recovers whatever the last deployment stranded without waiting out a
- * period.
+ * All three run on the first tick, so a fresh deployment gets its cleanup
+ * jobs and recovers whatever the last deployment stranded without waiting out
+ * a period.
  */
 export function startRetryScheduler(
   intervalMs = Number(process.env.JOB_RETRY_SWEEP_MS ?? 15_000),
@@ -360,10 +513,12 @@ export function startRetryScheduler(
     process.env.JOB_MAINTENANCE_SWEEP_MS ?? 10 * 60 * 1000,
   ),
   staleCheckMs = Number(process.env.JOB_STALE_SWEEP_MS ?? 60_000),
+  dlqCheckIntervalMs = dlqCheckMs(),
 ): RetrySchedulerHandle {
   let sweeping = false
   let lastMaintenanceCheck = 0
   let lastStaleCheck = 0
+  let lastDlqCheck = 0
   const timer = setInterval(() => {
     if (sweeping) return
     sweeping = true
@@ -372,9 +527,12 @@ export function startRetryScheduler(
     if (runMaintenance) lastMaintenanceCheck = Date.now()
     const runStale = Date.now() - lastStaleCheck >= staleCheckMs
     if (runStale) lastStaleCheck = Date.now()
+    const runDlq = Date.now() - lastDlqCheck >= dlqCheckIntervalMs
+    if (runDlq) lastDlqCheck = Date.now()
     void sweepRetryableJobs()
       .then(() => (runStale ? sweepStaleRunningJobs() : 0))
       .then(() => (runMaintenance ? sweepMaintenanceJobs() : 0))
+      .then(() => (runDlq ? checkDeadLetterDepth() : null))
       .catch((error: unknown) => {
         workerLogger.error({ err: error }, 'Retry sweep failed')
       })
@@ -385,7 +543,7 @@ export function startRetryScheduler(
   timer.unref()
 
   workerLogger.info(
-    { intervalMs, maintenanceCheckMs, staleCheckMs },
+    { intervalMs, maintenanceCheckMs, staleCheckMs, dlqCheckIntervalMs },
     'Retry scheduler started',
   )
   return {

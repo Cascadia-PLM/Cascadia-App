@@ -74,7 +74,7 @@ export function ImportProgressStep({
           costCurrency: row.mappedData.costCurrency as string | undefined,
           leadTimeDays: row.mappedData.leadTimeDays as number | undefined,
           attributes: row.mappedData.attributes as
-            Record<string, string> | undefined,
+            Record<string, unknown> | undefined,
         }))
 
         // Prepare BOM relationships for API
@@ -106,7 +106,7 @@ export function ImportProgressStep({
           fileName: row.mappedData.fileName as string | undefined,
           mimeType: row.mappedData.mimeType as string | undefined,
           attributes: row.mappedData.attributes as
-            Record<string, string> | undefined,
+            Record<string, unknown> | undefined,
         }))
 
         requestBody = {
@@ -128,7 +128,7 @@ export function ImportProgressStep({
           resolution: row.mappedData.resolution as string | undefined,
           rootCause: row.mappedData.rootCause as string | undefined,
           attributes: row.mappedData.attributes as
-            Record<string, string> | undefined,
+            Record<string, unknown> | undefined,
         }))
 
         requestBody = {

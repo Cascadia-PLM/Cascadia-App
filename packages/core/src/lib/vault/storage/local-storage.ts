@@ -6,6 +6,7 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 import { Readable, pipeline } from 'node:stream'
 
+import { NotFoundError, ValidationError } from '../../errors'
 import type { VaultStorage } from './types'
 
 const pipelineAsync = promisify(pipeline)
@@ -34,6 +35,10 @@ export class LocalFileStorage implements VaultStorage {
   /**
    * Get absolute path from relative vault path
    * Validates path to prevent directory traversal attacks
+   *
+   * Both guards throw `ValidationError`, so a crafted path is a 400 the
+   * caller can act on rather than a 500 that reads as a server fault — and
+   * so callers (and tests) can match the refusal by class.
    */
   private getAbsolutePath(relativePath: string): string {
     // Normalize and resolve the path
@@ -41,14 +46,14 @@ export class LocalFileStorage implements VaultStorage {
 
     // Prevent directory traversal
     if (normalized.includes('..') || path.isAbsolute(normalized)) {
-      throw new Error('Invalid path: directory traversal detected')
+      throw new ValidationError('Invalid path: directory traversal detected')
     }
 
     const absolutePath = path.join(this.rootPath, normalized)
 
     // Double-check that the resolved path is within the vault root
     if (!absolutePath.startsWith(this.rootPath)) {
-      throw new Error('Invalid path: outside vault root')
+      throw new ValidationError('Invalid path: outside vault root')
     }
 
     return absolutePath
@@ -107,7 +112,7 @@ export class LocalFileStorage implements VaultStorage {
     const absolutePath = this.getAbsolutePath(relativePath)
 
     if (!(await this.exists(relativePath))) {
-      throw new Error(`File not found: ${relativePath}`)
+      throw new NotFoundError('File', relativePath, { operation: 'retrieve' })
     }
 
     return await fs.promises.readFile(absolutePath)
@@ -117,7 +122,9 @@ export class LocalFileStorage implements VaultStorage {
     const absolutePath = this.getAbsolutePath(relativePath)
 
     if (!(await this.exists(relativePath))) {
-      throw new Error(`File not found: ${relativePath}`)
+      throw new NotFoundError('File', relativePath, {
+        operation: 'createReadStream',
+      })
     }
 
     const nodeStream = fs.createReadStream(absolutePath)
@@ -167,7 +174,7 @@ export class LocalFileStorage implements VaultStorage {
     const absolutePath = this.getAbsolutePath(relativePath)
 
     if (!(await this.exists(relativePath))) {
-      throw new Error(`File not found: ${relativePath}`)
+      throw new NotFoundError('File', relativePath, { operation: 'getSize' })
     }
 
     const stats = await fs.promises.stat(absolutePath)

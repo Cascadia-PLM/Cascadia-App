@@ -4,6 +4,83 @@
 import { z } from 'zod'
 import type { ComponentType } from 'react'
 
+/**
+ * A JSON document value - what a `jsonb` column can actually hold.
+ *
+ * `items.attributes` is `jsonb` with a GIN index over it, and `baseItemSchema`
+ * below is the contract in front of it. The two used to disagree: the column
+ * took arbitrary JSON while the schema narrowed it to `Record<string, string>`,
+ * and every create validates against the schema. So each writer with structure
+ * to store hit the wall independently and worked around it differently -
+ * design-engine materialization `JSON.stringify`-ed its snapshots, the CSV
+ * importer coerced with `String()`, and the SysML import route cast past the
+ * schema and got a 400 at runtime for any element carrying a non-string
+ * property. The column is authoritative; the schema now matches it.
+ *
+ * This names the runtime contract; it is deliberately NOT the type of
+ * `BaseItem.attributes` (see the note there), and it is a poor fit for
+ * anything assembled out of typed rows - an `interface` has no implicit index
+ * signature, so it is not assignable here however JSON-shaped its values are.
+ * Reach for it where a value is built from scalars, as `import/mapper.ts`
+ * does; elsewhere `unknown` is the type that matches the column.
+ */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Array<JsonValue>
+  | { [key: string]: JsonValue }
+
+function isJsonValue(value: unknown): boolean {
+  if (value === null) return true
+  switch (typeof value) {
+    case 'string':
+    case 'boolean':
+      return true
+    // NaN and +/-Infinity have no JSON encoding. `JSON.stringify` turns them
+    // into `null` on the way to Postgres, which would land in the column as a
+    // value nobody wrote.
+    case 'number':
+      return Number.isFinite(value)
+    case 'object': {
+      if (Array.isArray(value)) return value.every(isJsonValue)
+      // Plain objects only. A Date, Map, Set or class instance is 'object'
+      // too, and `JSON.stringify` reshapes each one on the way to Postgres
+      // without complaining - a Date into a string through its `toJSON`, a
+      // Map into `{}` - so the column ends up holding something nobody wrote.
+      // A caller that means to store a timestamp should format it (see
+      // `toAttributeValue` in lib/import/mapper.ts).
+      const proto: unknown = Object.getPrototypeOf(value)
+      if (proto !== Object.prototype && proto !== null) return false
+      return Object.values(value).every(isJsonValue)
+    }
+    // undefined, function, symbol, bigint: `JSON.stringify` drops the key,
+    // reshapes it, or throws.
+    default:
+      return false
+  }
+}
+
+/**
+ * Validates that a value is a JSON document, without narrowing its type.
+ *
+ * Hand-written rather than the obvious `z.lazy` union over `JsonValue`: a
+ * recursive type here propagates into `BaseItem.attributes`, which the
+ * thirteen item type schemas `.extend()` and several hundred assignments
+ * check against. Measured, that exhausts a 10 GB `tsc` heap - so the static
+ * type stays flat and the JSON-ness is enforced at runtime instead. `unknown`
+ * is the honest static type for arbitrary JSON anyway: it forces every reader
+ * to narrow before use, which is the point.
+ */
+export const jsonValueSchema: z.ZodType<unknown> = z.custom<unknown>(
+  isJsonValue,
+  {
+    message:
+      'Expected a JSON value (string, finite number, boolean, null, array, or object)',
+  },
+)
+
 // Base item interface matching database schema
 export interface BaseItem {
   id?: string
@@ -21,7 +98,9 @@ export interface BaseItem {
   modifiedBy?: string
   lockedBy?: string | null
   lockedAt?: Date | null
-  attributes?: Record<string, string>
+  // Arbitrary JSON - the `attributes` jsonb column verbatim. Typed `unknown`
+  // rather than a recursive JSON value type on purpose; see `jsonValueSchema`.
+  attributes?: Record<string, unknown>
   usageOf?: string // If set, this is a usage referencing a definition (SysML v2 pattern)
 }
 
@@ -83,7 +162,10 @@ export const baseItemSchema = z.object({
   modifiedBy: z.string().uuid().optional(),
   lockedBy: z.string().uuid().nullable().optional(),
   lockedAt: z.date().nullable().optional(),
-  attributes: z.record(z.string(), z.string()).optional(),
+  // Free-form metadata, stored as-is in the `attributes` jsonb column. Any
+  // JSON document is valid here - see `JsonValue` above for why the schema
+  // matches the column rather than narrowing it.
+  attributes: z.record(z.string(), jsonValueSchema).optional(),
   usageOf: z.string().uuid().optional(), // Reference to definition item (SysML v2 pattern)
 })
 

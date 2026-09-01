@@ -6,6 +6,22 @@ import { Label } from './Label'
 import type { ReactElement, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
+/**
+ * The id of the first child that brings its own. A label points at one
+ * control, so the first form control wins when several are nested here.
+ */
+function findChildId(children: ReactNode): string | undefined {
+  for (const child of Children.toArray(children)) {
+    if (isValidElement(child)) {
+      const { id } = (child as ReactElement<{ id?: string }>).props
+      if (id) {
+        return id
+      }
+    }
+  }
+  return undefined
+}
+
 export interface FormFieldProps {
   label?: string
   error?: string
@@ -27,7 +43,10 @@ export function FormField({
   id: providedId,
 }: FormFieldProps) {
   const generatedId = useId()
-  const fieldId = providedId || generatedId
+  // A child that already carries an id keeps it (the clone below only fills
+  // one in when it is missing), so the label and the described-by ids have to
+  // follow that id rather than the generated one they would never match.
+  const fieldId = providedId ?? findChildId(children) ?? generatedId
   const errorId = `${fieldId}-error`
   const helpId = `${fieldId}-help`
 

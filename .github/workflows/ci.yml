@@ -6,12 +6,27 @@ on:
   pull_request:
     branches: [main]
 
-# Cancel superseded PR runs; never cancel a main run. Each merge commit is a
-# distinct state that needs its own verdict — on 2026-08-05 two merges landed 14
-# seconds apart, and a blanket cancel-in-progress would have left the first one
-# permanently unjudged.
+# The token reads this repository and nothing else. Nothing in this workflow
+# writes: every job checks out, runs npm scripts and uploads artifacts, and
+# none of that needs a scope beyond reads. A job that later does — posting a
+# pull-request comment, say — widens at job level, so the extra scope sits next
+# to the step that asked for it and expires with it.
+permissions:
+  contents: read
+
+# Cancel superseded PR runs; never cancel or drop a main run. Each merge commit
+# is a distinct state that needs its own verdict — on 2026-08-05 two merges
+# landed 14 seconds apart, and a blanket cancel-in-progress would have left the
+# first one permanently unjudged. That guarantee needs more than a false
+# cancel-in-progress: GitHub queues at most one *pending* run per concurrency
+# group, so with a ref-keyed group a third push landing while one run is
+# executing and another is pending gets its pending run silently dropped, not
+# queued. Keying push runs by SHA gives every push its own group so none can
+# supersede another; PR runs stay keyed by ref so a new push still collapses
+# the old one. `github.ref` is always set on a pull_request event, so the
+# `a && b || c` short-circuit here can't fall through the falsy-middle trap.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -55,12 +70,12 @@ jobs:
       - name: Check license headers
         run: npm run license:check
 
-      # No dependency may oblige us to publish source we sell. The same closure
-      # ships under two licences at once — every third-party package is declared
-      # in the root manifest, and the publish pipeline keeps the public
-      # manifest's dependencies tracking it exactly — so a strong-copyleft
-      # dependency added for either edition lands in both. Reads the lockfile,
-      # so it needs no install of its own and cannot drift from what ships.
+      # No dependency may oblige us to publish source we sell. The gate is
+      # edition-blind by construction: its closure comes from the lockfile,
+      # which spans every workspace, so which manifest declares a package never
+      # changes the verdict and a strong-copyleft addition is caught wherever it
+      # was added. Reads the lockfile, so it needs no install of its own and
+      # cannot drift from what ships.
       - name: Check third-party licenses
         run: npm run license:thirdparty
 
@@ -154,9 +169,10 @@ jobs:
   #
   # An empty database is also the one thing a data-dependent migration cannot
   # be judged on: a backfill UPDATE matches nothing and a guard that is meant to
-  # abort has nothing to abort on, so both are green here for the wrong reason.
-  # The last step therefore replays the journal against *seeded* databases —
-  # see scripts/check-migration-backfills.mjs.
+  # abort — an ADD CONSTRAINT, a SET NOT NULL, a CREATE UNIQUE INDEX — has
+  # nothing to abort on, so both are green here for the wrong reason. The last
+  # step therefore replays the journal against *seeded* databases — see
+  # scripts/check-migration-backfills.mjs, which classifies both families.
   migrations:
     name: Migrations Apply
     runs-on: ubuntu-latest
@@ -233,8 +249,9 @@ jobs:
       # fresh-install path. This is the upgrade path: stage the journal to the
       # tag before the one under test, seed the shape of data that tag's SQL
       # exists to handle, then apply it and assert what it did. It also fails
-      # when a new migration touches rows and registers no scenario, so the gap
-      # cannot reopen on the next backfill.
+      # when a new migration's outcome depends on rows — whether it writes them
+      # or merely asks Postgres to validate them — and registers no scenario,
+      # so the gap cannot reopen on the next backfill or the next constraint.
       #
       # No CASCADIA_APP prefix: the script resolves the edition itself, so this
       # step is correct in the published tree too, where only apps/cascadia
@@ -310,7 +327,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.14'
 
       - name: Install Python worker test dependencies
         run: pip install -r workers/py-common/requirements-dev.txt
@@ -470,6 +487,51 @@ jobs:
           POSTGRES_PASSWORD: ci-validation-only
           PGADMIN_PASSWORD: ci-validation-only
         run: docker compose -f docker-compose.yml config --quiet
+
+      # The five deployment templates under docs/orchestration are the files an
+      # operator copies to stand Cascadia up, and until now nothing parsed them:
+      # a service or image name renamed in the repo's own compose and not in
+      # theirs stays green here and fails on someone else's first
+      # `docker compose up`. Each declares its own required variables with `:?`
+      # and each step supplies exactly those, same dummy convention as above.
+      - name: Validate single-server compose
+        env:
+          POSTGRES_PASSWORD: ci-validation-only
+        run: docker compose -f docs/orchestration/deployments/single-server/docker-compose.yml config --quiet
+
+      - name: Validate cloud-database compose
+        env:
+          DATABASE_URL: ci-validation-only
+        run: docker compose -f docs/orchestration/deployments/cloud-database/docker-compose.yml config --quiet
+
+      - name: Validate distributed infrastructure compose
+        env:
+          POSTGRES_PASSWORD: ci-validation-only
+          RABBITMQ_PASSWORD: ci-validation-only
+          MINIO_PASSWORD: ci-validation-only
+        run: docker compose -f docs/orchestration/deployments/distributed/infrastructure/docker-compose.yml config --quiet
+
+      - name: Validate distributed app compose
+        env:
+          DATABASE_URL: ci-validation-only
+          S3_ENDPOINT: ci-validation-only
+          S3_ACCESS_KEY: ci-validation-only
+          S3_SECRET_KEY: ci-validation-only
+          RABBITMQ_URL: ci-validation-only
+        run: docker compose -f docs/orchestration/deployments/distributed/app/docker-compose.yml config --quiet
+
+      # `deploy.replicas` here reads a variable with a default, so it needs no
+      # dummy of its own. An older compose on the runner may warn about that key
+      # and still exit zero — `--quiet` suppresses the rendered document, not
+      # warnings, so the exit code is the whole verdict and is left to fail.
+      - name: Validate distributed jobs compose
+        env:
+          DATABASE_URL: ci-validation-only
+          RABBITMQ_URL: ci-validation-only
+          S3_ENDPOINT: ci-validation-only
+          S3_ACCESS_KEY: ci-validation-only
+          S3_SECRET_KEY: ci-validation-only
+        run: docker compose -f docs/orchestration/deployments/distributed/jobs/docker-compose.yml config --quiet
 
   docker-build-smoke:
     name: Docker Build Smoke

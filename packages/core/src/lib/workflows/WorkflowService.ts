@@ -1333,7 +1333,9 @@ export class WorkflowService {
     }
     return {
       claimed: false,
-      error: 'A release of this workflow is already in progress',
+      error:
+        'A release of this workflow is already in progress (claims expire after ' +
+        `${this.RELEASE_CLAIM_TIMEOUT_MS / 60_000} minutes if the releasing process dies)`,
     }
   }
 
@@ -1434,7 +1436,9 @@ export class WorkflowService {
         success: false,
         fromState: instance.currentState,
         toState: toStateId,
-        error: 'A release of this workflow is already in progress',
+        error:
+          'A release of this workflow is already in progress (claims expire after ' +
+          `${WorkflowService.RELEASE_CLAIM_TIMEOUT_MS / 60_000} minutes if the releasing process dies)`,
       }
     }
 

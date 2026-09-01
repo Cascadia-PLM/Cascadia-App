@@ -119,6 +119,25 @@ export const items = pgTable('items', {/* columns */}, (table) => [
 ])
 ```
 
+**Use a partial unique index — `uniqueIndex(name).on(...).where(...)` —
+when uniqueness should hold only over a subset of rows.**
+`changeOrderAffectedItems` keys one scope row per master per change order,
+but a row can legitimately carry no master (`changeAction: 'create'` records
+an item that doesn't exist yet), so the index excludes those rows instead of
+uniquing on a value several rows share on purpose:
+
+```typescript
+export const changeOrderAffectedItems = pgTable(
+  'change_order_affected_items',
+  {/* columns */},
+  (table) => [
+    uniqueIndex('uq_coai_change_order_master')
+      .on(table.changeOrderId, table.affectedItemMasterId)
+      .where(sql`${table.affectedItemMasterId} IS NOT NULL`),
+  ],
+)
+```
+
 ### Soft Delete Pattern
 
 Items use soft deletes via `isDeleted`, `deletedAt`, and `deletedBy` columns. Use the `notDeleted()` filter helper:
@@ -219,6 +238,15 @@ await db
   })
 ```
 
+**Only `onConflictDoUpdate` has a `target`/`set` split with its own
+`targetWhere`.** `onConflictDoNothing` takes a single `where`, which must
+restate the arbiter index's own predicate when the arbiter is a partial
+index — get the key name wrong (e.g. write `targetWhere` on
+`onConflictDoNothing`) and Drizzle silently drops it rather than rejecting the
+call, so the predicate just vanishes from the generated SQL with no error.
+Omit the predicate outright and Postgres does reject the statement ("no
+unique or exclusion constraint matching the ON CONFLICT specification").
+
 ### Delete
 
 ```typescript
@@ -316,6 +344,26 @@ generates belongs to that composition.
 3. **Keep seeds truthful**: if the change affects seeded data shapes, update
    `scripts/seed-minimal.ts` in the same commit — fresh databases are built
    from push + seeds, so seeds are the source of correct data
+
+**`db:push` does not rewrite an index whose only change is its predicate.**
+`drizzle-kit push` diffs indexes by name, columns, and uniqueness — not by
+`WHERE` clause — so narrowing (or widening) a unique index's predicate on a
+database that already has the old index leaves the stale definition in place,
+silently. CI and released installs never see this: CI provisions a fresh
+database per run (which creates the new form directly), and released installs
+upgrade via `db:migrate`, whose migration SQL carries an explicit
+`DROP INDEX`/`CREATE INDEX` pair. Only a long-lived dev or test database can be
+stuck on the old index.
+
+If a predicate-only index change doesn't seem to take effect after `db:push`,
+apply the DDL by hand instead of chasing a code bug — for example, narrowing a
+unique index to a partial one:
+
+```sql
+DROP INDEX your_table_your_column_idx;
+CREATE UNIQUE INDEX your_table_your_column_idx
+  ON your_table (your_column) WHERE <new predicate>;
+```
 
 ### Adding a Column
 

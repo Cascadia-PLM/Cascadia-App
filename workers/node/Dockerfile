@@ -25,7 +25,7 @@ COPY apps/cascadia/package.json ./apps/cascadia/
 # =============================================================================
 # Stage 2: Dependencies
 # =============================================================================
-FROM node:22-alpine AS deps
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS deps
 
 WORKDIR /app
 
@@ -40,7 +40,7 @@ RUN npm ci
 # =============================================================================
 # Stage 3: Builder
 # =============================================================================
-FROM node:22-alpine AS builder
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS builder
 
 WORKDIR /app
 
@@ -57,7 +57,7 @@ RUN npm run build:app -- "$APP"
 # =============================================================================
 # Stage 4: Production
 # =============================================================================
-FROM node:22-alpine AS production
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS production
 
 WORKDIR /app
 
@@ -76,8 +76,13 @@ RUN apk add --no-cache \
 # are.
 COPY --from=manifests / ./
 
-# Install only production dependencies
-RUN npm ci --omit=dev && \
+# Production deps only, lifecycle scripts off — the same policy as
+# docker/app.Dockerfile. Nothing in the runtime tree needs a postinstall:
+# @node-rs/argon2 is the only native runtime dependency and ships napi
+# prebuilds, and `postgres` is pure JS. A dependency that does need one
+# (sharp, say) fails at *runtime* with a missing-binary error, not at build
+# time — if that happens, drop --ignore-scripts from both images, not one.
+RUN npm ci --omit=dev --ignore-scripts && \
     npm cache clean --force
 
 # Copy built application

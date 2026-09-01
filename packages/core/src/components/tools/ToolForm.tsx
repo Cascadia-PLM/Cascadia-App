@@ -47,7 +47,7 @@ export function ToolForm({
   const [capabilities, setCapabilities] = useState<Record<string, unknown>>(
     tool?.capabilities ?? {},
   )
-  const [attributes, setAttributes] = useState<Record<string, string>>(
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
     tool?.attributes ?? {},
   )
 

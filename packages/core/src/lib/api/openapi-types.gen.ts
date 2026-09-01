@@ -9190,7 +9190,7 @@ export interface operations {
                     designId: string;
                     rows: {
                         attributes?: {
-                            [key: string]: string;
+                            [key: string]: unknown;
                         };
                         description?: string;
                         /** @enum {string} */
@@ -9227,7 +9227,7 @@ export interface operations {
                     programId?: string;
                     rows: {
                         attributes?: {
-                            [key: string]: string;
+                            [key: string]: unknown;
                         };
                         /** @enum {string} */
                         category?: "Design" | "Manufacturing" | "Quality" | "Customer" | "Safety" | "Other";
@@ -9279,7 +9279,7 @@ export interface operations {
                     designId: string;
                     rows: {
                         attributes?: {
-                            [key: string]: string;
+                            [key: string]: unknown;
                         };
                         cost?: string;
                         costCurrency?: string;
@@ -9458,12 +9458,420 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** Format: uuid */
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Format: uuid
+                     * @description Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.
+                     */
                     branchId?: string;
+                    /** @description Message for the commit the branch write produces. Ignored without `branchId`. Defaults to "Created <itemType> <itemNumber>". */
                     commitMessage?: string;
-                    itemType: string;
-                } & {
-                    [key: string]: unknown;
+                    cost?: string;
+                    /** @default USD */
+                    costCurrency?: string;
+                    description?: string;
+                    /** Format: uuid */
+                    designId: string;
+                    itemNumber?: string;
+                    /** @constant */
+                    itemType: "Part";
+                    leadTimeDays?: number;
+                    material?: string;
+                    name?: string;
+                    /** @enum {string} */
+                    partType?: "Manufacture" | "Purchase" | "Software" | "Phantom";
+                    revision?: string;
+                    state?: string;
+                    /** @enum {string} */
+                    trackingMode?: "none" | "lot" | "serial";
+                    /** Format: uuid */
+                    usageOf?: string;
+                    weight?: string;
+                    /** @default kg */
+                    weightUnit?: string;
+                } | {
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Format: uuid
+                     * @description Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.
+                     */
+                    branchId?: string;
+                    /** @description Message for the commit the branch write produces. Ignored without `branchId`. Defaults to "Created <itemType> <itemNumber>". */
+                    commitMessage?: string;
+                    description?: string;
+                    /** Format: uuid */
+                    designId: string;
+                    /** Format: uuid */
+                    fileId?: string;
+                    fileName?: string;
+                    fileSize?: number;
+                    itemNumber?: string;
+                    /** @constant */
+                    itemType: "Document";
+                    mimeType?: string;
+                    name?: string;
+                    revision?: string;
+                    state?: string;
+                    storagePath?: string;
+                    /** Format: uuid */
+                    usageOf?: string;
+                } | {
+                    acceptanceCriteria?: string;
+                    /** Format: uuid */
+                    allocatedDesignId?: string;
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Format: uuid
+                     * @description Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.
+                     */
+                    branchId?: string;
+                    category?: string;
+                    /** @description Message for the commit the branch write produces. Ignored without `branchId`. Defaults to "Created <itemType> <itemNumber>". */
+                    commitMessage?: string;
+                    description?: string;
+                    /** Format: uuid */
+                    designId: string;
+                    itemNumber?: string;
+                    /** @constant */
+                    itemType: "Requirement";
+                    name?: string;
+                    /** Format: uuid */
+                    parentRequirementId?: string;
+                    /** @enum {string} */
+                    priority?: "MustHave" | "ShouldHave" | "CouldHave" | "WontHave";
+                    revision?: string;
+                    source?: string;
+                    state?: string;
+                    /** @enum {string} */
+                    type?: "Functional" | "Non-Functional" | "Performance" | "Security" | "Usability" | "Business";
+                    /** Format: uuid */
+                    usageOf?: string;
+                    /** @enum {string} */
+                    verificationMethod?: "Analysis" | "Inspection" | "Demonstration" | "Test" | "Documentation";
+                    /** @enum {string} */
+                    verificationStatus?: "NotStarted" | "InProgress" | "Passed" | "Failed" | "Waived";
+                } | {
+                    actualHours?: string;
+                    /** Format: uuid */
+                    assignee?: string;
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Format: uuid
+                     * @description Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.
+                     */
+                    branchId?: string;
+                    /** @description Message for the commit the branch write produces. Ignored without `branchId`. Defaults to "Created <itemType> <itemNumber>". */
+                    commitMessage?: string;
+                    description?: string;
+                    /** Format: uuid */
+                    designId?: string;
+                    dueDate?: string;
+                    estimatedHours?: string;
+                    itemNumber?: string;
+                    /** @constant */
+                    itemType: "Task";
+                    name?: string;
+                    /** Format: uuid */
+                    parentTaskId?: string;
+                    /**
+                     * @default Medium
+                     * @enum {string}
+                     */
+                    priority?: "Low" | "Medium" | "High" | "Critical";
+                    /** Format: uuid */
+                    programId?: string;
+                    revision?: string;
+                    state?: string;
+                    tags?: string[];
+                    /** Format: uuid */
+                    usageOf?: string;
+                } | {
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Format: uuid
+                     * @description Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.
+                     */
+                    branchId?: string;
+                    /** @description Message for the commit the branch write produces. Ignored without `branchId`. Defaults to "Created <itemType> <itemNumber>". */
+                    commitMessage?: string;
+                    /** Format: uuid */
+                    designId: string;
+                    entryCriteria?: string;
+                    environment?: string;
+                    exitCriteria?: string;
+                    itemNumber?: string;
+                    /** @constant */
+                    itemType: "TestPlan";
+                    name?: string;
+                    revision?: string;
+                    scope?: string;
+                    state?: string;
+                    /** Format: uuid */
+                    usageOf?: string;
+                } | {
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Format: uuid
+                     * @description Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.
+                     */
+                    branchId?: string;
+                    /** @description Message for the commit the branch write produces. Ignored without `branchId`. Defaults to "Created <itemType> <itemNumber>". */
+                    commitMessage?: string;
+                    /** Format: uuid */
+                    designId: string;
+                    environment?: string;
+                    /** @enum {string} */
+                    executionStatus?: "NotRun" | "Passed" | "Failed" | "Blocked";
+                    itemNumber?: string;
+                    /** @constant */
+                    itemType: "TestCase";
+                    /** Format: date-time */
+                    lastExecutedAt?: string;
+                    /** Format: uuid */
+                    lastExecutedBy?: string;
+                    name?: string;
+                    preconditions?: string;
+                    revision?: string;
+                    state?: string;
+                    steps?: {
+                        action: string;
+                        expectedResult: string;
+                        stepNumber: number;
+                    }[];
+                    /** Format: uuid */
+                    testPlanId?: string;
+                    /** @enum {string} */
+                    testType?: "Unit" | "Integration" | "System" | "Acceptance";
+                    /** Format: uuid */
+                    usageOf?: string;
+                } | {
+                    affectedItemIds?: string[];
+                    /** Format: uuid */
+                    assignedTo?: string;
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Format: uuid
+                     * @description Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.
+                     */
+                    branchId?: string;
+                    /** @enum {string} */
+                    category?: "Design" | "Manufacturing" | "Quality" | "Customer" | "Safety" | "Other";
+                    /** @description Message for the commit the branch write produces. Ignored without `branchId`. Defaults to "Created <itemType> <itemNumber>". */
+                    commitMessage?: string;
+                    description?: string;
+                    /** Format: uuid */
+                    designId?: string;
+                    designIds?: string[];
+                    itemNumber?: string;
+                    /** @constant */
+                    itemType: "Issue";
+                    name?: string;
+                    /**
+                     * @default Medium
+                     * @enum {string}
+                     */
+                    priority?: "Critical" | "High" | "Medium" | "Low";
+                    /** Format: uuid */
+                    programId?: string;
+                    /** Format: uuid */
+                    reportedBy?: string;
+                    reportedDate?: string;
+                    resolution?: string;
+                    resolvedDate?: string;
+                    revision?: string;
+                    rootCause?: string;
+                    /**
+                     * @default Medium
+                     * @enum {string}
+                     */
+                    severity?: "Critical" | "High" | "Medium" | "Low";
+                    state?: string;
+                    /** Format: uuid */
+                    usageOf?: string;
+                } | {
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Format: uuid
+                     * @description Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.
+                     */
+                    branchId?: string;
+                    /** @description Message for the commit the branch write produces. Ignored without `branchId`. Defaults to "Created <itemType> <itemNumber>". */
+                    commitMessage?: string;
+                    description?: string;
+                    /** Format: uuid */
+                    designId?: string;
+                    /** @enum {string} */
+                    difficulty?: "Easy" | "Medium" | "Hard";
+                    estimatedTime?: number;
+                    itemNumber?: string;
+                    /** @constant */
+                    itemType: "WorkInstruction";
+                    name?: string;
+                    /** Format: uuid */
+                    outputPartId: string;
+                    requiredTools?: string;
+                    revision?: string;
+                    safetyNotes?: string;
+                    state?: string;
+                    /** Format: uuid */
+                    usageOf?: string;
+                } | {
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Format: uuid
+                     * @description Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.
+                     */
+                    branchId?: string;
+                    buildArtifactFileId?: string | null;
+                    /** @description Message for the commit the branch write produces. Ignored without `branchId`. Defaults to "Created <itemType> <itemNumber>". */
+                    commitMessage?: string;
+                    description?: string;
+                    /** Format: uuid */
+                    designId: string;
+                    draftManifestId?: string | null;
+                    itemNumber?: string;
+                    /** @constant */
+                    itemType: "Software";
+                    manifestId?: string | null;
+                    name?: string;
+                    revision?: string;
+                    /** @enum {string} */
+                    softwareType?: "firmware" | "application" | "library" | "configuration" | "fpga";
+                    /**
+                     * @default internal
+                     * @enum {string}
+                     */
+                    sourceMode?: "internal" | "external";
+                    state?: string;
+                    targetHardware?: string;
+                    toolchain?: string;
+                    /** Format: uuid */
+                    usageOf?: string;
+                    version?: string;
+                } | {
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Format: uuid
+                     * @description Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.
+                     */
+                    branchId?: string;
+                    capabilities?: {
+                        [key: string]: unknown;
+                    };
+                    /** @description Message for the commit the branch write produces. Ignored without `branchId`. Defaults to "Created <itemType> <itemNumber>". */
+                    commitMessage?: string;
+                    /** Format: uuid */
+                    designId?: string;
+                    itemNumber?: string;
+                    /** @constant */
+                    itemType: "Tool";
+                    location?: string;
+                    manufacturer?: string;
+                    model?: string;
+                    name?: string;
+                    notes?: string;
+                    revision?: string;
+                    state?: string;
+                    toolSubtype: string;
+                    /** @enum {string} */
+                    toolType: "manufacturing" | "quality" | "utility";
+                    /** Format: uuid */
+                    usageOf?: string;
+                } | {
+                    /** Format: uuid */
+                    asBuiltItemId?: string;
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Format: uuid
+                     * @description Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.
+                     */
+                    branchId?: string;
+                    /** @description Message for the commit the branch write produces. Ignored without `branchId`. Defaults to "Created <itemType> <itemNumber>". */
+                    commitMessage?: string;
+                    /** Format: uuid */
+                    designId?: string;
+                    erpRef?: string;
+                    /** @enum {string} */
+                    instanceKind: "unit" | "lot";
+                    itemNumber?: string;
+                    /** @constant */
+                    itemType: "PhysicalPart";
+                    lotNumber?: string;
+                    /** Format: uuid */
+                    manufacturerPartId?: string;
+                    name?: string;
+                    notes?: string;
+                    /** Format: uuid */
+                    partMasterId: string;
+                    /** Format: uuid */
+                    producingWorkOrderId?: string;
+                    revision?: string;
+                    serialNumber?: string;
+                    state?: string;
+                    /** Format: uuid */
+                    usageOf?: string;
+                } | {
+                    /** @default [] */
+                    assignedTo?: string[];
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Format: uuid
+                     * @description Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.
+                     */
+                    branchId?: string;
+                    /** @description Message for the commit the branch write produces. Ignored without `branchId`. Defaults to "Created <itemType> <itemNumber>". */
+                    commitMessage?: string;
+                    completedAt?: (string) | null;
+                    customerOrder?: string | null;
+                    /** Format: uuid */
+                    designId?: string;
+                    dueDate?: (string) | null;
+                    itemNumber?: string;
+                    /** @constant */
+                    itemType: "WorkOrder";
+                    name?: string;
+                    notes?: string | null;
+                    partId?: string | null;
+                    /**
+                     * @default Normal
+                     * @enum {string}
+                     */
+                    priority?: "Low" | "Normal" | "High" | "Urgent";
+                    programId?: string | null;
+                    /** @default 1 */
+                    quantity?: number;
+                    /** @default 0 */
+                    quantityCompleted?: number;
+                    /** @default false */
+                    requiresSignOff?: boolean;
+                    revision?: string;
+                    state?: string;
+                    /** Format: uuid */
+                    usageOf?: string;
                 };
             };
         };
@@ -11742,8 +12150,20 @@ export interface operations {
             content: {
                 "application/json": {
                     relationships: {
-                        [key: string]: unknown;
+                        findNumber?: number;
+                        metadata?: {
+                            [key: string]: unknown;
+                        };
+                        quantity?: number | string;
+                        referenceDesignator?: string;
+                        /** @description e.g. `BOM`, `Document`, `Satisfies`, `Consumes` */
+                        relationshipType: string;
+                        /** Format: uuid */
+                        sourceId: string;
+                        /** Format: uuid */
+                        targetId: string;
                     }[];
+                    /** @description Clear the existing edges of every source that has a line in this batch before inserting. Without it, an edge already stored is counted in `skipped` and left alone. */
                     replaceExisting?: boolean;
                 };
             };

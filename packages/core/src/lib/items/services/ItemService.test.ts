@@ -284,6 +284,60 @@ describe('ItemService', () => {
       ).rejects.toThrow(NotFoundError)
     })
 
+    // `items.attributes` is jsonb and `baseItemSchema` matches it, so whatever
+    // a caller puts there comes back unchanged. It narrowed to
+    // `Record<string, string>` once, which made a catalog snapshot or a SysML
+    // element carrying a numeric property a validation failure rather than
+    // data - and left three separate encode-on-the-way-in workarounds behind.
+    it('round-trips a structured attributes document through create', async () => {
+      const attributes = {
+        text: 'anodized',
+        count: 12,
+        ratio: 0.5,
+        flag: true,
+        absent: null,
+        list: [1, 'two', { three: false }],
+        nested: { supplier: { name: 'Acme', leadTimeDays: 30 } },
+      }
+
+      const created = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-ATTRS`,
+          revision: 'A',
+          name: 'Structured attributes',
+          partType: 'Manufacture',
+          designId,
+          attributes,
+        } as any,
+        user.id,
+      )
+
+      const found = await ItemService.findById(created.id)
+      expect(found?.attributes).toEqual(attributes)
+    })
+
+    // The other half of matching the column: a value jsonb cannot hold is
+    // refused at the boundary instead of being reshaped on the way to
+    // Postgres. A Date carries a `toJSON`, so it would otherwise land as a
+    // string nobody wrote.
+    it('rejects an attributes value that jsonb cannot represent', async () => {
+      await expect(
+        ItemService.create(
+          'Part',
+          {
+            itemNumber: `PN-${uniquePrefix}-ATTRD`,
+            revision: 'A',
+            name: 'Unrepresentable attribute',
+            partType: 'Manufacture',
+            designId,
+            attributes: { measuredAt: new Date() },
+          } as any,
+          user.id,
+        ),
+      ).rejects.toThrow(ValidationError)
+    })
+
     it('throws ValidationError for invalid data', async () => {
       const invalidData = {
         // Missing the design a Part requires

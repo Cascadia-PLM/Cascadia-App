@@ -267,16 +267,21 @@ app.put(
           body.content,
           body.encoding === 'base64' ? 'base64' : 'utf8',
         )
-        const { item, manifest } = await SoftwareSourceService.saveFileToDraft(
-          params.id,
-          body.path,
-          data,
-          user.id,
-        )
+        const { item, manifest, path } =
+          await SoftwareSourceService.saveFileToDraft(
+            params.id,
+            body.path,
+            data,
+            user.id,
+          )
+        // The stored path, not the requested one: the service normalizes
+        // separators and a leading './' before writing the entry, and a
+        // caller that reads the file back has to ask for what was written.
         return {
           draftManifestId: manifest.id,
           fileCount: manifest.fileCount,
           itemId: item.id,
+          path,
         }
       },
     ),
@@ -332,17 +337,19 @@ app.post(
       },
       async ({ body, params, user }) => {
         await requireItemAccess(user.id, params.id)
-        const { item, manifest } =
+        const { item, manifest, path } =
           await SoftwareSourceService.renameFileInDraft(
             params.id,
             body.fromPath,
             body.toPath,
             user.id,
           )
+        // The stored destination, not the requested one — see the PUT above.
         return {
           draftManifestId: manifest.id,
           fileCount: manifest.fileCount,
           itemId: item.id,
+          path,
         }
       },
     ),

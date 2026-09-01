@@ -14,6 +14,7 @@
 
 import {
   boolean,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -97,9 +98,8 @@ export const componentCatalogEntries = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     description: text('description'),
-    categoryId: uuid('category_id')
-      .notNull()
-      .references(() => componentCatalogCategories.id),
+    // FK named in the table extras below — see the note there.
+    categoryId: uuid('category_id').notNull(),
 
     // Distinguishes finished components from raw stock materials
     entryType: text('entry_type', { enum: ['component', 'raw_stock'] })
@@ -141,6 +141,12 @@ export const componentCatalogEntries = pgTable(
       .notNull(),
   },
   (table) => [
+    // Named explicitly: the implicit name is 72 bytes, past Postgres's 63.
+    foreignKey({
+      name: 'fk_catalog_entry_category',
+      columns: [table.categoryId],
+      foreignColumns: [componentCatalogCategories.id],
+    }),
     // Full-text search using 'simple' config to preserve engineering tokens (M3, NEMA, 2020)
     // Note: Uses immutable-safe expression (no array_to_string which is STABLE)
     index('idx_catalog_fts').using(
@@ -165,9 +171,8 @@ export const componentCatalogMedia = pgTable(
   'component_catalog_media',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    componentId: uuid('component_id')
-      .notNull()
-      .references(() => componentCatalogEntries.id, { onDelete: 'cascade' }),
+    // FK named in the table extras below — see the note there.
+    componentId: uuid('component_id').notNull(),
     type: text('type', {
       enum: ['thumbnail', 'diagram', 'datasheet'],
     }).notNull(),
@@ -175,7 +180,15 @@ export const componentCatalogMedia = pgTable(
     label: text('label'),
     sortOrder: integer('sort_order').default(0),
   },
-  (table) => [index('idx_catalog_media_component').on(table.componentId)],
+  (table) => [
+    // Named explicitly: the implicit name is 68 bytes, past Postgres's 63.
+    foreignKey({
+      name: 'fk_catalog_media_component',
+      columns: [table.componentId],
+      foreignColumns: [componentCatalogEntries.id],
+    }).onDelete('cascade'),
+    index('idx_catalog_media_component').on(table.componentId),
+  ],
 )
 
 // ============================================================================

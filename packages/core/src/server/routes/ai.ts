@@ -23,6 +23,8 @@ import { acquireStreamSlot, releaseStreamSlot } from '@/lib/ai/stream-limits'
 import { createSearchTools, createServerTools } from '@/lib/ai/tools'
 import {
   AlreadyExistsError,
+  AppError,
+  ErrorCode,
   NotFoundError,
   PermissionDeniedError,
   ValidationError,
@@ -105,7 +107,14 @@ app.post(
   '/chat',
   adapt(
     apiHandler(
-      { body: chatRequestSchema },
+      {
+        body: chatRequestSchema,
+        // Every accepted turn fans out to a paid provider and spends the
+        // program's token budget, so the default API bucket is too generous
+        // here. Production-gated like all limiting, so dev and tests are
+        // unaffected.
+        rateLimit: { windowMs: 60_000, maxRequests: 60 },
+      },
       async ({ request, body, user, requestId }) => {
         const { messages: clientMessages, data } = body
         const sessionId = data?.sessionId
@@ -137,15 +146,13 @@ app.post(
         // Check if AI is enabled
         const aiEnabled = await isAIEnabled(effectiveProgramId)
         if (!aiEnabled) {
-          return new Response(
-            JSON.stringify({
-              error: {
-                code: 'FEATURE_DISABLED',
-                message:
-                  'AI assistant is not enabled. Please configure AI settings or set API keys.',
-              },
-            }),
-            { status: 503, headers: { 'Content-Type': 'application/json' } },
+          // The 503 was hand-rolled here until FEATURE_DISABLED became a real
+          // ErrorCode: same wire code and status, but now through
+          // handleApiError, so the body carries the timestamp and requestId
+          // every other error on this API does.
+          throw new AppError(
+            ErrorCode.FEATURE_DISABLED,
+            'AI assistant is not enabled. Please configure AI settings or set API keys.',
           )
         }
 

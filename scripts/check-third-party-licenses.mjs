@@ -20,9 +20,10 @@
  *     other direction — GPLv2-only and AGPLv3 cannot be combined at all.
  *
  * So the gate is deliberately edition-blind: anything that fails for either
- * edition fails here. That is not over-caution, it is the shape of the tree —
- * every third-party dependency is declared in the root manifest rather than in
- * the workspace that uses it, so one closure serves whatever is built from it.
+ * edition fails here. That is not over-caution, it is the shape of the check —
+ * `third-party-closure.mjs` derives the closure from the lockfile, which spans
+ * every workspace at once, so which manifest declares a package never changes
+ * the verdict.
  *
  * **Unknown is a failure, not a pass.** A package with no `license` field
  * grants nothing — the default is exclusive copyright, so redistributing it is

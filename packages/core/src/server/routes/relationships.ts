@@ -196,8 +196,17 @@ app.post(
           // documented-not-enforced: per-line rejection is this endpoint's
           // contract. Parsing the whole body against the schema would turn
           // one malformed line into a rejection of all 500, which is what
-          // `errors[]` exists to avoid.
-          request: { body: { schema: batchCreateRequestSchema } },
+          // `errors[]` exists to avoid. `documentsSupersetOfEnforced` is what
+          // keeps the per-line shape in the document: `batchCreateBodySchema`
+          // above is the deliberately looser envelope this route enforces, and
+          // every body this schema describes passes it, so the document is the
+          // stricter of the two.
+          request: {
+            body: {
+              schema: batchCreateRequestSchema,
+              documentsSupersetOfEnforced: true,
+            },
+          },
           responses: {
             201: { schema: batchCreateResponseSchema },
             207: {

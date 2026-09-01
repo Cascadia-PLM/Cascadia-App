@@ -25,7 +25,11 @@ import { WorkflowService } from './WorkflowService'
 import { WorkflowApprovalService } from './WorkflowApprovalService'
 import { resolveLifecycleType } from './normalize'
 import type { CreateWorkflowInput, TransitionAction } from './types'
-import { AlreadyExistsError, NotFoundError } from '@/lib/errors'
+import {
+  AlreadyExistsError,
+  NotFoundError,
+  ValidationError,
+} from '@/lib/errors'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { insertTestPart } from '@/__tests__/fixtures/items'
@@ -376,7 +380,7 @@ describe('WorkflowService', () => {
         WorkflowService.update(created.id, {
           states: [], // Invalid - no states
         }),
-      ).rejects.toThrow('must have at least one state')
+      ).rejects.toThrow(ValidationError)
     })
   })
 

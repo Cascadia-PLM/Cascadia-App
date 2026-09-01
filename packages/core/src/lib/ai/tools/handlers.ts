@@ -17,6 +17,14 @@ import { DesignService } from '@/lib/services/DesignService'
 import { ProgramService } from '@/lib/services/ProgramService'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { requireItemAccess } from '@/lib/auth/access'
+import { ValidationError } from '@/lib/errors'
+
+/**
+ * A canonical UUID, in either case. Shared by the id-or-code resolvers below
+ * and by `offer_navigation`, which builds a URL out of the id it is handed.
+ */
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * Helper to resolve a design identifier to a UUID.
@@ -28,9 +36,7 @@ async function resolveDesignId(
   if (!designIdOrCode) return undefined
 
   // Check if it's already a UUID (basic pattern check)
-  const uuidPattern =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  if (uuidPattern.test(designIdOrCode)) {
+  if (UUID_PATTERN.test(designIdOrCode)) {
     return designIdOrCode
   }
 
@@ -52,9 +58,7 @@ async function resolveProgramId(
   if (!programIdOrCode) return undefined
 
   // Check if it's already a UUID (basic pattern check)
-  const uuidPattern =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  if (uuidPattern.test(programIdOrCode)) {
+  if (UUID_PATTERN.test(programIdOrCode)) {
     return programIdOrCode
   }
 
@@ -708,10 +712,30 @@ const ITEM_TYPE_ROUTES: Record<OfferNavigationInput['itemType'], string> = {
   Program: '/programs',
 }
 
+/**
+ * The tab segment this tool will append: a route slug and nothing else.
+ * `?`, `#`, `/` and `:` are the characters that turn an appended tab into a
+ * different destination rather than a tab on the same page.
+ */
+const TAB_SLUG_PATTERN = /^[a-z0-9-]{1,40}$/
+
 export const offerNavigationHandler = withPermissionAndAudit(
   'offer_navigation',
   { resource: 'parts', action: 'read' },
   async (input: OfferNavigationInput, _context: ToolContext) => {
+    // Both halves of the URL below are model-chosen, and what the model saw
+    // before choosing them was tool results — item names and descriptions any
+    // user with write access can author. The chat panel turns the result into
+    // a one-click button, so the shape is checked here rather than left to
+    // whichever surface called: `itemId` reaches no service at all for
+    // Program, Design and ChangeOrder, and its schema is a bare string.
+    if (!UUID_PATTERN.test(input.itemId)) {
+      throw new ValidationError(`Invalid item ID: "${input.itemId}"`)
+    }
+    if (input.tab !== undefined && !TAB_SLUG_PATTERN.test(input.tab)) {
+      throw new ValidationError(`Invalid tab: "${input.tab}"`)
+    }
+
     // Validate item exists for most item types
     // Note: Programs and Designs have separate services but we'll skip validation
     // since this is just offering navigation, not accessing data

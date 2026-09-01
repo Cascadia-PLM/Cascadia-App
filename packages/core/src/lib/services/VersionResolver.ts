@@ -483,7 +483,11 @@ export class VersionResolver {
    *
    * `added` then contributes the masters that exist only on the branch —
    * items created there, and items tracked in `branch_items` but absent from
-   * `item_versions` at all.
+   * `item_versions` at all. Its "not deleted" test is `IS DISTINCT FROM`
+   * rather than `<>`, because a plain checkout records no change type at all:
+   * against a NULL, `<>` is neither true nor false, and the row was dropped
+   * where the in-memory merge — which asks `changeType !== 'deleted'` — keeps
+   * it.
    */
   private static async resolveBranchItemIds(
     branchId: string,
@@ -546,7 +550,7 @@ export class VersionResolver {
         FROM tracked t
         INNER JOIN items bv
           ON bv.id = t.current_item_id AND bv.is_deleted IS NOT TRUE
-        WHERE t.change_type <> 'deleted'
+        WHERE t.change_type IS DISTINCT FROM 'deleted'
           AND NOT EXISTS (
             SELECT 1 FROM main_items m WHERE m.master_id = t.item_master_id
           )

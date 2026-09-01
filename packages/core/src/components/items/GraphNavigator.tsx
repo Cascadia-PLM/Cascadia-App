@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   Background,
   Controls,
@@ -26,6 +27,7 @@ import {
   parallelEdgeOffsets,
   withEdgeDirectionLabels,
 } from '@/components/graph/edgeStyles'
+import { itemGraphQuery, itemRelationshipsQuery } from '@/lib/query'
 import { useTheme } from '@/lib/theme'
 
 interface GraphNavigatorProps {
@@ -79,6 +81,11 @@ const getLayoutedElements = (
 
 type DirectionMode = 'all' | 'outgoing' | 'incoming'
 
+/** The only field of a relationship row the type chips read. */
+interface RelationshipTypeRow {
+  relationshipType: string
+}
+
 export function GraphNavigator({
   itemId,
   defaultExpanded = false,
@@ -88,168 +95,142 @@ export function GraphNavigator({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
   const [depth, setDepth] = useState(defaultDepth)
   const [direction, setDirection] = useState<DirectionMode>('all')
-  const [availableTypes, setAvailableTypes] = useState<Array<string>>([])
   const [selectedTypes, setSelectedTypes] = useState<Array<string>>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // Types seen only as graph edges — derived INSTANCE_OF/BUILDS links, edges
+  // deeper than the direct ring. Accumulated rather than derived from the
+  // current answer, so filtering a type out does not remove its own chip.
+  const [graphTypesSeen, setGraphTypesSeen] = useState<Array<string>>([])
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
 
   const nodeTypes = useMemo(() => ({ itemNode: GraphItemNode }), [])
   const edgeTypes = useMemo(() => ({ relationship: RelationshipEdge }), [])
 
-  const loadAvailableTypes = useCallback(async () => {
-    try {
-      // Load relationship types from itemRelationships table
-      const response = await fetch(`/api/v1/items/${itemId}/relationships`)
-      const types = new Set<string>()
+  // UsageOf is not a row in item_relationships — the graph walk synthesises
+  // it — so it is filtered out of the `types` param and expressed as
+  // `includeUsages` instead. No selection at all means "everything", usages
+  // included.
+  const regularTypes = useMemo(
+    () => selectedTypes.filter((type) => type !== 'UsageOf'),
+    [selectedTypes],
+  )
+  const includeUsages =
+    selectedTypes.length === 0 || selectedTypes.includes('UsageOf')
 
-      if (response.ok) {
-        // apiHandler wraps responses as { data: { relationships } }
-        const json = await response.json()
-        const relationships = json.data?.relationships ?? []
-        relationships.forEach((rel: any) => {
-          types.add(rel.relationshipType)
-        })
+  // Every read below is gated on the panel being open, so a collapsed
+  // navigator costs nothing; re-opening it within staleTime is served from
+  // the cache rather than refetched.
+  const graphQuery = useQuery(
+    itemGraphQuery(
+      itemId,
+      { depth, direction, types: regularTypes, includeUsages },
+      isExpanded,
+    ),
+  )
+  const loading = graphQuery.isPending || graphQuery.isFetching
+  const error = graphQuery.error
+    ? graphQuery.error.message || 'Failed to load graph data'
+    : null
+
+  // The item's own edges, for the chips — the same cache entry the
+  // relationship table reads, not a second fetch of it.
+  const relationshipsQuery = useQuery(
+    itemRelationshipsQuery<RelationshipTypeRow>(itemId, {}, isExpanded),
+  )
+
+  // A depth-1 walk with usages forced on, purely to answer whether a UsageOf
+  // chip belongs on screen at all: the main query cannot answer that once the
+  // user has filtered usages away. It collapses onto the main query's cache
+  // entry whenever the two happen to ask for the same thing.
+  const usageProbeQuery = useQuery(
+    itemGraphQuery(itemId, { depth: 1, includeUsages: true }, isExpanded),
+  )
+
+  const ownTypes = useMemo(() => {
+    const types = new Set<string>()
+    for (const relationship of relationshipsQuery.data ?? []) {
+      types.add(relationship.relationshipType)
+    }
+    const probeEdges = usageProbeQuery.data?.edges ?? []
+    if (probeEdges.some((edge) => edge.data?.isUsageRelationship === true)) {
+      types.add('UsageOf')
+    }
+    return types
+  }, [relationshipsQuery.data, usageProbeQuery.data])
+
+  const availableTypes = useMemo(
+    () => Array.from(new Set([...ownTypes, ...graphTypesSeen])).sort(),
+    [ownTypes, graphTypesSeen],
+  )
+
+  const graphData = graphQuery.data
+  useEffect(() => {
+    if (!graphData) return
+
+    // Surface relationship types only present as graph edges so the filter
+    // chips cover everything on screen.
+    const graphRelTypes = new Set<string>()
+    for (const edge of graphData.edges) {
+      if (edge.data?.relationshipType) {
+        graphRelTypes.add(edge.data.relationshipType)
       }
-
-      // Check if UsageOf relationships exist by fetching graph with usages enabled
-      // This will tell us if the item is a usage or definition with usages
-      const graphResponse = await fetch(
-        `/api/v1/items/${itemId}/graph?depth=1&includeUsages=true`,
-      )
-      if (graphResponse.ok) {
-        const graphData = await graphResponse.json()
-        const hasUsageRelationships = graphData.edges.some(
-          (edge: any) => edge.data?.isUsageRelationship === true,
-        )
-        if (hasUsageRelationships) {
-          types.add('UsageOf')
-        }
-      }
-
-      setAvailableTypes((prev) => {
-        const merged = new Set([...prev, ...types])
+    }
+    if (graphRelTypes.size > 0) {
+      setGraphTypesSeen((prev) => {
+        const merged = new Set([...prev, ...graphRelTypes])
         return Array.from(merged).sort()
       })
-    } catch {
-      // Failed to load relationship types
     }
-  }, [itemId])
 
-  const loadGraphData = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+    // Convert to React Flow format with markers
+    const flowEdges: Array<Edge> = graphData.edges.map((edge: any) => {
+      const isUsageEdge = edge.data?.isUsageRelationship === true
+      const visuals = graphEdgeVisuals(graphEdgeKind(edge.data ?? {}))
 
-    try {
-      // Filter out UsageOf from types param (handled separately)
-      const regularTypes = selectedTypes.filter((t) => t !== 'UsageOf')
-      const typesParam =
-        regularTypes.length > 0 ? `&types=${regularTypes.join(',')}` : ''
+      // For UsageOf edges: swap to definition→usage so definition is above.
+      // The label flips with it ("used by") so the wording still reads the
+      // way the arrow points.
+      const source = isUsageEdge ? edge.target : edge.source
+      const target = isUsageEdge ? edge.source : edge.target
 
-      // Determine if UsageOf should be included
-      // If no types selected (showing all), include usages
-      // If types selected and UsageOf is in the list, include usages
-      // If types selected and UsageOf is NOT in the list, exclude usages
-      const includeUsages =
-        selectedTypes.length === 0 || selectedTypes.includes('UsageOf')
-      const usagesParam = `&includeUsages=${includeUsages}`
-
-      const response = await fetch(
-        `/api/v1/items/${itemId}/graph?depth=${depth}&direction=${direction}${typesParam}${usagesParam}`,
-      )
-
-      if (!response.ok) {
-        throw new Error('Failed to load graph data')
+      return {
+        id: edge.id,
+        source,
+        target,
+        label: isUsageEdge ? USAGE_EDGE_LABEL : edge.label,
+        type: 'relationship',
+        animated: isUsageEdge,
+        markerEnd: visuals.markerEnd,
+        style: visuals.style,
+        data: edge.data,
       }
+    })
 
-      const data = await response.json()
+    // Spread edges that share a node pair so their labels stay readable
+    const offsets = parallelEdgeOffsets(flowEdges)
+    const spreadEdges = flowEdges.map((edge) => {
+      const offset = offsets.get(edge.id)
+      return offset === undefined
+        ? edge
+        : { ...edge, data: { ...edge.data, parallelOffset: offset } }
+    })
 
-      // Surface relationship types only present as graph edges (derived
-      // INSTANCE_OF/BUILDS links, edges deeper than the direct ring) so
-      // the filter chips cover everything on screen.
-      const graphRelTypes = new Set<string>()
-      for (const edge of data.edges) {
-        if (edge.data?.relationshipType) {
-          graphRelTypes.add(edge.data.relationshipType)
-        }
-      }
-      if (graphRelTypes.size > 0) {
-        setAvailableTypes((prev) => {
-          const merged = new Set([...prev, ...graphRelTypes])
-          return Array.from(merged).sort()
-        })
-      }
+    const flowNodes: Array<Node> = graphData.nodes.map((node: any) => ({
+      id: node.id,
+      type: node.type,
+      data: node.data,
+      position: node.position,
+    }))
 
-      // Convert to React Flow format with markers
-      const flowEdges: Array<Edge> = data.edges.map((edge: any) => {
-        const isUsageEdge = edge.data?.isUsageRelationship === true
-        const visuals = graphEdgeVisuals(graphEdgeKind(edge.data ?? {}))
+    // Apply layout
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+      flowNodes,
+      withEdgeDirectionLabels(flowNodes, spreadEdges),
+    )
 
-        // For UsageOf edges: swap to definition→usage so definition is above.
-        // The label flips with it ("used by") so the wording still reads the
-        // way the arrow points.
-        const source = isUsageEdge ? edge.target : edge.source
-        const target = isUsageEdge ? edge.source : edge.target
-
-        return {
-          id: edge.id,
-          source,
-          target,
-          label: isUsageEdge ? USAGE_EDGE_LABEL : edge.label,
-          type: 'relationship',
-          animated: isUsageEdge,
-          markerEnd: visuals.markerEnd,
-          style: visuals.style,
-          data: edge.data,
-        }
-      })
-
-      // Spread edges that share a node pair so their labels stay readable
-      const offsets = parallelEdgeOffsets(flowEdges)
-      const spreadEdges = flowEdges.map((edge) => {
-        const offset = offsets.get(edge.id)
-        return offset === undefined
-          ? edge
-          : { ...edge, data: { ...edge.data, parallelOffset: offset } }
-      })
-
-      const flowNodes: Array<Node> = data.nodes.map((node: any) => ({
-        id: node.id,
-        type: node.type,
-        data: node.data,
-        position: node.position,
-      }))
-
-      // Apply layout
-      const { nodes: layoutedNodes, edges: layoutedEdges } =
-        getLayoutedElements(
-          flowNodes,
-          withEdgeDirectionLabels(flowNodes, spreadEdges),
-        )
-
-      setNodes(layoutedNodes)
-      setEdges(layoutedEdges)
-    } catch (err) {
-      setError((err as Error).message)
-    } finally {
-      setLoading(false)
-    }
-  }, [itemId, depth, direction, selectedTypes, setNodes, setEdges])
-
-  useEffect(() => {
-    if (isExpanded) {
-      loadAvailableTypes()
-      loadGraphData()
-    }
-  }, [
-    isExpanded,
-    depth,
-    direction,
-    selectedTypes,
-    loadGraphData,
-    loadAvailableTypes,
-  ])
+    setNodes(layoutedNodes)
+    setEdges(layoutedEdges)
+  }, [graphData, setNodes, setEdges])
 
   const handleTypeToggle = (type: string) => {
     setSelectedTypes((prev) =>
@@ -266,7 +247,7 @@ export function GraphNavigator({
   }
 
   const handleRefresh = () => {
-    loadGraphData()
+    void graphQuery.refetch()
   }
 
   return (

@@ -143,7 +143,17 @@ function toSafeUser(user: DatabaseUser): User {
   }
 }
 
-function hasPostgresErrorCode(error: unknown, code: string): boolean {
+/**
+ * The SQLSTATEs a delete raises when a retained row still references the user:
+ * `foreign_key_violation` from a `NO ACTION` reference, `restrict_violation`
+ * from a `RESTRICT` one.
+ */
+const FK_PROTECTION_CODES = ['23503', '23001'] as const
+
+function hasPostgresErrorCode(
+  error: unknown,
+  codes: ReadonlyArray<string>,
+): boolean {
   const seen = new Set<unknown>()
   let current: unknown = error
 
@@ -156,7 +166,7 @@ function hasPostgresErrorCode(error: unknown, code: string): boolean {
     if (
       'code' in current &&
       typeof current.code === 'string' &&
-      current.code === code
+      codes.includes(current.code)
     ) {
       return true
     }
@@ -298,7 +308,14 @@ export class UserService {
       permissionService.clearUserCache(id)
       return 'deleted'
     } catch (error) {
-      if (!hasPostgresErrorCode(error, '23503')) {
+      // Both codes mean the same thing here — a retained row still names this
+      // user — and which one Postgres raises depends only on how the
+      // referencing table declared its foreign key: `NO ACTION` (the default)
+      // raises `foreign_key_violation`, `RESTRICT` raises `restrict_violation`.
+      // Reading only 23503 would let a `RESTRICT` reference (signing
+      // credentials are the first) escape as an unhandled 500 instead of
+      // degrading to deactivation.
+      if (!hasPostgresErrorCode(error, FK_PROTECTION_CODES)) {
         throw error
       }
 

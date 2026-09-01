@@ -16,7 +16,7 @@ import { SysMLSerializer } from '@/lib/sysml'
 import { requireDesignAccess } from '@/lib/auth/access'
 import { requirePermission } from '@/lib/auth/server'
 import { getResourceType } from '@/lib/items/item-type-resources'
-import { apiHandler, created } from '@/lib/api/handler'
+import { apiHandler, created, parseQuery } from '@/lib/api/handler'
 
 import '@/lib/items/registerItemTypes.server'
 
@@ -34,6 +34,40 @@ const sysmlElementSchema = z
   .passthrough() as unknown as z.ZodType<SysMLElement>
 // Register item types
 
+/**
+ * Paging, validated rather than `parseInt`-ed. All three collections below
+ * read their bounds with a bare `parseInt`, which has no failure mode: a
+ * `pageSize=abc` became NaN and reached either `Array.slice` (a silently empty
+ * page) or the query builder's `LIMIT`, and a negative `pageStart` went to the
+ * database as a negative `OFFSET` untouched. Both are a 400 now, which is what
+ * a conformant client should be told rather than an empty page it cannot
+ * distinguish from the end of the collection.
+ *
+ * The bounds match the rest of the API — 1..500, default 100.
+ */
+const DEFAULT_PAGE_SIZE = 100
+const pageSizeParam = z.coerce.number().int().min(1).max(500)
+const pageStartParam = z.coerce.number().int().min(0)
+
+/** The SysML-spelled pair, used by the commit and element collections. */
+const sysmlPageSchema = z.object({
+  pageSize: pageSizeParam.default(DEFAULT_PAGE_SIZE),
+  pageStart: pageStartParam.default(0),
+})
+
+/**
+ * The project collection has accepted `limit`/`offset` alongside the
+ * SysML-spelled pair since it shipped, so both names stay valid — bounded the
+ * same way, resolved at the call site so the standard pair still wins when a
+ * client sends both.
+ */
+const projectPageSchema = z.object({
+  limit: pageSizeParam.optional(),
+  pageSize: pageSizeParam.optional(),
+  offset: pageStartParam.optional(),
+  pageStart: pageStartParam.optional(),
+})
+
 const adapt = tagged('SysML')
 
 const app = new Hono()
@@ -43,20 +77,10 @@ app.get(
   '/projects',
   adapt(
     apiHandler({}, async ({ request, user }) => {
-      const url = new URL(request.url)
       // Accept both limit/offset (standard) and pageSize/pageStart (SysML) for backwards compatibility
-      const pageSize = parseInt(
-        url.searchParams.get('limit') ||
-          url.searchParams.get('pageSize') ||
-          '100',
-        10,
-      )
-      const pageStart = parseInt(
-        url.searchParams.get('offset') ||
-          url.searchParams.get('pageStart') ||
-          '0',
-        10,
-      )
+      const page = parseQuery(request, projectPageSchema)
+      const pageSize = page.limit ?? page.pageSize ?? DEFAULT_PAGE_SIZE
+      const pageStart = page.offset ?? page.pageStart ?? 0
 
       // Get designs accessible to this user
       const allDesigns = await AccessControlService.getAccessibleDesigns(
@@ -172,9 +196,14 @@ app.post(
           'create',
         )
 
-        // Create item on branch
-        // Cast to BaseItem to allow SysML-specific fields (sysmlType, metamodel, attributes)
-        // which are stored in the items table but not in the BaseItem interface
+        // Create item on branch. The cast is for `sysmlType` and `metamodel`,
+        // which are columns on `items` but not fields on `BaseItem`.
+        // `attributes` needs no help: an element's custom properties are
+        // whatever JSON the caller sent, and `baseItemSchema` takes any JSON
+        // document. It used to narrow the map to `Record<string, string>`, so
+        // an element carrying a nested or numeric property was a 400 from
+        // inside the create — the cast got it past the compiler and no
+        // further.
         const result = await ItemService.createOnBranch(
           itemData.itemType,
           {
@@ -213,8 +242,7 @@ app.get(
       const { id } = params
       const url = new URL(request.url)
       const branchId = url.searchParams.get('branchId')
-      const pageSize = parseInt(url.searchParams.get('pageSize') || '100', 10)
-      const pageStart = parseInt(url.searchParams.get('pageStart') || '0', 10)
+      const { pageSize, pageStart } = parseQuery(request, sysmlPageSchema)
 
       // Validate project exists
       const design = await DesignService.getById(id)
@@ -225,20 +253,31 @@ app.get(
       // Check access via design access control
       await requireDesignAccess(user.id, design.id)
 
-      // Get branch - either specified or default
+      // Get branch - either specified or default. `branchId` is a query
+      // parameter, so it is the caller's word and not the path's: without the
+      // ownership check below, access granted on the path project would read
+      // commits out of any branch in the instance, including designs in
+      // programs the caller cannot reach. The two siblings in this file assert
+      // the same thing about their branch (:179) and their commit (:323).
       const branch = branchId
         ? await BranchService.getById(branchId)
         : await DesignService.getDefaultBranch(id)
 
-      if (!branch) {
+      if (!branch || branch.designId !== id) {
         throw new NotFoundError('Branch', branchId || 'default')
       }
 
-      // Get commits for the branch
-      const commits = await CommitService.getByBranch(branch.id, {
-        limit: pageSize,
-        offset: pageStart,
-      })
+      // Get commits for the branch. The total is counted, not measured off the
+      // page: `sysmlCommits.length` is the size of the slice just fetched, so
+      // it equalled `pageSize` on every full page and a paging client walking
+      // `pageStart` against it never saw the end of the branch.
+      const [commits, totalResults] = await Promise.all([
+        CommitService.getByBranch(branch.id, {
+          limit: pageSize,
+          offset: pageStart,
+        }),
+        CommitService.countByBranch(branch.id),
+      ])
 
       // Get changes for each commit and convert to SysML format
       const sysmlCommits = await Promise.all(
@@ -260,7 +299,7 @@ app.get(
           '@type': 'CommitCollection',
           pageSize,
           pageStart,
-          totalResults: sysmlCommits.length,
+          totalResults,
         }),
         {
           headers: { 'Content-Type': 'application/json' },
@@ -278,9 +317,7 @@ app.get(
       {},
       async ({ request, params, user }) => {
         const { id, cid } = params
-        const url = new URL(request.url)
-        const pageSize = parseInt(url.searchParams.get('pageSize') || '100', 10)
-        const pageStart = parseInt(url.searchParams.get('pageStart') || '0', 10)
+        const { pageSize, pageStart } = parseQuery(request, sysmlPageSchema)
 
         // Validate project exists
         const design = await DesignService.getById(id)

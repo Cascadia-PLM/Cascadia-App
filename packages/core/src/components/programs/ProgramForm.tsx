@@ -47,14 +47,8 @@ export function ProgramForm({
   onCancel,
   isSubmitting,
 }: ProgramFormProps) {
-  const [attributes, setAttributes] = useState<Record<string, string>>(
-    // Convert unknown values to strings for the editor
-    Object.fromEntries(
-      Object.entries(program?.attributes || {}).map(([key, value]) => [
-        key,
-        Array.isArray(value) ? value.join(', ') : String(value ?? ''),
-      ]),
-    ),
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
+    program?.attributes || {},
   )
 
   const form = useForm({

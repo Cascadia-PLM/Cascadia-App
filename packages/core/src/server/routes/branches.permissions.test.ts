@@ -15,8 +15,11 @@
  *
  * The first half calls the helper directly — a branch id that names no row, a
  * branch in a program the caller is not in, and a branch they may have — so
- * the three answers are pinned as *classes*, at the seam where the routes
+ * the three scenarios are pinned as *classes*, at the seam where the routes
  * read them, rather than inferred from an HTTP status somewhere downstream.
+ * The first two collapse to the same class on purpose: a missing branch and
+ * an unreachable one both answer PermissionDeniedError, so neither the
+ * routes above nor a caller watching responses can tell which is true.
  *
  * The second half is the shape the by-id enumeration ratchet structurally
  * cannot drive. Of the eighteen call sites, six take the branch from the path
@@ -68,7 +71,7 @@ import { ProgramService } from '@/lib/services/ProgramService'
 import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
 import { requireBranchAccess } from '@/lib/auth/access'
-import { NotFoundError, PermissionDeniedError } from '@/lib/errors'
+import { PermissionDeniedError } from '@/lib/errors'
 import { ErrorCode } from '@/lib/errors/codes'
 
 // Import to register item types
@@ -190,14 +193,13 @@ describe('requireBranchAccess — program isolation on branches', () => {
     })
   }
 
-  it('throws NotFoundError for a branch id that names no row', async () => {
-    // Existence is answered before authorization, so a caller can tell a
-    // branch that is missing from one they simply cannot reach. That is the
-    // helper as written and this pins it; narrowing it would be a change to
-    // the helper, not to its test.
+  it('throws PermissionDeniedError for a branch id that names no row', async () => {
+    // Authorization is answered without first confirming existence, so a
+    // branch that is missing reads exactly like one the caller cannot
+    // reach — never a distinguishable 404.
     await expect(
       requireBranchAccess(member.id, randomUUID()),
-    ).rejects.toBeInstanceOf(NotFoundError)
+    ).rejects.toBeInstanceOf(PermissionDeniedError)
   })
 
   it('throws PermissionDeniedError for a branch in another program', async () => {

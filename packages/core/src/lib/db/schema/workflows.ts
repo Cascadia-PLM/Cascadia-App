@@ -4,6 +4,7 @@
 import {
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -58,9 +59,8 @@ export const workflowInstances = pgTable(
   'workflow_instances',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    workflowDefinitionId: uuid('workflow_definition_id').references(
-      () => workflowDefinitions.id,
-    ),
+    // FK named in the table extras below — see the note there.
+    workflowDefinitionId: uuid('workflow_definition_id'),
     itemId: uuid('item_id').references(() => items.id, { onDelete: 'cascade' }),
     currentState: varchar('current_state', { length: 100 }),
     startedAt: timestamp('started_at', { withTimezone: true })
@@ -84,6 +84,12 @@ export const workflowInstances = pgTable(
     releasingAt: timestamp('releasing_at', { withTimezone: true }),
   },
   (table) => [
+    // Named explicitly: the implicit name is 68 bytes, past Postgres's 63.
+    foreignKey({
+      name: 'fk_wf_instances_definition',
+      columns: [table.workflowDefinitionId],
+      foreignColumns: [workflowDefinitions.id],
+    }),
     // One active workflow per item — backs the check-then-insert in the routes
     uniqueIndex('workflow_instances_one_active_per_item')
       .on(table.itemId)
@@ -156,9 +162,8 @@ export const workflowStateApprovers = pgTable(
   'workflow_state_approvers',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    workflowDefinitionId: uuid('workflow_definition_id')
-      .notNull()
-      .references(() => workflowDefinitions.id, { onDelete: 'cascade' }),
+    // FK named in the table extras below — see the note there.
+    workflowDefinitionId: uuid('workflow_definition_id').notNull(),
     stateId: varchar('state_id', { length: 100 }).notNull(),
     approverType: varchar('approver_type', { length: 10 }).notNull(), // 'user' | 'role'
     approverId: uuid('approver_id').notNull(), // References users.id or roles.id
@@ -169,6 +174,12 @@ export const workflowStateApprovers = pgTable(
     createdBy: uuid('created_by').references(() => users.id),
   },
   (table) => [
+    // Named explicitly: the implicit name is 74 bytes, past Postgres's 63.
+    foreignKey({
+      name: 'fk_wf_state_approvers_definition',
+      columns: [table.workflowDefinitionId],
+      foreignColumns: [workflowDefinitions.id],
+    }).onDelete('cascade'),
     /**
      * One row per approver per state. `addStateApprover` selected for an
      * existing row and then inserted, which is the same TOCTOU window
@@ -202,9 +213,8 @@ export const workflowInstanceApprovers = pgTable(
   'workflow_instance_approvers',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    workflowInstanceId: uuid('workflow_instance_id')
-      .notNull()
-      .references(() => workflowInstances.id, { onDelete: 'cascade' }),
+    // FK named in the table extras below — see the note there.
+    workflowInstanceId: uuid('workflow_instance_id').notNull(),
     stateId: varchar('state_id', { length: 100 }).notNull(),
     approverType: varchar('approver_type', { length: 10 }).notNull(), // 'user' | 'role'
     approverId: uuid('approver_id').notNull(), // References users.id or roles.id
@@ -215,6 +225,12 @@ export const workflowInstanceApprovers = pgTable(
     createdBy: uuid('created_by').references(() => users.id),
   },
   (table) => [
+    // Named explicitly: the implicit name is 73 bytes, past Postgres's 63.
+    foreignKey({
+      name: 'fk_wf_instance_approvers_instance',
+      columns: [table.workflowInstanceId],
+      foreignColumns: [workflowInstances.id],
+    }).onDelete('cascade'),
     /**
      * The instance-scoped half of the same rule. Nothing here was
      * check-then-insert — `setInstanceApprovers` deletes the state's rows and
@@ -241,9 +257,8 @@ export const workflowApprovalVotes = pgTable(
   'workflow_approval_votes',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    workflowInstanceId: uuid('workflow_instance_id')
-      .notNull()
-      .references(() => workflowInstances.id, { onDelete: 'cascade' }),
+    // FK named in the table extras below — see the note there.
+    workflowInstanceId: uuid('workflow_instance_id').notNull(),
     stateId: varchar('state_id', { length: 100 }).notNull(),
     userId: uuid('user_id')
       .notNull()
@@ -263,6 +278,12 @@ export const workflowApprovalVotes = pgTable(
     supersededAt: timestamp('superseded_at', { withTimezone: true }),
   },
   (table) => [
+    // Named explicitly: the implicit name is 69 bytes, past Postgres's 63.
+    foreignKey({
+      name: 'fk_wf_votes_instance',
+      columns: [table.workflowInstanceId],
+      foreignColumns: [workflowInstances.id],
+    }).onDelete('cascade'),
     /**
      * One live vote per person per state. Partial on supersededAt IS NULL,
      * because that is exactly the set approval gating counts — a rework

@@ -26,6 +26,32 @@ const PART_TYPED_ATTRIBUTES = [
 // Item-level attributes that can be resolved
 const ITEM_ATTRIBUTES = ['name', 'itemNumber', 'revision', 'state'] as const
 
+/**
+ * Render one `items.attributes` value as a parametric substitution, or refuse.
+ *
+ * That column is a JSON document, so a value can be an object or an array —
+ * and a parametric block substitutes its value into work-instruction prose,
+ * where a nested structure has no sensible rendering. `String(val)` gave those
+ * `[object Object]`, and before the column's contract was widened they arrived
+ * pre-`JSON.stringify`-ed by their writer, so the picker offered machine
+ * metadata like a catalog snapshot as a selectable attribute whose value was a
+ * blob of JSON text. Scalars render; structure is not resolvable.
+ */
+function renderAttributeValue(
+  val: unknown,
+): { resolvable: true; value: string | null } | { resolvable: false } {
+  if (val === null || val === undefined)
+    return { resolvable: true, value: null }
+  if (
+    typeof val === 'string' ||
+    typeof val === 'number' ||
+    typeof val === 'boolean'
+  ) {
+    return { resolvable: true, value: String(val) }
+  }
+  return { resolvable: false }
+}
+
 export class ParametricResolutionService {
   /**
    * Resolve a single parametric block value
@@ -195,13 +221,15 @@ export class ParametricResolutionService {
       }
     }
 
-    // Dynamic JSONB attributes
+    // Dynamic JSONB attributes — scalars only; see renderAttributeValue.
     const jsonAttrs = item.attributes ?? {}
     for (const [key, val] of Object.entries(jsonAttrs)) {
+      const rendered = renderAttributeValue(val)
+      if (!rendered.resolvable) continue
       attributes.push({
         path: `attributes.${key}`,
         label: this.formatLabel(key),
-        value: val != null ? String(val) : null,
+        value: rendered.value,
       })
     }
 
@@ -236,15 +264,17 @@ export class ParametricResolutionService {
       }
     }
 
-    // Check JSONB attributes (path like "attributes.tensileStrength")
+    // Check JSONB attributes (path like "attributes.tensileStrength").
+    // A structured value reports unavailable rather than null: the block
+    // points at something real that simply has no textual rendering, which is
+    // the same signal the UI already shows for a path the part does not carry.
     if (attributePath.startsWith('attributes.')) {
       const jsonKey = attributePath.slice('attributes.'.length)
       const attrs = (item.attributes ?? {}) as Record<string, unknown>
-      const val = attrs[jsonKey]
-      return {
-        value: val != null ? String(val) : null,
-        available: true,
-      }
+      const rendered = renderAttributeValue(attrs[jsonKey])
+      return rendered.resolvable
+        ? { value: rendered.value, available: true }
+        : { value: null, available: false }
     }
 
     return { value: null, available: false }

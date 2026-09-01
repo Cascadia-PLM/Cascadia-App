@@ -8,7 +8,10 @@ import { ArrowLeft, Box, Check, Edit, Save, Trash2, X } from 'lucide-react'
 import type { ChangeOrder } from '@/lib/items/types/change-order'
 import { changeOrderTypeSchema } from '@/lib/items/types/change-order'
 import { PageContainer } from '@/components/layout'
-import { AttributesEditor } from '@/components/items/AttributesEditor'
+import {
+  AttributesEditor,
+  formatAttributeValue,
+} from '@/components/items/AttributesEditor'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { StateBadge } from '@/components/items/StateBadge'
 import { EcoHistoryGraphView } from '@/components/change-orders/EcoHistoryGraphView'
@@ -172,16 +175,8 @@ export function ChangeOrderDetail({
     () => initialChangeOrder || createEmptyChangeOrder(),
   )
   const [isEditing, setIsEditing] = useState(isCreateMode)
-  const [attributes, setAttributes] = useState<Record<string, string>>(
-    // Convert unknown values to strings for the editor
-    Object.fromEntries(
-      Object.entries(initialChangeOrder?.attributes || {}).map(
-        ([key, value]) => [
-          key,
-          Array.isArray(value) ? value.join(', ') : String(value),
-        ],
-      ),
-    ),
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
+    initialChangeOrder?.attributes || {},
   )
 
   const { data: workflowStructure } = useQuery(
@@ -232,16 +227,7 @@ export function ChangeOrderDetail({
   useEffect(() => {
     if (initialChangeOrder) {
       setChangeOrder(initialChangeOrder)
-      setAttributes(
-        Object.fromEntries(
-          Object.entries(initialChangeOrder.attributes || {}).map(
-            ([key, value]) => [
-              key,
-              Array.isArray(value) ? value.join(', ') : String(value),
-            ],
-          ),
-        ),
-      )
+      setAttributes(initialChangeOrder.attributes || {})
     }
   }, [initialChangeOrder])
 
@@ -323,16 +309,7 @@ export function ChangeOrderDetail({
     } else {
       setChangeOrder(currentChangeOrder)
       // Reset attributes to current values
-      setAttributes(
-        Object.fromEntries(
-          Object.entries(currentChangeOrder.attributes || {}).map(
-            ([key, value]) => [
-              key,
-              Array.isArray(value) ? value.join(', ') : String(value),
-            ],
-          ),
-        ),
-      )
+      setAttributes(currentChangeOrder.attributes || {})
       setIsEditing(false)
     }
   }
@@ -810,9 +787,7 @@ export function ChangeOrderDetail({
                                   {key}
                                 </dt>
                                 <dd className="text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-md">
-                                  {Array.isArray(value)
-                                    ? value.join(', ')
-                                    : String(value)}
+                                  {formatAttributeValue(value) || '-'}
                                 </dd>
                               </div>
                             ))}

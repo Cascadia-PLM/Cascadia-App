@@ -171,7 +171,7 @@ export function PartDetail({
   const [isEditing, setIsEditing] = useState(isCreateMode)
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false)
   const [isImpactDialogOpen, setIsImpactDialogOpen] = useState(false)
-  const [attributes, setAttributes] = useState<Record<string, string>>(
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
     initialPart?.attributes ?? {},
   )
 
@@ -180,8 +180,15 @@ export function PartDetail({
     (result: UrlEnrichmentResult) => {
       // Always keep the source link as provenance (existing keys win).
       setAttributes((prev) => {
-        const merged: Record<string, string> = { ...result.attributes, ...prev }
-        if (!merged.link || !merged.link.trim()) merged.link = result.link
+        const merged: Record<string, unknown> = {
+          ...result.attributes,
+          ...prev,
+        }
+        // A `link` already on the item wins, but only if it is usable text -
+        // attributes can hold any JSON, and a structured value is not a link.
+        if (typeof merged.link !== 'string' || !merged.link.trim()) {
+          merged.link = result.link
+        }
         return merged
       })
 

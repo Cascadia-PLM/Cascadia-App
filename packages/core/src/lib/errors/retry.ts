@@ -29,6 +29,12 @@ export const defaultRetryConfig: RetryConfig = {
 const retryableErrors = new Set<ErrorCode>([
   ErrorCode.RATE_LIMITED,
   ErrorCode.DB_CONNECTION_FAILED,
+  // Serialization failures and deadlocks. The envelope's own message tells the
+  // caller to try again, so the client follows that advice rather than leaving
+  // it to the user. Retries are bounded by `defaultRetryConfig.maxAttempts`,
+  // and the server's `withSerializableRetry` has already absorbed the
+  // occurrences it could — one that still surfaces is transient by definition.
+  ErrorCode.DB_TRANSACTION_FAILED,
   ErrorCode.EXTERNAL_SERVICE_UNAVAILABLE,
   ErrorCode.EXTERNAL_SERVICE_TIMEOUT,
 ])

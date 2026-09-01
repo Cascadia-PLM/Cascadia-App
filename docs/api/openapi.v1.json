@@ -10406,9 +10406,7 @@
                     "items": {
                       "properties": {
                         "attributes": {
-                          "additionalProperties": {
-                            "type": "string"
-                          },
+                          "additionalProperties": {},
                           "type": "object"
                         },
                         "description": {
@@ -10509,9 +10507,7 @@
                     "items": {
                       "properties": {
                         "attributes": {
-                          "additionalProperties": {
-                            "type": "string"
-                          },
+                          "additionalProperties": {},
                           "type": "object"
                         },
                         "category": {
@@ -10667,9 +10663,7 @@
                     "items": {
                       "properties": {
                         "attributes": {
-                          "additionalProperties": {
-                            "type": "string"
-                          },
+                          "additionalProperties": {},
                           "type": "object"
                         },
                         "cost": {
@@ -11166,27 +11160,1340 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": {},
-                "properties": {
-                  "branchId": {
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                    "type": "string"
+                "oneOf": [
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "cost": {
+                        "type": "string"
+                      },
+                      "costCurrency": {
+                        "default": "USD",
+                        "maxLength": 3,
+                        "minLength": 3,
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Part",
+                        "type": "string"
+                      },
+                      "leadTimeDays": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "material": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "partType": {
+                        "enum": [
+                          "Manufacture",
+                          "Purchase",
+                          "Software",
+                          "Phantom"
+                        ],
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "trackingMode": {
+                        "enum": [
+                          "none",
+                          "lot",
+                          "serial"
+                        ],
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "weight": {
+                        "type": "string"
+                      },
+                      "weightUnit": {
+                        "default": "kg",
+                        "maxLength": 10,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "designId",
+                      "itemType"
+                    ],
+                    "type": "object"
                   },
-                  "commitMessage": {
-                    "maxLength": 500,
-                    "type": "string"
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "fileId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "fileName": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "fileSize": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Document",
+                        "type": "string"
+                      },
+                      "mimeType": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "storagePath": {
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "designId",
+                      "itemType"
+                    ],
+                    "type": "object"
                   },
-                  "itemType": {
-                    "maxLength": 100,
-                    "minLength": 1,
-                    "type": "string"
+                  {
+                    "properties": {
+                      "acceptanceCriteria": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "allocatedDesignId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "attributes": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "category": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Requirement",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "parentRequirementId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "priority": {
+                        "enum": [
+                          "MustHave",
+                          "ShouldHave",
+                          "CouldHave",
+                          "WontHave"
+                        ],
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "source": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "type": {
+                        "enum": [
+                          "Functional",
+                          "Non-Functional",
+                          "Performance",
+                          "Security",
+                          "Usability",
+                          "Business"
+                        ],
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "verificationMethod": {
+                        "enum": [
+                          "Analysis",
+                          "Inspection",
+                          "Demonstration",
+                          "Test",
+                          "Documentation"
+                        ],
+                        "type": "string"
+                      },
+                      "verificationStatus": {
+                        "enum": [
+                          "NotStarted",
+                          "InProgress",
+                          "Passed",
+                          "Failed",
+                          "Waived"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "designId",
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "actualHours": {
+                        "type": "string"
+                      },
+                      "assignee": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "attributes": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "dueDate": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "format": "date-time",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "estimatedHours": {
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Task",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "parentTaskId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "priority": {
+                        "default": "Medium",
+                        "enum": [
+                          "Low",
+                          "Medium",
+                          "High",
+                          "Critical"
+                        ],
+                        "type": "string"
+                      },
+                      "programId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "tags": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "entryCriteria": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "environment": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "exitCriteria": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "TestPlan",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "scope": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "designId",
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "environment": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "executionStatus": {
+                        "enum": [
+                          "NotRun",
+                          "Passed",
+                          "Failed",
+                          "Blocked"
+                        ],
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "TestCase",
+                        "type": "string"
+                      },
+                      "lastExecutedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "lastExecutedBy": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "preconditions": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "steps": {
+                        "items": {
+                          "properties": {
+                            "action": {
+                              "maxLength": 2000,
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            "expectedResult": {
+                              "maxLength": 2000,
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            "stepNumber": {
+                              "maximum": 9007199254740991,
+                              "minimum": 1,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "stepNumber",
+                            "action",
+                            "expectedResult"
+                          ],
+                          "type": "object"
+                        },
+                        "type": "array"
+                      },
+                      "testPlanId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "testType": {
+                        "enum": [
+                          "Unit",
+                          "Integration",
+                          "System",
+                          "Acceptance"
+                        ],
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "designId",
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "affectedItemIds": {
+                        "items": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "assignedTo": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "attributes": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "category": {
+                        "enum": [
+                          "Design",
+                          "Manufacturing",
+                          "Quality",
+                          "Customer",
+                          "Safety",
+                          "Other"
+                        ],
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 10000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "designIds": {
+                        "items": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Issue",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "priority": {
+                        "default": "Medium",
+                        "enum": [
+                          "Critical",
+                          "High",
+                          "Medium",
+                          "Low"
+                        ],
+                        "type": "string"
+                      },
+                      "programId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "reportedBy": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "reportedDate": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "format": "date-time",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "resolution": {
+                        "maxLength": 10000,
+                        "type": "string"
+                      },
+                      "resolvedDate": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "format": "date-time",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "rootCause": {
+                        "maxLength": 10000,
+                        "type": "string"
+                      },
+                      "severity": {
+                        "default": "Medium",
+                        "enum": [
+                          "Critical",
+                          "High",
+                          "Medium",
+                          "Low"
+                        ],
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "difficulty": {
+                        "enum": [
+                          "Easy",
+                          "Medium",
+                          "Hard"
+                        ],
+                        "type": "string"
+                      },
+                      "estimatedTime": {
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "type": "integer"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "WorkInstruction",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "outputPartId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "requiredTools": {
+                        "maxLength": 2000,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "safetyNotes": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "itemType",
+                      "outputPartId"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "buildArtifactFileId": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "draftManifestId": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Software",
+                        "type": "string"
+                      },
+                      "manifestId": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "softwareType": {
+                        "enum": [
+                          "firmware",
+                          "application",
+                          "library",
+                          "configuration",
+                          "fpga"
+                        ],
+                        "type": "string"
+                      },
+                      "sourceMode": {
+                        "default": "internal",
+                        "enum": [
+                          "internal",
+                          "external"
+                        ],
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "targetHardware": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "toolchain": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "version": {
+                        "maxLength": 50,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "designId",
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "capabilities": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Tool",
+                        "type": "string"
+                      },
+                      "location": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "manufacturer": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "model": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "notes": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "toolSubtype": {
+                        "maxLength": 50,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "toolType": {
+                        "enum": [
+                          "manufacturing",
+                          "quality",
+                          "utility"
+                        ],
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "itemType",
+                      "toolType",
+                      "toolSubtype"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "asBuiltItemId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "attributes": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "erpRef": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "instanceKind": {
+                        "enum": [
+                          "unit",
+                          "lot"
+                        ],
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "PhysicalPart",
+                        "type": "string"
+                      },
+                      "lotNumber": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "manufacturerPartId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "notes": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "partMasterId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "producingWorkOrderId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "serialNumber": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "itemType",
+                      "instanceKind",
+                      "partMasterId"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "assignedTo": {
+                        "default": [],
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "attributes": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "completedAt": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "format": "date-time",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "customerOrder": {
+                        "anyOf": [
+                          {
+                            "maxLength": 200,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "dueDate": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "format": "date-time",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "WorkOrder",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "notes": {
+                        "anyOf": [
+                          {
+                            "maxLength": 5000,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "partId": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "priority": {
+                        "default": "Normal",
+                        "enum": [
+                          "Low",
+                          "Normal",
+                          "High",
+                          "Urgent"
+                        ],
+                        "type": "string"
+                      },
+                      "programId": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "quantity": {
+                        "default": 1,
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "type": "integer"
+                      },
+                      "quantityCompleted": {
+                        "default": 0,
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "requiresSignOff": {
+                        "default": false,
+                        "type": "boolean"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "itemType"
+                    ],
+                    "type": "object"
                   }
-                },
-                "required": [
-                  "itemType"
-                ],
-                "type": "object"
+                ]
               }
             }
           },
@@ -16524,7 +17831,47 @@
                 "properties": {
                   "relationships": {
                     "items": {
-                      "additionalProperties": {},
+                      "properties": {
+                        "findNumber": {
+                          "type": "number"
+                        },
+                        "metadata": {
+                          "additionalProperties": {},
+                          "type": "object"
+                        },
+                        "quantity": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "referenceDesignator": {
+                          "type": "string"
+                        },
+                        "relationshipType": {
+                          "description": "e.g. `BOM`, `Document`, `Satisfies`, `Consumes`",
+                          "type": "string"
+                        },
+                        "sourceId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "targetId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "sourceId",
+                        "targetId",
+                        "relationshipType"
+                      ],
                       "type": "object"
                     },
                     "maxItems": 500,
@@ -16532,6 +17879,7 @@
                     "type": "array"
                   },
                   "replaceExisting": {
+                    "description": "Clear the existing edges of every source that has a line in this batch before inserting. Without it, an edge already stored is counted in `skipped` and left alone.",
                     "type": "boolean"
                   }
                 },

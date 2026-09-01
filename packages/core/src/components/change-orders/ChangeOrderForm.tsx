@@ -35,7 +35,7 @@ export function ChangeOrderForm({
   onCancel,
   isSubmitting,
 }: ChangeOrderFormProps) {
-  const [attributes, setAttributes] = useState<Record<string, string>>(
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
     changeOrder?.attributes ?? {},
   )
   const form = useForm({

@@ -37,6 +37,12 @@ const itemCreateEnvelope = {
     ),
   commitMessage: z
     .string()
+    // Mirrors the cap the route's own envelope enforces on this field.
+    // `documentsSupersetOfEnforced` promises every body this union describes
+    // is one that envelope accepts, and nothing checks that promise: an
+    // uncapped string here documented a 501-character message the route
+    // answers 400 to.
+    .max(500)
     .optional()
     .describe(
       'Message for the commit the branch write produces. Ignored without ' +

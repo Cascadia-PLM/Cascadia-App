@@ -89,6 +89,19 @@ describe('MyService', () => {
 call it and postgres.js deadlocks on nested `BEGIN` with a single-connection
 pool. Let the services manage their own transactions; just pass `testDb.db`.
 
+## Race tests: never assert a constant duration
+
+`ConcurrentTestDatabase` (`helpers/concurrent-db.ts`) hands out real, separate
+connections so two callers can genuinely overlap. What it cannot do is make the
+machine fast: this suite runs its files in parallel, and a perfectly overlapped
+pair of 200 ms operations can still exceed any constant you pick under load. An
+early harness self-test asserted that two 200 ms sleeps finish in under 500 ms,
+and went flaky on its second full run.
+
+**Measure a serial baseline in the same test and compare the two**, rather than
+picking a number. `helpers/concurrent-db.race.test.ts` is the worked example —
+copy its shape for any later test that wants to assert overlap.
+
 ## Seeding shared tables
 
 Some tables (`workflow_definitions`, `item_type_configs`) are _not_ cleared
@@ -225,6 +238,16 @@ StrictMode double-mount coverage passes
 effects, and misses duplicate mount-effect bugs. Golden examples:
 `src/lib/hooks/useListSelection.test.tsx`,
 `src/components/work-orders/useInstructionRun.test.tsx`.
+
+## A new test file needs `npm run typecheck`, not just vitest and eslint
+
+A fixture can run green and lint clean and still fail `tsc` — two PRs went red
+that way. The usual cause is a generic service method: `ItemService.create` is
+generic over `BaseItem`, so an untyped object literal has nowhere to put
+`partType` or `outputPartId`. **Name the generic** —
+`ItemService.create<Part>({ ... })` — rather than reaching for the `as never`
+the older suites use. `as never` compiles, but it types the returned row
+`never`, so the next line that reads `.id` off it fails instead.
 
 ## Writing tests — philosophy
 

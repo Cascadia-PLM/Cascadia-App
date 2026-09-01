@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/Label'
 import { Badge } from '@/components/ui/Badge'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { apiFetch } from '@/lib/api/client'
+import { useResourceMutation } from '@/lib/query'
 import { cn } from '@/lib/utils'
 import { StateBadge } from '@/components/items/StateBadge'
 
@@ -42,7 +43,7 @@ interface AddPartToStructureDialogProps {
   parentItemNumber: string
   currentDesignId: string
   currentDesignCode: string
-  onSuccess: () => void
+  onSuccess?: () => void
 }
 
 export function AddPartToStructureDialog({
@@ -61,7 +62,6 @@ export function AddPartToStructureDialog({
   const [selectedItem, setSelectedItem] = useState<EnrichedItem | null>(null)
   const [quantity, setQuantity] = useState('1')
   const [findNumber, setFindNumber] = useState('')
-  const [loading, setLoading] = useState(false)
   const [searching, setSearching] = useState(false)
 
   // Search for parts based on scope and query
@@ -122,32 +122,34 @@ export function AddPartToStructureDialog({
     }
   }, [open])
 
-  const handleAdd = async () => {
-    if (!selectedItem) return
-
-    setLoading(true)
-    try {
-      await apiFetch(`/api/v1/items/${parentItemId}/relationships`, {
+  const addPart = useResourceMutation({
+    mutationFn: (item: EnrichedItem) =>
+      apiFetch(`/api/v1/items/${parentItemId}/relationships`, {
         method: 'POST',
         body: JSON.stringify({
-          targetId: selectedItem.id,
+          targetId: item.id,
           relationshipType: 'BOM',
           quantity: quantity || '1',
           findNumber: findNumber ? parseInt(findNumber) : undefined,
         }),
-      })
-
-      onSuccess()
+      }),
+    invalidates: ['relationships'],
+    onSuccess: () => {
+      onSuccess?.()
       onOpenChange(false)
-    } catch {
+    },
+    onError: () => {
       alert({
         title: 'Error',
         description: 'Failed to add part to structure',
         variant: 'destructive',
       })
-    } finally {
-      setLoading(false)
-    }
+    },
+  })
+
+  const handleAdd = () => {
+    if (!selectedItem) return
+    addPart.mutate(selectedItem)
   }
 
   const scopeOptions: Array<{ value: DesignScope; label: string }> = [
@@ -338,9 +340,9 @@ export function AddPartToStructureDialog({
           <Button
             type="button"
             onClick={handleAdd}
-            disabled={!selectedItem || loading}
+            disabled={!selectedItem || addPart.isPending}
           >
-            {loading ? 'Adding...' : 'Add to BOM'}
+            {addPart.isPending ? 'Adding...' : 'Add to BOM'}
           </Button>
         </DialogFooter>
       </DialogContent>

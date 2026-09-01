@@ -3,6 +3,7 @@
 
 import {
   boolean,
+  foreignKey,
   index,
   jsonb,
   pgTable,
@@ -68,9 +69,8 @@ export const partManufacturerParts = pgTable(
     // items.masterId of the Part — deliberately NOT an FK to items.id: the AML
     // binds to the part lineage across revisions, not to one version row.
     partMasterId: uuid('part_master_id').notNull(),
-    manufacturerPartId: uuid('manufacturer_part_id')
-      .notNull()
-      .references(() => manufacturerParts.id, { onDelete: 'cascade' }),
+    // FK named in the table extras below — see the note there.
+    manufacturerPartId: uuid('manufacturer_part_id').notNull(),
     qualificationStatus: varchar('qualification_status', { length: 20 })
       .notNull()
       .default('proposed'), // 'proposed' | 'approved' | 'obsolete'
@@ -82,6 +82,12 @@ export const partManufacturerParts = pgTable(
     createdBy: uuid('created_by').references(() => users.id),
   },
   (table) => [
+    // Named explicitly: the implicit name is 69 bytes, past Postgres's 63.
+    foreignKey({
+      name: 'fk_part_mfr_parts_mfr_part',
+      columns: [table.manufacturerPartId],
+      foreignColumns: [manufacturerParts.id],
+    }).onDelete('cascade'),
     unique('uq_part_manufacturer_parts').on(
       table.partMasterId,
       table.manufacturerPartId,

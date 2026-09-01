@@ -305,3 +305,49 @@ export function designFamiliesQuery(programId?: string) {
     },
   })
 }
+
+/** Which half of a design's scope graph to read. */
+export type ScopeGraphDirection = 'all' | 'up' | 'down'
+
+export interface DesignScopeGraphParams {
+  /** `up` is the parent program, `down` the items the design contains. */
+  direction?: ScopeGraphDirection
+  /** Empty means every item type. */
+  itemTypes?: Array<string>
+}
+
+/**
+ * The drill-down scope graph rooted at a design — its parent program above,
+ * its top-level items below, and the per-item-type counts the graph view's
+ * type filter is built from.
+ *
+ * Generic in the response shape for the same reason `designStructureQuery` is.
+ * Keyed beneath the design *and* by the direction and type filter, so an
+ * upward expansion and a downward one are separate entries, toggling a type
+ * reads its own, and `invalidate('designs')` refreshes all of them.
+ */
+export function designScopeGraphQuery<T>(
+  designId: string,
+  params: DesignScopeGraphParams = {},
+  enabled = true,
+) {
+  const { direction = 'all', itemTypes = [] } = params
+  const qs = new URLSearchParams()
+  if (direction !== 'all') qs.set('direction', direction)
+  if (itemTypes.length > 0) qs.set('itemTypes', itemTypes.join(','))
+  const suffix = qs.size > 0 ? `?${qs}` : ''
+
+  return queryOptions({
+    queryKey: qk.sub('designs', designId, 'scope-graph', {
+      direction,
+      itemTypes,
+    }),
+    queryFn: async (): Promise<T> => {
+      const result = await apiFetch<{ data: T }>(
+        `/api/v1/designs/${designId}/graph${suffix}`,
+      )
+      return result.data
+    },
+    enabled: enabled && Boolean(designId),
+  })
+}

@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { CheckCircle2, Factory, Loader2, XCircle } from 'lucide-react'
 import {
   Dialog,
@@ -25,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { apiFetch } from '@/lib/api/client'
+import { designTagsQuery, useResourceMutation } from '@/lib/query'
 
 interface Tag {
   id: string
@@ -40,9 +42,6 @@ interface CreateMbomDialogProps {
   sourceDesignCode: string
   sourceDesignName: string
 }
-
-type CreateStatus =
-  'idle' | 'loading-tags' | 'submitting' | 'completed' | 'failed'
 
 interface MbomResult {
   design: {
@@ -70,50 +69,25 @@ export function CreateMbomDialog({
   const [copyBomStructure, setCopyBomStructure] = useState(true)
   const [linkToSource, setLinkToSource] = useState(true)
   const [renumberItems, setRenumberItems] = useState(true)
-  const [status, setStatus] = useState<CreateStatus>('idle')
-  const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<MbomResult | null>(null)
-  const [tags, setTags] = useState<Array<Tag>>([])
 
-  // Load tags when dialog opens
-  useEffect(() => {
-    if (open) {
-      setCode(`M-${sourceDesignCode}`)
-      setName(`${sourceDesignName} (MBOM)`)
-      setDescription('')
-      setSourceTagId('__current__')
-      setCopyBomStructure(true)
-      setLinkToSource(true)
-      setRenumberItems(true)
-      setStatus('loading-tags')
-      setError(null)
-      setResult(null)
+  // The baseline tags are only worth asking for while the dialog is on
+  // screen, but the answer is the one every other reader of this design's
+  // tags already holds — so it comes from the shared cache rather than from
+  // a fetch this component owns.
+  const { data: tags = [], isFetching: isLoadingTags } = useQuery({
+    ...designTagsQuery<Tag>(sourceDesignId),
+    enabled: open,
+  })
 
-      // Load tags for the source design
-      loadTags()
-    }
-  }, [open, sourceDesignCode, sourceDesignName, sourceDesignId])
-
-  const loadTags = async () => {
-    try {
-      const response = await apiFetch(`/api/v1/designs/${sourceDesignId}/tags`)
-      const { data } = response as { data: { tags: Array<Tag> } }
-      setTags(data.tags)
-      setStatus('idle')
-    } catch (err) {
-      console.error('Failed to load tags:', err)
-      setTags([])
-      setStatus('idle')
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setStatus('submitting')
-    setError(null)
-
-    try {
-      const response = await apiFetch('/api/v1/mbom', {
+  /**
+   * Creating an MBOM mints a whole Manufacturing design carrying copies of
+   * the source items, so `designs` goes stale alongside `mbom` — without it
+   * the designs list keeps its pre-creation rows until something else happens
+   * to refetch them.
+   */
+  const createMbom = useResourceMutation<MbomResult, Error, void>({
+    mutationFn: async () => {
+      const response = await apiFetch<{ data: MbomResult }>('/api/v1/mbom', {
         method: 'POST',
         body: JSON.stringify({
           sourceDesignId,
@@ -126,31 +100,50 @@ export function CreateMbomDialog({
           renumberItems,
         }),
       })
+      return response.data
+    },
+    invalidates: ['mbom', 'designs'],
+  })
 
-      const { data } = response as { data: MbomResult }
-      setResult(data)
-      setStatus('completed')
-    } catch (err) {
-      setStatus('failed')
-      setError((err as Error).message || 'Failed to create MBOM')
+  const result = createMbom.data ?? null
+  const error = createMbom.error
+    ? createMbom.error.message || 'Failed to create MBOM'
+    : null
+  const isFormDisabled = createMbom.isPending
+
+  // Reset the form each time the dialog opens. State only — the tags come
+  // from the query above, which needs no prompting.
+  useEffect(() => {
+    if (open) {
+      setCode(`M-${sourceDesignCode}`)
+      setName(`${sourceDesignName} (MBOM)`)
+      setDescription('')
+      setSourceTagId('__current__')
+      setCopyBomStructure(true)
+      setLinkToSource(true)
+      setRenumberItems(true)
+      createMbom.reset()
     }
+  }, [open, sourceDesignCode, sourceDesignName])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    createMbom.mutate()
   }
 
   const handleNavigateToNewDesign = () => {
-    if (result?.design.id) {
+    if (result) {
       onOpenChange(false)
       navigate({ to: '/designs/$id', params: { id: result.design.id } })
     }
   }
 
   const handleClose = () => {
-    if (status === 'submitting') {
+    if (createMbom.isPending) {
       return
     }
     onOpenChange(false)
   }
-
-  const isFormDisabled = status !== 'idle' && status !== 'loading-tags'
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -167,9 +160,7 @@ export function CreateMbomDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {status === 'idle' ||
-        status === 'loading-tags' ||
-        status === 'submitting' ? (
+        {!result && !createMbom.isError ? (
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
               {/* Source Design Info */}
@@ -198,7 +189,7 @@ export function CreateMbomDialog({
                 <Select
                   value={sourceTagId}
                   onValueChange={setSourceTagId}
-                  disabled={isFormDisabled || status === 'loading-tags'}
+                  disabled={isFormDisabled || isLoadingTags}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Use current HEAD" />
@@ -311,13 +302,6 @@ export function CreateMbomDialog({
                   </Label>
                 </div>
               </div>
-
-              {error && (
-                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 p-3 rounded-lg">
-                  <XCircle className="h-4 w-4" />
-                  {error}
-                </div>
-              )}
             </div>
 
             <DialogFooter>
@@ -325,12 +309,12 @@ export function CreateMbomDialog({
                 type="button"
                 variant="outline"
                 onClick={handleClose}
-                disabled={status === 'submitting'}
+                disabled={createMbom.isPending}
               >
                 Cancel
               </Button>
               <Button type="submit" disabled={isFormDisabled}>
-                {status === 'submitting' ? (
+                {createMbom.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Creating...
@@ -341,7 +325,7 @@ export function CreateMbomDialog({
               </Button>
             </DialogFooter>
           </form>
-        ) : status === 'completed' && result ? (
+        ) : result ? (
           <div className="py-8 space-y-4">
             <div className="flex items-center justify-center">
               <CheckCircle2 className="h-12 w-12 text-green-600 dark:text-green-400" />
@@ -389,7 +373,7 @@ export function CreateMbomDialog({
               </Button>
             </DialogFooter>
           </div>
-        ) : status === 'failed' ? (
+        ) : (
           <div className="py-8 space-y-4">
             <div className="flex items-center justify-center">
               <XCircle className="h-12 w-12 text-red-600 dark:text-red-400" />
@@ -403,13 +387,13 @@ export function CreateMbomDialog({
               </p>
             </div>
             <DialogFooter className="sm:justify-center">
-              <Button variant="outline" onClick={() => setStatus('idle')}>
+              <Button variant="outline" onClick={() => createMbom.reset()}>
                 Try Again
               </Button>
               <Button onClick={handleClose}>Close</Button>
             </DialogFooter>
           </div>
-        ) : null}
+        )}
       </DialogContent>
     </Dialog>
   )

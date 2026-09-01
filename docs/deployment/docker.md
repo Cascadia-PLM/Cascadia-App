@@ -43,8 +43,8 @@ All Node.js images use a four-stage build pattern to minimize image size and sep
 
 Key details:
 
-- The production stage installs production dependencies only (`npm ci --omit=dev`) — the server is pre-bundled, so dev dependencies aren't needed at runtime. `tsx` and `drizzle-kit` are then added back as admin tools for running `scripts/*.ts` (seed, schema push, reset) via `docker exec`.
-- The workspace sources (`packages/`, `apps/`, `scripts/`) are copied so those tsx-run admin scripts — including the schema push via `npm run db:push` — work inside the container.
+- The production stage installs production dependencies only (`npm ci --omit=dev --ignore-scripts`) — the server is pre-bundled, so dev dependencies aren't needed at runtime. `tsx` and `drizzle-kit` are then added back as admin tools for running `scripts/*.ts` (seed, migrate, baseline, reset) via `docker exec`.
+- The workspace sources (`packages/`, `apps/`, `scripts/`) are copied so those tsx-run admin scripts — including `npm run db:migrate` (and the one-time `npm run db:baseline` stamp for a pre-v0.5 database) — work inside the container.
 - Storage directories `/app/storage/files` and `/app/vault` are created with correct ownership.
 - Health check hits `GET /api/v1/health` on port 3000.
 - Entrypoint uses `dumb-init` for signal forwarding; the default command is `node .output/${APP}/server/index.mjs`, where the `APP` env var (baked from the build arg) names the edition's output directory.
@@ -54,7 +54,7 @@ Key details:
 Same four-stage pattern. Differences:
 
 - Production stage installs additional system packages: `imagemagick` (image processing), `ghostscript` (PDF operations). LibreOffice is available as a commented-out option for office document conversions.
-- Installs only production npm dependencies (`npm install --omit=dev`).
+- Installs only production npm dependencies (`npm ci --omit=dev --ignore-scripts`), the same policy as the app image.
 - Creates a `/app/tmp` directory for conversion scratch space.
 - Default environment: `WORKER_CONCURRENCY=5`, `JOB_TYPES=*`, `JOB_TIMEOUT=300000`.
 - Health check hits `GET /health` on port 3002.

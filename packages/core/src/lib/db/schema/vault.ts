@@ -10,6 +10,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
@@ -17,6 +18,7 @@ import { relations, sql } from 'drizzle-orm'
 import { users } from './users'
 import { items } from './items'
 import { branches } from './versioning'
+import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 
 export const vaultFiles = pgTable(
   'vault_files',
@@ -61,7 +63,8 @@ export const vaultFiles = pgTable(
     isPrimaryModel: boolean('is_primary_model').default(false), // Mark primary CAD file for quick access
     // User-designated item thumbnail. Set on an uploaded image file to make that
     // image the item's thumbnail; takes precedence over the CAD-converter-generated
-    // thumbnail referenced by thumbnailFileId. At most one per item.
+    // thumbnail referenced by thumbnailFileId. At most one per item, enforced
+    // by uq_vault_files_item_thumbnail below.
     isItemThumbnail: boolean('is_item_thumbnail').notNull().default(false),
     cadMetadata: jsonb('cad_metadata').$type<{
       software?: string // e.g., 'SolidWorks 2024', 'Fusion360'
@@ -71,7 +74,16 @@ export const vaultFiles = pgTable(
       hasColors?: boolean // Per-face colors preserved (GLB written by the CAD converter)
     }>(),
 
-    thumbnailFileId: uuid('thumbnail_file_id'), // Self-referencing FK added via raw SQL migration
+    // The generated thumbnail of this file, itself a vault file. A real
+    // self-FK, not a bare uuid: nothing in the app hard-deletes a vault_files
+    // row today, but a future hard delete or an operator's manual cleanup
+    // would otherwise leave `getItemThumbnailFileId` handing out an id that
+    // 404s. SET NULL, so the referrer survives its thumbnail and simply has
+    // none.
+    thumbnailFileId: uuid('thumbnail_file_id').references(
+      (): AnyPgColumn => vaultFiles.id,
+      { onDelete: 'set null' },
+    ),
 
     deletedAt: timestamp('deleted_at', { withTimezone: true }), // Soft delete
     deletedBy: uuid('deleted_by').references(() => users.id),
@@ -95,8 +107,17 @@ export const vaultFiles = pgTable(
     index('idx_vault_files_primary')
       .on(table.itemId)
       .where(sql`${table.isPrimaryModel}`),
+    // On the pointer column, and kept: it is what the self-FK's SET NULL scan
+    // reads when a thumbnail file is hard-deleted.
     index('idx_vault_files_thumbnail').on(table.thumbnailFileId),
-    index('idx_vault_files_item_thumbnail').on(table.isItemThumbnail),
+    // Partial and unique, on itemId: "at most one thumbnail per item" was a
+    // comment the database did nothing about, and the index that stood here
+    // was a bare whole-table boolean btree — two values over every row, which
+    // answered no query anyone asks. One declaration now enforces the
+    // invariant and serves the per-item lookup.
+    uniqueIndex('uq_vault_files_item_thumbnail')
+      .on(table.itemId)
+      .where(sql`${table.isItemThumbnail}`),
   ],
 )
 

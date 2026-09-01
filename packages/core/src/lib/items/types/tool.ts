@@ -18,8 +18,8 @@ export interface Tool extends BaseItem {
   capabilities?: Record<string, unknown>
   location?: string
   notes?: string
-  // Free-form key/value metadata (inherited from BaseItem; declared for clarity)
-  attributes?: Record<string, string>
+  // Free-form metadata (inherited from BaseItem; declared for clarity)
+  attributes?: Record<string, unknown>
 }
 
 // ============================================================================

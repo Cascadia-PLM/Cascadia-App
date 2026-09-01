@@ -223,12 +223,19 @@ async function readJsonBody(request: Request): Promise<unknown> {
  * validate one shape and advertise another, which is the state
  * `PUT /parts/:id` was in: an annotation naming `partUpdateSchema` over a
  * handler that took whatever it was sent.
+ *
+ * The one exception is opt-in and named: an annotation flagged
+ * `documentsSupersetOfEnforced` survives verbatim, for the routes whose
+ * enforced envelope is deliberately looser than their real contract — see the
+ * flag's own doc comment for what that costs. Two routes use it; every other
+ * annotation is still overwritten.
  */
 function documentBody(
   openapi: OpenApiMetadata,
   body: z.ZodType | undefined,
 ): OpenApiMetadata {
   if (!body) return openapi
+  if (openapi.request?.body?.documentsSupersetOfEnforced) return openapi
   return {
     ...openapi,
     request: {

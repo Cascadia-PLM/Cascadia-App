@@ -41,8 +41,13 @@ export type MarkConflictReviewedRequest = z.infer<
 export interface EnrichedItemConflict extends ItemConflict {
   /** Whether this conflict has been reviewed */
   isReviewed: boolean
-  /** The review record if reviewed */
+  /** The current (newest) acknowledgement if reviewed */
   review?: ConflictReview
+  /**
+   * Every acknowledgement of this conflict, newest first. Acknowledgements
+   * accumulate rather than replace, so earlier reviewers' notes survive here.
+   */
+  reviewHistory?: Array<ConflictReview>
   /** Whether the review is stale (conflict has changed since review) */
   needsReReview: boolean
 }

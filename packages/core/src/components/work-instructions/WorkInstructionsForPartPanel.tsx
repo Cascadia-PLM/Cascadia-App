@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { ClipboardCheck, Clock, PlayCircle } from 'lucide-react'
 import {
   Badge,
@@ -14,6 +15,7 @@ import {
   CardTitle,
 } from '@/components/ui'
 import { StateBadge } from '@/components/items/StateBadge'
+import { partWorkInstructionsQuery } from '@/lib/query'
 
 interface WorkInstructionForPart {
   attachmentId: string
@@ -55,29 +57,24 @@ export function WorkInstructionsForPartPanel({
   partId,
   onError,
 }: WorkInstructionsForPartPanelProps) {
-  const [workInstructions, setWorkInstructions] = useState<
-    Array<WorkInstructionForPart>
-  >([])
-  const [loading, setLoading] = useState(true)
+  const {
+    data: workInstructions = [],
+    isPending: loading,
+    error,
+  } = useQuery(partWorkInstructionsQuery<WorkInstructionForPart>(partId))
 
-  const loadWorkInstructions = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/v1/parts/${partId}/work-instructions`)
-      if (!response.ok) {
-        throw new Error('Failed to load work instructions')
-      }
-      const data = await response.json()
-      setWorkInstructions(data.data?.workInstructions ?? [])
-    } catch (error) {
-      onError?.(error as Error)
-    } finally {
-      setLoading(false)
-    }
-  }, [partId, onError])
+  // The host decides how a load failure is surfaced (the part page raises a
+  // toast). Held in a ref so the report is keyed on the error alone: the
+  // callback is an inline arrow at the call site, so depending on it directly
+  // would re-report on every render of the parent.
+  const onErrorRef = useRef(onError)
+  onErrorRef.current = onError
 
   useEffect(() => {
-    loadWorkInstructions()
-  }, [loadWorkInstructions])
+    if (error) {
+      onErrorRef.current?.(error)
+    }
+  }, [error])
 
   return (
     <Card>

@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   Background,
   Controls,
@@ -37,6 +38,7 @@ import type { ThreadResponse } from '@/lib/services/ThreadService'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { FullscreenGraphWrapper } from '@/components/ui/FullscreenGraphWrapper'
+import { itemThreadQuery } from '@/lib/query'
 import { useTheme } from '@/lib/theme'
 
 interface DigitalThreadNavigatorProps {
@@ -46,6 +48,15 @@ interface DigitalThreadNavigatorProps {
   designId?: string
   defaultExpanded?: boolean
 }
+
+/** Every domain the navigator draws; the endpoint defaults to a narrower set. */
+const THREAD_DOMAINS = [
+  'requirements',
+  'validation',
+  'engineering',
+  'manufacturing',
+  'physical',
+]
 
 export function DigitalThreadNavigator({
   itemId,
@@ -60,15 +71,9 @@ export function DigitalThreadNavigator({
   const [downstreamDepth, setDownstreamDepth] = useState(3)
   const [bomDepth, setBomDepth] = useState(2)
   const [direction, setDirection] = useState<'TB' | 'LR'>('TB')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
-  const [stats, setStats] = useState<ThreadResponse['stats'] | null>(null)
   const [comparisonDialogOpen, setComparisonDialogOpen] = useState(false)
-  const [focalItemNumber, setFocalItemNumber] = useState(itemNumber)
-  const [focalItemName, setFocalItemName] = useState(itemName)
-  const [focalDesignId, setFocalDesignId] = useState(designId)
   const cachedThreadData = useRef<ThreadResponse | null>(null)
   const directionRef = useRef(direction)
   directionRef.current = direction
@@ -85,6 +90,28 @@ export function DigitalThreadNavigator({
     },
     [],
   )
+
+  // The thread itself, asked only once the card is open. Keyed beneath the
+  // item and by the depth budget, so a relationship or version write elsewhere
+  // refreshes a mounted navigator and moving a depth control re-keys the read.
+  const threadQuery = useQuery(
+    itemThreadQuery<ThreadResponse>(
+      itemId,
+      { upstreamDepth, downstreamDepth, bomDepth, domains: THREAD_DOMAINS },
+      isExpanded,
+    ),
+  )
+  const threadData = threadQuery.data
+  const loading = threadQuery.isFetching
+  const error = threadQuery.error
+  const stats = threadData?.stats ?? null
+
+  // The server resolves the focal item; the props are only the caller's guess
+  // until it answers.
+  const focalItem = threadData?.focalItem
+  const focalItemNumber = focalItem ? focalItem.itemNumber : itemNumber
+  const focalItemName = focalItem ? focalItem.name : itemName
+  const focalDesignId = focalItem ? (focalItem.designId ?? '') : designId
 
   const nodeTypes = useMemo(() => ({ threadNode: ThreadNode }), [])
 
@@ -159,48 +186,17 @@ export function DigitalThreadNavigator({
     }
   }
 
-  const loadThreadData = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const params = new URLSearchParams({
-        upstreamDepth: upstreamDepth.toString(),
-        downstreamDepth: downstreamDepth.toString(),
-        bomDepth: bomDepth.toString(),
-        domains: 'requirements,validation,engineering,manufacturing,physical',
-      })
-
-      const response = await fetch(`/api/v1/thread/${itemId}?${params}`)
-
-      if (!response.ok) {
-        throw new Error('Failed to load digital thread data')
-      }
-
-      const { data } = (await response.json()) as { data: ThreadResponse }
-
-      setFocalItemNumber(data.focalItem.itemNumber)
-      setFocalItemName(data.focalItem.name)
-      setFocalDesignId(data.focalItem.designId ?? '')
-
-      cachedThreadData.current = data
-      applyLayout(data, directionRef.current)
-      setStats(data.stats)
-    } catch (err) {
-      setError((err as Error).message)
-    } finally {
-      setLoading(false)
-    }
-  }, [itemId, upstreamDepth, downstreamDepth, bomDepth, applyLayout])
-
+  // React Flow's model is derived state: rebuild it whenever the query hands
+  // back a different thread. `applyLayout` is stable and the direction comes
+  // from a ref, so laying out never re-runs this.
   useEffect(() => {
-    if (isExpanded) {
-      loadThreadData()
-    }
-  }, [isExpanded, loadThreadData])
+    if (!threadData) return
+    cachedThreadData.current = threadData
+    applyLayout(threadData, directionRef.current)
+  }, [threadData, applyLayout])
 
   const handleRefresh = () => {
-    loadThreadData()
+    void threadQuery.refetch()
   }
 
   const handleToggleDirection = useCallback(() => {
@@ -445,7 +441,7 @@ export function DigitalThreadNavigator({
 
           {error && (
             <div className="text-center py-8 text-red-600 dark:text-red-400">
-              Error: {error}
+              Error: {error.message}
             </div>
           )}
 

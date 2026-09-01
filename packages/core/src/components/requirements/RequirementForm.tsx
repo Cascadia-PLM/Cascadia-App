@@ -49,7 +49,7 @@ export function RequirementForm({
 }: RequirementFormProps) {
   // Track selected design's protection status
   const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>()
-  const [attributes, setAttributes] = useState<Record<string, string>>(
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
     requirement?.attributes ?? {},
   )
   const form = useForm({

@@ -37,12 +37,15 @@
 #     your own STEP files via the UI.
 #   * All volumes are namespaced cascadia_demo_* so they coexist safely with
 #     the dev compose's cascadia-* volumes.
+#   * The app port is published on 127.0.0.1 only. Running the demo on a remote
+#     VM? Set DEMO_BIND=0.0.0.0 (the admin credential above is public knowledge
+#     — do not do this on an untrusted network).
 
 name: cascadia-demo
 
 services:
   postgres:
-    image: postgres:18-alpine
+    image: postgres:18-alpine@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
     container_name: cascadia-demo-postgres
     restart: unless-stopped
     environment:
@@ -61,7 +64,7 @@ services:
     networks: [cascadia-demo]
 
   rabbitmq:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:3-management-alpine@sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281
     container_name: cascadia-demo-rabbitmq
     restart: unless-stopped
     environment:
@@ -105,7 +108,7 @@ services:
       #   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
     ports:
-      - '${DEMO_APP_PORT:-3000}:3000'
+      - '${DEMO_BIND:-127.0.0.1}:${DEMO_APP_PORT:-3000}:3000'
     volumes:
       - cascadia_demo_app_storage:/app/storage
       - cascadia_demo_app_vault:/app/vault

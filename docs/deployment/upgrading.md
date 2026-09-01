@@ -31,19 +31,37 @@ Both of those run against empty databases, which is the one place a
 data-dependent migration cannot be judged: a backfill `UPDATE` matches
 nothing, a dedup `DELETE` removes nothing, and a guard written to abort on
 corrupt history has nothing to abort on. `npm run db:check-backfills`
-covers that case. For each migration that touches rows it stages the
-journal to the tag before it, seeds the shape of data that tag's SQL exists
-to handle, applies just that one file, and asserts what it did — including
-the migrations that are supposed to fail, which must abort with the
-documented SQLSTATE and leave the database exactly where it was. It runs in
-the Migrations Apply job against its own scratch database.
+covers that case. For each migration whose outcome depends on rows it
+stages the journal to the tag before it, seeds the shape of data that tag's
+SQL exists to handle, applies just that one file, and asserts what it did —
+including the migrations that are supposed to fail, which must abort with
+the documented SQLSTATE and leave the database exactly where it was. It
+runs in the Migrations Apply job against its own scratch database.
 
-**A new migration that touches rows has to ship a scenario.** The check
-scans every journal entry for a row-touching statement and fails when one
-has none registered, so add the seed-and-assert block to
-`scripts/check-migration-backfills.mjs` in the same commit as the
-migration. Locally: `createdb -U postgres cascadia_migrate_backfills`, then
+"Depends on rows" is two families. The writes — `UPDATE`, `DELETE`,
+`INSERT` — are the obvious one. The other is DDL Postgres validates against
+every existing row before it will commit: `ADD CONSTRAINT`, `SET NOT NULL`,
+a `NOT NULL` column added with no default, a column whose type changes, and
+`CREATE UNIQUE INDEX`. Those are the statements that abort an upgrade
+rather than silently doing nothing, and an empty database judges them no
+better than it judges a backfill. Validating DDL against a table the same
+migration just created does not count — there, "the rows already present"
+is the empty set by construction, which is what keeps the baselines out.
+
+**A new migration in either family has to ship a scenario.** The check
+scans every journal entry and fails when one has none registered, so add
+the seed-and-assert block to `scripts/check-migration-backfills.mjs` in the
+same commit as the migration. Locally:
+`createdb -U postgres cascadia_migrate_backfills`, then
 `BACKFILL_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cascadia_migrate_backfills npm run db:check-backfills`.
+
+If a statement genuinely cannot behave differently against rows — a
+constraint the database already enforced under another name, say — record
+the argument in that script's `CANNOT_ABORT` list rather than narrowing its
+classifier. Narrowing it is how the writes-only version of this check came
+to wave a constraint-validating migration through with no scenario at all;
+an entry naming a statement that no longer qualifies fails the run, so the
+list cannot silently outlive what it was arguing about.
 
 ## Fresh installs (v0.5.0 or later)
 
@@ -70,6 +88,38 @@ npm run db:migrate
 baseline creates — that means the database was not kept current with
 `db:push` before the upgrade. Bring it to the 0.5.0 schema first (check out
 v0.5.0 and run `npm run db:push` once), then stamp.
+
+### Preflight the data-dependent migrations
+
+The migrations applied after the stamp validate against data the pre-0.5
+schema allowed, and two of them refuse rather than repair: the items
+identity unique — which `NULLS NOT DISTINCT` makes bite for the design-less
+item types the old constraint never checked — and the versioning-graph
+foreign keys. Both have a report-only preflight. Run them first, so a
+collision arrives as a list of rows rather than as an aborted upgrade
+window:
+
+```bash
+npm run db:check-duplicates   # names the colliding design-less identities
+npm run db:check-orphans      # dangling versioning pointers, counted per edge
+```
+
+Each exits non-zero when it finds anything, so either can gate an upgrade
+script. `db:check-orphans` also labels every edge with what the migration
+will do about it: the inert classes (stale provenance pointers, tracking
+rows left behind on archived branches) are cleaned by the file itself,
+while a dangling `commits.parent_id` / `commits.branch_id` or a
+`branches.head_commit_id` / `base_commit_id` aborts it on purpose — that is
+history corruption, and a human decides. Read the `branch_items` edges the
+same way: the cleanup covers archived branches only, so a dangler on a live
+branch aborts too.
+
+An abort is not a half-upgrade. `ADD CONSTRAINT` validates inside the
+migration's transaction, so a refusal rolls that file back and leaves the
+database exactly where it started; resolve the rows the report names and
+run `db:migrate` again. Neither check is pre-0.5-specific — any install
+that has not yet applied the post-v0.5.0 migrations can run them — but
+pre-0.5 databases are where the offending rows accumulated.
 
 ### In Docker
 
@@ -125,24 +175,34 @@ new migration.
 and images carry `org.opencontainers.image.version`. Check it before and
 after an upgrade.
 
-## Consolidating unreleased migrations
+## Consolidating unpublished migrations
 
-A migration that has never been in a release has never reached an install
-that upgrades. Before its first release, a run of them may be folded into a
-single file — which is what happened before v0.5.1, to the twenty-five
-(nineteen in the community edition) that the two remediation programs
-produced after `v0.5.0`. It happened in two passes: the first program's were
-folded while the second was still running, and the result was folded again
-with the second's into the same `0001_remediation`. Folding a file that is
-itself a fold is fine; what matters is that nothing in it was ever released.
+A migration that has never been published has never reached a database
+other than a development one upstream. Before it is first published, a run
+of them may be folded into a single file — which is what happened to the
+twenty-five (nineteen in the community edition) that the two remediation
+programs produced after `v0.5.0`. It happened in two passes: the first
+program's were folded while the second was still running, and the result was
+folded again with the second's into the same `0001_remediation`. Folding a
+file that is itself a fold is fine; what matters is that nothing in it was
+ever published.
+
+This is the standing practice, not an occasional cleanup: each wave of
+development arrives in this repository as **one** new migration per edition,
+folded from however many the work minted upstream. Development iterates
+freely there; what publishes is the consolidated result.
 
 This is allowed because it is not an edit in the sense above: no database
 that ran those files ends up disagreeing with one that runs the consolidated
 one. Three things make that true, and all three have to hold:
 
-1. **Every folded migration is post-release.** Check the tag: `git ls-tree -r
---name-only v0.5.0 -- apps/*/drizzle/` shows what shipped. Anything at or
-   before the last release stays where it is, forever.
+1. **Every folded migration is unpublished.** A release tag is not the line —
+   publication is. A production database can only be tracking what this
+   repository's `main` has carried, tagged or not, so check what `main`
+   already holds under `apps/*/drizzle/`: anything there stays where it is,
+   forever. (This is stricter than the release check the first fold used —
+   `git ls-tree -r --name-only v0.5.0 -- apps/*/drizzle/` — which is only
+   equivalent while nothing has been published since the tag.)
 2. **The consolidated file keeps the `when` of the _last_ migration it
    folds.** Drizzle applies on `created_at < folderMillis`, so the timestamp
    chosen decides exactly which databases skip the file, and only one choice
@@ -215,8 +275,10 @@ for.
   so an edit does not fail — it silently divides your installs into those
   that ran the old statements and those that ran the new. Fix forward with a
   new migration.
-- **Consolidating unreleased migrations is the one exception**, and it is a
-  deliberate operation rather than an edit. See below.
+- **Consolidating unpublished migrations is the one exception**, and it is a
+  deliberate operation rather than an edit — see "Consolidating unpublished
+  migrations" above. It happens once per wave, right before the publish that
+  ships it, so each publish carries at most one new migration per edition.
 - The enterprise migrations are proprietary (they name module tables) and
   never publish; the community migrations under `apps/cascadia/drizzle/`
   ship to the public repo. `npm run publish:verify` checks both directions.

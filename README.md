@@ -74,7 +74,7 @@ Working from a clone instead? Use [`docker-compose.demo-with-build.yml`](./docke
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 - PostgreSQL 18+
 - npm or pnpm
 - Docker (optional, for RabbitMQ)

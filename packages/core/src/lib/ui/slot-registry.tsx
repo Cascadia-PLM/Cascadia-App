@@ -36,6 +36,14 @@ export interface SlotProps {
    */
   'admin-ai-settings-sections': Record<string, never>
   /**
+   * Extra sections on the admin console's landing page, below the built-in
+   * cards and above the version block. Takes no props, for the same reason as
+   * the AI settings slot: a module contributing here brings its own heading
+   * and copy, because core has no basis for describing a feature it does not
+   * ship — or for naming the permission that feature happens to gate on.
+   */
+  'admin-settings-sections': Record<string, never>
+  /**
    * Extra entries in the sidebar's Designs section, below My Workspaces.
    *
    * A module that contributes whole routes has to contribute the way in as

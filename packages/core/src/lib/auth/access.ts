@@ -106,7 +106,13 @@ export async function requireEcoAccess(userId: string, changeOrderId: string) {
 
 /**
  * Verify user can access the design that a branch belongs to.
- * Throws NotFoundError if branch doesn't exist, PermissionDeniedError if no access.
+ * Throws PermissionDeniedError if the branch is missing or unreachable —
+ * deliberately the same error for both, mirroring `canAccessDesign`, which
+ * already collapses a missing design into the same `false` as an
+ * inaccessible one. A NotFoundError here would let a caller distinguish "no
+ * such branch" from "that branch is real but out of reach," turning a branch
+ * id gathered elsewhere into an oracle for what exists in a program they
+ * cannot open.
  * Returns the branch for convenience.
  */
 export async function requireBranchAccess(
@@ -117,7 +123,7 @@ export async function requireBranchAccess(
   designId: string
 }> {
   const branch = await BranchService.getById(branchId)
-  if (!branch) throw new NotFoundError('Branch', branchId)
+  if (!branch) throw new PermissionDeniedError('branch', 'read')
 
   await requireDesignAccess(userId, branch.designId)
   return { branch, designId: branch.designId }

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   ArrowUpDown,
   Clock,
@@ -11,11 +12,7 @@ import {
   RefreshCw,
   Rows3,
 } from 'lucide-react'
-import type {
-  Report,
-  ReportColumn,
-  ReportExecutionResult,
-} from '@/lib/reports/types'
+import type { Report, ReportColumn } from '@/lib/reports/types'
 import {
   Badge,
   Button,
@@ -28,48 +25,31 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui'
+import { reportExecutionQuery } from '@/lib/query'
 
 interface ReportViewerProps {
   report: Report
 }
 
 export function ReportViewer({ report }: ReportViewerProps) {
-  const [result, setResult] = useState<ReportExecutionResult | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // The CSV download is the one thing here that is not a cached read, so its
+  // failure is the one error this component still holds itself.
+  const [exportError, setExportError] = useState<string | null>(null)
 
-  const executeReport = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
+  const {
+    data: result,
+    isFetching,
+    error: executionError,
+    refetch,
+  } = useQuery(reportExecutionQuery(report.id))
 
-    try {
-      const response = await fetch(`/api/v1/reports/${report.id}/execute`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ limit: 100, offset: 0 }),
-      })
+  const error = exportError ?? executionError?.message ?? null
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(
-          errorData.details || errorData.error || 'Failed to execute report',
-        )
-      }
-
-      const data = await response.json()
-      setResult(data.result)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [report.id])
-
-  useEffect(() => {
-    executeReport()
-  }, [executeReport])
+  /** Re-run the report against the server, clearing whatever last failed. */
+  const handleRefresh = () => {
+    setExportError(null)
+    void refetch()
+  }
 
   const handleExport = async () => {
     try {
@@ -106,7 +86,7 @@ export function ReportViewer({ report }: ReportViewerProps) {
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch {
-      setError('Failed to export report')
+      setExportError('Failed to export report')
     }
   }
 
@@ -181,11 +161,11 @@ export function ReportViewer({ report }: ReportViewerProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={executeReport}
-            disabled={isLoading}
+            onClick={handleRefresh}
+            disabled={isFetching}
           >
             <RefreshCw
-              className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`}
+              className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`}
             />
             Refresh
           </Button>
@@ -193,7 +173,7 @@ export function ReportViewer({ report }: ReportViewerProps) {
             variant="outline"
             size="sm"
             onClick={handleExport}
-            disabled={isLoading || !result}
+            disabled={isFetching || !result}
           >
             <Download className="w-4 h-4 mr-2" />
             Export CSV
@@ -246,7 +226,7 @@ export function ReportViewer({ report }: ReportViewerProps) {
       )}
 
       {/* Loading State */}
-      {isLoading && (
+      {isFetching && (
         <Card className="p-12">
           <div className="flex flex-col items-center justify-center">
             <LoadingSpinner size="lg" />
@@ -256,13 +236,13 @@ export function ReportViewer({ report }: ReportViewerProps) {
       )}
 
       {/* Error State */}
-      {error && !isLoading && (
+      {error && !isFetching && (
         <Card className="p-6 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
           <p className="text-red-600 dark:text-red-400">{error}</p>
           <Button
             variant="outline"
             size="sm"
-            onClick={executeReport}
+            onClick={handleRefresh}
             className="mt-4"
           >
             Try Again
@@ -271,7 +251,7 @@ export function ReportViewer({ report }: ReportViewerProps) {
       )}
 
       {/* Results Table */}
-      {result && !isLoading && !error && (
+      {result && !isFetching && !error && (
         <Card className="overflow-hidden">
           {result.rows.length === 0 ? (
             <div className="p-12 text-center">

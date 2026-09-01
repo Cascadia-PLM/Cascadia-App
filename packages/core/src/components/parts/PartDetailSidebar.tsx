@@ -4,7 +4,10 @@
 import type { Part } from '@/lib/items/types/part'
 import type { VersionContext } from '@/lib/hooks/useVersionContext'
 import type { CADViewerState } from './useCADViewerState'
-import { AttributesEditor } from '@/components/items/AttributesEditor'
+import {
+  AttributesEditor,
+  formatAttributeValue,
+} from '@/components/items/AttributesEditor'
 import { FileList, FileUploadZone } from '@/components/vault'
 import {
   Card,
@@ -44,8 +47,8 @@ export function PartDetailSidebar({
   isCreateMode: boolean
   isEditing: boolean
   isSubmitting: boolean
-  attributes: Record<string, string>
-  onAttributesChange: (attributes: Record<string, string>) => void
+  attributes: Record<string, unknown>
+  onAttributesChange: (attributes: Record<string, unknown>) => void
   context: VersionContext
   mainBranchId: string | undefined
   /** Uploads refresh the CAD list and bust the thumbnail cache. */
@@ -87,7 +90,7 @@ export function PartDetailSidebar({
                             {key}
                           </dt>
                           <dd className="text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-md">
-                            {value || '-'}
+                            {formatAttributeValue(value) || '-'}
                           </dd>
                         </div>
                       ),

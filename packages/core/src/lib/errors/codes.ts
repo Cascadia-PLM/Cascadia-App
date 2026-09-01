@@ -57,6 +57,13 @@ export enum ErrorCode {
   NOT_IMPLEMENTED = 'NOT_IMPLEMENTED',
   RATE_LIMITED = 'RATE_LIMITED',
   SECRET_DECRYPTION_FAILED = 'SECRET_DECRYPTION_FAILED',
+  /**
+   * A feature turned off by configuration rather than one that failed. Kept
+   * out of the retryable set (errors/retry.ts) deliberately: retrying a
+   * feature an administrator switched off can only fail again, which is why
+   * the retryable EXTERNAL_SERVICE_UNAVAILABLE is the wrong code for it.
+   */
+  FEATURE_DISABLED = 'FEATURE_DISABLED',
 
   // Licensing (10xxx)
   PACKAGE_NOT_LICENSED = 'PACKAGE_NOT_LICENSED',
@@ -125,11 +132,12 @@ export const errorCodeToHttpStatus: Record<ErrorCode, number> = {
   [ErrorCode.EXTERNAL_SERVICE_TIMEOUT]: 504,
   [ErrorCode.EXTERNAL_SERVICE_ERROR]: 502,
 
-  // System → 429/500/501
+  // System → 429/500/501/503
   [ErrorCode.INTERNAL_ERROR]: 500,
   [ErrorCode.NOT_IMPLEMENTED]: 501,
   [ErrorCode.RATE_LIMITED]: 429,
   [ErrorCode.SECRET_DECRYPTION_FAILED]: 500,
+  [ErrorCode.FEATURE_DISABLED]: 503,
 
   // Licensing → 403
   [ErrorCode.PACKAGE_NOT_LICENSED]: 403,

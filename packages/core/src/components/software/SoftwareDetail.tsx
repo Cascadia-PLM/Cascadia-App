@@ -9,7 +9,10 @@ import { SourceViewer } from './SourceViewer'
 import type { Software } from '@/lib/items/types/software'
 import type { Design } from '@/lib/types/design'
 import { PageContainer } from '@/components/layout'
-import { AttributesEditor } from '@/components/items/AttributesEditor'
+import {
+  AttributesEditor,
+  formatAttributeValue,
+} from '@/components/items/AttributesEditor'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import {
   Badge,
@@ -105,7 +108,7 @@ export function SoftwareDetail({
     () => initialSoftware || createEmptySoftware(defaultDesignId),
   )
   const [isEditing, setIsEditing] = useState(isCreateMode)
-  const [attributes, setAttributes] = useState<Record<string, string>>(
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
     initialSoftware?.attributes ?? {},
   )
 
@@ -437,7 +440,7 @@ export function SoftwareDetail({
                                     {key}
                                   </dt>
                                   <dd className="text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-md">
-                                    {value || '-'}
+                                    {formatAttributeValue(value) || '-'}
                                   </dd>
                                 </div>
                               ),

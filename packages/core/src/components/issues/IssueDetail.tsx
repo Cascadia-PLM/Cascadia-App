@@ -8,7 +8,10 @@ import { ArrowLeft, Edit, Save, Trash2, X } from 'lucide-react'
 import type { Issue } from '@/lib/items/types/issue'
 import type { Design } from '@/lib/types/design'
 import { PageContainer } from '@/components/layout'
-import { AttributesEditor } from '@/components/items/AttributesEditor'
+import {
+  AttributesEditor,
+  formatAttributeValue,
+} from '@/components/items/AttributesEditor'
 import { StateBadge } from '@/components/items/StateBadge'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { DesignMultiSelector } from '@/components/versioning/DesignMultiSelector'
@@ -178,13 +181,8 @@ export function IssueDetail({
       },
   )
   const [isEditing, setIsEditing] = useState(isCreateMode)
-  const [attributes, setAttributes] = useState<Record<string, string>>(
-    Object.fromEntries(
-      Object.entries(initialIssue?.attributes ?? {}).map(([key, value]) => [
-        key,
-        Array.isArray(value) ? value.join(', ') : String(value),
-      ]),
-    ),
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
+    initialIssue?.attributes ?? {},
   )
 
   const { context, setContext } = useVersionContext(
@@ -206,14 +204,7 @@ export function IssueDetail({
   useEffect(() => {
     if (initialIssue) {
       setIssue(initialIssue)
-      setAttributes(
-        Object.fromEntries(
-          Object.entries(initialIssue.attributes ?? {}).map(([key, value]) => [
-            key,
-            Array.isArray(value) ? value.join(', ') : String(value),
-          ]),
-        ),
-      )
+      setAttributes(initialIssue.attributes ?? {})
     }
   }, [initialIssue])
 
@@ -247,14 +238,7 @@ export function IssueDetail({
       onCancel()
     } else {
       setIssue(currentIssue)
-      setAttributes(
-        Object.fromEntries(
-          Object.entries(currentIssue.attributes ?? {}).map(([key, value]) => [
-            key,
-            Array.isArray(value) ? value.join(', ') : String(value),
-          ]),
-        ),
-      )
+      setAttributes(currentIssue.attributes ?? {})
       setIsEditing(false)
     }
   }
@@ -586,9 +570,7 @@ export function IssueDetail({
                                     {key}
                                   </dt>
                                   <dd className="text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-md">
-                                    {Array.isArray(value)
-                                      ? value.join(', ')
-                                      : String(value)}
+                                    {formatAttributeValue(value) || '-'}
                                   </dd>
                                 </div>
                               ),

@@ -14,16 +14,44 @@ import {
 } from '@/components/ui'
 
 interface AttributesEditorProps {
-  value: Record<string, string>
-  onChange: (attributes: Record<string, string>) => void
+  value: Record<string, unknown>
+  onChange: (attributes: Record<string, unknown>) => void
   disabled?: boolean
   /** Additional classes for the outer border wrapper (use 'border-0' to suppress when inside a Card) */
   className?: string
 }
 
 /**
+ * Render one attribute value as display text.
+ *
+ * `items.attributes` is a JSON document, so a value can be an object or an
+ * array. Passing one of those to React as a child throws, and `String(v)`
+ * gives `[object Object]` - both of which this replaces. Exported because
+ * every read-only attribute list on an item detail page needs the same thing.
+ */
+export function formatAttributeValue(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'string') return value
+  if (typeof value !== 'object') return String(value)
+  try {
+    return JSON.stringify(value)
+  } catch {
+    // A circular structure is not something the column can hold, but the
+    // editor should still render the row rather than throw.
+    return String(value)
+  }
+}
+
+/**
  * A reusable component for editing key-value attributes on items.
  * Renders inside a collapsible section with add/edit/remove operations.
+ *
+ * Editing is for string values, which is what a person types here. A
+ * structured value - a catalog snapshot written by design-engine
+ * materialization, say - is shown read-only as JSON and passed back through
+ * `onChange` untouched, because every caller saves the whole map: coercing it
+ * into this editor's text input would destroy it on the next save of any
+ * unrelated field. Renaming its key and deleting it still work.
  */
 export function AttributesEditor({
   value,
@@ -52,7 +80,7 @@ export function AttributesEditor({
     if (oldKey === newKey || !newKey.trim()) return
 
     // Build new object preserving order, replacing old key with new key
-    const newAttributes: Record<string, string> = {}
+    const newAttributes: Record<string, unknown> = {}
     for (const [key, val] of Object.entries(value)) {
       if (key === oldKey) {
         newAttributes[newKey.trim()] = val
@@ -95,40 +123,52 @@ export function AttributesEditor({
               </p>
             ) : (
               <div className="space-y-2">
-                {entries.map(([key, val], index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Input
-                      value={key}
-                      onChange={(e) => handleKeyChange(key, e.target.value)}
-                      onBlur={(e) => {
-                        // Clean up empty keys on blur
-                        if (!e.target.value.trim()) {
-                          handleRemove(key)
+                {entries.map(([key, val], index) => {
+                  const isText = typeof val === 'string'
+                  return (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={key}
+                        onChange={(e) => handleKeyChange(key, e.target.value)}
+                        onBlur={(e) => {
+                          // Clean up empty keys on blur
+                          if (!e.target.value.trim()) {
+                            handleRemove(key)
+                          }
+                        }}
+                        placeholder="Key"
+                        className="flex-1"
+                        disabled={disabled}
+                      />
+                      <Input
+                        value={formatAttributeValue(val)}
+                        onChange={(e) => handleValueChange(key, e.target.value)}
+                        placeholder="Value"
+                        className={cn(
+                          'flex-1',
+                          !isText && 'text-muted-foreground',
+                        )}
+                        disabled={disabled}
+                        readOnly={!isText}
+                        title={
+                          isText
+                            ? undefined
+                            : 'Structured value — edit it where it is written, or remove it here'
                         }
-                      }}
-                      placeholder="Key"
-                      className="flex-1"
-                      disabled={disabled}
-                    />
-                    <Input
-                      value={val}
-                      onChange={(e) => handleValueChange(key, e.target.value)}
-                      placeholder="Value"
-                      className="flex-1"
-                      disabled={disabled}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemove(key)}
-                      disabled={disabled}
-                      className="text-red-500 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/20 shrink-0"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemove(key)}
+                        disabled={disabled}
+                        className="text-red-500 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/20 shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )
+                })}
               </div>
             )}
 

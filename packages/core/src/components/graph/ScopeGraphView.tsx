@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Background,
   Controls,
@@ -28,6 +29,11 @@ import { GraphItemNode } from '@/components/items/GraphItemNode'
 import { GraphFileNode } from '@/components/items/GraphFileNode'
 import { Button, FullscreenGraphWrapper } from '@/components/ui'
 import { useTheme } from '@/lib/theme'
+import {
+  designScopeGraphQuery,
+  itemGraphQuery,
+  programScopeGraphQuery,
+} from '@/lib/query'
 
 /**
  * ScopeGraphView — drill-down graph over the organizational hierarchy:
@@ -305,12 +311,11 @@ export function ScopeGraphView({
   inlineHeight = '600px',
 }: ScopeGraphViewProps) {
   const { theme } = useTheme()
+  const queryClient = useQueryClient()
   const rootNodeId = `${rootType}:${rootId}`
   const graphTitle =
     title ?? (rootType === 'program' ? 'Program Graph' : 'Design Graph')
 
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [availableItemTypes, setAvailableItemTypes] = useState<
     Array<ItemTypeCount>
   >([])
@@ -320,6 +325,26 @@ export function ScopeGraphView({
   const [graphEdges, setGraphEdges, onEdgesChange] = useEdgesState<Edge>([])
   const [graphVersion, setGraphVersion] = useState(0)
   const reactFlowRef = useRef<ReactFlowInstance | null>(null)
+
+  // The root read. Both factories are declared unconditionally — hooks have to
+  // be — and the one that does not match `rootType` stays disabled, so exactly
+  // one request is in flight. Keyed under `programs`/`designs`, so a write that
+  // names either resource refreshes a mounted graph.
+  const isProgramRoot = rootType === 'program'
+  const programRootQuery = useQuery(
+    programScopeGraphQuery<ScopeApiResponse>(rootId, isProgramRoot),
+  )
+  const designRootQuery = useQuery(
+    designScopeGraphQuery<ScopeApiResponse>(
+      rootId,
+      { itemTypes: selectedItemTypes },
+      !isProgramRoot,
+    ),
+  )
+  const rootQuery = isProgramRoot ? programRootQuery : designRootQuery
+  const loading = rootQuery.isPending || rootQuery.isFetching
+  const rootError = rootQuery.error
+  const error = rootError ? rootError.message || 'Failed to load graph' : null
 
   // Graph caches: everything ever fetched; visibility derives from expandedMap
   const nodeCacheRef = useRef<Map<string, CachedNode>>(new Map())
@@ -430,51 +455,60 @@ export function ScopeGraphView({
     [],
   )
 
-  /** Fetch the expansion for a node in a direction, returning new graph data. */
+  /** The program/design row a scope node was built from. */
+  const scopeEntityId = (nodeId: string): string => {
+    const entityId = nodeCacheRef.current.get(nodeId)?.data.entityId
+    if (!entityId) throw new Error('Scope node carries no entity id')
+    return entityId
+  }
+
+  /**
+   * Fetch the expansion for a node in a direction, returning new graph data.
+   *
+   * Reads go through the shared cache: re-expanding a node the user collapsed
+   * and reopened after a full graph reset costs nothing, and a write that
+   * invalidates the resource reaches these entries too.
+   */
   const fetchExpansion = useCallback(
     async (
       nodeId: string,
       direction: ExpandDir,
     ): Promise<{ nodes: Array<CachedNode>; edges: Array<CachedEdge> }> => {
       const kind = getNodeKind(nodeId)
-      const entityId = nodeCacheRef.current.get(nodeId)?.data.entityId
 
       if (kind === 'program') {
         // Upstream is a leaf; only downstream (designs) can be fetched
-        const response = await fetch(`/api/v1/programs/${entityId}/graph`)
-        if (!response.ok) throw new Error('Failed to expand program')
-        const json = (await response.json()) as { data: ScopeApiResponse }
-        mergeAvailableItemTypes(json.data.availableItemTypes)
-        return processScopeResponse(json.data)
+        const data = await queryClient.fetchQuery(
+          programScopeGraphQuery<ScopeApiResponse>(scopeEntityId(nodeId)),
+        )
+        mergeAvailableItemTypes(data.availableItemTypes)
+        return processScopeResponse(data)
       }
 
       if (kind === 'design') {
-        const dir = direction === 'downstream' ? 'down' : 'up'
-        const typesParam =
-          selectedItemTypes.length > 0
-            ? `&itemTypes=${selectedItemTypes.join(',')}`
-            : ''
-        const response = await fetch(
-          `/api/v1/designs/${entityId}/graph?direction=${dir}${typesParam}`,
+        const data = await queryClient.fetchQuery(
+          designScopeGraphQuery<ScopeApiResponse>(scopeEntityId(nodeId), {
+            direction: direction === 'downstream' ? 'down' : 'up',
+            itemTypes: selectedItemTypes,
+          }),
         )
-        if (!response.ok) throw new Error('Failed to expand design')
-        const json = (await response.json()) as { data: ScopeApiResponse }
-        mergeAvailableItemTypes(json.data.availableItemTypes)
-        return processScopeResponse(json.data)
+        mergeAvailableItemTypes(data.availableItemTypes)
+        return processScopeResponse(data)
       }
 
       // Item node: expand through the item relationship graph endpoint
       // (includeFiles matches the Part relationship graph, so attached vault
       // files hang below their item as leaf nodes)
-      const apiDirection = direction === 'downstream' ? 'outgoing' : 'incoming'
-      const response = await fetch(
-        `/api/v1/items/${nodeId}/graph?depth=1&direction=${apiDirection}&includeFiles=true`,
+      const data = await queryClient.fetchQuery(
+        itemGraphQuery(nodeId, {
+          depth: 1,
+          direction: direction === 'downstream' ? 'outgoing' : 'incoming',
+          includeFiles: true,
+        }),
       )
-      if (!response.ok) throw new Error('Failed to expand item')
-      const data = (await response.json()) as ItemGraphApiResponse
       return processItemGraphResponse(data)
     },
-    [selectedItemTypes, mergeAvailableItemTypes],
+    [queryClient, selectedItemTypes, mergeAvailableItemTypes],
   )
 
   const handleExpandNodeImpl = useCallback(
@@ -622,68 +656,51 @@ export function ScopeGraphView({
     }))
   }
 
-  // Initial load (also re-runs when the item type filter changes — the type
-  // filter shapes what design expansions return, so the graph resets)
-  const loadInitial = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const typesParam =
-        selectedItemTypes.length > 0
-          ? `?itemTypes=${selectedItemTypes.join(',')}`
-          : ''
-      const url =
-        rootType === 'design'
-          ? `/api/v1/designs/${rootId}/graph${typesParam}`
-          : `/api/v1/programs/${rootId}/graph`
-
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error('Failed to load graph')
-      }
-      const json = (await response.json()) as { data: ScopeApiResponse }
-      const { nodes: flowNodes, edges: flowEdges } = processScopeResponse(
-        json.data,
-      )
-
-      const newNodeCache = new Map<string, CachedNode>()
-      for (const node of flowNodes) newNodeCache.set(node.id, node)
-      const newEdgeCache = new Map<string, CachedEdge>()
-      for (const edge of flowEdges) newEdgeCache.set(edge.id, edge)
-
-      // The root arrives expanded in both directions; everything else starts
-      // collapsed and unfetched.
-      const newExpandedMap = new Map<string, DirectionState>()
-      const newFetchedMap = new Map<string, DirectionState>()
-      for (const node of flowNodes) {
-        const isRoot = node.id === rootNodeId
-        newExpandedMap.set(node.id, { upstream: isRoot, downstream: isRoot })
-        newFetchedMap.set(node.id, { upstream: isRoot, downstream: isRoot })
-      }
-
-      nodeCacheRef.current = newNodeCache
-      edgeCacheRef.current = newEdgeCache
-      expandedMapRef.current = newExpandedMap
-      fetchedMapRef.current = newFetchedMap
-      expandingNodeRef.current = null
-
-      setAvailableItemTypes(
-        [...json.data.availableItemTypes].sort((a, b) =>
-          a.itemType.localeCompare(b.itemType),
-        ),
-      )
-      applyVisibleGraph()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load graph')
-    } finally {
-      setLoading(false)
-    }
-  }, [rootType, rootId, rootNodeId, selectedItemTypes, applyVisibleGraph])
-
+  // Rebuild the caches from the root read.
+  //
+  // `selectedItemTypes` is a dependency even though the query supplies the
+  // data: for a design root the filter is part of the key, so a toggle brings
+  // a different response, but a program's scope graph takes no filter and its
+  // response is identical across toggles. The filter still shapes what a
+  // *design* expansion returns, so the graph must reset either way rather than
+  // keep expansions fetched under the previous filter.
+  const rootGraphData = rootQuery.data
   useEffect(() => {
-    void loadInitial()
-  }, [loadInitial])
+    if (!rootGraphData) return
+
+    const { nodes: flowNodes, edges: flowEdges } =
+      processScopeResponse(rootGraphData)
+
+    const newNodeCache = new Map<string, CachedNode>()
+    for (const node of flowNodes) newNodeCache.set(node.id, node)
+    const newEdgeCache = new Map<string, CachedEdge>()
+    for (const edge of flowEdges) newEdgeCache.set(edge.id, edge)
+
+    // The root arrives expanded in both directions; everything else starts
+    // collapsed and unfetched.
+    const newExpandedMap = new Map<string, DirectionState>()
+    const newFetchedMap = new Map<string, DirectionState>()
+    for (const node of flowNodes) {
+      const isRoot = node.id === rootNodeId
+      newExpandedMap.set(node.id, { upstream: isRoot, downstream: isRoot })
+      newFetchedMap.set(node.id, { upstream: isRoot, downstream: isRoot })
+    }
+
+    // All four refs land before applyVisibleGraph, which reads every one of
+    // them to decide what is visible.
+    nodeCacheRef.current = newNodeCache
+    edgeCacheRef.current = newEdgeCache
+    expandedMapRef.current = newExpandedMap
+    fetchedMapRef.current = newFetchedMap
+    expandingNodeRef.current = null
+
+    setAvailableItemTypes(
+      [...rootGraphData.availableItemTypes].sort((a, b) =>
+        a.itemType.localeCompare(b.itemType),
+      ),
+    )
+    applyVisibleGraph()
+  }, [rootGraphData, rootNodeId, selectedItemTypes, applyVisibleGraph])
 
   // Re-fit the viewport after the visible graph changes
   useEffect(() => {
@@ -751,15 +768,41 @@ export function ScopeGraphView({
         </div>
       )}
 
+      {/* A failed *refetch* keeps the graph that is already on screen. Every
+          expansion the user drilled into lives in the caches above, not in the
+          query cache, so swapping in the error pane would throw a hand-built
+          drill-down away over a background failure — and its Retry would reset
+          those caches again on success. This banner is how the user learns the
+          refresh did not land; the pane below still owns the case where there
+          is nothing to show. */}
+      {error && graphNodes.length > 0 && (
+        <div className="mb-4 flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {error} — showing the last version that loaded.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void rootQuery.refetch()}
+            disabled={loading}
+          >
+            <RefreshCw
+              className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`}
+            />
+            Retry
+          </Button>
+        </div>
+      )}
+
       {/* Graph */}
-      {error ? (
+      {error && graphNodes.length === 0 ? (
         <div className="text-center py-8">
           <p className="text-red-500 dark:text-red-400">{error}</p>
           <Button
             variant="outline"
             size="sm"
             className="mt-3"
-            onClick={() => void loadInitial()}
+            onClick={() => void rootQuery.refetch()}
           >
             <RefreshCw className="h-4 w-4 mr-1" />
             Retry
@@ -784,7 +827,7 @@ export function ScopeGraphView({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => void loadInitial()}
+              onClick={() => void rootQuery.refetch()}
               disabled={loading}
             >
               <RefreshCw

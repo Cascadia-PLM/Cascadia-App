@@ -4,6 +4,18 @@
 /**
  * Vault storage interface - abstracts the underlying storage mechanism
  * Implementations: LocalFileStorage, S3Storage (Phase 2), etc.
+ *
+ * Throw contract, binding on every implementation: a `path` that traverses
+ * outside the vault root (contains `..`, or is absolute) throws
+ * `ValidationError` from `@/lib/errors`; a `path` the backend does not hold
+ * throws `NotFoundError` from `retrieve`, `createReadStream`, and `getSize`.
+ * These propagate through `handleApiError`, which classifies by error class
+ * (`ValidationError` -> 400, `NotFoundError` -> 404) — an implementation that
+ * throws a bare `Error` for either case degrades that refusal to a 500 with
+ * its message replaced by "An unexpected error occurred", and logs an
+ * operational client error as a non-operational server fault. A backend
+ * fault genuinely outside the client's control (e.g. a malformed response
+ * from the storage service) may still throw untyped.
  */
 export interface VaultStorage {
   /**

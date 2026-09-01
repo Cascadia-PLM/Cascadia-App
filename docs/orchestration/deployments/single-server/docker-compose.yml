@@ -4,7 +4,7 @@
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:18-alpine
+    image: postgres:18-alpine@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
     container_name: cascadia-postgres
     restart: unless-stopped
     environment:
@@ -60,12 +60,14 @@ services:
       - app_vault:/app/vault
     networks:
       - cascadia-internal
-    # Push the schema on startup (pre-1.0: no migration files)
+    # Apply committed migrations on startup (scripts/boot-migrate.ts). Refuses
+    # a populated database with no migration journal — see
+    # docs/deployment/upgrading.md.
     command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
 
   # Optional: pgAdmin for database management
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:latest@sha256:2f4ce946ddf8360680d7eff4eaba1d91859eb6b4003e6623bad5c63a322c2f4d
     container_name: cascadia-pgadmin
     restart: unless-stopped
     profiles:

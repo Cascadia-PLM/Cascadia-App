@@ -16,8 +16,9 @@
  * Invariants: a body that does not parse is the caller's fault (400,
  * VALIDATION_FAILED); a body that does parse still reaches the handler
  * untouched; a declared schema rejects what does not conform before the
- * handler runs and is the schema the document shows; and a route that
- * declares no schema is untouched by any of it.
+ * handler runs and is the schema the document shows unless the annotation
+ * opts out by name; and a route that declares no schema is untouched by any
+ * of it.
  *
  * Run: npx vitest run packages/core/src/lib/api/handler.test.ts
  */
@@ -252,6 +253,68 @@ describe('apiHandler body schemas', () => {
     // The runtime schema wins; the flags around it survive.
     expect(handler.openapi?.request?.body?.schema).toBe(widgetSchema)
     expect(handler.openapi?.request?.body?.required).toBe(false)
+  })
+
+  it('keeps an annotation that declares itself a superset of the enforced envelope', () => {
+    // The two routes whose enforced envelope is deliberately looser than
+    // their contract — POST /items and POST /relationships/batch-create —
+    // opt out by name so the document keeps the richer shape. Every body
+    // this one describes is one `widgetSchema` accepts, which is the
+    // condition the flag asserts.
+    const documented = z.object({
+      name: z.string().min(1),
+      count: z.number().int(),
+    })
+    const handler = apiHandler(
+      {
+        public: true,
+        body: widgetSchema,
+        openapi: {
+          request: {
+            body: {
+              schema: documented,
+              documentsSupersetOfEnforced: true,
+              description: 'Superset',
+            },
+          },
+        },
+      },
+      () => Promise.resolve({}),
+    )
+
+    expect(handler.openapi?.request?.body?.schema).toBe(documented)
+    expect(handler.openapi?.request?.body?.description).toBe('Superset')
+  })
+
+  it('still enforces the runtime schema for a superset annotation', async () => {
+    const app = new Hono().post(
+      '/widgets',
+      adapt(
+        apiHandler(
+          {
+            public: true,
+            body: widgetSchema,
+            openapi: {
+              request: {
+                body: {
+                  schema: z.object({ name: z.string() }),
+                  documentsSupersetOfEnforced: true,
+                },
+              },
+            },
+          },
+          ({ body }) => Promise.resolve({ received: body }),
+        ),
+      ),
+    )
+
+    const response = await app.request('/widgets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count: 3 }),
+    })
+
+    expect(response.status).toBe(400)
   })
 })
 

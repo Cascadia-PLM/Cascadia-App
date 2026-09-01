@@ -530,6 +530,64 @@ export class ChangeOrderService {
   }
 
   /**
+   * Write the ECO/design link, absorbing a concurrent caller's row.
+   *
+   * Every caller reaches here having just read that no link exists, and
+   * nothing holds a lock in between: `checkoutItemToEco`, `addDesignToEco`
+   * and `adoptWorkspaceItems` run their check and their insert as separate
+   * statements on the pool, and two `addAffectedItem` batches each run in
+   * their own transaction. So two callers routinely both insert, and
+   * `change_order_designs_unique` rejects the second with a raw 23505 —
+   * surfaced as RESOURCE_ALREADY_EXISTS, for an operation whose whole
+   * contract is "link this design if it is not linked yet".
+   *
+   * The row the loser wanted is the row the winner made, so absorb the
+   * conflict and re-resolve it — the same shape `CheckoutService.checkout`
+   * uses for `branch_items`.
+   */
+  private static async insertDesignAssociation(
+    changeOrderId: string,
+    designId: string,
+    branchId: string,
+    tx?: TransactionClient,
+  ): Promise<typeof changeOrderDesigns.$inferSelect> {
+    const inserted = await (tx ?? db)
+      .insert(changeOrderDesigns)
+      .values({
+        changeOrderId,
+        designId,
+        branchId,
+        mergeStatus: 'pending',
+      })
+      .onConflictDoNothing({
+        target: [changeOrderDesigns.changeOrderId, changeOrderDesigns.designId],
+      })
+      .returning()
+
+    const created = inserted.at(0)
+    if (created) {
+      return created
+    }
+
+    // Lost the insert. `onConflictDoNothing` waited on the winner before
+    // reporting nothing, so this read — a new statement, a new snapshot —
+    // sees the row it stood down for.
+    return takeFirst(
+      await (tx ?? db)
+        .select()
+        .from(changeOrderDesigns)
+        .where(
+          and(
+            eq(changeOrderDesigns.changeOrderId, changeOrderId),
+            eq(changeOrderDesigns.designId, designId),
+          ),
+        )
+        .limit(1),
+      'change order design',
+    )
+  }
+
+  /**
    * Ensure a design is associated with an ECO (idempotent).
    * Creates the changeOrderDesigns record and ECO branch if they don't exist.
    * Also creates a "ChangeOrder created" commit when the design is first linked.
@@ -585,19 +643,7 @@ export class ChangeOrderService {
     }
 
     // Create the changeOrderDesigns record
-    const ecoDesign = takeFirst(
-      await (tx ?? db)
-        .insert(changeOrderDesigns)
-        .values({
-          changeOrderId,
-          designId,
-          branchId: branch.id,
-          mergeStatus: 'pending',
-        })
-        .returning(),
-    )
-
-    return ecoDesign
+    return this.insertDesignAssociation(changeOrderId, designId, branch.id, tx)
   }
 
   /**
@@ -1510,7 +1556,9 @@ export class ChangeOrderService {
   static async close(changeOrderId: string, userId: string) {
     const changeOrder = await ItemService.findById(changeOrderId)
     if (!changeOrder) {
-      throw new Error('Change order not found')
+      throw new NotFoundError('Change Order', changeOrderId, {
+        operation: 'close',
+      })
     }
 
     // Merge the change order (process affected items, merge branches, etc.)
@@ -1538,7 +1586,9 @@ export class ChangeOrderService {
   static async cancel(changeOrderId: string, _userId: string) {
     const changeOrder = await ItemService.findById(changeOrderId)
     if (!changeOrder) {
-      throw new Error('Change order not found')
+      throw new NotFoundError('Change Order', changeOrderId, {
+        operation: 'cancel',
+      })
     }
 
     const ecoDesigns = await this.getEcoDesigns(changeOrderId)
@@ -2108,16 +2158,20 @@ export class ChangeOrderService {
     // 1. Verify the change order exists and is a ChangeOrder
     const changeOrder = await ItemService.findById(changeOrderId)
     if (!changeOrder) {
-      throw new Error('Change order not found')
+      throw new NotFoundError('Change Order', changeOrderId, {
+        operation: 'checkoutItemToEco',
+      })
     }
     if (changeOrder.itemType !== 'ChangeOrder') {
-      throw new Error('Item is not a change order')
+      throw new ValidationError('Item is not a change order')
     }
 
     // 2. Get the item and validate it has a designId
     const item = await ItemService.findById(itemId)
     if (!item) {
-      throw new Error('Item not found')
+      throw new NotFoundError('Item', itemId, {
+        operation: 'checkoutItemToEco',
+      })
     }
     if (!item.designId) {
       throw new Error(
@@ -2171,20 +2225,17 @@ export class ChangeOrderService {
       userId,
     )
 
-    // 5. Create or update changeOrderDesign record
+    // 5. Create or update changeOrderDesign record. The read in step 3 and
+    // this write are separate statements on the pool, so two callers checking
+    // the first items out of the same design both find no link and both
+    // insert; the loser takes the winner's row rather than a raw constraint
+    // error, and `created` above is already false for it.
     if (!ecoDesign) {
-      const newEcoDesign = takeFirst(
-        await db
-          .insert(changeOrderDesigns)
-          .values({
-            changeOrderId,
-            designId: item.designId,
-            branchId: branch.id,
-            mergeStatus: 'pending',
-          })
-          .returning(),
+      ecoDesign = await this.insertDesignAssociation(
+        changeOrderId,
+        item.designId,
+        branch.id,
       )
-      ecoDesign = newEcoDesign
     } else if (!ecoDesign.branchId && created) {
       // Update the branchId if it was just created
       await db
@@ -2398,12 +2449,11 @@ export class ChangeOrderService {
       .then((r) => r.at(0))
 
     if (!ecoDesign) {
-      await db.insert(changeOrderDesigns).values({
+      await this.insertDesignAssociation(
         changeOrderId,
-        designId: workspace.designId,
-        branchId: ecoBranch.id,
-        mergeStatus: 'pending',
-      })
+        workspace.designId,
+        ecoBranch.id,
+      )
     } else if (!ecoDesign.branchId && created) {
       await db
         .update(changeOrderDesigns)
@@ -2511,7 +2561,9 @@ export class ChangeOrderService {
   ): Promise<EcoSummary> {
     const changeOrder = await ItemService.findById(changeOrderId)
     if (!changeOrder) {
-      throw new Error('Change order not found')
+      throw new NotFoundError('Change Order', changeOrderId, {
+        operation: 'getEcoSummary',
+      })
     }
 
     // Get all designs affected by this ECO
@@ -2741,7 +2793,9 @@ export class ChangeOrderService {
     // Verify change order exists
     const changeOrder = await ItemService.findById(changeOrderId)
     if (!changeOrder) {
-      throw new Error('Change order not found')
+      throw new NotFoundError('Change Order', changeOrderId, {
+        operation: 'addDesignToEco',
+      })
     }
 
     // Check if scope is locked (ECO has left initial state)
@@ -2803,19 +2857,7 @@ export class ChangeOrderService {
     }
 
     // Create the association with the branch ID
-    const ecoDesign = takeFirst(
-      await db
-        .insert(changeOrderDesigns)
-        .values({
-          changeOrderId,
-          designId,
-          branchId: branch.id,
-          mergeStatus: 'pending',
-        })
-        .returning(),
-    )
-
-    return ecoDesign
+    return this.insertDesignAssociation(changeOrderId, designId, branch.id)
   }
 
   // ============================================

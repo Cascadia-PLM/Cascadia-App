@@ -514,6 +514,31 @@ describe('program isolation — items, designs, change orders', () => {
   })
 
   // ==========================================================================
+  // An ECO id that names nothing
+  // ==========================================================================
+
+  describe('an unknown change-order id', () => {
+    // Cross-program authority is the only persona that reaches the service
+    // at all — everyone else is refused by the program gate, because an ECO
+    // with no reachable designs is not theirs to see and a row that does not
+    // exist has none. Past the gate the lookup used to throw a bare Error,
+    // which the API error handler classified as an unexpected fault: a
+    // mistyped id answered 500 and was logged as a server failure. It is a
+    // missing resource, so it answers 404.
+    it('is 404 to cross-program authority and 403 to an outsider', async () => {
+      const unknown = randomUUID()
+      expect(
+        (await as(sysAdmin).get(`/api/v1/change-orders/${unknown}/summary`))
+          .status,
+      ).toBe(404)
+      expect(
+        (await as(outsider).get(`/api/v1/change-orders/${unknown}/summary`))
+          .status,
+      ).toBe(403)
+    })
+  })
+
+  // ==========================================================================
   // Change-order list scoping
   // ==========================================================================
 

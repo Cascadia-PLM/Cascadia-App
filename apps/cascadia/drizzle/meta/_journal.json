@@ -15,6 +15,13 @@
       "when": 1788107563217,
       "tag": "0001_remediation",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788212430368,
+      "tag": "0002_review_hardening",
+      "breakpoints": true
     }
   ]
 }

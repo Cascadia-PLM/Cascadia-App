@@ -16,8 +16,8 @@ refusing to run a feature this build does not contain.
 - **Certificate enrollment** for signing credentials.
 - **A hash-chained, append-only audit trail**, so a tampered record breaks the
   chain rather than disappearing quietly.
-- **Signed release PDFs** — a printed approval block plus an embedded PAdES
-  signature.
+- **Signed release PDFs** — a printed approval block plus an embedded PKCS#7
+  detached signature.
 
 Together these target the electronic-records and electronic-signature
 expectations of regulated manufacturing.

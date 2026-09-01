@@ -175,6 +175,13 @@ Columns that are not mapped to any standard field are automatically collected in
 
 For example, a column named `Supplier Code` becomes the attribute key `supplier_code`.
 
+Values keep the cell's own type -- a numeric column arrives as a number, not as
+its text. The two shapes JSON has no encoding for are rendered rather than
+dropped: a date-formatted cell becomes an ISO 8601 string, and a non-finite
+number becomes its text. (Every value used to be coerced with `String()`,
+because `baseItemSchema` narrowed `attributes` to a flat string map; it now
+matches the `jsonb` column it fronts.)
+
 ---
 
 ## Validation Preview
@@ -404,7 +411,7 @@ Creates parts in bulk, optionally with BOM relationships.
 | `cost`         | string            | No       |                                                  |
 | `costCurrency` | string (3 chars)  | No       | ISO 4217 code                                    |
 | `leadTimeDays` | integer (min 0)   | No       |                                                  |
-| `attributes`   | object            | No       | String key-value pairs                           |
+| `attributes`   | object            | No       | Any JSON document                                |
 
 **BOM relationship fields:**
 
@@ -473,7 +480,7 @@ Creates documents in bulk. Same structure as parts import but without BOM suppor
 | `docType`     | enum              | No       | `Specification`, `Drawing`, `Procedure`, `Manual`, `Report`, `Other` |
 | `fileName`    | string (max 500)  | No       | Reference only; does not upload the file                             |
 | `mimeType`    | string (max 100)  | No       |                                                                      |
-| `attributes`  | object            | No       | String key-value pairs                                               |
+| `attributes`  | object            | No       | Any JSON document                                                    |
 
 This endpoint requires design access (`requireDesignAccess`) and branch access (`requireBranchAccess`) if a branch is specified. Bypassing branch protection requires the Administrator role.
 
@@ -514,7 +521,7 @@ Creates issues in bulk. Issues use a free lifecycle and do not require a design 
 | `reportedDate` | string             | No       | ISO date format (e.g., `2024-01-15`)                                |
 | `resolution`   | string (max 10000) | No       |                                                                     |
 | `rootCause`    | string (max 10000) | No       |                                                                     |
-| `attributes`   | object             | No       | String key-value pairs                                              |
+| `attributes`   | object             | No       | Any JSON document                                                   |
 
 Issues are always created with state `Open` and revision `"-"`. They bypass branch protection automatically.
 

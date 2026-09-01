@@ -479,6 +479,8 @@ describe('FileService — vault writes under real concurrency', () => {
         .spyOn(storage, 'store')
         .mockRejectedValueOnce(new Error('vault volume is full'))
 
+      // Message match on purpose: this is the sentinel this test injected,
+      // and pinning it is how we know the run died where we aimed it.
       await expect(
         FileService.replaceContent({
           fileId,

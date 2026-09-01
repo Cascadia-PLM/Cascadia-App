@@ -33,7 +33,7 @@ export function IssueForm({
   onCancel,
   isSubmitting,
 }: IssueFormProps) {
-  const [attributes, setAttributes] = useState<Record<string, string>>(
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
     issue?.attributes ?? {},
   )
   const form = useForm({

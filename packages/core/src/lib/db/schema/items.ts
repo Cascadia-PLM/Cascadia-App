@@ -6,6 +6,7 @@ import {
   boolean,
   check,
   decimal,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -60,7 +61,18 @@ export const items = pgTable(
     // Design structure membership - when true, part shows as root in BOM tree; when false, shows as orphan
     inDesignStructure: boolean('in_design_structure').default(true),
 
-    // Flexible attributes for SysML and extensibility
+    // Flexible attributes for SysML and extensibility.
+    //
+    // Arbitrary JSON, and this column is the authority on that: the validating
+    // contract in front of it - `baseItemSchema.attributes` in
+    // lib/items/types/base.ts - matches it rather than narrowing it. The two
+    // used to contradict each other, and the schema won every argument because
+    // every create parses through it. See the `JsonValue` comment there.
+    //
+    // GIN-indexed below with the default `jsonb_ops`, so containment (`@>`)
+    // and key existence (`?`) are answered by the index. A `->>` extraction
+    // is not, and sequential-scans every item in the instance - query by
+    // containment when a query has the choice.
     attributes: jsonb('attributes')
       .$type<Record<string, unknown>>()
       .default({}),
@@ -77,6 +89,16 @@ export const items = pgTable(
     // Usage/Definition pattern (SysML v2 style)
     // If null, this item is a "definition" (canonical item, typically in Library)
     // If set, this item is a "usage" that references a definition item
+    //
+    // Points at items.id, and is deliberately not an FK because both delete
+    // modes are wrong. NULL here *means* "definition" — it is the predicate
+    // ItemSearchService and ImpactAssessmentService filter on — so ON DELETE
+    // SET NULL would silently promote a usage to a definition when its
+    // definition row goes. NO ACTION would abort the hard-delete paths that
+    // legitimately remove item rows (ItemService.delete, plus workspace-branch
+    // cleanup and discard-on-branch in BranchService). So a dangling usage_of
+    // stays possible on purpose: it resolves to no definition, which reads as
+    // broken rather than as a quietly reclassified item.
     usageOf: uuid('usage_of'),
   },
   (table) => [
@@ -150,6 +172,14 @@ export const documents = pgTable('documents', {
     .primaryKey()
     .references(() => items.id, { onDelete: 'cascade' }),
   description: text('description'),
+  // Vault file pointer, deliberately not an FK. FileService's permanent
+  // delete hard-deletes the vault_files row, so this pointer can outlive its
+  // target; a document whose file has been purged still reads as a valid
+  // document, just one whose file no longer resolves. An ON DELETE SET NULL
+  // foreign key would express that better and nothing argues against it — it
+  // is a vault-side schema change with no behavioral payoff, so it belongs
+  // bundled into a future vault migration rather than minting one for a
+  // comment-grade finding.
   fileId: uuid('file_id'),
   fileName: varchar('file_name', { length: 500 }),
   // bigint, matching vaultFiles.fileSize. The 2 GB integer cap is reachable:
@@ -193,9 +223,8 @@ export const changeOrderAffectedItems = pgTable(
   'change_order_affected_items',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    changeOrderId: uuid('change_order_id')
-      .notNull()
-      .references(() => changeOrders.itemId, { onDelete: 'cascade' }),
+    // FK named in the table extras below — see the note there.
+    changeOrderId: uuid('change_order_id').notNull(),
     affectedItemId: uuid('affected_item_id').references(() => items.id, {
       onDelete: 'cascade',
     }),
@@ -220,6 +249,18 @@ export const changeOrderAffectedItems = pgTable(
       .references(() => users.id),
   },
   (table) => [
+    /**
+     * Named explicitly because the implicit name drizzle derives —
+     * `change_order_affected_items_change_order_id_change_orders_item_id_fk`
+     * — is 68 bytes, and Postgres silently truncates identifiers at 63. The
+     * schema then described a constraint no database had ever created under
+     * that name. See `constraint-name-length.test.ts`.
+     */
+    foreignKey({
+      name: 'fk_coai_change_order',
+      columns: [table.changeOrderId],
+      foreignColumns: [changeOrders.itemId],
+    }).onDelete('cascade'),
     /**
      * One scope row per item per change order.
      *
@@ -251,9 +292,8 @@ export const changeOrderImpactedItems = pgTable(
   'change_order_impacted_items',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    changeOrderId: uuid('change_order_id')
-      .notNull()
-      .references(() => changeOrders.itemId, { onDelete: 'cascade' }),
+    // FK named in the table extras below — see the note there.
+    changeOrderId: uuid('change_order_id').notNull(),
     impactedItemId: uuid('impacted_item_id')
       .notNull()
       .references(() => items.id, { onDelete: 'cascade' }),
@@ -267,6 +307,12 @@ export const changeOrderImpactedItems = pgTable(
       .notNull(),
   },
   (table) => [
+    // Named explicitly: the implicit name is 68 bytes, past Postgres's 63.
+    foreignKey({
+      name: 'fk_co_impacted_change_order',
+      columns: [table.changeOrderId],
+      foreignColumns: [changeOrders.itemId],
+    }).onDelete('cascade'),
     index('idx_co_impacted').on(table.changeOrderId),
     index('idx_impacted_item').on(table.impactedItemId),
   ],
@@ -294,20 +340,29 @@ export const changeOrderRisks = pgTable(
   (table) => [index('idx_co_risks').on(table.changeOrderId)],
 )
 
-export const changeOrderImpactReports = pgTable('change_order_impact_reports', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  changeOrderId: uuid('change_order_id')
-    .notNull()
-    .unique()
-    .references(() => changeOrders.itemId, { onDelete: 'cascade' }),
-  generatedAt: timestamp('generated_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  totalImpactedItems: integer('total_impacted_items'),
-  maxBOMDepth: integer('max_bom_depth'),
-  reportData: jsonb('report_data'),
-  generationDurationMs: integer('generation_duration_ms'),
-})
+export const changeOrderImpactReports = pgTable(
+  'change_order_impact_reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    // FK named in the table extras below — see the note there.
+    changeOrderId: uuid('change_order_id').notNull().unique(),
+    generatedAt: timestamp('generated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    totalImpactedItems: integer('total_impacted_items'),
+    maxBOMDepth: integer('max_bom_depth'),
+    reportData: jsonb('report_data'),
+    generationDurationMs: integer('generation_duration_ms'),
+  },
+  (table) => [
+    // Named explicitly: the implicit name is 68 bytes, past Postgres's 63.
+    foreignKey({
+      name: 'fk_co_impact_report_change_order',
+      columns: [table.changeOrderId],
+      foreignColumns: [changeOrders.itemId],
+    }).onDelete('cascade'),
+  ],
+)
 
 // Phase 3: ECO-as-Branch - tracks which designs an ECO affects and their branch status
 export const changeOrderDesigns = pgTable(
@@ -1047,9 +1102,8 @@ export const workInstructionOperations = pgTable(
   'work_instruction_operations',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    workInstructionId: uuid('work_instruction_id')
-      .notNull()
-      .references(() => workInstructions.itemId, { onDelete: 'cascade' }),
+    // FK named in the table extras below — see the note there.
+    workInstructionId: uuid('work_instruction_id').notNull(),
     orderIndex: integer('order_index').notNull(),
     title: varchar('title', { length: 500 }).notNull(),
     description: text('description'),
@@ -1062,6 +1116,12 @@ export const workInstructionOperations = pgTable(
       .notNull(),
   },
   (table) => [
+    // Named explicitly: the implicit name is 76 bytes, past Postgres's 63.
+    foreignKey({
+      name: 'fk_wi_operation_wi',
+      columns: [table.workInstructionId],
+      foreignColumns: [workInstructions.itemId],
+    }).onDelete('cascade'),
     index('idx_wi_operation_order').on(
       table.workInstructionId,
       table.orderIndex,
@@ -1076,13 +1136,9 @@ export const workInstructionSteps = pgTable(
   'work_instruction_steps',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    workInstructionId: uuid('work_instruction_id')
-      .notNull()
-      .references(() => workInstructions.itemId, { onDelete: 'cascade' }),
-    operationId: uuid('operation_id').references(
-      () => workInstructionOperations.id,
-      { onDelete: 'set null' },
-    ),
+    // Both FKs named in the table extras below — see the note there.
+    workInstructionId: uuid('work_instruction_id').notNull(),
+    operationId: uuid('operation_id'),
     orderIndex: integer('order_index').notNull(),
     title: varchar('title', { length: 500 }),
     // Content blocks stored as JSONB
@@ -1095,6 +1151,18 @@ export const workInstructionSteps = pgTable(
       .notNull(),
   },
   (table) => [
+    // Named explicitly: the implicit names are 71 and 69 bytes, past
+    // Postgres's 63.
+    foreignKey({
+      name: 'fk_wi_step_wi',
+      columns: [table.workInstructionId],
+      foreignColumns: [workInstructions.itemId],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'fk_wi_step_operation',
+      columns: [table.operationId],
+      foreignColumns: [workInstructionOperations.id],
+    }).onDelete('set null'),
     index('idx_wi_step_order').on(table.workInstructionId, table.orderIndex),
     index('idx_wi_step_operation').on(table.operationId),
   ],
@@ -1114,9 +1182,8 @@ export const workInstructionPartAttachments = pgTable(
   'work_instruction_part_attachments',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    workInstructionId: uuid('work_instruction_id')
-      .notNull()
-      .references(() => workInstructions.itemId, { onDelete: 'cascade' }),
+    // FK named in the table extras below — see the note there.
+    workInstructionId: uuid('work_instruction_id').notNull(),
     partId: uuid('part_id')
       .notNull()
       .references(() => items.id, { onDelete: 'cascade' }),
@@ -1134,6 +1201,13 @@ export const workInstructionPartAttachments = pgTable(
       .references(() => users.id),
   },
   (table) => [
+    // Named explicitly: the implicit name is 82 bytes — the longest in the
+    // schema — past Postgres's 63.
+    foreignKey({
+      name: 'fk_wi_part_attach_wi',
+      columns: [table.workInstructionId],
+      foreignColumns: [workInstructions.itemId],
+    }).onDelete('cascade'),
     unique('wi_part_attachment_unique').on(
       table.workInstructionId,
       table.partId,
@@ -1155,9 +1229,8 @@ export const workInstructionChangeAlerts = pgTable(
   'work_instruction_change_alerts',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    workInstructionId: uuid('work_instruction_id')
-      .notNull()
-      .references(() => workInstructions.itemId, { onDelete: 'cascade' }),
+    // FK named in the table extras below — see the note there.
+    workInstructionId: uuid('work_instruction_id').notNull(),
     partId: uuid('part_id')
       .notNull()
       .references(() => items.id, { onDelete: 'cascade' }),
@@ -1175,6 +1248,12 @@ export const workInstructionChangeAlerts = pgTable(
       .notNull(),
   },
   (table) => [
+    // Named explicitly: the implicit name is 79 bytes, past Postgres's 63.
+    foreignKey({
+      name: 'fk_wi_alert_wi',
+      columns: [table.workInstructionId],
+      foreignColumns: [workInstructions.itemId],
+    }).onDelete('cascade'),
     index('idx_wi_alert_wi').on(table.workInstructionId),
     index('idx_wi_alert_part').on(table.partId),
     index('idx_wi_alert_status').on(table.status),

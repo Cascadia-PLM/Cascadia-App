@@ -49,7 +49,7 @@ export function PartForm({
 }: PartFormProps) {
   // Track selected design's protection status
   const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>()
-  const [attributes, setAttributes] = useState<Record<string, string>>(
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
     part?.attributes ?? {},
   )
   const form = useForm({

@@ -283,15 +283,27 @@ function ConflictCard({
             {conflict.resolutionNotes}
           </p>
 
-          {/* Reviewer info for reviewed conflicts */}
+          {/* Reviewer info for reviewed conflicts. Acknowledgements accumulate,
+              so earlier reviewers' notes stay readable under the current one. */}
           {conflict.isReviewed && conflict.review && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-              Reviewed by {conflict.review.reviewerName || 'Unknown'} on{' '}
-              {new Date(conflict.review.reviewedAt).toLocaleDateString()}
-              {conflict.review.notes && (
-                <span className="italic"> - "{conflict.review.notes}"</span>
-              )}
-            </p>
+            <div className="text-xs text-slate-500 dark:text-slate-400 mb-3 space-y-1">
+              <p>
+                Reviewed by {conflict.review.reviewerName || 'Unknown'} on{' '}
+                {new Date(conflict.review.reviewedAt).toLocaleDateString()}
+                {conflict.review.notes && (
+                  <span className="italic"> - "{conflict.review.notes}"</span>
+                )}
+              </p>
+              {conflict.reviewHistory?.slice(1).map((review) => (
+                <p key={review.id} className="opacity-75">
+                  Previously reviewed by {review.reviewerName || 'Unknown'} on{' '}
+                  {new Date(review.reviewedAt).toLocaleDateString()}
+                  {review.notes && (
+                    <span className="italic"> - "{review.notes}"</span>
+                  )}
+                </p>
+              ))}
+            </div>
           )}
 
           {/* Version comparison */}

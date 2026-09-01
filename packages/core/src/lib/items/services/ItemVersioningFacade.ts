@@ -251,8 +251,7 @@ export class ItemVersioningFacade {
             ),
             validatedData.state)
           : await LifecycleService.getInitialStateId(type),
-        attributes: (validatedData as unknown as Record<string, unknown>)
-          .attributes as Record<string, unknown> | undefined,
+        attributes: validatedData.attributes,
       },
       branchId,
       commitMessage,

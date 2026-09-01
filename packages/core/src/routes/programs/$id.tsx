@@ -41,7 +41,10 @@ import {
   ViewEditText,
   ViewEditTextarea,
 } from '@/components/ui/view-edit-field'
-import { AttributesEditor } from '@/components/items/AttributesEditor'
+import {
+  AttributesEditor,
+  formatAttributeValue,
+} from '@/components/items/AttributesEditor'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import {
@@ -113,8 +116,8 @@ function ProgramDetail({
   const [isEditing, setIsEditing] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editProgram, setEditProgram] = useState<Program>(program)
-  const [attributes, setAttributes] = useState<Record<string, string>>(
-    (program.attributes ?? {}) as Record<string, string>,
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
+    program.attributes ?? {},
   )
 
   const updateField = <TKey extends keyof Program>(
@@ -126,13 +129,13 @@ function ProgramDetail({
 
   const handleEdit = () => {
     setEditProgram(program)
-    setAttributes((program.attributes ?? {}) as Record<string, string>)
+    setAttributes(program.attributes ?? {})
     setIsEditing(true)
   }
 
   const handleCancelEdit = () => {
     setEditProgram(program)
-    setAttributes((program.attributes ?? {}) as Record<string, string>)
+    setAttributes(program.attributes ?? {})
     setIsEditing(false)
   }
 
@@ -497,9 +500,7 @@ function ProgramDetail({
                                     {key}
                                   </dt>
                                   <dd className="text-slate-900 dark:text-white">
-                                    {Array.isArray(value)
-                                      ? value.join(', ')
-                                      : String(value)}
+                                    {formatAttributeValue(value) || '-'}
                                   </dd>
                                 </div>
                               ),

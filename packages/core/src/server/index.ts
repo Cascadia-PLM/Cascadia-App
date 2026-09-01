@@ -51,7 +51,10 @@ import workflows from './routes/workflows'
 import workspaces from './routes/workspaces'
 import { ERROR_COMPONENTS } from '@/lib/api/openapi-helpers'
 import { mountRoutes } from '@/lib/api/route-registry'
-import { buildPreflightResponse } from '@/lib/api/cors'
+import { applySecurityHeaders, buildPreflightResponse } from '@/lib/api/cors'
+import { createErrorResponse } from '@/lib/errors/api'
+import { getRequestId } from '@/lib/errors/handleApiError'
+import { AppError, ErrorCode } from '@/lib/errors'
 
 const app = new Hono()
 
@@ -165,6 +168,35 @@ app.get(
     pageTitle: 'Cascadia API Reference',
   }),
 )
+
+// Anything under /api that matched no route above answers with the documented
+// error envelope, not with HTML and not with Hono's plain-text default.
+//
+// Registration order is the whole correctness argument: Hono dispatches in
+// registration order and stops at the first handler that responds, so every
+// real endpoint — the v1 mounts, the module contributions from mountRoutes,
+// the JSON-RPC endpoint at /api/mcp, the docs UI, and the OPTIONS preflight —
+// still answers, and only a genuinely unmatched path reaches this. It must
+// therefore stay below every /api registration, and above the static block:
+// below that, a mistyped GET /api/v1/partz kept being served the SPA's
+// index.html with a 200, so a client parsing the body as JSON failed on markup
+// instead of reading a 404, while an unmatched POST got a bare text 404.
+//
+// The security and CORS headers go on for the same reason apiHandler puts them
+// on real responses: a cross-origin caller whose preflight was allowed can
+// then actually read this 404 rather than seeing an opaque CORS failure.
+app.all('/api/*', (c) => {
+  const requestId = getRequestId(c.req.raw)
+  return applySecurityHeaders(
+    createErrorResponse(
+      new AppError(ErrorCode.RESOURCE_NOT_FOUND, 'API endpoint not found', {
+        context: { requestId },
+      }),
+      requestId,
+    ),
+    c.req.raw,
+  )
+})
 
 // In production, serve the Vite SPA build as static files.
 //

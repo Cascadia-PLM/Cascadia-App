@@ -123,3 +123,21 @@ export function workInstructionUsageQuery<T>(id: string) {
     },
   })
 }
+
+/**
+ * The work instruction templates attached to one part.
+ *
+ * Keyed beneath the *part*, not the template: it is the part's attachment
+ * list, so detaching a template — or any write that reaches `parts` — has to
+ * restage it. Generic in the row type for the same reason
+ * `workInstructionUsageQuery` is: the shape the panel renders is a component
+ * type, and the query layer has no business importing from `components/`.
+ */
+export function partWorkInstructionsQuery<T>(partId: string) {
+  return entitySubQuery<T>(
+    'parts',
+    partId,
+    'work-instructions',
+    'workInstructions',
+  )
+}

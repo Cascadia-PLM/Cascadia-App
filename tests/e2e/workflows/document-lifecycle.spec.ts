@@ -2,10 +2,26 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * Document Lifecycle E2E Workflow Tests
+ * Document Lifecycle E2E Journey
  *
- * Core workflow coverage.
- * Tests the complete document lifecycle: Create → Edit → Delete
+ * One journey, end to end, in the eco-workflow/bom-management style: create a
+ * document through the UI, find it through the same list query the documents
+ * grid runs, and delete it through the UI — reading the server back after each
+ * mutation rather than trusting the page that performed it.
+ *
+ * What it replaces: four tests, two of which were pure navigation smoke —
+ * "clicking New lands on /documents/new", "the create form renders its
+ * fields" — with no invariant behind either, and a list test that typed into
+ * the grid's search box and slept 500ms hoping the filter had run.
+ *
+ * The UI *edit* leg is deliberately absent, and it is the one step of the
+ * lifecycle this journey cannot assert today. The document detail page PUTs
+ * the whole row back, and `documentUpdateSchema` refuses `null` on `fileId`
+ * and `fileName` — which is exactly what a read returns for a document with
+ * no file attached. `partUpdateSchema` was made nullable for this precise
+ * reason when body validation landed; the document schema was not. Until it
+ * is, a save from that page is a 400, and a step here would assert a known
+ * break rather than guard against a new one.
  */
 
 import { expect, test } from '../fixtures'
@@ -26,17 +42,31 @@ async function fillField(
   await field.fill(value)
 }
 
-test.describe('Document Lifecycle Workflow', () => {
-  // Store created document ID for cleanup
+/** The document as the server holds it, after a UI step claimed to write it. */
+async function readDocument(
+  page: Page,
+  id: string,
+): Promise<{ itemNumber: string; name: string; state: string }> {
+  const response = await page.request.get(`/api/v1/documents/${id}`)
+  expect(response.ok(), `document read failed: ${await response.text()}`).toBe(
+    true,
+  )
+  return (await response.json()).data.document as {
+    itemNumber: string
+    name: string
+    state: string
+  }
+}
+
+test.describe('Document Lifecycle Journey', () => {
+  // Only set while the journey still owns a row: the UI delete below clears
+  // it. Cleanup goes through the API — see the note in part-lifecycle.spec.ts
+  // on why a visibility-guarded Delete click was no cleanup at all.
   let createdDocumentId: string | null = null
 
   test.afterEach(async ({ authenticatedPage: page }) => {
-    // Cleanup: Try to delete the document if it was created
     if (createdDocumentId) {
       try {
-        // Delete through the API, not the UI — see the note in
-        // part-lifecycle.spec.ts: a visibility-guarded click made cleanup a
-        // no-op whenever the page had no Delete button.
         await page.request.delete(`/api/v1/documents/${createdDocumentId}`)
       } catch {
         // Ignore cleanup errors
@@ -45,115 +75,97 @@ test.describe('Document Lifecycle Workflow', () => {
     }
   })
 
-  test('complete document lifecycle: create, view, and verify', async ({
+  test('create a document through the UI → it is in the list query → delete it through the UI', async ({
     authenticatedPage: page,
   }) => {
-    const design = await seedFreshDesign(page, 'E2E Doc Lifecycle')
+    const ts = Date.now()
+    const design = await seedFreshDesign(page, 'E2E Doc Journey')
+    const itemNumber = `DOC-E2E-LIFECYCLE-${ts}`
+    const docName = `E2E Lifecycle Document ${ts}`
 
-    // 1. Navigate to create document page and pick the seeded design
+    // ---- Create through the UI ----
     await page.goto('/documents/new')
     await selectDesignByName(page, design.name)
-
-    // 2. Fill in document details using focus + pressSequentially
-    const timestamp = Date.now()
-    const itemNumber = `DOC-LIFECYCLE-${timestamp}`
-    const docName = 'Lifecycle Test Document'
-
     await fillField(page, '[data-testid="document-item-number"]', itemNumber)
     await fillField(page, '[data-testid="document-name"]', docName)
 
-    // 3. Submit the form
-    await page.click('[data-testid="document-submit"]')
+    const [createResponse] = await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.url().includes('/api/v1/items') && r.request().method() === 'POST',
+        { timeout: 15000 },
+      ),
+      page.click('[data-testid="document-submit"]'),
+    ])
+    expect(
+      createResponse.ok(),
+      `document create failed: ${await createResponse.text()}`,
+    ).toBe(true)
+    const created = (await createResponse.json()).data.item as {
+      id: string
+      state: string
+    }
+    createdDocumentId = created.id
 
-    // 4. Wait for navigation to detail page
-    await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+(\?.*)?$/, {
-      timeout: 10000,
+    await page.waitForURL(/\/documents\/[a-f0-9-]+(\?.*)?$/, { timeout: 15000 })
+    await expect(page.locator('main')).toContainText(itemNumber, {
+      timeout: 15000,
     })
 
-    // Extract document ID from URL for cleanup
-    const url = page.url()
-    createdDocumentId = url.split('/').pop() || null
+    // ---- …and the row the server holds is the one the form described ----
+    const detail = await readDocument(page, created.id)
+    expect(detail.itemNumber).toBe(itemNumber)
+    expect(detail.name).toBe(docName)
+    // No state name is spelled out here — lifecycle states are configuration.
+    // What has to hold is that the read returns the state the create reported.
+    expect(detail.state).toBe(created.state)
 
-    // 5. Verify we're on the document detail page with correct data
-    // Use first() because the item number appears in both the banner and the heading
-    await expect(page.locator(`text=${itemNumber}`).first()).toBeVisible({
-      timeout: 5000,
-    })
-  })
-
-  test('can navigate to create document page from list', async ({
-    authenticatedPage: page,
-  }) => {
-    // Navigate to documents list
-    await page.goto('/documents')
-
-    // Click create document button
-    await page.click('[data-testid="create-document-button"]')
-
-    // Should navigate to new document page
-    await expect(page).toHaveURL(/\/documents\/new/)
-  })
-
-  test('create document form displays all required fields', async ({
-    authenticatedPage: page,
-  }) => {
-    await page.goto('/documents/new')
-
-    // Verify form is visible
-    await expect(page.locator('[data-testid="document-form"]')).toBeVisible()
-
-    // Verify key form fields are present
-    await expect(page.locator('[data-testid="design-selector"]')).toBeVisible()
-    await expect(
-      page.locator('[data-testid="document-item-number"]'),
-    ).toBeVisible()
-    await expect(page.locator('[data-testid="document-name"]')).toBeVisible()
-    await expect(page.locator('[data-testid="document-submit"]')).toBeVisible()
-  })
-
-  test('document appears in documents list after creation', async ({
-    authenticatedPage: page,
-  }) => {
-    // 1. Create a document on a seeded design
-    const design = await seedFreshDesign(page, 'E2E Doc List')
-
-    await page.goto('/documents/new')
-    await selectDesignByName(page, design.name)
-
-    const timestamp = Date.now()
-    const itemNumber = `DOC-LIST-${timestamp}`
-
-    await fillField(page, '[data-testid="document-item-number"]', itemNumber)
-    await fillField(
-      page,
-      '[data-testid="document-name"]',
-      'Document for List Test',
+    // ---- Reachable through the query the list page runs ----
+    // `globalSearch` is the parameter `/documents`'s grid sends for its search
+    // box, so asking the API the same question is the honest form of what the
+    // old test approximated by typing and sleeping 500ms.
+    const listResponse = await page.request.get(
+      `/api/v1/items?itemType=Document&globalSearch=${encodeURIComponent(itemNumber)}&limit=50`,
     )
-    await page.click('[data-testid="document-submit"]')
+    expect(listResponse.ok()).toBe(true)
+    const { items } = (await listResponse.json()).data as {
+      items: Array<{ id: string; itemNumber: string; name: string }>
+    }
+    const listed = items.find((i) => i.itemNumber === itemNumber)
+    expect(
+      listed,
+      'the created document is missing from the list query the grid runs',
+    ).toBeTruthy()
+    expect(listed!.name).toBe(docName)
 
-    await expect(page).toHaveURL(/\/documents\/[a-f0-9-]+(\?.*)?$/, {
-      timeout: 10000,
-    })
+    // ---- Delete through the UI ----
+    // The header's Delete is unambiguous while the document has no files: the
+    // per-file delete buttons in the Files card are titled 'Delete' too, and
+    // none of them exists until a file does.
+    await page.getByRole('button', { name: 'Delete', exact: true }).click()
+    const confirmDialog = page.getByRole('alertdialog')
+    await expect(confirmDialog).toBeVisible({ timeout: 10000 })
+    const [deleteResponse] = await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.url().includes('/api/v1/documents/') &&
+          r.request().method() === 'DELETE',
+        { timeout: 15000 },
+      ),
+      confirmDialog
+        .getByRole('button', { name: 'Delete', exact: true })
+        .click(),
+    ])
+    expect(
+      deleteResponse.ok(),
+      `document delete failed: ${await deleteResponse.text()}`,
+    ).toBe(true)
+    await page.waitForURL(/\/documents(\?.*)?$/, { timeout: 15000 })
 
-    const url = page.url()
-    createdDocumentId = url.split('/').pop() || null
-
-    // 2. Navigate to documents list
-    await page.goto('/documents')
-
-    // 3. Search for the created document (using focus + pressSequentially)
-    // The grid's own search box, by accessible name — the old placeholder
-    // selector also matched the header's global search bar.
-    const searchInput = page.getByRole('textbox', { name: 'Search table' })
-    await searchInput.focus()
-    await page.waitForTimeout(100)
-    await searchInput.pressSequentially(itemNumber, { delay: 30 })
-    // Give time for search to filter
-    await page.waitForTimeout(500)
-
-    // 4. Verify document appears in the list
-    await expect(page.locator(`text=${itemNumber}`)).toBeVisible({
-      timeout: 5000,
-    })
+    // ---- …and the row is gone from the server, not merely off the page ----
+    const gone = await page.request.get(`/api/v1/documents/${created.id}`)
+    expect(gone.status()).toBe(404)
+    // Deleted here, so afterEach has nothing left to clean up.
+    createdDocumentId = null
   })
 })

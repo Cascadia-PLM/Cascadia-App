@@ -31,6 +31,11 @@ import { vaultLogger } from '@/lib/logging/logger'
 import { accessScopeCondition, notDeleted } from '@/lib/db/filters'
 import { takeFirst } from '@/lib/db/take-first'
 import {
+  asPostgresError,
+  constraintOf,
+  isUniqueViolation,
+} from '@/lib/errors/pg'
+import {
   AlreadyExistsError,
   ConflictError,
   FileTooLargeError,
@@ -240,75 +245,86 @@ export class FileService {
       )
     }
 
-    // Extract additional metadata
-    const extractedMetadata = await extractFileMetadata(
-      metadata.originalFileName,
-      metadata.mimeType,
-      file,
-    )
+    // Everything from here through the row insert can throw: metadata
+    // extraction reads the buffer, and the thumbnail clear and the insert both
+    // touch the database. The bytes are already in the vault by then, so a
+    // failure past this point would leave a blob no row names — drop it before
+    // letting the error out.
+    let fileRecord: typeof vaultFiles.$inferSelect
+    try {
+      // Extract additional metadata
+      const extractedMetadata = await extractFileMetadata(
+        metadata.originalFileName,
+        metadata.mimeType,
+        file,
+      )
 
-    const combinedMetadata = {
-      ...extractedMetadata,
-      description: metadata.description,
-      ...metadata,
+      const combinedMetadata = {
+        ...extractedMetadata,
+        description: metadata.description,
+        ...metadata,
+      }
+
+      // Detect file category
+      const fileCategory = detectFileCategory(
+        metadata.originalFileName,
+        metadata.mimeType,
+      )
+
+      // Check if this is the first CAD model for this item (auto-mark as primary)
+      let isPrimaryModel = false
+      if (fileCategory === 'cad_model') {
+        const existingCadFiles = await db
+          .select()
+          .from(vaultFiles)
+          .where(
+            and(
+              eq(vaultFiles.itemId, itemId),
+              eq(vaultFiles.fileCategory, 'cad_model'),
+              isNull(vaultFiles.deletedAt),
+            ),
+          )
+          .limit(1)
+
+        // If no existing CAD files, mark this as primary
+        isPrimaryModel = existingCadFiles.length === 0
+      }
+
+      // A newly designated thumbnail replaces any previous one for this item
+      if (isItemThumbnail) {
+        await this.clearItemThumbnailFlag(itemId)
+      }
+
+      // Insert file record
+      fileRecord = takeFirst(
+        await db
+          .insert(vaultFiles)
+          .values({
+            id: fileId,
+            itemId,
+            branchId: branchId ?? null,
+            fileName: sanitized,
+            originalFileName: metadata.originalFileName,
+            fileSize: file.length,
+            mimeType: metadata.mimeType,
+            fileHash,
+            storageType: (process.env.VAULT_TYPE as string) || 'local',
+            storagePath,
+            fileVersion: 1,
+            isLatestVersion: true,
+            isCheckedOut: false,
+            uploadedBy,
+            metadata: combinedMetadata,
+            fileCategory,
+            isPrimaryModel,
+            isItemThumbnail,
+          })
+          .returning(),
+      )
+    } catch (error) {
+      await this.discardOrphanedBlob(storagePath)
+      throw error
     }
-
-    // Detect file category
-    const fileCategory = detectFileCategory(
-      metadata.originalFileName,
-      metadata.mimeType,
-    )
-
-    // Check if this is the first CAD model for this item (auto-mark as primary)
-    let isPrimaryModel = false
-    if (fileCategory === 'cad_model') {
-      const existingCadFiles = await db
-        .select()
-        .from(vaultFiles)
-        .where(
-          and(
-            eq(vaultFiles.itemId, itemId),
-            eq(vaultFiles.fileCategory, 'cad_model'),
-            isNull(vaultFiles.deletedAt),
-          ),
-        )
-        .limit(1)
-
-      // If no existing CAD files, mark this as primary
-      isPrimaryModel = existingCadFiles.length === 0
-    }
-
-    // A newly designated thumbnail replaces any previous one for this item
-    if (isItemThumbnail) {
-      await this.clearItemThumbnailFlag(itemId)
-    }
-
-    // Insert file record
-    const fileRecord = takeFirst(
-      await db
-        .insert(vaultFiles)
-        .values({
-          id: fileId,
-          itemId,
-          branchId: branchId ?? null,
-          fileName: sanitized,
-          originalFileName: metadata.originalFileName,
-          fileSize: file.length,
-          mimeType: metadata.mimeType,
-          fileHash,
-          storageType: (process.env.VAULT_TYPE as string) || 'local',
-          storagePath,
-          fileVersion: 1,
-          isLatestVersion: true,
-          isCheckedOut: false,
-          uploadedBy,
-          metadata: combinedMetadata,
-          fileCategory,
-          isPrimaryModel,
-          isItemThumbnail,
-        })
-        .returning(),
-    )
 
     // Log upload action
     await this.logAction({
@@ -788,29 +804,6 @@ export class FileService {
   }
 
   /**
-   * Permanently delete a file from storage (admin only)
-   */
-  static async permanentlyDeleteFile(
-    fileId: string,
-    _userId: string,
-  ): Promise<void> {
-    const file = await this.getFileMetadata(fileId)
-
-    if (!file) {
-      throw new NotFoundError('File', fileId)
-    }
-
-    // Delete from storage
-    const storage = await this.getStorage()
-    await storage.delete(file.storagePath)
-
-    // Delete from database
-    await db.delete(vaultFiles).where(eq(vaultFiles.id, fileId))
-
-    // Note: History is preserved via cascade
-  }
-
-  /**
    * Restore a deleted file
    */
   static async restoreFile(fileId: string, userId: string): Promise<void> {
@@ -1075,17 +1068,17 @@ export class FileService {
   }
 
   /**
-   * Drop a blob written for a version row that was never inserted.
+   * Drop a blob written for a row that was never inserted.
    *
-   * Both version-creating paths store the bytes *before* opening their
-   * transaction, because the reverse order is worse: a demote that commits and
+   * Every path that writes to the vault stores the bytes *before* the row that
+   * names them, because the reverse order is worse: a demote that commits and
    * a store that then fails leaves the file with no latest version at all,
    * which is unrecoverable without hand-editing the table. Storing first makes
    * the failure mode an unreferenced blob instead, and nothing reaches a blob
    * except through the row that names it — so an orphan is invisible, not
    * corrupting. This is best effort for that reason: it tidies up when it can,
-   * and a failure here is logged rather than raised over the conflict the
-   * caller is already reporting.
+   * and a failure here is logged rather than raised over the error the caller
+   * is already reporting.
    */
   private static async discardOrphanedBlob(storagePath: string): Promise<void> {
     try {
@@ -1094,7 +1087,7 @@ export class FileService {
     } catch (error) {
       vaultLogger.warn(
         { err: error, storagePath },
-        'Failed to discard the blob of a superseded version write',
+        'Failed to discard an orphaned vault blob',
       )
     }
   }
@@ -1557,9 +1550,17 @@ export class FileService {
   /**
    * Clear the thumbnail designation from every file on an item.
    * Returns the number of files that were cleared.
+   *
+   * Takes an optional transaction so a caller that is about to designate a
+   * new thumbnail can do both halves as one unit — `uq_vault_files_item_thumbnail`
+   * rejects the window between them.
    */
-  private static async clearItemThumbnailFlag(itemId: string): Promise<number> {
-    const cleared = await db
+  private static async clearItemThumbnailFlag(
+    itemId: string,
+    tx?: TransactionClient,
+  ): Promise<number> {
+    const client = tx ?? db
+    const cleared = await client
       .update(vaultFiles)
       .set({ isItemThumbnail: false })
       .where(
@@ -1576,6 +1577,15 @@ export class FileService {
   /**
    * Designate an uploaded image as its item's thumbnail.
    * Only one file per item can be the thumbnail - this unsets any existing one.
+   *
+   * The clear and the set are one transaction. They used to be two statements,
+   * which left a window in which the item had no thumbnail at all and, worse,
+   * let two simultaneous designations both clear and both set: the item ended
+   * up with two flagged files and which one the UI showed came down to row
+   * order. `uq_vault_files_item_thumbnail` now makes the loser of that race
+   * fail instead, and the retry below re-runs it — the second attempt clears
+   * the winner's flag and takes the designation, so the last caller in wins,
+   * which is what a user pressing "use this image" means.
    */
   static async setItemThumbnail(fileId: string, userId: string): Promise<void> {
     const file = await this.getFileMetadata(fileId)
@@ -1594,12 +1604,34 @@ export class FileService {
       )
     }
 
-    await this.clearItemThumbnailFlag(file.itemId)
+    // One retry, not a loop: the only way to lose is to a concurrent setter,
+    // and the second attempt reads that setter's committed flag and clears it.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        await db.transaction(async (tx) => {
+          await FileService.clearItemThumbnailFlag(file.itemId, tx)
 
-    await db
-      .update(vaultFiles)
-      .set({ isItemThumbnail: true })
-      .where(eq(vaultFiles.id, fileId))
+          await tx
+            .update(vaultFiles)
+            .set({ isItemThumbnail: true })
+            .where(eq(vaultFiles.id, fileId))
+        })
+        break
+      } catch (error) {
+        const pgError = asPostgresError(error)
+        const lostTheRace =
+          isUniqueViolation(error) &&
+          pgError !== null &&
+          constraintOf(pgError) === 'uq_vault_files_item_thumbnail'
+        if (!lostTheRace) throw error
+        if (attempt === 1) {
+          throw new ConflictError(
+            'Another thumbnail was designated for this item while the request was in flight; re-read the item and retry',
+            { operation: 'FileService.setItemThumbnail', fileId },
+          )
+        }
+      }
+    }
 
     await this.logAction({
       fileId,

@@ -10,7 +10,10 @@ import type { SearchableSelectOption } from '@/components/ui/SearchableSelect'
 import type { UrlEnrichmentResult } from '@/components/items/useUrlDropEnrichment'
 import { TOOL_SUBTYPES, getSubtypeGroup } from '@/lib/items/types/tool'
 import { PageContainer } from '@/components/layout'
-import { AttributesEditor } from '@/components/items/AttributesEditor'
+import {
+  AttributesEditor,
+  formatAttributeValue,
+} from '@/components/items/AttributesEditor'
 import { UrlDropOverlay } from '@/components/items/UrlDropOverlay'
 import { useUrlDropEnrichment } from '@/components/items/useUrlDropEnrichment'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
@@ -111,7 +114,7 @@ export function ToolDetail({
   const [capabilities, setCapabilities] = useState<Record<string, unknown>>(
     initialTool?.capabilities ?? {},
   )
-  const [attributes, setAttributes] = useState<Record<string, string>>(
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
     initialTool?.attributes ?? {},
   )
 
@@ -136,8 +139,15 @@ export function ToolDetail({
     (result: UrlEnrichmentResult) => {
       // Always keep the source link as provenance (existing keys win).
       setAttributes((prev) => {
-        const merged: Record<string, string> = { ...result.attributes, ...prev }
-        if (!merged.link || !merged.link.trim()) merged.link = result.link
+        const merged: Record<string, unknown> = {
+          ...result.attributes,
+          ...prev,
+        }
+        // A `link` already on the item wins, but only if it is usable text -
+        // attributes can hold any JSON, and a structured value is not a link.
+        if (typeof merged.link !== 'string' || !merged.link.trim()) {
+          merged.link = result.link
+        }
         return merged
       })
 
@@ -520,7 +530,7 @@ export function ToolDetail({
                                       {key}
                                     </dt>
                                     <dd className="text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-md">
-                                      {value || '-'}
+                                      {formatAttributeValue(value) || '-'}
                                     </dd>
                                   </div>
                                 ),

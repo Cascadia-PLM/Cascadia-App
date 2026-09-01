@@ -19,6 +19,12 @@
  * element's `@type`, so the last case below is the load-bearing one: the
  * permission follows the mapped type, not a single fixed tuple.
  *
+ * The last three cases cover a second gate in the same file, of the same shape:
+ * `GET /projects/:id/commits` authorized the **path** project and then resolved
+ * a branch from the `branchId` **query** parameter without checking it belonged
+ * to that project, so access to one project read any branch's commit history —
+ * and its exact commit count — out of a program the caller cannot reach.
+ *
  * Run: npx vitest run packages/core/src/server/routes/sysml.permissions.test.ts
  */
 
@@ -48,6 +54,7 @@ import { ProgramService } from '@/lib/services/ProgramService'
 import { BranchService } from '@/lib/services/BranchService'
 import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
+import { ErrorCode } from '@/lib/errors'
 import {
   generateApiKey,
   getKeyPrefix,
@@ -272,5 +279,110 @@ describe('SysML element-create — item-type RBAC and key scope', () => {
     expect((await postElement(headers, 'PartUsage')).status).toBe(403)
     // ActionUsage really did create something; the refusal above did not.
     expect(await itemCount()).toBe(1)
+  })
+
+  /**
+   * A second program, with its own design and branch, that the callers built by
+   * `memberWith` are never enrolled into. Created by the same owner as the
+   * program above — who is a member of both — because what the cases below turn
+   * on is the *caller's* reach, not the creator's.
+   */
+  async function foreignProject(): Promise<{
+    designId: string
+    branchId: string
+  }> {
+    const program = await ProgramService.create(
+      {
+        name: 'SysML Program B',
+        code: `SMLB-${randomUUID().slice(0, 8).toUpperCase()}`,
+      },
+      ownerId,
+    )
+    const design = await DesignService.create(
+      {
+        programId: program.id,
+        name: 'SysML Design B',
+        code: `SMLDB-${randomUUID().slice(0, 8).toUpperCase()}`,
+        designType: 'Engineering',
+      },
+      ownerId,
+    )
+
+    const branches = await BranchService.listByDesign(design.id)
+    const main = branches.find((b) => !b.isLocked) ?? branches[0]
+    if (!main) throw new Error('foreign design fixture has no branch')
+    return { designId: design.id, branchId: main.id }
+  }
+
+  /** The commit collection, always addressed at the program-A project. */
+  function getCommits(headers: Record<string, string>, branch?: string) {
+    return app.request(
+      `/api/v1/sysml/projects/${designId}/commits${
+        branch === undefined ? '' : `?branchId=${branch}`
+      }`,
+      { headers },
+    )
+  }
+
+  it('refuses a branchId belonging to a project the caller cannot reach', async () => {
+    const engineer = await memberWith({
+      parts: ['read'],
+      designs: ['read'],
+    })
+    const headers = await cookieFor(engineer)
+    const foreign = await foreignProject()
+
+    // The branch is real and resolvable, so the refusal below is the ownership
+    // check and not absence: without it `BranchService.getById` hands the
+    // handler exactly this row and the request answers 200 with B's history.
+    expect((await BranchService.getById(foreign.branchId))?.designId).toBe(
+      foreign.designId,
+    )
+
+    const response = await getCommits(headers, foreign.branchId)
+
+    // 404 rather than 403, matching the two siblings in this file: an
+    // unreachable branch and a nonexistent one answer identically, so the
+    // status is not an existence oracle for other programs' branches.
+    expect(response.status).toBe(404)
+    const body = (await response.json()) as {
+      error?: { code?: string }
+      data?: unknown
+      totalResults?: number
+    }
+    expect(body.error?.code).toBe(ErrorCode.RESOURCE_NOT_FOUND)
+    // The invariant: neither the foreign history nor its size crossed over.
+    expect(body.data).toBeUndefined()
+    expect(body.totalResults).toBeUndefined()
+  })
+
+  it('serves the same caller their own branch named explicitly', async () => {
+    const engineer = await memberWith({
+      parts: ['read'],
+      designs: ['read'],
+    })
+
+    const response = await getCommits(await cookieFor(engineer), branchId)
+
+    // The half that proves the guard narrowed only the cross-project case:
+    // same caller, same query parameter, a branch of the project in the path.
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as { '@type'?: string }
+    expect(body['@type']).toBe('CommitCollection')
+  })
+
+  it('resolves the project default branch when branchId is omitted', async () => {
+    const engineer = await memberWith({
+      parts: ['read'],
+      designs: ['read'],
+    })
+
+    const response = await getCommits(await cookieFor(engineer))
+
+    // The default branch is read from the path project, so it passes the same
+    // ownership check the explicit id does rather than bypassing it.
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as { '@type'?: string }
+    expect(body['@type']).toBe('CommitCollection')
   })
 })

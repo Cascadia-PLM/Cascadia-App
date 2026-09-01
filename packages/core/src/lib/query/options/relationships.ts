@@ -87,6 +87,13 @@ export interface ItemGraphParams {
   /** Branch context, used for file visibility only. */
   branchId?: string
   includeFiles?: boolean
+  /**
+   * Whether definition/usage edges come back. Omitted leaves the server's own
+   * default in place — which is that they do — so a caller predating this
+   * param sends exactly the request it sent before; only a caller with an
+   * opinion states one.
+   */
+  includeUsages?: boolean
 }
 
 /**
@@ -106,10 +113,14 @@ export function itemGraphQuery(
     types = [],
     branchId,
     includeFiles = false,
+    includeUsages,
   } = params
 
   const search = new URLSearchParams({ depth: String(depth), direction })
   if (includeFiles) search.set('includeFiles', 'true')
+  if (includeUsages !== undefined) {
+    search.set('includeUsages', String(includeUsages))
+  }
   if (types.length > 0) search.set('types', types.join(','))
   if (branchId) search.set('branch', branchId)
 
@@ -120,6 +131,7 @@ export function itemGraphQuery(
       types,
       branchId,
       includeFiles,
+      includeUsages,
     }),
     queryFn: (): Promise<ItemGraph> =>
       apiFetch<ItemGraph>(`/api/v1/items/${itemId}/graph?${search}`),
@@ -236,6 +248,60 @@ export function itemBomTreeQuery(
         `/api/v1/items/${itemId}`,
       )
       return [await buildTreeNode(itemId, result.data.item, new Set())]
+    },
+    enabled: enabled && Boolean(itemId),
+  })
+}
+
+/** Depth budget and domain slice for one digital-thread read. */
+export interface ItemThreadParams {
+  upstreamDepth?: number
+  downstreamDepth?: number
+  bomDepth?: number
+  /** Empty means the server's own default domain set. */
+  domains?: Array<string>
+}
+
+/**
+ * The cross-domain digital thread around an item.
+ *
+ * Generic in the response so the query layer does not have to name the thread
+ * service's shapes. Keyed beneath the item like the comparison targets above,
+ * so a relationship or version write refreshes a mounted thread view, and
+ * keyed by the depth budget so moving a depth control re-keys rather than
+ * re-invoking a loader.
+ */
+export function itemThreadQuery<T>(
+  itemId: string,
+  params: ItemThreadParams = {},
+  enabled = true,
+) {
+  const {
+    upstreamDepth = 5,
+    downstreamDepth = 5,
+    bomDepth = 3,
+    domains = [],
+  } = params
+
+  const search = new URLSearchParams({
+    upstreamDepth: String(upstreamDepth),
+    downstreamDepth: String(downstreamDepth),
+    bomDepth: String(bomDepth),
+  })
+  if (domains.length > 0) search.set('domains', domains.join(','))
+
+  return queryOptions({
+    queryKey: qk.sub('items', itemId, 'thread', {
+      upstreamDepth,
+      downstreamDepth,
+      bomDepth,
+      domains,
+    }),
+    queryFn: async (): Promise<T> => {
+      const result = await apiFetch<{ data: T }>(
+        `/api/v1/thread/${itemId}?${search}`,
+      )
+      return result.data
     },
     enabled: enabled && Boolean(itemId),
   })

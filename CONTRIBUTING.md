@@ -66,7 +66,7 @@ overwritten.
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 - PostgreSQL 18+
 - Docker (for RabbitMQ and optional workers)
 

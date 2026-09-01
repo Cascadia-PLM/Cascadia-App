@@ -6,6 +6,18 @@
 import { tanstackConfig } from '@tanstack/eslint-config'
 import tseslint from 'typescript-eslint'
 import { PROPRIETARY } from './scripts/edition-manifest.mjs'
+import noIndirectEffectFetch from './scripts/eslint-rules/no-indirect-effect-fetch.mjs'
+
+/**
+ * The rules this repo writes itself, as an inline flat-config plugin.
+ *
+ * There is one, and it exists because `no-restricted-syntax` is a syntax
+ * matcher: it can say "a fetch is written here", never "this effect reaches a
+ * fetch". See scripts/eslint-rules/no-indirect-effect-fetch.mjs.
+ */
+const local = {
+  rules: { 'no-indirect-effect-fetch': noIndirectEffectFetch },
+}
 
 /**
  * Import patterns that would put proprietary code inside core.
@@ -194,20 +206,73 @@ export default [
         },
       ]
     : []),
+  // The one local rule, registered for every file so that both the ban below
+  // and its allowlist can name it. A config object without `files` exists to
+  // contribute the plugin namespace, nothing else.
+  {
+    plugins: { local },
+  },
+  // Escape user text before it reaches a LIKE/ILIKE pattern — see
+  // `likePatternRestrictions` above for what and why.
+  //
+  // Scoped to `.ts` deliberately: the E2E isVisible ban lives outside
+  // `packages/`, and a broader glob here would silently disable it.
+  //
+  // It sits BEFORE the effect-fetch block rather than after because the two
+  // overlap — a hook module under `components/` or `routes/` is a `.ts` file —
+  // and `no-restricted-syntax` options OVERRIDE per matched file rather than
+  // merge, so whichever block comes last is the only one in force. The
+  // effect-fetch block below spreads these selectors back in, and so does the
+  // routes/api block at the bottom; both overlaps are therefore neutral rather
+  // than merely improbable. Order is load-bearing here: a new block matching
+  // `packages/**` must either come before this one or restate these selectors.
+  {
+    files: ['packages/*/src/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': ['error', ...likePatternRestrictions],
+    },
+  },
   // Data fetching goes through the query layer — never fetch inside an
   // effect. An effect-fetch bypasses the one shared TanStack Query cache:
   // the route loader cannot prime it, useInvalidateResources cannot reach
   // it, and every mount refetches. It is the load-bearing member of the five
   // replaced idioms catalogued in docs/development/data-fetching.md.
   //
-  // The esquery descendant selector reaches fetches nested inside inner
-  // async functions declared in the effect — the dominant shape. Known
-  // limitation, documented rather than chased: a fetch inside a useCallback
-  // that an effect merely *invokes* is not matched; the conversion batches
-  // (FE-3..FE-6) remove those along with everything below.
+  // Two rules, because one shape is syntax and the other is reachability:
+  //
+  //  - The esquery descendant selector matches a fetch WRITTEN inside the
+  //    effect, including one nested in an inner async function declared
+  //    there. That is all a syntax matcher can see.
+  //  - `local/no-indirect-effect-fetch` matches a fetch the effect REACHES:
+  //    a sibling function — plain, `function`-declared, or `useCallback`-
+  //    wrapped — that the effect calls or depends on. That shape passed the
+  //    selector while doing exactly what it forbids.
+  //
+  // An earlier version of this comment claimed the conversion batches had
+  // removed the indirect shape and no rule was needed. They had not: the
+  // rule found ten files on the day it was written, eight of them absent
+  // from the audit that made the claim. Do not replace a gate with a
+  // sentence about a gate.
+  //
+  // One honest limitation remains, documented rather than chased: CROSS-FILE
+  // indirection. Scope analysis resolves an imported name to its import, not
+  // to the function behind it, so an effect calling a fetching helper from
+  // another module is not matched. Following that would mean resolving
+  // modules inside a lint rule, and the query layer's own review is a better
+  // place to catch it.
+  //
+  // Both rules cover `.ts` as well as `.tsx` under these directories. They
+  // were `.tsx`-only until this block was widened, which exempted precisely
+  // the files most likely to hold the pattern: a `useXData.ts` hook is where
+  // an effect-fetch goes once it is factored out of a component. Two live
+  // ones sat there unreported the whole time — see the allowlist below.
+  // The LIKE-pattern selectors are spread back in because the `.ts` block
+  // above matches these files too and options override rather than merge.
   {
     files: [
+      'packages/*/src/components/**/*.ts',
       'packages/*/src/components/**/*.tsx',
+      'packages/*/src/routes/**/*.ts',
       'packages/*/src/routes/**/*.tsx',
     ],
     rules: {
@@ -219,28 +284,93 @@ export default [
           message:
             'Fetch through the query layer (route loader + query factory + useInvalidateResources), not inside useEffect — see docs/development/data-fetching.md.',
         },
+        ...likePatternRestrictions,
       ],
+      'local/no-indirect-effect-fetch': 'error',
     },
   },
-  // Allowlist for the rule above. It began as the effect-fetches that
-  // predated the rule, pinned file by file while the conversion batches
-  // (FE-3..FE-6) drained them; as of 2026-08-28 what remains are the two that
-  // are deliberately NOT query reads. Files may only ever be REMOVED from
-  // this list — never added.
+  // Allowlist for the lexical selector above — `no-restricted-syntax` only;
+  // the reachability rule keeps its own list further down.
+  //
+  // It began as the effect-fetches that predated the rule, pinned file by file
+  // while the conversion batches (FE-3..FE-6) drained them; one entry is
+  // deliberately NOT a query read, and the two after it are what widening the
+  // glob to `.ts` uncovered. Files may only ever be REMOVED from this list —
+  // never added.
   //
   //  - vault/FilePreview.tsx streams a file's bytes and hands back an object
   //    URL it must revoke on unmount. Putting that in the query cache would
   //    leak URLs nobody revokes; the effect owns the resource lifetime.
-  //  - design-engine's CollaborativeWorkspace drives an SSE session whose
-  //    effects are entangled with stream and session lifecycle; a mechanical
-  //    swap would change semantics rather than preserve them.
+  //
+  // Still to convert — each conversion deletes its own line. Neither was ever
+  // granted an exemption: both are `.ts`, and the ban was registered for
+  // `.tsx` only until the block above was widened, so the rule had never once
+  // looked at them. They are pre-existing debt made visible, not new
+  // permission, and the never-added contract still binds every file after
+  // them.
+  //
+  //  - navigation/useBreadcrumbData.ts chains `/items/:id` → `/designs/:id` →
+  //    `/programs/:id` into `useState` on every pathname change, with no
+  //    cancellation, so an interleaved navigation can land the previous
+  //    page's crumb last. It is mounted on every authenticated page.
+  //  - work-orders/useInstructionRun.ts starts or resumes an execution and
+  //    reads its resolved parametric values the same way — GETs into
+  //    `useState` that no invalidation reaches.
+  //
+  // The exemption is the effect-fetch selector only. `'off'` would zero the
+  // rule wholesale, taking the LIKE-pattern selectors with it now that `.ts`
+  // files can appear here, so those are restated rather than dropped.
   {
     files: [
+      'packages/core/src/components/navigation/useBreadcrumbData.ts',
       'packages/core/src/components/vault/FilePreview.tsx',
-      'packages/design-engine/src/components/design-engine/CollaborativeWorkspace.tsx',
+      'packages/core/src/components/work-orders/useInstructionRun.ts',
     ],
     rules: {
-      'no-restricted-syntax': 'off',
+      'no-restricted-syntax': ['error', ...likePatternRestrictions],
+    },
+  },
+  // Allowlist for `local/no-indirect-effect-fetch`, on the same contract as
+  // the one above: files may only ever be REMOVED from this list, never
+  // added. A new file that needs an entry is a new defect — convert it
+  // instead.
+  //
+  // These are what the rule found on the day it landed. Eight of them were
+  // not in the audit that preceded it, which is the argument for the rule.
+  //
+  // Still to convert — each conversion deletes its own line:
+  //
+  //  - AddDesignToEcoDialog          `fetchDesigns` on open
+  //  - EcoAffectedItemsPanel         `buildGraph` per design structure
+  //  - ParentPropagationDialog       `fetchAncestors` on open
+  //  - AddPartToStructureDialog      `handleSearch` behind a debounce
+  //  - MembersTab                    `fetchMembers` on mount
+  //  - SourceDiffDialog              `fetchBlobText` for each side of a diff
+  //  - GenerateCadDialog             `runAssessment` on open
+  //
+  // Deliberately NOT query reads, so permanent, the way FilePreview is
+  // permanent above. Both are writes an effect drives, and both hand the
+  // result back to the cache themselves:
+  //
+  //  - SourceViewer's `saveDraft` is the 30-second auto-save: a PUT per
+  //    dirty file, then one `invalidate('software')` for the batch.
+  //  - The work-instruction detail route's `handleStartEditing` POSTs a
+  //    checkout when `?edit=true` deep-links into edit mode, then refetches
+  //    the edit context through the query client.
+  {
+    files: [
+      'packages/core/src/components/change-orders/AddDesignToEcoDialog.tsx',
+      'packages/core/src/components/change-orders/EcoAffectedItemsPanel.tsx',
+      'packages/core/src/components/change-orders/ParentPropagationDialog.tsx',
+      'packages/core/src/components/designs/AddPartToStructureDialog.tsx',
+      'packages/core/src/components/designs/MembersTab.tsx',
+      'packages/core/src/components/software/SourceDiffDialog.tsx',
+      'packages/core/src/components/software/SourceViewer.tsx',
+      'packages/core/src/routes/work-instructions/$id/index.tsx',
+      'packages/design-engine/src/components/parts/GenerateCadDialog.tsx',
+    ],
+    rules: {
+      'local/no-indirect-effect-fetch': 'off',
     },
   },
   // E2E journeys assert; they do not check whether the thing they came to
@@ -276,21 +406,6 @@ export default [
       ],
     },
   },
-  // Escape user text before it reaches a LIKE/ILIKE pattern — see
-  // `likePatternRestrictions` above for what and why.
-  //
-  // Scoped to `.ts` deliberately. `no-restricted-syntax` options OVERRIDE per
-  // matched file rather than merge, so a broader glob here would silently
-  // disable the effect-fetch ban — which is `.tsx`-only — and the E2E
-  // isVisible ban, which lives outside `packages/`. The one `.ts` block that
-  // does overlap is the routes/api one below; it spreads these selectors back
-  // in so the override is neutral rather than merely improbable.
-  {
-    files: ['packages/*/src/**/*.ts'],
-    rules: {
-      'no-restricted-syntax': ['error', ...likePatternRestrictions],
-    },
-  },
   // Nudge API routes toward apiHandler/response builders instead of raw Response construction
   {
     files: ['packages/*/src/routes/api/**/*.ts'],
@@ -305,7 +420,10 @@ export default [
         },
         // Re-stated because this block overrides the LIKE-pattern block above
         // for any file it matches. `--max-warnings 0` makes 'warn' fatal in
-        // CI just as 'error' is.
+        // CI just as 'error' is. It also overrides the effect-fetch selector,
+        // `routes/api/**` being a subset of `routes/**`; that is left as-is
+        // because no such directory exists — API routes live under
+        // `src/server/routes/` — and server code has no `useEffect` to gate.
         ...likePatternRestrictions,
       ],
     },

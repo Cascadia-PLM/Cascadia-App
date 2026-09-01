@@ -10,6 +10,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
+import { NotFoundError, ValidationError } from '../../errors'
 import type { S3ClientConfig } from '@aws-sdk/client-s3'
 
 import type { S3StorageConfig, VaultStorage } from './types'
@@ -64,6 +65,9 @@ export class S3Storage implements VaultStorage {
   /**
    * Get the full S3 key from a relative path
    * Normalizes path and applies optional prefix
+   *
+   * Throws `ValidationError`, matching `LocalFileStorage`'s traversal guard —
+   * see `storage/types.ts` for the shared `VaultStorage` throw contract.
    */
   private getS3Key(relativePath: string): string {
     // Normalize path separators to forward slashes
@@ -71,7 +75,7 @@ export class S3Storage implements VaultStorage {
 
     // Prevent directory traversal
     if (normalized.includes('..') || normalized.startsWith('/')) {
-      throw new Error('Invalid path: directory traversal detected')
+      throw new ValidationError('Invalid path: directory traversal detected')
     }
 
     // Apply prefix if configured
@@ -118,7 +122,9 @@ export class S3Storage implements VaultStorage {
       )
 
       if (!response.Body) {
-        throw new Error(`File not found: ${relativePath}`)
+        throw new NotFoundError('File', relativePath, {
+          operation: 'retrieve',
+        })
       }
 
       // Convert stream to buffer
@@ -129,7 +135,9 @@ export class S3Storage implements VaultStorage {
       return Buffer.concat(chunks)
     } catch (error: unknown) {
       if (this.isNotFoundError(error)) {
-        throw new Error(`File not found: ${relativePath}`)
+        throw new NotFoundError('File', relativePath, {
+          operation: 'retrieve',
+        })
       }
       throw error
     }
@@ -147,7 +155,9 @@ export class S3Storage implements VaultStorage {
       )
 
       if (!response.Body) {
-        throw new Error(`File not found: ${relativePath}`)
+        throw new NotFoundError('File', relativePath, {
+          operation: 'createReadStream',
+        })
       }
 
       // Convert AWS SDK stream to Web ReadableStream
@@ -170,7 +180,9 @@ export class S3Storage implements VaultStorage {
       })
     } catch (error: unknown) {
       if (this.isNotFoundError(error)) {
-        throw new Error(`File not found: ${relativePath}`)
+        throw new NotFoundError('File', relativePath, {
+          operation: 'createReadStream',
+        })
       }
       throw error
     }
@@ -225,7 +237,9 @@ export class S3Storage implements VaultStorage {
       return response.ContentLength
     } catch (error: unknown) {
       if (this.isNotFoundError(error)) {
-        throw new Error(`File not found: ${relativePath}`)
+        throw new NotFoundError('File', relativePath, {
+          operation: 'getSize',
+        })
       }
       throw error
     }

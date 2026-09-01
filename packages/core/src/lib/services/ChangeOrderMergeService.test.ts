@@ -3564,6 +3564,276 @@ describe('ChangeOrderMergeService', () => {
     })
   })
 
+  // ================================================================
+  // Revision base for affected items with no branch content
+  //
+  // `change_order_affected_items.affected_item_id` pins the item row that was
+  // current when the item was added to the change order. Every pass that acts
+  // on affected items rather than branch content bumped that pinned revision,
+  // so a change order listing a master another change order has since
+  // released minted a letter from a stale base: one letter behind re-minted a
+  // letter that already exists (a unique violation the serializable retry can
+  // only reproduce, never resolve), and two or more behind minted a letter
+  // below main's current one - which collides only where the letters in
+  // between exist, and otherwise becomes current and walks the master's
+  // revision backwards.
+  //
+  // These passes are what make the stale pin reachable in the first place.
+  // Only the branch merge and the branchless working-copy arm call
+  // `supersedePriorVersions`; a `revise` with no working copy goes through
+  // `ItemService.revise`, which clears `isCurrent` and leaves the row it
+  // replaced in its old state. A prior revision that is still "Released"
+  // passes `canApplyAction`, so nothing stops a second change order that
+  // pinned it from releasing it again.
+  //
+  // Invariant: whatever a change order pinned, releasing a `revise` mints the
+  // letter after main's current revision, and leaves exactly one current row.
+  // ================================================================
+
+  describe('revise bumps from main current revision, not the pinned row', () => {
+    async function currentRow(masterId: string) {
+      return testDb.db
+        .select({ id: items.id, revision: items.revision })
+        .from(items)
+        .where(and(eq(items.masterId, masterId), eq(items.isCurrent, true)))
+        .then((r) => r.at(0))
+    }
+
+    async function revisionsOf(masterId: string) {
+      return testDb.db
+        .select({ revision: items.revision, isCurrent: items.isCurrent })
+        .from(items)
+        .where(eq(items.masterId, masterId))
+    }
+
+    /**
+     * A change order listing one item version by id, with a design
+     * association and an ECO branch but nothing on it - the shape that sends
+     * the release down the affected-items pass rather than a branch merge.
+     */
+    async function ecoListing(itemId: string, masterId: string) {
+      const eco = await createChangeOrder()
+
+      const { branch } = await BranchService.getOrCreateEcoBranch(
+        designId,
+        eco.id,
+        user.id,
+      )
+      await testDb.db
+        .insert(changeOrderDesigns)
+        .values({
+          changeOrderId: eco.id!,
+          designId,
+          branchId: branch.id,
+          mergeStatus: 'pending',
+        })
+        .onConflictDoNothing()
+
+      await testDb.db.insert(changeOrderAffectedItems).values({
+        changeOrderId: eco.id!,
+        affectedItemId: itemId,
+        affectedItemMasterId: masterId,
+        changeAction: 'revise',
+        currentState: 'Released',
+        currentRevision: 'A',
+        createdBy: user.id,
+      })
+
+      return eco
+    }
+
+    async function releaseEco(ecoId: string) {
+      await approveEco(ecoId)
+      await ChangeOrderMergeService.merge(ecoId, user.id)
+    }
+
+    /**
+     * Every version of the master, asserted as a set: one current row at the
+     * expected letter, and every earlier letter still held by exactly the row
+     * that released it.
+     */
+    async function expectRevisions(
+      masterId: string,
+      expected: { current: string; all: Array<string> },
+    ) {
+      const rows = await revisionsOf(masterId)
+      expect(rows.filter((r) => r.isCurrent).map((r) => r.revision)).toEqual([
+        expected.current,
+      ])
+      expect(rows.map((r) => r.revision).sort()).toEqual(
+        [...expected.all].sort(),
+      )
+    }
+
+    it('mints C when the pinned row is a letter behind main (no working copy)', async () => {
+      const part = await createPart('pinned-nowc', 'Released')
+
+      // Two change orders scoped while the part was at A, released in turn -
+      // nothing stops a master being listed by more than one open ECO.
+      const first = await ecoListing(part.id, part.masterId)
+      const second = await ecoListing(part.id, part.masterId)
+
+      await releaseEco(first.id)
+      expect((await currentRow(part.masterId))?.revision).toBe('B')
+
+      // Bumping the pinned 'A' produced 'B' a second time, which the
+      // (itemNumber, revision, designId, itemType) unique index rejects - and
+      // since a stale base is deterministic rather than a race, the
+      // serializable retry reproduced it three times and the release threw.
+      await releaseEco(second.id)
+
+      await expectRevisions(part.masterId, {
+        current: 'C',
+        all: ['A', 'B', 'C'],
+      })
+    })
+
+    it('mints C when the change order holds a working copy of the pinned row', async () => {
+      const part = await createPart('pinned-wc', 'Released')
+
+      // Added while the part was still at A, so the working copy is based on
+      // A and the affected row pins A - both change orders open at once.
+      const second = await createChangeOrder()
+      const { workingCopyId } = await ChangeOrderService.addAffectedItem(
+        second.id,
+        { affectedItemId: part.id!, changeAction: 'revise' },
+        user.id,
+      )
+      expect(workingCopyId).toBeTruthy()
+
+      const first = await ecoListing(part.id, part.masterId)
+      await releaseEco(first.id)
+      expect((await currentRow(part.masterId))?.revision).toBe('B')
+
+      // Drop this change order's branch content so phase 1 finds nothing to
+      // merge and the affected-items pass runs, still holding the working
+      // copy. That copy carries a branch placeholder revision, so its letter
+      // comes from the base - which must be main's B, not the pinned A.
+      for (const ecoDesign of await ChangeOrderService.getEcoDesigns(
+        second.id,
+      )) {
+        if (!ecoDesign.branchId) continue
+        await testDb.db
+          .delete(branchItems)
+          .where(
+            and(
+              eq(branchItems.branchId, ecoDesign.branchId),
+              eq(branchItems.itemMasterId, part.masterId),
+            ),
+          )
+      }
+
+      await releaseEco(second.id)
+
+      const current = await currentRow(part.masterId)
+      expect(current?.revision).toBe('C')
+      expect(current?.id).toBe(workingCopyId)
+
+      const rows = await revisionsOf(part.masterId)
+      expect(rows.filter((r) => r.isCurrent)).toHaveLength(1)
+      expect(rows.filter((r) => r.revision === 'B')).toHaveLength(1)
+    })
+
+    it('mints C for an affected item alongside a branch that does merge', async () => {
+      const part = await createPart('pinned-phase3', 'Released')
+
+      const first = await ecoListing(part.id, part.masterId)
+      const second = await ecoListing(part.id, part.masterId)
+
+      // Unrelated content on the second change order's branch, so its branch
+      // merge runs and this master falls to the remaining-actions pass.
+      const branchId = (await ChangeOrderService.getEcoDesigns(second.id)).at(
+        0,
+      )?.branchId
+      expect(branchId).toBeTruthy()
+
+      const branchNewPart = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            itemNumber: `PN-${uniquePrefix}-phase3new`,
+            itemType: 'Part',
+            revision: '-abcdef12',
+            name: 'Added on branch',
+            state: 'Draft',
+            masterId: randomUUID(),
+            designId,
+            isCurrent: false,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
+      await testDb.db.insert(branchItems).values({
+        branchId: branchId!,
+        itemMasterId: branchNewPart.masterId,
+        currentItemId: branchNewPart.id,
+        baseItemId: null,
+        changeType: 'added',
+      })
+
+      await releaseEco(first.id)
+      expect((await currentRow(part.masterId))?.revision).toBe('B')
+
+      await releaseEco(second.id)
+
+      await expectRevisions(part.masterId, {
+        current: 'C',
+        all: ['A', 'B', 'C'],
+      })
+    })
+
+    it('mints D when the pinned row is two letters behind, never going backwards', async () => {
+      const part = await createPart('pinned-two', 'Released')
+
+      const stale = await ecoListing(part.id, part.masterId)
+
+      const first = await ecoListing(part.id, part.masterId)
+      await releaseEco(first.id)
+      const revisionB = await currentRow(part.masterId)
+      expect(revisionB?.revision).toBe('B')
+
+      const second = await ecoListing(revisionB!.id, part.masterId)
+      await releaseEco(second.id)
+      expect((await currentRow(part.masterId))?.revision).toBe('C')
+
+      // Two letters behind, so bumping the pin minted 'B' rather than the
+      // letter after main's C. A master that walked A -> B -> C still holds B,
+      // so that re-mint collides here; had anything left a gap it would not,
+      // and the lower letter would have become current and demoted C.
+      await releaseEco(stale.id)
+
+      await expectRevisions(part.masterId, {
+        current: 'D',
+        all: ['A', 'B', 'C', 'D'],
+      })
+    })
+
+    it('previews the letter the release assigns', async () => {
+      const part = await createPart('pinned-preview', 'Released')
+
+      const first = await ecoListing(part.id, part.masterId)
+      const second = await ecoListing(part.id, part.masterId)
+
+      await releaseEco(first.id)
+
+      // The pairing `resolveModifiedRevision` was extracted to guarantee, on
+      // the arm that never called it: the preview a reviewer approves from
+      // must name the letter the merge mints.
+      const preview = await ChangeOrderMergeService.previewMerge(second.id)
+      const previewed = preview.designs
+        .flatMap((d) => d.items)
+        .find((i) => i.itemNumber === part.itemNumber)
+
+      expect(previewed?.currentRevision).toBe('B')
+      expect(previewed?.newRevision).toBe('C')
+
+      await releaseEco(second.id)
+
+      expect((await currentRow(part.masterId))?.revision).toBe('C')
+    })
+  })
+
   describe('release never uses the stored revision prediction', () => {
     it('recomputes the revision at merge, ignoring targetRevision', async () => {
       const eco = await createChangeOrder()

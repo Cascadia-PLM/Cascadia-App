@@ -3,6 +3,7 @@
 
 import { z } from 'zod'
 import { MAX_IMPORT_RELATIONSHIPS } from './constants'
+import { jsonValueSchema } from '@/lib/items/types/base'
 
 /**
  * Supported item types for import
@@ -167,8 +168,13 @@ export const importPartRowSchema = z.object({
   cost: z.string().optional(),
   costCurrency: z.string().length(3).optional(),
   leadTimeDays: z.number().int().min(0).optional(),
-  /** Custom attributes from unmapped columns (converted to strings) */
-  attributes: z.record(z.string(), z.string()).optional(),
+  /**
+   * Custom attributes from unmapped columns, at the cell's own type. Mirrors
+   * `baseItemSchema`, which takes any JSON document — this used to narrow to
+   * strings and the mapper coerced to match, turning every unmapped numeric
+   * and boolean column into text on the way in.
+   */
+  attributes: z.record(z.string(), jsonValueSchema).optional(),
 })
 
 export type ImportPartRow = z.infer<typeof importPartRowSchema>

@@ -132,6 +132,24 @@ export interface OpenApiMetadata {
        * the body is absent — `POST /files/:id/convert` is the one such case.
        */
       required?: boolean
+      /**
+       * Keep this schema in the document instead of the one `body:` enforces.
+       *
+       * `documentBody` (`handler.ts`) otherwise overwrites the annotation with
+       * the runtime schema, so a route cannot advertise a shape it does not
+       * check. Set this only where the enforced envelope is *deliberately*
+       * looser than the real contract — a union the route resolves per item
+       * type, or a batch whose lines are rejected individually — and the
+       * annotation is a documented superset of it: every body the annotation
+       * describes must be one the envelope accepts.
+       *
+       * It buys documentation, not enforcement. Nothing compares the two
+       * schemas, so the superset can drift from what the handler downstream of
+       * the envelope actually takes; the route's `documented-not-enforced:`
+       * comment has to say which check is the real one. Reach for it only
+       * alongside that comment.
+       */
+      documentsSupersetOfEnforced?: true
     }
     query?: z.ZodType
     params?: z.ZodType

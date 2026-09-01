@@ -2070,11 +2070,14 @@ describe('VersionResolver', () => {
 
     let designId: string
     let ecoBranchId: string
+    let checkedOutUnchangedIds: Array<string>
 
     const idsOf = (result: PaginatedItemsResult) =>
       result.items.map((item) => item.id).sort()
 
     beforeEach(async () => {
+      checkedOutUnchangedIds = []
+
       const design = await DesignService.create(
         {
           programId,
@@ -2272,6 +2275,41 @@ describe('VersionResolver', () => {
           changeType: 'modified',
         })
       }
+
+      // 28–29 checked out but not yet edited: a plain checkout records no
+      // change type at all. These masters are invisible to commit resolution
+      // too, so they can only reach the branch view through the added arm —
+      // where a `<> 'deleted'` test is NULL rather than true against a NULL
+      // and silently drops them, while the in-memory merge keeps them.
+      for (let index = 28; index < 30; index++) {
+        const masterId = crypto.randomUUID()
+        const row = takeFirst(
+          await testDb.db
+            .insert(items)
+            .values({
+              masterId,
+              itemNumber: `${uniquePrefix}-OVCHK-${index}`,
+              revision: 'A',
+              itemType: 'Part',
+              name: `Checked out unchanged item ${index}`,
+              state: 'Released',
+              isCurrent: true,
+              createdBy: user.id,
+              modifiedBy: user.id,
+              designId,
+            })
+            .returning(),
+        )
+        checkedOutUnchangedIds.push(row.id)
+        await testDb.db.insert(branchItems).values({
+          branchId: ecoBranchId,
+          itemMasterId: masterId,
+          currentItemId: row.id,
+          changeType: null,
+          checkedOutBy: user.id,
+          checkedOutAt: new Date(),
+        })
+      }
     })
 
     it('returns the same items as the in-memory merge', async () => {
@@ -2283,8 +2321,28 @@ describe('VersionResolver', () => {
 
       // The fixture is only meaningful if every arm actually contributed:
       // 60 released, minus 5 deleted on the branch, minus 3 whose working copy
-      // is deleted, plus 5 branch-only and 5 unversioned.
-      expect(sqlPath.total).toBe(62)
+      // is deleted, plus 5 branch-only, 5 unversioned and 2 checked out but
+      // not yet edited.
+      expect(sqlPath.total).toBe(64)
+    })
+
+    it('keeps a checked-out-but-unchanged master, as the in-memory merge does', async () => {
+      const sqlPath = await VersionResolver.getBranchItems(ecoBranchId)
+      const oracle = await mergeInMemory(ecoBranchId)
+
+      expect(sqlPath.total).toBe(oracle.total)
+      expect(idsOf(sqlPath)).toEqual(idsOf(oracle))
+
+      // Named separately from the set comparison above: an arm that vanished
+      // from both paths would still make them agree, and this is the one the
+      // NULL change type reaches.
+      expect(checkedOutUnchangedIds.length).toBe(2)
+      expect(idsOf(oracle)).toEqual(
+        expect.arrayContaining(checkedOutUnchangedIds),
+      )
+      expect(idsOf(sqlPath)).toEqual(
+        expect.arrayContaining(checkedOutUnchangedIds),
+      )
     })
 
     it('returns the same items as the in-memory merge under filters', async () => {

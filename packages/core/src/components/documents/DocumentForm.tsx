@@ -39,7 +39,7 @@ export function DocumentForm({
 }: DocumentFormProps) {
   // Track selected design's protection status
   const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>()
-  const [attributes, setAttributes] = useState<Record<string, string>>(
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
     document?.attributes ?? {},
   )
   const form = useForm({

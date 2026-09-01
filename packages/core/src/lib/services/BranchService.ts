@@ -263,6 +263,13 @@ export class BranchService {
    * Get or create an ECO branch
    * Useful when checking out items - creates branch on first checkout
    * Returns the branch and whether it was newly created
+   *
+   * Idempotent under concurrency, which the read-then-create below is not on
+   * its own: two callers checking the same item out of the same design both
+   * find no branch and both try to make one. `created` is the answer to "did
+   * *this* call make it", and callers act on it — `ensureDesignAssociation`
+   * and `addDesignToEco` write the "ChangeOrder created" commit only when it
+   * is true — so exactly one of two racers may come back with `true`.
    */
   static async getOrCreateEcoBranch(
     designId: string,
@@ -292,14 +299,41 @@ export class BranchService {
       return { branch: existing, created: false }
     }
 
-    // Create new ECO branch
-    const branch = await this.createEcoBranch(
-      designId,
-      changeOrderItemId,
-      userId,
-      tx,
-    )
-    return { branch, created: true }
+    // Create new ECO branch. Nothing holds a lock across the read above and
+    // this write, so the loser of a race arrives here with the winner's
+    // branch already committed and fails — either on `createEcoBranch`'s own
+    // existence check, or, having got past it, on
+    // `branches_design_name_unique`, which reaches the client as a raw
+    // RESOURCE_ALREADY_EXISTS. "Get or create" owes that caller the branch.
+    //
+    // The attempt runs in a savepoint when it is on a caller's transaction:
+    // `withTx` threads an outer transaction straight through, so a failed
+    // statement would abort the caller's whole transaction and leave nothing
+    // to re-resolve on. `createEcoBranch` itself is untouched — a direct
+    // caller asking to create a branch that exists is still told so, which is
+    // the right answer for the user-named workspace and release branches that
+    // share `createBranch`.
+    try {
+      const branch =
+        tx === undefined
+          ? await this.createEcoBranch(designId, changeOrderItemId, userId)
+          : await tx.transaction((savepoint) =>
+              this.createEcoBranch(
+                designId,
+                changeOrderItemId,
+                userId,
+                savepoint,
+              ),
+            )
+      return { branch, created: true }
+    } catch (error) {
+      // Only a lost race is absorbed. If no branch of this name is there now,
+      // the failure was something else — a missing design, a design with no
+      // main branch — and belongs to the caller.
+      const winner = await this.getByName(designId, branchName, tx)
+      if (!winner) throw error
+      return { branch: winner, created: false }
+    }
   }
 
   /**

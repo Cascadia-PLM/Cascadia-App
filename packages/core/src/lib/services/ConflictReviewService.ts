@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { createHash } from 'node:crypto'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { db } from '../db'
 import { conflictReviews, users } from '../db/schema'
 import type { ItemConflict } from './ConflictDetectionService'
@@ -11,12 +11,16 @@ import type {
   EnrichedItemConflict,
 } from './types/conflict-review'
 import { takeFirst } from '@/lib/db/take-first'
-import { NotFoundError } from '@/lib/errors'
 
 /**
  * Service for managing conflict reviews on ECOs.
  * Allows users to mark warning-level conflicts as "reviewed" to acknowledge
  * they've been seen without necessarily resolving them.
+ *
+ * Acknowledgements accumulate: each markAsReviewed appends a row rather than
+ * replacing the previous one, so every reviewer's note and timestamp survive.
+ * The newest acknowledgement for a conflict key is the one that counts for
+ * review status; older ones are exposed as history.
  */
 export class ConflictReviewService {
   /**
@@ -57,6 +61,11 @@ export class ConflictReviewService {
   /**
    * Mark a conflict as reviewed.
    *
+   * Always appends a new acknowledgement row — a re-acknowledgement never
+   * replaces the previous reviewer's note; it stacks on top of it. Because
+   * this is a single insert, two reviewers acknowledging the same conflict
+   * concurrently both succeed and both acknowledgements are kept.
+   *
    * @param changeOrderId - The ECO's item ID
    * @param conflict - The conflict being reviewed
    * @param userId - User marking the conflict as reviewed
@@ -71,41 +80,7 @@ export class ConflictReviewService {
   ): Promise<ConflictReview> {
     const signature = this.generateConflictSignature(conflict)
 
-    // Upsert: update if exists, insert if not
-    const existing = await this.findExistingReview(
-      changeOrderId,
-      conflict.itemMasterId,
-      conflict.conflictType,
-      conflict.theirEcoId || null,
-    )
-
-    if (existing) {
-      // Update existing review with new signature and timestamp
-      const [updated] = await db
-        .update(conflictReviews)
-        .set({
-          conflictSignature: signature,
-          reviewedBy: userId,
-          reviewedAt: new Date(),
-          notes: notes || null,
-        })
-        .where(eq(conflictReviews.id, existing.id))
-        .returning()
-
-      if (!updated) {
-        throw new NotFoundError('Conflict Review', existing.id, {
-          operation: 'markAsReviewed',
-        })
-      }
-
-      return {
-        ...updated,
-        notes: updated.notes,
-      }
-    }
-
-    // Insert new review
-    const review = takeFirst(
+    return takeFirst(
       await db
         .insert(conflictReviews)
         .values({
@@ -119,15 +94,14 @@ export class ConflictReviewService {
         })
         .returning(),
     )
-
-    return {
-      ...review,
-      notes: review.notes,
-    }
   }
 
   /**
-   * Remove a review (unmark a conflict as reviewed).
+   * Remove a review (retract one acknowledgement).
+   *
+   * Deletes the single acknowledgement row named by id. If an earlier
+   * acknowledgement of the same conflict exists, it becomes current again —
+   * enrichConflictsWithReviewStatus recomputes status from what remains.
    *
    * @param reviewId - The review record ID to delete
    */
@@ -150,7 +124,11 @@ export class ConflictReviewService {
   }
 
   /**
-   * Get all conflict reviews for an ECO.
+   * Get all conflict reviews for an ECO, newest first.
+   *
+   * A conflict that has been acknowledged more than once contributes one row
+   * per acknowledgement; the id tiebreak keeps the order deterministic when
+   * two acknowledgements share a timestamp.
    *
    * @param changeOrderId - The ECO's item ID
    * @returns Array of review records with reviewer names
@@ -166,6 +144,7 @@ export class ConflictReviewService {
       .from(conflictReviews)
       .leftJoin(users, eq(conflictReviews.reviewedBy, users.id))
       .where(eq(conflictReviews.changeOrderId, changeOrderId))
+      .orderBy(desc(conflictReviews.reviewedAt), desc(conflictReviews.id))
 
     return rows.map((row) => ({
       ...row.review,
@@ -191,6 +170,10 @@ export class ConflictReviewService {
   /**
    * Enrich a list of conflicts with their review status.
    *
+   * A conflict may carry several acknowledgements. The newest one decides
+   * review status (and is the one checked for staleness); the full list rides
+   * along as reviewHistory so earlier reviewers' notes stay visible.
+   *
    * @param changeOrderId - The ECO's item ID
    * @param conflicts - Array of conflicts to enrich
    * @returns Conflicts with review status added
@@ -199,18 +182,23 @@ export class ConflictReviewService {
     changeOrderId: string,
     conflicts: Array<ItemConflict>,
   ): Promise<Array<EnrichedItemConflict>> {
-    // Get all reviews for this ECO
+    // All reviews for this ECO, newest first
     const reviews = await this.getReviewsForEco(changeOrderId)
 
-    // Build a lookup map by composite key
-    const reviewMap = new Map<string, ConflictReview>()
+    // Group by composite key, preserving newest-first order within each group
+    const reviewsByKey = new Map<string, Array<ConflictReview>>()
     for (const review of reviews) {
       const key = this.buildReviewKey(
         review.itemMasterId,
         review.conflictType,
         review.theirEcoId,
       )
-      reviewMap.set(key, review)
+      const group = reviewsByKey.get(key)
+      if (group) {
+        group.push(review)
+      } else {
+        reviewsByKey.set(key, [review])
+      }
     }
 
     // Enrich each conflict
@@ -220,9 +208,10 @@ export class ConflictReviewService {
         conflict.conflictType,
         conflict.theirEcoId || null,
       )
-      const review = reviewMap.get(key)
+      const history = reviewsByKey.get(key)
+      const current = history?.at(0)
 
-      if (!review) {
+      if (!history || !current) {
         return {
           ...conflict,
           isReviewed: false,
@@ -230,46 +219,16 @@ export class ConflictReviewService {
         }
       }
 
-      const isValid = this.isReviewValid(review, conflict)
+      const isValid = this.isReviewValid(current, conflict)
 
       return {
         ...conflict,
         isReviewed: true,
-        review,
+        review: current,
+        reviewHistory: history,
         needsReReview: !isValid,
       }
     })
-  }
-
-  /**
-   * Find an existing review by composite key.
-   */
-  private static async findExistingReview(
-    changeOrderId: string,
-    itemMasterId: string,
-    conflictType: string,
-    theirEcoId: string | null,
-  ): Promise<ConflictReview | null> {
-    const conditions = [
-      eq(conflictReviews.changeOrderId, changeOrderId),
-      eq(conflictReviews.itemMasterId, itemMasterId),
-      eq(conflictReviews.conflictType, conflictType),
-    ]
-
-    // Handle null theirEcoId - need different query condition
-    if (theirEcoId === null) {
-      conditions.push(isNull(conflictReviews.theirEcoId))
-    } else {
-      conditions.push(eq(conflictReviews.theirEcoId, theirEcoId))
-    }
-
-    const rows = await db
-      .select()
-      .from(conflictReviews)
-      .where(and(...conditions))
-      .limit(1)
-
-    return rows.at(0) || null
   }
 
   /**

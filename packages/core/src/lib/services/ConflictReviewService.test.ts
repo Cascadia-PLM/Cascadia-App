@@ -14,11 +14,18 @@
  * "reviewed" badge sitting on top of a changed conflict, and the change would
  * reach release unseen.
  *
+ * Acknowledgements accumulate: markAsReviewed appends a row per call rather
+ * than replacing the previous one, so a re-acknowledgement — including the
+ * product's Mark Reviewed button, which sends no notes — can never destroy an
+ * earlier reviewer's note. The newest acknowledgement per conflict key decides
+ * review status; the rest ride along as reviewHistory.
+ *
  * Data-integrity gate: the signature is what stops an acknowledgement from
- * masking a conflict it never covered. Complex-algorithm gate: the signature
- * is a hash over field conflicts that arrive in whatever order detection
- * produced them, so it must sort before hashing or the same conflict hashes
- * two ways and every review looks stale.
+ * masking a conflict it never covered, and accumulation is what stops a
+ * re-acknowledgement from destroying the record of who accepted what and why.
+ * Complex-algorithm gate: the signature is a hash over field conflicts that
+ * arrive in whatever order detection produced them, so it must sort before
+ * hashing or the same conflict hashes two ways and every review looks stale.
  *
  * The suite tests the service contract the four /conflict-reviews endpoints
  * consume; it does not run detection itself, which is covered by
@@ -137,6 +144,18 @@ describe('ConflictReviewService', () => {
       .where(eq(conflictReviews.changeOrderId, changeOrderId))
   }
 
+  /**
+   * Backdate a review row. Every insert in one test shares the transaction's
+   * now(), so without this "newest acknowledgement wins" would be decided by
+   * the random-uuid id tiebreak rather than by time.
+   */
+  async function backdate(reviewId: string) {
+    await testDb.db
+      .update(conflictReviews)
+      .set({ reviewedAt: new Date('2020-01-01T00:00:00.000Z') })
+      .where(eq(conflictReviews.id, reviewId))
+  }
+
   describe('generateConflictSignature', () => {
     it('does not depend on the order detection emitted field conflicts in', () => {
       const identity = {
@@ -193,7 +212,10 @@ describe('ConflictReviewService', () => {
   })
 
   describe('markAsReviewed', () => {
-    it('updates the existing acknowledgement instead of adding a second one', async () => {
+    it('appends a second acknowledgement and leaves the first note intact', async () => {
+      // theirEcoId is non-null, so with the old conflict_reviews_unique
+      // constraint still in place the second insert below would raise a
+      // unique violation — this test also pins that the constraint is gone.
       const conflict = buildConflict({ theirEcoId: otherEcoId })
 
       const first = await ConflictReviewService.markAsReviewed(
@@ -203,41 +225,36 @@ describe('ConflictReviewService', () => {
         'Coordinating with the other ECO owner',
       )
 
-      // Backdate so the refresh is observable rather than same-millisecond.
-      const backdated = new Date('2020-01-01T00:00:00.000Z')
-      await testDb.db
-        .update(conflictReviews)
-        .set({ reviewedAt: backdated })
-        .where(eq(conflictReviews.id, first.id))
-
       const changed = {
         ...conflict,
         fieldConflicts: [weightConflict('2.1')],
       }
+      // No notes — the shape the product's Mark Reviewed button sends, and
+      // the exact request that used to overwrite the first note with NULL.
       const second = await ConflictReviewService.markAsReviewed(
         ecoId,
         changed,
         secondReviewer.id,
-        'Re-acknowledged after the other ECO moved',
       )
 
-      expect(await storedReviews()).toHaveLength(1)
-      expect(second.id).toBe(first.id)
+      const rows = await storedReviews()
+      expect(rows).toHaveLength(2)
+      expect(second.id).not.toBe(first.id)
+      expect(second.reviewedBy).toBe(secondReviewer.id)
+      expect(second.notes).toBeNull()
       expect(second.conflictSignature).toBe(
         ConflictReviewService.generateConflictSignature(changed),
       )
-      expect(second.conflictSignature).not.toBe(first.conflictSignature)
-      expect(second.reviewedBy).toBe(secondReviewer.id)
-      expect(second.notes).toBe('Re-acknowledged after the other ECO moved')
-      expect(second.reviewedAt.getTime()).toBeGreaterThan(backdated.getTime())
+
+      const firstStored = rows.find((row) => row.id === first.id)
+      expect(firstStored?.notes).toBe('Coordinating with the other ECO owner')
+      expect(firstStored?.reviewedBy).toBe(reviewer.id)
+      expect(firstStored?.conflictSignature).toBe(first.conflictSignature)
     })
 
-    it('updates rather than duplicating when theirEcoId is null', async () => {
-      // Postgres treats NULLs as distinct, so conflict_reviews_unique cannot
-      // catch a duplicate on this path — findExistingReview's isNull branch is
-      // the only thing holding it. Were that branch an `eq(col, null)`, the
-      // lookup would find nothing, the insert would succeed, and the ECO would
-      // carry two acknowledgements of one conflict.
+    it('accumulates on the null-theirEcoId path the same way', async () => {
+      // The null and non-null paths used to diverge (a hand-rolled upsert
+      // with an isNull branch); accumulation must not reintroduce a split.
       const conflict = buildConflict()
       expect(conflict.theirEcoId).toBeUndefined()
 
@@ -245,18 +262,19 @@ describe('ConflictReviewService', () => {
         ecoId,
         conflict,
         reviewer.id,
+        'First look',
       )
       const second = await ConflictReviewService.markAsReviewed(
         ecoId,
-        { ...conflict, fieldConflicts: [weightConflict('2.1')] },
-        reviewer.id,
+        conflict,
+        secondReviewer.id,
       )
 
       const rows = await storedReviews()
-      expect(rows).toHaveLength(1)
-      expect(takeFirst(rows).theirEcoId).toBeNull()
-      expect(second.id).toBe(first.id)
-      expect(second.conflictSignature).not.toBe(first.conflictSignature)
+      expect(rows).toHaveLength(2)
+      expect(rows.every((row) => row.theirEcoId === null)).toBe(true)
+      expect(second.id).not.toBe(first.id)
+      expect(rows.find((row) => row.id === first.id)?.notes).toBe('First look')
     })
 
     it('keeps acknowledgements of different conflicts on one item apart', async () => {
@@ -323,6 +341,69 @@ describe('ConflictReviewService', () => {
       expect(asStale.review?.id).toBe(review.id)
     })
 
+    it('surfaces the newest acknowledgement and keeps older ones as history', async () => {
+      const conflict = buildConflict({ theirEcoId: otherEcoId })
+
+      const first = await ConflictReviewService.markAsReviewed(
+        ecoId,
+        conflict,
+        reviewer.id,
+        'Original rationale',
+      )
+      await backdate(first.id)
+      const second = await ConflictReviewService.markAsReviewed(
+        ecoId,
+        conflict,
+        secondReviewer.id,
+      )
+
+      const enriched = takeFirst(
+        await ConflictReviewService.enrichConflictsWithReviewStatus(ecoId, [
+          conflict,
+        ]),
+      )
+
+      expect(enriched.isReviewed).toBe(true)
+      expect(enriched.review?.id).toBe(second.id)
+      expect(enriched.needsReReview).toBe(false)
+      // The first reviewer's note is still there, one entry down.
+      expect(enriched.reviewHistory?.map((review) => review.id)).toEqual([
+        second.id,
+        first.id,
+      ])
+      expect(enriched.reviewHistory?.at(1)?.notes).toBe('Original rationale')
+    })
+
+    it('judges staleness against the newest acknowledgement only', async () => {
+      const conflict = buildConflict({ theirEcoId: otherEcoId })
+
+      // First acknowledgement covers the conflict as it originally stood…
+      const first = await ConflictReviewService.markAsReviewed(
+        ecoId,
+        conflict,
+        reviewer.id,
+      )
+      await backdate(first.id)
+
+      // …then the conflict moves and someone re-acknowledges the moved form.
+      const moved = { ...conflict, fieldConflicts: [weightConflict('2.1')] }
+      await ConflictReviewService.markAsReviewed(
+        ecoId,
+        moved,
+        secondReviewer.id,
+      )
+
+      // The stale first acknowledgement must not drag the conflict back to
+      // needs-re-review while the newest one covers what is there.
+      const enriched = takeFirst(
+        await ConflictReviewService.enrichConflictsWithReviewStatus(ecoId, [
+          moved,
+        ]),
+      )
+      expect(enriched.isReviewed).toBe(true)
+      expect(enriched.needsReReview).toBe(false)
+    })
+
     it('does not let one ECO acknowledgement settle another ECO conflict', async () => {
       const conflict = buildConflict()
       await ConflictReviewService.markAsReviewed(ecoId, conflict, reviewer.id)
@@ -340,6 +421,35 @@ describe('ConflictReviewService', () => {
   })
 
   describe('unmarkReview', () => {
+    it('retracts one acknowledgement and lets the previous one stand again', async () => {
+      const conflict = buildConflict({ theirEcoId: otherEcoId })
+
+      const first = await ConflictReviewService.markAsReviewed(
+        ecoId,
+        conflict,
+        reviewer.id,
+        'Original rationale',
+      )
+      await backdate(first.id)
+      const second = await ConflictReviewService.markAsReviewed(
+        ecoId,
+        conflict,
+        secondReviewer.id,
+      )
+
+      await ConflictReviewService.unmarkReview(second.id, ecoId)
+
+      const enriched = takeFirst(
+        await ConflictReviewService.enrichConflictsWithReviewStatus(ecoId, [
+          conflict,
+        ]),
+      )
+      expect(enriched.isReviewed).toBe(true)
+      expect(enriched.review?.id).toBe(first.id)
+      expect(enriched.review?.notes).toBe('Original rationale')
+      expect(enriched.reviewHistory).toHaveLength(1)
+    })
+
     it('will not clear a review through the wrong change order', async () => {
       const review = await ConflictReviewService.markAsReviewed(
         ecoId,

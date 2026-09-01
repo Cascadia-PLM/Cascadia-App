@@ -533,7 +533,8 @@ When an ECO transitions to its final state (e.g., Approved), the transition endp
 
 `ChangeOrderService.assertReleaseGates()` runs from `executeWorkflowTransition` before a
 transition into a `finalKind: 'release'` state takes its release claim — so a refusal leaves
-nothing to clean up:
+nothing to clean up. That claim is a 15-minute lease, not a permanent lock; see
+[`workflow-engine.md`](./workflow-engine.md#initial-and-final-states) for the takeover policy:
 
 1. **Critical risk acknowledgement**: All risks with `severity = 'critical'` and `requiresAcknowledgement = true` must have `acknowledgedBy` set.
 

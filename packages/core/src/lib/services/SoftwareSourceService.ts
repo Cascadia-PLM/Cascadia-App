@@ -228,13 +228,16 @@ export class SoftwareSourceService {
   // mirrors the platform's edit -> commit model for item fields.
   // ==========================================================================
 
-  /** Save one file into the item's draft tree. */
+  /**
+   * Save one file into the item's draft tree. `path` is the normalized path
+   * the entry was stored under, which is not always the one passed in.
+   */
   static async saveFileToDraft(
     itemId: string,
     path: string,
     data: Buffer,
     userId: string,
-  ): Promise<{ item: Software; manifest: SoftwareManifest }> {
+  ): Promise<{ item: Software; manifest: SoftwareManifest; path: string }> {
     const item = await this.getEditableSoftware(itemId, userId)
     const normalized = this.normalizePath(path)
     if (data.length > MAX_FILE_SIZE) {
@@ -256,7 +259,7 @@ export class SoftwareSourceService {
     })
 
     const updated = await this.setDraft(itemId, manifest.id, userId)
-    return { item: updated, manifest }
+    return { item: updated, manifest, path: normalized }
   }
 
   /** Delete one file from the item's draft tree. */
@@ -287,13 +290,17 @@ export class SoftwareSourceService {
     return { item: updated, manifest }
   }
 
-  /** Rename/move one file within the item's draft tree (content untouched). */
+  /**
+   * Rename/move one file within the item's draft tree (content untouched).
+   * `path` is the normalized destination the entry now lives at, which is not
+   * always the `toPath` passed in.
+   */
   static async renameFileInDraft(
     itemId: string,
     fromPath: string,
     toPath: string,
     userId: string,
-  ): Promise<{ item: Software; manifest: SoftwareManifest }> {
+  ): Promise<{ item: Software; manifest: SoftwareManifest; path: string }> {
     const item = await this.getEditableSoftware(itemId, userId)
     const from = this.normalizePath(fromPath)
     const to = this.normalizePath(toPath)
@@ -318,7 +325,7 @@ export class SoftwareSourceService {
     )
 
     const updated = await this.setDraft(itemId, manifest.id, userId)
-    return { item: updated, manifest }
+    return { item: updated, manifest, path: to }
   }
 
   /** Throw away the item's uncommitted draft. */

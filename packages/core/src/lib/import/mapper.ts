@@ -3,6 +3,7 @@
 
 import { getFieldsForType, getRequiredFieldsByType } from './constants'
 import type { ColumnMapping, ImportItemType } from './types'
+import type { JsonValue } from '@/lib/items/types/base'
 
 /**
  * Options for applying mappings
@@ -159,6 +160,32 @@ export function autoDetectMappings(
 }
 
 /**
+ * Narrow one parsed cell to a JSON value fit for `items.attributes`.
+ *
+ * A spreadsheet cell is a scalar, so the interesting cases are the two that
+ * are not JSON: ExcelJS hands back a `Date` for a date-formatted cell, and a
+ * numeric cell can carry Infinity or NaN. `baseItemSchema` refuses both (see
+ * `jsonValueSchema`), so an unmapped date column would otherwise fail the
+ * whole row on create. Rendering them as text keeps the import working and
+ * says plainly what was stored. Everything else is already a JSON scalar and
+ * is kept at its own type.
+ */
+function toAttributeValue(value: unknown): JsonValue {
+  if (value instanceof Date) return value.toISOString()
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : String(value)
+  }
+  if (
+    typeof value === 'string' ||
+    typeof value === 'boolean' ||
+    value === null
+  ) {
+    return value
+  }
+  return String(value)
+}
+
+/**
  * Apply column mappings to transform raw rows into mapped data.
  * Optionally collects unmapped columns as custom attributes.
  */
@@ -180,7 +207,7 @@ export function applyMappings(
 
   return rows.map((row) => {
     const mappedRow: Record<string, unknown> = {}
-    const attributes: Record<string, unknown> = {}
+    const attributes: Record<string, JsonValue> = {}
 
     for (const [sourceColumn, value] of Object.entries(row)) {
       const targetField = columnToField[sourceColumn]
@@ -191,10 +218,13 @@ export function applyMappings(
         value !== undefined &&
         value !== ''
       ) {
-        // Collect unmapped columns as attributes (convert to string for schema compatibility)
+        // Collect unmapped columns as attributes, keeping the cell's own type.
+        // This used to be a flat `String(value)`, working around
+        // `baseItemSchema` narrowing the map to `Record<string, string>`; that
+        // turned every unmapped numeric and boolean column into text.
         const attrKey = sanitizeAttributeKey(sourceColumn)
         if (attrKey) {
-          attributes[attrKey] = String(value)
+          attributes[attrKey] = toAttributeValue(value)
         }
       }
     }

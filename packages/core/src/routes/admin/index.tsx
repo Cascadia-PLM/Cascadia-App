@@ -22,6 +22,7 @@ import {
 import { useState } from 'react'
 import { PageContainer } from '@/components/layout'
 import { PackagesCard } from '@/components/admin/PackagesCard'
+import { Slot } from '@/lib/ui/slot-registry'
 import {
   Badge,
   Button,
@@ -533,6 +534,9 @@ function AdminPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Sections contributed by optional packages */}
+      <Slot name="admin-settings-sections" props={{}} />
 
       {/* System */}
       <Card>

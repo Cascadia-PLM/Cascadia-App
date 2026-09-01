@@ -9,6 +9,13 @@ on:
     tags:
       - 'v*'
 
+# The token reads this repository and nothing else. This workflow only checks
+# out, compares a tag to `package.json` and greps the changelog — publishing and
+# tagging stay manual, so nothing here needs a write scope. A step that later
+# does widens at job level, not here.
+permissions:
+  contents: read
+
 jobs:
   verify-tag:
     name: Tag matches package version

@@ -6,7 +6,7 @@ Local development setup guide for Cascadia PLM.
 
 | Requirement    | Version  | Notes                                     |
 | -------------- | -------- | ----------------------------------------- |
-| **Node.js**    | 22.x LTS | Recommended. 20.x also works.             |
+| **Node.js**    | 22.x LTS | Minimum. Node 20 reached end of life.     |
 | **npm**        | 10+      | Ships with Node.js 22.                    |
 | **PostgreSQL** | 18+      | Required. Must be running and accessible. |
 | **Git**        | 2.x      | For cloning the repository.               |

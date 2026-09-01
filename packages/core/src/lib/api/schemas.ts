@@ -13,6 +13,7 @@
 
 import { z } from 'zod'
 import { changeOrderTypeSchema } from '@/lib/items/types/change-order'
+import { jsonValueSchema } from '@/lib/items/types/base'
 import { testStepSchema } from '@/lib/items/types/testcase'
 import {
   issueCategories,
@@ -96,10 +97,10 @@ export const partUpdateSchema = z.object({
   // identical value and rejects a changed one — a state change goes through
   // the lifecycle, not through here.
   state: z.string().max(50).optional(),
-  // Free-form extension bag on the items row. Typed `Record<string, unknown>`
-  // in the schema, so the values are not narrowed to strings here either: a
-  // PUT echoes back whatever a read returned.
-  attributes: z.record(z.string(), z.unknown()).optional(),
+  // Free-form extension bag on the items row. Same contract as
+  // `baseItemSchema` — any JSON document — so a PUT echoes back whatever a
+  // read returned.
+  attributes: z.record(z.string(), jsonValueSchema).optional(),
   commitMessage: z.string().max(500).optional(),
 })
 
@@ -311,7 +312,7 @@ export type ChangeOrderUpdate = z.infer<typeof changeOrderUpdateSchema>
 const itemUpdateBaseFields = {
   name: z.string().max(500).nullable().optional(),
   state: z.string().max(50).optional(),
-  attributes: z.record(z.string(), z.unknown()).optional(),
+  attributes: z.record(z.string(), jsonValueSchema).optional(),
   commitMessage: z.string().max(500).optional(),
 }
 

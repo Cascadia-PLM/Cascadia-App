@@ -24,6 +24,10 @@
  * problem: only the worker executing a job ever moves it off 'running', so a
  * worker that dies mid-execution wedged its row there permanently.
  *
+ * Both sweeps share one deliberate no-op: a row whose type this process has
+ * no definition for belongs to another worker fleet and is left exactly as
+ * it is, warned about once rather than on every tick forever.
+ *
  * The last block races the sweep's own publish window: `requeueForRetry`
  * publishes first and flips the row to 'queued' second, so a worker can claim
  * the delivery in between. Its flip is guarded to the statuses a re-publish
@@ -61,6 +65,7 @@ import {
 } from '@/lib/jobs/scheduler'
 import { jobs } from '@/lib/db/schema/jobs'
 import { takeFirst } from '@/lib/db/take-first'
+import { workerLogger } from '@/lib/logging/logger'
 
 const TEST_TYPE = 'test.jobs.retry-sweep'
 const MAX_ATTEMPTS = 3
@@ -69,6 +74,12 @@ const LONG_RUNNING_TYPE = 'test.jobs.long-running'
 const LONG_RUNNING_TIMEOUT_MS = 10 * 60 * 1000
 /** Deliberately never registered — the foreign-fleet row. */
 const UNREGISTERED_TYPE = 'test.jobs.owned-by-another-fleet'
+/**
+ * A second never-registered type, kept distinct from {@link UNREGISTERED_TYPE}
+ * because the warning latches per type per process: a type an earlier test
+ * already swept past would never warn again, whatever the sweep did.
+ */
+const UNREGISTERED_RETRY_TYPE = 'test.jobs.retry-owned-by-another-fleet'
 /** Stand-ins for a module's contributed maintenance entries. */
 const CONTRIBUTED_TYPE = 'test.jobs.maintenance-contributed'
 const CONTRIBUTED_SLOW_TYPE = 'test.jobs.maintenance-contributed-slow'
@@ -707,6 +718,64 @@ describe('retry sweep', () => {
       expect(publishSpy).not.toHaveBeenCalled()
       expect((await rowFor(cancelled.id)).status).toBe('cancelled')
       expect((await rowFor(running.id)).status).toBe('running')
+    })
+  })
+
+  describe('unregistered types (JOBS2-11)', () => {
+    /** A parked row of `type` whose backoff elapsed a second ago. */
+    async function insertDueForRetry(type: string) {
+      return insertJob('pending', {
+        type,
+        attempts: 1,
+        nextRetryAt: new Date(Date.now() - 1000),
+      })
+    }
+
+    /**
+     * The logged warnings naming `type`, whichever tick emitted them. Pino's
+     * signature is overloaded, so a spy's call tuples type loosely; the first
+     * argument is the context object every sweep warning carries.
+     */
+    function warningsFor(calls: Array<Array<unknown>>, type: string) {
+      return calls.filter(([context]) => {
+        if (typeof context !== 'object' || context === null) return false
+        return (context as { type?: string }).type === type
+      })
+    }
+
+    it('never publishes a due row whose type this process does not know', async () => {
+      const foreign = await insertDueForRetry(UNREGISTERED_TYPE)
+      const owned = await insertDueForRetry(TEST_TYPE)
+
+      // Skipped per row, not a bail-out: the type this process does own goes
+      // out in the same pass.
+      expect(await sweepRetryableJobs()).toBe(1)
+
+      // A publish for a type nothing can handle would mint an unclaimable
+      // delivery, so the foreign row never reaches the broker at all.
+      const publishedJobIds = publishSpy.mock.calls.map(([, msg]) => msg.jobId)
+      expect(publishedJobIds).toEqual([owned.id])
+
+      // And it is left exactly as it was, for the fleet that does own it.
+      const row = await rowFor(foreign.id)
+      expect(row.status).toBe('pending')
+      expect(row.nextRetryAt).not.toBeNull()
+      expect((await rowFor(owned.id)).status).toBe('queued')
+    })
+
+    it('warns once per unregistered type, not once per tick', async () => {
+      const warn = vi.spyOn(workerLogger, 'warn').mockReturnValue(undefined)
+      await insertDueForRetry(UNREGISTERED_RETRY_TYPE)
+
+      // The row stays due forever, so the tick count is unbounded — the
+      // warning must not be.
+      expect(await sweepRetryableJobs()).toBe(0)
+      expect(await sweepRetryableJobs()).toBe(0)
+      expect(await sweepRetryableJobs()).toBe(0)
+
+      const warned = warningsFor(warn.mock.calls, UNREGISTERED_RETRY_TYPE)
+      expect(warned).toHaveLength(1)
+      expect(publishSpy).not.toHaveBeenCalled()
     })
   })
 })

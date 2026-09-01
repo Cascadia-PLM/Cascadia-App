@@ -33,7 +33,7 @@ export function TaskForm({
   onCancel,
   isSubmitting,
 }: TaskFormProps) {
-  const [attributes, setAttributes] = useState<Record<string, string>>(
+  const [attributes, setAttributes] = useState<Record<string, unknown>>(
     task?.attributes ?? {},
   )
   const form = useForm({

@@ -7,7 +7,7 @@ import cascadiaLogo from '/cascadia-plm-logo-icon.svg'
 import { ThemeToggle } from './ThemeToggle'
 import { Sidebar } from './Sidebar'
 import type { UserInfo } from './types'
-import { authSessionQuery } from '@/lib/query'
+import { authSessionQuery, invalidateEverything } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
 import { useSidebar } from '@/lib/sidebar-context'
 import { useChatPanel } from '@/lib/ai/chat-context'
@@ -43,8 +43,13 @@ export function Header() {
   const handleLogout = async () => {
     try {
       await apiFetch('/api/v1/auth/logout', { method: 'POST' })
-      await queryClient.invalidateQueries({ queryKey: ['auth'] })
-      navigate({ to: '/login' })
+      // Signing out changes identity, so nothing the previous session cached
+      // may survive. Navigate first: clearing while the authorized routes are
+      // still mounted would send every live query off to refetch and 401
+      // before /login unmounts them. On /login only the session query is
+      // active, and its refetch correctly reports `authenticated: false`.
+      await navigate({ to: '/login' })
+      invalidateEverything(queryClient)
     } catch {
       // Silently fail - user will see they're still logged in
     }

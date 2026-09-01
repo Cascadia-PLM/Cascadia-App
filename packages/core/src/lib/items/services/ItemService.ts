@@ -308,11 +308,7 @@ export class ItemService {
               itemType: type,
               name: validatedData.name,
               state: validatedData.state || initialState,
-              attributes: (
-                validatedData as unknown as {
-                  attributes?: Record<string, unknown>
-                }
-              ).attributes,
+              attributes: validatedData.attributes,
               isCurrent: true,
               sysmlType: sysmlType,
               usageOf: (validatedData as unknown as { usageOf?: string })
@@ -628,13 +624,8 @@ export class ItemService {
         updateData.revision = (data as any).revision
       if ((data as any).isCurrent !== undefined)
         updateData.isCurrent = (data as any).isCurrent
-      if (
-        (data as unknown as { attributes?: Record<string, unknown> })
-          .attributes !== undefined
-      ) {
-        updateData.attributes = (
-          data as unknown as { attributes?: Record<string, unknown> }
-        ).attributes
+      if (data.attributes !== undefined) {
+        updateData.attributes = data.attributes
       }
 
       await tx.update(items).set(updateData).where(eq(items.id, id))

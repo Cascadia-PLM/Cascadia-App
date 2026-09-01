@@ -4,6 +4,7 @@
 import {
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -124,11 +125,9 @@ export const workOrderInstructions = pgTable(
       .notNull()
       .references(() => workOrders.itemId, { onDelete: 'cascade' }),
     // Provenance: the template this line was instantiated from. The
-    // snapshot keeps the line executable if the template is deleted.
-    workInstructionId: uuid('work_instruction_id').references(
-      () => workInstructions.itemId,
-      { onDelete: 'set null' },
-    ),
+    // snapshot keeps the line executable if the template is deleted. FK
+    // named in the table extras below — see the note there.
+    workInstructionId: uuid('work_instruction_id'),
     // The part this line applies to — the order's built part, or a BOM
     // descendant when the order fabricates subassemblies too.
     partId: uuid('part_id').references(() => items.id, {
@@ -159,6 +158,12 @@ export const workOrderInstructions = pgTable(
       .references(() => users.id),
   },
   (table) => [
+    // Named explicitly: the implicit name is 72 bytes, past Postgres's 63.
+    foreignKey({
+      name: 'fk_wo_instruction_template',
+      columns: [table.workInstructionId],
+      foreignColumns: [workInstructions.itemId],
+    }).onDelete('set null'),
     index('idx_wo_instruction_order').on(table.workOrderId, table.orderIndex),
     index('idx_wo_instruction_template').on(table.workInstructionId),
     index('idx_wo_instruction_part').on(table.partId),
@@ -192,9 +197,8 @@ export const instructionExecutions = pgTable(
   'instruction_executions',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    workOrderInstructionId: uuid('work_order_instruction_id')
-      .notNull()
-      .references(() => workOrderInstructions.id, { onDelete: 'cascade' }),
+    // FK named in the table extras below — see the note there.
+    workOrderInstructionId: uuid('work_order_instruction_id').notNull(),
     executedBy: uuid('executed_by')
       .notNull()
       .references(() => users.id),
@@ -224,6 +228,12 @@ export const instructionExecutions = pgTable(
     currentStepIndex: integer('current_step_index').notNull().default(0),
   },
   (table) => [
+    // Named explicitly: the implicit name is 78 bytes, past Postgres's 63.
+    foreignKey({
+      name: 'fk_instr_exec_line',
+      columns: [table.workOrderInstructionId],
+      foreignColumns: [workOrderInstructions.id],
+    }).onDelete('cascade'),
     /**
      * One open run per technician per line per unit. Partial on the
      * 'In Progress' status, because that is exactly the set a resume looks in

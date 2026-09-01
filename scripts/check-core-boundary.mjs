@@ -152,6 +152,16 @@ function resolveSpecifier(specifier, fromFile) {
     )
   } else if (specifier.startsWith('@cascadia/')) {
     for (const name of MODULE_PACKAGES) {
+      // The root specifier, with no subpath. It resolves to nothing at
+      // runtime — no module package declares a '.' export — but a core file
+      // still named a module, and the subpath test below reads straight past
+      // it: only a trailing slash matched, so this fell through to null and
+      // was never classified. Point it at the package manifest, a real file
+      // under packages/<name>/ that the edition manifest calls proprietary.
+      // The core package needs no equivalent: a core target records nothing.
+      if (specifier === `@cascadia/${name}`) {
+        return tryExtensions(join('packages', name, 'package.json'))
+      }
       const prefix = `@cascadia/${name}/`
       if (specifier.startsWith(prefix)) {
         return tryExtensions(
@@ -197,8 +207,25 @@ for (const file of allFiles) {
     }
   }
 
+  // A template literal is the third way to write a string, and the pass knew
+  // only two — so a quoted id survived by being written in backticks. It is
+  // matched against code lines only: every comment in this repository names an
+  // identifier in Markdown backticks, so scanning prose for one would fail
+  // three honest sentences and teach the next author to stop naming the module
+  // they are explaining. In code a backtick opens a string; in a comment it is
+  // punctuation. The single- and double-quoted forms keep scanning everything,
+  // because a quoted id reads as code wherever it appears.
+  const code = source
+    .split('\n')
+    .filter((line) => !/^\s*(\/\/|\/\*|\*)/.test(line))
+    .join('\n')
+
   for (const id of PROPRIETARY_PACKAGE_IDS) {
-    if (source.includes(`'${id}'`) || source.includes(`"${id}"`)) {
+    if (
+      source.includes(`'${id}'`) ||
+      source.includes(`"${id}"`) ||
+      code.includes(`\`${id}\``)
+    ) {
       record(file, `names the package id '${id}'`)
     }
   }

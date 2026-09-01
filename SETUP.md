@@ -4,7 +4,7 @@ Detailed installation and configuration instructions for Cascadia PLM.
 
 ## Prerequisites
 
-- **Node.js** 20+ ([download](https://nodejs.org/))
+- **Node.js** 22+ ([download](https://nodejs.org/))
 - **PostgreSQL** 18+ ([download](https://www.postgresql.org/download/))
 - **npm** (included with Node.js)
 - **Docker** (optional, for RabbitMQ and CAD workers)

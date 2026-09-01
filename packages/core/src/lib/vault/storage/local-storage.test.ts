@@ -14,6 +14,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { LocalFileStorage } from './local-storage'
+import { NotFoundError, ValidationError } from '@/lib/errors'
 
 describe('LocalFileStorage', () => {
   let storage: LocalFileStorage
@@ -62,44 +63,47 @@ describe('LocalFileStorage', () => {
     })
   })
 
+  // The traversal guards are the vault's only defence against a crafted
+  // storage path escaping the root, so what is pinned here is the refusal
+  // itself: every one of these calls must reject with a ValidationError.
   describe('path validation', () => {
     it('rejects paths with directory traversal (..)', async () => {
       await expect(
         storage.store('../outside.txt', Buffer.from('data')),
-      ).rejects.toThrow('Invalid path: directory traversal detected')
+      ).rejects.toThrow(ValidationError)
       await expect(storage.retrieve('../outside.txt')).rejects.toThrow(
-        'Invalid path: directory traversal detected',
+        ValidationError,
       )
       // exists() catches the error and returns false instead of throwing
       expect(await storage.exists('../outside.txt')).toBe(false)
       await expect(storage.delete('../outside.txt')).rejects.toThrow(
-        'Invalid path: directory traversal detected',
+        ValidationError,
       )
     })
 
     it('rejects paths with embedded directory traversal', async () => {
       await expect(
         storage.store('foo/../../../etc/passwd', Buffer.from('data')),
-      ).rejects.toThrow('Invalid path')
+      ).rejects.toThrow(ValidationError)
       await expect(
         storage.store(
           'foo/bar/../../baz/../../../etc/passwd',
           Buffer.from('data'),
         ),
-      ).rejects.toThrow('Invalid path')
+      ).rejects.toThrow(ValidationError)
     })
 
     it('rejects absolute paths', async () => {
       // Unix-style absolute path (works on both platforms after normalization)
       await expect(
         storage.store('/etc/passwd', Buffer.from('data')),
-      ).rejects.toThrow('Invalid path: directory traversal detected')
+      ).rejects.toThrow(ValidationError)
 
       // Windows-style absolute path - only test on Windows since path.isAbsolute() is platform-specific
       if (process.platform === 'win32') {
         await expect(
           storage.store('C:\\Windows\\System32\\config', Buffer.from('data')),
-        ).rejects.toThrow('Invalid path')
+        ).rejects.toThrow(ValidationError)
       }
     })
 
@@ -256,7 +260,7 @@ describe('LocalFileStorage', () => {
 
     it('throws error for non-existent file', async () => {
       await expect(storage.retrieve('non-existent-file.txt')).rejects.toThrow(
-        'File not found',
+        NotFoundError,
       )
     })
 
@@ -299,7 +303,7 @@ describe('LocalFileStorage', () => {
     it('throws error for non-existent file', async () => {
       await expect(
         storage.createReadStream('non-existent-stream.txt'),
-      ).rejects.toThrow('File not found')
+      ).rejects.toThrow(NotFoundError)
     })
 
     it('streams large files correctly', async () => {
@@ -422,7 +426,7 @@ describe('LocalFileStorage', () => {
 
     it('throws error for non-existent file', async () => {
       await expect(storage.getSize('no-size.txt')).rejects.toThrow(
-        'File not found',
+        NotFoundError,
       )
     })
 

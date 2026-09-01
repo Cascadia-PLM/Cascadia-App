@@ -144,7 +144,7 @@ describe('relationships batch-create', () => {
       {
         programId: designType === 'Library' ? null : programId,
         name: `${suffix} Design`,
-        code: `BATCH-${suffix}-${crypto.randomUUID().slice(0, 8)}`,
+        code: `BATCH-${suffix}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
         designType,
       },
       engineer.id,

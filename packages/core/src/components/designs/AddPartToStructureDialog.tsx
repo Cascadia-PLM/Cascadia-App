@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useEffect, useState } from 'react'
-import { ExternalLink, Info, Search } from 'lucide-react'
+import { ExternalLink, Search } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,7 @@ import { useResourceMutation } from '@/lib/query'
 import { cn } from '@/lib/utils'
 import { StateBadge } from '@/components/items/StateBadge'
 
-type DesignScope = 'current' | 'all' | 'library'
+type DesignScope = 'current' | 'library'
 
 interface EnrichedItem {
   id: string
@@ -154,7 +154,6 @@ export function AddPartToStructureDialog({
 
   const scopeOptions: Array<{ value: DesignScope; label: string }> = [
     { value: 'current', label: 'This Design' },
-    { value: 'all', label: 'All Designs' },
     { value: 'library', label: 'Standard Library' },
   ]
 
@@ -282,25 +281,6 @@ export function AddPartToStructureDialog({
               </div>
             )}
           </div>
-
-          {/* External Part Info Banner */}
-          {selectedItem?.isExternal && (
-            <div className="flex gap-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-blue-900 dark:text-blue-100">
-                  Cross-Design Reference
-                </p>
-                <p className="text-blue-700 dark:text-blue-300 mt-0.5">
-                  This part belongs to{' '}
-                  <strong>{selectedItem.designName}</strong> (
-                  {selectedItem.designCode}). It will appear in your BOM
-                  structure, but changes to it require an ECO in its home
-                  design.
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* BOM Fields */}
           {selectedItem && (

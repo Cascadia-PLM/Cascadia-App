@@ -3,7 +3,7 @@
 
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../../db'
-import { branchItems, itemRelationships, items } from '../../db/schema'
+import { branchItems, designs, itemRelationships, items } from '../../db/schema'
 import {
   AlreadyExistsError,
   NotFoundError,
@@ -46,6 +46,118 @@ function relationshipExistsError(
  * Extracted from ItemService to keep relationship logic isolated
  */
 export class ItemRelationshipService {
+  /**
+   * Keep direct BOM writes inside the scope the structure editor exposes:
+   * Part -> Part in one design, with Library parts as the only cross-design
+   * targets. A part pulled in as a usage has the target design's `designId`,
+   * so it passes the same-design rule while retaining `usageOf` traceability.
+   *
+   * Cross-design references are a separate model (`design_cross_references`).
+   * Their materialisation flow writes the inherited external edges directly;
+   * this guard is for user/API relationship creation and batch import, where
+   * accepting a wider graph than the picker can later edit creates stranded
+   * BOM lines.
+   */
+  private static async assertBomTargetScope(
+    relationships: Array<{
+      sourceId: string
+      targetId: string
+      relationshipType: string
+    }>,
+    batch = false,
+  ): Promise<void> {
+    const bomRelationships = relationships
+      .map((relationship, index) => ({ relationship, index }))
+      .filter(({ relationship }) => relationship.relationshipType === 'BOM')
+
+    if (bomRelationships.length === 0) return
+
+    const itemIds = [
+      ...new Set(
+        bomRelationships.flatMap(({ relationship }) => [
+          relationship.sourceId,
+          relationship.targetId,
+        ]),
+      ),
+    ]
+    const itemRows = await db
+      .select({
+        id: items.id,
+        designId: items.designId,
+        itemType: items.itemType,
+        itemNumber: items.itemNumber,
+      })
+      .from(items)
+      .where(inArray(items.id, itemIds))
+    const itemById = new Map(itemRows.map((item) => [item.id, item]))
+
+    const targetDesignIds = [
+      ...new Set(
+        bomRelationships
+          .map(({ relationship }) => itemById.get(relationship.targetId))
+          .map((item) => item?.designId)
+          .filter((id): id is string => id !== null && id !== undefined),
+      ),
+    ]
+    const targetDesignRows =
+      targetDesignIds.length === 0
+        ? []
+        : await db
+            .select({ id: designs.id, designType: designs.designType })
+            .from(designs)
+            .where(inArray(designs.id, targetDesignIds))
+    const libraryDesignIds = new Set(
+      targetDesignRows
+        .filter((design) => design.designType === 'Library')
+        .map((design) => design.id),
+    )
+
+    const fieldErrors: Array<{
+      field: string
+      message: string
+      code: string
+    }> = []
+
+    for (const { relationship, index } of bomRelationships) {
+      const source = itemById.get(relationship.sourceId)
+      const target = itemById.get(relationship.targetId)
+      const field = batch ? `relationships[${index}].targetId` : 'targetId'
+
+      if (!source || !target) continue
+
+      if (source.itemType !== 'Part' || target.itemType !== 'Part') {
+        fieldErrors.push({
+          field,
+          message: 'BOM relationships must connect Part items',
+          code: 'INVALID_BOM_ITEM_TYPE',
+        })
+        continue
+      }
+
+      const sameDesign =
+        source.designId !== null && source.designId === target.designId
+      const libraryTarget =
+        target.designId !== null && libraryDesignIds.has(target.designId)
+
+      if (!sameDesign && !libraryTarget) {
+        fieldErrors.push({
+          field,
+          message:
+            `BOM target ${target.itemNumber} must belong to the source ` +
+            'design or a Library design; pull it in as a local usage first',
+          code: 'BOM_TARGET_OUT_OF_SCOPE',
+        })
+      }
+    }
+
+    if (fieldErrors.length > 0) {
+      throw new ValidationError(
+        'BOM relationships are limited to the source design and libraries',
+        fieldErrors,
+      )
+    }
+  }
+
   /**
    * Get items related to a specific item
    */
@@ -487,6 +599,7 @@ export class ItemRelationshipService {
     const { ItemService } = await import('./ItemService')
 
     const sourceItem = await ItemService.findById(sourceId)
+    await this.assertBomTargetScope([{ sourceId, targetId, relationshipType }])
     if (!options?.bypassEditGuard) {
       await this.requireEdgeEditable(
         sourceItem,
@@ -651,6 +764,12 @@ export class ItemRelationshipService {
         })),
       )
     }
+
+    // The UI confines BOM candidates to the source design plus libraries.
+    // Apply that boundary before either the edit checks or a replacement
+    // delete so direct API and import callers cannot create an uneditable
+    // cross-design structure or erase the old one with an invalid rebuild.
+    await this.assertBomTargetScope(relationships, true)
 
     // Edit-lock policy: every distinct source item must be editable by the
     // user adding relationships to it, plus the requirement end of any

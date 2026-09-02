@@ -36,6 +36,7 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
+import { UsageService } from '@/lib/services/UsageService'
 import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
 import { itemRelationships, programMembers, programs } from '@/lib/db/schema'
@@ -66,6 +67,7 @@ describe('relationships batch-create', () => {
 
   let engineer: TestUser
   let cookie: string
+  let programId: string
   let designId: string
 
   beforeAll(async () => {
@@ -93,6 +95,7 @@ describe('relationships batch-create', () => {
         })
         .returning(),
     )
+    programId = program.id
     await testDb.db.insert(programMembers).values({
       programId: program.id,
       userId: engineer.id,
@@ -117,12 +120,36 @@ describe('relationships batch-create', () => {
     await testDb.rollback()
   })
 
-  async function createPart(name: string): Promise<{ id: string }> {
+  async function createPart(
+    name: string,
+    targetDesignId = designId,
+  ): Promise<{ id: string }> {
     return ItemService.create(
       'Part',
-      { designId, revision: 'A', name, partType: 'Manufacture' } as never,
+      {
+        designId: targetDesignId,
+        revision: 'A',
+        name,
+        partType: 'Manufacture',
+      } as never,
       engineer.id,
     )
+  }
+
+  async function createDesign(
+    designType: 'Engineering' | 'Library',
+    suffix: string,
+  ): Promise<string> {
+    const design = await DesignService.create(
+      {
+        programId: designType === 'Library' ? null : programId,
+        name: `${suffix} Design`,
+        code: `BATCH-${suffix}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+        designType,
+      },
+      engineer.id,
+    )
+    return design.id
   }
 
   function batchCreate(body: unknown) {
@@ -282,6 +309,73 @@ describe('relationships batch-create', () => {
     expect(after.find((line) => line.targetId === bracket.id)?.findNumber).toBe(
       10,
     )
+  })
+
+  it('rejects a BOM target from another engineering design before replacing', async () => {
+    const parent = await createPart('Assembly')
+    const existing = await createPart('Existing child')
+    const foreignDesignId = await createDesign('Engineering', 'FOREIGN')
+    const foreign = await createPart('Foreign child', foreignDesignId)
+
+    expect(
+      (
+        await batchCreate({
+          relationships: [bomLine(parent.id, existing.id, 10)],
+        })
+      ).status,
+    ).toBe(201)
+
+    const response = await batchCreate({
+      replaceExisting: true,
+      relationships: [bomLine(parent.id, foreign.id, 20)],
+    })
+
+    expect(response.status).toBe(400)
+    const body = (await response.json()) as ErrorBody
+    expect(body.error.code).toBe('VALIDATION_FAILED')
+    expect(body.error.fieldErrors?.[0]).toMatchObject({
+      field: 'relationships[0].targetId',
+      code: 'BOM_TARGET_OUT_OF_SCOPE',
+    })
+    expect(await storedBom(parent.id)).toEqual([
+      { targetId: existing.id, findNumber: 10 },
+    ])
+  })
+
+  it('allows a Library part as a cross-design BOM target', async () => {
+    const parent = await createPart('Assembly')
+    const libraryDesignId = await createDesign('Library', 'LIBRARY')
+    const libraryPart = await createPart('Library fastener', libraryDesignId)
+
+    const response = await batchCreate({
+      relationships: [bomLine(parent.id, libraryPart.id, 10)],
+    })
+
+    expect(response.status).toBe(201)
+    expect(await storedBom(parent.id)).toEqual([
+      { targetId: libraryPart.id, findNumber: 10 },
+    ])
+  })
+
+  it('allows a pulled-in local usage without duplicating its definition', async () => {
+    const parent = await createPart('Assembly')
+    const foreignDesignId = await createDesign('Engineering', 'SOURCE')
+    const definition = await createPart('Reusable module', foreignDesignId)
+    const { usage } = await UsageService.createUsage(
+      { definitionId: definition.id, targetDesignId: designId },
+      engineer.id,
+    )
+
+    const response = await batchCreate({
+      relationships: [bomLine(parent.id, usage.id, 10)],
+    })
+
+    expect(response.status).toBe(201)
+    expect(usage.designId).toBe(designId)
+    expect(usage.usageOf).toBe(definition.id)
+    expect(await storedBom(parent.id)).toEqual([
+      { targetId: usage.id, findNumber: 10 },
+    ])
   })
 
   it('answers a repeated single-relationship create with a conflict, not a driver error', async () => {

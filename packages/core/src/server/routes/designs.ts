@@ -54,6 +54,7 @@ import {
 } from '@/lib/api/scope-graph'
 import { serviceLogger } from '@/lib/logging/logger'
 import { db } from '@/lib/db'
+import { paginatedOrderBy } from '@/lib/db/paginated-order'
 import {
   changeOrderAffectedItems,
   changeOrders,
@@ -438,19 +439,12 @@ app.get(
       const design = await DesignService.getById(designId)
       if (!design) throw new NotFoundError('Design', designId)
 
-      // Check access - cross-program authority bypasses program membership check
-      if (design.programId) {
-        const hasBypass = await AccessControlService.hasCrossProgramAccess(
-          user.id,
-        )
-        if (!hasBypass) {
-          const canAccess = await ProgramService.canUserAccess(
-            user.id,
-            design.programId,
-          )
-          if (!canAccess) throw new PermissionDeniedError('design', 'read')
-        }
-      }
+      // Was the cross-program bypass plus `ProgramService.canUserAccess`
+      // written out inline, inside `if (design.programId)`. That is
+      // `canAccessDesign` exactly — same bypass, same membership call, same
+      // admission of a design carrying no program — so the shared helper says
+      // it once and the null policy stays decided in one place.
+      await requireDesignAccess(user.id, designId)
 
       const [defaultBranch, parent] = await Promise.all([
         DesignService.getDefaultBranch(designId),
@@ -1465,7 +1459,7 @@ app.get(
           })
           .from(items)
           .where(and(...conditions))
-          .orderBy(asc(items.itemNumber))
+          .orderBy(...paginatedOrderBy(asc(items.itemNumber), items.id))
           .limit(limit)
           .offset(offset)
 
@@ -2682,7 +2676,17 @@ app.post(
   '/:designId/gap-analysis',
   adapt(
     apiHandler<{ designId: string }, z.infer<typeof gapAnalysisRequestSchema>>(
-      { body: gapAnalysisRequestSchema },
+      {
+        // The five analysis routes below read a whole design — its
+        // requirements, their coverage and the gaps between them — and none of
+        // them declared an instance gate, so a member of any program could
+        // enumerate another program's requirements by naming its design id.
+        // The services behind them take a designId and check nothing
+        // themselves.
+        access: ({ params, user }) =>
+          requireDesignAccess(user.id, params.designId),
+        body: gapAnalysisRequestSchema,
+      },
       async ({ body, params }) => {
         const result = await GapAnalysisService.analyze({
           designId: params.designId,
@@ -2699,14 +2703,20 @@ app.post(
 app.get(
   '/:designId/gap-analysis',
   adapt(
-    apiHandler<{ designId: string }>({}, async ({ params }) => {
-      const { designId } = params
+    apiHandler<{ designId: string }>(
+      {
+        access: ({ params, user }) =>
+          requireDesignAccess(user.id, params.designId),
+      },
+      async ({ params }) => {
+        const { designId } = params
 
-      // GET request runs with default settings
-      const result = await GapAnalysisService.analyze({ designId })
+        // GET request runs with default settings
+        const result = await GapAnalysisService.analyze({ designId })
 
-      return result
-    }),
+        return result
+      },
+    ),
   ),
 )
 
@@ -2714,12 +2724,18 @@ app.get(
 app.get(
   '/:designId/requirements-coverage',
   adapt(
-    apiHandler<{ designId: string }>({}, async ({ params }) => {
-      const { designId } = params
-      const coverage = await RequirementService.getCoverage(designId)
+    apiHandler<{ designId: string }>(
+      {
+        access: ({ params, user }) =>
+          requireDesignAccess(user.id, params.designId),
+      },
+      async ({ params }) => {
+        const { designId } = params
+        const coverage = await RequirementService.getCoverage(designId)
 
-      return coverage
-    }),
+        return coverage
+      },
+    ),
   ),
 )
 
@@ -2727,12 +2743,18 @@ app.get(
 app.get(
   '/:designId/test-coverage',
   adapt(
-    apiHandler<{ designId: string }>({}, async ({ params }) => {
-      const { designId } = params
-      const coverage = await VerificationService.getTestCoverage(designId)
+    apiHandler<{ designId: string }>(
+      {
+        access: ({ params, user }) =>
+          requireDesignAccess(user.id, params.designId),
+      },
+      async ({ params }) => {
+        const { designId } = params
+        const coverage = await VerificationService.getTestCoverage(designId)
 
-      return { coverage }
-    }),
+        return { coverage }
+      },
+    ),
   ),
 )
 
@@ -2740,12 +2762,18 @@ app.get(
 app.get(
   '/:designId/verification-gaps',
   adapt(
-    apiHandler<{ designId: string }>({}, async ({ params }) => {
-      const { designId } = params
-      const gaps = await VerificationService.getVerificationGaps(designId)
+    apiHandler<{ designId: string }>(
+      {
+        access: ({ params, user }) =>
+          requireDesignAccess(user.id, params.designId),
+      },
+      async ({ params }) => {
+        const { designId } = params
+        const gaps = await VerificationService.getVerificationGaps(designId)
 
-      return { gaps }
-    }),
+        return { gaps }
+      },
+    ),
   ),
 )
 

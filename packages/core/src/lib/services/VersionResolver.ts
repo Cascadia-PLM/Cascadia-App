@@ -11,6 +11,10 @@ import {
   items,
   tags,
 } from '../db/schema'
+import {
+  ancestorsDedupedCte,
+  commitAncestorDepthCte,
+} from '../db/commit-ancestry'
 import { notDeleted, notWorkingRevision } from '../db/filters'
 import { likeContains } from '../db/like-pattern'
 import { BranchService } from './BranchService'
@@ -499,20 +503,8 @@ export class VersionResolver {
     const offset = filters?.offset ?? 0
 
     const rows = await db.execute(sql`
-      WITH RECURSIVE commit_ancestors AS (
-        SELECT c.id, c.parent_id, c.merge_parent_id, c.created_at, 0 AS depth
-        FROM commits c WHERE c.id = ${headCommitId}
-        UNION ALL
-        SELECT c.id, c.parent_id, c.merge_parent_id, c.created_at, ca.depth + 1
-        FROM commits c
-        INNER JOIN commit_ancestors ca
-          ON c.id = ca.parent_id OR c.id = ca.merge_parent_id
-      ),
-      ancestors AS (
-        SELECT DISTINCT ON (id) id, depth, created_at
-        FROM commit_ancestors
-        ORDER BY id, depth
-      ),
+      WITH RECURSIVE ${commitAncestorDepthCte(headCommitId)},
+      ${ancestorsDedupedCte},
       resolved AS (
         SELECT DISTINCT ON (i.master_id)
                i.id, i.master_id, iv.change_type
@@ -820,20 +812,8 @@ export class VersionResolver {
     const offset = filters?.offset ?? 0
 
     const rows = await db.execute(sql`
-      WITH RECURSIVE commit_ancestors AS (
-        SELECT c.id, c.parent_id, c.merge_parent_id, c.created_at, 0 AS depth
-        FROM commits c WHERE c.id = ${commitId}
-        UNION ALL
-        SELECT c.id, c.parent_id, c.merge_parent_id, c.created_at, ca.depth + 1
-        FROM commits c
-        INNER JOIN commit_ancestors ca
-          ON c.id = ca.parent_id OR c.id = ca.merge_parent_id
-      ),
-      ancestors AS (
-        SELECT DISTINCT ON (id) id, depth, created_at
-        FROM commit_ancestors
-        ORDER BY id, depth
-      ),
+      WITH RECURSIVE ${commitAncestorDepthCte(commitId)},
+      ${ancestorsDedupedCte},
       resolved AS (
         SELECT DISTINCT ON (i.master_id)
                i.id,
@@ -1112,10 +1092,12 @@ export class VersionResolver {
    * builds a position map from this order gets a stable one; the previous
    * version had no ORDER BY at all, which left resolution order to the heap.
    *
-   * UNION ALL rather than UNION: commit DAGs here are acyclic and shallow
-   * (per-design linear history plus ECO merge edges), so a diamond ancestor
-   * is revisited at most once per extra path, and the DISTINCT ON collapse
-   * keeps exactly one row per commit at its shallowest depth. Raw
+   * The walk itself is `commitAncestorDepthCte`. It used to be written out
+   * here with `UNION ALL`, reasoned as "a diamond ancestor is revisited at
+   * most once per extra path, and the DISTINCT ON collapse keeps exactly one
+   * row per commit at its shallowest depth" — both true, and the arithmetic
+   * still fails, because the number of paths is what grows and the collapse
+   * runs after the walk has produced its rows. See that helper. Raw
    * `db.execute` rows are snake_case — the old signature cast them to full
    * camelCase commit rows, a lie both callers survived only by reading `.id`;
    * only the columns actually consumed are selected now.
@@ -1124,15 +1106,7 @@ export class VersionResolver {
     commitId: string,
   ): Promise<Array<{ id: string; depth: number }>> {
     const result = await db.execute(sql`
-      WITH RECURSIVE commit_ancestors AS (
-        SELECT c.id, c.parent_id, c.merge_parent_id, c.created_at, 0 AS depth
-        FROM commits c WHERE c.id = ${commitId}
-        UNION ALL
-        SELECT c.id, c.parent_id, c.merge_parent_id, c.created_at, ca.depth + 1
-        FROM commits c
-        INNER JOIN commit_ancestors ca
-          ON c.id = ca.parent_id OR c.id = ca.merge_parent_id
-      )
+      WITH RECURSIVE ${commitAncestorDepthCte(commitId)}
       SELECT id, depth FROM (
         SELECT DISTINCT ON (id) id, depth, created_at
         FROM commit_ancestors

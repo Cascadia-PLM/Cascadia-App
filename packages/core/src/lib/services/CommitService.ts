@@ -4,6 +4,7 @@
 import { and, desc, eq, gte, inArray, lte, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
+import { commitAncestorSetCte } from '../db/commit-ancestry'
 import { withSerializableRetry } from '../db/retry'
 import {
   branches,
@@ -501,12 +502,7 @@ export class CommitService {
     let ancestorCommitIds: Set<string> | null = null
     if (untilCommitId) {
       const result = await db.execute(sql`
-        WITH RECURSIVE commit_ancestors AS (
-          SELECT c.id, c.parent_id, c.merge_parent_id FROM commits c WHERE c.id = ${untilCommitId}
-          UNION
-          SELECT c.id, c.parent_id, c.merge_parent_id FROM commits c
-          INNER JOIN commit_ancestors ca ON c.id = ca.parent_id OR c.id = ca.merge_parent_id
-        )
+        WITH RECURSIVE ${commitAncestorSetCte(untilCommitId)}
         SELECT id FROM commit_ancestors
       `)
       ancestorCommitIds = new Set(
@@ -725,21 +721,11 @@ export class CommitService {
     // Get ancestors of both commits
     const [ancestors1Result, ancestors2Result] = await Promise.all([
       db.execute(sql`
-        WITH RECURSIVE commit_ancestors AS (
-          SELECT c.id, c.parent_id, c.merge_parent_id FROM commits c WHERE c.id = ${commit1.id}
-          UNION
-          SELECT c.id, c.parent_id, c.merge_parent_id FROM commits c
-          INNER JOIN commit_ancestors ca ON c.id = ca.parent_id OR c.id = ca.merge_parent_id
-        )
+        WITH RECURSIVE ${commitAncestorSetCte(commit1.id)}
         SELECT id FROM commit_ancestors
       `),
       db.execute(sql`
-        WITH RECURSIVE commit_ancestors AS (
-          SELECT c.id, c.parent_id, c.merge_parent_id FROM commits c WHERE c.id = ${commit2.id}
-          UNION
-          SELECT c.id, c.parent_id, c.merge_parent_id FROM commits c
-          INNER JOIN commit_ancestors ca ON c.id = ca.parent_id OR c.id = ca.merge_parent_id
-        )
+        WITH RECURSIVE ${commitAncestorSetCte(commit2.id)}
         SELECT id FROM commit_ancestors
       `),
     ])

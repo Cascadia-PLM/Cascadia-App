@@ -3,6 +3,7 @@
 
 import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
+import { paginatedOrderBy } from '../db/paginated-order'
 import { LifecycleService } from './LifecycleService'
 import type {
   WorkOrder,
@@ -250,15 +251,18 @@ export class WorkOrderService {
         .leftJoin(programs, eq(workOrders.programId, programs.id))
         .where(whereClause)
         .orderBy(
-          criteria.sortBy === 'dueDate'
-            ? criteria.sortDir === 'asc'
-              ? asc(workOrders.dueDate)
-              : desc(workOrders.dueDate)
-            : criteria.sortBy === 'status'
+          ...paginatedOrderBy(
+            criteria.sortBy === 'dueDate'
               ? criteria.sortDir === 'asc'
-                ? asc(items.state)
-                : desc(items.state)
-              : desc(items.createdAt),
+                ? asc(workOrders.dueDate)
+                : desc(workOrders.dueDate)
+              : criteria.sortBy === 'status'
+                ? criteria.sortDir === 'asc'
+                  ? asc(items.state)
+                  : desc(items.state)
+                : desc(items.createdAt),
+            items.id,
+          ),
         )
         .limit(limit)
         .offset(offset),

@@ -22126,6 +22126,7 @@
             "name": "upstreamDepth",
             "required": false,
             "schema": {
+              "default": 5,
               "maximum": 10,
               "minimum": 0,
               "type": "integer"
@@ -22136,6 +22137,7 @@
             "name": "downstreamDepth",
             "required": false,
             "schema": {
+              "default": 5,
               "maximum": 10,
               "minimum": 0,
               "type": "integer"
@@ -22146,6 +22148,7 @@
             "name": "bomDepth",
             "required": false,
             "schema": {
+              "default": 3,
               "maximum": 10,
               "minimum": 0,
               "type": "integer"
@@ -22156,6 +22159,7 @@
             "name": "physicalDepth",
             "required": false,
             "schema": {
+              "default": 4,
               "maximum": 10,
               "minimum": 0,
               "type": "integer"

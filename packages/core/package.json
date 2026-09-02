@@ -1,6 +1,6 @@
 {
   "name": "@cascadia/core",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Cascadia PLM core — the AGPL edition, published to Cascadia-PLM/Cascadia-App.",
   "license": "AGPL-3.0-or-later",
   "private": true,

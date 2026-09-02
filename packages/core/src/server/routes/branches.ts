@@ -5,12 +5,13 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../adapter'
 import { BranchService } from '@/lib/services/BranchService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { DesignService } from '@/lib/services/DesignService'
 import { CommitService } from '@/lib/services/CommitService'
 import { VersionResolver } from '@/lib/services/VersionResolver'
-import { NotFoundError, PermissionDeniedError } from '@/lib/errors'
-import { requireBranchAccess } from '@/lib/auth/access'
+import { NotFoundError } from '@/lib/errors'
+import {
+  requireBranchAccess,
+  requireDesignManageAuthority,
+} from '@/lib/auth/access'
 import { apiHandler, parseQuery } from '@/lib/api/handler'
 import { itemListSchema } from '@/lib/api/schemas'
 
@@ -46,25 +47,25 @@ app.put(
   '/:id',
   adapt(
     apiHandler<{ id: string }, z.infer<typeof branchFlagsSchema>>(
-      { body: branchFlagsSchema },
-      async ({ params, body: data, user }) => {
+      {
+        body: branchFlagsSchema,
+        // Locking, unlocking or archiving a branch takes program admin/lead.
+        // Two things the inline check this replaces got wrong: it never
+        // consulted cross-program authority, so an administrator outside the
+        // program could not lock a branch; and it sat inside
+        // `if (design.programId)` with no else, so on a design carrying no
+        // program it fell through and any authenticated caller could archive a
+        // branch — discarding the in-flight work on it.
+        access: async ({ params, user }) => {
+          const branch = await BranchService.getById(params.id)
+          if (!branch) throw new NotFoundError('Branch', params.id)
+          await requireDesignManageAuthority(user.id, branch.designId, 'update')
+        },
+      },
+      async ({ params, body: data }) => {
         const { id } = params
         const branch = await BranchService.getById(id)
         if (!branch) throw new NotFoundError('Branch', id)
-
-        const design = await DesignService.getById(branch.designId)
-        if (!design) throw new NotFoundError('Design', branch.designId)
-
-        // Need lead/admin access to lock/unlock
-        if (design.programId) {
-          const role = await ProgramService.getUserRole(
-            user.id,
-            design.programId,
-          )
-          if (role !== 'admin' && role !== 'lead') {
-            throw new PermissionDeniedError('branch', 'update')
-          }
-        }
 
         if (data.isLocked === true) {
           await BranchService.lockBranch(id)

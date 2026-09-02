@@ -17,6 +17,7 @@ import { db } from '../db'
 import { likeContains } from '../db/like-pattern'
 import { branches, commits, designs, items, tags } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
+import { paginatedOrderBy } from '../db/paginated-order'
 import type { SQL } from 'drizzle-orm'
 import { takeFirst } from '@/lib/db/take-first'
 
@@ -671,18 +672,21 @@ export class DesignService {
   ): Array<SQL<unknown>> {
     if (!criteria.sortField) {
       // Default sort: createdAt descending
-      return [desc(designs.createdAt)]
+      return paginatedOrderBy(desc(designs.createdAt), designs.id)
     }
 
     const direction = criteria.sortDirection === 'asc' ? asc : desc
     const column = this.getColumnById(criteria.sortField)
 
     if (column) {
-      return [direction(column)]
+      return paginatedOrderBy(direction(column), designs.id)
     }
 
-    // Fallback to default sort
-    return [desc(designs.createdAt)]
+    // Fallback to default sort. `created_at` is the transaction timestamp, so
+    // a bulk import writes a whole run of designs sharing it — the same tie
+    // the paged query 200 lines above already carries an explicit `desc(id)`
+    // for, and this method did not.
+    return paginatedOrderBy(desc(designs.createdAt), designs.id)
   }
 
   // ============================================================================

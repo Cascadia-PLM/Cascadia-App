@@ -44,6 +44,7 @@ import {
   testCases,
   testPlans,
 } from '../db/schema'
+import { paginatedOrderBy } from '../db/paginated-order'
 import type { AccessScope } from '../db/filters'
 import type { SQL } from 'drizzle-orm'
 import type {
@@ -401,7 +402,7 @@ export class ReportService {
       .select()
       .from(reports)
       .where(whereClause)
-      .orderBy(desc(reports.modifiedAt))
+      .orderBy(...paginatedOrderBy(desc(reports.modifiedAt), reports.id))
       .limit(limit)
       .offset(offset)
 
@@ -437,7 +438,7 @@ export class ReportService {
       .select()
       .from(reports)
       .where(whereClause)
-      .orderBy(desc(reports.modifiedAt))
+      .orderBy(...paginatedOrderBy(desc(reports.modifiedAt), reports.id))
       .limit(limit)
       .offset(offset)
 
@@ -599,7 +600,7 @@ export class ReportService {
       .from(items)
       .leftJoin(typeTable, eq(items.id, typeTable.itemId))
       .where(and(...conditions))
-      .orderBy(...sortOrder)
+      .orderBy(...paginatedOrderBy(sortOrder, items.id))
       .limit(limit + 1) // Fetch one extra to check for more
       .offset(offset)
 

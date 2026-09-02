@@ -7,16 +7,24 @@ import { tanstackConfig } from '@tanstack/eslint-config'
 import tseslint from 'typescript-eslint'
 import { PROPRIETARY } from './scripts/edition-manifest.mjs'
 import noIndirectEffectFetch from './scripts/eslint-rules/no-indirect-effect-fetch.mjs'
+import paginatedQueryTotalOrder from './scripts/eslint-rules/paginated-query-total-order.mjs'
 
 /**
  * The rules this repo writes itself, as an inline flat-config plugin.
  *
- * There is one, and it exists because `no-restricted-syntax` is a syntax
- * matcher: it can say "a fetch is written here", never "this effect reaches a
- * fetch". See scripts/eslint-rules/no-indirect-effect-fetch.mjs.
+ * Both exist because `no-restricted-syntax` is a syntax matcher, and both
+ * invariants are about what a construct *reaches* rather than how it is
+ * written: it can say "a fetch is written here", never "this effect reaches a
+ * fetch", and it can say ".offset( appears here", never "the sort this query
+ * pages on distinguishes every row".
+ * See scripts/eslint-rules/no-indirect-effect-fetch.mjs and
+ * scripts/eslint-rules/paginated-query-total-order.mjs.
  */
 const local = {
-  rules: { 'no-indirect-effect-fetch': noIndirectEffectFetch },
+  rules: {
+    'no-indirect-effect-fetch': noIndirectEffectFetch,
+    'paginated-query-total-order': paginatedQueryTotalOrder,
+  },
 }
 
 /**
@@ -211,6 +219,13 @@ export default [
   // contribute the plugin namespace, nothing else.
   {
     plugins: { local },
+  },
+  // Paging without a total order repeats and skips rows silently. Server code
+  // only: the browser never builds a Drizzle chain, and `.offset(` on an array
+  // means something else entirely.
+  {
+    files: ['packages/*/src/lib/**/*.ts', 'packages/*/src/server/**/*.ts'],
+    rules: { 'local/paginated-query-total-order': 'error' },
   },
   // Escape user text before it reaches a LIKE/ILIKE pattern — see
   // `likePatternRestrictions` above for what and why.

@@ -22,11 +22,12 @@
  *
  *   node scripts/eslint-rules/no-indirect-effect-fetch.test.mjs
  *
- * Deliberately runnable that way. Vitest's include globs are
- * `scripts/*.{test,spec}.ts` — top level, TypeScript — so this file is outside
- * the suite. `RuleTester` registers through global `describe`/`it` when they
- * exist and runs its cases inline when they do not, so the same file works
- * either way if the globs ever widen.
+ * Runnable that way and under vitest both. The globs did widen: they were
+ * `scripts/*.{test,spec}.ts` — top level, TypeScript — which could match
+ * neither this file's directory nor its extension, so this suite was executed
+ * by nothing from the day it was written. `RuleTester` registers through
+ * global `describe`/`it` when they exist and runs its cases inline when they
+ * do not, which is what made the same file work either way once they did.
  */
 
 import { RuleTester } from 'eslint'

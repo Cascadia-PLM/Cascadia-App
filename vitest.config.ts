@@ -42,7 +42,16 @@ export default defineConfig({
           include: [
             'packages/*/src/**/*.{test,spec}.ts',
             'publish/*.{test,spec}.ts',
-            'scripts/*.{test,spec}.ts',
+            // Recursive, and `.mjs` as well as `.ts`, so the two hand-written
+            // ESLint rules' RuleTester suites run. They sit in
+            // `scripts/eslint-rules/` and are `.mjs` because the rules they
+            // test are, and the previous glob — top level, TypeScript — could
+            // match neither. `no-indirect-effect-fetch.test.mjs` was therefore
+            // written, committed, and executed by nothing: a test held up as
+            // the gate on a lint rule, which nothing ran. Both suites pass
+            // standalone under `node` too; RuleTester registers through global
+            // describe/it when they exist and runs inline when they do not.
+            'scripts/**/*.{test,spec}.{ts,mjs}',
           ],
         },
       },

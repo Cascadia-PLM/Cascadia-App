@@ -7,6 +7,7 @@ import { db } from '../db'
 import { likeContains } from '../db/like-pattern'
 import { programMembers, programs, users } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
+import { paginatedOrderBy } from '../db/paginated-order'
 import type { SQL } from 'drizzle-orm'
 import { takeFirst } from '@/lib/db/take-first'
 
@@ -233,13 +234,13 @@ export class ProgramService {
           .select()
           .from(programs)
           .where(eq(programs.status, filters.status))
-          .orderBy(desc(programs.createdAt))
+          .orderBy(...paginatedOrderBy(desc(programs.createdAt), programs.id))
           .limit(limit)
           .offset(offset)
       : await db
           .select()
           .from(programs)
-          .orderBy(desc(programs.createdAt))
+          .orderBy(...paginatedOrderBy(desc(programs.createdAt), programs.id))
           .limit(limit)
           .offset(offset)
 
@@ -324,7 +325,7 @@ export class ProgramService {
       .select()
       .from(programs)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(...orderBy)
+      .orderBy(...paginatedOrderBy(orderBy, programs.id))
       .limit(criteria.limit || 50)
       .offset(criteria.offset || 0)
 

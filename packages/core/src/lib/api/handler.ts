@@ -74,7 +74,11 @@ function validateOrigin(request: Request): boolean {
   return false
 }
 
-interface HandlerOptions<TParams = Record<string, string>, TBody = unknown> {
+interface HandlerOptions<
+  TParams = Record<string, string>,
+  TBody = unknown,
+  TQuery = unknown,
+> {
   /** Permission check: [resource, action]. Omit for auth-only. */
   permission?: [ResourceType, PermissionAction]
   /** Require one authentication method. Omit to accept a session or API key. */
@@ -94,6 +98,28 @@ interface HandlerOptions<TParams = Record<string, string>, TBody = unknown> {
    * route's OpenAPI metadata below, so the spec cannot drift from what runs.
    */
   body?: z.ZodType<TBody>
+  /**
+   * Query-string schema, the exact counterpart of `body:` above. When set the
+   * search params are validated before the handler runs and arrive as
+   * `ctx.query`, and the same schema is written into the route's OpenAPI
+   * metadata — so the documented contract and the enforced one cannot drift.
+   *
+   * `parseQuery` has always existed and can be called from inside a handler,
+   * which is the whole problem: it is a function you may call, not an option
+   * the wrapper acts on, so forgetting it is invisible. The adoption numbers
+   * are the argument — `body:` is declared on 281 routes, `parseQuery` on 30,
+   * and the gap is ergonomics rather than importance. What the remaining
+   * routes do instead is `parseInt(url.searchParams.get('limit') || '50', 10)`,
+   * which is how `?limit=abc` put NaN into a LIMIT clause and `?limit=100000`
+   * was honoured.
+   *
+   * Sharper still: `thread.ts` declared a zod query schema with `min(0).max(10)`
+   * depths, published those bounds in OpenAPI, and never called `parseQuery` —
+   * the document promised a contract nothing enforced. That shape is what this
+   * option makes unrepresentable, because declaring the schema *is* enforcing
+   * it.
+   */
+  query?: z.ZodType<TQuery>
   /**
    * Route-level access gate — program membership, design or ECO reach —
    * checked after RBAC and **before the body is read**.
@@ -129,7 +155,11 @@ export type AnnotatedHandler<TParams = Record<string, string>> = ((args: {
   request: Request
 }) => Promise<Response>) & { openapi?: OpenApiMetadata }
 
-interface HandlerContext<TParams = Record<string, string>, TBody = unknown> {
+interface HandlerContext<
+  TParams = Record<string, string>,
+  TBody = unknown,
+  TQuery = unknown,
+> {
   request: Request
   params: TParams
   /**
@@ -139,21 +169,35 @@ interface HandlerContext<TParams = Record<string, string>, TBody = unknown> {
    * stream, so `request.json()` would find it empty.
    */
   body: TBody
+  /**
+   * The validated query string when the route declares `query:`, and
+   * `undefined` (typed `unknown`) when it does not. Unlike the body, the raw
+   * search params are still readable from `request.url` — nothing is consumed —
+   * so this is a contract rather than a physical constraint. Declaring the
+   * schema is what makes the contract enforced instead of merely documented.
+   */
+  query: TQuery
   user: SessionUser
   requestId: string
 }
 
-type HandlerFn<TParams = Record<string, string>, TBody = unknown> = (
-  ctx: HandlerContext<TParams, TBody>,
-) => Promise<object | Response>
+type HandlerFn<
+  TParams = Record<string, string>,
+  TBody = unknown,
+  TQuery = unknown,
+> = (ctx: HandlerContext<TParams, TBody, TQuery>) => Promise<object | Response>
 
 /**
  * The context a `public: true` route gets: everything a private one gets,
  * except that `user` is `null` — because there is no authenticated user, and
  * a route that skipped auth has no business reading one.
  */
-type PublicHandlerFn<TParams = Record<string, string>, TBody = unknown> = (
-  ctx: Omit<HandlerContext<TParams, TBody>, 'user'> & { user: null },
+type PublicHandlerFn<
+  TParams = Record<string, string>,
+  TBody = unknown,
+  TQuery = unknown,
+> = (
+  ctx: Omit<HandlerContext<TParams, TBody, TQuery>, 'user'> & { user: null },
 ) => Promise<object | Response>
 
 /**
@@ -246,6 +290,43 @@ function documentBody(
 }
 
 /**
+ * The `documentBody` of query strings: the schema the route enforces is the
+ * schema the document publishes.
+ *
+ * No `documentsSupersetOfEnforced` escape hatch here, deliberately. That flag
+ * exists for bodies whose enforced envelope is a deliberate union the route
+ * resolves per item type; a query string has no such shape, and the defect this
+ * replaces was a route publishing bounds it did not enforce. Adding the opt-out
+ * would reintroduce exactly that.
+ */
+function documentQuery(
+  openapi: OpenApiMetadata,
+  query: z.ZodType | undefined,
+): OpenApiMetadata {
+  if (!query) return openapi
+  return {
+    ...openapi,
+    request: { ...openapi.request, query },
+  }
+}
+
+/**
+ * A request's search params as a plain record, for schema parsing.
+ *
+ * Shared by the `query:` option and `parseQuery` so the two cannot disagree
+ * about what "the query string" means — repeated keys collapse to the last
+ * occurrence in both, and a schema wanting arrays has to say so itself.
+ */
+function searchParamsOf(request: Request): Record<string, string> {
+  const url = new URL(request.url, 'http://localhost')
+  const raw: Record<string, string> = {}
+  url.searchParams.forEach((value, key) => {
+    raw[key] = value
+  })
+  return raw
+}
+
+/**
  * Wraps an API handler with auth, error handling, and response serialization.
  *
  * Return an object to auto-serialize as JSON with `{ data: ... }` envelope.
@@ -271,17 +352,30 @@ function documentBody(
  * params and a body names both type arguments; a route with only a body
  * (`apiHandler({ body: schema }, ...)`) has `TBody` inferred from the schema.
  */
-export function apiHandler<TParams = Record<string, string>, TBody = unknown>(
-  options: HandlerOptions<TParams, TBody> & { public: true },
-  handler: PublicHandlerFn<TParams, TBody>,
+export function apiHandler<
+  TParams = Record<string, string>,
+  TBody = unknown,
+  TQuery = unknown,
+>(
+  options: HandlerOptions<TParams, TBody, TQuery> & { public: true },
+  handler: PublicHandlerFn<TParams, TBody, TQuery>,
 ): AnnotatedHandler<TParams>
-export function apiHandler<TParams = Record<string, string>, TBody = unknown>(
-  options: HandlerOptions<TParams, TBody>,
-  handler: HandlerFn<TParams, TBody>,
+export function apiHandler<
+  TParams = Record<string, string>,
+  TBody = unknown,
+  TQuery = unknown,
+>(
+  options: HandlerOptions<TParams, TBody, TQuery>,
+  handler: HandlerFn<TParams, TBody, TQuery>,
 ): AnnotatedHandler<TParams>
-export function apiHandler<TParams = Record<string, string>, TBody = unknown>(
-  options: HandlerOptions<TParams, TBody>,
-  handler: HandlerFn<TParams, TBody> | PublicHandlerFn<TParams, TBody>,
+export function apiHandler<
+  TParams = Record<string, string>,
+  TBody = unknown,
+  TQuery = unknown,
+>(
+  options: HandlerOptions<TParams, TBody, TQuery>,
+  handler:
+    HandlerFn<TParams, TBody, TQuery> | PublicHandlerFn<TParams, TBody, TQuery>,
 ): AnnotatedHandler<TParams> {
   // Built once per route, not per request. A limiter constructed inside the
   // handler starts every request with an empty window — it can never reject —
@@ -476,10 +570,17 @@ export function apiHandler<TParams = Record<string, string>, TBody = unknown>(
         ? options.body.parse(await readJsonBody(request))
         : (undefined as TBody)
 
-      const result = await (handler as HandlerFn<TParams, TBody>)({
+      // Same position as the body, for the same reason: a caller who cannot
+      // reach the route must not learn its bounds from a 400.
+      const query = options.query
+        ? options.query.parse(searchParamsOf(request))
+        : (undefined as TQuery)
+
+      const result = await (handler as HandlerFn<TParams, TBody, TQuery>)({
         request,
         params,
         body,
+        query,
         // Assigned above for every non-public route — that branch either sets
         // it from resolved credentials or throws — and null for a public one,
         // which is what the public overload tells its handler.
@@ -508,14 +609,23 @@ export function apiHandler<TParams = Record<string, string>, TBody = unknown>(
   // A route with a body schema documents it even without any other openapi
   // metadata — enforcement without documentation is the inverse of the drift
   // documentBody exists to prevent.
-  if (options.openapi || options.body)
-    wrapped.openapi = documentBody(options.openapi ?? {}, options.body)
+  if (options.openapi || options.body || options.query)
+    wrapped.openapi = documentQuery(
+      documentBody(options.openapi ?? {}, options.body),
+      options.query,
+    )
   return wrapped
 }
 
 /**
  * Parse and validate query parameters from a request against a Zod schema.
- * Returns typed, validated params with defaults applied.
+ *
+ * Prefer the `query:` handler option. This is the same parse, but as a call the
+ * author has to remember rather than a declaration the wrapper acts on, and it
+ * writes nothing into the OpenAPI document — so a route using it can publish
+ * bounds it does not enforce, which is the defect `query:` exists to remove.
+ * Kept for the cases the option cannot serve: a handler that parses the query
+ * more than once, or against a schema chosen at request time.
  *
  * @example
  * ```typescript
@@ -527,12 +637,7 @@ export function parseQuery<T extends z.ZodType>(
   request: Request,
   schema: T,
 ): z.infer<T> {
-  const url = new URL(request.url, 'http://localhost')
-  const raw: Record<string, string> = {}
-  url.searchParams.forEach((value, key) => {
-    raw[key] = value
-  })
-  return schema.parse(raw)
+  return schema.parse(searchParamsOf(request))
 }
 
 /**

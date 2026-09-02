@@ -17,6 +17,7 @@ import {
   componentCatalogMedia,
 } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
+import { paginatedOrderBy } from '../db/paginated-order'
 import type { SQL } from 'drizzle-orm'
 import type {
   CatalogDimensions,
@@ -332,7 +333,9 @@ export class CatalogService {
         eq(componentCatalogEntries.categoryId, componentCatalogCategories.id),
       )
       .where(where)
-      .orderBy(orderFn(sortCol))
+      .orderBy(
+        ...paginatedOrderBy(orderFn(sortCol), componentCatalogEntries.id),
+      )
       .offset(offset)
       .limit(limit)
 

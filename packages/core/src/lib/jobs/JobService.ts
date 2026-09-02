@@ -17,6 +17,7 @@ import { z } from 'zod'
 import { db } from '../db'
 import { jobLogs, jobs } from '../db/schema/jobs'
 import { NotFoundError, ValidationError } from '../errors'
+import { paginatedOrderBy } from '../db/paginated-order'
 import { JobTypeRegistry } from './registry'
 import { RabbitMQClient } from './rabbitmq/client'
 import { PRIORITY_MAP } from './types'
@@ -288,7 +289,7 @@ export class JobService {
       .select()
       .from(jobs)
       .where(whereClause)
-      .orderBy(desc(jobs.createdAt))
+      .orderBy(...paginatedOrderBy(desc(jobs.createdAt), jobs.id))
       .limit(filter.limit ?? 50)
       .offset(filter.offset ?? 0)
 

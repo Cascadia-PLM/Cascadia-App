@@ -318,6 +318,107 @@ describe('apiHandler body schemas', () => {
   })
 })
 
+describe('apiHandler query schemas', () => {
+  /**
+   * The `query:` counterpart of the body block above, and the same invariant:
+   * a declared schema is enforced, not advertised.
+   *
+   * The defect this option removes is specific. `thread.ts` declared a zod
+   * query schema with `min(0).max(10)` depths, published those bounds in its
+   * OpenAPI metadata, and never called `parseQuery` — so `?upstreamDepth=abc`
+   * walked the graph with NaN and `?upstreamDepth=99` ignored the maximum the
+   * document promised. Declaring the schema has to be what enforces it, or the
+   * next route repeats that.
+   */
+  const querySchema = z.object({
+    limit: z.coerce.number().int().min(1).max(100).default(50),
+    tag: z.string().optional(),
+  })
+
+  const appWithQuery = () =>
+    new Hono().get(
+      '/things',
+      adapt(
+        apiHandler<
+          Record<string, string>,
+          unknown,
+          z.infer<typeof querySchema>
+        >({ public: true, query: querySchema }, ({ query }) =>
+          Promise.resolve({ limit: query.limit, tag: query.tag }),
+        ),
+      ),
+    )
+
+  const get = (qs: string) => appWithQuery().request(`/things${qs}`)
+
+  it('applies the declared defaults when the parameter is absent', async () => {
+    const response = await get('')
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ data: { limit: 50 } })
+  })
+
+  it('rejects a non-numeric value rather than passing NaN downstream', async () => {
+    const response = await get('?limit=abc')
+
+    expect(response.status).toBe(400)
+    const payload = (await response.json()) as ValidationEnvelope
+    expect(payload.error.code).toBe(ErrorCode.VALIDATION_FAILED)
+    expect(payload.error.fieldErrors).toContainEqual(
+      expect.objectContaining({ field: 'limit' }),
+    )
+  })
+
+  it('enforces the ceiling the schema states', async () => {
+    const response = await get('?limit=100000')
+
+    expect(response.status).toBe(400)
+  })
+
+  it('coerces and hands the parsed value to the handler', async () => {
+    const response = await get('?limit=7&tag=blue')
+
+    expect(await response.json()).toEqual({ data: { limit: 7, tag: 'blue' } })
+  })
+
+  it('strips parameters the schema does not declare', async () => {
+    const response = await get('?limit=7&smuggled=1')
+
+    expect(await response.json()).toEqual({ data: { limit: 7 } })
+  })
+
+  it('publishes the enforced schema, so the document cannot promise other bounds', () => {
+    const handler = apiHandler<
+      Record<string, string>,
+      unknown,
+      z.infer<typeof querySchema>
+    >({ public: true, query: querySchema }, ({ query }) =>
+      Promise.resolve({ limit: query.limit }),
+    )
+
+    expect(handler.openapi?.request?.query).toBe(querySchema)
+  })
+
+  it('leaves a route that declares no query schema untouched', async () => {
+    const app = new Hono().get(
+      '/raw',
+      adapt(
+        apiHandler({ public: true }, ({ request, query }) =>
+          Promise.resolve({
+            query,
+            raw: new URL(request.url).searchParams.get('limit'),
+          }),
+        ),
+      ),
+    )
+
+    const response = await app.request('/raw?limit=abc')
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ data: { raw: 'abc' } })
+  })
+})
+
 describe('apiHandler access gates', () => {
   const gated = (gate: () => void) =>
     new Hono().post(

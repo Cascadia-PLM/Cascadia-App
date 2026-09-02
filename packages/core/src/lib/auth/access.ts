@@ -4,6 +4,8 @@
 import { eq, inArray } from 'drizzle-orm'
 import { AccessControlService } from './AccessControlService'
 import { BranchService } from '@/lib/services/BranchService'
+import { DesignService } from '@/lib/services/DesignService'
+import { ProgramService } from '@/lib/services/ProgramService'
 import { FileService } from '@/lib/vault/services/FileService'
 import { db } from '@/lib/db'
 import {
@@ -31,6 +33,51 @@ export async function requireDesignAccess(
   const canAccess = await AccessControlService.canAccessDesign(userId, designId)
   if (!canAccess) {
     throw new PermissionDeniedError('design', 'read')
+  }
+}
+
+/**
+ * Assert the caller may *act on* a design — tag it, lock or archive its
+ * branches, delete either.
+ *
+ * The read companion above admits a design carrying no program to every
+ * authenticated user, deliberately: a design is program-less between creation
+ * and assignment, and hiding it then would hide it from whoever just made it.
+ * That is a *read* policy, decided once in `canAccessDesign`.
+ *
+ * Three write routes re-derived it inline as `if (design.programId) { …role
+ * check… }` with no else, which silently extends "everyone may see it" to
+ * "everyone may change it": `DELETE /tags/:id` destroys a named release or
+ * baseline pointer on that reasoning, and `PUT /branches/:id` archives a
+ * branch, discarding in-flight work. Neither declared a permission tuple
+ * either, so nothing else stood behind the fall-through.
+ *
+ * So the null arm here closes rather than opens, which is the rule this
+ * codebase has already applied twice to the same shape: a work order naming no
+ * program (`requireWorkOrderAccess` below) and a change order linking no
+ * design are both reachable by cross-program authority alone.
+ *
+ * Cross-program authority is checked first so it also covers the null arm — an
+ * administrator can still reach an unassigned design in order to assign it.
+ * `PUT /branches/:id` gains that bypass, which its inline check never
+ * consulted: a cross-program administrator could not previously lock a branch
+ * in a program they were not a member of.
+ */
+export async function requireDesignManageAuthority(
+  userId: string,
+  designId: string,
+  action: string,
+): Promise<void> {
+  const design = await DesignService.getById(designId)
+  if (!design) throw new NotFoundError('Design', designId)
+
+  if (await AccessControlService.hasCrossProgramAccess(userId)) return
+
+  const role = design.programId
+    ? await ProgramService.getUserRole(userId, design.programId)
+    : null
+  if (role !== 'admin' && role !== 'lead') {
+    throw new PermissionDeniedError('design', action)
   }
 }
 
@@ -455,14 +502,18 @@ export async function requireFileAccess(fileId: string, userId: string) {
   if (!file) throw new NotFoundError('File', fileId)
   if (file.deletedAt) throw new ValidationError('File has been deleted')
 
-  if (file.itemId) {
-    const item = await db.query.items.findFirst({
-      where: eq(items.id, file.itemId),
-    })
-    if (item?.designId) {
-      await requireDesignAccess(userId, item.designId)
-    }
-  }
+  // Delegated to `requireItemAccess` rather than re-derived. This used to read
+  // the item and check `if (item?.designId)`, which is the vacuous arm that
+  // function's own docblock describes: ChangeOrder, Issue, WorkOrder and
+  // PhysicalPart all carry `items.designId = NULL`, so an attachment on any of
+  // them was gated by authentication alone across every file route. The
+  // dispatch existed one function above and was never applied here.
+  //
+  // One behaviour change: a file pointing at an item row that no longer exists
+  // now answers `NotFoundError` instead of being served. Items are soft-deleted
+  // rather than removed, so this is the torn-row case, and refusing it matches
+  // what the by-id item routes already answer for the same id.
+  if (file.itemId) await requireItemAccess(userId, file.itemId)
 
   return file
 }

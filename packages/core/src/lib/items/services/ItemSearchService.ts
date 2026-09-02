@@ -35,6 +35,7 @@ import { accessScopeCondition, notDeleted } from '../../db/filters'
 import type { AccessScope } from '../../db/filters'
 import type { SQL } from 'drizzle-orm'
 import type { BaseItem } from '../types/base'
+import { paginatedOrderBy } from '@/lib/db/paginated-order'
 
 export interface SearchCriteria {
   query?: string
@@ -441,7 +442,9 @@ export class ItemSearchService {
       .select()
       .from(items)
       .where(and(...conditions))
-      .orderBy(items.itemNumber)
+      // `itemNumber` carries no uniqueness constraint, so it cannot close the
+      // order on its own.
+      .orderBy(...paginatedOrderBy(asc(items.itemNumber), items.id))
       // `??` not `||`: an explicit 0 must not silently become the default
       .limit(options?.limit ?? 20)
       .offset(options?.offset ?? 0)
@@ -649,10 +652,14 @@ export class ItemSearchService {
       : undefined
     if (!column) {
       // Deterministic default matching the header dropdown's ordering
-      return [asc(items.itemNumber)]
+      return paginatedOrderBy(asc(items.itemNumber), items.id)
     }
-    // Secondary key keeps paging stable when the primary has ties
-    return [direction(column), asc(items.itemNumber)]
+    // `itemNumber` is unique in practice but carries no constraint saying so,
+    // so the id still closes the order.
+    return paginatedOrderBy(
+      [direction(column), asc(items.itemNumber)],
+      items.id,
+    )
   }
 
   /**
@@ -892,8 +899,11 @@ export class ItemSearchService {
     criteria: SearchCriteria,
   ): Array<SQL<unknown>> {
     if (!criteria.sortField) {
-      // Default sort: createdAt descending
-      return [desc(items.createdAt)]
+      // Default sort: createdAt descending. `created_at` is the transaction
+      // timestamp, so a seed, a bulk import or an ECO merge writes a whole run
+      // of rows sharing it exactly — which is why the tiebreaker matters most
+      // on the default path.
+      return paginatedOrderBy(desc(items.createdAt), items.id)
     }
 
     const direction = criteria.sortDirection === 'asc' ? asc : desc
@@ -985,17 +995,23 @@ export class ItemSearchService {
 
     // Check base columns
     if (baseColumns[criteria.sortField]) {
-      return [direction(baseColumns[criteria.sortField])]
+      return paginatedOrderBy(
+        direction(baseColumns[criteria.sortField]),
+        items.id,
+      )
     }
 
     // Check type-specific columns
     const typeColumns = typeColumnMaps[type]
     if (typeColumns?.[criteria.sortField]) {
-      return [direction(typeColumns[criteria.sortField])]
+      return paginatedOrderBy(
+        direction(typeColumns[criteria.sortField]),
+        items.id,
+      )
     }
 
     // Fallback to default sort
-    return [desc(items.createdAt)]
+    return paginatedOrderBy(desc(items.createdAt), items.id)
   }
 
   /**

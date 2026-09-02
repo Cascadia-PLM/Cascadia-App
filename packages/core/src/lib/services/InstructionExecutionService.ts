@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, count, desc, eq, isNull, sql } from 'drizzle-orm'
+import { paginatedOrderBy } from '../db/paginated-order'
 import { LifecycleService } from './LifecycleService'
 import type { ExecutionStatus } from '@/lib/items/types/work-order'
 import { db } from '@/lib/db'
@@ -360,7 +361,12 @@ export class InstructionExecutionService {
         .from(instructionExecutions)
         .leftJoin(users, eq(instructionExecutions.executedBy, users.id))
         .where(eq(instructionExecutions.workOrderInstructionId, lineId))
-        .orderBy(desc(instructionExecutions.startedAt))
+        .orderBy(
+          ...paginatedOrderBy(
+            desc(instructionExecutions.startedAt),
+            instructionExecutions.id,
+          ),
+        )
         .limit(limit)
         .offset(offset),
       db
@@ -410,7 +416,12 @@ export class InstructionExecutionService {
           ),
         )
         .where(whereClause)
-        .orderBy(desc(instructionExecutions.startedAt))
+        .orderBy(
+          ...paginatedOrderBy(
+            desc(instructionExecutions.startedAt),
+            instructionExecutions.id,
+          ),
+        )
         .limit(limit)
         .offset(offset),
       db

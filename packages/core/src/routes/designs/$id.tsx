@@ -17,6 +17,7 @@ import { UpstreamChangesBanner } from '@/components/mbom/UpstreamChangesBanner'
 import { HistoricalViewBanner } from '@/components/designs/HistoricalViewBanner'
 import { InitialReleaseHelper } from '@/components/versioning/InitialReleaseHelper'
 import { StructureTab } from '@/components/designs/StructureTab'
+import { DesignModelViewer } from '@/components/designs/DesignModelViewer'
 import { LibraryItemsTab } from '@/components/designs/LibraryItemsTab'
 import { HistoryTab } from '@/components/designs/HistoryTab'
 import { ECOsTab } from '@/components/designs/ECOsTab'
@@ -376,13 +377,21 @@ function DesignDetailPage() {
             <TabsTrigger value="baselines">Baselines</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="structure" className="mt-6">
+          <TabsContent value="structure" className="mt-6 space-y-6">
             <StructureTab
               designId={design.id}
               designCode={design.code}
               designName={design.name}
               versionContext={context}
               isHistoricalView={isHistoricalView}
+            />
+            {/* 3D viewer — sits below the structure tab's own cards, the last
+                of which is Non-Structure Items. */}
+            <DesignModelViewer
+              designId={design.id}
+              versionContext={context}
+              mainBranchId={design.defaultBranchId ?? undefined}
+              hideWhenEmpty
             />
           </TabsContent>
 

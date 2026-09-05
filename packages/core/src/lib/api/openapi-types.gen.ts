@@ -2307,6 +2307,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/items/enrich": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest item fields from a web link and/or images
+         * @description Send a `url`, up to four base64 `images` (PNG, JPEG, GIF or WebP, 4 MB each), or both. A link may point at a page or directly at an image. Answers `{ aiEnabled: false }` with the link echoed back when no AI provider is connected.
+         */
+        post: operations["postApiV1ItemsEnrich"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/items/enrich-from-url": {
         parameters: {
             query?: never;
@@ -2316,7 +2336,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Suggest item fields from a web link */
+        /**
+         * Suggest item fields from a web link and/or images
+         * @deprecated
+         * @description Send a `url`, up to four base64 `images` (PNG, JPEG, GIF or WebP, 4 MB each), or both. A link may point at a page or directly at an image. Answers `{ aiEnabled: false }` with the link echoed back when no AI provider is connected.
+         */
         post: operations["postApiV1ItemsEnrichFromUrl"];
         delete?: never;
         options?: never;
@@ -10069,6 +10093,36 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    postApiV1ItemsEnrich: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    images?: {
+                        data: string;
+                        /** @enum {string} */
+                        mediaType: "image/png" | "image/jpeg" | "image/gif" | "image/webp";
+                    }[];
+                    /** @enum {string} */
+                    itemType: "Part" | "Tool";
+                    /** Format: uri */
+                    url?: string;
+                };
+            };
+        };
+        responses: {
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     postApiV1ItemsEnrichFromUrl: {
         parameters: {
             query?: never;
@@ -10079,10 +10133,15 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    images?: {
+                        data: string;
+                        /** @enum {string} */
+                        mediaType: "image/png" | "image/jpeg" | "image/gif" | "image/webp";
+                    }[];
                     /** @enum {string} */
                     itemType: "Part" | "Tool";
                     /** Format: uri */
-                    url: string;
+                    url?: string;
                 };
             };
         };

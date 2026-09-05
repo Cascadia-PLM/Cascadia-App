@@ -18,6 +18,24 @@ import { db } from '@/lib/db'
 const NEVER_COPIED = new Set(['draftManifestId'])
 
 /**
+ * The values that make `targetItemId`'s extension row a copy of `source`:
+ * every column but the key and the never-copied set. Shared with
+ * `UsageService`, whose usage creation starts from this same copy and then
+ * applies its per-field inheritance policy on top of it.
+ */
+export function extensionRowCopy(
+  source: Record<string, unknown>,
+  targetItemId: string,
+): Record<string, unknown> {
+  const values: Record<string, unknown> = { itemId: targetItemId }
+  for (const [column, value] of Object.entries(source)) {
+    if (column === 'itemId' || NEVER_COPIED.has(column)) continue
+    values[column] = value
+  }
+  return values
+}
+
+/**
  * Copy an item's type-specific data from one item version to another.
  *
  * Every item type stores its own fields in an extension table keyed by
@@ -52,13 +70,10 @@ export async function copyTypeSpecificData(
     .then((rows: Array<Record<string, unknown>>) => rows.at(0))
 
   if (source) {
-    const values: Record<string, unknown> = { itemId: targetItemId }
-    for (const [column, value] of Object.entries(source)) {
-      if (column === 'itemId' || NEVER_COPIED.has(column)) continue
-      values[column] = value
-    }
-
-    await run.insert(table).values(values).onConflictDoNothing()
+    await run
+      .insert(table)
+      .values(extensionRowCopy(source, targetItemId))
+      .onConflictDoNothing()
   }
 
   await handler.copyChildren?.(sourceItemId, targetItemId, tx)

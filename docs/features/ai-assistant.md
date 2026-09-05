@@ -574,19 +574,55 @@ The API sets `X-Session-Id` and `X-Request-Id` headers on the SSE response for t
 
 ---
 
+## Auto-Filling New Parts and Tools
+
+The Part and Tool create forms accept a dropped (or pasted) **web link** or **image** and fill their empty fields from it, so a new item can start from a supplier page, a product photo, a nameplate, or a spec sheet rather than a blank form.
+
+### What can be dropped
+
+| Source                                     | How it is read                                                                                                                     |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| A link to a web page                       | Fetched server-side, reduced to text, and sent to the model. Saved as a `link` custom attribute either way.                        |
+| A link straight to an image                | Fetched server-side (an image dragged out of another browser tab arrives this way) and sent to the model as an image.              |
+| Image files (PNG, JPEG, GIF, WebP, BMP, …) | Downscaled in the browser to 1568 px on the long edge, re-encoded as JPEG, and sent to the model. Up to four per drop.             |
+| A pasted screenshot                        | Same as an image file. A pasted _link_ counts only outside a text field — inside one it is the user typing, and the field gets it. |
+
+Anything else dropped (a PDF, a STEP file) is declined with a toast; files can be attached once the item exists.
+
+### What gets filled
+
+Suggestions land only in fields that are still empty or at their create-form default — nothing the user has typed is overwritten. Beyond the base fields, the model's other findings (part numbers, dimensions, ratings, …) become custom attributes, at most 20 per drop.
+
+- **Parts**: name, description, part type, material, weight and unit, cost and currency, lead time. Dropped images are held on the form and attached as the part's files when it is saved, the first as its thumbnail.
+- **Tools**: name, subtype, manufacturer, model, location, notes. The suggested subtype is held to the catalog (`TOOL_SUBTYPES` in `packages/core/src/lib/items/types/tool.ts`), and the catalog — not the model — decides the tool's group. For subtypes with a capabilities schema (`CAPABILITY_SCHEMAS`: FDM and SLA printers, CNC and manual mills and lathes, laser cutters, press brakes, saws, drill presses, surface grinders) the model is shown the schema's keys and value shapes, and its answer is validated key by key against that same schema, so nothing suggested can fail validation on save.
+
+### When AI is not connected
+
+The drop still works: a link is saved as the `link` attribute and images are still attached on save; the form says that nothing was read, and why. A reached monthly token budget answers `429` rather than an empty result. A provider error — including a text-only model handed an image — is reported as one, distinct from "nothing found".
+
+### Bounds and safety
+
+Links pass `assertSafeUrl` (http/https only; no loopback, private or link-local hosts) before the first request and again at every redirect hop, which the fetcher follows by hand. Pages are read up to 1 MB and reduced to 8,000 characters of text; images up to 4 MB each. Every extraction writes an `ai_usage_logs` row against the user who dropped the source, with a null program — the item does not exist yet — so it counts toward the global budget.
+
+Server code lives in `packages/core/src/lib/items/enrichment/` (`enrich-item.ts`, `fetch-source.ts`, `html-to-text.ts`, `limits.ts`); the client side in `packages/core/src/components/items/` (`useDropEnrichment.ts`, `enrichment-sources.ts`, `image-payload.ts`, `apply-enrichment.ts`, `DropOverlay.tsx`, `PendingImageStrip.tsx`).
+
+---
+
 ## API Reference
 
-| Endpoint                           | Method | Auth                  | Description                             |
-| ---------------------------------- | ------ | --------------------- | --------------------------------------- |
-| `/api/v1/ai/chat`                  | POST   | Authenticated         | Send a chat message, receive SSE stream |
-| `/api/v1/ai/sessions`              | GET    | Authenticated         | List user's sessions                    |
-| `/api/v1/ai/sessions`              | POST   | Authenticated         | Create a new session                    |
-| `/api/v1/ai/sessions/:id`          | GET    | Authenticated (owner) | Get session details                     |
-| `/api/v1/ai/sessions/:id`          | DELETE | Authenticated (owner) | Delete session and messages             |
-| `/api/v1/ai/sessions/:id/messages` | GET    | Authenticated (owner) | Get message history                     |
-| `/api/v1/ai/settings`              | GET    | Authenticated         | Get AI settings                         |
-| `/api/v1/ai/settings`              | POST   | `ai_settings:create`  | Create AI settings                      |
-| `/api/v1/ai/settings`              | PUT    | `ai_settings:update`  | Update AI settings                      |
+| Endpoint                           | Method | Auth                                                | Description                                                                                  |
+| ---------------------------------- | ------ | --------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `/api/v1/ai/chat`                  | POST   | Authenticated                                       | Send a chat message, receive SSE stream                                                      |
+| `/api/v1/ai/sessions`              | GET    | Authenticated                                       | List user's sessions                                                                         |
+| `/api/v1/ai/sessions`              | POST   | Authenticated                                       | Create a new session                                                                         |
+| `/api/v1/ai/sessions/:id`          | GET    | Authenticated (owner)                               | Get session details                                                                          |
+| `/api/v1/ai/sessions/:id`          | DELETE | Authenticated (owner)                               | Delete session and messages                                                                  |
+| `/api/v1/ai/sessions/:id/messages` | GET    | Authenticated (owner)                               | Get message history                                                                          |
+| `/api/v1/ai/settings`              | GET    | Authenticated                                       | Get AI settings                                                                              |
+| `/api/v1/ai/settings`              | POST   | `ai_settings:create`                                | Create AI settings                                                                           |
+| `/api/v1/ai/settings`              | PUT    | `ai_settings:update`                                | Update AI settings                                                                           |
+| `/api/v1/items/enrich`             | POST   | `create` on the item's resource (`parts` / `tools`) | Suggest fields, attributes and (tools) capabilities from a web link and/or up to four images |
+| `/api/v1/items/enrich-from-url`    | POST   | as above                                            | Deprecated alias of `/items/enrich`, kept because v1 is additive-only                        |
 
 ---
 

@@ -262,7 +262,7 @@ npm run test:e2e         # Run tests
 E2E tests expect:
 
 - Admin user: `admin@cascadia.local` / `Cascadia`
-- The Default Program and Standard Parts Library created by the minimal seed
+- The Standard Parts Library created by the minimal seed (the E2E program and design are created by global setup)
 
 ### Writing E2E Tests
 

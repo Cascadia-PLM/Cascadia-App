@@ -26,6 +26,7 @@ import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
+  ItemCheckoutRequiredError,
   NotFoundError,
   PermissionDeniedError,
   ValidationError,
@@ -35,6 +36,7 @@ import { LifecycleService } from '@/lib/services/LifecycleService'
 import { seedWorkOrderLifecycle } from '@/__tests__/fixtures/lifecycles'
 import { LIFECYCLE_IDS } from '@/lib/items/lifecycle-ids'
 import {
+  branchItems,
   branches,
   changeOrders,
   commits,
@@ -1026,6 +1028,103 @@ describe('ItemService', () => {
       await expect(
         ItemService.delete('00000000-0000-0000-0000-000000000000', user.id),
       ).resolves.not.toThrow()
+    })
+
+    // branch_items.current_item_id is NO ACTION, so a tracking row left
+    // behind does not dangle — it fails the delete. Which rows are a real
+    // claim on the item, and which are just a pointer to move, is the whole
+    // question.
+    describe('branch tracking rows the delete has to clear', () => {
+      async function mainBranchId(): Promise<string> {
+        return takeFirst(
+          await testDb.db
+            .select()
+            .from(branches)
+            .where(
+              and(
+                eq(branches.designId, designId),
+                eq(branches.branchType, 'main'),
+              ),
+            ),
+        ).id
+      }
+
+      it('deletes an item created on unprotected main, and its main tracking row', async () => {
+        const branchId = await mainBranchId()
+        const { item } = await ItemService.createOnBranch(
+          'Part',
+          {
+            designId,
+            itemNumber: `PN-${uniquePrefix}-MAINTRACK`,
+            name: 'Main-tracked Part',
+          } as Part,
+          branchId,
+          'create part on main',
+          user.id,
+        )
+        // BaseItem types both as optional; a persisted row always has them.
+        const itemId = item.id!
+        const masterId = item.masterId!
+
+        expect(
+          await testDb.db
+            .select()
+            .from(branchItems)
+            .where(eq(branchItems.currentItemId, itemId)),
+        ).toHaveLength(1)
+
+        await ItemService.delete(itemId, user.id)
+
+        expect(await ItemService.findById(itemId)).toBeNull()
+        expect(
+          await testDb.db
+            .select()
+            .from(branchItems)
+            .where(eq(branchItems.itemMasterId, masterId)),
+        ).toHaveLength(0)
+      })
+
+      it('still refuses an item tracked on a live workspace branch, and keeps the branch row', async () => {
+        const workspace = takeFirst(
+          await testDb.db
+            .insert(branches)
+            .values({
+              designId,
+              name: `ws-${uniquePrefix}`,
+              branchType: 'workspace',
+              ownerId: user.id,
+              createdBy: user.id,
+            })
+            .returning(),
+        )
+
+        const { item } = await ItemService.createOnBranch(
+          'Part',
+          {
+            designId,
+            itemNumber: `PN-${uniquePrefix}-WSTRACK`,
+            name: 'Workspace Part',
+          } as Part,
+          workspace.id,
+          'create part on workspace',
+          user.id,
+        )
+        const itemId = item.id!
+
+        // The live branch row is a real claim: the edit-lock gate refuses
+        // before anything is destroyed, rather than the FK doing it.
+        await expect(ItemService.delete(itemId, user.id)).rejects.toThrow(
+          ItemCheckoutRequiredError,
+        )
+
+        expect(await ItemService.findById(itemId)).not.toBeNull()
+        expect(
+          await testDb.db
+            .select()
+            .from(branchItems)
+            .where(eq(branchItems.currentItemId, itemId)),
+        ).toHaveLength(1)
+      })
     })
 
     // The hard delete cascades from items.id — version rows, workflow

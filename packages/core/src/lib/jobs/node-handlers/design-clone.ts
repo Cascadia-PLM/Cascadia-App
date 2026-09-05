@@ -9,16 +9,11 @@ import type {
 } from '../definitions/design/types'
 import { db } from '@/lib/db'
 import { takeFirst } from '@/lib/db/take-first'
-import {
-  documents,
-  itemRelationships,
-  items,
-  parts,
-  requirements,
-} from '@/lib/db/schema/items'
+import { itemRelationships, items } from '@/lib/db/schema/items'
 import { vaultFiles } from '@/lib/db/schema/vault'
 import { branchItems } from '@/lib/db/schema/versioning'
 import { designCrossReferences } from '@/lib/db/schema/crossReferences'
+import { copyTypeSpecificData } from '@/lib/items/type-handlers/copy'
 import { DesignService } from '@/lib/services/DesignService'
 import { LifecycleService } from '@/lib/services/LifecycleService'
 import { BranchService } from '@/lib/services/BranchService'
@@ -210,10 +205,17 @@ export const cloneDesignHandler: JobHandler<
 
           itemIdMap.set(sourceItem.id, newUsage.id)
 
-          // Copy type-specific data inline (these are the "overrides" on the usage)
-          // Note: Using inline copy to preserve source modifications and handle
-          // clone-specific field copying (all fields copied, not just inherited)
-          await copyTypeSpecificData(tx, sourceItem, newUsage.id)
+          // Copy the type-specific row whole (these are the "overrides" on the
+          // usage): every column carries over, including the source's own
+          // modifications. Whole-row on purpose — a hand-written column list
+          // here had dropped a Part's `trackingMode`, so every serial- or
+          // lot-tracked part came out of a clone reset to `none`.
+          await copyTypeSpecificData(
+            sourceItem.itemType,
+            sourceItem.id,
+            newUsage.id,
+            tx,
+          )
 
           // Copy file references (not actual files - they reference same vault files)
           const sourceFiles = await tx
@@ -516,78 +518,6 @@ export const cloneDesignHandler: JobHandler<
 async function getItemsOnBranch(branchId: string) {
   const result = await VersionResolver.getBranchItems(branchId)
   return result.items
-}
-
-type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
-
-/**
- * Copy type-specific data from source item to target usage.
- * These values are stored inline on the usage (the "overrides").
- */
-async function copyTypeSpecificData(
-  tx: TransactionClient,
-  sourceItem: typeof items.$inferSelect,
-  targetItemId: string,
-) {
-  switch (sourceItem.itemType) {
-    case 'Part': {
-      const [sourcePart] = await tx
-        .select()
-        .from(parts)
-        .where(eq(parts.itemId, sourceItem.id))
-      if (sourcePart) {
-        await tx.insert(parts).values({
-          itemId: targetItemId,
-          description: sourcePart.description,
-          partType: sourcePart.partType,
-          material: sourcePart.material,
-          weight: sourcePart.weight,
-          weightUnit: sourcePart.weightUnit,
-          cost: sourcePart.cost,
-          costCurrency: sourcePart.costCurrency,
-          leadTimeDays: sourcePart.leadTimeDays,
-        })
-      }
-      break
-    }
-    case 'Document': {
-      const [sourceDoc] = await tx
-        .select()
-        .from(documents)
-        .where(eq(documents.itemId, sourceItem.id))
-      if (sourceDoc) {
-        await tx.insert(documents).values({
-          itemId: targetItemId,
-          description: sourceDoc.description,
-          fileId: sourceDoc.fileId,
-          fileName: sourceDoc.fileName,
-          fileSize: sourceDoc.fileSize,
-          mimeType: sourceDoc.mimeType,
-          storagePath: sourceDoc.storagePath,
-        })
-      }
-      break
-    }
-    case 'Requirement': {
-      const [sourceReq] = await tx
-        .select()
-        .from(requirements)
-        .where(eq(requirements.itemId, sourceItem.id))
-      if (sourceReq) {
-        await tx.insert(requirements).values({
-          itemId: targetItemId,
-          description: sourceReq.description,
-          type: sourceReq.type,
-          priority: sourceReq.priority,
-          acceptanceCriteria: sourceReq.acceptanceCriteria,
-          source: sourceReq.source,
-          category: sourceReq.category,
-        })
-      }
-      break
-    }
-    // Tasks and ChangeOrders are typically not cloned with designs
-  }
 }
 
 /**

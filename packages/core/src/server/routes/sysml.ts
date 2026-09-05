@@ -143,7 +143,7 @@ app.get(
 
 /**
  * The element-create route below declares no permission, and checks one in the
- * handler instead — the same shape `POST /api/items/enrich-from-url` uses, and
+ * handler instead — the same shape `POST /api/items/enrich` uses, and
  * for the same reason the import routes gained theirs.
  *
  * A declared tuple cannot cover it: the item type this route creates depends on

@@ -125,16 +125,17 @@ Ready-to-use configurations, each with the compose file or manifests alongside i
 
 ## Development Guides
 
-| Document                                                          | Description                                              |
-| ----------------------------------------------------------------- | -------------------------------------------------------- |
-| [Service Patterns](./development/service-patterns.md)             | Service layer conventions, error handling, transactions  |
-| [Database Patterns](./development/database-patterns.md)           | Drizzle ORM patterns, schema conventions, migrations     |
-| [Adding Item Types](./development/adding-item-types.md)           | Step-by-step guide to extending the type system          |
-| [Adding API Routes](./development/adding-api-routes.md)           | Hono route conventions, apiHandler usage                 |
-| [Adding Background Jobs](./development/adding-background-jobs.md) | Job type registration, handler patterns, submission      |
-| [Adding Packages](./development/adding-packages.md)               | Optional package framework: catalog, entitlement, gating |
-| [Testing](./development/testing.md)                               | Test strategy, utilities, CI/CD integration              |
-| [UI Components](./development/ui-components.md)                   | Component library, forms, DataGrid, common pitfalls      |
+| Document                                                          | Description                                               |
+| ----------------------------------------------------------------- | --------------------------------------------------------- |
+| [Service Patterns](./development/service-patterns.md)             | Service layer conventions, error handling, transactions   |
+| [Database Patterns](./development/database-patterns.md)           | Drizzle ORM patterns, schema conventions, migrations      |
+| [Adding Item Types](./development/adding-item-types.md)           | Step-by-step guide to extending the type system           |
+| [Adding API Routes](./development/adding-api-routes.md)           | Hono route conventions, apiHandler usage                  |
+| [Adding Background Jobs](./development/adding-background-jobs.md) | Job type registration, handler patterns, submission       |
+| [Adding Packages](./development/adding-packages.md)               | Optional package framework: catalog, entitlement, gating  |
+| [Testing](./development/testing.md)                               | Test strategy, utilities, CI/CD integration               |
+| [UI Components](./development/ui-components.md)                   | Component library, forms, DataGrid, common pitfalls       |
+| [Demo Datasets](./development/demo-datasets.md)                   | Seeding the robot-arm and FreeCAD/KiCad demos, and baking |
 
 ## Design Proposals
 

@@ -18,6 +18,7 @@ import type { CreateProgramInput, Program } from '@/lib/types/program'
 import type { Design } from '@/lib/types/design'
 import { PageContainer } from '@/components/layout'
 import { ProgramHistoryGraphView } from '@/components/programs/ProgramHistoryGraphView'
+import { ProgramModelViewer } from '@/components/programs/ProgramModelViewer'
 import { ProgramTeamCard } from '@/components/programs/ProgramTeamCard'
 import { ScopeGraphView } from '@/components/graph/ScopeGraphView'
 import {
@@ -365,6 +366,9 @@ function ProgramDetail({
                   </dl>
                 </CardContent>
               </Card>
+
+              {/* 3D Model — pick a design, then a top-level part of it */}
+              <ProgramModelViewer designs={designs} />
 
               {/* Program Graph */}
               <Card>

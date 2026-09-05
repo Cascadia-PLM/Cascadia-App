@@ -30,7 +30,11 @@ import {
 } from '@/lib/items/item-type-resources'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { itemCreateRequestSchema } from '@/lib/items/item-create-request'
-import { enrichItemFromUrl } from '@/lib/items/enrichment/enrich-from-url'
+import {
+  enrichItem,
+  enrichmentImageSchema,
+} from '@/lib/items/enrichment/enrich-item'
+import { MAX_ENRICHMENT_IMAGES } from '@/lib/items/enrichment/limits'
 import { BranchService } from '@/lib/services/BranchService'
 import { DesignService } from '@/lib/services/DesignService'
 import { ProgramService } from '@/lib/services/ProgramService'
@@ -835,44 +839,61 @@ app.post(
   ),
 )
 
-/** Body of `POST /items/enrich-from-url`. */
-const enrichFromUrlSchema = z.object({
-  url: z.string().url(),
+/**
+ * Body of `POST /items/enrich` and its `/enrich-from-url` alias. At least one
+ * of `url` / `images` is required; the service checks that, so the schema
+ * stays a plain object the OpenAPI document can describe.
+ */
+const enrichItemSchema = z.object({
   itemType: z.enum(['Part', 'Tool']),
+  url: z.string().url().optional(),
+  images: z.array(enrichmentImageSchema).max(MAX_ENRICHMENT_IMAGES).optional(),
 })
 
-// POST /api/items/enrich-from-url
-// Parse a dropped web link into suggested field values + custom attributes.
-// Returns { aiEnabled: false, link } when no AI provider is connected.
-app.post(
-  '/enrich-from-url',
-  adapt(
+// POST /api/items/enrich
+// Parse a dropped web link and/or dropped images into suggested field values,
+// custom attributes and (for tools) capabilities. Returns
+// { aiEnabled: false, link } when no AI provider is connected.
+//
+// `/enrich-from-url` is the path this shipped under when a link was the only
+// source. It is the same handler and stays mounted: v1 is additive-only.
+function enrichItemHandler(options: { deprecated?: boolean } = {}) {
+  return adapt(
     apiHandler(
       {
-        body: enrichFromUrlSchema,
+        body: enrichItemSchema,
         openapi: {
-          summary: 'Suggest item fields from a web link',
+          summary: 'Suggest item fields from a web link and/or images',
+          description:
+            'Send a `url`, up to four base64 `images` (PNG, JPEG, GIF or ' +
+            'WebP, 4 MB each), or both. A link may point at a page or ' +
+            'directly at an image. Answers `{ aiEnabled: false }` with the ' +
+            'link echoed back when no AI provider is connected.',
+          deprecated: options.deprecated,
         },
       },
-      async ({ body: { url, itemType }, request, user }) => {
+      async ({ body: { url, images, itemType }, request, user }) => {
         // Gate on the same create permission used when creating the item.
         await requirePermission(request, getResourceType(itemType), 'create')
 
         // `user.id` so the extraction's token spend is attributed to whoever
-        // dropped the link, rather than going unrecorded. `request.signal` so
-        // a user who navigates away mid-extraction actually cancels the model
-        // call: the extraction accepted a signal and no caller supplied one,
-        // which left the abort path dead code.
-        return await enrichItemFromUrl({
+        // dropped the source, rather than going unrecorded. `request.signal`
+        // so a user who navigates away mid-extraction actually cancels the
+        // model call.
+        return await enrichItem({
           url,
+          images,
           itemType,
           userId: user.id,
           signal: request.signal,
         })
       },
     ),
-  ),
-)
+  )
+}
+
+app.post('/enrich', enrichItemHandler())
+app.post('/enrich-from-url', enrichItemHandler({ deprecated: true }))
 
 // GET /api/items/:id
 //

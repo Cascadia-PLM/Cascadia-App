@@ -378,8 +378,8 @@ command fails rather than apply destructive changes; set force=true to auto-appr
     {
       name: 'db_seed',
       description: `Run a database seed script. Kinds: "minimal" (admin user, roles,
-default program, standard library — the normal first seed), "catalog" (generic
-component catalog: fasteners, raw stock), "tools" (standard tool library), "demo"
+standard library — the normal first seed), "catalog" (generic component
+catalog: fasteners, raw stock), "tools" (standard tool library), "demo"
 (full TDJ-25 robot-arm dataset; requires \`npm run demo:fetch\` to have been run).
 Seeds are additive — reset first when reseeding to avoid unique-constraint conflicts.`,
       inputSchema: z.object({
@@ -394,7 +394,7 @@ Seeds are additive — reset first when reseeding to avoid unique-constraint con
           minimal: 'npm run db:seed',
           catalog: 'npm run db:seed:catalog',
           tools: 'npm run db:seed:tools',
-          demo: 'npm run db:seed:demo',
+          demo: 'npm run seed:demo',
         } as const
         return runCommand(
           scripts[(input as { kind: keyof typeof scripts }).kind],

@@ -2,21 +2,19 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * Server-side webpage fetch + text extraction for link-based item enrichment.
+ * URL safety check and HTML-to-text extraction for link-based item enrichment.
  *
  * Dependency-free: strips scripts/styles/tags, decodes common entities, and
- * bounds the output so it is safe to feed to an LLM. Guards against SSRF by
- * rejecting non-http(s) URLs and hosts on the local / private network.
+ * bounds the output so it is safe to feed to an LLM. `assertSafeUrl` guards
+ * against SSRF by rejecting non-http(s) URLs and hosts on the local / private
+ * network; `fetch-source.ts` does the network side and applies it to every
+ * redirect hop as well.
  */
 
 import { ValidationError } from '@/lib/errors'
 
-/** Hard cap on the HTML we will read into memory. */
-const MAX_HTML_BYTES = 1_000_000
 /** Hard cap on the extracted body text handed to the model. */
 const MAX_TEXT_CHARS = 8_000
-/** Fetch timeout — a hung page must not hang the request. */
-const FETCH_TIMEOUT_MS = 8_000
 
 export interface FetchedPage {
   title?: string
@@ -77,51 +75,8 @@ function isBlockedHost(host: string): boolean {
   return false
 }
 
-/**
- * Fetch a webpage and return its title, meta description, and cleaned body text.
- * Throws ValidationError for unreachable / non-HTML / blocked URLs.
- */
-export async function fetchPageText(rawUrl: string): Promise<FetchedPage> {
-  const url = assertSafeUrl(rawUrl)
-
-  let response: Response
-  try {
-    response = await fetch(url, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      redirect: 'follow',
-      headers: {
-        'User-Agent': 'CascadiaPLM/1.0 (+link-enrichment)',
-        Accept: 'text/html,application/xhtml+xml',
-      },
-    })
-  } catch {
-    throw new ValidationError('Could not reach that link')
-  }
-
-  if (!response.ok) {
-    throw new ValidationError(
-      `Could not fetch that page (HTTP ${response.status})`,
-    )
-  }
-
-  const contentType = response.headers.get('content-type') ?? ''
-  if (
-    !contentType.includes('text/html') &&
-    !contentType.includes('application/xhtml')
-  ) {
-    throw new ValidationError('The link is not a web page we can read')
-  }
-
-  const contentLength = Number(response.headers.get('content-length') ?? '0')
-  if (contentLength > MAX_HTML_BYTES) {
-    throw new ValidationError('That page is too large to read')
-  }
-
-  const html = (await response.text()).slice(0, MAX_HTML_BYTES)
-  return extractText(html)
-}
-
-function extractText(html: string): FetchedPage {
+/** Title, meta description, and cleaned, bounded body text of an HTML document. */
+export function extractText(html: string): FetchedPage {
   const rawTitle = matchGroup(html, /<title[^>]*>([\s\S]*?)<\/title>/i)
   const rawDescription =
     metaContent(html, 'name', 'description') ??

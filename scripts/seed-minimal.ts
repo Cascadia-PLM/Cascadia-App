@@ -5,7 +5,6 @@
  * Minimal Database Seed Script
  * Creates only the bare essentials needed to start using Cascadia:
  * - Admin User (with the Administrator role)
- * - Default Program
  * - Standard Parts Library
  * - Core Roles
  * - Default lifecycles for every item type, from the default-lifecycles
@@ -19,10 +18,6 @@ import {
   userRoles,
   users,
 } from '../packages/core/src/lib/db/schema/users.ts'
-import {
-  programMembers,
-  programs,
-} from '../packages/core/src/lib/db/schema/programs.ts'
 import { designs } from '../packages/core/src/lib/db/schema/designs.ts'
 import {
   branches,
@@ -46,7 +41,6 @@ import { takeFirst } from '../packages/core/src/lib/db/take-first'
 // Format: version 4 (13th char = 4), variant 1 (17th char = 8-b)
 const IDS = {
   admin: '00000000-0000-4000-8000-000000000000',
-  program: '00000000-0000-4000-8000-000000000010',
   standardLibrary: '00000000-0000-4000-8000-000000000020',
   // Lifecycle definition IDs - imported from shared constants
   partLifecycle: LIFECYCLE_IDS.part,
@@ -143,52 +137,7 @@ try {
   }
 
   // ============================================================================
-  // 3. Create Default Program
-  // ============================================================================
-  const existingProgram = await db
-    .select()
-    .from(programs)
-    .where(eq(programs.code, 'DEFAULT'))
-    .limit(1)
-
-  const existingDefaultProgram = existingProgram[0]
-  let program
-  if (existingDefaultProgram) {
-    program = existingDefaultProgram
-  } else {
-    const created = takeFirst(
-      await db
-        .insert(programs)
-        .values({
-          id: IDS.program,
-          name: 'Default Program',
-          code: 'DEFAULT',
-          description: 'Default program for general use',
-          status: 'Active',
-          createdBy: adminId,
-        })
-        .returning(),
-    )
-    program = created
-  }
-
-  // Add admin as program admin
-  await db
-    .insert(programMembers)
-    .values({
-      programId: program.id,
-      userId: adminId,
-      role: 'admin',
-      canCreateEco: true,
-      canApproveEco: true,
-      canManageDesigns: true,
-    })
-    .onConflictDoNothing()
-
-  console.log('✓ Default Program')
-
-  // ============================================================================
-  // 4. Create Standard Parts Library (Global)
+  // 3. Create Standard Parts Library (Global)
   // ============================================================================
   const existingLibrary = await db
     .select()
@@ -265,7 +214,7 @@ try {
   console.log('✓ Standard Parts Library (Global)')
 
   // ============================================================================
-  // 5. Default Lifecycles
+  // 4. Default Lifecycles
   // ============================================================================
 
   // Every item type's default lifecycle — and both change-order workflows —
@@ -307,7 +256,7 @@ try {
   )
 
   // ============================================================================
-  // 6. Create Item Type Configs with Lifecycle Assignments
+  // 5. Create Item Type Configs with Lifecycle Assignments
   // ============================================================================
   const typeConfigs = [
     {
@@ -509,9 +458,6 @@ try {
       : '  Password: Cascadia',
   )
   console.log('  Roles: Administrator')
-  console.log('\nProgram:')
-  console.log(`  Name: ${program.name}`)
-  console.log(`  Code: ${program.code}`)
   console.log('\nStandard Library (Global):')
   console.log(`  Name: ${standardLibrary.name}`)
   console.log(`  Code: ${standardLibrary.code}`)

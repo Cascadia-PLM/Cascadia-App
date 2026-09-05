@@ -2,12 +2,11 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Eye, EyeOff, GitCompare } from 'lucide-react'
-import type { CADFileEntry } from './cad-types'
 import type { CADCompareState } from './useCADCompareState'
 import type { CADViewerState } from './useCADViewerState'
-import { CADViewer } from '@/components/parts/CADViewer'
 import { CADComparePanel } from '@/components/parts/CADComparePanel'
-import { CADViewerToolbar } from '@/components/parts/CADViewerToolbar'
+import { CADFileSelect } from '@/components/parts/CADFileSelect'
+import { CADViewerSurface } from '@/components/parts/CADViewerSurface'
 import {
   Button,
   Card,
@@ -15,13 +14,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
 } from '@/components/ui'
 
 /**
@@ -99,50 +91,12 @@ export function PartCADSection({
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div
-          ref={viewer.containerRef}
-          className={`relative ${viewer.fullscreen ? 'h-screen' : 'h-[500px]'}`}
-          tabIndex={0}
+        <CADViewerSurface
+          viewer={viewer}
+          file={selectedFile}
+          comparison={compare.comparison}
+          onError={onError}
         >
-          <CADViewerToolbar
-            wireframe={viewer.wireframe}
-            showGrid={viewer.showGrid}
-            isFullscreen={viewer.fullscreen}
-            backgroundPreset={viewer.background}
-            materialPreset={viewer.material}
-            polygonCount={viewer.modelStats.polygonCount}
-            hasEmbeddedColors={
-              selectedFile.hasColors && selectedFile.fileType === 'glb'
-            }
-            onResetView={viewer.resetView}
-            onToggleWireframe={viewer.toggleWireframe}
-            onToggleGrid={viewer.toggleGrid}
-            onToggleFullscreen={viewer.toggleFullscreen}
-            onBackgroundChange={viewer.setBackground}
-            onMaterialChange={viewer.setMaterial}
-            onDownload={viewer.download}
-          />
-          <CADViewer
-            ref={viewer.viewerRef}
-            fileUrl={`/api/v1/files/${selectedFile.id}/download`}
-            fileType={selectedFile.fileType}
-            fileName={selectedFile.fileName}
-            wireframe={viewer.wireframe}
-            showGrid={viewer.showGrid}
-            backgroundPreset={viewer.background}
-            materialPreset={viewer.material}
-            hasEmbeddedColors={
-              selectedFile.hasColors && selectedFile.fileType === 'glb'
-            }
-            comparison={compare.comparison}
-            onLoad={viewer.onModelLoad}
-            onError={(error) =>
-              onError(error, { title: 'Failed to load CAD model' })
-            }
-            onComparisonError={(error) =>
-              onError(error, { title: 'Failed to load a model being compared' })
-            }
-          />
           {compare.isOpen && (
             <CADComparePanel
               versions={compare.versions}
@@ -154,7 +108,7 @@ export function PartCADSection({
               onClose={compare.close}
             />
           )}
-        </div>
+        </CADViewerSurface>
       </CardContent>
     </Card>
   )
@@ -195,61 +149,5 @@ export function PartCADHiddenPrompt({ viewer }: { viewer: CADViewerState }) {
         </div>
       </CardContent>
     </Card>
-  )
-}
-
-/** Direct files first, then one group per CAD document they came from. */
-function CADFileSelect({
-  files,
-  selectedId,
-  onSelect,
-}: {
-  files: Array<CADFileEntry>
-  selectedId: string
-  onSelect: (file: CADFileEntry) => void
-}) {
-  const direct = files.filter((f) => f.source === 'direct')
-  const docGroups = new Map<string, Array<CADFileEntry>>()
-  for (const f of files.filter((cf) => cf.source === 'cad_doc')) {
-    const key = f.sourceItemNumber ?? f.sourceItemId
-    const group = docGroups.get(key)
-    if (group) group.push(f)
-    else docGroups.set(key, [f])
-  }
-
-  return (
-    <Select
-      value={selectedId}
-      onValueChange={(fileId) => {
-        const file = files.find((f) => f.id === fileId)
-        if (file) onSelect(file)
-      }}
-    >
-      <SelectTrigger className="w-[220px] h-8 text-xs" aria-label="CAD file">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {direct.length > 0 && (
-          <SelectGroup>
-            <SelectLabel>Direct Files</SelectLabel>
-            {direct.map((f) => (
-              <SelectItem key={f.id} value={f.id}>
-                {f.fileName}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        )}
-        {Array.from(docGroups.entries()).map(([label, groupFiles]) => (
-          <SelectGroup key={label}>
-            <SelectLabel>{label}</SelectLabel>
-            {groupFiles.map((f) => (
-              <SelectItem key={f.id} value={f.id}>
-                {f.fileName}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        ))}
-      </SelectContent>
-    </Select>
   )
 }

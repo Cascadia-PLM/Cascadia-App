@@ -2,10 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { randomUUID } from 'node:crypto'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, ne, or } from 'drizzle-orm'
 import { ZodError } from 'zod'
 import { db, withTx } from '../../db'
-import { designs, items } from '../../db/schema'
+import { branchItems, branches, designs, items } from '../../db/schema'
 import { NumberingService } from '../numbering'
 import { ItemTypeRegistry } from '../registry'
 import { getTypeHandler } from '../type-handlers'
@@ -773,8 +773,11 @@ export class ItemService {
    *
    * Idempotent for missing items (no error). Enforces the same edit-lock
    * policy as update(): protected main and other users' checkouts block the
-   * delete. Branch-tracked rows must go through deleteOnBranch instead —
-   * deleting them here would leave branch_items.currentItemId dangling.
+   * delete. A working copy on a live ECO/workspace branch must go through
+   * deleteOnBranch instead, so the deletion is recorded on the branch; the
+   * tracking rows that are not a live claim (main's, and an archived
+   * branch's) are repointed or dropped alongside the item — see
+   * `releaseBranchTracking`.
    *
    * This is a hard delete, and the schema cascades from `items.id`: the
    * item_versions and item_field_changes rows go with it (the items row IS
@@ -817,7 +820,112 @@ export class ItemService {
 
     await this.requireNoRetainedEvidence(item, id)
 
-    await db.delete(items).where(eq(items.id, id))
+    await db.transaction(async (tx) => {
+      await this.releaseBranchTracking(item, id, tx)
+      await tx.delete(items).where(eq(items.id, id))
+    })
+  }
+
+  /**
+   * Repoint or drop the `branch_items` rows that point at the row about to be
+   * hard-deleted, in the deleting transaction.
+   *
+   * `branch_items.current_item_id` / `.base_item_id` are NO ACTION by design
+   * (see the schema): a live branch that still tracks an item must not lose it
+   * silently. `requireContentEditable` is what enforces that — but it only
+   * looks for a *working copy* on an unarchived ECO/workspace branch. Two
+   * kinds of row it never sees still reference the item and still hold the
+   * FK, so the delete reached Postgres and came back as a raw
+   * `branch_items_current_item_id_items_id_fk` violation surfaced as
+   * DB_CONSTRAINT_VIOLATION:
+   *
+   * - the **main** branch's tracking row, which `ItemService.createOnBranch`
+   *   writes for every item created on unprotected main (the ordinary
+   *   pre-release "create a part under a design" path), and which
+   *   `UsageService` writes for a usage copied into a design's structure;
+   * - a row on an **archived** branch, left behind by a workspace that was
+   *   archived while tracking the item.
+   *
+   * Neither is a live claim on the item, so neither should block the delete.
+   * The row is repointed at whatever version of the same master survives, and
+   * dropped when nothing does — the "tracking row first, then the row it
+   * points at" order `BranchService.removeWorkspaceItem` already keeps.
+   *
+   * A live ECO/workspace row that references the item only as its *base* is
+   * not a working copy either, so `requireContentEditable` lets it through;
+   * that one is a real claim, and is refused here rather than silently
+   * rewritten.
+   */
+  private static async releaseBranchTracking(
+    item: BaseItem,
+    id: string,
+    tx: TransactionClient,
+  ): Promise<void> {
+    const tracking = await tx
+      .select({
+        rowId: branchItems.id,
+        currentItemId: branchItems.currentItemId,
+        baseItemId: branchItems.baseItemId,
+        branchName: branches.name,
+        branchType: branches.branchType,
+        isArchived: branches.isArchived,
+      })
+      .from(branchItems)
+      .innerJoin(branches, eq(branchItems.branchId, branches.id))
+      .where(
+        or(eq(branchItems.currentItemId, id), eq(branchItems.baseItemId, id)),
+      )
+
+    if (tracking.length === 0) return
+
+    const live = tracking.find(
+      (row) => row.branchType !== 'main' && row.isArchived !== true,
+    )
+    if (live) {
+      throw new ValidationError(
+        `Item '${item.itemNumber || id}' is tracked on branch "${live.branchName}". Use the branch delete operation (deleteOnBranch) so the change is recorded on the branch.`,
+      )
+    }
+
+    // The master's surviving version, if the item being deleted is one of
+    // several revisions. `isCurrent` is the same pointer every other reader
+    // of a master uses, so the tracking row lands where they would look.
+    const masterId = item.masterId
+    const survivor = masterId
+      ? (
+          await tx
+            .select({ id: items.id })
+            .from(items)
+            .where(
+              and(
+                eq(items.masterId, masterId),
+                ne(items.id, id),
+                eq(items.isCurrent, true),
+              ),
+            )
+            .limit(1)
+        ).at(0)
+      : undefined
+
+    for (const row of tracking) {
+      if (row.currentItemId === id && !survivor) {
+        // Nothing left of this master on the branch — the row tracks nothing.
+        await tx.delete(branchItems).where(eq(branchItems.id, row.rowId))
+        continue
+      }
+
+      await tx
+        .update(branchItems)
+        .set({
+          currentItemId:
+            row.currentItemId === id
+              ? (survivor?.id ?? null)
+              : row.currentItemId,
+          baseItemId:
+            row.baseItemId === id ? (survivor?.id ?? null) : row.baseItemId,
+        })
+        .where(eq(branchItems.id, row.rowId))
+    }
   }
 
   /**

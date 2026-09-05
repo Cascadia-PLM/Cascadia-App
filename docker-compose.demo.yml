@@ -128,7 +128,7 @@ services:
     command: >
       sh -c "node scripts/drizzle.mjs push --force
       && npx tsx scripts/seed-minimal.ts
-      && npx tsx scripts/seed-demo-robot-arm.ts
+      && npx tsx scripts/seed-demo.ts
       && npm run serve"
 
   cad-converter:

@@ -315,21 +315,22 @@ Graphical interfaces for complex data.
 | Design history graph | ✅     | Branch/commit timeline                                           |
 | Affected items tree  | ✅     | ECO impact visualization                                         |
 | Digital thread view  | ✅     | Swim-lane navigator across five domains, with cross-context diff |
-| 3D CAD viewer        | ✅     | STL/OBJ/GLB rendering in browser                                 |
+| 3D CAD viewer        | ✅     | STL/OBJ/GLB rendering on part, design and program pages          |
 
 ### 3D Viewer Features ✅
 
-| Feature                   | Status |
-| ------------------------- | ------ |
-| STL file support          | ✅     |
-| OBJ file support          | ✅     |
-| GLB (binary glTF) support | ✅     |
-| Per-face/solid colors     | ✅     |
-| Orbit controls            | ✅     |
-| Auto-fit camera           | ✅     |
-| Wireframe mode            | ✅     |
-| Model statistics          | ✅     |
-| Reset view                | ✅     |
+| Feature                           | Status |
+| --------------------------------- | ------ |
+| STL file support                  | ✅     |
+| OBJ file support                  | ✅     |
+| GLB (binary glTF) support         | ✅     |
+| Per-face/solid colors             | ✅     |
+| Orbit controls                    | ✅     |
+| Auto-fit camera                   | ✅     |
+| Wireframe mode                    | ✅     |
+| Model statistics                  | ✅     |
+| Reset view                        | ✅     |
+| Part, design and program surfaces | ✅     |
 
 ---
 
@@ -577,16 +578,17 @@ LLM-powered chatbot for navigating and querying PLM data.
 
 ### AI Chatbot ✅
 
-| Feature             | Status | Notes                                           |
-| ------------------- | ------ | ----------------------------------------------- |
-| Chat panel UI       | ✅     | Slide-out panel with markdown rendering         |
-| Session persistence | ✅     | Conversations saved to database                 |
-| Read-only PLM tools | ✅     | Search parts, get item details, navigate system |
-| Write tools         | ✅     | Create/update items with permission enforcement |
-| Confirmation flow   | ✅     | User confirms write actions before execution    |
-| Anthropic adapter   | ✅     | Claude integration via TanStack AI              |
-| OpenAI adapter      | ✅     | GPT integration via TanStack AI                 |
-| Admin settings      | ✅     | Configure AI provider and model                 |
+| Feature             | Status | Notes                                                                                                                      |
+| ------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Chat panel UI       | ✅     | Slide-out panel with markdown rendering                                                                                    |
+| Session persistence | ✅     | Conversations saved to database                                                                                            |
+| Read-only PLM tools | ✅     | Search parts, get item details, navigate system                                                                            |
+| Write tools         | ✅     | Create/update items with permission enforcement                                                                            |
+| Confirmation flow   | ✅     | User confirms write actions before execution                                                                               |
+| Anthropic adapter   | ✅     | Claude integration via TanStack AI                                                                                         |
+| OpenAI adapter      | ✅     | GPT integration via TanStack AI                                                                                            |
+| Admin settings      | ✅     | Configure AI provider and model                                                                                            |
+| Auto-fill new items | ✅     | Drop or paste a link, photo, nameplate or spec sheet on a new Part or Tool; fills fields, attributes and tool capabilities |
 
 ### MCP Servers ✅
 

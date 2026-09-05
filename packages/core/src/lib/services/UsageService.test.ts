@@ -41,6 +41,7 @@ import {
   items,
   parts,
   programs,
+  requirements,
 } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { takeFirst } from '@/lib/db/take-first'
@@ -110,6 +111,7 @@ describe('UsageService', () => {
     cost?: string
     costCurrency?: string
     leadTimeDays?: number
+    trackingMode?: string
   }) {
     const masterId = randomUUID()
     const itemNumber =
@@ -143,6 +145,7 @@ describe('UsageService', () => {
       weight: overrides?.weight ?? '2.500',
       weightUnit: 'kg',
       partType: overrides?.partType ?? 'Manufacture',
+      trackingMode: overrides?.trackingMode ?? 'none',
       cost: overrides?.cost ?? '50.00',
       costCurrency: overrides?.costCurrency ?? 'USD',
       leadTimeDays: overrides?.leadTimeDays ?? 14,
@@ -311,6 +314,7 @@ describe('UsageService', () => {
       expect(inheritFieldNames).toContain('material')
       expect(inheritFieldNames).toContain('weight')
       expect(inheritFieldNames).toContain('weightUnit')
+      expect(inheritFieldNames).toContain('trackingMode')
 
       // Check copy-mode fields
       const copyFields = config.fields.filter((f) => f.mode === 'copy')
@@ -563,6 +567,94 @@ describe('UsageService', () => {
       // Inherit-mode fields are also initially copied
       expect(result.typeData!.material).toBe('Titanium')
       expect(result.typeData!.weight).toBe('5.000')
+    })
+
+    it('carries a serial-tracked definition into a serial-tracked usage', async () => {
+      const definition = await insertDefinitionPart({ trackingMode: 'serial' })
+
+      const { usage } = await UsageService.createUsage(
+        { definitionId: definition.id, targetDesignId: designId },
+        user.id,
+      )
+
+      const definitionRow = takeFirst(
+        await testDb.db
+          .select()
+          .from(parts)
+          .where(eq(parts.itemId, definition.id)),
+      )
+      const usageRow = takeFirst(
+        await testDb.db.select().from(parts).where(eq(parts.itemId, usage.id)),
+      )
+
+      // The named regression: the tracking policy used to reset to the
+      // column default, so a serial-tracked part's usage consumed material
+      // untracked.
+      expect(usageRow.trackingMode).toBe('serial')
+
+      // The invariant behind it: every column the policy does not reserve
+      // for the usage carries the definition's value — including columns
+      // added to the table after this was written.
+      const usageOnly = new Set(
+        UsageService.getInheritanceConfig('Part')
+          .fields.filter((f) => f.mode === 'usage-only')
+          .map((f) => f.fieldName),
+      )
+      const carried = Object.fromEntries(
+        Object.entries(definitionRow).filter(
+          ([column]) => column !== 'itemId' && !usageOnly.has(column),
+        ),
+      )
+      expect(usageRow).toMatchObject(carried)
+    })
+
+    it('starts a usage-only field empty even when the definition has a value', async () => {
+      // Requirement is the type with usage-only fields: verification status
+      // belongs to the usage, not to the definition it was created from.
+      const definition = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: randomUUID(),
+            itemNumber: `R-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            revision: 'A',
+            itemType: 'Requirement',
+            name: 'Test Definition Requirement',
+            state: 'Draft',
+            designId,
+            sysmlType: 'RequirementDefinition',
+            metamodel: 'cascadia',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
+      await testDb.db.insert(requirements).values({
+        itemId: definition.id,
+        description: 'Shall survive a 1 m drop',
+        type: 'Functional',
+        priority: 'High',
+        verificationMethod: 'Test',
+        verificationStatus: 'Passed',
+      })
+
+      const { usage } = await UsageService.createUsage(
+        { definitionId: definition.id, targetDesignId: designId },
+        user.id,
+      )
+
+      const usageRow = takeFirst(
+        await testDb.db
+          .select()
+          .from(requirements)
+          .where(eq(requirements.itemId, usage.id)),
+      )
+      expect(usageRow.verificationStatus).toBeNull()
+      // ...while the rest of the row still carries over.
+      expect(usageRow.description).toBe('Shall survive a 1 m drop')
+      expect(usageRow.verificationMethod).toBe('Test')
+      expect(usageRow.priority).toBe('High')
     })
 
     it('allows overriding name on usage creation', async () => {

@@ -121,8 +121,9 @@ npm run db:baseline   # One-time stamp for pre-v0.5 push-created databases so db
 npm run db:studio     # Open Drizzle Studio GUI
 npm run db:seed       # Minimal seed (admin, roles, program, standard library)
 npm run db:seed:catalog  # Generic component catalog (fasteners, raw stock)
-npm run demo:fetch    # Fetch the demo dataset (required before db:seed:demo)
-npm run db:seed:demo  # Full TDJ-25 demo robot-arm dataset (~88 parts, BOM, CAD)
+npm run demo:fetch    # Fetch the demo datasets (required before seed:demo)
+npm run seed:demo     # Both demo datasets: TDJ-25 robot arm, and FreeCAD/KiCad PUC cart + USV catamaran
+npm run seed:demo -- --only robot-arm   # ...or just one of them (robot-arm | freecad)
 
 # Database Reset (truncates all tables, then optionally reseeds)
 npm run db:reset              # Truncate all tables only (data gone, schema kept)
@@ -302,6 +303,7 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 | UI components / forms                   | `./docs/development/ui-components.md`          |
 | Testing patterns                        | `./docs/development/testing.md`                |
 | Background jobs                         | `./docs/development/adding-background-jobs.md` |
+| Demo data and seeding                   | `./docs/development/demo-datasets.md`          |
 
 ## Architecture Quick Reference
 

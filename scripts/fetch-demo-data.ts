@@ -2,14 +2,15 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * Fetch the TDJ-25 robot-arm demo dataset into ./demo-data/.
+ * Fetch the demo datasets into ./demo-data/.
  *
- * The dataset (~199 MB of GLB + thumbnails) lives in Cascadia-PLM/Demo-Data
- * rather than this repo, so a clone of Cascadia-App stays small. This script
- * shallow-clones that repo at a pinned tag — no extra dependencies, and the tag
- * makes a seeded demo reproducible.
+ * Two of them: the TDJ-25 robot arm (~199 MB of GLB + thumbnails) and the
+ * baked FreeCAD/KiCad bundle, both seeded by `npm run seed:demo`. They live in
+ * Cascadia-PLM/Demo-Data rather than this repo, so a clone stays small. This
+ * script shallow-clones that repo at a pinned tag — no extra dependencies, and
+ * the tag makes a seeded demo reproducible.
  *
- * Idempotent: re-running with the dataset already at the pinned tag is a no-op.
+ * Idempotent: re-running with the datasets already at the pinned tag is a no-op.
  *
  * Run with:
  *   npm run demo:fetch
@@ -36,9 +37,10 @@ import { fileURLToPath } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
 
-// Bump this when the dataset changes. Pinning a tag rather than tracking main
+// Bump this when the datasets change. Pinning a tag rather than tracking main
 // means `npm run demo:fetch` produces the same demo on every machine and in CI.
-const DEFAULT_REF = 'v1.0.0'
+// v1.1.0 added freecad-demo/ alongside robot-arm/.
+const DEFAULT_REF = 'v1.1.0'
 
 const REF = process.env.DEMO_DATA_REF ?? DEFAULT_REF
 const REPO =
@@ -47,6 +49,18 @@ const DEST = process.env.DEMO_DATA_DIR ?? join(REPO_ROOT, 'demo-data')
 const FORCE = process.env.FORCE === '1'
 
 const STAMP = join(DEST, '.fetched-ref')
+
+/**
+ * Subdirectories of the Demo-Data repo this script grafts across.
+ *
+ * `freecad-demo` is optional so that a checkout pinned at a tag predating it
+ * still fetches cleanly — `seed:demo` says what to do when the bundle is
+ * absent, which is a better failure than making every `demo:fetch` fail.
+ */
+const DATASETS: Array<{ dir: string; required: boolean }> = [
+  { dir: 'robot-arm', required: true },
+  { dir: 'freecad-demo', required: false },
+]
 
 function run(cmd: string, args: Array<string>): void {
   const result = spawnSync(cmd, args, { stdio: 'inherit' })
@@ -79,12 +93,13 @@ if (
 console.log(`[demo:fetch] cloning ${REPO} @ ${REF}`)
 console.log(`[demo:fetch] into ${DEST}`)
 
-// Clone to a scratch dir, then graft only robot-arm/ across. The Demo-Data repo
-// also carries a Dockerfile, package.json, scripts/ and .github/ that this repo
-// has no use for — and a nested package.json confuses lint and test globs.
+// Clone to a scratch dir, then graft only the dataset directories across. The
+// Demo-Data repo also carries a Dockerfile, package.json, scripts/ and .github/
+// that this repo has no use for — and a nested package.json confuses lint and
+// test globs.
 //
-// Deleting is scoped to what we own: demo-data/robot-arm and the stamp. Anything
-// else a developer parked under demo-data/ survives.
+// Deleting is scoped to what we own: the dataset directories and the stamp.
+// Anything else a developer parked under demo-data/ survives.
 const TMP = `${DEST}.tmp`
 
 // Windows holds handles on a freshly-cloned tree long enough that renameSync and
@@ -97,16 +112,23 @@ rmDir(TMP)
 try {
   run('git', ['clone', '--quiet', '--depth', '1', '--branch', REF, REPO, TMP])
 
-  const src = join(TMP, 'robot-arm')
-  if (!existsSync(src)) {
-    console.error(`[demo:fetch] ${REPO} @ ${REF} has no robot-arm/ directory.`)
-    rmDir(TMP) // process.exit skips the finally below
-    process.exit(1)
-  }
-
   mkdirSync(DEST, { recursive: true })
-  rmDir(join(DEST, 'robot-arm'))
-  cpSync(src, join(DEST, 'robot-arm'), { recursive: true })
+
+  for (const { dir, required } of DATASETS) {
+    const src = join(TMP, dir)
+    if (!existsSync(src)) {
+      if (required) {
+        console.error(`[demo:fetch] ${REPO} @ ${REF} has no ${dir}/ directory.`)
+        rmDir(TMP) // process.exit skips the finally below
+        process.exit(1)
+      }
+      console.log(`[demo:fetch] ${REF} carries no ${dir}/ — skipping`)
+      continue
+    }
+    rmDir(join(DEST, dir))
+    cpSync(src, join(DEST, dir), { recursive: true })
+    console.log(`[demo:fetch] ✓ ${dir}/`)
+  }
 } finally {
   rmDir(TMP)
 }
@@ -146,7 +168,32 @@ if (missing.length > 0) {
   process.exit(1)
 }
 
+console.log(`[demo:fetch] ✓ ${expected} GLB files, ${REF}`)
+
+// The FreeCAD bundle keeps its own inventory: manifest.blobs maps a SHA-256 to
+// a size, and files/ is named by that hash. Checking the count here means a
+// half-fetched bundle fails now rather than seeding a demo with no 3D models.
+const freecadManifest = join(DEST, 'freecad-demo', 'manifest.json')
+if (existsSync(freecadManifest)) {
+  interface FreecadManifest {
+    blobs: Record<string, number>
+  }
+  const bundle: FreecadManifest = JSON.parse(
+    readFileSync(freecadManifest, 'utf-8'),
+  )
+  const hashes = Object.keys(bundle.blobs)
+  const absent = hashes.filter(
+    (h) => !existsSync(join(DEST, 'freecad-demo', 'files', h)),
+  )
+  if (absent.length > 0) {
+    console.error(
+      `[demo:fetch] ${absent.length}/${hashes.length} FreeCAD demo blobs are missing from the clone.`,
+    )
+    process.exit(1)
+  }
+  console.log(`[demo:fetch] ✓ ${hashes.length} FreeCAD demo blobs`)
+}
+
 writeFileSync(STAMP, `${REF}\n`, 'utf-8')
 
-console.log(`[demo:fetch] ✓ ${expected} GLB files, ${REF}`)
-console.log(`[demo:fetch] now run: npm run db:seed:demo`)
+console.log(`[demo:fetch] now run: npm run seed:demo`)

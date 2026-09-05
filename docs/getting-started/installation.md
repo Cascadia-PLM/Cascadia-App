@@ -112,7 +112,7 @@ This is an interactive command that uses `drizzle-kit push` to apply the schema 
 
 ## Seed the database
 
-Run the minimal seed to create the admin user, default roles, a default program, and lifecycle definitions:
+Run the minimal seed to create the admin user, default roles, and lifecycle definitions:
 
 ```bash
 npm run db:seed
@@ -125,7 +125,6 @@ Seeding minimal database...
 
  Roles (Administrator, Power User, Approver, User, View Only)
  Admin User (admin@cascadia.local / Cascadia)
- Default Program
  Standard Parts Library (Global)
  Default Lifecycles (Part, Document, Requirement, ChangeOrder)
  Flexible Workflow (Dynamic Change Order)

@@ -12979,14 +12979,43 @@
         ]
       }
     },
-    "/api/v1/items/enrich-from-url": {
+    "/api/v1/items/enrich": {
       "post": {
-        "operationId": "postApiV1ItemsEnrichFromUrl",
+        "description": "Send a `url`, up to four base64 `images` (PNG, JPEG, GIF or WebP, 4 MB each), or both. A link may point at a page or directly at an image. Answers `{ aiEnabled: false }` with the link echoed back when no AI provider is connected.",
+        "operationId": "postApiV1ItemsEnrich",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "properties": {
+                  "images": {
+                    "items": {
+                      "properties": {
+                        "data": {
+                          "maxLength": 5592408,
+                          "minLength": 1,
+                          "pattern": "^[A-Za-z0-9+/]+={0,2}$",
+                          "type": "string"
+                        },
+                        "mediaType": {
+                          "enum": [
+                            "image/png",
+                            "image/jpeg",
+                            "image/gif",
+                            "image/webp"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "mediaType",
+                        "data"
+                      ],
+                      "type": "object"
+                    },
+                    "maxItems": 4,
+                    "type": "array"
+                  },
                   "itemType": {
                     "enum": [
                       "Part",
@@ -13000,7 +13029,6 @@
                   }
                 },
                 "required": [
-                  "url",
                   "itemType"
                 ],
                 "type": "object"
@@ -13026,7 +13054,89 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
-        "summary": "Suggest item fields from a web link",
+        "summary": "Suggest item fields from a web link and/or images",
+        "tags": [
+          "Items"
+        ]
+      }
+    },
+    "/api/v1/items/enrich-from-url": {
+      "post": {
+        "deprecated": true,
+        "description": "Send a `url`, up to four base64 `images` (PNG, JPEG, GIF or WebP, 4 MB each), or both. A link may point at a page or directly at an image. Answers `{ aiEnabled: false }` with the link echoed back when no AI provider is connected.",
+        "operationId": "postApiV1ItemsEnrichFromUrl",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "images": {
+                    "items": {
+                      "properties": {
+                        "data": {
+                          "maxLength": 5592408,
+                          "minLength": 1,
+                          "pattern": "^[A-Za-z0-9+/]+={0,2}$",
+                          "type": "string"
+                        },
+                        "mediaType": {
+                          "enum": [
+                            "image/png",
+                            "image/jpeg",
+                            "image/gif",
+                            "image/webp"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "mediaType",
+                        "data"
+                      ],
+                      "type": "object"
+                    },
+                    "maxItems": 4,
+                    "type": "array"
+                  },
+                  "itemType": {
+                    "enum": [
+                      "Part",
+                      "Tool"
+                    ],
+                    "type": "string"
+                  },
+                  "url": {
+                    "format": "uri",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "itemType"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Suggest item fields from a web link and/or images",
         "tags": [
           "Items"
         ]

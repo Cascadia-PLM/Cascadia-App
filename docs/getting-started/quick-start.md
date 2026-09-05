@@ -16,7 +16,6 @@ This creates:
 | -------------------------- | ------------------------------------------------------------------- |
 | **Admin user**             | `admin@cascadia.local` / `Cascadia`                                 |
 | **Roles**                  | Administrator, Power User, Approver, User, View Only                |
-| **Default Program**        | Code: `DEFAULT`                                                     |
 | **Standard Parts Library** | Code: `STD-LIB` (global, not tied to any program)                   |
 | **Lifecycles**             | Part, Document (Driven by ECO), ChangeOrder (Driving), Issue (Free) |
 | **Flexible Workflow**      | Dynamic Change Order (customizable per instance)                    |
@@ -61,7 +60,7 @@ After login, you land on the **Dashboard**. The main navigation is in the left s
 
 ## Create a program
 
-Programs are the top-level organizational unit. The minimal seed creates a `DEFAULT` program, but you can create your own.
+Programs are the top-level organizational unit. The seed creates none — your first one is yours to name.
 
 1. Navigate to **Programs** in the sidebar.
 2. Click **New Program**.

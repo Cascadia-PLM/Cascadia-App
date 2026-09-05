@@ -7,15 +7,21 @@ import { ArrowLeft, Edit, Save, Trash2, X } from 'lucide-react'
 import { CapabilitiesEditor, CapabilitiesView } from './CapabilitiesEditor'
 import type { KnownToolSubtype, Tool } from '@/lib/items/types/tool'
 import type { SearchableSelectOption } from '@/components/ui/SearchableSelect'
-import type { UrlEnrichmentResult } from '@/components/items/useUrlDropEnrichment'
+import type { EnrichmentResult } from '@/components/items/useDropEnrichment'
+import type { EnrichmentSources } from '@/components/items/enrichment-sources'
 import { TOOL_SUBTYPES, getSubtypeGroup } from '@/lib/items/types/tool'
 import { PageContainer } from '@/components/layout'
 import {
   AttributesEditor,
   formatAttributeValue,
 } from '@/components/items/AttributesEditor'
-import { UrlDropOverlay } from '@/components/items/UrlDropOverlay'
-import { useUrlDropEnrichment } from '@/components/items/useUrlDropEnrichment'
+import { DropOverlay } from '@/components/items/DropOverlay'
+import { useDropEnrichment } from '@/components/items/useDropEnrichment'
+import {
+  describeEnrichment,
+  fillEmptyFields,
+  mergeEnrichmentAttributes,
+} from '@/components/items/apply-enrichment'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { ITEM_NUMBER_PLACEHOLDER } from '@/lib/items/numbering/format'
@@ -134,65 +140,36 @@ export function ToolDetail({
     setTool((prev) => ({ ...prev, [field]: value }))
   }
 
-  // Drag-and-drop a web link onto the create form to auto-fill it.
+  // Drag-and-drop (or paste) a web link or images onto the create form to
+  // auto-fill it. The merge rules live in apply-enrichment.ts, shared with
+  // the Part form: suggestions fill empty or still-default fields only.
   const applyEnrichment = useCallback(
-    (result: UrlEnrichmentResult) => {
-      // Always keep the source link as provenance (existing keys win).
-      setAttributes((prev) => {
-        const merged: Record<string, unknown> = {
-          ...result.attributes,
-          ...prev,
-        }
-        // A `link` already on the item wins, but only if it is usable text -
-        // attributes can hold any JSON, and a structured value is not a link.
-        if (typeof merged.link !== 'string' || !merged.link.trim()) {
-          merged.link = result.link
-        }
-        return merged
-      })
+    (result: EnrichmentResult, sources: EnrichmentSources) => {
+      setAttributes((prev) => mergeEnrichmentAttributes(prev, result))
+      setTool((prev) => fillEmptyFields(prev, createEmptyTool(), result.fields))
 
-      // Fill only empty or still-default fields; never clobber user input.
-      setTool((prev) => {
-        const defaults = createEmptyTool() as unknown as Record<string, unknown>
-        const prevRecord = prev as unknown as Record<string, unknown>
-        const next: Record<string, unknown> = { ...prevRecord }
-        for (const [key, value] of Object.entries(result.fields)) {
-          const current = prevRecord[key]
-          if (
-            current === undefined ||
-            current === null ||
-            current === '' ||
-            current === defaults[key]
-          ) {
-            next[key] = value
-          }
-        }
-        return next as unknown as Tool
-      })
-
-      const fieldCount = Object.keys(result.fields).length
-      const attrCount = Object.keys(result.attributes).length
-      if (!result.aiEnabled) {
-        showInfo(
-          'Link saved',
-          'AI isn’t connected — the link was saved as a custom attribute. Connect AI in settings to auto-fill more.',
-        )
-      } else if (fieldCount === 0 && attrCount === 0) {
-        showInfo(
-          'Link saved',
-          'Couldn’t pull details from that page, but the link was saved.',
-        )
-      } else {
-        showSuccess(
-          'Details added',
-          `Filled ${fieldCount} field${fieldCount === 1 ? '' : 's'} and ${attrCount} attribute${attrCount === 1 ? '' : 's'} from the link.`,
-        )
+      // Capabilities belong to a subtype, so they are taken only when the
+      // form will end up on the suggested one: the subtype was still unset
+      // (the fill above sets it) or already matched. Existing keys win.
+      const suggestedSubtype = result.fields.toolSubtype
+      const currentSubtype = tool.toolSubtype
+      if (
+        result.capabilities &&
+        typeof suggestedSubtype === 'string' &&
+        (!currentSubtype || currentSubtype === suggestedSubtype)
+      ) {
+        const suggested = result.capabilities
+        setCapabilities((prev) => ({ ...suggested, ...prev }))
       }
+
+      const notice = describeEnrichment(result, sources)
+      const show = notice.variant === 'success' ? showSuccess : showInfo
+      show(notice.title, notice.description)
     },
-    [showSuccess, showInfo],
+    [tool.toolSubtype, showSuccess, showInfo],
   )
 
-  const { isDragging, isEnriching, dropHandlers } = useUrlDropEnrichment({
+  const { isDragging, enriching, dropHandlers } = useDropEnrichment({
     itemType: 'Tool',
     enabled: isCreateMode,
     onEnriched: applyEnrichment,
@@ -603,7 +580,7 @@ export function ToolDetail({
           </TabsContent>
         </Tabs>
       </PageContainer>
-      <UrlDropOverlay isDragging={isDragging} isEnriching={isEnriching} />
+      <DropOverlay isDragging={isDragging} enriching={enriching} />
     </div>
   )
 }

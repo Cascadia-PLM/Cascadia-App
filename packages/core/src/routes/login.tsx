@@ -40,16 +40,25 @@ function LoginPage() {
   const [oauthLoading, setOauthLoading] = useState(false)
   const gearBackgroundRef = useRef<AnimatedGearBackgroundRef>(null)
 
-  // Show OAuth errors from callback redirects
+  // Show OAuth errors from callback redirects, and prefill the email when a
+  // link carries one (the hosted demo's "open my demo" flow lands here with
+  // `?email=`). Either way the query string is scrubbed so a reload or a
+  // bookmark does not keep replaying it.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const oauthError = params.get('error')
+    const prefillEmail = params.get('email')
+    if (prefillEmail) {
+      setUsername(prefillEmail)
+    }
     if (oauthError) {
       const message =
         params.get('message') ||
         OAUTH_ERROR_MESSAGES[oauthError] ||
         'Authentication failed. Please try again.'
       setError(message)
+    }
+    if (oauthError || prefillEmail) {
       // Clean up URL
       window.history.replaceState({}, '', '/login')
     }

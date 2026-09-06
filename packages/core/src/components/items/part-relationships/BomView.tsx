@@ -11,11 +11,13 @@ import {
 } from 'lucide-react'
 import type { BOMTreeNode } from '@/components/bom/types'
 import type { ColumnDefinition } from '@/components/bom/BomTreeView'
+import type { OptionModel } from '@/lib/types/variants'
 import { Badge, Button, Card, CardContent } from '@/components/ui'
 import { ContextMenuItem } from '@/components/ui/ContextMenu'
 import { BomTreeView } from '@/components/bom/BomTreeView'
 import { exportBomTreeToCsv } from '@/components/bom/exportBomTree'
 import { StateBadge } from '@/components/items/StateBadge'
+import { OptionConditionChips } from '@/components/variants/OptionConditionChips'
 import { getItemDetailPath } from '@/lib/items/item-type-ui'
 
 /**
@@ -31,14 +33,25 @@ export function BomView({
   expandedNodes: expandedBomNodes,
   onToggle: handleBomToggle,
   onRefresh,
+  optionModel,
 }: {
   nodes: Array<BOMTreeNode>
   loading: boolean
   expandedNodes: Set<string>
   onToggle: (itemId: string) => void
   onRefresh: () => void
+  /** The root part's option model, for labelling line conditions. */
+  optionModel?: OptionModel | null
 }) {
   const navigate = useNavigate()
+
+  // Product variants: show the Option column only when the tree has a
+  // conditioned line somewhere, so an unconfigured BOM looks as it always did.
+  const hasOption = (list: Array<BOMTreeNode>): boolean =>
+    list.some(
+      (n) => Boolean(n.option) || (n.children ? hasOption(n.children) : false),
+    )
+  const showOption = Boolean(optionModel) || hasOption(bomNodes)
 
   // BOM tree columns
   const bomColumns: Array<ColumnDefinition> = [
@@ -91,6 +104,22 @@ export function BomView({
         <span className="text-xs text-slate-500">{node.findNumber ?? '—'}</span>
       ),
     },
+    ...(showOption
+      ? [
+          {
+            id: 'option',
+            label: 'Option',
+            width: 'w-40 flex-shrink-0',
+            renderCell: (node: BOMTreeNode) => (
+              <OptionConditionChips
+                condition={node.option}
+                model={optionModel}
+                fixedLabel={node.relationshipId ? 'fixed' : undefined}
+              />
+            ),
+          } satisfies ColumnDefinition,
+        ]
+      : []),
     {
       id: 'rev',
       label: 'Rev',

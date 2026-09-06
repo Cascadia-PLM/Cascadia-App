@@ -38,6 +38,8 @@ registerTypeHandler('Part', {
       cost: data.cost && data.cost !== '' ? data.cost : null,
       costCurrency: data.costCurrency || null,
       leadTimeDays: numberOrNull(data.leadTimeDays),
+      optionModel: data.optionModel ?? null,
+      makes: data.makes ?? null,
     })
   },
 
@@ -71,6 +73,9 @@ registerTypeHandler('Part', {
       updateData.costCurrency = data.costCurrency || null
     if (data.leadTimeDays !== undefined)
       updateData.leadTimeDays = numberOrNull(data.leadTimeDays)
+    if (data.optionModel !== undefined)
+      updateData.optionModel = data.optionModel ?? null
+    if (data.makes !== undefined) updateData.makes = data.makes ?? null
 
     if (Object.keys(updateData).length > 0) {
       await run.update(parts).set(updateData).where(eq(parts.itemId, itemId))

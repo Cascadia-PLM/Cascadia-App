@@ -122,6 +122,8 @@ export interface BomRelationship {
   quantity: number
   findNumber?: number
   referenceDesignator?: string
+  /** Product variants: text form of the option condition (see parseOptionText). */
+  option?: string
 }
 
 /**
@@ -231,6 +233,11 @@ export const bomRelationshipSchema = z.object({
   quantity: z.number().min(0).default(1),
   findNumber: z.number().int().optional(),
   referenceDesignator: z.string().optional(),
+  option: z
+    .string()
+    .max(500)
+    .optional()
+    .describe('Product variants: `color=black; display=yes,no`'),
 })
 
 export type BomRelationshipRequest = z.infer<typeof bomRelationshipSchema>

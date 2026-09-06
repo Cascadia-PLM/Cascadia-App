@@ -239,4 +239,20 @@ export const BOM_FIELDS: Array<ItemFieldConfig> = [
     type: 'string',
     example: 'R1, R2',
   },
+  {
+    field: 'option',
+    label: 'Option Condition',
+    required: false,
+    aliases: [
+      'option',
+      'options',
+      'option condition',
+      'condition',
+      'applies to',
+      'variant',
+      'variants',
+    ],
+    type: 'string',
+    example: 'color=black; display=yes',
+  },
 ]

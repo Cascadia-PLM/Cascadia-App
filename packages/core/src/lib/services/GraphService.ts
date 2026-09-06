@@ -22,6 +22,7 @@
 
 import { and, eq, inArray, isNull, ne, or } from 'drizzle-orm'
 import { UsageService } from './UsageService'
+import type { OptionCondition } from '@/lib/types/variants'
 import { db } from '@/lib/db'
 import {
   itemRelationships,
@@ -84,6 +85,7 @@ export interface GraphEdge {
     quantity?: string | null
     referenceDesignator?: string | null
     findNumber?: number | null
+    option?: OptionCondition | null // Product variants: condition on a BOM line
     isUsageRelationship?: boolean // True for usageOf edges
     isPhysicalRelationship?: boolean // True for derived INSTANCE_OF/BUILDS edges
     isFileRelationship?: boolean // True for derived ATTACHED_FILE edges
@@ -163,6 +165,7 @@ interface CollectedRelationship {
   relationshipType: string
   quantity: string | null
   referenceDesignator: string | null
+  option?: OptionCondition | null
   findNumber: number | null
   isUsageRelationship?: boolean
   isPhysicalRelationship?: boolean
@@ -687,6 +690,7 @@ export class GraphService {
             quantity: rel.quantity,
             referenceDesignator: rel.referenceDesignator,
             findNumber: rel.findNumber,
+            option: rel.option ?? null,
             isUsageRelationship: false,
           })
 
@@ -708,6 +712,7 @@ export class GraphService {
             quantity: rel.quantity,
             referenceDesignator: rel.referenceDesignator,
             findNumber: rel.findNumber,
+            option: rel.option ?? null,
             isUsageRelationship: false,
           })
           enqueue(rel.sourceId)
@@ -928,6 +933,7 @@ export class GraphService {
             quantity: rel.quantity,
             referenceDesignator: rel.referenceDesignator,
             findNumber: rel.findNumber,
+            option: rel.option ?? null,
             isUsageRelationship: rel.isUsageRelationship ?? false,
             isPhysicalRelationship: rel.isPhysicalRelationship ?? false,
           },

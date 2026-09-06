@@ -5,6 +5,8 @@ import { Hono } from 'hono'
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../adapter'
+import type { OptionCondition } from '@/lib/types/variants'
+import { optionConditionSchema } from '@/lib/types/variants'
 import { db } from '@/lib/db'
 import { itemRelationships, items } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'
@@ -42,6 +44,7 @@ const relationshipDataSchema = z.object({
   referenceDesignator: z.string().optional(),
   findNumber: z.number().optional(),
   metadata: z.record(z.string(), z.any()).optional(),
+  option: optionConditionSchema.nullish(),
 })
 
 type RelationshipData = z.infer<typeof relationshipDataSchema>
@@ -299,6 +302,7 @@ app.post(
               sourceId: itemRelationships.sourceId,
               targetId: itemRelationships.targetId,
               relationshipType: itemRelationships.relationshipType,
+              option: itemRelationships.option,
             })
             .from(itemRelationships)
             .where(inArray(itemRelationships.sourceId, sourceIds))
@@ -319,6 +323,7 @@ app.post(
             referenceDesignator?: string
             findNumber?: number
             metadata?: Record<string, unknown>
+            option?: OptionCondition | null
           }
         }> = []
 
@@ -331,6 +336,7 @@ app.post(
             referenceDesignator,
             findNumber,
             metadata,
+            option,
           } = relData
 
           if (
@@ -339,6 +345,7 @@ app.post(
                 sourceId,
                 targetId,
                 relationshipType,
+                option,
               }),
             )
           ) {
@@ -356,6 +363,7 @@ app.post(
               referenceDesignator: referenceDesignator || undefined,
               findNumber: findNumber || undefined,
               metadata: metadata || undefined,
+              option: option ?? null,
             },
           })
         }
@@ -409,6 +417,9 @@ const relationshipEditSchema = z.object({
     .nullish(),
   referenceDesignator: z.string().max(200).nullish(),
   findNumber: z.number().int().min(0).max(1_000_000).nullish(),
+  option: optionConditionSchema
+    .nullish()
+    .describe('Product variants: null makes the line fixed again.'),
 })
 
 app.put(

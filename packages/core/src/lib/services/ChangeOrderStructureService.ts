@@ -15,6 +15,7 @@ import { designs } from '../db/schema/designs'
 import { CrossDesignReferenceService } from './CrossDesignReferenceService'
 import { DesignService } from './DesignService'
 import { VersionResolver } from './VersionResolver'
+import type { OptionCondition } from '@/lib/types/variants'
 import type { VersionContext } from './VersionResolver'
 import type { BOMTreeNode, OrphanItem } from '@/lib/types/bom'
 
@@ -422,6 +423,7 @@ export class ChangeOrderStructureService {
         relationshipId: string
         quantity?: number
         findNumber?: number
+        option?: OptionCondition | null
       }>
     >()
     const hasParent = new Set<string>()
@@ -518,6 +520,7 @@ export class ChangeOrderStructureService {
           relationshipId: r.rel.id,
           quantity: r.rel.quantity ? Number(r.rel.quantity) : undefined,
           findNumber: r.rel.findNumber ?? undefined,
+          option: r.rel.option ?? null,
         })
       }
     }
@@ -570,6 +573,7 @@ export class ChangeOrderStructureService {
             node.quantity = c.quantity
             node.findNumber = c.findNumber
             node.relationshipId = c.relationshipId
+            node.option = c.option ?? null
           }
           return node
         })

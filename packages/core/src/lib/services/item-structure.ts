@@ -4,6 +4,7 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '../db'
 import { itemRelationships } from '../db/schema'
+import { optionConditionKey } from '../types/variants'
 
 /**
  * An item's BOM structure, reduced to something two versions can be compared
@@ -19,7 +20,7 @@ import { itemRelationships } from '../db/schema'
 export interface BomStructure {
   /** Number of BOM lines, for display */
   lineCount: number
-  /** Order-independent identity of the line set: child, quantity, find number */
+  /** Order-independent identity of the line set: child, quantity, find number, option */
   signature: string
 }
 
@@ -32,6 +33,7 @@ export async function bomStructureOf(
       targetId: itemRelationships.targetId,
       quantity: itemRelationships.quantity,
       findNumber: itemRelationships.findNumber,
+      option: itemRelationships.option,
     })
     .from(itemRelationships)
     .where(
@@ -44,7 +46,10 @@ export async function bomStructureOf(
   return {
     lineCount: rows.length,
     signature: rows
-      .map((r) => `${r.targetId}:${r.quantity ?? ''}:${r.findNumber ?? ''}`)
+      .map(
+        (r) =>
+          `${r.targetId}:${r.quantity ?? ''}:${r.findNumber ?? ''}:${optionConditionKey(r.option)}`,
+      )
       .sort()
       .join('|'),
   }

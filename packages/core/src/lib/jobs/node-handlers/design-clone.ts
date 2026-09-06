@@ -425,6 +425,7 @@ export const cloneDesignHandler: JobHandler<
               findNumber: rel.findNumber,
               referenceDesignator: rel.referenceDesignator,
               metadata: rel.metadata,
+              option: rel.option,
               isComposite: rel.isComposite,
               isDirected: rel.isDirected,
               multiplicityLower: rel.multiplicityLower,
@@ -445,6 +446,7 @@ export const cloneDesignHandler: JobHandler<
               findNumber: rel.findNumber,
               referenceDesignator: rel.referenceDesignator,
               metadata: rel.metadata,
+              option: rel.option,
               isComposite: rel.isComposite,
               isDirected: rel.isDirected,
               multiplicityLower: rel.multiplicityLower,
@@ -462,32 +464,7 @@ export const cloneDesignHandler: JobHandler<
         )
       }
 
-      // =========================================================================
-      // 7. Copy cross-design references (baseline only)
-      // =========================================================================
-      await context.updateProgress(90, 'Copying cross-design references...')
-
-      let crossReferencesCopied = 0
-
-      const sourceCrossRefs = await db
-        .select()
-        .from(designCrossReferences)
-        .where(
-          and(
-            eq(designCrossReferences.referencingDesignId, sourceDesignId),
-            isNull(designCrossReferences.branchId),
-          ),
-        )
-
-      if (sourceCrossRefs.length > 0) {
-        for (const ref of sourceCrossRefs) {
-          await db.insert(designCrossReferences).values({
-            referencingDesignId: targetDesign.id,
-            referencedItemId: ref.referencedItemId,
-            sourceDesignId: ref.sourceDesignId,
-            inDesignStructure: ref.inDesignStructure,
-            notes: ref.notes,
-            createdBy: userId,
+      // ==================================================================            createdBy: userId,
             modifiedBy: userId,
           })
           crossReferencesCopied++

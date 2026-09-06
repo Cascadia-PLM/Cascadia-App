@@ -3,6 +3,7 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
+import type { OptionCondition } from '@/lib/types/variants'
 import type { BOMTreeNode } from '@/components/bom/types'
 import { apiFetch } from '@/lib/api/client'
 
@@ -155,6 +156,7 @@ interface BomRelationship {
   relationshipType: string
   quantity: string | null
   findNumber: number | null
+  option?: OptionCondition | null
   targetItem: BomItem
 }
 
@@ -234,6 +236,7 @@ export function itemBomTreeQuery(
           quantity: rel.quantity ? parseFloat(rel.quantity) : undefined,
           findNumber: rel.findNumber ?? undefined,
           relationshipId: rel.id,
+          option: rel.option ?? null,
         }
       }),
     )

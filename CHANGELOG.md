@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **A part can now describe a family of products that differ in selectable options.** A BOM line may carry an _option condition_ — the selections that put it in the product — and a part may carry an _option model_ (named families with value domains, and constraints between them) plus _makes_, named complete selections. The BOM then holds every line the family can use, a "150 % BOM", and resolving a set of selections against it yields one product's BOM, recursively, with one flat selection map at every level. Nothing new is versioned: the model and makes ride the part version and the condition rides the line, so checkout, ECO merge, conflict detection and time travel already cover them, and two makes of one part can never drift to different revisions. A design without variants sees exactly one new thing, an option icon on each BOM row; after the first family exists there is an Option column in the relationships table, the BOM tree and the design structure grid, a Variants tab on the part page with a configurator (live validation, live resolved-BOM preview, save as make, load a make), and a Configurable badge. `POST /api/v1/mbom` accepts a configuration — a make code or explicit selections — and derives a Manufacturing design holding only the lines it admits, as fixed lines, with the make code appended to the root part number; upstream-change review on such a design says whether the configuration still selects each changed item. BOM import takes an Option Condition column in the text form `color=black; display=yes,no`. Prompted by [Cascadia-App#95](https://github.com/Cascadia-PLM/Cascadia-App/discussions/95). See `docs/features/product-variants.md`.
+- **Numeric revision schemes can start at zero.** `numeric` and `prefixed-numeric` take an optional `startAt`, so a lifecycle can run `0, 1, 2` or `R0, R1, R2`; the default stays 1.
+
 ## [0.6.0] - 2026-09-13
 
 ### Added

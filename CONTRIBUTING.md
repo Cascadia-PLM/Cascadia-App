@@ -40,27 +40,34 @@ This project adheres to the [Contributor Covenant Code of Conduct](./CODE_OF_CON
 
 ### How your pull request gets merged
 
-Worth reading before you open one. The mechanics here are unusual, and knowing
-them up front keeps the outcome from reading as a rejection.
+Your pull request merges here, on `main`, as the merge button says. It is worth
+knowing what happens afterwards, because one step is unusual.
 
 This repository is **generated**. Cascadia is dual licensed, and both editions
 are built from a single upstream tree in which this AGPL edition is one package.
-Publishing copies that package here; it does not merge in the other direction. A
-commit pushed straight to `main` here would be overwritten by the next publish,
-so the pipeline refuses to run when it finds one.
+Publishing copies that package here; it does not merge in the other direction.
+So a change that lands only here would be reverted by the next publish, and the
+publisher refuses to run until the upstream tree reproduces it.
 
-What that means for your pull request:
+What that means in practice:
 
-1. You open it here, as normal. Review and discussion happen here, in public.
-2. Once it is accepted, a maintainer applies your patch upstream with
-   `git commit --author` set to you. **Your authorship is preserved** — the
-   commit is yours, not the maintainer's.
-3. The next publish carries it back here, and your pull request is closed with a
-   link to the resulting commit.
+1. You open the pull request here, as normal. Review, CI and discussion all
+   happen here, in public, on your branch.
+2. A maintainer merges it. Your commits are yours — the merge preserves the
+   author on every one of them — and the review thread stays attached to them.
+3. The maintainer cherry-picks the same commits upstream, again preserving you
+   as the author, and the next publish confirms that upstream and this
+   repository now hold the same tree.
 
-So a closed pull request with a commit link means merged, not declined. Your
-change is in `main`; it simply arrived by the only route that does not get
-overwritten.
+Step 3 is a maintainer's chore, not yours, and nothing about it changes your
+pull request. If it turns up something that has to change — a conflict with
+unreleased upstream work, usually — you will hear about it on the thread.
+
+A **branch** here whose commits you did not push is a maintainer's, not a
+mistake: work in progress and contributors' branches both get published to
+`feature/…` and `fix/…` so they can be read and reviewed in the open before
+anything reaches `main`. Only `main` is generated in the strict sense; those
+branches are for looking at.
 
 ## Development Setup
 

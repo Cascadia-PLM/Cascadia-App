@@ -56,9 +56,15 @@ ARG APP=cascadia
 RUN npm run build:app -- "$APP"
 
 # =============================================================================
-# Stage 4: Production
+# Stage 4: Runtime dependencies
 # =============================================================================
-FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS production
+# Split out of the production stage below so it can be built, and therefore
+# smoke-tested, without the builder stage. Everything here depends on the
+# manifests alone; the first `COPY --from=builder` is what begins stage 5, and
+# that copy is what used to drag a ten-minute Vite build in front of any
+# attempt to exercise the install below. CI's Docker Build Smoke job builds
+# this target for exactly that reason.
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS runtime-deps
 
 WORKDIR /app
 
@@ -70,16 +76,59 @@ RUN apk add --no-cache dumb-init
 # are.
 COPY --from=manifests / ./
 
-# Production deps only — the server is pre-bundled (see build-server.mjs) so tsx
-# and other devDeps aren't needed at runtime. tsx + drizzle-kit are added back
-# as admin tools for running scripts/*.ts (seed, migrate, reset) via `docker exec`.
+# Production deps only — the server is pre-bundled (see build-server.mjs) so
+# tsx and other devDeps aren't needed at runtime.
 # Lifecycle scripts stay off: no runtime dependency needs a postinstall (the
 # one native package, @node-rs/argon2, ships napi prebuilds). A dependency
 # that does need one fails at runtime with a missing binary, not at build
 # time. workers/node/Dockerfile carries the same policy.
 RUN npm ci --omit=dev --ignore-scripts && \
-    npm install --no-save --no-package-lock --ignore-scripts tsx@^4 drizzle-kit@^0.31 && \
     npm cache clean --force
+
+# tsx and drizzle-kit, the admin tools for running scripts/*.ts (seed, migrate,
+# reset) via `docker exec`. They get their own tree rather than being added to
+# the app's.
+#
+# They were previously installed into /app with:
+#
+#     npm install --no-save --no-package-lock --ignore-scripts tsx@^4 drizzle-kit@^0.31
+#
+# and that line broke the image outright. `--no-package-lock` makes npm discard
+# the lockfile and re-resolve the whole tree live from the registry,
+# devDependencies included, against the node_modules the install above has just
+# pruned of them; arborist walks vitest's peer set, reaches a node that is not
+# there, and exits 1 with "Cannot read properties of null (reading
+# 'edgesOut')". Both architectures, every time. It had never been reproducible
+# — whether it worked depended on what the registry resolved that day, not on
+# anything in this repository — and by the time it was traced it had failed
+# repeated publishes of the public image.
+#
+# Both in-tree repairs are worse than the crash. Adding `--omit=dev` makes npm
+# silently *drop the two packages it was told to install*, because both are
+# listed under devDependencies: the image builds green and fails later, at
+# `docker exec` time, which is a far more expensive place to find it. Dropping
+# `--no-package-lock` instead resolves against the lockfile and installs the
+# entire dev tree — vitest, playwright and the rest, ~147MB — into a production
+# image, defeating the `--omit=dev` above it.
+#
+# A separate prefix has neither failure mode. It is 43MB, it resolves in its
+# own tree where nothing can perturb the app's, and it is reproducible.
+# drizzle-kit declares no peerDependencies and bundles its own esbuild, so it
+# needs nothing from /app/node_modules; the schema's `drizzle-orm` import
+# resolves from the schema file, which lives in the app tree. Both entry points
+# find these through PATH without knowing where they are: `npm run` keeps the
+# inherited PATH, and scripts/drizzle.mjs shells out via `npx`, which falls
+# through to PATH when a binary is not in a local node_modules.
+RUN mkdir -p /opt/admin && cd /opt/admin && \
+    npm init -y > /dev/null && \
+    npm install --ignore-scripts tsx@^4 drizzle-kit@^0.31 && \
+    npm cache clean --force
+ENV PATH="/opt/admin/node_modules/.bin:${PATH}"
+
+# =============================================================================
+# Stage 5: Production
+# =============================================================================
+FROM runtime-deps AS production
 
 # Copy bundled server + SPA build
 COPY --from=builder /app/.output ./.output

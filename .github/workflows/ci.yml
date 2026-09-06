@@ -603,6 +603,23 @@ jobs:
       - name: Build jobs worker image dependency stage
         run: docker build --target deps -f workers/node/Dockerfile .
 
+      # The runtime install, which is a different install from the one above and
+      # failed repeatedly without any check noticing. `deps` runs a full
+      # `npm ci`; the production stage runs `npm ci --omit=dev` and then adds
+      # the admin tools, and only that second combination hit npm's
+      # "Cannot read properties of null (reading 'edgesOut')" — and it surfaced
+      # on the public image, which is the most expensive place to find it.
+      #
+      # It was uncoverable until the Dockerfiles grew a `runtime-deps` stage.
+      # The install sits above the first `COPY --from=builder`, so stopping
+      # there needs no Vite build: this costs one production `npm ci` per
+      # image, not the ten-plus minutes that building `production` would.
+      - name: Build app image runtime dependency stage
+        run: docker build --target runtime-deps -f docker/app.Dockerfile .
+
+      - name: Build jobs worker image runtime dependency stage
+        run: docker build --target runtime-deps -f workers/node/Dockerfile .
+
   large-files:
     name: Large File Guard
     runs-on: ubuntu-latest

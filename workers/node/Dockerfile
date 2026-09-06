@@ -55,9 +55,12 @@ ARG APP=cascadia
 RUN npm run build:app -- "$APP"
 
 # =============================================================================
-# Stage 4: Production
+# Stage 4: Runtime dependencies
 # =============================================================================
-FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS production
+# Split out of the production stage below so it can be built, and therefore
+# smoke-tested, without the builder stage — the same seam, for the same reason,
+# as docker/app.Dockerfile. The first `COPY --from=builder` begins stage 5.
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS runtime-deps
 
 WORKDIR /app
 
@@ -84,6 +87,11 @@ COPY --from=manifests / ./
 # time — if that happens, drop --ignore-scripts from both images, not one.
 RUN npm ci --omit=dev --ignore-scripts && \
     npm cache clean --force
+
+# =============================================================================
+# Stage 5: Production
+# =============================================================================
+FROM runtime-deps AS production
 
 # Copy built application
 COPY --from=builder /app/.output ./.output

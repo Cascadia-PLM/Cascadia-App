@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   ChevronDown,
   ExternalLink,
@@ -13,12 +13,27 @@ import {
 import type { Row } from '@tanstack/react-table'
 import type { DataGridColumn } from '@/components/ui/DataGrid'
 import type { Relationship } from './types'
-import { Badge, Button, Card, CardContent } from '@/components/ui'
+import type { Make, OptionModel } from '@/lib/types/variants'
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui'
 import { DataGrid } from '@/components/ui/DataGrid'
 import { ContextMenuItem } from '@/components/ui/ContextMenu'
 import { ItemLink } from '@/components/items/ItemLink'
 import { StateBadge } from '@/components/items/StateBadge'
+import { OptionConditionChips } from '@/components/variants/OptionConditionChips'
+import { OptionConditionPopover } from '@/components/variants/OptionConditionPopover'
+import { BOM_RELATIONSHIP_TYPE } from '@/components/items/bom-target-scope'
 import { getItemDetailPath } from '@/lib/items/item-type-ui'
+import { conditionMatches, formatOptionText } from '@/lib/types/variants'
 
 /**
  * The relationships table: one collapsible DataGrid per relationship type.
@@ -37,10 +52,20 @@ export function TableView({
   onAddNewType,
   onEdit,
   onRemove,
+  parentPart,
 }: {
   grouped: Record<string, Array<Relationship>>
   relationships: Array<Relationship>
   readOnly: boolean
+  /**
+   * The item whose lines these are, when it is a Part: its option model is
+   * the vocabulary for BOM line conditions. Absent for other item types.
+   */
+  parentPart?: {
+    id: string
+    optionModel?: OptionModel | null
+    makes?: Array<Make> | null
+  }
   collapsedTypes: Set<string>
   onToggleType: (type: string) => void
   onAddToType: (type: string) => void
@@ -53,7 +78,24 @@ export function TableView({
   const handleAddToExistingType = onAddToType
   const setEditingRelationship = onEdit
   const handleRemoveRelationship = onRemove
-  const groupedRelationships = grouped
+
+  // Product variants: view the BOM as one make would resolve it, or the
+  // fixed lines only. Other relationship types are never filtered.
+  const makes = parentPart?.makes ?? []
+  const [viewMake, setViewMake] = useState<'all' | 'fixed' | string>('all')
+  const groupedRelationships = useMemo(() => {
+    if (viewMake === 'all') return grouped
+    const make = makes.find((m) => m.code === viewMake)
+    const selections = viewMake === 'fixed' ? {} : (make?.selections ?? {})
+    return Object.fromEntries(
+      Object.entries(grouped).map(([type, rels]) => [
+        type,
+        type === BOM_RELATIONSHIP_TYPE
+          ? rels.filter((r) => conditionMatches(r.option, selections))
+          : rels,
+      ]),
+    )
+  }, [grouped, viewMake, makes])
 
   // Get unique states for filter options
   const stateOptions = useMemo(() => {
@@ -65,6 +107,25 @@ export function TableView({
   const itemTypeOptions = useMemo(() => {
     const types = new Set(relationships.map((r) => r.targetItem.itemType))
     return Array.from(types).map((type) => ({ label: type, value: type }))
+  }, [relationships])
+
+  // Product variants: the Option column appears once anything on this part
+  // is conditioned or the part declares option families. A design with no
+  // variants never sees it.
+  const optionModel = parentPart?.optionModel ?? null
+  const showOption = useMemo(
+    () => Boolean(optionModel) || relationships.some((r) => r.option),
+    [optionModel, relationships],
+  )
+  const optionFilterOptions = useMemo(() => {
+    const texts = new Set<string>()
+    for (const r of relationships) {
+      texts.add(r.option ? formatOptionText(r.option) : '')
+    }
+    return [...texts].sort().map((text) => ({
+      label: text || 'Fixed',
+      value: text || '__fixed__',
+    }))
   }, [relationships])
 
   // Get URL for relationship row
@@ -228,16 +289,50 @@ export function TableView({
           )
         },
       },
+      ...(showOption
+        ? [
+            {
+              id: 'option',
+              header: 'Option',
+              accessorFn: (row: Relationship) =>
+                row.option ? formatOptionText(row.option) : '__fixed__',
+              enableSorting: true,
+              enableFiltering: true,
+              filterType: 'multiSelect' as const,
+              filterOptions: optionFilterOptions,
+              meta: { width: '160px' },
+              cell: ({ row }: { row: Row<Relationship> }) => (
+                <OptionConditionChips
+                  condition={row.original.option}
+                  model={optionModel}
+                  fixedLabel={
+                    row.original.relationshipType === BOM_RELATIONSHIP_TYPE
+                      ? 'fixed'
+                      : undefined
+                  }
+                />
+              ),
+            } satisfies DataGridColumn<Relationship>,
+          ]
+        : []),
       {
         id: 'actions',
         header: '',
         enableSorting: false,
         enableFiltering: false,
-        meta: { width: '80px', align: 'center' as const },
+        meta: { width: '112px', align: 'center' as const },
         cell: ({ row }) => {
           if (readOnly) return null
           return (
             <div className="flex items-center justify-center gap-0.5">
+              {parentPart &&
+                row.original.relationshipType === BOM_RELATIONSHIP_TYPE && (
+                  <OptionConditionPopover
+                    relationshipId={row.original.id}
+                    option={row.original.option}
+                    parent={parentPart}
+                  />
+                )}
               <Button
                 type="button"
                 variant="ghost"
@@ -263,7 +358,15 @@ export function TableView({
         },
       },
     ],
-    [stateOptions, itemTypeOptions, readOnly],
+    [
+      stateOptions,
+      itemTypeOptions,
+      readOnly,
+      parentPart,
+      showOption,
+      optionModel,
+      optionFilterOptions,
+    ],
   )
 
   return (
@@ -284,6 +387,28 @@ export function TableView({
           </div>
         ) : (
           <div className="space-y-4">
+            {showOption && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-slate-500 dark:text-slate-400">
+                  Show BOM as
+                </span>
+                <Select value={viewMake} onValueChange={setViewMake}>
+                  <SelectTrigger className="h-8 w-48 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All lines (150 %)</SelectItem>
+                    <SelectItem value="fixed">Fixed lines only</SelectItem>
+                    {makes.map((m) => (
+                      <SelectItem key={m.code} value={m.code}>
+                        {m.code}
+                        {m.name ? ` — ${m.name}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {Object.entries(groupedRelationships).map(([type, rels]) => (
               <div key={type} className="border rounded-lg overflow-hidden">
                 <div className="bg-slate-50 dark:bg-slate-900 px-4 py-3 flex items-center justify-between">

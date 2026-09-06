@@ -43,6 +43,10 @@ export const NO_REVISION_MARKER = 'N/A'
  * - alpha: A, B, C, ..., Z, AA, AB, ... (default, traditional PLM)
  * - numeric: 1, 2, 3, ... (common for prototype/pre-production)
  * - prefixed-numeric: X1, X2, X3, ... (prefix + numeric, e.g., prototype revisions)
+ *
+ * Both numeric schemes take an optional `startAt` for the first released
+ * revision. It defaults to 1 for compatibility; `startAt: 0` gives 0, 1, 2
+ * or R0, R1, R2.
  * - none: No revision tracking — a released item sits at the fixed
  *   `NO_REVISION_MARKER` and stays there. Valid only for lifecycles that
  *   update items in place (Free, and phase-level `promote` overrides): a
@@ -52,8 +56,8 @@ export const NO_REVISION_MARKER = 'N/A'
  */
 export type RevisionScheme =
   | { type: 'alpha'; uppercase?: boolean }
-  | { type: 'numeric' }
-  | { type: 'prefixed-numeric'; prefix: string }
+  | { type: 'numeric'; startAt?: number }
+  | { type: 'prefixed-numeric'; prefix: string; startAt?: number }
   | { type: 'none' }
 
 // ============================================

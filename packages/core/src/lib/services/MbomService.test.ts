@@ -33,6 +33,7 @@ import { NotFoundError, ValidationError } from '@/lib/errors'
 import {
   itemRelationships,
   items,
+  parts,
   programs,
   upstreamChanges,
   workInstructionPartAttachments,
@@ -764,5 +765,283 @@ describe('MbomService', () => {
         false,
       )
     })
+  })
+})
+
+describe('MbomService — configuration (product variants)', () => {
+  const testDb = new TestDatabase()
+  let user: TestUser
+  let sourceDesignId: string
+  let sourceDesignCode: string
+  let unique: string
+
+  beforeAll(async () => {
+    await testDb.setup()
+    await seedStandardPartLifecycle(testDb.db)
+  })
+
+  afterAll(async () => {
+    await testDb.teardown()
+  })
+
+  afterEach(async () => {
+    await testDb.rollback()
+  })
+
+  const colourModel = {
+    families: [
+      {
+        code: 'color',
+        name: 'Colour',
+        required: true,
+        values: [
+          { code: 'black', label: 'Black' },
+          { code: 'white', label: 'White' },
+        ],
+      },
+    ],
+    constraints: [],
+  }
+  const black = { all: [{ family: 'color', values: ['black'] }] }
+  const white = { all: [{ family: 'color', values: ['white'] }] }
+
+  /**
+   * A configurable assembly: one fixed PCB, a black housing and a white
+   * housing, plus two makes. The 150 % BOM the derivation resolves.
+   */
+  async function seedConfigurableDesign() {
+    await testDb.beginTransaction()
+    user = await insertTestUser(testDb.db)
+    unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+    const program = takeFirst(
+      await testDb.db
+        .insert(programs)
+        .values({
+          name: 'Variants',
+          code: `PROG-${unique}`,
+          createdBy: user.id,
+        })
+        .returning(),
+    )
+    sourceDesignCode = `EBOM-${unique}`
+    const design = await DesignService.create(
+      {
+        programId: program.id,
+        name: 'Source EBOM',
+        code: sourceDesignCode,
+        designType: 'Engineering',
+      },
+      user.id,
+    )
+    sourceDesignId = design.id!
+
+    const part = (itemNumber: string, name: string) =>
+      ItemService.create<Part>(
+        'Part',
+        {
+          itemNumber,
+          revision: 'A',
+          name,
+          itemType: 'Part',
+          designId: sourceDesignId,
+        },
+        user.id,
+      )
+    const assembly = await part(`P3001V1-${unique}`, 'Touch switch V1')
+    const pcb = await part(`B3001-${unique}`, 'Bottom PCB')
+    const housingBlack = await part(`H-BLK-${unique}`, 'Housing black')
+    const housingWhite = await part(`H-WHT-${unique}`, 'Housing white')
+
+    await testDb.db
+      .update(parts)
+      .set({
+        optionModel: colourModel,
+        makes: [
+          {
+            code: 'MK1',
+            name: 'Black',
+            selections: { color: 'black' },
+            active: true,
+          },
+          {
+            code: 'MK2',
+            name: 'White',
+            selections: { color: 'white' },
+            active: true,
+          },
+        ],
+      })
+      .where(eq(parts.itemId, assembly.id!))
+
+    const edge = (
+      childId: string,
+      option: typeof black | null,
+      quantity = '1',
+    ) =>
+      testDb.db.insert(itemRelationships).values({
+        sourceId: assembly.id!,
+        targetId: childId,
+        relationshipType: 'BOM',
+        quantity,
+        option,
+        sourceDesignId,
+        targetDesignId: sourceDesignId,
+        createdBy: user.id,
+        modifiedBy: user.id,
+      })
+    await edge(pcb.id!, null)
+    await edge(housingBlack.id!, black)
+    await edge(housingWhite.id!, white)
+
+    return { assembly, pcb, housingBlack, housingWhite }
+  }
+
+  async function mbomBomLines(mbomDesignId: string) {
+    return testDb.db
+      .select({
+        sourceId: itemRelationships.sourceId,
+        targetId: itemRelationships.targetId,
+        option: itemRelationships.option,
+        derivationNotes: itemRelationships.derivationNotes,
+        targetNumber: items.itemNumber,
+      })
+      .from(itemRelationships)
+      .innerJoin(items, eq(items.id, itemRelationships.targetId))
+      .where(
+        and(
+          eq(items.designId, mbomDesignId),
+          eq(itemRelationships.relationshipType, 'BOM'),
+        ),
+      )
+  }
+
+  it('keeps the fixed and admitted lines as fixed lines, records the configuration, and numbers the root by make', async () => {
+    const { assembly, pcb, housingBlack, housingWhite } =
+      await seedConfigurableDesign()
+
+    const result = await MbomService.createFromEbom(
+      {
+        sourceDesignId,
+        name: 'Black switch MBOM',
+        code: `MBOM-${unique}`,
+        copyBomStructure: true,
+        linkToSource: true,
+        renumberItems: false,
+        configuration: { rootItemId: assembly.id!, makeCode: 'MK1' },
+      },
+      user.id,
+    )
+
+    expect(result.linesFiltered).toBe(1)
+    expect(result.relationshipsCopied).toBe(2)
+    expect(result.design.configuration).toEqual({
+      rootItemId: assembly.id,
+      makeCode: 'MK1',
+      selections: { color: 'black' },
+    })
+
+    const lines = await mbomBomLines(result.design.id)
+    expect(lines.map((l) => l.targetNumber).sort()).toEqual(
+      [pcb.itemNumber, housingBlack.itemNumber].sort(),
+    )
+    expect(lines.every((l) => l.option === null)).toBe(true)
+    const housingLine = lines.find(
+      (l) => l.targetNumber === housingBlack.itemNumber,
+    )
+    expect(housingLine?.derivationNotes).toBe('Selected by color=black')
+    expect(lines.some((l) => l.targetNumber === housingWhite.itemNumber)).toBe(
+      false,
+    )
+
+    const root = takeFirst(
+      await testDb.db
+        .select({ itemNumber: items.itemNumber })
+        .from(items)
+        .where(
+          and(
+            eq(items.designId, result.design.id),
+            eq(items.usageOf, assembly.id!),
+          ),
+        ),
+    )
+    expect(root.itemNumber).toBe(`${assembly.itemNumber}MK1`)
+  })
+
+  it('accepts explicit selections and copies the whole 150% BOM without one', async () => {
+    const { assembly } = await seedConfigurableDesign()
+
+    const configured = await MbomService.createFromEbom(
+      {
+        sourceDesignId,
+        name: 'White switch',
+        code: `MBOM-W-${unique}`,
+        copyBomStructure: true,
+        linkToSource: false,
+        renumberItems: false,
+        configuration: {
+          rootItemId: assembly.id!,
+          selections: { color: 'white' },
+        },
+      },
+      user.id,
+    )
+    expect(configured.relationshipsCopied).toBe(2)
+    expect(configured.design.configuration?.makeCode).toBeNull()
+
+    const plain = await MbomService.createFromEbom(
+      {
+        sourceDesignId,
+        name: 'Unconfigured',
+        code: `MBOM-ALL-${unique}`,
+        copyBomStructure: true,
+        linkToSource: false,
+        renumberItems: false,
+      },
+      user.id,
+    )
+    expect(plain.relationshipsCopied).toBe(3)
+    expect(plain.linesFiltered).toBe(0)
+    const lines = await mbomBomLines(plain.design.id)
+    expect(lines.filter((l) => l.option !== null)).toHaveLength(2)
+    expect(plain.design.configuration).toBeNull()
+  })
+
+  it('refuses an invalid configuration before writing anything', async () => {
+    const { assembly } = await seedConfigurableDesign()
+    const code = `MBOM-BAD-${unique}`
+
+    await expect(
+      MbomService.createFromEbom(
+        {
+          sourceDesignId,
+          name: 'Bad',
+          code,
+          copyBomStructure: true,
+          linkToSource: true,
+          renumberItems: true,
+          configuration: {
+            rootItemId: assembly.id!,
+            selections: { color: 'red' },
+          },
+        },
+        user.id,
+      ),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await expect(
+      MbomService.createFromEbom(
+        {
+          sourceDesignId,
+          name: 'Bad',
+          code,
+          copyBomStructure: true,
+          linkToSource: true,
+          renumberItems: true,
+          configuration: { rootItemId: assembly.id!, makeCode: 'MK9' },
+        },
+        user.id,
+      ),
+    ).rejects.toBeInstanceOf(NotFoundError)
+
+    expect(await DesignService.getByCode(code)).toBeNull()
   })
 })

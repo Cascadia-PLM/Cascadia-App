@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
+import type { OptionCondition } from './variants'
+
 /**
  * The shape of a BOM tree as it crosses the wire.
  *
@@ -36,6 +38,11 @@ export interface BOMTreeNode {
   findNumber?: number
   /** The BOM relationship joining this node to its parent; absent on roots. */
   relationshipId?: string
+  /**
+   * Product variants: the option condition on the parent's BOM line, or null
+   * for a fixed line. Absent on roots.
+   */
+  option?: OptionCondition | null
   children?: Array<BOMTreeNode>
 
   // Cross-design: the node resolves to an item in another design

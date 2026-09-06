@@ -134,7 +134,14 @@ if (dumpAt !== -1) {
     console.error('--dump needs a database URL')
     process.exit(2)
   }
-  process.stdout.write(await dump(url))
+  // Drain before exiting. When stdout is a pipe — which it is for every
+  // caller of --dump, since the point is to capture the text — Node writes
+  // asynchronously and `process.exit` right after the write cuts the output
+  // at the pipe buffer (64 KiB). The dump crossed that line once the schema
+  // grew, and the truncated reference then differed from the full one in a
+  // way that read as a migration bug.
+  const text = await dump(url)
+  await new Promise((resolve) => process.stdout.write(text, resolve))
   process.exit(0)
 }
 

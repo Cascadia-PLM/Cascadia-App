@@ -4,6 +4,8 @@
 import { z } from 'zod'
 import { baseItemSchema, commonStates } from './base'
 import type { BaseItem } from './base'
+import type { Make, OptionModel } from '@/lib/types/variants'
+import { makesSchema, optionModelSchema } from '@/lib/types/variants'
 
 // Part classification. Exported as a schema so the AI/MCP tool schemas can
 // advertise exactly the values this type accepts (see requirement.ts).
@@ -29,6 +31,11 @@ export interface Part extends BaseItem {
   costCurrency?: string
   leadTimeDays?: number
 
+  // Product variants (see docs/proposals/product-variants.md). A part with an
+  // option model is configurable; its makes are named, complete selections.
+  optionModel?: OptionModel | null
+  makes?: Array<Make> | null
+
   // Usage/Definition pattern fields (populated by search with includeUsageCount)
   usageOf?: string // If set, this is a usage referencing a definition
   usageCount?: number // Number of designs using this definition
@@ -47,6 +54,8 @@ export const partSchema = baseItemSchema.extend({
   cost: z.string().optional(),
   costCurrency: z.string().length(3).optional().default('USD'),
   leadTimeDays: z.number().int().min(0).optional(),
+  optionModel: optionModelSchema.nullable().optional(),
+  makes: makesSchema.nullable().optional(),
 })
 
 // Part-specific states (using common states)

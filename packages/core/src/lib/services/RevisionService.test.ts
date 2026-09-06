@@ -145,6 +145,38 @@ describe('RevisionService', () => {
   // None Scheme
   // ============================================
 
+  describe('startAt on numeric schemes', () => {
+    it('starts a numeric scheme at 0 when asked', () => {
+      const scheme: RevisionScheme = { type: 'numeric', startAt: 0 }
+      expect(RevisionService.getInitialRevision(scheme)).toBe('0')
+      expect(RevisionService.getNextRevision('', scheme)).toBe('0')
+      expect(RevisionService.getNextRevision('0', scheme)).toBe('1')
+      expect(RevisionService.getNextRevision('1', scheme)).toBe('2')
+    })
+
+    it('runs a prefixed-numeric scheme R0 -> R1 -> R2', () => {
+      const scheme: RevisionScheme = {
+        type: 'prefixed-numeric',
+        prefix: 'R',
+        startAt: 0,
+      }
+      expect(RevisionService.getInitialRevision(scheme)).toBe('R0')
+      expect(RevisionService.getNextRevision('', scheme)).toBe('R0')
+      expect(RevisionService.getNextRevision('R0', scheme)).toBe('R1')
+      expect(RevisionService.getNextRevision('R1', scheme)).toBe('R2')
+    })
+
+    it('leaves the default at 1 when startAt is absent', () => {
+      expect(RevisionService.getInitialRevision({ type: 'numeric' })).toBe('1')
+      expect(
+        RevisionService.getInitialRevision({
+          type: 'prefixed-numeric',
+          prefix: 'P',
+        }),
+      ).toBe('P1')
+    })
+  })
+
   describe('getNextRevision - none scheme', () => {
     const scheme: RevisionScheme = { type: 'none' }
 

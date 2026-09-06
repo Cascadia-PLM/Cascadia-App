@@ -7,7 +7,6 @@ import {
   ArrowDownToLine,
   Download,
   ExternalLink,
-  Link2,
   Loader2,
   Plus,
   Trash2,
@@ -16,9 +15,9 @@ import {
 import { useNavigate } from '@tanstack/react-router'
 import { AddPartToDesignDialog } from './AddPartToDesignDialog'
 import { AddPartToStructureDialog } from './AddPartToStructureDialog'
+import { useStructureColumns } from './StructureTabColumns'
 import type { VersionContext } from '@/lib/hooks/useVersionContext'
 import type { BOMTreeNode } from '@/components/bom/types'
-import type { ColumnDefinition } from '@/components/bom/BomTreeView'
 import type { DataGridColumn } from '@/components/ui/DataGrid'
 import type { Row } from '@tanstack/react-table'
 import {
@@ -351,111 +350,10 @@ export function StructureTab({
     setExpandedNodes(new Set())
   }
 
-  // Column definitions for tree-table grid
-  const structureColumns: Array<ColumnDefinition> = useMemo(
-    () => [
-      {
-        id: 'item',
-        label: 'Item',
-        width: 'flex-[2] min-w-[200px]',
-        renderCell: (node) => (
-          <>
-            <span
-              className={`font-medium truncate ${
-                node.isCrossDesignRef
-                  ? 'text-slate-500 dark:text-slate-400'
-                  : 'text-slate-900 dark:text-white'
-              }`}
-            >
-              {node.itemNumber}
-            </span>
-            {node.isCrossDesignRef && node.designCode && (
-              <Badge
-                variant="outline"
-                className="text-xs text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-600 flex-shrink-0"
-                title={`Cross-design reference from ${node.designName || node.designCode}`}
-              >
-                XREF {node.designCode}
-              </Badge>
-            )}
-            {!node.isCrossDesignRef && node.isExternal && node.designCode && (
-              <Badge
-                variant="outline"
-                className="text-xs text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-600 flex-shrink-0"
-                title={`From ${node.designName || node.designCode}`}
-              >
-                <Link2 className="h-3 w-3 mr-1" />
-                {node.designCode}
-              </Badge>
-            )}
-          </>
-        ),
-      },
-      {
-        id: 'name',
-        label: 'Name',
-        width: 'flex-[2] min-w-[150px]',
-        renderCell: (node) => (
-          <span className="truncate text-slate-600 dark:text-slate-400">
-            {node.name}
-          </span>
-        ),
-      },
-      {
-        id: 'type',
-        label: 'Type',
-        width: 'w-20 flex-shrink-0',
-        align: 'center',
-        renderCell: (node) => (
-          <Badge variant="outline" className="text-xs">
-            {node.itemType}
-          </Badge>
-        ),
-      },
-      {
-        id: 'qty',
-        label: 'Qty',
-        width: 'w-14 flex-shrink-0',
-        align: 'center',
-        renderCell: (node) => (
-          <span className="text-xs text-slate-500">{node.quantity ?? '—'}</span>
-        ),
-      },
-      {
-        id: 'rev',
-        label: 'Rev',
-        width: 'w-14 flex-shrink-0',
-        align: 'center',
-        renderCell: (node) => (
-          <span className="text-xs text-slate-500">{node.revision}</span>
-        ),
-      },
-      {
-        id: 'state',
-        label: 'State',
-        width: 'w-24 flex-shrink-0',
-        align: 'center',
-        renderCell: (node) => (
-          <Badge variant={getStateBadgeVariant(node.state)} className="text-xs">
-            {node.state}
-          </Badge>
-        ),
-      },
-      {
-        id: 'inwork',
-        label: '',
-        width: 'w-6 flex-shrink-0',
-        align: 'center',
-        renderCell: (node) =>
-          node.isInWork ? (
-            <span className="text-amber-500" title="In work on ECO">
-              &#8635;
-            </span>
-          ) : null,
-      },
-    ],
-    [isHistoricalView],
-  )
+  // Column definitions live in StructureTabColumns.tsx; this file is the
+  // structure editor, and the grid's columns are the one region that is
+  // independent of its editing state.
+  const structureColumns = useStructureColumns(isHistoricalView, roots)
 
   // Filter options are derived from the data since the grid mixes item types
   const nonStructureTypeOptions = useMemo(

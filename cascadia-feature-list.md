@@ -107,18 +107,19 @@ Personal sandbox branches for exploratory work that has not yet earned an ECO.
 
 Bill of Materials with hierarchical relationships, where-used tracking, and cross-design references.
 
-| Feature                    | Status | Notes                                                                                |
-| -------------------------- | ------ | ------------------------------------------------------------------------------------ |
-| Parent/child relationships | ✅     | Parts can contain other parts                                                        |
-| Quantity tracking          | ✅     | Per-relationship quantity                                                            |
-| Find numbers               | ✅     | Position identifiers in assembly                                                     |
-| Reference designators      | ✅     | For electrical components                                                            |
-| BOM tree visualization     | ✅     | Expandable grid tree-table view                                                      |
-| Where-used queries         | ✅     | "What assemblies use this part?"                                                     |
-| Multi-level BOM expansion  | ✅     | Full indented BOM                                                                    |
-| BOM changes tracked by ECO | ✅     | Add/remove tracked in change orders                                                  |
-| Cross-design references    | ✅     | Read-only links to items in other designs                                            |
-| MBOM (Manufacturing BOM)   | 🟡     | Initial — EBOM-to-MBOM creation, upstream change tracking; full UI/workflows planned |
+| Feature                    | Status | Notes                                                                                                                                 |
+| -------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Parent/child relationships | ✅     | Parts can contain other parts                                                                                                         |
+| Quantity tracking          | ✅     | Per-relationship quantity                                                                                                             |
+| Find numbers               | ✅     | Position identifiers in assembly                                                                                                      |
+| Reference designators      | ✅     | For electrical components                                                                                                             |
+| BOM tree visualization     | ✅     | Expandable grid tree-table view                                                                                                       |
+| Where-used queries         | ✅     | "What assemblies use this part?"                                                                                                      |
+| Multi-level BOM expansion  | ✅     | Full indented BOM                                                                                                                     |
+| BOM changes tracked by ECO | ✅     | Add/remove tracked in change orders                                                                                                   |
+| Cross-design references    | ✅     | Read-only links to items in other designs                                                                                             |
+| MBOM (Manufacturing BOM)   | 🟡     | Initial — EBOM-to-MBOM creation, upstream change tracking; full UI/workflows planned                                                  |
+| Product variants           | ✅     | Option conditions on BOM lines (150% BOM), option model and makes on the part, resolver with live preview, configured MBOM derivation |
 
 ---
 

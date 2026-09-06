@@ -29,6 +29,7 @@ import mbom from './routes/mbom'
 import mcp from './routes/mcp'
 import packages from './routes/packages'
 import parts from './routes/parts'
+import variants from './routes/variants'
 import physicalPartsRoutes from './routes/physical-parts'
 import programs from './routes/programs'
 import relationships from './routes/relationships'
@@ -98,6 +99,7 @@ app.route('/api/v1/mbom', mbom)
 app.route('/api/mcp', mcp)
 app.route('/api/v1/packages', packages)
 app.route('/api/v1/parts', parts)
+app.route('/api/v1/parts', variants)
 app.route('/api/v1/physical-parts', physicalPartsRoutes)
 app.route('/api/v1/programs', programs)
 app.route('/api/v1/relationships', relationships)

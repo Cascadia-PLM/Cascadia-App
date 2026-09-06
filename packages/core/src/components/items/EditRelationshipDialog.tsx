@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useState } from 'react'
+import type { OptionCondition, OptionModel } from '@/lib/types/variants'
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { apiFetch } from '@/lib/api/client'
 import { useInvalidateResources } from '@/lib/query'
 import { cn } from '@/lib/utils'
+import { OptionConditionChips } from '@/components/variants/OptionConditionChips'
 
 /** The line being edited — the columns `PUT /relationships/:id` can change. */
 export interface EditableRelationship {
@@ -27,6 +29,8 @@ export interface EditableRelationship {
   quantity: string | null
   referenceDesignator: string | null
   findNumber: number | null
+  /** Product variants: shown here, edited from the row's option icon. */
+  option?: OptionCondition | null
   targetItem: {
     itemNumber: string
     name?: string | null
@@ -37,6 +41,8 @@ interface EditRelationshipDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   relationship: EditableRelationship
+  /** For labelling the option chips; the parent part's model. */
+  optionModel?: OptionModel | null
   onSuccess?: () => void
 }
 
@@ -53,6 +59,7 @@ export function EditRelationshipDialog({
   open,
   onOpenChange,
   relationship,
+  optionModel,
   onSuccess,
 }: EditRelationshipDialogProps) {
   const { alert } = useAlertDialog()
@@ -164,6 +171,21 @@ export function EditRelationshipDialog({
             />
           </div>
         </div>
+
+        {relationship.option && (
+          <div className="text-sm">
+            <span className="text-slate-500 dark:text-slate-400 mr-2">
+              Option condition
+            </span>
+            <OptionConditionChips
+              condition={relationship.option}
+              model={optionModel}
+            />
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Change it from the option icon on the line.
+            </p>
+          </div>
+        )}
 
         <DialogFooter>
           <Button

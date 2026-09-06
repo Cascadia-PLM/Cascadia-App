@@ -25,6 +25,7 @@ import type {
   ThreadResponse,
 } from './ThreadService'
 import type { VersionContext } from './VersionResolver'
+import { optionConditionKey } from '@/lib/types/variants'
 
 /**
  * Node diff status in a thread comparison
@@ -68,6 +69,7 @@ export interface ThreadEdgeDiff {
   changes?: {
     quantityChanged?: boolean
     derivationMethodChanged?: boolean
+    optionChanged?: boolean
   }
   sourceContext: 'before' | 'after' | 'both'
 }
@@ -710,13 +712,20 @@ export class ThreadComparisonService {
         const quantityChanged = beforeEdge.quantity !== afterEdge.quantity
         const derivationMethodChanged =
           beforeEdge.derivationMethod !== afterEdge.derivationMethod
+        const optionChanged =
+          optionConditionKey(beforeEdge.option) !==
+          optionConditionKey(afterEdge.option)
 
-        if (quantityChanged || derivationMethodChanged) {
+        if (quantityChanged || derivationMethodChanged || optionChanged) {
           diffs.push({
             edge: afterEdge,
             status: 'modified',
             previousEdge: beforeEdge,
-            changes: { quantityChanged, derivationMethodChanged },
+            changes: {
+              quantityChanged,
+              derivationMethodChanged,
+              optionChanged,
+            },
             sourceContext: 'both',
           })
         } else {

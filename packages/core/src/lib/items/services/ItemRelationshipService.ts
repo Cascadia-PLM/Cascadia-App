@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '../../db'
-import { branchItems, designs, itemRelationships, items } from '../../db/schema'
+import {
+  branchItems,
+  designs,
+  itemRelationships,
+  items,
+  parts,
+} from '../../db/schema'
 import {
   AlreadyExistsError,
   NotFoundError,
@@ -21,8 +27,10 @@ import { CommitService } from '../../services/CommitService'
 import { ThreadCacheService } from '../../services/ThreadCacheService'
 import type { TransactionClient } from '../../db'
 import type { PersistedItem } from '../types/base'
+import type { OptionCondition } from '@/lib/types/variants'
 import { itemLogger } from '@/lib/logging/logger'
 import { takeFirst } from '@/lib/db/take-first'
+import { optionConditionKey, optionConditionSchema } from '@/lib/types/variants'
 
 /**
  * The 409 for an edge that is already there. One shape for every path that can
@@ -455,20 +463,65 @@ export class ItemRelationshipService {
   }
 
   /**
-   * An edge is identified by (sourceId, targetId, relationshipType) — the
-   * unique constraint on `item_relationships`. Two BOM lines naming the same
-   * child under different find numbers are therefore the *same* edge, and the
-   * quantity has to be aggregated onto one line. Callers use this to say so
+   * A conditioned line may only name option families and values that its
+   * SOURCE part declares. The parent's option model is the vocabulary for its
+   * own BOM; a part with no model cannot carry conditioned lines.
+   */
+  static async assertOptionDeclared(
+    sourceId: string,
+    option: OptionCondition,
+  ): Promise<void> {
+    const { findUndeclared } = await import('@/lib/types/variants')
+    const [row] = await db
+      .select({ optionModel: parts.optionModel })
+      .from(parts)
+      .where(eq(parts.itemId, sourceId))
+      .limit(1)
+    const model = row?.optionModel
+    if (!model) {
+      throw new ValidationError(
+        'The parent part has no option model; declare its option families before conditioning a BOM line',
+        [
+          {
+            field: 'option',
+            message: 'No option model on the parent',
+            code: 'NO_OPTION_MODEL',
+          },
+        ],
+      )
+    }
+    const problem = findUndeclared(model, option)
+    if (problem) {
+      throw new ValidationError(problem, [
+        { field: 'option', message: problem, code: 'OPTION_NOT_DECLARED' },
+      ])
+    }
+  }
+
+  /**
+   * An edge is identified by (sourceId, targetId, relationshipType, option) —
+   * the two partial unique indexes on `item_relationships`. Two BOM lines
+   * naming the same child under different find numbers but the same option
+   * condition are therefore the *same* edge, and the quantity has to be
+   * aggregated onto one line; the same child under two different conditions
+   * is two lines. Callers use this to say so
    * before the database does, because the driver's answer is a wall of SQL.
    */
   static edgeKey(edge: {
     sourceId: string
     targetId: string
     relationshipType: string
+    option?: OptionCondition | null
   }): string {
-    // NUL separates: it cannot occur in a uuid or a relationship type, so no
-    // pair of distinct triples can collide on the joined string.
-    return [edge.sourceId, edge.targetId, edge.relationshipType].join('\u0000')
+    // NUL separates: it cannot occur in a uuid, a relationship type or the
+    // canonical JSON of a condition, so no pair of distinct tuples can
+    // collide on the joined string. A fixed line contributes ''.
+    return [
+      edge.sourceId,
+      edge.targetId,
+      edge.relationshipType,
+      optionConditionKey(edge.option),
+    ].join('\u0000')
   }
 
   /**
@@ -479,7 +532,12 @@ export class ItemRelationshipService {
    * later one.
    */
   static findDuplicateEdges<
-    T extends { sourceId: string; targetId: string; relationshipType: string },
+    T extends {
+      sourceId: string
+      targetId: string
+      relationshipType: string
+      option?: OptionCondition | null
+    },
   >(edges: Array<T>): Array<{ index: number; firstIndex: number; edge: T }> {
     const firstSeenAt = new Map<string, number>()
     const duplicates: Array<{ index: number; firstIndex: number; edge: T }> = []
@@ -568,6 +626,7 @@ export class ItemRelationshipService {
           referenceDesignator: rel.referenceDesignator,
           findNumber: rel.findNumber,
           metadata: rel.metadata,
+          option: rel.option,
           createdBy: userId,
         })),
       )
@@ -592,11 +651,19 @@ export class ItemRelationshipService {
       quantity?: string
       referenceDesignator?: string
       findNumber?: number
+      option?: OptionCondition | null
     },
     options?: { bypassEditGuard?: boolean },
   ): Promise<typeof itemRelationships.$inferSelect> {
     // Lazy import to avoid circular dependency
     const { ItemService } = await import('./ItemService')
+
+    const option = data?.option
+      ? optionConditionSchema.parse(data.option)
+      : null
+    if (option) {
+      await this.assertOptionDeclared(sourceId, option)
+    }
 
     const sourceItem = await ItemService.findById(sourceId)
     await this.assertBomTargetScope([{ sourceId, targetId, relationshipType }])
@@ -619,6 +686,9 @@ export class ItemRelationshipService {
           eq(itemRelationships.sourceId, sourceId),
           eq(itemRelationships.targetId, targetId),
           eq(itemRelationships.relationshipType, relationshipType),
+          option
+            ? eq(itemRelationships.option, option)
+            : isNull(itemRelationships.option),
         ),
       )
       .limit(1)
@@ -639,6 +709,7 @@ export class ItemRelationshipService {
             quantity: data?.quantity,
             referenceDesignator: data?.referenceDesignator,
             findNumber: data?.findNumber,
+            option,
             createdBy: userId,
           })
           .returning(),
@@ -737,6 +808,7 @@ export class ItemRelationshipService {
         referenceDesignator?: string
         findNumber?: number
         metadata?: Record<string, unknown> | null
+        option?: OptionCondition | null
       }
     }>,
     options?: {
@@ -749,9 +821,22 @@ export class ItemRelationshipService {
 
     const { ItemService } = await import('./ItemService')
 
+    // Canonical conditions first, so the duplicate check below and the
+    // partial unique index agree on what "the same line" is.
+    for (const r of relationships) {
+      if (r.data?.option) {
+        r.data.option = optionConditionSchema.parse(r.data.option)
+        await this.assertOptionDeclared(r.sourceId, r.data.option)
+      }
+    }
+    const withOption = relationships.map((r) => ({
+      ...r,
+      option: r.data?.option ?? null,
+    }))
+
     // Duplicates inside the batch collide with each other, not with anything
     // stored, so no amount of replacing saves them. Reject before writing.
-    const duplicates = this.findDuplicateEdges(relationships)
+    const duplicates = this.findDuplicateEdges(withOption)
     if (duplicates.length > 0) {
       throw new ValidationError(
         'A relationship may appear only once per (source, target, type)',
@@ -847,6 +932,7 @@ export class ItemRelationshipService {
               referenceDesignator: r.data?.referenceDesignator ?? null,
               findNumber: r.data?.findNumber ?? null,
               metadata: r.data?.metadata ?? null,
+              option: r.data?.option ?? null,
               createdBy: r.userId,
             })),
           )
@@ -1100,7 +1186,8 @@ export class ItemRelationshipService {
   }
 
   /**
-   * Update a relationship's properties (quantity, referenceDesignator, findNumber)
+   * Update a relationship's properties (quantity, referenceDesignator,
+   * findNumber, option). `option: null` makes the line fixed again.
    */
   static async updateRelationship(
     relationshipId: string,
@@ -1109,6 +1196,7 @@ export class ItemRelationshipService {
       quantity?: string | null
       referenceDesignator?: string | null
       findNumber?: number | null
+      option?: OptionCondition | null
     },
     options?: { bypassEditGuard?: boolean },
   ): Promise<typeof itemRelationships.$inferSelect> {
@@ -1123,6 +1211,44 @@ export class ItemRelationshipService {
 
     if (!existing) {
       throw new Error(`Relationship ${relationshipId} not found`)
+    }
+
+    const option =
+      data.option === undefined
+        ? undefined
+        : data.option
+          ? optionConditionSchema.parse(data.option)
+          : null
+    if (option) {
+      await this.assertOptionDeclared(existing.sourceId, option)
+    }
+    if (
+      option !== undefined &&
+      optionConditionKey(option) !== optionConditionKey(existing.option)
+    ) {
+      // Changing the condition can collide with a sibling line on the same
+      // child; say so before the index does.
+      const collision = await db
+        .select({ id: itemRelationships.id })
+        .from(itemRelationships)
+        .where(
+          and(
+            eq(itemRelationships.sourceId, existing.sourceId),
+            eq(itemRelationships.targetId, existing.targetId),
+            eq(itemRelationships.relationshipType, existing.relationshipType),
+            option
+              ? eq(itemRelationships.option, option)
+              : isNull(itemRelationships.option),
+          ),
+        )
+        .limit(1)
+      if (collision.length > 0) {
+        throw relationshipExistsError(
+          existing.sourceId,
+          existing.targetId,
+          existing.relationshipType,
+        )
+      }
     }
 
     // Edit-lock policy: relationship properties are source-item content
@@ -1144,12 +1270,25 @@ export class ItemRelationshipService {
     if (data.referenceDesignator !== undefined)
       updateData.referenceDesignator = data.referenceDesignator
     if (data.findNumber !== undefined) updateData.findNumber = data.findNumber
+    if (option !== undefined) updateData.option = option
 
-    const [updated] = await db
-      .update(itemRelationships)
-      .set(updateData)
-      .where(eq(itemRelationships.id, relationshipId))
-      .returning()
+    let updated: typeof itemRelationships.$inferSelect | undefined
+    try {
+      ;[updated] = await db
+        .update(itemRelationships)
+        .set(updateData)
+        .where(eq(itemRelationships.id, relationshipId))
+        .returning()
+    } catch (error) {
+      if (isUniqueViolation(error, { table: 'item_relationships' })) {
+        throw relationshipExistsError(
+          existing.sourceId,
+          existing.targetId,
+          existing.relationshipType,
+        )
+      }
+      throw error
+    }
 
     if (!updated) {
       throw new NotFoundError('ItemRelationship', relationshipId)
@@ -1239,6 +1378,25 @@ export class ItemRelationshipService {
               newValue: {
                 targetItemNumber: targetLabel,
                 findNumber: data.findNumber,
+              },
+              fieldCategory: 'relationship',
+            })
+          }
+
+          if (
+            option !== undefined &&
+            optionConditionKey(option) !== optionConditionKey(existing.option)
+          ) {
+            fieldChanges.push({
+              fieldName: `bom_option_changed`,
+              fieldPath: `relationships.${existing.relationshipType}`,
+              oldValue: {
+                targetItemNumber: targetLabel,
+                option: existing.option,
+              },
+              newValue: {
+                targetItemNumber: targetLabel,
+                option,
               },
               fieldCategory: 'relationship',
             })

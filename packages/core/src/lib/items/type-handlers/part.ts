@@ -25,6 +25,8 @@ registerTypeHandler('Part', {
         data.leadTimeDays && data.leadTimeDays !== ''
           ? data.leadTimeDays
           : null,
+      optionModel: data.optionModel ?? null,
+      makes: data.makes ?? null,
     })
   },
 
@@ -59,6 +61,9 @@ registerTypeHandler('Part', {
     if (data.leadTimeDays !== undefined)
       updateData.leadTimeDays =
         data.leadTimeDays && data.leadTimeDays !== '' ? data.leadTimeDays : null
+    if (data.optionModel !== undefined)
+      updateData.optionModel = data.optionModel ?? null
+    if (data.makes !== undefined) updateData.makes = data.makes ?? null
 
     if (Object.keys(updateData).length > 0) {
       await run.update(parts).set(updateData).where(eq(parts.itemId, itemId))

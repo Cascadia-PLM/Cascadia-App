@@ -198,6 +198,13 @@ Each child includes quantity and find number from the BOM relationship.`,
         quantity: z.number().optional(),
         findNumber: z.number().optional(),
         referenceDesignator: z.string().optional(),
+        option: z
+          .string()
+          .optional()
+          .describe(
+            'Product variants: the option condition admitting this line, ' +
+              'e.g. "color=black; display=yes". Absent on fixed lines.',
+          ),
         depth: z
           .number()
           .describe('Level in BOM hierarchy (1=immediate child)'),

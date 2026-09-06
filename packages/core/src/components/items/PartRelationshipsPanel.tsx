@@ -25,6 +25,7 @@ import type {
   ViewMode,
   WhereUsedNode,
 } from './part-relationships/types'
+import type { Part } from '@/lib/items/types/part'
 import {
   Badge,
   Button,
@@ -73,6 +74,7 @@ interface PartRelationshipsPanelProps {
  */
 export function PartRelationshipsPanel({
   itemId,
+  itemType,
   branchId,
   readOnly = false,
 }: PartRelationshipsPanelProps) {
@@ -87,6 +89,11 @@ export function PartRelationshipsPanel({
   )
   const { data: itemUsage } = useQuery(
     entityQuery<ItemUsageInfo>('items', itemId, 'item'),
+  )
+  // Product variants: a Part's option model is the vocabulary for the
+  // conditions on its BOM lines. Read only for Parts.
+  const { data: parentPart } = useQuery(
+    entityQuery<Part>('parts', itemId, 'part', itemType === 'Part'),
   )
 
   // Dialog state
@@ -256,6 +263,7 @@ export function PartRelationshipsPanel({
 
           <TabsContent value="bom" className="mt-4">
             <BomView
+              optionModel={parentPart?.optionModel ?? null}
               nodes={bomQuery.data ?? []}
               loading={bomQuery.isPending || bomQuery.isFetching}
               expandedNodes={expandedBomNodes}
@@ -279,6 +287,15 @@ export function PartRelationshipsPanel({
               onAddNewType={handleAddNewType}
               onEdit={setEditingRelationship}
               onRemove={handleRemoveRelationship}
+              parentPart={
+                parentPart?.id
+                  ? {
+                      id: parentPart.id,
+                      optionModel: parentPart.optionModel,
+                      makes: parentPart.makes,
+                    }
+                  : undefined
+              }
             />
           </TabsContent>
 
@@ -318,6 +335,7 @@ export function PartRelationshipsPanel({
             if (!open) setEditingRelationship(null)
           }}
           relationship={editingRelationship}
+          optionModel={parentPart?.optionModel ?? null}
         />
       )}
     </>

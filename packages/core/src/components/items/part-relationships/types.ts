@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
+import type { OptionCondition } from '@/lib/types/variants'
+
 /**
  * Shapes shared by the relationships panel and its four views.
  *
@@ -17,6 +19,7 @@ export interface Relationship {
   quantity: string | null
   referenceDesignator: string | null
   findNumber: number | null
+  option?: OptionCondition | null
   targetItem: {
     id: string
     itemNumber: string

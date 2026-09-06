@@ -314,13 +314,14 @@ The detected format and relationship count are displayed in the validation previ
 
 In addition to standard part fields, BOM imports support these relationship fields:
 
-| Field                | Type   | Description                        | Aliases                                                                       |
-| -------------------- | ------ | ---------------------------------- | ----------------------------------------------------------------------------- |
-| BOM Level            | number | Hierarchy depth (0 = top)          | `level`, `bom level`, `indent`, `lvl`, `hierarchy`                            |
-| Parent Item Number   | string | Parent assembly's item number      | `parent`, `parent item number`, `parent part number`, `parent pn`, `assembly` |
-| Quantity             | number | Quantity per assembly (default: 1) | `qty`, `quantity`, `qty per`, `qty/assy`, `count`                             |
-| Find Number          | number | Position identifier on drawings    | `find #`, `find number`, `find no`, `item no`, `seq`, `sequence`              |
-| Reference Designator | string | Component reference (e.g., R1, R2) | `ref des`, `reference designator`, `designator`                               |
+| Field                | Type   | Description                                                                                                     | Aliases                                                                       |
+| -------------------- | ------ | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| BOM Level            | number | Hierarchy depth (0 = top)                                                                                       | `level`, `bom level`, `indent`, `lvl`, `hierarchy`                            |
+| Parent Item Number   | string | Parent assembly's item number                                                                                   | `parent`, `parent item number`, `parent part number`, `parent pn`, `assembly` |
+| Quantity             | number | Quantity per assembly (default: 1)                                                                              | `qty`, `quantity`, `qty per`, `qty/assy`, `count`                             |
+| Find Number          | number | Position identifier on drawings                                                                                 | `find #`, `find number`, `find no`, `item no`, `seq`, `sequence`              |
+| Reference Designator | string | Component reference (e.g., R1, R2)                                                                              | `ref des`, `reference designator`, `designator`                               |
+| Option Condition     | string | Product variants: `color=black; display=yes,no` (blank = fixed line); the parent part must declare the families | `option`, `condition`, `applies to`, `variant`                                |
 
 ### External Parent Support
 

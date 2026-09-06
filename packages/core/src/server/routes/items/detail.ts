@@ -5,6 +5,7 @@ import { Hono } from 'hono'
 import { eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../../adapter'
+import { optionConditionSchema } from '@/lib/types/variants'
 import { requirePermission } from '@/lib/auth/server'
 import { NotFoundError, PermissionDeniedError } from '@/lib/errors'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -635,6 +636,12 @@ const addRelationshipSchema = z.object({
     ),
   referenceDesignator: z.string().optional(),
   findNumber: z.number().optional(),
+  option: optionConditionSchema
+    .nullish()
+    .describe(
+      'Product variants: the option selections that admit this BOM line. ' +
+        'Omit or null for a fixed line.',
+    ),
 })
 
 // POST /api/items/:id/relationships
@@ -689,6 +696,7 @@ app.post(
               data.quantity === undefined ? undefined : String(data.quantity),
             referenceDesignator: data.referenceDesignator,
             findNumber: data.findNumber,
+            option: data.option ?? null,
           },
         )
 

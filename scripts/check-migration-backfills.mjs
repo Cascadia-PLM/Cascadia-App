@@ -1147,7 +1147,106 @@ const SCENARIOS = [
 
   ...snapshotSeqScenarios(),
   ...signingCredentialScenarios(),
+
+  {
+    tag: VARIANT_EDGES_TAG(),
+    name: 'existing BOM edges survive the split into fixed and option indexes',
+    async seed(sql) {
+      await exec(sql, variantEdgesSeed())
+    },
+    async assert(sql) {
+      // Every edge that was unique under the old triple constraint is unique
+      // under the fixed-line index too: the new column is NULL on all of
+      // them, so the index sees exactly the tuples the constraint did.
+      const [kept] = await sql.unsafe(
+        `select count(*)::int as n from item_relationships
+          where source_id = '${id(400)}' and option is null`,
+      )
+      expectEqual(
+        kept.n,
+        3,
+        'the three pre-existing edges are all still there, all fixed',
+      )
+
+      expect(
+        !(await constraintExists(
+          sql,
+          'item_relationships_source_id_target_id_relationship_type_unique',
+        )),
+        'the old triple constraint should be gone',
+      )
+      expect(
+        await relationExists(sql, 'item_relationships_fixed_edge_unique'),
+        'the fixed-line index should exist',
+      )
+      expect(
+        await relationExists(sql, 'item_relationships_option_edge_unique'),
+        'the option-line index should exist',
+      )
+
+      // The split's whole point: a second fixed line on the same child is
+      // still refused, the same child under a condition is now allowed, and
+      // the same condition twice is refused by the other index.
+      const duplicateFixed = await refused(
+        sql,
+        `insert into item_relationships
+           (id, source_id, target_id, relationship_type, quantity, created_by)
+         values ('${id(420)}', '${id(400)}', '${id(402)}', 'BOM', '1', '${U1}')`,
+      )
+      expectEqual(
+        duplicateFixed.code,
+        '23505',
+        'SQLSTATE for a duplicate fixed line',
+      )
+      expectEqual(
+        duplicateFixed.constraint_name,
+        'item_relationships_fixed_edge_unique',
+        'the fixed-line index refuses it',
+      )
+
+      const black = `'{"all":[{"family":"color","values":["black"]}]}'::jsonb`
+      await sql.unsafe(
+        `insert into item_relationships
+           (id, source_id, target_id, relationship_type, quantity, option, created_by)
+         values ('${id(421)}', '${id(400)}', '${id(402)}', 'BOM', '2', ${black}, '${U1}')`,
+      )
+      const duplicateOption = await refused(
+        sql,
+        `insert into item_relationships
+           (id, source_id, target_id, relationship_type, quantity, option, created_by)
+         values ('${id(422)}', '${id(400)}', '${id(402)}', 'BOM', '3', ${black}, '${U1}')`,
+      )
+      expectEqual(
+        duplicateOption.code,
+        '23505',
+        'SQLSTATE for a duplicate conditioned line',
+      )
+      expectEqual(
+        duplicateOption.constraint_name,
+        'item_relationships_option_edge_unique',
+        'the option-line index refuses it',
+      )
+    },
+  },
 ]
+
+/**
+ * The product-variants migration, named by the index it builds: the tag
+ * differs per edition. It replaces the (source, target, type) constraint on
+ * item_relationships with two partial unique indexes, one for fixed lines and
+ * one for lines carrying an option condition.
+ */
+function VARIANT_EDGES_TAG() {
+  const found = migrations.find((m) =>
+    m.sql.some((s) => s.includes('item_relationships_fixed_edge_unique')),
+  )
+  if (!found) {
+    throw new Error(
+      'No migration creates item_relationships_fixed_edge_unique — the variant edges scenario names a file that no longer exists.',
+    )
+  }
+  return found.tag
+}
 
 /**
  * The approver-uniqueness migration, named by what it builds for the same
@@ -1494,6 +1593,31 @@ function affectedItemsSeed() {
       ('${id(228)}', '${id(200)}', null, null, 'create', null, '2024-01-01T00:00:00Z', '${U1}'),
       -- Out of the group: the same master, listed on a different change order.
       ('${id(229)}', '${id(202)}', '${id(204)}', '${id(205)}', 'revise', null, '2024-01-01T00:00:00Z', '${U1}');
+  `
+}
+
+/**
+ * One parent with three edges that were distinct under the old triple
+ * constraint: two BOM children, and one of those children again under a
+ * different relationship type. Every row predates the `option` column, so all
+ * three arrive at the new indexes as fixed lines.
+ */
+function variantEdgesSeed() {
+  return `
+    ${USERS}
+    insert into items
+      (id, master_id, item_number, revision, item_type, state, created_by, modified_by)
+    values
+      ('${id(400)}', '${id(401)}', 'FIX-VAR-ASSY', 'A', 'Part', 'Released', '${U1}', '${U1}'),
+      ('${id(402)}', '${id(403)}', 'FIX-VAR-C1', 'A', 'Part', 'Released', '${U1}', '${U1}'),
+      ('${id(404)}', '${id(405)}', 'FIX-VAR-C2', 'A', 'Part', 'Released', '${U1}', '${U1}');
+
+    insert into item_relationships
+      (id, source_id, target_id, relationship_type, quantity, created_by)
+    values
+      ('${id(410)}', '${id(400)}', '${id(402)}', 'BOM', '1', '${U1}'),
+      ('${id(411)}', '${id(400)}', '${id(404)}', 'BOM', '2', '${U1}'),
+      ('${id(412)}', '${id(400)}', '${id(402)}', 'Reference', null, '${U1}');
   `
 }
 

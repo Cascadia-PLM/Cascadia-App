@@ -132,6 +132,27 @@ export function PartTable({
       cell: ({ getValue }) => (getValue() as string) || '-',
     },
     {
+      id: 'configurable',
+      header: 'Variants',
+      accessorFn: (row) => (row.optionModel ? 'yes' : 'no'),
+      enableSorting: true,
+      enableFiltering: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Configurable', value: 'yes' },
+        { label: 'Not configurable', value: 'no' },
+      ],
+      cell: ({ getValue }) =>
+        getValue() === 'yes' ? (
+          <Badge
+            variant="outline"
+            className="text-cyan-700 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700"
+          >
+            Configurable
+          </Badge>
+        ) : null,
+    },
+    {
       id: 'partType',
       header: 'Type',
       accessorKey: 'partType',

@@ -24,6 +24,7 @@ import { manufacturerParts } from './manufacturer-parts'
 import { designs } from './designs'
 import { programs } from './programs'
 import { branches, commits } from './versioning'
+import type { Make, OptionCondition, OptionModel } from '../../types/variants'
 
 export const items = pgTable(
   'items',
@@ -165,6 +166,14 @@ export const parts = pgTable('parts', {
   cost: decimal('cost', { precision: 10, scale: 2 }),
   costCurrency: varchar('cost_currency', { length: 3 }),
   leadTimeDays: integer('lead_time_days'),
+  /**
+   * Product variants. A part with an option model is configurable: its BOM
+   * lines may carry option conditions naming these families, and `makes` are
+   * its named, complete selections. Both ride the part VERSION, so changing
+   * a make is an ECO like any other content edit. Null on ordinary parts.
+   */
+  optionModel: jsonb('option_model').$type<OptionModel>(),
+  makes: jsonb('makes').$type<Array<Make>>(),
 })
 
 export const documents = pgTable('documents', {
@@ -657,6 +666,13 @@ export const itemRelationships = pgTable(
     referenceDesignator: text('reference_designator'),
     findNumber: integer('find_number'),
     metadata: jsonb('metadata'),
+    /**
+     * Product variants: when this BOM line applies. Null is a fixed line that
+     * is always in the BOM; a condition names the option selections that
+     * admit it. Stored in canonical form (see `normalizeOptionCondition`) so
+     * the partial unique index below can compare it byte for byte.
+     */
+    option: jsonb('option').$type<OptionCondition>(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -690,7 +706,18 @@ export const itemRelationships = pgTable(
     derivationNotes: text('derivation_notes'),
   },
   (table) => [
-    unique().on(table.sourceId, table.targetId, table.relationshipType),
+    // An edge is (source, target, type) — plus its option condition, so one
+    // child can appear on a parent's BOM under two conditions with different
+    // quantities. Postgres never equates NULLs, so a single index over the
+    // four columns would let fixed lines duplicate; two partial indexes keep
+    // both cases unique. Both names carry the `item_relationships_` prefix
+    // that `isUniqueViolation(error, { table })` matches on.
+    uniqueIndex('item_relationships_fixed_edge_unique')
+      .on(table.sourceId, table.targetId, table.relationshipType)
+      .where(sql`${table.option} IS NULL`),
+    uniqueIndex('item_relationships_option_edge_unique')
+      .on(table.sourceId, table.targetId, table.relationshipType, table.option)
+      .where(sql`${table.option} IS NOT NULL`),
     index('idx_source').on(table.sourceId),
     index('idx_target').on(table.targetId),
     index('idx_relationship_type').on(table.relationshipType),

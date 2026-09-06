@@ -3045,6 +3045,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/parts/{id}/variants/lint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Check a part's variant data for inconsistencies */
+        get: operations["getApiV1PartsByIdVariantsLint"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/parts/{id}/variants/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a configuration to a 100 % BOM
+         * @description Keeps the fixed lines and the lines whose option condition the selections satisfy, recursively. Pass `makeCode` to use a named make's selections.
+         */
+        post: operations["postApiV1PartsByIdVariantsResolve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/parts/{id}/variants/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate option selections against a configurable part */
+        post: operations["postApiV1PartsByIdVariantsValidate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/parts/{id}/work-instructions": {
         parameters: {
             query?: never;
@@ -9290,6 +9344,8 @@ export interface operations {
                     bomRelationships?: {
                         childItemNumber: string;
                         findNumber?: number;
+                        /** @description Product variants: `color=black; display=yes,no` */
+                        option?: string;
                         parentItemNumber: string;
                         /** @default 1 */
                         quantity?: number;
@@ -9502,8 +9558,47 @@ export interface operations {
                     /** @constant */
                     itemType: "Part";
                     leadTimeDays?: number;
+                    makes?: {
+                        /** @default true */
+                        active?: boolean;
+                        code: string;
+                        /** @default  */
+                        name?: string;
+                        selections: {
+                            [key: string]: string;
+                        };
+                    }[] | null;
                     material?: string;
                     name?: string;
+                    optionModel?: {
+                        constraints?: {
+                            /** @default  */
+                            message?: string;
+                            require: {
+                                all: {
+                                    family: string;
+                                    values: string[];
+                                }[];
+                            };
+                            when: {
+                                all: {
+                                    family: string;
+                                    values: string[];
+                                }[];
+                            };
+                        }[];
+                        /** @default [] */
+                        families?: {
+                            code: string;
+                            name: string;
+                            /** @default true */
+                            required?: boolean;
+                            values: {
+                                code: string;
+                                label: string;
+                            }[];
+                        }[];
+                    } | null;
                     /** @enum {string} */
                     partType?: "Manufacture" | "Purchase" | "Software" | "Phantom";
                     revision?: string;
@@ -10546,6 +10641,13 @@ export interface operations {
             content: {
                 "application/json": {
                     findNumber?: number;
+                    /** @description Product variants: the option selections that admit this BOM line. Omit or null for a fixed line. */
+                    option?: {
+                        all: {
+                            family: string;
+                            values: string[];
+                        }[];
+                    } | null;
                     /** @description Stored as text, so a string arrives verbatim — BOM quantities are not all integers. */
                     quantity?: number | string;
                     referenceDesignator?: string;
@@ -11342,6 +11444,14 @@ export interface operations {
             content: {
                 "application/json": {
                     code: string;
+                    configuration?: {
+                        makeCode?: string;
+                        /** Format: uuid */
+                        rootItemId: string;
+                        selections?: {
+                            [key: string]: string;
+                        };
+                    };
                     /** @default true */
                     copyBomStructure?: boolean;
                     description?: string;
@@ -11504,8 +11614,47 @@ export interface operations {
                     costCurrency?: string | null;
                     description?: string | null;
                     leadTimeDays?: number | null;
+                    makes?: {
+                        /** @default true */
+                        active?: boolean;
+                        code: string;
+                        /** @default  */
+                        name?: string;
+                        selections: {
+                            [key: string]: string;
+                        };
+                    }[] | null;
                     material?: string | null;
                     name?: string | null;
+                    optionModel?: {
+                        constraints?: {
+                            /** @default  */
+                            message?: string;
+                            require: {
+                                all: {
+                                    family: string;
+                                    values: string[];
+                                }[];
+                            };
+                            when: {
+                                all: {
+                                    family: string;
+                                    values: string[];
+                                }[];
+                            };
+                        }[];
+                        /** @default [] */
+                        families?: {
+                            code: string;
+                            name: string;
+                            /** @default true */
+                            required?: boolean;
+                            values: {
+                                code: string;
+                                label: string;
+                            }[];
+                        }[];
+                    } | null;
                     partType?: ("Manufacture" | "Purchase" | "Software" | "Phantom") | null;
                     state?: string;
                     /** @enum {string} */
@@ -11645,6 +11794,172 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getApiV1PartsByIdVariantsLint: {
+        parameters: {
+            query?: {
+                branchId?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            findings: {
+                                code: string;
+                                family?: string;
+                                makeCode?: string;
+                                message: string;
+                                relationshipId?: string;
+                                /** @enum {string} */
+                                severity: "error" | "warning";
+                                value?: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    postApiV1PartsByIdVariantsResolve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    branchId?: string;
+                    /** @description A named make on the part */
+                    makeCode?: string;
+                    selections?: {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            children: unknown[];
+                            droppedLines: number;
+                            findings: {
+                                itemNumber: string;
+                                message: string;
+                            }[];
+                            root: {
+                                itemId: string;
+                                itemNumber: string;
+                                name: string | null;
+                                revision: string;
+                            };
+                            selections: {
+                                [key: string]: string;
+                            };
+                            validation: {
+                                errors: {
+                                    family?: string;
+                                    message: string;
+                                    /** @enum {string} */
+                                    severity: "error" | "warning";
+                                }[];
+                                valid: boolean;
+                                warnings: {
+                                    family?: string;
+                                    message: string;
+                                    /** @enum {string} */
+                                    severity: "error" | "warning";
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    postApiV1PartsByIdVariantsValidate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Option family code → value code */
+                    selections: {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            errors: {
+                                family?: string;
+                                message: string;
+                                /** @enum {string} */
+                                severity: "error" | "warning";
+                            }[];
+                            valid: boolean;
+                            warnings: {
+                                family?: string;
+                                message: string;
+                                /** @enum {string} */
+                                severity: "error" | "warning";
+                            }[];
+                        };
+                    };
+                };
+            };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
@@ -12216,6 +12531,12 @@ export interface operations {
                         metadata?: {
                             [key: string]: unknown;
                         };
+                        option?: {
+                            all: {
+                                family: string;
+                                values: string[];
+                            }[];
+                        } | null;
                         quantity?: number | string;
                         referenceDesignator?: string;
                         /** @description e.g. `BOM`, `Document`, `Satisfies`, `Consumes` */
@@ -12247,6 +12568,12 @@ export interface operations {
                                     metadata?: {
                                         [key: string]: unknown;
                                     };
+                                    option?: {
+                                        all: {
+                                            family: string;
+                                            values: string[];
+                                        }[];
+                                    } | null;
                                     quantity?: number | string;
                                     referenceDesignator?: string;
                                     /** @description e.g. `BOM`, `Document`, `Satisfies`, `Consumes` */
@@ -12278,6 +12605,12 @@ export interface operations {
                                     metadata?: {
                                         [key: string]: unknown;
                                     };
+                                    option?: {
+                                        all: {
+                                            family: string;
+                                            values: string[];
+                                        }[];
+                                    } | null;
                                     quantity?: number | string;
                                     referenceDesignator?: string;
                                     /** @description e.g. `BOM`, `Document`, `Satisfies`, `Consumes` */
@@ -12313,6 +12646,13 @@ export interface operations {
             content: {
                 "application/json": {
                     findNumber?: number | null;
+                    /** @description Product variants: null makes the line fixed again. */
+                    option?: {
+                        all: {
+                            family: string;
+                            values: string[];
+                        }[];
+                    } | null;
                     quantity?: (number | string) | null;
                     referenceDesignator?: string | null;
                 };
@@ -15603,10 +15943,12 @@ export interface operations {
                             type: "alpha";
                             uppercase?: boolean;
                         } | {
+                            startAt?: number;
                             /** @constant */
                             type: "numeric";
                         } | {
                             prefix: string;
+                            startAt?: number;
                             /** @constant */
                             type: "prefixed-numeric";
                         } | {
@@ -15619,10 +15961,12 @@ export interface operations {
                         type: "alpha";
                         uppercase?: boolean;
                     } | {
+                        startAt?: number;
                         /** @constant */
                         type: "numeric";
                     } | {
                         prefix: string;
+                        startAt?: number;
                         /** @constant */
                         type: "prefixed-numeric";
                     } | {
@@ -15796,10 +16140,12 @@ export interface operations {
                             type: "alpha";
                             uppercase?: boolean;
                         } | {
+                            startAt?: number;
                             /** @constant */
                             type: "numeric";
                         } | {
                             prefix: string;
+                            startAt?: number;
                             /** @constant */
                             type: "prefixed-numeric";
                         } | {
@@ -15812,10 +16158,12 @@ export interface operations {
                         type: "alpha";
                         uppercase?: boolean;
                     } | {
+                        startAt?: number;
                         /** @constant */
                         type: "numeric";
                     } | {
                         prefix: string;
+                        startAt?: number;
                         /** @constant */
                         type: "prefixed-numeric";
                     } | {

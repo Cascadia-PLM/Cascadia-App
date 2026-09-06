@@ -44,9 +44,13 @@ export class RevisionService {
       case 'alpha':
         return this.nextAlpha(currentRevision)
       case 'numeric':
-        return this.nextNumeric(currentRevision)
+        return this.nextNumeric(currentRevision, resolvedScheme.startAt)
       case 'prefixed-numeric':
-        return this.nextPrefixedNumeric(currentRevision, resolvedScheme.prefix)
+        return this.nextPrefixedNumeric(
+          currentRevision,
+          resolvedScheme.prefix,
+          resolvedScheme.startAt,
+        )
       case 'none':
         return currentRevision || this.NO_REVISION
     }
@@ -63,9 +67,9 @@ export class RevisionService {
       case 'alpha':
         return 'A'
       case 'numeric':
-        return '1'
+        return String(resolvedScheme.startAt ?? 1)
       case 'prefixed-numeric':
-        return `${resolvedScheme.prefix}1`
+        return `${resolvedScheme.prefix}${resolvedScheme.startAt ?? 1}`
       case 'none':
         return this.NO_REVISION
     }
@@ -167,16 +171,19 @@ export class RevisionService {
   }
 
   /**
-   * Numeric revision: 1 → 2 → 3 → ...
+   * Numeric revision: 1 → 2 → 3 → ... (or from `startAt`)
    */
-  private static nextNumeric(currentRevision: string): string {
+  private static nextNumeric(
+    currentRevision: string,
+    startAt: number = 1,
+  ): string {
     if (this.hasNoOrdinal(currentRevision)) {
-      return '1'
+      return String(startAt)
     }
 
     const num = parseInt(currentRevision, 10)
     if (isNaN(num)) {
-      return '1'
+      return String(startAt)
     }
 
     return String(num + 1)
@@ -189,9 +196,10 @@ export class RevisionService {
   private static nextPrefixedNumeric(
     currentRevision: string,
     prefix: string,
+    startAt: number = 1,
   ): string {
     if (this.hasNoOrdinal(currentRevision)) {
-      return `${prefix}1`
+      return `${prefix}${startAt}`
     }
 
     // Strip the prefix if present
@@ -201,7 +209,7 @@ export class RevisionService {
 
     const num = parseInt(numPart, 10)
     if (isNaN(num)) {
-      return `${prefix}1`
+      return `${prefix}${startAt}`
     }
 
     return `${prefix}${num + 1}`

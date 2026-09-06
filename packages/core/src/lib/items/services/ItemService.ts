@@ -39,6 +39,8 @@ import { ItemVersioningFacade } from './ItemVersioningFacade'
 import { ItemEditPolicy } from './ItemEditPolicy'
 import { ItemSearchService } from './ItemSearchService'
 import { ItemRelationshipService } from './ItemRelationshipService'
+import type { OptionCondition } from '@/lib/types/variants'
+import type { Part } from '../types/part'
 import type { AccessScope } from '../../db/filters'
 import type { TypeHandlerContext } from '../type-handlers'
 import type { SQL } from 'drizzle-orm'
@@ -543,6 +545,23 @@ export class ItemService {
       }
       data = { ...data }
       delete (data as Record<string, unknown>).designId
+    }
+
+    // Product variants: an option model or make change must leave every
+    // conditioned BOM line and every make resolvable. Checked against the
+    // version being edited, whose lines are the ones the model governs.
+    if (oldItem.itemType === 'Part') {
+      const record = data as Record<string, unknown>
+      if (record.optionModel !== undefined || record.makes !== undefined) {
+        const { VariantService } = await import('@/lib/services/VariantService')
+        const normalized = await VariantService.assertPartVariantWrite(
+          id,
+          oldItem as unknown as Pick<Part, 'optionModel' | 'makes'>,
+          record,
+          options?.tx,
+        )
+        data = { ...data, ...normalized }
+      }
     }
 
     // Enforce branch protection and the edit-lock (checkout) policy.
@@ -1293,6 +1312,7 @@ export class ItemService {
       quantity?: string
       referenceDesignator?: string
       findNumber?: number
+      option?: OptionCondition | null
     },
     options?: { bypassEditGuard?: boolean },
   ): Promise<typeof itemRelationships.$inferSelect> {
@@ -1333,6 +1353,7 @@ export class ItemService {
       quantity?: string | null
       referenceDesignator?: string | null
       findNumber?: number | null
+      option?: OptionCondition | null
     },
     options?: { bypassEditGuard?: boolean },
   ): Promise<typeof itemRelationships.$inferSelect> {

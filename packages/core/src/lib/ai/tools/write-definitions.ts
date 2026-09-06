@@ -285,6 +285,14 @@ Requires user confirmation before creating.`,
       .string()
       .optional()
       .describe('Reference designator like R1, C2 (BOM only)'),
+    option: z
+      .string()
+      .optional()
+      .describe(
+        'Product variants: option condition admitting this line, as ' +
+          '"family=value[,value][; family=value]" (BOM only). The parent ' +
+          'part must declare those families in its option model.',
+      ),
     // Confirmation plumbing
     confirmationToken: z
       .string()

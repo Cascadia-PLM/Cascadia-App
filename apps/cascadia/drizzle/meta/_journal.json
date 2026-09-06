@@ -29,6 +29,13 @@
       "when": 1788254169383,
       "tag": "0003_software_external_source",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788579365420,
+      "tag": "0004_product_variants",
+      "breakpoints": true
     }
   ]
 }

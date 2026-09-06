@@ -9,6 +9,7 @@ import type {
   ImportResult,
   ItemFieldConfig,
 } from '@/lib/import'
+import { parseOptionText } from '@/lib/types/variants'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
@@ -535,6 +536,7 @@ app.post(
                   quantity: String(rel.quantity),
                   findNumber: rel.findNumber,
                   referenceDesignator: rel.referenceDesignator,
+                  option: rel.option ? parseOptionText(rel.option) : null,
                 },
                 { bypassEditGuard: true },
               )

@@ -140,6 +140,23 @@ export function DesignPageHeader({
             <p className="text-slate-600 dark:text-slate-400 mt-1">
               {design.name}
             </p>
+            {design.configuration && (
+              <p
+                className="text-xs text-cyan-700 dark:text-cyan-300 mt-1"
+                title="The configuration this Manufacturing design was resolved with"
+              >
+                Configuration
+                {design.configuration.makeCode && (
+                  <span className="font-mono ml-1">
+                    {design.configuration.makeCode}
+                  </span>
+                )}
+                :{' '}
+                {Object.entries(design.configuration.selections)
+                  .map(([family, value]) => `${family}=${value}`)
+                  .join(', ')}
+              </p>
+            )}
           </div>
         </div>
 

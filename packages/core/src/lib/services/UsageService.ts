@@ -673,6 +673,7 @@ export class UsageService {
           findNumber: rel.findNumber,
           referenceDesignator: rel.referenceDesignator,
           metadata: rel.metadata,
+          option: rel.option,
           isComposite: rel.isComposite,
           isDirected: rel.isDirected,
           multiplicityLower: rel.multiplicityLower,

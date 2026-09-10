@@ -11,7 +11,7 @@
 import { withPermissionAndAudit } from './permission-wrapper'
 import type { ToolContext } from './permission-wrapper'
 import type { ItemNumberMatch } from '@/lib/items/services/ItemService'
-import { formatOptionText } from '@/lib/types/variants'
+import { formatOptionText, formatPartDesignation } from '@/lib/types/variants'
 import { ImpactAssessmentService } from '@/lib/items/services/ImpactAssessmentService'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
@@ -384,6 +384,8 @@ interface BomChild {
   findNumber?: number
   referenceDesignator?: string
   option?: string
+  targetMakeCode?: string
+  designation: string
   depth: number
   children?: Array<BomChild>
 }
@@ -443,6 +445,12 @@ export const getBomHandler = withPermissionAndAudit(
           findNumber: rel.findNumber ?? undefined,
           referenceDesignator: rel.referenceDesignator ?? undefined,
           option: formatOptionText(rel.option) || undefined,
+          targetMakeCode: rel.targetMakeCode ?? undefined,
+          designation: formatPartDesignation({
+            itemNumber: rel.targetItem.itemNumber,
+            revision: rel.targetItem.revision,
+            makeCode: rel.targetMakeCode,
+          }),
           depth: currentDepth,
         }
 

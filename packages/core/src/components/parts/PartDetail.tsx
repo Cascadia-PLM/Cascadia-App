@@ -376,9 +376,8 @@ export function PartDetail({
     },
   )
   const hasGallery = !isCreateMode && galleryImages.length > 0
-  // Product variants: the tab exists once the part declares option families.
-  // Until then the only variant affordance is the option icon on a BOM line.
-  const hasVariants = !isCreateMode && Boolean(currentPart.optionModel)
+  // Every existing Part can start its family/variant configuration here.
+  const hasVariants = !isCreateMode
 
   // Field update helper
   const updateField = (field: keyof Part, value: any) => {
@@ -586,13 +585,22 @@ export function PartDetail({
                       {contextLabel}
                     </Badge>
                   )}
-                {hasVariants && (
+                {hasVariants && Boolean(currentPart.optionModel) && (
                   <Badge
                     variant="outline"
                     className="text-sm text-cyan-700 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700"
                     title="This part has option families; its BOM lines can carry option conditions"
                   >
                     Configurable
+                  </Badge>
+                )}
+                {!isCreateMode && currentPart.productFamilyCode && (
+                  <Badge
+                    variant="outline"
+                    className="text-sm font-mono"
+                    title="Product family and independently revisioned variant"
+                  >
+                    {currentPart.productFamilyCode} / {currentPart.variantCode}
                   </Badge>
                 )}
                 {!isCreateMode && editLock.status?.isCheckedOut && (
@@ -930,7 +938,7 @@ export function PartDetail({
             />
           </TabsContent>
 
-          {/* Variants Tab (product variants; only once the part is configurable) */}
+          {/* Variants tab also creates the first option model/family assignment. */}
           {hasVariants && currentPart.id && (
             <TabsContent value="variants" className="mt-6">
               <PartVariantsTab

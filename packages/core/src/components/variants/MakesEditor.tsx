@@ -3,6 +3,7 @@
 
 import { Plus, Trash2 } from 'lucide-react'
 import type { Make, OptionModel } from '@/lib/types/variants'
+import { formatPartDesignation } from '@/lib/types/variants'
 import {
   Badge,
   Button,
@@ -25,6 +26,8 @@ export function MakesEditor({
   onChange,
   isEditing,
   onLoad,
+  itemNumber,
+  revision,
 }: {
   model: OptionModel
   value: Array<Make>
@@ -32,6 +35,8 @@ export function MakesEditor({
   isEditing: boolean
   /** Load a make's selections into the configurator, when one is mounted. */
   onLoad?: (make: Make) => void
+  itemNumber: string
+  revision?: string
 }) {
   const update = (index: number, patch: Partial<Make>) =>
     onChange(value.map((m, i) => (i === index ? { ...m, ...patch } : m)))
@@ -45,7 +50,7 @@ export function MakesEditor({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold">Makes</h4>
+        <h4 className="text-sm font-semibold">Executions</h4>
         {isEditing && (
           <Button
             type="button"
@@ -64,14 +69,14 @@ export function MakesEditor({
             }
           >
             <Plus className="h-4 w-4 mr-1" />
-            Make
+            Execution
           </Button>
         )}
       </div>
       {value.length === 0 && (
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          No makes yet. A make is a named, complete set of selections; save one
-          from the configurator or add one here.
+          No executions yet. An execution is a named, complete set of
+          selections; save one from the configurator or add one here.
         </p>
       )}
       {value.map((make, index) => (
@@ -91,6 +96,13 @@ export function MakesEditor({
                 {make.code}
               </Badge>
             )}
+            <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+              {formatPartDesignation({
+                itemNumber,
+                revision,
+                makeCode: make.code,
+              })}
+            </div>
             <label className="flex items-center gap-1.5 text-xs">
               <Checkbox
                 checked={make.active}
@@ -154,6 +166,7 @@ export function MakesEditor({
                 type="button"
                 variant="outline"
                 size="sm"
+                disabled={!make.active}
                 onClick={() => onLoad(make)}
               >
                 Load
@@ -165,7 +178,7 @@ export function MakesEditor({
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0 self-end"
-                aria-label="Remove make"
+                aria-label="Remove execution"
                 onClick={() => onChange(value.filter((_, i) => i !== index))}
               >
                 <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />

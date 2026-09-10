@@ -317,8 +317,11 @@ describe('gap analysis', () => {
   // ==========================================================================
 
   it('finds no orphans in an MBOM whose every item was linked on derivation', async () => {
-    await create('Part', 'P1')
-    await create('Part', 'P2')
+    // Derivation copies the root Part's reachable subtree, so both parts hang
+    // off one root.
+    const p1 = await create('Part', 'P1')
+    const p2 = await create('Part', 'P2')
+    await link(p1.id, p2.id, 'BOM')
 
     const mbom = await MbomService.createFromEbom(
       {

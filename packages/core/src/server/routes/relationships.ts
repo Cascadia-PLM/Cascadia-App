@@ -6,7 +6,7 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../adapter'
 import type { OptionCondition } from '@/lib/types/variants'
-import { optionConditionSchema } from '@/lib/types/variants'
+import { makeCodeSchema, optionConditionSchema } from '@/lib/types/variants'
 import { db } from '@/lib/db'
 import { itemRelationships, items } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'
@@ -45,6 +45,9 @@ const relationshipDataSchema = z.object({
   findNumber: z.number().optional(),
   metadata: z.record(z.string(), z.any()).optional(),
   option: optionConditionSchema.nullish(),
+  targetMakeCode: makeCodeSchema
+    .nullish()
+    .describe('Active execution of the target Part revision, e.g. `MK2`.'),
 })
 
 type RelationshipData = z.infer<typeof relationshipDataSchema>
@@ -81,7 +84,10 @@ const batchCreateResponseSchema = z.object({
    * the full INSERT statement and its bound parameters in it.
    */
   errors: z.array(
-    z.object({ relationship: relationshipDataSchema, error: z.string() }),
+    z.object({
+      relationship: z.record(z.string(), z.unknown()),
+      error: z.string(),
+    }),
   ),
 })
 
@@ -189,13 +195,13 @@ app.post(
           summary: 'Create relationships in bulk',
           description:
             'Up to 500 edges in one request — this is how a BOM is loaded. ' +
-            'A line naming the same `(sourceId, targetId, relationshipType)` ' +
-            'twice rejects the whole request with 400: the caller has to ' +
-            'merge those lines and sum their quantities. Otherwise nothing ' +
-            'is written until the batch is known to be insertable, and the ' +
-            'status reports the outcome: 201 when every line was created, ' +
-            '207 when some lines were created and others rejected, 400 when ' +
-            'none were.',
+            'A line naming the same source, target, relationship type, option ' +
+            'condition and target execution twice rejects the whole request ' +
+            'with 400: the caller has to merge those lines and sum their ' +
+            'quantities. Otherwise nothing is written until the batch is ' +
+            'known to be insertable, and the status reports the outcome: 201 ' +
+            'when every line was created, 207 when some lines were created ' +
+            'and others rejected, 400 when none were.',
           // documented-not-enforced: per-line rejection is this endpoint's
           // contract. Parsing the whole body against the schema would turn
           // one malformed line into a rejection of all 500, which is what
@@ -219,15 +225,11 @@ app.post(
           },
         },
       },
-      async ({ body: rawBody, user }) => {
+      async ({ body, user }) => {
         const userId = user.id
         // The three shape checks that used to live here — array, non-empty,
         // at most 500 — are the envelope schema now. Lines stay untyped
         // until the per-line pass below rejects them individually.
-        const body = rawBody as {
-          relationships: Array<RelationshipData>
-          replaceExisting?: boolean
-        }
 
         // Everything below is validation of the request as given — no write
         // happens until the batch is known to be insertable. The route used to
@@ -240,32 +242,32 @@ app.post(
         const candidates: Array<{ index: number; relData: RelationshipData }> =
           []
 
-        body.relationships.forEach((relData, index) => {
-          const { sourceId, targetId, relationshipType } = relData
-          if (!sourceId || !targetId || !relationshipType) {
+        body.relationships.forEach((rawRelationship, index) => {
+          const parsed = relationshipDataSchema.safeParse(rawRelationship)
+          if (!parsed.success) {
             errors.push({
-              relationship: relData,
-              error:
-                'Missing required fields (sourceId, targetId, or relationshipType)',
+              relationship: rawRelationship,
+              error: parsed.error.issues
+                .map((issue) => issue.message)
+                .join('; '),
             })
             return
           }
+          const relData = parsed.data
           candidates.push({ index, relData })
         })
 
-        // A BOM that lists the same child twice — "4 M4 screws here, 12 there"
-        // — is two lines for one edge, and `unique(source_id, target_id,
-        // relationship_type)` allows only one. Reject the whole request rather
-        // than let the driver reject the second insert: the caller has to merge
-        // those lines, and needs to be told which ones.
+        // A BOM that repeats the same complete edge identity is one line twice.
+        // Conditions and target executions are part of that identity, so the
+        // same child may still appear in several valid configurations.
         const duplicates = ItemRelationshipService.findDuplicateEdges(
           candidates.map((c) => c.relData),
         )
         if (duplicates.length > 0) {
           throw new ValidationError(
-            'A relationship may appear only once per (sourceId, targetId, ' +
-              'relationshipType); combine the duplicate lines and sum their ' +
-              'quantities',
+            'A relationship may appear only once per source, target, type, ' +
+              'option condition and target execution; combine the duplicate ' +
+              'lines and sum their quantities',
             duplicates.map(({ index, firstIndex, edge }) => ({
               field: `relationships[${candidates[index]!.index}]`,
               message:
@@ -303,6 +305,7 @@ app.post(
               targetId: itemRelationships.targetId,
               relationshipType: itemRelationships.relationshipType,
               option: itemRelationships.option,
+              targetMakeCode: itemRelationships.targetMakeCode,
             })
             .from(itemRelationships)
             .where(inArray(itemRelationships.sourceId, sourceIds))
@@ -324,6 +327,7 @@ app.post(
             findNumber?: number
             metadata?: Record<string, unknown>
             option?: OptionCondition | null
+            targetMakeCode?: string | null
           }
         }> = []
 
@@ -337,6 +341,7 @@ app.post(
             findNumber,
             metadata,
             option,
+            targetMakeCode,
           } = relData
 
           if (
@@ -346,6 +351,7 @@ app.post(
                 targetId,
                 relationshipType,
                 option,
+                targetMakeCode,
               }),
             )
           ) {
@@ -364,6 +370,7 @@ app.post(
               findNumber: findNumber || undefined,
               metadata: metadata || undefined,
               option: option ?? null,
+              targetMakeCode: targetMakeCode ?? null,
             },
           })
         }
@@ -420,6 +427,9 @@ const relationshipEditSchema = z.object({
   option: optionConditionSchema
     .nullish()
     .describe('Product variants: null makes the line fixed again.'),
+  targetMakeCode: makeCodeSchema
+    .nullish()
+    .describe('Active execution of the target Part revision; null clears it.'),
 })
 
 app.put(

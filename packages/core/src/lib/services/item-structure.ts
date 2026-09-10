@@ -34,6 +34,7 @@ export async function bomStructureOf(
       quantity: itemRelationships.quantity,
       findNumber: itemRelationships.findNumber,
       option: itemRelationships.option,
+      targetMakeCode: itemRelationships.targetMakeCode,
     })
     .from(itemRelationships)
     .where(
@@ -48,7 +49,7 @@ export async function bomStructureOf(
     signature: rows
       .map(
         (r) =>
-          `${r.targetId}:${r.quantity ?? ''}:${r.findNumber ?? ''}:${optionConditionKey(r.option)}`,
+          `${r.targetId}:${r.quantity ?? ''}:${r.findNumber ?? ''}:${optionConditionKey(r.option)}:${r.targetMakeCode ?? ''}`,
       )
       .sort()
       .join('|'),

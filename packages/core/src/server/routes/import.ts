@@ -537,6 +537,7 @@ app.post(
                   findNumber: rel.findNumber,
                   referenceDesignator: rel.referenceDesignator,
                   option: rel.option ? parseOptionText(rel.option) : null,
+                  targetMakeCode: rel.targetMakeCode,
                 },
                 { bypassEditGuard: true },
               )

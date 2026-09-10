@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { OptionCondition } from '@/lib/types/variants'
+import type { Make, OptionCondition } from '@/lib/types/variants'
 
 /**
  * Shapes shared by the relationships panel and its four views.
@@ -20,6 +20,7 @@ export interface Relationship {
   referenceDesignator: string | null
   findNumber: number | null
   option?: OptionCondition | null
+  targetMakeCode?: string | null
   targetItem: {
     id: string
     itemNumber: string
@@ -27,6 +28,7 @@ export interface Relationship {
     itemType: string
     name: string
     state: string
+    makes?: Array<Make> | null
   }
 }
 

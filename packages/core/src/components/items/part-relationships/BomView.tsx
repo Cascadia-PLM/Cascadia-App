@@ -19,6 +19,7 @@ import { exportBomTreeToCsv } from '@/components/bom/exportBomTree'
 import { StateBadge } from '@/components/items/StateBadge'
 import { OptionConditionChips } from '@/components/variants/OptionConditionChips'
 import { getItemDetailPath } from '@/lib/items/item-type-ui'
+import { formatPartDesignation } from '@/lib/types/variants'
 
 /**
  * The BOM structure tab: the assembly tree, in a grid layout.
@@ -61,7 +62,24 @@ export function BomView({
       width: 'flex-[2] min-w-[200px]',
       renderCell: (node) => (
         <span className="font-medium text-slate-900 dark:text-white truncate">
-          {node.itemNumber}
+          {node.targetMakeCode
+            ? formatPartDesignation({
+                itemNumber: node.itemNumber,
+                revision: node.revision,
+                makeCode: node.targetMakeCode,
+              })
+            : node.itemNumber}
+        </span>
+      ),
+    },
+    {
+      id: 'execution',
+      label: 'Execution',
+      width: 'w-20 flex-shrink-0',
+      align: 'center',
+      renderCell: (node) => (
+        <span className="text-xs font-mono text-slate-500">
+          {node.targetMakeCode ?? '—'}
         </span>
       ),
     },

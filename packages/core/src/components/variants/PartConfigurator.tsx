@@ -9,6 +9,7 @@ import type { ColumnDefinition } from '@/components/bom/BomTreeView'
 import type { BOMTreeNode } from '@/components/bom/types'
 import type { Make, OptionModel } from '@/lib/types/variants'
 import type { ResolvedBomNode } from '@/lib/query'
+import { makeCodeSchema } from '@/lib/types/variants'
 import {
   Badge,
   Button,
@@ -63,6 +64,7 @@ export function PartConfigurator({
       itemId: n.itemId,
       masterId: n.masterId,
       itemNumber: n.itemNumber,
+      designation: n.designation,
       name: n.name,
       revision: n.revision,
       state: n.state,
@@ -98,7 +100,7 @@ export function PartConfigurator({
       width: 'flex-[2] min-w-[180px]',
       renderCell: (node) => (
         <span className="font-medium text-slate-900 dark:text-white truncate">
-          {node.itemNumber}
+          {node.designation ?? node.itemNumber}
         </span>
       ),
     },
@@ -160,13 +162,14 @@ export function PartConfigurator({
   const validation = resolved.data?.validation
   const matchingMake = makes.find(
     (m) =>
+      m.active &&
       Object.keys(m.selections).length === Object.keys(selections).length &&
       Object.entries(m.selections).every(([k, v]) => selections[k] === v),
   )
   const canSave =
     Boolean(onSaveAsMake) &&
     validation?.valid === true &&
-    makeCode.trim().length > 0 &&
+    makeCodeSchema.safeParse(makeCode).success &&
     !makes.some((m) => m.code.toLowerCase() === makeCode.trim().toLowerCase())
 
   return (
@@ -264,7 +267,7 @@ export function PartConfigurator({
         {onSaveAsMake && (
           <>
             <div>
-              <div className="text-xs text-slate-500 mb-1">Make code</div>
+              <div className="text-xs text-slate-500 mb-1">Execution code</div>
               <Input
                 className="h-8 w-28 text-sm font-mono"
                 placeholder="MK1"
@@ -288,7 +291,7 @@ export function PartConfigurator({
               disabled={!canSave}
               onClick={() => {
                 onSaveAsMake({
-                  code: makeCode.trim(),
+                  code: makeCode.trim().toUpperCase(),
                   name: makeName.trim(),
                   selections,
                   active: true,
@@ -298,7 +301,7 @@ export function PartConfigurator({
               }}
             >
               <Save className="h-4 w-4 mr-1" />
-              Save as make
+              Save as execution
             </Button>
           </>
         )}

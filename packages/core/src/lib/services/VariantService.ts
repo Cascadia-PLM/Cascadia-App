@@ -19,6 +19,7 @@
  */
 
 import { and, eq, isNotNull } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { db } from '../db'
 import { itemRelationships, items, parts } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
@@ -26,6 +27,7 @@ import {
   conditionMatches,
   findUndeclared,
   formatOptionText,
+  formatPartDesignation,
   makesSchema,
   optionModelSchema,
   validateSelectionsAgainst,
@@ -82,6 +84,10 @@ export interface ResolvedBomNode {
   referenceDesignator: string | null
   /** The condition on the parent's line; null for a fixed line. */
   admittedBy: OptionCondition | null
+  /** Execution selected on the incoming BOM line. */
+  targetMakeCode: string | null
+  /** itemNumber + revision + selected execution; display-only. */
+  designation: string
   children: Array<ResolvedBomNode>
 }
 
@@ -91,6 +97,8 @@ export interface ResolvedBom {
     itemNumber: string
     name: string | null
     revision: string
+    makeCode: string | null
+    designation: string
   }
   selections: Record<string, string>
   validation: SelectionValidation
@@ -117,7 +125,7 @@ export class VariantService {
   static async resolve(
     itemId: string,
     selections: Record<string, string>,
-    options?: { branchId?: string },
+    options?: { branchId?: string; rootMakeCode?: string },
   ): Promise<ResolvedBom> {
     const { ItemService } = await import('../items/services/ItemService')
     const { ItemRelationshipService } =
@@ -139,8 +147,21 @@ export class VariantService {
           )
         : ItemRelationshipService.getRelationshipsWithDetails(id, 'BOM')
 
+    const activeMatchingRootMake = (root.makes ?? []).find(
+      (make) =>
+        make.active &&
+        Object.keys(make.selections).length ===
+          Object.keys(selections).length &&
+        Object.entries(make.selections).every(
+          ([family, value]) => selections[family] === value,
+        ),
+    )
+    const rootMakeCode =
+      options?.rootMakeCode ?? activeMatchingRootMake?.code ?? null
+
     const walk = async (
       parentId: string,
+      parentSelections: Record<string, string>,
       depth: number,
       path: Set<string>,
     ): Promise<Array<ResolvedBomNode>> => {
@@ -151,17 +172,35 @@ export class VariantService {
         const child = line.targetItem as
           (Part & { masterId: string }) | null | undefined
         if (!child) continue
-        if (!conditionMatches(line.option, selections)) {
+        if (!conditionMatches(line.option, parentSelections)) {
           droppedLines++
           continue
         }
         // A configurable child validates the same map against its own model,
         // seeing only the families it declares: the map is design-wide, so
         // a family the child never heard of is not its concern.
+        let childSelections = parentSelections
+        if (line.targetMakeCode) {
+          try {
+            childSelections = {
+              ...parentSelections,
+              ...(await this.selectionsForMake(child.id!, line.targetMakeCode)),
+            }
+          } catch (error) {
+            findings.push({
+              itemNumber: child.itemNumber ?? '',
+              message:
+                error instanceof Error
+                  ? error.message
+                  : `Execution ${line.targetMakeCode} cannot be resolved`,
+            })
+            childSelections = {}
+          }
+        }
         if (child.optionModel) {
           const childModel = child.optionModel
           const known = Object.fromEntries(
-            Object.entries(selections).filter(([family]) =>
+            Object.entries(childSelections).filter(([family]) =>
               childModel.families.some((f) => f.code === family),
             ),
           )
@@ -177,7 +216,12 @@ export class VariantService {
         const childMaster = child.masterId
         const children = path.has(childMaster)
           ? [] // cycle guard, by master as the ancestor walk does
-          : await walk(child.id!, depth + 1, new Set([...path, childMaster]))
+          : await walk(
+              child.id!,
+              childSelections,
+              depth + 1,
+              new Set([...path, childMaster]),
+            )
         kept.push({
           itemId: child.id!,
           masterId: childMaster,
@@ -192,6 +236,12 @@ export class VariantService {
           findNumber: line.findNumber ?? null,
           referenceDesignator: line.referenceDesignator ?? null,
           admittedBy: line.option,
+          targetMakeCode: line.targetMakeCode ?? null,
+          designation: formatPartDesignation({
+            itemNumber: child.itemNumber ?? '',
+            revision: child.revision,
+            makeCode: line.targetMakeCode,
+          }),
           children,
         })
       }
@@ -200,6 +250,7 @@ export class VariantService {
 
     const children = await walk(
       itemId,
+      selections,
       1,
       new Set([(root as Part & { masterId: string }).masterId]),
     )
@@ -210,6 +261,12 @@ export class VariantService {
         itemNumber: root.itemNumber ?? '',
         name: root.name ?? null,
         revision: root.revision ?? '',
+        makeCode: rootMakeCode,
+        designation: formatPartDesignation({
+          itemNumber: root.itemNumber ?? '',
+          revision: root.revision,
+          makeCode: rootMakeCode,
+        }),
       },
       selections,
       validation,
@@ -354,6 +411,9 @@ export class VariantService {
     // here, so every configuration of this part fails on that child.
     const declared = new Set(model.families.map((f) => f.code))
     for (const line of lines) {
+      // A pinned child execution supplies the child's own selections; it does
+      // not depend on the parent's flat option vocabulary.
+      if (line.targetMakeCode) continue
       const child = line.targetItem as Part | null | undefined
       const childModel = child?.optionModel
       if (!childModel) continue
@@ -415,6 +475,35 @@ export class VariantService {
         ),
       )
 
+    const [currentItem] = await executor
+      .select({ masterId: items.masterId })
+      .from(items)
+      .where(eq(items.id, currentId))
+      .limit(1)
+    const pinSourceItems = alias(items, 'variant_pin_source_items')
+    const incomingExecutionPins = currentItem
+      ? await executor
+          .select({
+            relationshipId: itemRelationships.id,
+            targetMakeCode: itemRelationships.targetMakeCode,
+          })
+          .from(itemRelationships)
+          .innerJoin(items, eq(items.id, itemRelationships.targetId))
+          .innerJoin(
+            pinSourceItems,
+            eq(pinSourceItems.id, itemRelationships.sourceId),
+          )
+          .where(
+            and(
+              eq(items.masterId, currentItem.masterId),
+              eq(pinSourceItems.isCurrent, true),
+              eq(pinSourceItems.isDeleted, false),
+              eq(itemRelationships.relationshipType, 'BOM'),
+              isNotNull(itemRelationships.targetMakeCode),
+            ),
+          )
+      : []
+
     const fieldErrors: Array<{ field: string; message: string; code: string }> =
       []
 
@@ -459,6 +548,19 @@ export class VariantService {
       }
     }
 
+    for (const pin of incomingExecutionPins) {
+      const make = (nextMakes ?? []).find(
+        (candidate) => candidate.code === pin.targetMakeCode,
+      )
+      if (!make?.active) {
+        fieldErrors.push({
+          field: 'makes',
+          message: `Execution ${pin.targetMakeCode} is used by BOM relationship ${pin.relationshipId} and must remain active`,
+          code: 'MAKE_IN_USE',
+        })
+      }
+    }
+
     if (fieldErrors.length > 0) {
       throw new ValidationError(fieldErrors[0]!.message, fieldErrors, {
         operation: 'update',
@@ -488,6 +590,15 @@ export class VariantService {
     )
     if (!make) {
       throw new NotFoundError('Make', makeCode, { itemId })
+    }
+    if (!make.active) {
+      throw new ValidationError(`Execution ${make.code} is inactive`, [
+        {
+          field: 'makeCode',
+          message: `Execution ${make.code} is inactive`,
+          code: 'MAKE_INACTIVE',
+        },
+      ])
     }
     return make.selections
   }

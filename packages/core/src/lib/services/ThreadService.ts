@@ -93,6 +93,8 @@ export interface ThreadEdge {
   derivationMethod: string | null
   /** Product variants: option condition on a BOM line; null when fixed. */
   option?: OptionCondition | null
+  /** Execution pinned on a BOM edge's target Part revision. */
+  targetMakeCode?: string | null
 }
 
 /**
@@ -846,6 +848,7 @@ export class ThreadService {
         domain: 'same',
         quantity: rel.quantity,
         option: rel.option ?? null,
+        targetMakeCode: rel.targetMakeCode ?? null,
         derivationMethod: null,
       })
 

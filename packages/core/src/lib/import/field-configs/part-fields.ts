@@ -255,4 +255,12 @@ export const BOM_FIELDS: Array<ItemFieldConfig> = [
     type: 'string',
     example: 'color=black; display=yes',
   },
+  {
+    field: 'targetMakeCode',
+    label: 'Target Execution',
+    required: false,
+    aliases: ['target execution', 'execution', 'make', 'make code', 'mk'],
+    type: 'string',
+    example: 'MK2',
+  },
 ]

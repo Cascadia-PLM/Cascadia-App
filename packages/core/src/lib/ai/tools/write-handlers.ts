@@ -802,6 +802,7 @@ async function createRelationshipHandlerImpl(
         findNumber: input.findNumber,
         referenceDesignator: input.referenceDesignator,
         option: input.option ? parseOptionText(input.option) : null,
+        targetMakeCode: input.targetMakeCode,
       },
     )
 

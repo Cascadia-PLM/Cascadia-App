@@ -43,6 +43,10 @@ export interface BOMTreeNode {
    * for a fixed line. Absent on roots.
    */
   option?: OptionCondition | null
+  /** Execution pinned on the incoming BOM line. */
+  targetMakeCode?: string | null
+  /** Display-only item number + revision + execution. */
+  designation?: string
   children?: Array<BOMTreeNode>
 
   // Cross-design: the node resolves to an item in another design

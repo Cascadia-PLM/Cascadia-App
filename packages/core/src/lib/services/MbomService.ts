@@ -16,7 +16,11 @@ import {
 } from '../db/schema'
 import { notDeleted } from '../db/filters'
 import { NotFoundError, ValidationError } from '../errors'
-import { conditionMatches, formatOptionText } from '../types/variants'
+import {
+  formatOptionText,
+  makeCodeSchema,
+  optionConditionKey,
+} from '../types/variants'
 import { DesignService } from './DesignService'
 import { BranchService } from './BranchService'
 import { UsageService } from './UsageService'
@@ -37,6 +41,8 @@ export const EBOM_SOURCE_RELATIONSHIP = 'EBOM_SOURCE'
  */
 export const createMbomSchema = z.object({
   sourceDesignId: z.string().uuid(),
+  /** Root Part whose BOM subtree is materialised. */
+  rootItemId: z.string().uuid().optional(),
   name: z.string().min(1, 'Name is required').max(200),
   code: z
     .string()
@@ -57,7 +63,7 @@ export const createMbomSchema = z.object({
   configuration: z
     .object({
       rootItemId: z.string().uuid(),
-      makeCode: z.string().optional(),
+      makeCode: makeCodeSchema.optional(),
       selections: z.record(z.string(), z.string()).optional(),
     })
     .refine((c) => c.makeCode !== undefined || c.selections !== undefined, {
@@ -186,41 +192,144 @@ export class MbomService {
     // Product variants: settle the configuration before any row is written.
     // The root must be a part of the source design; the selections must be
     // complete and constraint-valid for it.
+    const sourceMainBranch = await BranchService.getMainBranch(
+      validated.sourceDesignId,
+    )
+    if (!sourceMainBranch) {
+      throw new ValidationError('The source design has no main branch')
+    }
+    const sourceBranchItems = (
+      await VersionResolver.getBranchItems(sourceMainBranch.id)
+    ).items
+    const declaredRootItemId =
+      validated.rootItemId ?? validated.configuration?.rootItemId
+    let sourceRoot = declaredRootItemId
+      ? sourceBranchItems.find((item) => item.id === declaredRootItemId)
+      : undefined
+    if (!sourceRoot && declaredRootItemId) {
+      const { ItemService } = await import('../items/services/ItemService')
+      const requested = await ItemService.findById(declaredRootItemId)
+      sourceRoot = requested?.masterId
+        ? sourceBranchItems.find((item) => item.masterId === requested.masterId)
+        : undefined
+    }
+    if (!sourceRoot) {
+      const nestedTargets =
+        sourceBranchItems.length > 0
+          ? await db
+              .select({ masterId: items.masterId })
+              .from(itemRelationships)
+              .innerJoin(items, eq(items.id, itemRelationships.targetId))
+              .where(
+                and(
+                  inArray(
+                    itemRelationships.sourceId,
+                    sourceBranchItems.map((item) => item.id),
+                  ),
+                  eq(itemRelationships.relationshipType, 'BOM'),
+                ),
+              )
+          : []
+      const nestedMasterIds = new Set(
+        nestedTargets.map((target) => target.masterId),
+      )
+      const roots = sourceBranchItems.filter(
+        (item) =>
+          item.itemType === 'Part' &&
+          item.inDesignStructure &&
+          !nestedMasterIds.has(item.masterId),
+      )
+      if (roots.length !== 1) {
+        throw new ValidationError(
+          roots.length === 0
+            ? 'The source design has no root Part'
+            : 'Select the root Part to release; the source design has multiple roots',
+          undefined,
+          { field: 'rootItemId' },
+        )
+      }
+      sourceRoot = roots[0]!
+    }
+    if (
+      sourceRoot.itemType !== 'Part' ||
+      sourceRoot.designId !== validated.sourceDesignId
+    ) {
+      throw new ValidationError(
+        'The MBOM root must be a Part in the source design',
+        undefined,
+        { field: 'rootItemId' },
+      )
+    }
+    const sourceRootItemId = sourceRoot.id
+
     let configuration: DesignConfiguration | null = null
     if (validated.configuration) {
       const { VariantService } = await import('./VariantService')
       const { ItemService } = await import('../items/services/ItemService')
       const { rootItemId, makeCode } = validated.configuration
-      const root = await ItemService.findById(rootItemId)
-      if (!root || root.designId !== validated.sourceDesignId) {
+      const configurationRoot = await ItemService.findById(rootItemId)
+      if (configurationRoot?.masterId !== sourceRoot.masterId) {
         throw new ValidationError(
-          'The configuration root must be a part of the source design',
+          'The configuration root must match the selected MBOM root',
           undefined,
           { field: 'configuration.rootItemId' },
         )
       }
-      const selections =
-        validated.configuration.selections ??
-        (await VariantService.selectionsForMake(rootItemId, makeCode!))
-      const validation = await VariantService.validateSelections(
-        rootItemId,
-        selections,
-      )
-      if (!validation.valid) {
+      const namedSelections = makeCode
+        ? await VariantService.selectionsForMake(sourceRootItemId, makeCode)
+        : undefined
+      if (
+        namedSelections &&
+        validated.configuration.selections &&
+        (Object.keys(namedSelections).length !==
+          Object.keys(validated.configuration.selections).length ||
+          Object.entries(namedSelections).some(
+            ([family, value]) =>
+              validated.configuration?.selections?.[family] !== value,
+          ))
+      ) {
         throw new ValidationError(
-          validation.errors[0]?.message ?? 'Invalid configuration',
-          validation.errors.map((e) => ({
-            field: e.family
-              ? `configuration.selections.${e.family}`
-              : 'configuration.selections',
-            message: e.message,
-            code: 'INVALID_CONFIGURATION',
-          })),
+          `Selections do not match execution ${makeCode}`,
+          [
+            {
+              field: 'configuration.selections',
+              message: `Selections do not match execution ${makeCode}`,
+              code: 'MAKE_SELECTIONS_MISMATCH',
+            },
+          ],
+        )
+      }
+      const selections = namedSelections ?? validated.configuration.selections!
+      const resolved = await VariantService.resolve(
+        sourceRootItemId,
+        selections,
+        { rootMakeCode: makeCode },
+      )
+      if (!resolved.validation.valid || resolved.findings.length > 0) {
+        const nestedErrors = resolved.findings.map((finding) => ({
+          field: 'configuration',
+          message: `${finding.itemNumber}: ${finding.message}`,
+          code: 'INVALID_NESTED_CONFIGURATION',
+        }))
+        throw new ValidationError(
+          resolved.validation.errors[0]?.message ??
+            nestedErrors[0]?.message ??
+            'Invalid configuration',
+          [
+            ...resolved.validation.errors.map((e) => ({
+              field: e.family
+                ? `configuration.selections.${e.family}`
+                : 'configuration.selections',
+              message: e.message,
+              code: 'INVALID_CONFIGURATION',
+            })),
+            ...nestedErrors,
+          ],
           { field: 'configuration' },
         )
       }
       configuration = {
-        rootItemId,
+        rootItemId: sourceRootItemId,
         makeCode: makeCode ?? null,
         selections,
       }
@@ -332,6 +441,7 @@ export class MbomService {
           validated.code,
           validated.renumberItems,
           userId,
+          sourceRootItemId,
           configuration,
         )
         itemsCopied = copyResult.itemsCopied
@@ -419,6 +529,7 @@ export class MbomService {
     targetDesignCode: string,
     renumberItems: boolean,
     userId: string,
+    sourceRootItemId: string,
     configuration: DesignConfiguration | null = null,
   ): Promise<{
     itemsCopied: number
@@ -439,16 +550,6 @@ export class MbomService {
       }
     }
 
-    // Product variants: the root part gets the make code on its item number
-    // (P3001V1 + MK1 → P3001V1MK1), which is where a make becomes a
-    // manufacturable part number. Nothing else is renumbered by make.
-    let configuredRootMasterId: string | null = null
-    if (configuration) {
-      const { ItemService } = await import('../items/services/ItemService')
-      configuredRootMasterId =
-        (await ItemService.findById(configuration.rootItemId))?.masterId ?? null
-    }
-
     // Get all items on the source branch using proper version resolution
     // This uses VersionResolver.getBranchItems which:
     // - For main branch: returns items from commit history (released items)
@@ -466,17 +567,107 @@ export class MbomService {
       }
     }
 
-    // Deduplicate by itemNumber - take only one version per unique part
-    // This handles cases where multiple revisions exist with isCurrent=true
-    const sourceItemsByNumber = new Map<string, (typeof allSourceItems)[0]>()
-    for (const item of allSourceItems) {
-      const existing = sourceItemsByNumber.get(item.itemNumber)
-      if (!existing || item.revision > existing.revision) {
-        // Keep the highest revision
-        sourceItemsByNumber.set(item.itemNumber, item)
-      }
+    const sourceItemById = new Map(
+      allSourceItems.map((item) => [item.id, item]),
+    )
+    let rootItem = sourceItemById.get(sourceRootItemId)
+    if (!rootItem) {
+      const { ItemService } = await import('../items/services/ItemService')
+      const requestedRoot = await ItemService.findById(sourceRootItemId)
+      rootItem = requestedRoot?.masterId
+        ? allSourceItems.find(
+            (item) => item.masterId === requestedRoot.masterId,
+          )
+        : undefined
     }
-    const sourceItems = Array.from(sourceItemsByNumber.values())
+    if (!rootItem) {
+      throw new ValidationError('The selected root is not on the source branch')
+    }
+
+    // Read only the current source rows. Historical versions are not a second
+    // structure and must never be folded into the MBOM.
+    const candidateRelationships = await tx
+      .select()
+      .from(itemRelationships)
+      .where(
+        and(
+          inArray(
+            itemRelationships.sourceId,
+            allSourceItems.map((item) => item.id),
+          ),
+          eq(itemRelationships.relationshipType, 'BOM'),
+        ),
+      )
+
+    const targetIds = [
+      ...new Set(candidateRelationships.map((rel) => rel.targetId)),
+    ]
+    const targetVersions =
+      targetIds.length > 0
+        ? await tx
+            .select({ id: items.id, masterId: items.masterId })
+            .from(items)
+            .where(inArray(items.id, targetIds))
+        : []
+    const masterByItemId = new Map([
+      ...allSourceItems.map((item) => [item.id, item.masterId] as const),
+      ...targetVersions.map((item) => [item.id, item.masterId] as const),
+    ])
+    const currentByMaster = new Map(
+      allSourceItems.map((item) => [item.masterId, item] as const),
+    )
+
+    const includedMasterIds = new Set<string>([rootItem.masterId])
+    const selectedRelationshipIds = new Set<string>()
+    let linesFiltered = 0
+    if (configuration) {
+      const { VariantService } = await import('./VariantService')
+      const resolved = await VariantService.resolve(
+        rootItem.id,
+        configuration.selections,
+        { rootMakeCode: configuration.makeCode ?? undefined },
+      )
+      if (!resolved.validation.valid || resolved.findings.length > 0) {
+        throw new ValidationError('The configuration can no longer be resolved')
+      }
+      const collect = (nodes: typeof resolved.children) => {
+        for (const node of nodes) {
+          selectedRelationshipIds.add(node.relationshipId)
+          if (node.designId === sourceDesignId)
+            includedMasterIds.add(node.masterId)
+          collect(node.children)
+        }
+      }
+      collect(resolved.children)
+      linesFiltered = resolved.droppedLines
+    } else {
+      const relationshipsBySource = new Map<
+        string,
+        Array<(typeof candidateRelationships)[number]>
+      >()
+      for (const rel of candidateRelationships) {
+        const list = relationshipsBySource.get(rel.sourceId) ?? []
+        list.push(rel)
+        relationshipsBySource.set(rel.sourceId, list)
+      }
+      const walk = (sourceId: string, visited: Set<string>) => {
+        for (const rel of relationshipsBySource.get(sourceId) ?? []) {
+          selectedRelationshipIds.add(rel.id)
+          const targetMasterId = masterByItemId.get(rel.targetId)
+          const currentTarget = targetMasterId
+            ? currentByMaster.get(targetMasterId)
+            : undefined
+          if (!currentTarget || visited.has(currentTarget.masterId)) continue
+          includedMasterIds.add(currentTarget.masterId)
+          walk(currentTarget.id, new Set([...visited, currentTarget.masterId]))
+        }
+      }
+      walk(rootItem.id, new Set([rootItem.masterId]))
+    }
+
+    const sourceItems = allSourceItems.filter((item) =>
+      includedMasterIds.has(item.masterId),
+    )
 
     // Map old item IDs to new item IDs
     const itemIdMap = new Map<string, string>()
@@ -506,18 +697,13 @@ export class MbomService {
             usageOf: definitionId,
 
             // Copy field values from source, optionally renumbering the design code suffix
-            itemNumber:
-              (renumberItems
-                ? this.renumberItemNumber(
-                    sourceItem.itemNumber,
-                    sourceDesignCode,
-                    targetDesignCode,
-                  )
-                : sourceItem.itemNumber) +
-              (configuration?.makeCode &&
-              sourceItem.masterId === configuredRootMasterId
-                ? configuration.makeCode
-                : ''),
+            itemNumber: renumberItems
+              ? this.renumberItemNumber(
+                  sourceItem.itemNumber,
+                  sourceDesignCode,
+                  targetDesignCode,
+                )
+              : sourceItem.itemNumber,
             revision: '-', // Fresh start for MBOM usage
             itemType: sourceItem.itemType,
             name: sourceItem.name,
@@ -575,25 +761,7 @@ export class MbomService {
     // Get and copy BOM relationships (these define the MBOM structure)
     // Build masterId -> new usage ID mapping (like clone handler does)
     // This handles items that may have multiple versions
-    const sourceMasterIds = sourceItems.map((item) => item.masterId)
-
-    // Find ALL item version IDs for these masters (including old revisions)
-    // This ensures we capture relationships that may reference older versions
-    const allItemVersions = await tx
-      .select({
-        id: items.id,
-        masterId: items.masterId,
-      })
-      .from(items)
-      .where(inArray(items.masterId, sourceMasterIds))
-
-    const allSourceItemIds = allItemVersions.map((v) => v.id)
-
-    // Build itemId -> masterId mapping for all versions
-    const itemIdToMasterId = new Map<string, string>()
-    for (const v of allItemVersions) {
-      itemIdToMasterId.set(v.id, v.masterId)
-    }
+    const itemIdToMasterId = masterByItemId
 
     // Build masterId -> new usage ID mapping
     const masterIdToNewUsageId = new Map<string, string>()
@@ -604,22 +772,13 @@ export class MbomService {
       }
     }
 
-    // Get all BOM relationships where source is any version of our items
-    const sourceRelationships = await tx
-      .select()
-      .from(itemRelationships)
-      .where(
-        and(
-          inArray(itemRelationships.sourceId, allSourceItemIds),
-          eq(itemRelationships.relationshipType, 'BOM'),
-        ),
-      )
+    const sourceRelationships = candidateRelationships.filter((rel) =>
+      selectedRelationshipIds.has(rel.id),
+    )
 
     // Track which relationships we've already copied (by masterId pair) to avoid duplicates
     const copiedRelationships = new Set<string>()
     let relationshipsCopied = 0
-    let linesFiltered = 0
-
     for (const rel of sourceRelationships) {
       // Map item IDs to masterIds, then to new usage IDs
       const sourceMasterId = itemIdToMasterId.get(rel.sourceId)
@@ -633,13 +792,6 @@ export class MbomService {
       // selections admit, and copies them as fixed lines. The condition that
       // admitted a line is kept as a derivation note. Without a
       // configuration the 150 % BOM is copied as it is, conditions included.
-      if (
-        configuration &&
-        !conditionMatches(rel.option, configuration.selections)
-      ) {
-        linesFiltered++
-        continue
-      }
       const copiedOption = configuration ? null : rel.option
       const derivationNotes =
         configuration && rel.option
@@ -648,7 +800,13 @@ export class MbomService {
 
       // Check if we've already copied this relationship (from a different version)
       // For external targets (library items), use the original targetId for dedup
-      const relKey = `${sourceMasterId}:${targetMasterId || rel.targetId}`
+      const relKey = [
+        sourceMasterId,
+        targetMasterId || rel.targetId,
+        rel.relationshipType,
+        optionConditionKey(copiedOption),
+        rel.targetMakeCode ?? '',
+      ].join('\u0000')
       if (copiedRelationships.has(relKey)) {
         continue
       }
@@ -658,30 +816,31 @@ export class MbomService {
 
       if (!newSourceId) continue
 
-      if (targetMasterId) {
-        // Target is within our item set - remap to new usage ID
-        const newTargetId = masterIdToNewUsageId.get(targetMasterId)
-        if (newTargetId) {
-          await tx.insert(itemRelationships).values({
-            sourceId: newSourceId,
-            targetId: newTargetId,
-            relationshipType: 'BOM',
-            quantity: rel.quantity,
-            referenceDesignator: rel.referenceDesignator,
-            findNumber: rel.findNumber,
-            metadata: rel.metadata,
-            option: copiedOption,
-            derivationNotes,
-            isComposite: rel.isComposite,
-            isDirected: rel.isDirected,
-            multiplicityLower: rel.multiplicityLower,
-            multiplicityUpper: rel.multiplicityUpper,
-            usageAttributes: rel.usageAttributes,
-            createdBy: userId,
-            modifiedBy: userId,
-          })
-          relationshipsCopied++
-        }
+      const newTargetId = targetMasterId
+        ? masterIdToNewUsageId.get(targetMasterId)
+        : undefined
+      if (newTargetId) {
+        // Target is within the selected source subtree - remap to its usage.
+        await tx.insert(itemRelationships).values({
+          sourceId: newSourceId,
+          targetId: newTargetId,
+          relationshipType: 'BOM',
+          quantity: rel.quantity,
+          referenceDesignator: rel.referenceDesignator,
+          findNumber: rel.findNumber,
+          metadata: rel.metadata,
+          option: copiedOption,
+          targetMakeCode: rel.targetMakeCode,
+          derivationNotes,
+          isComposite: rel.isComposite,
+          isDirected: rel.isDirected,
+          multiplicityLower: rel.multiplicityLower,
+          multiplicityUpper: rel.multiplicityUpper,
+          usageAttributes: rel.usageAttributes,
+          createdBy: userId,
+          modifiedBy: userId,
+        })
+        relationshipsCopied++
       } else {
         // Target is outside our item set (e.g., library item from another design)
         // Preserve the relationship pointing to the original external item
@@ -694,6 +853,7 @@ export class MbomService {
           findNumber: rel.findNumber,
           metadata: rel.metadata,
           option: copiedOption,
+          targetMakeCode: rel.targetMakeCode,
           derivationNotes,
           isComposite: rel.isComposite,
           isDirected: rel.isDirected,

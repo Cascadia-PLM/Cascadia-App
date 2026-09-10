@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import type { BOMTreeNode } from './types'
-import { formatOptionText } from '@/lib/types/variants'
+import { formatOptionText, formatPartDesignation } from '@/lib/types/variants'
 
 interface ExportOptions {
   filename?: string
@@ -19,6 +19,8 @@ interface FlattenedNode {
   quantity?: number
   findNumber?: number
   option?: string
+  targetMakeCode?: string
+  designation: string
   designCode?: string
   isExternal?: boolean
   changeAction?: string | null
@@ -45,6 +47,12 @@ function flattenBomTree(
       quantity: node.quantity,
       findNumber: node.findNumber,
       option: formatOptionText(node.option) || undefined,
+      targetMakeCode: node.targetMakeCode ?? undefined,
+      designation: formatPartDesignation({
+        itemNumber: node.itemNumber,
+        revision: node.revision,
+        makeCode: node.targetMakeCode,
+      }),
       designCode: node.designCode,
       isExternal: node.isExternal,
       changeAction: node.changeAction,
@@ -95,6 +103,7 @@ export function exportBomTreeToCsv(
   const headers = [
     'Level',
     'Item Number',
+    'Designation',
     'Name',
     'Revision',
     'State',
@@ -102,6 +111,7 @@ export function exportBomTreeToCsv(
     'Quantity',
     'Find Number',
     'Option',
+    'Target Execution',
     'Design',
     'External',
   ]
@@ -115,6 +125,7 @@ export function exportBomTreeToCsv(
     const row = [
       node.level,
       node.itemNumber,
+      node.designation,
       node.name,
       node.revision,
       node.state,
@@ -122,6 +133,7 @@ export function exportBomTreeToCsv(
       node.quantity ?? '',
       node.findNumber ?? '',
       node.option ?? '',
+      node.targetMakeCode ?? '',
       node.designCode ?? '',
       node.isExternal ? 'Yes' : '',
     ]

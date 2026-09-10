@@ -50,6 +50,13 @@
       "when": 1789228530388,
       "tag": "0006_domain_events",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789365797834,
+      "tag": "0007_product_variants",
+      "breakpoints": true
     }
   ]
 }

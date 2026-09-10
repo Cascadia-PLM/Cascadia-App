@@ -183,6 +183,10 @@ export const parts = pgTable('parts', {
    */
   optionModel: jsonb('option_model').$type<OptionModel>(),
   makes: jsonb('makes').$type<Array<Make>>(),
+  // Lightweight grouping only: the item itself remains the independently
+  // revisioned variant (for example family P3001, variant V1).
+  productFamilyCode: varchar('product_family_code', { length: 100 }),
+  variantCode: varchar('variant_code', { length: 50 }),
 })
 
 export const documents = pgTable('documents', {
@@ -682,6 +686,8 @@ export const itemRelationships = pgTable(
      * the partial unique index below can compare it byte for byte.
      */
     option: jsonb('option').$type<OptionCondition>(),
+    /** Optional execution of the target Part revision (for example MK2). */
+    targetMakeCode: varchar('target_make_code', { length: 50 }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -715,18 +721,43 @@ export const itemRelationships = pgTable(
     derivationNotes: text('derivation_notes'),
   },
   (table) => [
-    // An edge is (source, target, type) — plus its option condition, so one
+    // An edge is (source, target, type) — plus its option condition and
+    // selected target execution, so one
     // child can appear on a parent's BOM under two conditions with different
     // quantities. Postgres never equates NULLs, so a single index over the
-    // four columns would let fixed lines duplicate; two partial indexes keep
-    // both cases unique. Both names carry the `item_relationships_` prefix
-    // that `isUniqueViolation(error, { table })` matches on.
+    // five columns would let fixed lines duplicate; four partial indexes keep
+    // every null/non-null combination unique. Their names carry the
+    // `item_relationships_` prefix that
+    // `isUniqueViolation(error, { table })` matches on.
     uniqueIndex('item_relationships_fixed_edge_unique')
       .on(table.sourceId, table.targetId, table.relationshipType)
-      .where(sql`${table.option} IS NULL`),
+      .where(sql`${table.option} IS NULL AND ${table.targetMakeCode} IS NULL`),
+    uniqueIndex('item_relationships_fixed_make_edge_unique')
+      .on(
+        table.sourceId,
+        table.targetId,
+        table.relationshipType,
+        table.targetMakeCode,
+      )
+      .where(
+        sql`${table.option} IS NULL AND ${table.targetMakeCode} IS NOT NULL`,
+      ),
     uniqueIndex('item_relationships_option_edge_unique')
       .on(table.sourceId, table.targetId, table.relationshipType, table.option)
-      .where(sql`${table.option} IS NOT NULL`),
+      .where(
+        sql`${table.option} IS NOT NULL AND ${table.targetMakeCode} IS NULL`,
+      ),
+    uniqueIndex('item_relationships_option_make_edge_unique')
+      .on(
+        table.sourceId,
+        table.targetId,
+        table.relationshipType,
+        table.option,
+        table.targetMakeCode,
+      )
+      .where(
+        sql`${table.option} IS NOT NULL AND ${table.targetMakeCode} IS NOT NULL`,
+      ),
     index('idx_source').on(table.sourceId),
     index('idx_target').on(table.targetId),
     index('idx_relationship_type').on(table.relationshipType),

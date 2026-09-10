@@ -13,7 +13,9 @@ import { z } from 'zod'
 import { tagged } from '../adapter'
 import { apiHandler, parseQuery } from '@/lib/api/handler'
 import { requireItemAccess } from '@/lib/auth/access'
+import { ValidationError } from '@/lib/errors'
 import { VariantService } from '@/lib/services/VariantService'
+import { makeCodeSchema } from '@/lib/types/variants'
 
 const adapt = tagged('Variants')
 
@@ -70,7 +72,9 @@ app.post(
 const resolveBodySchema = z
   .object({
     selections: selectionsSchema.optional(),
-    makeCode: z.string().optional().describe('A named make on the part'),
+    makeCode: makeCodeSchema
+      .optional()
+      .describe('A named execution on the part'),
     branchId: z.string().uuid().optional(),
   })
   .refine((b) => b.selections !== undefined || b.makeCode !== undefined, {
@@ -100,6 +104,8 @@ app.post(
                   itemNumber: z.string(),
                   name: z.string().nullable(),
                   revision: z.string(),
+                  makeCode: z.string().nullable(),
+                  designation: z.string(),
                 }),
                 selections: selectionsSchema,
                 validation: z.object({
@@ -119,11 +125,33 @@ app.post(
       },
       async ({ params, body, user }) => {
         await requireItemAccess(user.id, params.id)
-        const selections =
-          body.selections ??
-          (await VariantService.selectionsForMake(params.id, body.makeCode!))
+        const namedSelections = body.makeCode
+          ? await VariantService.selectionsForMake(params.id, body.makeCode)
+          : undefined
+        if (
+          namedSelections &&
+          body.selections &&
+          (Object.keys(namedSelections).length !==
+            Object.keys(body.selections).length ||
+            Object.entries(namedSelections).some(
+              ([family, value]) => body.selections?.[family] !== value,
+            ))
+        ) {
+          throw new ValidationError(
+            `Selections do not match execution ${body.makeCode}`,
+            [
+              {
+                field: 'selections',
+                message: `Selections do not match execution ${body.makeCode}`,
+                code: 'MAKE_SELECTIONS_MISMATCH',
+              },
+            ],
+          )
+        }
+        const selections = namedSelections ?? body.selections!
         return VariantService.resolve(params.id, selections, {
           branchId: body.branchId,
+          rootMakeCode: body.makeCode,
         })
       },
     ),

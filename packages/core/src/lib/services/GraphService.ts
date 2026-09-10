@@ -23,6 +23,7 @@
 import { and, eq, inArray, isNull, ne, or } from 'drizzle-orm'
 import { UsageService } from './UsageService'
 import type { OptionCondition } from '@/lib/types/variants'
+import { optionConditionKey } from '@/lib/types/variants'
 import { db } from '@/lib/db'
 import {
   itemRelationships,
@@ -86,6 +87,7 @@ export interface GraphEdge {
     referenceDesignator?: string | null
     findNumber?: number | null
     option?: OptionCondition | null // Product variants: condition on a BOM line
+    targetMakeCode?: string | null
     isUsageRelationship?: boolean // True for usageOf edges
     isPhysicalRelationship?: boolean // True for derived INSTANCE_OF/BUILDS edges
     isFileRelationship?: boolean // True for derived ATTACHED_FILE edges
@@ -166,6 +168,7 @@ interface CollectedRelationship {
   quantity: string | null
   referenceDesignator: string | null
   option?: OptionCondition | null
+  targetMakeCode?: string | null
   findNumber: number | null
   isUsageRelationship?: boolean
   isPhysicalRelationship?: boolean
@@ -691,6 +694,7 @@ export class GraphService {
             referenceDesignator: rel.referenceDesignator,
             findNumber: rel.findNumber,
             option: rel.option ?? null,
+            targetMakeCode: rel.targetMakeCode ?? null,
             isUsageRelationship: false,
           })
 
@@ -713,6 +717,7 @@ export class GraphService {
             referenceDesignator: rel.referenceDesignator,
             findNumber: rel.findNumber,
             option: rel.option ?? null,
+            targetMakeCode: rel.targetMakeCode ?? null,
             isUsageRelationship: false,
           })
           enqueue(rel.sourceId)
@@ -917,7 +922,13 @@ export class GraphService {
       // Skip self-loops (can happen when remapping different revisions)
       if (canonicalSourceId === canonicalTargetId) continue
 
-      const edgeId = `${canonicalSourceId}-${canonicalTargetId}-${rel.relationshipType}`
+      const edgeId = [
+        canonicalSourceId,
+        canonicalTargetId,
+        rel.relationshipType,
+        optionConditionKey(rel.option),
+        rel.targetMakeCode ?? '',
+      ].join('\u0000')
       if (!addedEdges.has(edgeId)) {
         addedEdges.add(edgeId)
         graphData.edges.push({
@@ -934,6 +945,7 @@ export class GraphService {
             referenceDesignator: rel.referenceDesignator,
             findNumber: rel.findNumber,
             option: rel.option ?? null,
+            targetMakeCode: rel.targetMakeCode ?? null,
             isUsageRelationship: rel.isUsageRelationship ?? false,
             isPhysicalRelationship: rel.isPhysicalRelationship ?? false,
           },

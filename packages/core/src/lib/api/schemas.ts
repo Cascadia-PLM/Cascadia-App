@@ -12,7 +12,12 @@
  */
 
 import { z } from 'zod'
-import { makesSchema, optionModelSchema } from '@/lib/types/variants'
+import {
+  makesSchema,
+  optionModelSchema,
+  productFamilyCodeSchema,
+  variantCodeSchema,
+} from '@/lib/types/variants'
 import { changeOrderTypeSchema } from '@/lib/items/types/change-order'
 import { jsonValueSchema } from '@/lib/items/types/base'
 import { testStepSchema } from '@/lib/items/types/testcase'
@@ -84,6 +89,8 @@ export const partCreateSchema = z.object({
   cost: z.string().optional(),
   costCurrency: z.string().length(3).optional().default('USD'),
   leadTimeDays: z.number().int().min(0).optional(),
+  productFamilyCode: productFamilyCodeSchema.nullable().optional(),
+  variantCode: variantCodeSchema.nullable().optional(),
   branchId: z.string().uuid().optional(), // For versioned workflow
 })
 
@@ -120,6 +127,8 @@ export const partUpdateSchema = z.object({
   // refuses a model change that strands a conditioned BOM line or a make.
   optionModel: optionModelSchema.nullable().optional(),
   makes: makesSchema.nullable().optional(),
+  productFamilyCode: productFamilyCodeSchema.nullable().optional(),
+  variantCode: variantCodeSchema.nullable().optional(),
   // Echoed by whole-item form saves. `ItemService.update` tolerates an
   // identical value and rejects a changed one — a state change goes through
   // the lifecycle, not through here.

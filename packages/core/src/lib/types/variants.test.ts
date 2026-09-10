@@ -11,6 +11,8 @@ import { describe, expect, it } from 'vitest'
 import {
   conditionMatches,
   formatOptionText,
+  formatPartDesignation,
+  makeCodeSchema,
   normalizeOptionCondition,
   optionConditionKey,
   optionConditionSchema,
@@ -250,5 +252,25 @@ describe('optionModelSchema', () => {
       ],
     })
     expect(result.success).toBe(false)
+  })
+})
+
+describe('engineering execution designation', () => {
+  it('normalises MK codes and rejects variant codes as executions', () => {
+    expect(makeCodeSchema.parse(' mk2 ')).toBe('MK2')
+    expect(makeCodeSchema.safeParse('V2').success).toBe(false)
+  })
+
+  it('composes a display value without changing the item number', () => {
+    expect(
+      formatPartDesignation({
+        itemNumber: 'P3001V1',
+        revision: 'R2',
+        makeCode: 'mk1',
+      }),
+    ).toBe('P3001V1R2MK1')
+    expect(
+      formatPartDesignation({ itemNumber: 'P3001V1', revision: '-' }),
+    ).toBe('P3001V1DRAFT')
   })
 })

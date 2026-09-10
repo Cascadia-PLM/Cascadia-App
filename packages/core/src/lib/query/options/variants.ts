@@ -82,6 +82,8 @@ export interface ResolvedBomNode {
   findNumber: number | null
   referenceDesignator: string | null
   admittedBy: { all: Array<{ family: string; values: Array<string> }> } | null
+  targetMakeCode: string | null
+  designation: string
   children: Array<ResolvedBomNode>
 }
 
@@ -91,6 +93,8 @@ export interface ResolvedBom {
     itemNumber: string
     name: string | null
     revision: string
+    makeCode: string | null
+    designation: string
   }
   selections: Record<string, string>
   validation: SelectionValidation

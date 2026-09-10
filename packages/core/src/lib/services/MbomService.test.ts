@@ -230,6 +230,23 @@ describe('MbomService', () => {
       expect(edges.map((e) => e.quantity).sort()).toEqual(['1.000', '2.000'])
     })
 
+    it('copies only the selected root subtree when a design has several products', async () => {
+      await seedEngineeringDesign()
+      const { assembly } = await seedTwoLevelBom()
+      const unrelated = await createPart('Unrelated product')
+
+      const result = await createMbom({ rootItemId: assembly.id })
+
+      expect(result.itemsCopied).toBe(3)
+      const copiedNumbers = (
+        await testDb.db
+          .select({ itemNumber: items.itemNumber })
+          .from(items)
+          .where(eq(items.designId, result.design.id))
+      ).map((item) => item.itemNumber)
+      expect(copiedNumbers).not.toContain(unrelated.itemNumber)
+    })
+
     it('points every copied item at the source it came from, unreleased and initial', async () => {
       await seedEngineeringDesign()
       const { assembly, childA, childB } = await seedTwoLevelBom()
@@ -952,7 +969,7 @@ describe('MbomService — configuration (product variants)', () => {
       )
   }
 
-  it('keeps the fixed and admitted lines as fixed lines, records the configuration, and numbers the root by make', async () => {
+  it('keeps admitted lines fixed, records the configuration, and preserves the root item number', async () => {
     const { assembly, pcb, housingBlack, housingWhite } =
       await seedConfigurableDesign()
 
@@ -1001,7 +1018,7 @@ describe('MbomService — configuration (product variants)', () => {
           ),
         ),
     )
-    expect(root.itemNumber).toBe(`${assembly.itemNumber}MK1`)
+    expect(root.itemNumber).toBe(assembly.itemNumber)
   })
 
   it('accepts explicit selections and copies the whole 150% BOM without one', async () => {

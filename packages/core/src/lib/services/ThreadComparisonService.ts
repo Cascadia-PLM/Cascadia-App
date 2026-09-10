@@ -70,6 +70,7 @@ export interface ThreadEdgeDiff {
     quantityChanged?: boolean
     derivationMethodChanged?: boolean
     optionChanged?: boolean
+    targetMakeChanged?: boolean
   }
   sourceContext: 'before' | 'after' | 'both'
 }
@@ -672,33 +673,64 @@ export class ThreadComparisonService {
 
   /**
    * Compute edge diffs between two sets of relationships.
-   * Matches edges by sourceId + targetId + relationshipType.
+   * Exact identity includes the option condition and target execution. When an
+   * edge has changed one of those fields, a second pass pairs the remaining
+   * edge in the same source/target/type group so the UI can show a modification
+   * rather than losing one of several parallel BOM lines in a Map.
    */
   private static computeEdgeDiffs(
     beforeEdges: Array<ThreadEdge>,
     afterEdges: Array<ThreadEdge>,
   ): Array<ThreadEdgeDiff> {
-    const edgeKey = (edge: ThreadEdge) =>
-      `${edge.sourceId}|${edge.targetId}|${edge.relationshipType}`
+    const baseKey = (edge: ThreadEdge) =>
+      [edge.sourceId, edge.targetId, edge.relationshipType].join('\u0000')
+    const exactKey = (edge: ThreadEdge) =>
+      [
+        baseKey(edge),
+        optionConditionKey(edge.option),
+        edge.targetMakeCode ?? '',
+      ].join('\u0000')
 
-    const beforeByKey = new Map<string, ThreadEdge>()
-    const afterByKey = new Map<string, ThreadEdge>()
+    const beforeByExact = new Map<string, Array<number>>()
+    const beforeByBase = new Map<string, Array<number>>()
+    beforeEdges.forEach((edge, index) => {
+      const exact = beforeByExact.get(exactKey(edge)) ?? []
+      exact.push(index)
+      beforeByExact.set(exactKey(edge), exact)
 
-    for (const edge of beforeEdges) {
-      beforeByKey.set(edgeKey(edge), edge)
+      const base = beforeByBase.get(baseKey(edge)) ?? []
+      base.push(index)
+      beforeByBase.set(baseKey(edge), base)
+    })
+
+    const matchedBefore = new Set<number>()
+    const beforeMatchByAfter = new Map<number, number>()
+    const takeAvailable = (indices: Array<number> | undefined) => {
+      const index = indices?.find((candidate) => !matchedBefore.has(candidate))
+      if (index !== undefined) matchedBefore.add(index)
+      return index
     }
-    for (const edge of afterEdges) {
-      afterByKey.set(edgeKey(edge), edge)
-    }
+
+    // Preserve all unchanged parallel edges before pairing modifications.
+    afterEdges.forEach((edge, afterIndex) => {
+      const beforeIndex = takeAvailable(beforeByExact.get(exactKey(edge)))
+      if (beforeIndex !== undefined)
+        beforeMatchByAfter.set(afterIndex, beforeIndex)
+    })
+    afterEdges.forEach((edge, afterIndex) => {
+      if (beforeMatchByAfter.has(afterIndex)) return
+      const beforeIndex = takeAvailable(beforeByBase.get(baseKey(edge)))
+      if (beforeIndex !== undefined)
+        beforeMatchByAfter.set(afterIndex, beforeIndex)
+    })
 
     const diffs: Array<ThreadEdgeDiff> = []
-    const processedKeys = new Set<string>()
 
     // Process edges in "after"
-    for (const afterEdge of afterEdges) {
-      const key = edgeKey(afterEdge)
-      const beforeEdge = beforeByKey.get(key)
-      processedKeys.add(key)
+    afterEdges.forEach((afterEdge, afterIndex) => {
+      const beforeIndex = beforeMatchByAfter.get(afterIndex)
+      const beforeEdge =
+        beforeIndex === undefined ? undefined : beforeEdges[beforeIndex]
 
       if (!beforeEdge) {
         // Added
@@ -715,8 +747,16 @@ export class ThreadComparisonService {
         const optionChanged =
           optionConditionKey(beforeEdge.option) !==
           optionConditionKey(afterEdge.option)
+        const targetMakeChanged =
+          (beforeEdge.targetMakeCode ?? null) !==
+          (afterEdge.targetMakeCode ?? null)
 
-        if (quantityChanged || derivationMethodChanged || optionChanged) {
+        if (
+          quantityChanged ||
+          derivationMethodChanged ||
+          optionChanged ||
+          targetMakeChanged
+        ) {
           diffs.push({
             edge: afterEdge,
             status: 'modified',
@@ -725,6 +765,7 @@ export class ThreadComparisonService {
               quantityChanged,
               derivationMethodChanged,
               optionChanged,
+              targetMakeChanged,
             },
             sourceContext: 'both',
           })
@@ -736,19 +777,18 @@ export class ThreadComparisonService {
           })
         }
       }
-    }
+    })
 
     // Process edges only in "before" (removed)
-    for (const beforeEdge of beforeEdges) {
-      const key = edgeKey(beforeEdge)
-      if (!processedKeys.has(key)) {
+    beforeEdges.forEach((beforeEdge, beforeIndex) => {
+      if (!matchedBefore.has(beforeIndex)) {
         diffs.push({
           edge: beforeEdge,
           status: 'removed',
           sourceContext: 'before',
         })
       }
-    }
+    })
 
     return diffs
   }

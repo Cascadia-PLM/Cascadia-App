@@ -33,7 +33,11 @@ import { OptionConditionChips } from '@/components/variants/OptionConditionChips
 import { OptionConditionPopover } from '@/components/variants/OptionConditionPopover'
 import { BOM_RELATIONSHIP_TYPE } from '@/components/items/bom-target-scope'
 import { getItemDetailPath } from '@/lib/items/item-type-ui'
-import { conditionMatches, formatOptionText } from '@/lib/types/variants'
+import {
+  conditionMatches,
+  formatOptionText,
+  formatPartDesignation,
+} from '@/lib/types/variants'
 
 /**
  * The relationships table: one collapsible DataGrid per relationship type.
@@ -191,7 +195,13 @@ export function TableView({
               itemId={rel.targetItem.id}
               className="font-medium text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 hover:underline flex items-center gap-1"
             >
-              {rel.targetItem.itemNumber}
+              {rel.targetMakeCode
+                ? formatPartDesignation({
+                    itemNumber: rel.targetItem.itemNumber,
+                    revision: rel.targetItem.revision,
+                    makeCode: rel.targetMakeCode,
+                  })
+                : rel.targetItem.itemNumber}
               <ExternalLink className="h-3 w-3" />
             </ItemLink>
           )
@@ -209,6 +219,25 @@ export function TableView({
             {getValue() as string}
           </Badge>
         ),
+      },
+      {
+        id: 'targetMakeCode',
+        header: 'Execution',
+        accessorFn: (row) => row.targetMakeCode,
+        enableSorting: true,
+        enableFiltering: true,
+        filterType: 'text' as const,
+        meta: { width: '90px', align: 'center' as const },
+        cell: ({ getValue }) => {
+          const value = getValue() as string | null
+          return value ? (
+            <Badge variant="outline" className="font-mono text-xs">
+              {value}
+            </Badge>
+          ) : (
+            '—'
+          )
+        },
       },
       {
         id: 'name',
@@ -397,12 +426,14 @@ export function TableView({
                   <SelectContent>
                     <SelectItem value="all">All lines (150 %)</SelectItem>
                     <SelectItem value="fixed">Fixed lines only</SelectItem>
-                    {makes.map((m) => (
-                      <SelectItem key={m.code} value={m.code}>
-                        {m.code}
-                        {m.name ? ` — ${m.name}` : ''}
-                      </SelectItem>
-                    ))}
+                    {makes
+                      .filter((m) => m.active)
+                      .map((m) => (
+                        <SelectItem key={m.code} value={m.code}>
+                          {m.code}
+                          {m.name ? ` — ${m.name}` : ''}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>

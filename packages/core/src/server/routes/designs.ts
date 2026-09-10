@@ -1064,6 +1064,8 @@ app.post(
                   findNumber: rel.findNumber,
                   referenceDesignator: rel.referenceDesignator,
                   metadata: rel.metadata,
+                  option: rel.option,
+                  targetMakeCode: rel.targetMakeCode,
                   isComposite: rel.isComposite,
                   isDirected: rel.isDirected,
                   multiplicityLower: rel.multiplicityLower,
@@ -1107,6 +1109,8 @@ app.post(
                   findNumber: rel.findNumber,
                   referenceDesignator: rel.referenceDesignator,
                   metadata: rel.metadata,
+                  option: rel.option,
+                  targetMakeCode: rel.targetMakeCode,
                   isComposite: rel.isComposite,
                   isDirected: rel.isDirected,
                   multiplicityLower: rel.multiplicityLower,
@@ -2341,6 +2345,7 @@ app.get(
           quantity?: number
           findNumber?: number
           option?: OptionCondition | null
+          targetMakeCode?: string | null
         }>
       >()
       const hasParent = new Set<string>()
@@ -2393,7 +2398,7 @@ app.get(
           const resolvedTargetId = resolveItemId(rel.targetId)
 
           // Deduplicate by resolved source-target pair
-          const relKey = `${resolvedSourceId}:${resolvedTargetId}:${optionConditionKey(rel.option)}`
+          const relKey = `${resolvedSourceId}:${resolvedTargetId}:${optionConditionKey(rel.option)}:${rel.targetMakeCode ?? ''}`
           if (addedRelationships.has(relKey)) continue
           addedRelationships.add(relKey)
 
@@ -2406,6 +2411,7 @@ app.get(
             quantity: rel.quantity ? Number(rel.quantity) : undefined,
             findNumber: rel.findNumber ?? undefined,
             option: rel.option ?? null,
+            targetMakeCode: rel.targetMakeCode ?? null,
           })
           hasParent.add(resolvedTargetId)
         }
@@ -2461,6 +2467,7 @@ app.get(
               node.findNumber = c.findNumber
               node.relationshipId = c.relationshipId
               node.option = c.option ?? null
+              node.targetMakeCode = c.targetMakeCode ?? null
             }
             return node
           })
@@ -2584,7 +2591,7 @@ app.get(
 
           // Add relationships
           for (const rel of childRels) {
-            const relKey = `${rel.sourceId}:${rel.targetId}:${optionConditionKey(rel.option)}`
+            const relKey = `${rel.sourceId}:${rel.targetId}:${optionConditionKey(rel.option)}:${rel.targetMakeCode ?? ''}`
             if (!addedRelationships.has(relKey)) {
               addedRelationships.add(relKey)
               if (!childrenMap.has(rel.sourceId)) {
@@ -2596,6 +2603,7 @@ app.get(
                 quantity: rel.quantity ? Number(rel.quantity) : undefined,
                 findNumber: rel.findNumber ?? undefined,
                 option: rel.option ?? null,
+                targetMakeCode: rel.targetMakeCode ?? null,
               })
               hasParent.add(rel.targetId)
             }

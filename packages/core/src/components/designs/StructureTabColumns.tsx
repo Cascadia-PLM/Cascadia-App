@@ -8,6 +8,7 @@ import type { BOMTreeNode } from '@/components/bom/types'
 import { Badge } from '@/components/ui'
 import { getStateBadgeVariant } from '@/components/bom/helpers'
 import { OptionConditionChips } from '@/components/variants/OptionConditionChips'
+import { formatPartDesignation } from '@/lib/types/variants'
 
 /**
  * The design structure grid's columns. Extracted from `StructureTab` — the
@@ -45,7 +46,13 @@ export function useStructureColumns(
                     : 'text-slate-900 dark:text-white'
                 }`}
               >
-                {node.itemNumber}
+                {node.targetMakeCode
+                  ? formatPartDesignation({
+                      itemNumber: node.itemNumber,
+                      revision: node.revision,
+                      makeCode: node.targetMakeCode,
+                    })
+                  : node.itemNumber}
               </span>
               {node.isCrossDesignRef && node.designCode && (
                 <Badge
@@ -150,9 +157,29 @@ export function useStructureColumns(
           ),
         })
       }
+      if (
+        roots.some((root) => {
+          const hasExecution = (node: BOMTreeNode): boolean =>
+            Boolean(node.targetMakeCode) ||
+            Boolean(node.children?.some(hasExecution))
+          return hasExecution(root)
+        })
+      ) {
+        columns.splice(4, 0, {
+          id: 'execution',
+          label: 'Execution',
+          width: 'w-20 flex-shrink-0',
+          align: 'center',
+          renderCell: (node) => (
+            <span className="text-xs font-mono text-slate-500">
+              {node.targetMakeCode ?? '—'}
+            </span>
+          ),
+        })
+      }
       return columns
     },
     // isHistoricalView was the original memo key; the columns read it lazily.
-    [isHistoricalView, showOption],
+    [isHistoricalView, roots, showOption],
   )
 }

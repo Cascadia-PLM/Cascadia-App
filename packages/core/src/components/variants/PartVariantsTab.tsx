@@ -20,6 +20,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Input,
 } from '@/components/ui'
 import { apiFetch } from '@/lib/api/client'
 import {
@@ -58,6 +59,10 @@ export function PartVariantsTab({
     part.optionModel ?? EMPTY_MODEL,
   )
   const [makes, setMakes] = useState<Array<Make>>(part.makes ?? [])
+  const [productFamilyCode, setProductFamilyCode] = useState(
+    part.productFamilyCode ?? '',
+  )
+  const [variantCode, setVariantCode] = useState(part.variantCode ?? '')
   const [dirty, setDirty] = useState(false)
   const [selections, setSelections] = useState<Record<string, string>>({})
   const [mbomConfig, setMbomConfig] = useState<MbomConfigurationInput | null>(
@@ -78,8 +83,16 @@ export function PartVariantsTab({
     if (!dirty) {
       setModel(part.optionModel ?? EMPTY_MODEL)
       setMakes(part.makes ?? [])
+      setProductFamilyCode(part.productFamilyCode ?? '')
+      setVariantCode(part.variantCode ?? '')
     }
-  }, [part.optionModel, part.makes, dirty])
+  }, [
+    part.optionModel,
+    part.makes,
+    part.productFamilyCode,
+    part.variantCode,
+    dirty,
+  ])
 
   useEffect(() => {
     if (!isEditing) setDirty(false)
@@ -91,7 +104,15 @@ export function PartVariantsTab({
     mutationFn: () =>
       apiFetch(`/api/v1/parts/${partId}`, {
         method: 'PUT',
-        body: JSON.stringify({ optionModel: model, makes }),
+        body: JSON.stringify({
+          optionModel:
+            model.families.length > 0 || model.constraints.length > 0
+              ? model
+              : null,
+          makes: makes.length > 0 ? makes : null,
+          productFamilyCode: productFamilyCode.trim() || null,
+          variantCode: variantCode.trim() || null,
+        }),
       }),
     invalidates: ['parts'],
     onSuccess: () => setDirty(false),
@@ -109,6 +130,63 @@ export function PartVariantsTab({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle>Product family</CardTitle>
+                <CardDescription>
+                  Groups independently revisioned Part variants. For example,
+                  family P3001 contains variants V1, V2 and V3; this Part keeps
+                  its own item number, files and lifecycle.
+                </CardDescription>
+              </div>
+              {isEditing && (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!dirty || save.isPending}
+                  onClick={() => save.mutate()}
+                >
+                  {save.isPending ? 'Saving…' : 'Save variant data'}
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-slate-500 dark:text-slate-400">
+                Family code
+              </label>
+              <Input
+                className="mt-1 flex h-9 w-full rounded-md border border-slate-300 bg-transparent px-3 py-1 text-sm font-mono shadow-sm dark:border-slate-700"
+                placeholder="P3001"
+                value={productFamilyCode}
+                disabled={!isEditing}
+                onChange={(event) => {
+                  setProductFamilyCode(event.target.value.toUpperCase())
+                  setDirty(true)
+                }}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 dark:text-slate-400">
+                Variant code
+              </label>
+              <Input
+                className="mt-1 flex h-9 w-full rounded-md border border-slate-300 bg-transparent px-3 py-1 text-sm font-mono shadow-sm dark:border-slate-700"
+                placeholder="V1"
+                value={variantCode}
+                disabled={!isEditing}
+                onChange={(event) => {
+                  setVariantCode(event.target.value.toUpperCase())
+                  setDirty(true)
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Configure</CardTitle>
@@ -137,8 +215,9 @@ export function PartVariantsTab({
               onCreateMbom={
                 design
                   ? (chosen) => {
-                      const matching = makes.find(
+                      const matching = (part.makes ?? []).find(
                         (m) =>
+                          m.active &&
                           Object.keys(m.selections).length ===
                             Object.keys(chosen).length &&
                           Object.entries(m.selections).every(
@@ -194,11 +273,11 @@ export function PartVariantsTab({
 
         <Card>
           <CardHeader>
-            <CardTitle>Makes</CardTitle>
+            <CardTitle>Executions (MK)</CardTitle>
             <CardDescription>
-              Named, complete configurations of this part. A make revisions with
-              the part; deriving a Manufacturing design from one gives it a part
-              number of its own.
+              Named configurations of this exact Part revision. Executions do
+              not revise independently; the full designation is composed as item
+              number + revision + MK code.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -211,6 +290,8 @@ export function PartVariantsTab({
                 setMakes(next)
                 setDirty(true)
               }}
+              itemNumber={part.itemNumber ?? ''}
+              revision={part.revision}
             />
           </CardContent>
         </Card>

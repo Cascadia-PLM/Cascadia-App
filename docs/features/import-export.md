@@ -322,6 +322,7 @@ In addition to standard part fields, BOM imports support these relationship fiel
 | Find Number          | number | Position identifier on drawings                                                                                 | `find #`, `find number`, `find no`, `item no`, `seq`, `sequence`              |
 | Reference Designator | string | Component reference (e.g., R1, R2)                                                                              | `ref des`, `reference designator`, `designator`                               |
 | Option Condition     | string | Product variants: `color=black; display=yes,no` (blank = fixed line); the parent part must declare the families | `option`, `condition`, `applies to`, `variant`                                |
+| Target Execution     | string | Active execution of the target Part revision, e.g. `MK2`                                                        | `target execution`, `execution`, `make`, `make code`, `mk`                    |
 
 ### External Parent Support
 

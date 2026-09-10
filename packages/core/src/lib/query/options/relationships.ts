@@ -157,6 +157,7 @@ interface BomRelationship {
   quantity: string | null
   findNumber: number | null
   option?: OptionCondition | null
+  targetMakeCode?: string | null
   targetItem: BomItem
 }
 
@@ -237,6 +238,7 @@ export function itemBomTreeQuery(
           findNumber: rel.findNumber ?? undefined,
           relationshipId: rel.id,
           option: rel.option ?? null,
+          targetMakeCode: rel.targetMakeCode ?? null,
         }
       }),
     )

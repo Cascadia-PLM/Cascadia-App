@@ -20,6 +20,7 @@ import { BranchService } from '@/lib/services/BranchService'
 import { CommitService } from '@/lib/services/CommitService'
 import { UsageService } from '@/lib/services/UsageService'
 import { VersionResolver } from '@/lib/services/VersionResolver'
+import { optionConditionKey } from '@/lib/types/variants'
 
 const BATCH_SIZE = 50
 
@@ -390,7 +391,13 @@ export const cloneDesignHandler: JobHandler<
           }
 
           // Check if we've already copied this relationship (from a different version)
-          const relKey = `${sourceMasterId}:${targetMasterId || rel.targetId}:${rel.relationshipType}`
+          const relKey = [
+            sourceMasterId,
+            targetMasterId || rel.targetId,
+            rel.relationshipType,
+            optionConditionKey(rel.option),
+            rel.targetMakeCode ?? '',
+          ].join(' ')
           if (copiedRelationships.has(relKey)) {
             skippedDuplicate++
             continue
@@ -426,6 +433,7 @@ export const cloneDesignHandler: JobHandler<
               referenceDesignator: rel.referenceDesignator,
               metadata: rel.metadata,
               option: rel.option,
+              targetMakeCode: rel.targetMakeCode,
               isComposite: rel.isComposite,
               isDirected: rel.isDirected,
               multiplicityLower: rel.multiplicityLower,
@@ -447,6 +455,7 @@ export const cloneDesignHandler: JobHandler<
               referenceDesignator: rel.referenceDesignator,
               metadata: rel.metadata,
               option: rel.option,
+              targetMakeCode: rel.targetMakeCode,
               isComposite: rel.isComposite,
               isDirected: rel.isDirected,
               multiplicityLower: rel.multiplicityLower,
@@ -464,7 +473,32 @@ export const cloneDesignHandler: JobHandler<
         )
       }
 
-      // ==================================================================            createdBy: userId,
+      // =========================================================================
+      // 7. Copy cross-design references (baseline only)
+      // =========================================================================
+      await context.updateProgress(90, 'Copying cross-design references...')
+
+      let crossReferencesCopied = 0
+
+      const sourceCrossRefs = await db
+        .select()
+        .from(designCrossReferences)
+        .where(
+          and(
+            eq(designCrossReferences.referencingDesignId, sourceDesignId),
+            isNull(designCrossReferences.branchId),
+          ),
+        )
+
+      if (sourceCrossRefs.length > 0) {
+        for (const ref of sourceCrossRefs) {
+          await db.insert(designCrossReferences).values({
+            referencingDesignId: targetDesign.id,
+            referencedItemId: ref.referencedItemId,
+            sourceDesignId: ref.sourceDesignId,
+            inDesignStructure: ref.inDesignStructure,
+            notes: ref.notes,
+            createdBy: userId,
             modifiedBy: userId,
           })
           crossReferencesCopied++

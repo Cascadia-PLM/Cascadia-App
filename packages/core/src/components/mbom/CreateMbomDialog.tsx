@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { CheckCircle2, Factory, Loader2, XCircle } from 'lucide-react'
+import type { BOMTreeNode, OrphanItem } from '@/lib/types/bom'
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,11 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { apiFetch } from '@/lib/api/client'
-import { designTagsQuery, useResourceMutation } from '@/lib/query'
+import {
+  designStructureQuery,
+  designTagsQuery,
+  useResourceMutation,
+} from '@/lib/query'
 
 interface Tag {
   id: string
@@ -85,6 +90,7 @@ export function CreateMbomDialog({
   const [copyBomStructure, setCopyBomStructure] = useState(true)
   const [linkToSource, setLinkToSource] = useState(true)
   const [renumberItems, setRenumberItems] = useState(true)
+  const [rootItemId, setRootItemId] = useState(configuration?.rootItemId ?? '')
 
   // The baseline tags are only worth asking for while the dialog is on
   // screen, but the answer is the one every other reader of this design's
@@ -94,6 +100,10 @@ export function CreateMbomDialog({
     ...designTagsQuery<Tag>(sourceDesignId),
     enabled: open,
   })
+  const { data: structure } = useQuery(
+    designStructureQuery<BOMTreeNode, OrphanItem>(sourceDesignId),
+  )
+  const roots = structure?.roots ?? []
 
   /**
    * Creating an MBOM mints a whole Manufacturing design carrying copies of
@@ -107,6 +117,7 @@ export function CreateMbomDialog({
         method: 'POST',
         body: JSON.stringify({
           sourceDesignId,
+          rootItemId,
           code: code.toUpperCase(),
           name,
           description: description || undefined,
@@ -152,9 +163,13 @@ export function CreateMbomDialog({
       setCopyBomStructure(true)
       setLinkToSource(true)
       setRenumberItems(true)
+      setRootItemId(
+        configuration?.rootItemId ??
+          (structure?.roots.length === 1 ? structure.roots[0]!.itemId : ''),
+      )
       createMbom.reset()
     }
-  }, [open, sourceDesignCode, sourceDesignName, configuration])
+  }, [open, sourceDesignCode, sourceDesignName, configuration, structure])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -232,6 +247,33 @@ export function CreateMbomDialog({
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     BOM lines this configuration does not select are left out;
                     the rest become fixed lines.
+                  </p>
+                </div>
+              )}
+
+              {!configuration && (
+                <div className="space-y-2">
+                  <Label htmlFor="mbomRoot">Root Part</Label>
+                  <Select
+                    value={rootItemId}
+                    onValueChange={setRootItemId}
+                    disabled={isFormDisabled}
+                  >
+                    <SelectTrigger id="mbomRoot">
+                      <SelectValue placeholder="Select the product to release" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roots.map((root) => (
+                        <SelectItem key={root.itemId} value={root.itemId}>
+                          {root.itemNumber} — {root.name || 'Unnamed'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {copyBomStructure
+                      ? 'Only this Part and its BOM subtree are copied to the MBOM.'
+                      : 'Identifies the product this Manufacturing design represents.'}
                   </p>
                 </div>
               )}
@@ -366,7 +408,7 @@ export function CreateMbomDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isFormDisabled}>
+              <Button type="submit" disabled={isFormDisabled || !rootItemId}>
                 {createMbom.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

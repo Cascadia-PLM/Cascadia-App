@@ -211,6 +211,38 @@ export interface Make {
   active: boolean
 }
 
+/** Product-family metadata groups independently revisioned Part variants. */
+export const productFamilyCodeSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .min(1)
+  .max(100)
+  .regex(
+    /^[A-Z0-9][A-Z0-9_-]*$/,
+    'Product family code must use uppercase letters, digits, "_" and "-"',
+  )
+
+export const variantCodeSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .min(1)
+  .max(50)
+  .regex(
+    /^[A-Z0-9][A-Z0-9_-]*$/,
+    'Variant code must use uppercase letters, digits, "_" and "-"',
+  )
+
+/** MK identifies an execution of one concrete Part revision. */
+export const makeCodeSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .min(1)
+  .max(50)
+  .regex(/^MK[A-Z0-9-]*$/, 'Execution code must start with MK')
+
 export const optionModelSchema = z
   .object({
     families: z
@@ -281,11 +313,26 @@ export const optionModelSchema = z
   })
 
 export const makeSchema = z.object({
-  code: z.string().trim().min(1).max(50),
+  code: makeCodeSchema,
   name: z.string().trim().max(200).default(''),
   selections: z.record(optionCodeSchema, optionCodeSchema),
   active: z.boolean().default(true),
 })
+
+/**
+ * Display-only engineering designation. Revision and execution remain
+ * separate database fields; composing them into itemNumber would destroy
+ * stable identity and revision history.
+ */
+export function formatPartDesignation(input: {
+  itemNumber: string
+  revision?: string | null
+  makeCode?: string | null
+}): string {
+  const revision = input.revision?.trim()
+  const makeCode = input.makeCode?.trim().toUpperCase()
+  return `${input.itemNumber}${revision && revision !== '-' ? revision : 'DRAFT'}${makeCode ?? ''}`
+}
 
 export const makesSchema = z.array(makeSchema).superRefine((makes, ctx) => {
   const seen = new Set<string>()

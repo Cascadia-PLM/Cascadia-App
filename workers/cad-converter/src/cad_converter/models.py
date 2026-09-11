@@ -67,6 +67,21 @@ class CadConversionResult(BaseModel):
     glbFileIds: Optional[list[str]] = None
 
 
+class GlbNode(BaseModel):
+    """
+    One separately-addressable part inside a structured assembly GLB.
+
+    Written to the GLB vault file's `cad_metadata` so the app can list what is
+    in a model without parsing it, and so a node -> part-item link has
+    something stable to be keyed by. `nodeKey` is the glTF node's name.
+    """
+
+    nodeKey: str
+    name: str
+    path: list[str] = Field(default_factory=list)
+    polygonCount: int = 0
+
+
 class ConversionOutput(BaseModel):
     """Internal result from the converter, before vault storage."""
 
@@ -78,6 +93,9 @@ class ConversionOutput(BaseModel):
     thumbnail_path: Optional[str] = None
     glb_path: Optional[str] = None
     color: Optional[list[float]] = None  # [r, g, b] in [0.0, 1.0]
+    #: Empty for a single part, and for an assembly written before the
+    #: structured writer existed — both are flat GLBs with nothing to select.
+    glb_nodes: list[GlbNode] = Field(default_factory=list)
 
 
 class JobMessage(BaseModel):

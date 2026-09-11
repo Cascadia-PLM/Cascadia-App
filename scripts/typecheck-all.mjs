@@ -16,6 +16,15 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 
+/**
+ * Heap for each `tsc`, in MB. Node's default is sized from physical memory —
+ * about 2 GB on a GitHub-hosted runner — and core's program alone outgrew it
+ * (2.1 GB, measured 2026-09-11). CI's Build job had been passing 4096 through
+ * its own NODE_OPTIONS, so it stayed green while a caller without that setting
+ * ran out of heap on the same code. The limit lives here so no caller lacks it.
+ */
+const TSC_HEAP_MB = 4096
+
 /** `[project directory, tsconfig filename, file that must exist first]` */
 const PROJECTS = [
   // The packages use their `tsconfig.typecheck.json`, which leaves out route
@@ -52,10 +61,18 @@ for (const [project, configName, requires] of PROJECTS) {
   }
   process.stdout.write(`tsc ${project} ... `)
   try {
-    execFileSync('npx', ['tsc', '--noEmit', '-p', config], {
-      stdio: 'pipe',
-      shell: process.platform === 'win32',
-    })
+    // `node` rather than `npx`, so the heap flag lands on tsc itself.
+    execFileSync(
+      process.execPath,
+      [
+        `--max-old-space-size=${TSC_HEAP_MB}`,
+        'node_modules/typescript/bin/tsc',
+        '--noEmit',
+        '-p',
+        config,
+      ],
+      { stdio: 'pipe' },
+    )
     console.log('ok')
   } catch (error) {
     console.log('FAILED')

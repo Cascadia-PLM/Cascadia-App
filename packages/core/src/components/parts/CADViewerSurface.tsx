@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
+import { useState } from 'react'
 import { CADViewer } from './CADViewer'
 import { CADViewerToolbar } from './CADViewerToolbar'
+import { CADSelectionCaption, CADSelectionMenu } from './CADSelectionOverlay'
+import { CADNodeLinkDialog } from './CADNodeLinkDialog'
 import type { CADComparison } from './CADViewer'
 import type { CADFileEntry } from './cad-types'
+import type { CADSelectionState } from './useCADSelectionState'
 import type { CADViewerState } from './useCADViewerState'
+import { ContextMenu, ContextMenuTrigger } from '@/components/ui/ContextMenu'
 
 /**
  * The viewport itself: the focusable container, its floating toolbar, and the
@@ -21,6 +26,7 @@ export function CADViewerSurface({
   viewer,
   file,
   comparison = null,
+  selection,
   onError,
   children,
 }: {
@@ -32,11 +38,20 @@ export function CADViewerSurface({
    */
   file: CADFileEntry
   comparison?: CADComparison | null
+  /**
+   * Which part of an assembly model is selected, when the caller has a BOM to
+   * resolve parts against. Omitted by the design and program viewers, which
+   * show a model without the part context that would give a node meaning —
+   * and the viewer then does no picking at all.
+   */
+  selection?: CADSelectionState
   onError: (error: unknown, options: { title: string }) => void
   /** Overlays drawn inside the viewport — the comparison panel, today. */
   children?: React.ReactNode
 }) {
-  return (
+  const [isLinkDialogOpen, setLinkDialogOpen] = useState(false)
+
+  const body = (
     <div
       ref={viewer.containerRef}
       className={`relative ${viewer.fullscreen ? 'h-screen' : 'h-[500px]'}`}
@@ -69,6 +84,8 @@ export function CADViewerSurface({
         materialPreset={viewer.material}
         hasEmbeddedColors={file.hasColors && file.fileType === 'glb'}
         comparison={comparison}
+        selectedNodeKey={selection?.selectedNodeKey ?? null}
+        onNodeSelect={selection?.selectable ? selection.select : undefined}
         onLoad={viewer.onModelLoad}
         onError={(error) =>
           onError(error, { title: 'Failed to load CAD model' })
@@ -77,7 +94,30 @@ export function CADViewerSurface({
           onError(error, { title: 'Failed to load a model being compared' })
         }
       />
+      {selection?.selectable && <CADSelectionCaption selection={selection} />}
       {children}
     </div>
+  )
+
+  // The context menu is mounted only for a model with parts to act on, so a
+  // right-click on a single part still gets the browser's own menu — the one
+  // that can save the image or inspect the canvas.
+  if (!selection?.selectable) return body
+
+  return (
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>{body}</ContextMenuTrigger>
+        <CADSelectionMenu
+          selection={selection}
+          onRelink={() => setLinkDialogOpen(true)}
+        />
+      </ContextMenu>
+      <CADNodeLinkDialog
+        selection={selection}
+        open={isLinkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+      />
+    </>
   )
 }

@@ -63,7 +63,13 @@ const REPO_ROOT = resolve(__dirname, '..')
 // v1.4.0 adds the third dataset, standard-library — unreleased components in
 // STD-LIB. Optional in DATASETS, so an older pin still fetches cleanly and
 // seed:demo just reports the library as absent.
-const DEFAULT_REF = 'v1.4.0'
+// v1.5.0 rebakes every assembly GLB with a glTF node per leaf part, and adds
+// robot-arm/nodes/ plus `nodes` on the FreeCAD bundle's vault_files rows, so
+// the viewer can select a part and open the item it is. Unlike the v1.2.0
+// up-axis bump this needs no guard: an older pin seeds models that are simply
+// one solid, which is what they have always been, and `seed:demo` says so
+// rather than leaving it to be noticed in the viewer.
+const DEFAULT_REF = 'v1.5.0'
 
 const REF = process.env.DEMO_DATA_REF ?? DEFAULT_REF
 const REPO =

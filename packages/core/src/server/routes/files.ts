@@ -36,6 +36,8 @@ import {
   updateAnnotationSchema,
 } from '@/lib/vault/annotations'
 import { AnnotationService } from '@/lib/vault/services/AnnotationService'
+import { resetNodeLinkSchema, setNodeLinkSchema } from '@/lib/vault/cad-nodes'
+import { CadModelNodeService } from '@/lib/vault/services/CadModelNodeService'
 import { WATERMARK_POSITIONS } from '@/lib/vault/pdf/watermark'
 
 const adapt = tagged('Files')
@@ -799,6 +801,120 @@ app.delete(
         await requireFileAccess(params.fileId, user.id)
         await AnnotationService.delete(params.annotationId, user.id)
         return { deleted: true }
+      },
+    ),
+  ),
+)
+
+// ============================================
+// Assembly model parts
+// ============================================
+
+// GET /api/files/:fileId/cad-nodes
+//
+// What the 3D viewer needs to make an assembly selectable: the model's own
+// parts, each resolved to the PLM part it is. Empty for a flat model, which
+// is every single part and every assembly converted before the CAD converter
+// started writing a glTF node per part.
+app.get(
+  '/:fileId/cad-nodes',
+  adapt(
+    apiHandler<{ fileId: string }>(
+      {
+        permission: ['documents', 'read'],
+        openapi: {
+          summary: "List an assembly model's selectable parts",
+          description:
+            'Each glTF node in the model, resolved to a PLM part by matching ' +
+            "the CAD's own name against the assembly's BOM, with any recorded " +
+            'corrections applied. Empty for a model with no part structure.',
+          request: {
+            params: z.object({ fileId: z.string().uuid() }),
+            query: z.object({
+              branchId: z
+                .string()
+                .uuid()
+                .optional()
+                .describe('Resolve the BOM as this branch sees it.'),
+            }),
+          },
+        },
+      },
+      async ({ params, request, user }) => {
+        await requireFileAccess(params.fileId, user.id)
+        // Validated against the same schema the annotation above documents, so
+        // `branchId=nonsense` is a 400 and not a Postgres uuid-syntax 500.
+        const { branchId } = parseQuery(
+          request,
+          z.object({ branchId: z.string().uuid().optional() }),
+        )
+        return CadModelNodeService.listNodes(params.fileId, { branchId })
+      },
+    ),
+  ),
+)
+
+// PUT /api/files/:fileId/cad-nodes/link
+//
+// Correct what a node in the model is. `parts:update` rather than
+// `documents:update`: the statement being recorded is about part structure —
+// "this geometry is that part" — not about the file carrying it.
+app.put(
+  '/:fileId/cad-nodes/link',
+  adapt(
+    apiHandler<{ fileId: string }, z.infer<typeof setNodeLinkSchema>>(
+      {
+        body: setNodeLinkSchema,
+        permission: ['parts', 'update'],
+        openapi: {
+          summary: 'Bind a model part to a PLM part',
+          description:
+            'A null `partItemId` records that the node is deliberately not a ' +
+            'BOM part, which suppresses the automatic match. To hand the node ' +
+            'back to matching, reset it instead.',
+          request: {
+            params: z.object({ fileId: z.string().uuid() }),
+          },
+        },
+      },
+      async ({ body: input, params, user }) => {
+        await requireFileAccess(params.fileId, user.id)
+        return {
+          node: await CadModelNodeService.setLink(
+            params.fileId,
+            input.nodeKey,
+            input.partItemId,
+            user.id,
+          ),
+        }
+      },
+    ),
+  ),
+)
+
+// POST /api/files/:fileId/cad-nodes/reset
+app.post(
+  '/:fileId/cad-nodes/reset',
+  adapt(
+    apiHandler<{ fileId: string }, z.infer<typeof resetNodeLinkSchema>>(
+      {
+        body: resetNodeLinkSchema,
+        permission: ['parts', 'update'],
+        openapi: {
+          summary: "Drop a node's recorded part, restoring the automatic match",
+          request: {
+            params: z.object({ fileId: z.string().uuid() }),
+          },
+        },
+      },
+      async ({ body: input, params, user }) => {
+        await requireFileAccess(params.fileId, user.id)
+        return {
+          node: await CadModelNodeService.clearLink(
+            params.fileId,
+            input.nodeKey,
+          ),
+        }
       },
     ),
   ),

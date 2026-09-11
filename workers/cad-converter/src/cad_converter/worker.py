@@ -541,6 +541,11 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
                 }
                 if output.bounding_box:
                     glb_cad_meta["boundingBox"] = output.bounding_box.model_dump()
+                # Only a structured assembly GLB has these. Their presence is
+                # what tells the viewer the model can be taken apart, so an
+                # empty list is left off rather than written as one.
+                if output.glb_nodes:
+                    glb_cad_meta["nodes"] = [n.model_dump() for n in output.glb_nodes]
 
                 glb_file_id = insert_vault_file(
                     item_id=payload.itemId,

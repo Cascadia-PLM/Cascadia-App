@@ -22,7 +22,7 @@ from OCC.Core.STEPControl import STEPControl_Reader
 from OCC.Core.StlAPI import StlAPI_Writer
 from OCC.Core.TopoDS import TopoDS_Shape
 
-from .models import BoundingBox, ConversionOutput, MeshQuality, MESH_PRESETS
+from .models import BoundingBox, ConversionOutput, GlbNode, MeshQuality, MESH_PRESETS
 
 logger = logging.getLogger(__name__)
 
@@ -207,8 +207,8 @@ def _xde_glb_subprocess(
         from OCC.Core.XCAFApp import XCAFApp_Application
         from OCC.Core.XCAFDoc import XCAFDoc_DocumentTool
 
-        from .colors import PartColor, extract_shape_colors, get_dominant_color
-        from .gltf_writer import write_glb
+        from .colors import PartColor, extract_all_colors, get_dominant_color
+        from .gltf_writer import write_glb, write_structured_glb
 
         quality = MeshQuality(quality_value)
 
@@ -256,21 +256,52 @@ def _xde_glb_subprocess(
             raise ValueError("XDE produced no shapes")
 
         # Extract colors
-        color_map = extract_shape_colors(doc)
+        shape_colors = extract_all_colors(doc)
+        color_map = shape_colors.faces
         dominant_color = get_dominant_color(color_map)
 
-        # Tessellate
+        # Tessellate. This triangulates the underlying faces, which the
+        # per-part prototype shapes below share with the located compound —
+        # so the structured path needs no second tessellation pass.
         linear, angular = MESH_PRESETS[quality]
         tessellate(shape, linear, angular)
 
-        # Write GLB
+        fallback_color = dominant_color or PartColor(0.45, 0.50, 0.56)
+
+        # An assembly is written with a node per leaf part, so the viewer can
+        # select one. A single part has nothing to take apart and takes the
+        # flat path, which is also the fallback whenever the XDE tree turns
+        # out not to describe an assembly at all.
+        placed_parts: list = []
+        try:
+            from .assembly import collect_placed_parts
+            from .colors import get_color_tool
+
+            placed_parts = collect_placed_parts(shape_tool, get_color_tool(doc))
+        except Exception as e:
+            logger.warning(
+                "Assembly structure walk failed; writing a flat GLB: %s", e
+            )
+
         os.makedirs(os.path.dirname(glb_output_path), exist_ok=True)
-        glb_path, glb_polygons = write_glb(
-            shape,
-            color_map,
-            glb_output_path,
-            default_color=dominant_color or PartColor(0.45, 0.50, 0.56),
-        )
+        nodes: list = []
+        if len(placed_parts) > 1:
+            glb_path, glb_polygons, nodes = write_structured_glb(
+                placed_parts,
+                color_map,
+                glb_output_path,
+                default_color=fallback_color,
+                # The located-face map above cannot answer for the unplaced
+                # prototypes this path draws from; this one can.
+                tshape_color_map=shape_colors.tshapes,
+            )
+        else:
+            glb_path, glb_polygons = write_glb(
+                shape,
+                color_map,
+                glb_output_path,
+                default_color=fallback_color,
+            )
 
         color_list = dominant_color.to_list() if dominant_color else None
 
@@ -279,6 +310,7 @@ def _xde_glb_subprocess(
             "glb_path": glb_path,
             "color": color_list,
             "polygon_count": glb_polygons,
+            "nodes": nodes,
         }
         with open(result_path, "w") as f:
             json.dump(result, f)
@@ -366,11 +398,13 @@ def convert_single_with_colors(
         # Merge GLB result into the STL conversion output
         result.glb_path = xde_result.get("glb_path")
         result.color = xde_result.get("color")
+        result.glb_nodes = [GlbNode(**n) for n in xde_result.get("nodes") or []]
 
         if result.glb_path:
             logger.info(
-                "GLB with colors generated: %d polygons",
+                "GLB with colors generated: %d polygons, %d selectable parts",
                 xde_result.get("polygon_count", 0),
+                len(result.glb_nodes),
             )
 
     except Exception as e:

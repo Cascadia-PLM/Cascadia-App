@@ -478,10 +478,12 @@ jobs:
       # a standalone tsc job would report a number unrelated to the code and
       # gate nothing. Running here reuses the trees the builds just produced —
       # and both must exist, since `typecheck-all` checks each app separately.
+      #
+      # No NODE_OPTIONS: tsc's heap is set inside typecheck-all, so every caller
+      # of that script gets it. It lived here once, and a caller without it ran
+      # out of heap at Node's ~2 GB runner default while this job stayed green.
       - name: Typecheck
         run: npm run typecheck:strict
-        env:
-          NODE_OPTIONS: '--max-old-space-size=4096'
 
   compose-config:
     name: Compose Config Validation

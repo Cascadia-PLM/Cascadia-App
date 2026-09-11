@@ -234,10 +234,14 @@ Uses `ChangeOrderDesignStructureTree` (which wraps `BomTreeView`) to show the fu
 
 **Components:**
 
-- `packages/core/src/components/parts/CADViewer.tsx` -- Main viewer (React Three Fiber canvas)
+- `packages/core/src/components/parts/CADViewer.tsx` -- The scene: camera, lights, controls, framing
+- `packages/core/src/components/parts/CADModel.tsx` -- The model: loading, materials, part picking
 - `packages/core/src/components/parts/CADViewerToolbar.tsx` -- Floating toolbar
 - `packages/core/src/components/parts/CADViewerTypes.ts` -- Type definitions and presets
 - `packages/core/src/components/parts/useCADViewerKeyboard.ts` -- Keyboard shortcut hook
+- `packages/core/src/components/parts/useCADSelectionState.ts` -- Which part is selected, and what it is
+- `packages/core/src/components/parts/CADSelectionOverlay.tsx` -- Selection caption and context menu
+- `packages/core/src/components/parts/CADNodeLinkDialog.tsx` -- Correcting what a model part is
 
 The 3D CAD Viewer renders CAD models directly in the browser using WebGL. It is built on React Three Fiber and Three.js.
 
@@ -262,6 +266,52 @@ STEP and IGES files are not rendered directly. They are converted server-side by
 - **Orientation gizmo:** A 3D view cube in the top-right corner shows the current camera orientation.
 - **Contact shadows:** In "Studio" background mode, soft contact shadows appear beneath the model.
 - **Model statistics:** The toolbar displays the triangle count.
+- **Assembly part selection:** On an assembly whose model carries per-part structure, hovering highlights the part under the pointer and clicking selects it. See below.
+
+### Assembly Part Selection
+
+On a Part detail page, an assembly's model can be taken apart: hovering highlights the part under the pointer, clicking selects it, and a caption at the bottom of the viewport names the PLM part it is — number, name, revision and state. Right-clicking selects the part and opens a menu that can open its detail page in a new tab or in place, copy its part number, or correct what the part is.
+
+Two things have to be true for any of it to work, and they fail independently.
+
+**The model must carry per-part structure.** The CAD converter writes an assembly as one glTF node per leaf part, named and placed by its own matrix (`write_structured_glb` in `workers/cad-converter/src/cad_converter/gltf_writer.py`). A model without that structure is a single mesh whose triangles are grouped by _colour_, so there is nothing in the file to select: two black brackets at opposite ends of an arm are literally the same primitive. That is what every GLB written before this feature is, and what a single part or a non-STEP source still is. Such a model behaves exactly as it always did — the viewer registers no pointer handlers at all, so it does no raycasting per frame either.
+
+**An older assembly earns the structure by being converted again.** Re-run `POST /api/v1/files/:fileId/convert` on the source STEP; the new GLB carries the nodes. Nothing rewrites an existing file in place.
+
+The node list rides the GLB's own `vault_files.cad_metadata.nodes`, so `nodes?.length` is the honest test for "can this model be taken apart".
+
+#### How a node becomes a part
+
+A glTF node's name is whatever the CAD called it — `TDJ-25-1042.SLDPRT`, `Base Bracket`, `bracket_v2`. That is a description, not an identity, and `CadModelNodeService` turns it into one two ways.
+
+**By matching**, against the assembly's own direct BOM children, in descending order of how much a match proves: an exact item number, then an exact part name, then an item number appearing as a whole token inside a longer CAD name (`TDJ-25-1042_rev_b`). Names are normalised first — lowercased, CAD file extension stripped, spaces and underscores folded to hyphens — but deliberately not aggressively: stripping a trailing `-1` as an occurrence suffix would also fold `TDJ-25-1` into `TDJ-25`. Two candidates matching equally well resolves to _nothing_ rather than to a coin flip, because an unmatched node reads as unmatched and gets linked, while a wrongly matched one quietly sends people to the wrong part.
+
+Matching runs on **every read** and is never saved. It costs a string compare per BOM child, and recomputing keeps a model current with a BOM that moves under it. Saved guesses would have gone stale silently and left nothing to distinguish a stale guess from a considered answer.
+
+**By being told.** "Link to a part…" in the context menu offers the assembly's BOM children, plus an explicit "Not a BOM part" for a fixture or weld bead the CAD carries, and "Reset to automatic" to drop the decision again. Only these decisions are stored, in `cad_model_node_links`, keyed by the assembly's `masterId` and the node key rather than by file or item id — so a decision survives both a re-conversion (new `vault_files` row) and a revision (new `items` rows), which is exactly when a large assembly would be most expensive to re-link by hand.
+
+Each node reports how it was resolved:
+
+| `resolution` | Meaning                                                                 |
+| ------------ | ----------------------------------------------------------------------- |
+| `auto`       | Matched by name on this read; may differ on the next if the BOM changes |
+| `manual`     | Someone said which part it is                                           |
+| `excluded`   | Someone said it is not a BOM part                                       |
+| `unmatched`  | Nothing resolved it — or a recorded part has since left the BOM         |
+
+#### Endpoints
+
+| Method | Path                                    | Permission       |
+| ------ | --------------------------------------- | ---------------- |
+| `GET`  | `/api/v1/files/:fileId/cad-nodes`       | `documents:read` |
+| `PUT`  | `/api/v1/files/:fileId/cad-nodes/link`  | `parts:update`   |
+| `POST` | `/api/v1/files/:fileId/cad-nodes/reset` | `parts:update`   |
+
+The two writes take the node key in the **body**, not the path. A node key is an instance path — `TDJ-25/ARM-ASSY/BRACKET` — so as a path segment it would have to arrive percent-encoded, and `%2F` inside a segment is exactly what a reverse proxy is liable to normalize back into a separator: a 404 on some deployments and not others.
+
+The writes take `parts:update` rather than `documents:update` because what is being recorded is a claim about part structure — "this geometry is that part" — not a change to the file carrying it.
+
+Selection is off while the version-comparison overlay is open: two translucent shells of two revisions overlap everywhere, so "the part under the pointer" has two answers, and neither side is necessarily the assembly whose BOM the node keys were resolved against.
 
 ### Background Presets
 

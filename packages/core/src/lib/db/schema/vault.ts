@@ -72,6 +72,27 @@ export const vaultFiles = pgTable(
       polygonCount?: number // For mesh files (STL, OBJ)
       boundingBox?: { x: number; y: number; z: number } // Model dimensions
       hasColors?: boolean // Per-face colors preserved (GLB written by the CAD converter)
+      /**
+       * The separately-addressable parts of a structured assembly GLB, in the
+       * order the converter wrote their glTF nodes.
+       *
+       * Present only on a GLB the converter wrote a node per leaf part into,
+       * which is what makes a model selectable in the viewer. Absent on a
+       * single part, on any non-STEP source, and on every assembly converted
+       * before the structured writer existed — all of which are flat meshes
+       * with nothing to pick apart. So `nodes?.length` is the honest test for
+       * "can this model be taken apart", and re-running the conversion is
+       * what earns an older file the capability.
+       */
+      nodes?: Array<{
+        /** glTF node name; unique in the file, stable across re-conversion. */
+        nodeKey: string
+        /** The part's name as its CAD authored it. Not unique. */
+        name: string
+        /** Instance path from the assembly root down to this part. */
+        path: Array<string>
+        polygonCount?: number
+      }>
     }>(),
 
     // The generated thumbnail of this file, itself a vault file. A real
@@ -265,6 +286,82 @@ export const vaultFileHistoryRelations = relations(
     }),
     performer: one(users, {
       fields: [vaultFileHistory.performedBy],
+      references: [users.id],
+    }),
+  }),
+)
+
+// ============================================================================
+// CAD model node links — which PLM part a node in an assembly model *is*
+// ============================================================================
+
+/**
+ * Binds one selectable node of a structured assembly GLB to the Part it
+ * represents, so clicking a bracket in the 3D view can open that bracket's
+ * detail page.
+ *
+ * Both sides are `masterId`s rather than item or file ids, which is what makes
+ * a link outlive the things it was made from. A re-conversion replaces the GLB
+ * with a new `vault_files` row; a revision replaces the assembly and the child
+ * with new `items` rows. Neither changes what the bracket in the corner of the
+ * model is, so neither should cost the link — and keying on a file id would
+ * have thrown the whole mapping away on the first re-convert, which is exactly
+ * when a large assembly is most expensive to re-link by hand.
+ *
+ * **Every row here is a person's correction.** Nothing writes the matches it
+ * can work out for itself: names are matched against the assembly's BOM on
+ * each read instead, which costs a string comparison per child and is always
+ * current — a part added to the BOM this morning is matched this morning,
+ * where saved auto-matches would have gone stale the moment the BOM moved and
+ * left no way to tell a stale guess from a considered answer. So a node with
+ * no row is not "unresolved", it is "whatever the matcher says", and this
+ * table only ever overrides that.
+ *
+ * `partMasterId` is nullable on purpose, and is not the same as a missing row:
+ * it is how someone records that a node is deliberately *not* a BOM part — a
+ * fixture, a weld bead, packaging the CAD carries — which both suppresses the
+ * matcher's guess and stops it being proposed again.
+ */
+export const cadModelNodeLinks = pgTable(
+  'cad_model_node_links',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    // items.masterId of the assembly Part — lineage reference, deliberately
+    // not an FK to a single version row.
+    assemblyMasterId: uuid('assembly_master_id').notNull(),
+    // glTF node name, as `cadMetadata.nodes[].nodeKey` carries it.
+    nodeKey: text('node_key').notNull(),
+    // items.masterId of the linked Part; null records "not a part" (see above).
+    partMasterId: uuid('part_master_id'),
+    createdBy: uuid('created_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    // One override per node — what the editor's upsert targets.
+    uniqueIndex('uq_cad_model_node_links_node').on(
+      table.assemblyMasterId,
+      table.nodeKey,
+    ),
+    // Reading an assembly's links is the only read anyone does, and it always
+    // asks for all of them at once — so the unique index above already serves
+    // it, and there is deliberately no second index on assemblyMasterId alone.
+    // This one answers the other direction: "which assemblies place this part".
+    index('idx_cad_model_node_links_part').on(table.partMasterId),
+  ],
+)
+
+export const cadModelNodeLinksRelations = relations(
+  cadModelNodeLinks,
+  ({ one }) => ({
+    creator: one(users, {
+      fields: [cadModelNodeLinks.createdBy],
       references: [users.id],
     }),
   }),

@@ -1855,6 +1855,63 @@ export interface paths {
         patch: operations["patchApiV1FilesByFileIdAnnotationsByAnnotationId"];
         trace?: never;
     };
+    "/api/v1/files/{fileId}/cad-nodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List an assembly model's selectable parts
+         * @description Each glTF node in the model, resolved to a PLM part by matching the CAD's own name against the assembly's BOM, with any recorded corrections applied. Empty for a model with no part structure.
+         */
+        get: operations["getApiV1FilesByFileIdCadNodes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/files/{fileId}/cad-nodes/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Bind a model part to a PLM part
+         * @description A null `partItemId` records that the node is deliberately not a BOM part, which suppresses the automatic match. To hand the node back to matching, reset it instead.
+         */
+        put: operations["putApiV1FilesByFileIdCadNodesLink"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/files/{fileId}/cad-nodes/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Drop a node's recorded part, restoring the automatic match */
+        post: operations["postApiV1FilesByFileIdCadNodesReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/files/{fileId}/category": {
         parameters: {
             query?: never;
@@ -9088,6 +9145,75 @@ export interface operations {
                         /** @constant */
                         kind: "text";
                     };
+                };
+            };
+        };
+        responses: {
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getApiV1FilesByFileIdCadNodes: {
+        parameters: {
+            query?: {
+                branchId?: string;
+            };
+            header?: never;
+            path: {
+                fileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    putApiV1FilesByFileIdCadNodesLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    nodeKey: string;
+                    partItemId: string | null;
+                };
+            };
+        };
+        responses: {
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    postApiV1FilesByFileIdCadNodesReset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    nodeKey: string;
                 };
             };
         };

@@ -4,12 +4,12 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
-import { designs, itemRelationships, items, requirements } from '../db/schema'
-import { notDeleted } from '../db/filters'
+import { designs, itemRelationships, requirements } from '../db/schema'
 import { NotFoundError } from '../errors'
 import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
 import { LifecycleService } from './LifecycleService'
 import { EBOM_SOURCE_RELATIONSHIP } from './MbomService'
+import { VersionResolver } from './VersionResolver'
 import {
   ALLOCATED_TO_RELATIONSHIP,
   SATISFIES_RELATIONSHIP,
@@ -198,6 +198,78 @@ export class GapAnalysisService {
   }
 
   /**
+   * The design's items of one type, resolved the way the rest of the app
+   * resolves them.
+   *
+   * `items.isCurrent` is not this question, and every read in this service
+   * used to ask it. It is a flag on a row: a part *created* on an open
+   * change-order branch carries it, so asking it directly counted unapproved
+   * work as the design's — reporting gaps against items that are not in the
+   * design yet, and inflating the denominator the completeness figure divides
+   * by, which is read as a compliance number. A part *revised* on a branch
+   * does not leak (its working copy is not current) and a design with merge
+   * history resolves identically either way, which is what kept the
+   * difference out of sight.
+   *
+   * `VersionResolver.getReleasedItems` is the answer the design page, the
+   * items tab and the structure tab already give, and it excludes
+   * soft-deleted rows on every one of its paths — so this is one resolution
+   * rule rather than a second copy of the predicate that can drift from it.
+   */
+  private static async resolveDesignItems(designId: string, itemType: string) {
+    const resolved = await VersionResolver.getReleasedItems(designId, {
+      itemType,
+    })
+    return resolved.items
+  }
+
+  /**
+   * The design's requirements, each with the fields that live on its
+   * extension row.
+   *
+   * A Requirement item with no `requirements` row is left out, which is what
+   * the inner join this replaced did. It is a data gap rather than an
+   * untraced requirement, and reporting it as the latter would put a row in
+   * the gap list that no amount of tracing can clear.
+   */
+  private static async resolveRequirements(designId: string) {
+    const resolved = await this.resolveDesignItems(designId, 'Requirement')
+    if (resolved.length === 0) return []
+
+    const extensions = await db
+      .select({
+        itemId: requirements.itemId,
+        priority: requirements.priority,
+        verificationStatus: requirements.verificationStatus,
+      })
+      .from(requirements)
+      .where(
+        inArray(
+          requirements.itemId,
+          resolved.map((item) => item.id),
+        ),
+      )
+    const byItemId = new Map(extensions.map((row) => [row.itemId, row]))
+
+    return resolved.flatMap((item) => {
+      const extension = byItemId.get(item.id)
+      if (!extension) return []
+      return [
+        {
+          id: item.id,
+          itemNumber: item.itemNumber,
+          name: item.name,
+          itemType: item.itemType,
+          revision: item.revision,
+          state: item.state,
+          priority: extension.priority,
+          verificationStatus: extension.verificationStatus,
+        },
+      ]
+    })
+  }
+
+  /**
    * Find requirement-related gaps:
    * - unallocated_requirement: Not allocated to any design element
    * - unsatisfied_requirement: Not satisfied by any part/document
@@ -206,28 +278,7 @@ export class GapAnalysisService {
   static async findRequirementGaps(designId: string): Promise<Array<Gap>> {
     const gaps: Array<Gap> = []
 
-    // Get all requirements for this design
-    const allRequirements = await db
-      .select({
-        id: items.id,
-        itemNumber: items.itemNumber,
-        name: items.name,
-        itemType: items.itemType,
-        revision: items.revision,
-        state: items.state,
-        priority: requirements.priority,
-        verificationStatus: requirements.verificationStatus,
-      })
-      .from(items)
-      .innerJoin(requirements, eq(items.id, requirements.itemId))
-      .where(
-        and(
-          eq(items.designId, designId),
-          eq(items.itemType, 'Requirement'),
-          eq(items.isCurrent, true),
-          notDeleted(),
-        ),
-      )
+    const allRequirements = await this.resolveRequirements(designId)
 
     if (allRequirements.length === 0) {
       return gaps
@@ -345,25 +396,7 @@ export class GapAnalysisService {
       return gaps
     }
 
-    // Get all parts for this design
-    const allParts = await db
-      .select({
-        id: items.id,
-        itemNumber: items.itemNumber,
-        name: items.name,
-        itemType: items.itemType,
-        revision: items.revision,
-        state: items.state,
-      })
-      .from(items)
-      .where(
-        and(
-          eq(items.designId, designId),
-          eq(items.itemType, 'Part'),
-          eq(items.isCurrent, true),
-          notDeleted(),
-        ),
-      )
+    const allParts = await this.resolveDesignItems(designId, 'Part')
 
     if (allParts.length === 0) {
       return gaps
@@ -471,25 +504,7 @@ export class GapAnalysisService {
       return gaps
     }
 
-    // Get all parts for this design
-    const allMbomItems = await db
-      .select({
-        id: items.id,
-        itemNumber: items.itemNumber,
-        name: items.name,
-        itemType: items.itemType,
-        revision: items.revision,
-        state: items.state,
-      })
-      .from(items)
-      .where(
-        and(
-          eq(items.designId, designId),
-          eq(items.itemType, 'Part'),
-          eq(items.isCurrent, true),
-          notDeleted(),
-        ),
-      )
+    const allMbomItems = await this.resolveDesignItems(designId, 'Part')
 
     if (allMbomItems.length === 0) {
       return gaps
@@ -546,19 +561,10 @@ export class GapAnalysisService {
       .where(eq(designs.id, designId))
       .limit(1)
 
-    // Requirements coverage
-    const allRequirements = await db
-      .select({ id: items.id })
-      .from(items)
-      .innerJoin(requirements, eq(items.id, requirements.itemId))
-      .where(
-        and(
-          eq(items.designId, designId),
-          eq(items.itemType, 'Requirement'),
-          eq(items.isCurrent, true),
-          notDeleted(),
-        ),
-      )
+    // Requirements coverage. The same resolution the gap list uses, so the
+    // summary and the gap list cannot disagree about the population either —
+    // not only about what a revised requirement still covers.
+    const allRequirements = await this.resolveRequirements(designId)
 
     const requirementIds = allRequirements.map((r) => r.id)
     let allocated = 0
@@ -589,17 +595,7 @@ export class GapAnalysisService {
     }
 
     // Engineering coverage
-    const allParts = await db
-      .select({ id: items.id })
-      .from(items)
-      .where(
-        and(
-          eq(items.designId, designId),
-          eq(items.itemType, 'Part'),
-          eq(items.isCurrent, true),
-          notDeleted(),
-        ),
-      )
+    const allParts = await this.resolveDesignItems(designId, 'Part')
 
     const partIds = allParts.map((p) => p.id)
     let tested = 0
@@ -634,20 +630,11 @@ export class GapAnalysisService {
     let linkedToEbom = 0
 
     if (design?.designType === 'Manufacturing') {
-      const allMbomItems = await db
-        .select({ id: items.id })
-        .from(items)
-        .where(
-          and(
-            eq(items.designId, designId),
-            eq(items.itemType, 'Part'),
-            eq(items.isCurrent, true),
-            notDeleted(),
-          ),
-        )
-
-      mbomTotal = allMbomItems.length
-      const mbomItemIds = allMbomItems.map((p) => p.id)
+      // An MBOM's items are the design's parts — the same resolution the
+      // engineering block above already performed, reused rather than asked
+      // again so the two counts cannot come back different.
+      mbomTotal = allParts.length
+      const mbomItemIds = partIds
 
       if (mbomItemIds.length > 0) {
         const linkedItems = await db

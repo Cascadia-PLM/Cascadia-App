@@ -3,6 +3,7 @@
 
 import { Eye, EyeOff, GitCompare } from 'lucide-react'
 import type { CADCompareState } from './useCADCompareState'
+import type { CADSelectionState } from './useCADSelectionState'
 import type { CADViewerState } from './useCADViewerState'
 import { CADComparePanel } from '@/components/parts/CADComparePanel'
 import { CADFileSelect } from '@/components/parts/CADFileSelect'
@@ -28,10 +29,12 @@ import {
 export function PartCADSection({
   viewer,
   compare,
+  selection,
   onError,
 }: {
   viewer: CADViewerState
   compare: CADCompareState
+  selection: CADSelectionState
   onError: (error: unknown, options: { title: string }) => void
 }) {
   const { selectedFile } = viewer
@@ -50,7 +53,10 @@ export function PartCADSection({
                 'Comparing two versions — pick each side in the panel'
               ) : (
                 <>
-                  Interactive 3D visualization • {selectedFile.fileName}
+                  {selection.selectable
+                    ? `${selection.nodes.length} selectable parts`
+                    : 'Interactive 3D visualization'}{' '}
+                  • {selectedFile.fileName}
                   {selectedFile.source === 'cad_doc' &&
                     selectedFile.sourceItemNumber &&
                     ` (from ${selectedFile.sourceItemNumber})`}
@@ -95,6 +101,7 @@ export function PartCADSection({
           viewer={viewer}
           file={selectedFile}
           comparison={compare.comparison}
+          selection={selection}
           onError={onError}
         >
           {compare.isOpen && (

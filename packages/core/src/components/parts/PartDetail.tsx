@@ -40,6 +40,7 @@ import { PartDetailSidebar } from '@/components/parts/PartDetailSidebar'
 import { PartManufacturingCard } from '@/components/parts/PartManufacturingCard'
 import { useCADViewerState } from '@/components/parts/useCADViewerState'
 import { useCADCompareState } from '@/components/parts/useCADCompareState'
+import { useCADSelectionState } from '@/components/parts/useCADSelectionState'
 import { DropOverlay } from '@/components/items/DropOverlay'
 import { useDropEnrichment } from '@/components/items/useDropEnrichment'
 import { PendingImageStrip } from '@/components/items/PendingImageStrip'
@@ -351,6 +352,14 @@ export function PartDetail({
     branchId: contextBranchId,
     enabled: !isCreateMode,
     selectedFileId: cadViewer.selectedFile?.id ?? null,
+  })
+  // Which part of the model is selected, for an assembly whose model has
+  // parts to select. Resolved against *this* part's BOM, in this version
+  // context, which is why it is created here and not inside the viewer.
+  const cadSelection = useCADSelectionState({
+    fileId: cadViewer.selectedFile?.id,
+    branchId: contextBranchId ?? undefined,
+    enabled: !isCreateMode,
   })
 
   // Attached images drive the Gallery tab. Shares FileList's query — same
@@ -832,6 +841,7 @@ export function PartDetail({
                     <PartCADSection
                       viewer={cadViewer}
                       compare={cadCompare}
+                      selection={cadSelection}
                       onError={handleError}
                     />
                     <PartCADHiddenPrompt viewer={cadViewer} />

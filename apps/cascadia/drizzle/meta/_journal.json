@@ -36,6 +36,13 @@
       "when": 1788869345830,
       "tag": "0004_change_management_and_design_structure",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789002865493,
+      "tag": "0005_cad_model_node_links",
+      "breakpoints": true
     }
   ]
 }

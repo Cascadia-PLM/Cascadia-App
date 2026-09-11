@@ -22,39 +22,25 @@ import {
   TrackballControls,
 } from '@react-three/drei'
 import * as THREE from 'three'
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { AlertTriangle, Loader2 } from 'lucide-react'
-import { BACKGROUND_PRESETS, MATERIAL_PRESETS } from './CADViewerTypes'
+import { BACKGROUND_PRESETS } from './CADViewerTypes'
+import { CADModel } from './CADModel'
 import type {
   BackgroundPreset,
   EnvironmentConfig,
   MaterialPreset,
   StandardView,
 } from './CADViewerTypes'
+import type { CADModelStats } from './CADModel'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+
+export type { CADModelStats }
 
 export interface CADViewerHandle {
   /** Reset the camera to fit the model in view */
   resetView: () => void
   /** Snap camera to a standard view */
   setView: (view: StandardView) => void
-}
-
-/** What a loaded model reports back about itself. */
-export interface CADModelStats {
-  /** Triangle count across every mesh in the model */
-  polygonCount: number
-  /** Size of the model's bounding box (x/y/z extents) */
-  boundingBox: THREE.Vector3
-  /**
-   * Center of that bounding box, in the model's native part coordinates.
-   * Geometry is never recentered, so a part authored away from its origin
-   * sits away from the world origin here too, and this is what the camera
-   * has to aim at to frame it.
-   */
-  boundingBoxCenter: THREE.Vector3
 }
 
 /** The volume the camera frames: a model's extents and where they sit. */
@@ -138,6 +124,24 @@ interface CADViewerProps {
    * read as distinct colors.
    */
   comparison?: CADComparison | null
+  /**
+   * The part of the assembly drawn as selected, by glTF node key.
+   *
+   * Selection is the caller's state, not the viewer's: the part number it
+   * resolves to is shown outside the canvas and drives navigation, so the
+   * viewer would only be holding it on someone else's behalf. Hover is the
+   * opposite and stays here — nothing above the canvas acts on it.
+   */
+  selectedNodeKey?: string | null
+  /**
+   * Called when a part is picked, by left- or right-click, with the node key —
+   * or with null when the click landed on nothing.
+   *
+   * Supplying it is what makes the model interactive. Without it R3F has no
+   * handlers to raycast against, so a viewer showing a model nobody can take
+   * apart does no picking work at all.
+   */
+  onNodeSelect?: (nodeKey: string | null) => void
   /** Loading callback — fires for the model on side A */
   onLoad?: (stats: CADModelStats) => void
   /** Error callback — fires for the model on side A */
@@ -190,6 +194,8 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
       materialPreset = 'default',
       hasEmbeddedColors = false,
       comparison = null,
+      selectedNodeKey = null,
+      onNodeSelect,
       onLoad,
       onError,
       onComparisonError,
@@ -198,15 +204,22 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
   ) {
     const [slotA, setSlotA] = useState<SlotState>(LOADING_SLOT)
     const [slotB, setSlotB] = useState<SlotState>(IDLE_SLOT)
+    const [hoveredNodeKey, setHoveredNodeKey] = useState<string | null>(null)
     const controlsRef = useRef<any>(null)
     const cameraRef = useRef<THREE.PerspectiveCamera>(null)
 
     const isComparing = comparison !== null
 
+    // Picking is off while comparing. Two translucent shells of two different
+    // revisions overlap everywhere, so "the part under the pointer" has two
+    // answers and the highlight would light both — and neither side is the
+    // assembly whose BOM the node keys were resolved against.
+    const selectable = onNodeSelect !== undefined && !isComparing
+
     // Both sides of a comparison are ordinary layers; outside one, the single
     // model occupies side A. Keeping it on the same slot is what lets the
-    // loaded geometry survive opening the compare panel: the <Model> keeps
-    // its key and its file URL, so nothing reloads.
+    // loaded geometry survive opening the compare panel: the <CADModel>
+    // keeps its key and its file URL, so nothing reloads.
     const layers: Array<RenderLayer> = []
     if (comparison) {
       const sides: Array<[CADCompareSlot, CADCompareLayer | null]> = [
@@ -419,7 +432,15 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
             </div>
           }
         >
-          <Canvas shadows>
+          <Canvas
+            shadows
+            // A click or right-click that hit no geometry. R3F reports these
+            // here rather than on any object, which is the only place the
+            // "clicked the background" case can be caught — and it has to be
+            // caught, or a right-click on empty space would open the context
+            // menu still pointing at whatever was selected before it.
+            onPointerMissed={selectable ? () => onNodeSelect(null) : undefined}
+          >
             <PerspectiveCamera
               ref={cameraRef}
               makeDefault
@@ -451,7 +472,7 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
               file a side shows reloads that side in place. */}
             <Suspense fallback={null}>
               {layers.map((layer) => (
-                <Model
+                <CADModel
                   key={layer.slot}
                   fileUrl={layer.fileUrl}
                   fileType={layer.fileType}
@@ -461,6 +482,16 @@ export const CADViewer = forwardRef<CADViewerHandle, CADViewerProps>(
                   tint={layer.tint}
                   visible={layer.visible}
                   renderOrder={layer.slot === 'A' ? 0 : 1}
+                  selectedNodeKey={selectable ? selectedNodeKey : null}
+                  hoveredNodeKey={selectable ? hoveredNodeKey : null}
+                  onNodePointerMove={
+                    selectable ? (key) => setHoveredNodeKey(key) : undefined
+                  }
+                  onNodePointerOut={
+                    selectable ? () => setHoveredNodeKey(null) : undefined
+                  }
+                  onNodeClick={selectable ? onNodeSelect : undefined}
+                  onNodeContextMenu={selectable ? onNodeSelect : undefined}
                   onLoad={(stats) => handleLayerLoad(layer.slot, stats)}
                   onError={(err) => handleLayerError(layer.slot, layer, err)}
                 />
@@ -892,358 +923,4 @@ function CameraAutoFit({
   }, [bounds, camera, controlsRef])
 
   return null
-}
-
-/**
- * Internal Model component that loads and displays the 3D geometry.
- * Supports STL, OBJ, and glTF/GLB file formats.
- * For glTF files with embedded colors, supports switching between
- * original materials and preset overrides.
- *
- * A `tint` replaces every material with a flat translucent color — the
- * comparison overlay's rendering mode. Translucent tints skip depth writes
- * so two near-coincident shells blend instead of z-fighting; unchanged
- * regions read as the blend of both colors, differences as a single color.
- */
-function Model({
-  fileUrl,
-  fileType,
-  wireframe = false,
-  materialPreset = 'default',
-  hasEmbeddedColors = false,
-  tint = null,
-  visible = true,
-  renderOrder = 0,
-  onLoad,
-  onError,
-}: {
-  fileUrl: string
-  fileType: string
-  wireframe?: boolean
-  materialPreset?: MaterialPreset
-  hasEmbeddedColors?: boolean
-  tint?: { color: string; opacity: number } | null
-  visible?: boolean
-  renderOrder?: number
-  onLoad: (stats: CADModelStats) => void
-  onError: (error: Error) => void
-}) {
-  const meshRef = useRef<THREE.Mesh>(null)
-  const groupRef = useRef<THREE.Group>(null)
-  const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null)
-  const [gltfScene, setGltfScene] = useState<THREE.Group | null>(null)
-  const originalMaterialsRef = useRef<
-    Map<string, THREE.Material | Array<THREE.Material>>
-  >(new Map())
-  const disposablesRef = useRef<{
-    geometry: THREE.BufferGeometry | null
-    gltfScene: THREE.Group | null
-  }>({ geometry: null, gltfScene: null })
-
-  // Use refs for callbacks to avoid restarting the load when parent re-renders
-  const onLoadRef = useRef(onLoad)
-  const onErrorRef = useRef(onError)
-  onLoadRef.current = onLoad
-  onErrorRef.current = onError
-
-  function disposeResources(resources: {
-    geometry: THREE.BufferGeometry | null
-    gltfScene: THREE.Group | null
-  }) {
-    if (resources.geometry) {
-      resources.geometry.dispose()
-    }
-    if (resources.gltfScene) {
-      resources.gltfScene.traverse((child) => {
-        // Cast lies; runtime Three.js Object3D may or may not be a Mesh.
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- isMesh discriminates Mesh from generic Object3D at runtime
-        if ((child as THREE.Mesh).isMesh) {
-          const mesh = child as THREE.Mesh
-          mesh.geometry.dispose()
-          if (Array.isArray(mesh.material)) {
-            mesh.material.forEach((m) => m.dispose())
-          } else {
-            mesh.material.dispose()
-          }
-        }
-      })
-    }
-  }
-
-  useEffect(() => {
-    let cancelled = false
-
-    const loadModel = async () => {
-      try {
-        // Dispose previous resources before loading new ones
-        disposeResources(disposablesRef.current)
-        disposablesRef.current = { geometry: null, gltfScene: null }
-
-        const ext = fileType.toLowerCase()
-
-        if (ext === 'glb' || ext === 'gltf') {
-          // Load glTF/GLB file
-          const loader = new GLTFLoader()
-          const gltf = await new Promise<any>((resolve, reject) => {
-            loader.load(
-              fileUrl,
-              (result) => resolve(result),
-              undefined,
-              (err) => reject(err),
-            )
-          })
-
-          if (cancelled) return
-
-          const scene = gltf.scene as THREE.Group
-
-          // Cache original materials for restoring later
-          const origMats = new Map<
-            string,
-            THREE.Material | Array<THREE.Material>
-          >()
-          scene.traverse((child) => {
-            if (child instanceof THREE.Mesh && child.material) {
-              origMats.set(
-                child.uuid,
-                Array.isArray(child.material)
-                  ? child.material.map((m: THREE.Material) => m.clone())
-                  : child.material.clone(),
-              )
-            }
-          })
-          originalMaterialsRef.current = origMats
-
-          // Calculate stats from all meshes
-          let totalPolygons = 0
-          const box = new THREE.Box3()
-          scene.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-              const geom = child.geometry
-              if (geom) {
-                totalPolygons += geom.index
-                  ? geom.index.count / 3
-                  : (geom.attributes.position?.count ?? 0) / 3
-              }
-              box.expandByObject(child)
-            }
-          })
-
-          const size = new THREE.Vector3()
-          const center = new THREE.Vector3()
-          box.getSize(size)
-          box.getCenter(center)
-
-          disposablesRef.current = { geometry: null, gltfScene: scene }
-          setGltfScene(scene)
-          setGeometry(null) // Clear any previous geometry
-          onLoadRef.current({
-            polygonCount: Math.floor(totalPolygons),
-            boundingBox: size,
-            boundingBoxCenter: center,
-          })
-        } else {
-          let loadedGeometry: THREE.BufferGeometry
-
-          if (ext === 'stl') {
-            const loader = new STLLoader()
-            loadedGeometry = await new Promise<THREE.BufferGeometry>(
-              (resolve, reject) => {
-                loader.load(
-                  fileUrl,
-                  (geom) => resolve(geom),
-                  undefined,
-                  (err) => reject(err),
-                )
-              },
-            )
-          } else if (ext === 'obj') {
-            const loader = new OBJLoader()
-            const object = await new Promise<THREE.Group>((resolve, reject) => {
-              loader.load(
-                fileUrl,
-                (obj) => resolve(obj),
-                undefined,
-                (err) => reject(err),
-              )
-            })
-
-            const meshes: Array<THREE.BufferGeometry> = []
-            object.traverse((child) => {
-              if (child instanceof THREE.Mesh) {
-                meshes.push(child.geometry)
-              }
-            })
-
-            const firstMesh = meshes[0]
-            if (!firstMesh) {
-              throw new Error('No geometry found in OBJ file')
-            }
-
-            loadedGeometry = firstMesh
-          } else {
-            throw new Error(`Unsupported file type: ${ext}`)
-          }
-
-          if (cancelled) return
-
-          if (!('normal' in loadedGeometry.attributes)) {
-            loadedGeometry.computeVertexNormals()
-          }
-
-          loadedGeometry.computeBoundingBox()
-          const boundingBox = loadedGeometry.boundingBox
-          const size = new THREE.Vector3()
-          const center = new THREE.Vector3()
-          if (boundingBox) {
-            boundingBox.getSize(size)
-            boundingBox.getCenter(center)
-          }
-
-          const polygonCount = loadedGeometry.index
-            ? loadedGeometry.index.count / 3
-            : (loadedGeometry.attributes.position?.count ?? 0) / 3
-
-          disposablesRef.current = { geometry: loadedGeometry, gltfScene: null }
-          setGeometry(loadedGeometry)
-          setGltfScene(null) // Clear any previous glTF scene
-          originalMaterialsRef.current.clear()
-          onLoadRef.current({
-            polygonCount: Math.floor(polygonCount),
-            boundingBox: size,
-            boundingBoxCenter: center,
-          })
-        }
-      } catch (error) {
-        if (!cancelled) {
-          onErrorRef.current(
-            error instanceof Error ? error : new Error(String(error)),
-          )
-        }
-      }
-    }
-
-    loadModel()
-
-    return () => {
-      cancelled = true
-      disposeResources(disposablesRef.current)
-      disposablesRef.current = { geometry: null, gltfScene: null }
-      // Dispose cached original materials
-      originalMaterialsRef.current.forEach((mat) => {
-        if (Array.isArray(mat)) {
-          mat.forEach((m) => m.dispose())
-        } else {
-          mat.dispose()
-        }
-      })
-      originalMaterialsRef.current.clear()
-    }
-  }, [fileUrl, fileType])
-
-  // Apply material overrides to glTF scene when tint, preset, or wireframe changes
-  const tintColor = tint?.color
-  const tintOpacity = tint?.opacity
-  useEffect(() => {
-    if (!gltfScene) return
-
-    const origMats = originalMaterialsRef.current
-    const tinted = tintColor !== undefined && tintOpacity !== undefined
-    const useOriginal =
-      !tinted && hasEmbeddedColors && materialPreset === 'default' && !wireframe
-    // Translucent comparison shells stay out of the shadow pass: they must
-    // blend rather than occlude or double-shadow.
-    const castsShadow = !tinted || tintOpacity >= 0.99
-
-    gltfScene.traverse((child) => {
-      if (!(child instanceof THREE.Mesh)) return
-
-      child.renderOrder = renderOrder
-
-      // These flags do not inherit down the graph. Setting them on the
-      // <primitive> group below did nothing, so glTF meshes — everything the
-      // CAD converter produces — were absent from the shadow pass entirely.
-      child.castShadow = castsShadow
-      child.receiveShadow = true
-
-      if (tinted) {
-        // Comparison tint replaces everything, embedded colors included
-        child.material = new THREE.MeshStandardMaterial({
-          color: tintColor,
-          metalness: 0.15,
-          roughness: 0.6,
-          transparent: true,
-          opacity: tintOpacity,
-          depthWrite: tintOpacity >= 0.99,
-          wireframe,
-        })
-      } else if (useOriginal) {
-        // Restore original glTF materials
-        const orig = origMats.get(child.uuid)
-        if (orig) {
-          child.material = Array.isArray(orig)
-            ? orig.map((m: THREE.Material) => m.clone())
-            : orig.clone()
-        }
-      } else {
-        // Override with preset material
-        const mat = MATERIAL_PRESETS[materialPreset]
-        child.material = new THREE.MeshStandardMaterial({
-          color: wireframe ? '#3b82f6' : mat.color,
-          metalness: wireframe ? 0.1 : mat.metalness,
-          roughness: wireframe ? 0.8 : mat.roughness,
-          wireframe,
-        })
-      }
-    })
-  }, [
-    gltfScene,
-    materialPreset,
-    wireframe,
-    hasEmbeddedColors,
-    tintColor,
-    tintOpacity,
-    renderOrder,
-  ])
-
-  const mat = MATERIAL_PRESETS[materialPreset]
-  // Translucent tints don't write depth or cast shadows — overlapping
-  // version shells must blend rather than occlude or double-shadow
-  const tintIsSolid = !tint || tint.opacity >= 0.99
-
-  // Render glTF scene
-  if (gltfScene) {
-    return (
-      // Shadow flags are set per-mesh in the traversal above, not here: a
-      // group does not pass them to its children.
-      <primitive ref={groupRef} object={gltfScene} visible={visible} />
-    )
-  }
-
-  // Render STL/OBJ geometry
-  if (!geometry) {
-    return null
-  }
-
-  return (
-    <mesh
-      ref={meshRef}
-      geometry={geometry}
-      visible={visible}
-      renderOrder={renderOrder}
-      castShadow={tintIsSolid}
-      receiveShadow
-    >
-      <meshStandardMaterial
-        color={tint ? tint.color : wireframe ? '#3b82f6' : mat.color}
-        metalness={tint ? 0.15 : wireframe ? 0.1 : mat.metalness}
-        roughness={tint ? 0.6 : wireframe ? 0.8 : mat.roughness}
-        flatShading={false}
-        wireframe={wireframe}
-        transparent={Boolean(tint)}
-        opacity={tint?.opacity ?? 1}
-        depthWrite={tintIsSolid}
-      />
-    </mesh>
-  )
 }

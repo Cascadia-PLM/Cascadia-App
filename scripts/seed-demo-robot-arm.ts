@@ -79,9 +79,44 @@ const MANIFEST_PATH = join(ROBOT_ARM_DIR, 'manifest.json')
 const STEP_DIR = join(ROBOT_ARM_DIR, 'step')
 const GLB_DIR = join(ROBOT_ARM_DIR, 'glb')
 const THUMB_DIR = join(ROBOT_ARM_DIR, 'thumbnails')
+const NODE_DIR = join(ROBOT_ARM_DIR, 'nodes')
 
 // In containers: VAULT_ROOT=/app/vault. On dev host: VAULT_ROOT=./vault.
 const VAULT_ROOT = process.env.VAULT_ROOT ?? join(REPO_ROOT, 'vault')
+
+/** One selectable part of an assembly model, as the converter described it. */
+interface GlbNode {
+  nodeKey: string
+  name: string
+  path: Array<string>
+  polygonCount?: number
+}
+
+/**
+ * The parts inside one model, or null when it has none to offer.
+ *
+ * `nodes/<cadFileBase>.json` is written by `prepare-demo-cad.ts` in the
+ * Demo-Data repo and rides the dataset next to glb/ and thumbnails/. Absent
+ * for a dataset baked before the converter wrote a glTF node per part, and
+ * empty for a single part — both mean "one solid, nothing to select", so both
+ * leave `nodes` off `cadMetadata` entirely. That absence is the viewer's
+ * signal, so writing `[]` would be a different and wrong statement.
+ */
+function readGlbNodes(cadFileBase: string): Array<GlbNode> | null {
+  const path = join(NODE_DIR, `${cadFileBase}.json`)
+  if (!existsSync(path)) return null
+  try {
+    const parsed = JSON.parse(readFileSync(path, 'utf-8')) as {
+      nodes?: Array<GlbNode>
+    }
+    return parsed.nodes && parsed.nodes.length > 0 ? parsed.nodes : null
+  } catch {
+    // A dataset that cannot describe its parts still seeds; it just seeds
+    // models the viewer treats as one solid.
+    console.warn(`   ! unreadable node manifest for ${cadFileBase}, ignoring`)
+    return null
+  }
+}
 
 const SKIP_ECO = process.env.DEMO_SKIP_ECO === 'true'
 const SKIP_FILES = process.env.DEMO_SKIP_FILES === 'true'
@@ -233,6 +268,7 @@ export async function seedRobotArm(): Promise<DatasetResult> {
   let vaultComplete = 0 // GLB + thumbnail both present
   let vaultGlbOnly = 0 // GLB but no thumbnail
   let vaultMissing = 0 // no GLB at all
+  let selectableModels = 0 // GLB carrying a per-part node manifest
 
   /** Vault blobs to copy once the rows referencing them are committed. */
   const pendingCopies: Array<{ src: string; dst: string }> = []
@@ -531,14 +567,22 @@ export async function seedRobotArm(): Promise<DatasetResult> {
 
         // GLB is always the primary cad_model — that's what the 3D viewer renders.
         // hasColors=true tells the viewer to keep the embedded glTF materials
-        // instead of overriding with its uniform gray preset.
+        // instead of overriding with its uniform gray preset. `nodes`, when the
+        // dataset carries them, is what makes the assembly selectable: each one
+        // names a glTF node the viewer can raycast to and resolve to a part.
+        const glbNodes = readGlbNodes(part.cadFileBase)
+        if (glbNodes) selectableModels++
         await ingest(
           glbFileId,
           glbSrc,
           `${part.cadFileBase}.glb`,
           'cad_model',
           true,
-          { units: 'mm', hasColors: true },
+          {
+            units: 'mm',
+            hasColors: true,
+            ...(glbNodes ? { nodes: glbNodes } : {}),
+          },
         )
         // STEP secondary, only if developer kept it locally.
         if (stepFileId) {
@@ -578,6 +622,14 @@ export async function seedRobotArm(): Promise<DatasetResult> {
         `✓ Vault files: ${vaultComplete} complete (GLB + thumbnail)` +
           (vaultGlbOnly ? `, ${vaultGlbOnly} GLB-only` : '') +
           (vaultMissing ? `, ${vaultMissing} parts had no GLB on disk` : ''),
+      )
+      // Worth saying out loud: a dataset baked before the converter wrote a
+      // node per part seeds perfectly well and is silently unselectable, and
+      // this line is the only place that difference shows.
+      console.log(
+        selectableModels > 0
+          ? `✓ Selectable assemblies: ${selectableModels}`
+          : '   no per-part node manifests in this dataset — models seed as single solids',
       )
     }
 

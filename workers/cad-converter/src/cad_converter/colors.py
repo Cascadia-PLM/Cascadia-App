@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
+from typing import NamedTuple, Optional
 
 from OCC.Core.Quantity import Quantity_Color
 from OCC.Core.TDF import TDF_ChildIterator, TDF_Label, TDF_LabelSequence
@@ -37,7 +37,7 @@ class PartColor:
         return [self.r, self.g, self.b]
 
 
-def _get_color_tool(doc: TDocStd_Document):
+def get_color_tool(doc: TDocStd_Document):
     """Get XCAFDoc_ColorTool from an XDE document."""
     from OCC.Core.XCAFDoc import XCAFDoc_ColorTool
 
@@ -100,19 +100,38 @@ def _get_parent_color(
     return _get_parent_color(color_tool, shape_tool, father)
 
 
-def extract_shape_colors(
-    doc: TDocStd_Document,
-) -> dict[int, PartColor]:
+class ShapeColors(NamedTuple):
     """
-    Build a hash(face) -> PartColor map by walking located instances of the
-    XDE assembly tree. Critical detail for SolidWorks AP214 STEPs: colors are
-    attached to the *unlocated* part definition's TShape, but the compound
-    iterated by the GLB writer contains *located* instances. TopoDS_Shape
-    hashing is location-aware (proven by experiment), so we must:
+    The two ways to ask what color a face is, from one walk of the document.
+
+    `faces` is keyed by `hash(face)`, which is location-aware: its keys match
+    the *located* compound a flat GLB is written from, and nothing else. Hand
+    it an unplaced prototype face and every lookup misses.
+
+    `tshapes` is keyed by `hash(face.TShape())`. A TShape pointer is shared by
+    every occurrence of a part, so this key is location-independent — which is
+    what the structured writer needs, because it draws each part from its own
+    unplaced prototype and puts the placement on the glTF node instead.
+    """
+
+    faces: dict[int, PartColor]
+    tshapes: dict[int, PartColor]
+
+
+def extract_all_colors(doc: TDocStd_Document) -> ShapeColors:
+    """
+    Both color maps for a document, from a single walk.
+
+    Critical detail for SolidWorks AP214 STEPs: colors are attached to the
+    *unlocated* part definition's TShape, but the compound iterated by the GLB
+    writer contains *located* instances. TopoDS_Shape hashing is location-aware
+    (proven by experiment), so we must:
       1. Walk LOCATED instance shapes (so face hashes match the compound).
       2. Resolve color via the unlocated referred shape (where it lives).
+
+    See `ShapeColors` for which map a caller wants.
     """
-    color_tool = _get_color_tool(doc)
+    color_tool = get_color_tool(doc)
     _shape_tool_fn = getattr(XCAFDoc_DocumentTool, 'ShapeTool_s', None) or XCAFDoc_DocumentTool.ShapeTool
     shape_tool = _shape_tool_fn(doc.Main())
 
@@ -277,7 +296,12 @@ def extract_shape_colors(
             logger.debug("Free shape walk failed: %s", e)
 
     logger.info("Extracted colors for %d face hashes", len(color_map))
-    return color_map
+    return ShapeColors(faces=color_map, tshapes=tshape_color_map)
+
+
+def extract_shape_colors(doc: TDocStd_Document) -> dict[int, PartColor]:
+    """The located-face color map alone — see `ShapeColors.faces`."""
+    return extract_all_colors(doc).faces
 
 
 def get_dominant_color(color_map: dict[int, PartColor]) -> Optional[PartColor]:

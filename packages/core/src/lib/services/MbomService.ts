@@ -190,148 +190,169 @@ export class MbomService {
     }
 
     // Product variants: settle the configuration before any row is written.
-    // The root must be a part of the source design; the selections must be
-    // complete and constraint-valid for it.
-    const sourceMainBranch = await BranchService.getMainBranch(
-      validated.sourceDesignId,
-    )
-    if (!sourceMainBranch) {
-      throw new ValidationError('The source design has no main branch')
-    }
-    const sourceBranchItems = (
-      await VersionResolver.getBranchItems(sourceMainBranch.id)
-    ).items
-    const declaredRootItemId =
-      validated.rootItemId ?? validated.configuration?.rootItemId
-    let sourceRoot = declaredRootItemId
-      ? sourceBranchItems.find((item) => item.id === declaredRootItemId)
-      : undefined
-    if (!sourceRoot && declaredRootItemId) {
-      const { ItemService } = await import('../items/services/ItemService')
-      const requested = await ItemService.findById(declaredRootItemId)
-      sourceRoot = requested?.masterId
-        ? sourceBranchItems.find((item) => item.masterId === requested.masterId)
+    // A root is needed only when structure is copied (or explicitly selected).
+    // Preserve the existing ability to derive an empty MBOM from an empty
+    // Engineering design and to create one without copying its structure.
+    let sourceRootItemId: string | undefined
+    let configuration: DesignConfiguration | null = null
+    const mustResolveRoot =
+      validated.copyBomStructure ||
+      validated.rootItemId !== undefined ||
+      validated.configuration !== undefined
+
+    if (mustResolveRoot) {
+      const sourceMainBranch = await BranchService.getMainBranch(
+        validated.sourceDesignId,
+      )
+      if (!sourceMainBranch) {
+        throw new ValidationError('The source design has no main branch')
+      }
+      const sourceBranchItems = (
+        await VersionResolver.getBranchItems(sourceMainBranch.id)
+      ).items
+      const declaredRootItemId =
+        validated.rootItemId ?? validated.configuration?.rootItemId
+      let sourceRoot = declaredRootItemId
+        ? sourceBranchItems.find((item) => item.id === declaredRootItemId)
         : undefined
-    }
-    if (!sourceRoot) {
-      const nestedTargets =
-        sourceBranchItems.length > 0
-          ? await db
-              .select({ masterId: items.masterId })
-              .from(itemRelationships)
-              .innerJoin(items, eq(items.id, itemRelationships.targetId))
-              .where(
-                and(
-                  inArray(
-                    itemRelationships.sourceId,
-                    sourceBranchItems.map((item) => item.id),
+      if (!sourceRoot && declaredRootItemId) {
+        const { ItemService } = await import('../items/services/ItemService')
+        const requested = await ItemService.findById(declaredRootItemId)
+        sourceRoot = requested?.masterId
+          ? sourceBranchItems.find(
+              (item) => item.masterId === requested.masterId,
+            )
+          : undefined
+      }
+      if (!sourceRoot) {
+        const nestedTargets =
+          sourceBranchItems.length > 0
+            ? await db
+                .select({ masterId: items.masterId })
+                .from(itemRelationships)
+                .innerJoin(items, eq(items.id, itemRelationships.targetId))
+                .where(
+                  and(
+                    inArray(
+                      itemRelationships.sourceId,
+                      sourceBranchItems.map((item) => item.id),
+                    ),
+                    eq(itemRelationships.relationshipType, 'BOM'),
                   ),
-                  eq(itemRelationships.relationshipType, 'BOM'),
-                ),
-              )
-          : []
-      const nestedMasterIds = new Set(
-        nestedTargets.map((target) => target.masterId),
-      )
-      const roots = sourceBranchItems.filter(
-        (item) =>
-          item.itemType === 'Part' &&
-          item.inDesignStructure &&
-          !nestedMasterIds.has(item.masterId),
-      )
-      if (roots.length !== 1) {
+                )
+            : []
+        const nestedMasterIds = new Set(
+          nestedTargets.map((target) => target.masterId),
+        )
+        const roots = sourceBranchItems.filter(
+          (item) =>
+            item.itemType === 'Part' &&
+            item.inDesignStructure &&
+            !nestedMasterIds.has(item.masterId),
+        )
+        if (roots.length === 1) {
+          sourceRoot = roots[0]!
+        } else if (
+          roots.length > 1 ||
+          sourceBranchItems.length > 0 ||
+          declaredRootItemId
+        ) {
+          throw new ValidationError(
+            roots.length === 0
+              ? 'The source design has no root Part'
+              : 'Select the root Part to release; the source design has multiple roots',
+            undefined,
+            { field: 'rootItemId' },
+          )
+        }
+      }
+      if (
+        sourceRoot &&
+        (sourceRoot.itemType !== 'Part' ||
+          sourceRoot.designId !== validated.sourceDesignId)
+      ) {
         throw new ValidationError(
-          roots.length === 0
-            ? 'The source design has no root Part'
-            : 'Select the root Part to release; the source design has multiple roots',
+          'The MBOM root must be a Part in the source design',
           undefined,
           { field: 'rootItemId' },
         )
       }
-      sourceRoot = roots[0]!
-    }
-    if (
-      sourceRoot.itemType !== 'Part' ||
-      sourceRoot.designId !== validated.sourceDesignId
-    ) {
-      throw new ValidationError(
-        'The MBOM root must be a Part in the source design',
-        undefined,
-        { field: 'rootItemId' },
-      )
-    }
-    const sourceRootItemId = sourceRoot.id
+      sourceRootItemId = sourceRoot?.id
 
-    let configuration: DesignConfiguration | null = null
-    if (validated.configuration) {
-      const { VariantService } = await import('./VariantService')
-      const { ItemService } = await import('../items/services/ItemService')
-      const { rootItemId, makeCode } = validated.configuration
-      const configurationRoot = await ItemService.findById(rootItemId)
-      if (configurationRoot?.masterId !== sourceRoot.masterId) {
-        throw new ValidationError(
-          'The configuration root must match the selected MBOM root',
-          undefined,
-          { field: 'configuration.rootItemId' },
+      if (validated.configuration) {
+        if (!sourceRoot || !sourceRootItemId) {
+          throw new ValidationError('The source design has no root Part')
+        }
+        const { VariantService } = await import('./VariantService')
+        const { ItemService } = await import('../items/services/ItemService')
+        const { rootItemId, makeCode } = validated.configuration
+        const configurationRoot = await ItemService.findById(rootItemId)
+        if (configurationRoot?.masterId !== sourceRoot.masterId) {
+          throw new ValidationError(
+            'The configuration root must match the selected MBOM root',
+            undefined,
+            { field: 'configuration.rootItemId' },
+          )
+        }
+        const namedSelections = makeCode
+          ? await VariantService.selectionsForMake(sourceRootItemId, makeCode)
+          : undefined
+        if (
+          namedSelections &&
+          validated.configuration.selections &&
+          (Object.keys(namedSelections).length !==
+            Object.keys(validated.configuration.selections).length ||
+            Object.entries(namedSelections).some(
+              ([family, value]) =>
+                validated.configuration?.selections?.[family] !== value,
+            ))
+        ) {
+          throw new ValidationError(
+            `Selections do not match execution ${makeCode}`,
+            [
+              {
+                field: 'configuration.selections',
+                message: `Selections do not match execution ${makeCode}`,
+                code: 'MAKE_SELECTIONS_MISMATCH',
+              },
+            ],
+          )
+        }
+        const selections =
+          namedSelections ?? validated.configuration.selections!
+        const resolved = await VariantService.resolve(
+          sourceRootItemId,
+          selections,
+          { rootMakeCode: makeCode },
         )
-      }
-      const namedSelections = makeCode
-        ? await VariantService.selectionsForMake(sourceRootItemId, makeCode)
-        : undefined
-      if (
-        namedSelections &&
-        validated.configuration.selections &&
-        (Object.keys(namedSelections).length !==
-          Object.keys(validated.configuration.selections).length ||
-          Object.entries(namedSelections).some(
-            ([family, value]) =>
-              validated.configuration?.selections?.[family] !== value,
-          ))
-      ) {
-        throw new ValidationError(
-          `Selections do not match execution ${makeCode}`,
-          [
-            {
-              field: 'configuration.selections',
-              message: `Selections do not match execution ${makeCode}`,
-              code: 'MAKE_SELECTIONS_MISMATCH',
-            },
-          ],
-        )
-      }
-      const selections = namedSelections ?? validated.configuration.selections!
-      const resolved = await VariantService.resolve(
-        sourceRootItemId,
-        selections,
-        { rootMakeCode: makeCode },
-      )
-      if (!resolved.validation.valid || resolved.findings.length > 0) {
-        const nestedErrors = resolved.findings.map((finding) => ({
-          field: 'configuration',
-          message: `${finding.itemNumber}: ${finding.message}`,
-          code: 'INVALID_NESTED_CONFIGURATION',
-        }))
-        throw new ValidationError(
-          resolved.validation.errors[0]?.message ??
-            nestedErrors[0]?.message ??
-            'Invalid configuration',
-          [
-            ...resolved.validation.errors.map((e) => ({
-              field: e.family
-                ? `configuration.selections.${e.family}`
-                : 'configuration.selections',
-              message: e.message,
-              code: 'INVALID_CONFIGURATION',
-            })),
-            ...nestedErrors,
-          ],
-          { field: 'configuration' },
-        )
-      }
-      configuration = {
-        rootItemId: sourceRootItemId,
-        makeCode: makeCode ?? null,
-        selections,
+        if (!resolved.validation.valid || resolved.findings.length > 0) {
+          const nestedErrors = resolved.findings.map((finding) => ({
+            field: 'configuration',
+            message: `${finding.itemNumber}: ${finding.message}`,
+            code: 'INVALID_NESTED_CONFIGURATION',
+          }))
+          throw new ValidationError(
+            resolved.validation.errors[0]?.message ??
+              nestedErrors[0]?.message ??
+              'Invalid configuration',
+            [
+              ...resolved.validation.errors.map((e) => ({
+                field: e.family
+                  ? `configuration.selections.${e.family}`
+                  : 'configuration.selections',
+                message: e.message,
+                code: 'INVALID_CONFIGURATION',
+              })),
+              ...nestedErrors,
+            ],
+            { field: 'configuration' },
+          )
+        }
+        configuration = {
+          rootItemId: sourceRootItemId,
+          makeCode: makeCode ?? null,
+          selections,
+        }
       }
     }
 
@@ -529,7 +550,7 @@ export class MbomService {
     targetDesignCode: string,
     renumberItems: boolean,
     userId: string,
-    sourceRootItemId: string,
+    sourceRootItemId?: string,
     configuration: DesignConfiguration | null = null,
   ): Promise<{
     itemsCopied: number
@@ -565,6 +586,10 @@ export class MbomService {
         linesFiltered: 0,
         itemIdMap: new Map(),
       }
+    }
+
+    if (!sourceRootItemId) {
+      throw new ValidationError('The source design has no root Part')
     }
 
     const sourceItemById = new Map(

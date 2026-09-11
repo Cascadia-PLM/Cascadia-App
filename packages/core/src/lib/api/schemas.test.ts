@@ -208,14 +208,15 @@ describe('update schemas accept null wherever a read can return one', () => {
  * with a bare `z.coerce.date()`, which is what this is guarding against.
  */
 describe('date fields accept every spelling of "no date"', () => {
-  /** Fields whose schema accepts a `Date` — i.e. the date fields. */
+  /** Fields whose schema parses a `Date` to a `Date` — i.e. date fields. */
   function dateFieldsOf(itemType: string): Array<[string, z.ZodType]> {
     const schema = itemUpdateSchemaFor(itemType)
     if (!(schema instanceof z.ZodObject)) return []
     const shape = schema.shape as Record<string, z.ZodType>
-    return Object.entries(shape).filter(
-      ([, field]) => field.safeParse(new Date()).success,
-    )
+    return Object.entries(shape).filter(([, field]) => {
+      const result = field.safeParse(new Date())
+      return result.success && result.data instanceof Date
+    })
   }
 
   const found = ITEM_TYPES.flatMap((itemType) =>

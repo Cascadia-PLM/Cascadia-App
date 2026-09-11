@@ -199,7 +199,7 @@ export function PartVariantsTab({
           <CardContent>
             <PartConfigurator
               partId={partId}
-              model={part.optionModel ?? model}
+              model={model}
               selections={selections}
               onSelectionsChange={setSelections}
               branchId={branchId}
@@ -215,7 +215,7 @@ export function PartVariantsTab({
               onCreateMbom={
                 design
                   ? (chosen) => {
-                      const matching = (part.makes ?? []).find(
+                      const matching = makes.find(
                         (m) =>
                           m.active &&
                           Object.keys(m.selections).length ===

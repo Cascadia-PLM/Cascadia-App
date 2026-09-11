@@ -9,7 +9,7 @@ import type {
   ImportResult,
   ItemFieldConfig,
 } from '@/lib/import'
-import { parseOptionText } from '@/lib/types/variants'
+import { optionConditionKey, parseOptionText } from '@/lib/types/variants'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
@@ -474,29 +474,13 @@ app.post(
             }
           }
 
-          // A parent lists a child once: `item_relationships` is unique on
-          // (source, target, type), so a file naming the same child on two
-          // lines has one edge to give. Caught here rather than at the insert,
-          // where the collision is reported in item ids the caller never saw
-          // and the second line's quantity is simply lost.
+          // Keep this identity aligned with ItemRelationshipService.edgeKey
+          // and the partial unique indexes: one child may occur more than
+          // once when its option condition or selected execution differs.
           const seenEdges = new Set<string>()
 
           // Process each relationship
           for (const rel of bomRelationships) {
-            const edgeKey = `${rel.parentItemNumber.toLowerCase()}\u0000${rel.childItemNumber.toLowerCase()}`
-            if (seenEdges.has(edgeKey)) {
-              result.relationshipsFailed++
-              result.failedRelationships.push({
-                parentItemNumber: rel.parentItemNumber,
-                childItemNumber: rel.childItemNumber,
-                error:
-                  `${rel.parentItemNumber} already lists ${rel.childItemNumber} ` +
-                  'on an earlier line; combine the lines and sum their quantities',
-              })
-              continue
-            }
-            seenEdges.add(edgeKey)
-
             const parentId = itemNumberToId.get(
               rel.parentItemNumber.toLowerCase(),
             )
@@ -525,6 +509,26 @@ app.post(
             }
 
             try {
+              const option = rel.option ? parseOptionText(rel.option) : null
+              const edgeKey = [
+                rel.parentItemNumber.toLowerCase(),
+                rel.childItemNumber.toLowerCase(),
+                optionConditionKey(option),
+                rel.targetMakeCode?.trim().toUpperCase() ?? '',
+              ].join('\u0000')
+              if (seenEdges.has(edgeKey)) {
+                result.relationshipsFailed++
+                result.failedRelationships.push({
+                  parentItemNumber: rel.parentItemNumber,
+                  childItemNumber: rel.childItemNumber,
+                  error:
+                    `${rel.parentItemNumber} already lists ${rel.childItemNumber} ` +
+                    'with the same option condition and target execution on an earlier line; combine the lines and sum their quantities',
+                })
+                continue
+              }
+              seenEdges.add(edgeKey)
+
               // Bulk import wires up items it just created — a system flow,
               // exempt from the per-user edit lock.
               await ItemService.addRelationship(
@@ -536,7 +540,7 @@ app.post(
                   quantity: String(rel.quantity),
                   findNumber: rel.findNumber,
                   referenceDesignator: rel.referenceDesignator,
-                  option: rel.option ? parseOptionText(rel.option) : null,
+                  option,
                   targetMakeCode: rel.targetMakeCode,
                 },
                 { bypassEditGuard: true },

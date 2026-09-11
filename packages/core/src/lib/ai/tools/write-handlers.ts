@@ -112,6 +112,7 @@ interface CreateRelationshipInput {
   findNumber?: number
   referenceDesignator?: string
   option?: string
+  targetMakeCode?: string
   confirmed?: boolean
   confirmationToken?: string
 }
@@ -773,6 +774,8 @@ async function createRelationshipHandlerImpl(
       if (input.referenceDesignator)
         relationshipInfo.push(`Ref Des: ${input.referenceDesignator}`)
       if (input.option) relationshipInfo.push(`Option: ${input.option}`)
+      if (input.targetMakeCode)
+        relationshipInfo.push(`Target execution: ${input.targetMakeCode}`)
 
       return withConfirmationToken(
         confirmationRequired(

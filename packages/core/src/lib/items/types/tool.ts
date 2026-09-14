@@ -3,7 +3,7 @@
 
 import { z } from 'zod'
 import { baseItemSchema } from './base'
-import type { BaseItem, RelationshipConfig, StateConfig } from './base'
+import type { BaseItem, RelationshipConfig } from './base'
 
 // ============================================================================
 // Tool-specific interface
@@ -477,13 +477,6 @@ export const toolSchema = baseItemSchema
 // ============================================================================
 // Tool states (free lifecycle)
 // ============================================================================
-
-export const toolStates: Array<StateConfig> = [
-  { id: 'Draft', name: 'Draft', color: 'gray' },
-  { id: 'Active', name: 'Active', color: 'green' },
-  { id: 'Maintenance', name: 'Maintenance', color: 'yellow' },
-  { id: 'Retired', name: 'Retired', color: 'red' },
-]
 
 // ============================================================================
 // Tool relationships (none — tools are standalone)

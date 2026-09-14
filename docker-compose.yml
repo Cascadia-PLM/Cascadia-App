@@ -130,6 +130,18 @@ services:
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
       JOB_TYPES: ${JOB_TYPES:-*}
       JOB_TIMEOUT: ${JOB_TIMEOUT:-300000}
+      # Declared, not inherited: this service enumerates its environment rather
+      # than using env_file, so a variable absent here never reaches the
+      # container at all.
+      EVENT_POLL_INTERVAL_MS: ${EVENT_POLL_INTERVAL_MS:-2000}
+      EVENT_CONSUMER_PARK_AFTER: ${EVENT_CONSUMER_PARK_AFTER:-10}
+      EVENT_RETENTION_DAYS: ${EVENT_RETENTION_DAYS:-90}
+      WEBHOOK_PUMP_INTERVAL_MS: ${WEBHOOK_PUMP_INTERVAL_MS:-5000}
+      WEBHOOK_DELIVERY_RETENTION_DAYS: ${WEBHOOK_DELIVERY_RETENTION_DAYS:-30}
+      # The worker is where webhook deliveries are signed, so the key has to
+      # reach it. It previously reached the app service only, which would have
+      # left every containerised deployment signing nothing.
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
     volumes:
       - .:/app
       - /app/node_modules # Use container's node_modules

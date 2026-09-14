@@ -62,52 +62,6 @@ export const issueSchema = baseItemSchema.extend({
   designIds: z.array(z.string().uuid()).optional(),
 })
 
-// Issue states (Free lifecycle - self-controlled)
-export const issueStates = [
-  {
-    id: 'Open',
-    name: 'Open',
-    color: 'blue',
-    description: 'Issue has been reported and is awaiting triage',
-  },
-  {
-    id: 'InProgress',
-    name: 'In Progress',
-    color: 'yellow',
-    description: 'Issue is being actively investigated or worked on',
-  },
-  {
-    id: 'Pending',
-    name: 'Pending',
-    color: 'orange',
-    description: 'Issue is waiting for external input or action',
-  },
-  {
-    id: 'Resolved',
-    name: 'Resolved',
-    color: 'green',
-    description: 'Issue has been resolved but not yet verified',
-  },
-  {
-    id: 'Verified',
-    name: 'Verified',
-    color: 'emerald',
-    description: 'Resolution has been verified and confirmed',
-  },
-  {
-    id: 'Closed',
-    name: 'Closed',
-    color: 'slate',
-    description: 'Issue is closed and complete',
-  },
-  {
-    id: 'Cancelled',
-    name: 'Cancelled',
-    color: 'red',
-    description: 'Issue was cancelled (duplicate, invalid, etc.)',
-  },
-]
-
 // Issue relationships
 export const issueRelationships = [
   {

@@ -6,20 +6,23 @@ All admin endpoints require the `Administrator` role unless otherwise noted.
 
 ## Item Type Configuration
 
-Cascadia uses a hybrid code-first + runtime configuration model. Item types (Part, Document, ChangeOrder, etc.) are defined in TypeScript with type-safe schemas, but their business rules can be overridden at runtime without redeployment.
+Cascadia is code-first. Item types (Part, Document, ChangeOrder, etc.) are defined in TypeScript with type-safe schemas, and which lifecycle governs a type is the one thing an administrator can change at runtime.
 
 ### What Can Be Configured at Runtime
 
-| Setting                  | Description                                                      |
-| ------------------------ | ---------------------------------------------------------------- |
-| `label`                  | Display name (e.g., rename "Part" to "Component")                |
-| `pluralLabel`            | Plural display name                                              |
-| `icon`                   | Lucide icon name                                                 |
-| `lifecycleDefinitionId`  | Link to a workflow definition for lifecycle states               |
-| `permissions`            | CRUD permission arrays (role names that can perform each action) |
-| `relationships`          | Allowed relationship types and targets                           |
-| `fieldMetadata`          | Per-field labels, descriptions, required/visible flags           |
-| `lifecyclesByChangeType` | (ChangeOrder only) Map change types to workflow definitions      |
+| Setting                  | Description                                                 |
+| ------------------------ | ----------------------------------------------------------- |
+| `lifecycleDefinitionId`  | The lifecycle whose states and transitions govern this type |
+| `lifecyclesByChangeType` | (ChangeOrder only) Map change types to workflow definitions |
+
+That is the whole list. `label`, `pluralLabel`, `icon`, `permissions`,
+`relationships` and `fieldMetadata` were once accepted here and are not any
+more: nothing read the last three at all, and the labels reached two of the
+dozen surfaces that display a type's name, so renaming Part to Component
+produced a search typeahead saying "Components" beside a page still saying
+"Part". Per-type access is not configured here either — see
+[Access Control](./access-control.md), where roles hold permissions on
+resources.
 
 ### What Requires Code Changes
 
@@ -27,7 +30,8 @@ Cascadia uses a hybrid code-first + runtime configuration model. Item types (Par
 - Zod validation schemas
 - React components
 - Table mappings
-- Default state definitions
+- Labels, icons, relationships and searchable fields
+- Item numbering schemes (`packages/core/src/lib/items/numbering/schemes.ts`)
 
 ### API Endpoints
 
@@ -49,9 +53,9 @@ Returns every registered item type with its code definition, runtime override (i
         "itemType": "Part",
         "hasCodeDefinition": true,
         "hasRuntimeConfig": true,
-        "codeConfig": { "label": "Part", "permissions": { ... } },
+        "codeConfig": { "label": "Part", "relationships": [...] },
         "runtimeConfig": { "id": "...", "version": 2, "config": { ... } },
-        "mergedConfig": { "label": "Component", "permissions": { ... } }
+        "mergedConfig": { "label": "Part", "lifecycleDefinitionId": "..." }
       }
     ]
   }
@@ -67,27 +71,23 @@ Content-Type: application/json
 {
   "itemType": "Part",
   "config": {
-    "label": "Component",
-    "pluralLabel": "Components",
-    "permissions": {
-      "create": ["Engineer", "Administrator"],
-      "read": ["*"],
-      "update": ["Engineer", "Administrator"],
-      "delete": ["Administrator"]
-    }
+    "lifecycleDefinitionId": "00000000-0000-4000-8000-000000000100"
   }
 }
 ```
 
-After saving, the `ItemTypeRegistry` is automatically reloaded so changes take effect immediately on the current instance.
+The swap is validated before it is stored: the target must exist, must be the
+same kind of definition the type's code definition assigns (an item lifecycle
+for Part, a change-order workflow for ChangeOrder), and must contain every
+state the type's existing items are in. `ItemTypeRegistry` is reloaded on the
+instance that served the request, so the change takes effect immediately
+there.
 
-Returns `201` for a new configuration or `200` for an update.
+Returns `201` for a new configuration or `200` for an update, and `409` if
+another administrator saved the same type while you were editing it.
 
-#### Delete a runtime override (revert to code defaults)
-
-```
-DELETE /api/v1/admin/item-type-configs/:itemType
-```
+There is no `DELETE`: the row carries the lifecycle assignment, and every item
+type must have one. Assign a different lifecycle instead.
 
 #### Reload all configurations
 

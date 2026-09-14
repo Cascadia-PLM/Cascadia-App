@@ -32,6 +32,11 @@ export const RESOURCES = [
   'designs',
   'documents',
   'enterprise-search',
+  // Its own resource rather than a sub-key of `admin`: `admin`'s dependents
+  // reach `items` and `lifecycles`, and a resume click has no business
+  // invalidating the item surface. No outbound edge is needed either — resume,
+  // skip and forget touch only cursor rows.
+  'events',
   'files',
   'import',
   'issues',
@@ -58,6 +63,11 @@ export const RESOURCES = [
   'thread',
   'tools',
   'users',
+  // Webhook subscriptions are instance configuration, not a view of any
+  // other resource, so they get their own entry rather than hanging off
+  // `admin` — whose dependents reach `items` and `lifecycles`, and a rotate
+  // click has no business invalidating the item surface.
+  'webhooks',
   'work-instructions',
   'work-orders',
   'workspaces',

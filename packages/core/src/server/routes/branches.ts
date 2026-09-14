@@ -62,7 +62,7 @@ app.put(
           await requireDesignManageAuthority(user.id, branch.designId, 'update')
         },
       },
-      async ({ params, body: data }) => {
+      async ({ params, body: data, user }) => {
         const { id } = params
         const branch = await BranchService.getById(id)
         if (!branch) throw new NotFoundError('Branch', id)
@@ -74,7 +74,7 @@ app.put(
         }
 
         if (data.isArchived === true) {
-          await BranchService.archiveBranch(id)
+          await BranchService.archiveBranch(id, undefined, user.id)
         }
 
         const updatedBranch = await BranchService.getById(id)

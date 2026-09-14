@@ -19,6 +19,12 @@ import {
   NotFoundError,
   ValidationError,
 } from '../errors'
+import {
+  DESIGN_RELEASED,
+  ITEM_OBSOLETED,
+  ITEM_RELEASED,
+  publishDomainEvent,
+} from '../events'
 import { getTypeHandler } from '../items/type-handlers'
 import { copyTypeSpecificData } from '../items/type-handlers/copy'
 import '../items/type-handlers/init'
@@ -35,6 +41,8 @@ import { MbomService } from './MbomService'
 import { ReleaseHookRegistry } from './release-hooks'
 import { RevisionService } from './RevisionService'
 import { bomStructureOf } from './item-structure'
+import { releaseBranchLocks } from './checkout-locks'
+import type { DesignReleasedPayload } from '../events'
 import type { TransactionClient } from '../db'
 import type { ResolvedActionStates } from './LifecycleService'
 import type { RevisionScheme } from '../types/lifecycle'
@@ -153,9 +161,18 @@ type ChangeOrderDesignRecord = Awaited<
 /** One item a release recorded, for the design's release commit. */
 interface ReleasedItem {
   itemId: string
+  /** The version this one supersedes; null when the row stayed current. */
+  previousItemId: string | null
+  masterId: string
+  itemType: string
   itemNumber: string | undefined
+  name: string | null
   changeType: 'added' | 'modified' | 'deleted'
+  /** The revision the item carried before this release. */
+  previousRevision: string
   newRevision?: string
+  /** The affected-item action that produced the entry. */
+  action: 'revise' | 'release' | 'promote' | 'obsolete'
 }
 
 interface ReleasedItemsForDesign {
@@ -180,6 +197,11 @@ interface ActionableItem {
   state: string
   revision: string
   designId?: string | null
+  /**
+   * Read by the release facts rather than by any action. Optional because the
+   * preview's row comes from `getAffectedItems`, which does not carry it.
+   */
+  name?: string | null
 }
 
 /**
@@ -205,6 +227,45 @@ type ChangeActionOutcome =
       /** Counted in the release's `totalRevisionsAssigned` */
       assignedRevision: boolean
     }
+
+/** Record an item a release pass released, under the design it released on. */
+function trackReleasedItem(
+  byDesign: Map<string, ReleasedItemsForDesign>,
+  designId: string | null | undefined,
+  entry: ReleasedItem,
+): void {
+  if (!designId) return
+  const existing = byDesign.get(designId) ?? { items: [] }
+  existing.items.push(entry)
+  byDesign.set(designId, existing)
+}
+
+/** What a release pass records for an item `applyChangeAction` applied. */
+function releasedEntry(
+  item: ActionableItem,
+  outcome: Extract<ChangeActionOutcome, { kind: 'applied' }>,
+  action: ChangeAction,
+): ReleasedItem {
+  return {
+    itemId: outcome.itemId,
+    previousItemId: outcome.itemId === item.id ? null : item.id,
+    masterId: item.masterId,
+    itemType: item.itemType,
+    itemNumber: outcome.itemNumber,
+    name: item.name ?? null,
+    changeType: outcome.changeType,
+    // Empty for an item released at its first revision, as on the branch-merge
+    // arm: what it held before was a working marker, not a revision anything
+    // was released at.
+    previousRevision:
+      outcome.newRevision &&
+      RevisionService.isWorkingRevision(outcome.currentRevision)
+        ? ''
+        : outcome.currentRevision,
+    newRevision: outcome.newRevision,
+    action,
+  }
+}
 
 /**
  * Service for change order merge/release workflow.
@@ -534,6 +595,7 @@ export class ChangeOrderMergeService {
         state: items.state,
         revision: items.revision,
         designId: items.designId,
+        name: items.name,
       })
       .from(items)
       .where(and(eq(items.masterId, item.masterId), eq(items.isCurrent, true)))
@@ -621,7 +683,13 @@ export class ChangeOrderMergeService {
     states: ResolvedActionStates,
     run:
       | { dryRun: true }
-      | { dryRun?: false; userId: string; tx: TransactionClient },
+      | {
+          dryRun?: false
+          userId: string
+          tx: TransactionClient
+          /** Carried for the per-item release fact this emits. */
+          changeOrderId: string
+        },
   ): Promise<ChangeActionOutcome> {
     const write = run.dryRun ? null : run
     // The version in service is what the action acts on — not the row pinned
@@ -823,7 +891,76 @@ export class ChangeOrderMergeService {
     if (write && outcome.kind !== 'invalid') {
       await this.trackOnMain(item, write.tx)
     }
+
+    // The per-item release fact, from the single authority both release passes
+    // act through — rather than at each pass's own tracking call, which is how
+    // the release hook came to fire on one arm and not the other. A dry run
+    // has no `write` and so cannot reach this, and an item outside any design
+    // has no design to report the release against.
+    if (write && outcome.kind === 'applied' && item.designId) {
+      await this.publishAffectedItemFact(
+        write.tx,
+        write.changeOrderId,
+        write.userId,
+        item.designId,
+        releasedEntry(item, outcome, action),
+      )
+    }
     return outcome
+  }
+
+  /**
+   * The per-item fact of an affected-item action — `item.released`, or
+   * `item.obsoleted` for the obsolete action — inside the release
+   * transaction. Every event of one release carries the change order's id as
+   * `correlationId`, so a consumer can group them without parsing payloads.
+   */
+  private static async publishAffectedItemFact(
+    tx: TransactionClient,
+    changeOrderId: string,
+    userId: string,
+    designId: string,
+    released: ReleasedItem,
+  ): Promise<void> {
+    const itemNumber = released.itemNumber ?? ''
+    if (released.action === 'obsolete') {
+      await publishDomainEvent(tx, ITEM_OBSOLETED, {
+        actorId: userId,
+        subject: { id: released.itemId, masterId: released.masterId },
+        context: { designId },
+        correlationId: changeOrderId,
+        payload: {
+          changeOrderId,
+          designId,
+          itemId: released.itemId,
+          masterId: released.masterId,
+          itemType: released.itemType,
+          itemNumber,
+          name: released.name,
+          revision: released.newRevision ?? released.previousRevision,
+        },
+      })
+      return
+    }
+    await publishDomainEvent(tx, ITEM_RELEASED, {
+      actorId: userId,
+      subject: { id: released.itemId, masterId: released.masterId },
+      context: { designId },
+      correlationId: changeOrderId,
+      payload: {
+        changeOrderId,
+        designId,
+        itemId: released.itemId,
+        masterId: released.masterId,
+        itemNumber,
+        name: released.name,
+        itemType: released.itemType,
+        previousRevision: released.previousRevision,
+        newRevision: released.newRevision ?? released.previousRevision,
+        changeType: released.changeType,
+        action: released.action,
+      },
+    })
   }
 
   /**
@@ -913,11 +1050,9 @@ export class ChangeOrderMergeService {
         continue
       }
 
-      // Auto-checkin all items on this branch before merge
-      // This releases checkout locks since the ECO is being released
-      await this.autoCheckinBranchItems(changeOrderDesign.branchId)
-
-      // Validate merge before proceeding
+      // Validate merge before proceeding. Held checkouts do not block it: the
+      // merge checks them in inside its own transaction, so a merge that
+      // fails leaves them held.
       const validation = await this.validateMerge(changeOrderDesign.branchId)
 
       // Check if this is a "no changes" situation vs a real conflict.
@@ -943,15 +1078,24 @@ export class ChangeOrderMergeService {
       }
 
       if (noChangesConflict) {
-        // No changes on this branch - skip merging but don't fail
-        // Mark as skipped (no merge needed)
-        await db
-          .update(changeOrderDesigns)
-          .set({
-            mergeStatus: 'skipped',
-            updatedAt: new Date(),
-          })
-          .where(eq(changeOrderDesigns.id, changeOrderDesign.id))
+        // No changes on this branch: nothing to merge, but its working life
+        // is over. Its locks are checked in with the status that says so, as
+        // a merge would check them in.
+        const skippedBranchId = changeOrderDesign.branchId
+        await db.transaction(async (tx) => {
+          await releaseBranchLocks(
+            tx,
+            { branchId: skippedBranchId, designId: changeOrderDesign.designId },
+            'checked_in',
+          )
+          await tx
+            .update(changeOrderDesigns)
+            .set({
+              mergeStatus: 'skipped',
+              updatedAt: new Date(),
+            })
+            .where(eq(changeOrderDesigns.id, changeOrderDesign.id))
+        })
         continue
       }
 
@@ -980,6 +1124,20 @@ export class ChangeOrderMergeService {
       // MBOM owners then accept or defer each change on their own schedule.
       if (mergeResult.changedItems.length > 0) {
         try {
+          // Held inline for this wave, deliberately — the third candidate the
+          // extension layer did not take. Two reasons, and the second is the
+          // real one. It is synchronous today, so moving it would put up to a
+          // poll interval between an ECO release and the upstream-changes rows
+          // the MBOM review panel reads. And its target shape is not the
+          // release payload: the event's item list carries an item id and an
+          // action an upstream-change row does not want, and lacks the changed
+          // fields it does — so moving it is a payload question wearing a
+          // dispatch question's clothes.
+          //
+          // It therefore keeps the arm-blindness the other two just lost: this
+          // call sits on the branch-merge path, so a branchless release
+          // notifies no derived MBOM. Recorded rather than smuggled into this
+          // stage.
           const notified = await MbomService.notifyDerivedMboms(
             changeOrderDesign.designId,
             mergeResult.mergeCommit.id,
@@ -1067,17 +1225,6 @@ export class ChangeOrderMergeService {
         // Track released items by design for creating release commits
         const releasedItemsByDesign = new Map<string, ReleasedItemsForDesign>()
 
-        /** Record an item this pass released, for its design's release commit. */
-        const trackReleased = (
-          designId: string | null | undefined,
-          entry: ReleasedItem,
-        ): void => {
-          if (!designId) return
-          const existing = releasedItemsByDesign.get(designId) ?? { items: [] }
-          existing.items.push(entry)
-          releasedItemsByDesign.set(designId, existing)
-        }
-
         return db.transaction(
           async (tx) => {
             for (const affected of affectedItems) {
@@ -1102,7 +1249,7 @@ export class ChangeOrderMergeService {
                 action,
                 item,
                 await LifecycleService.resolveActionStates(item.itemType),
-                { userId, tx },
+                { userId, tx, changeOrderId },
               )
               if (outcome.kind === 'invalid') {
                 throw new ValidationError(
@@ -1112,46 +1259,21 @@ export class ChangeOrderMergeService {
               if (outcome.kind === 'noop') continue
 
               if (outcome.assignedRevision) assignedThisAttempt++
-              trackReleased(item.designId, {
-                itemId: outcome.itemId,
-                itemNumber: outcome.itemNumber,
-                changeType: outcome.changeType,
-                newRevision: outcome.newRevision,
-              })
-            }
-
-            // Create release commits for each design that had items released
-            // This ensures the initial ECO release appears in the design's history graph
-            for (const [designId, designData] of releasedItemsByDesign) {
-              if (designData.items.length === 0) continue
-
-              const mainBranch = await BranchService.getMainBranch(designId)
-              if (!mainBranch) continue
-
-              // Build revision assignments map
-              const revisionsAssigned: Record<string, string> = {}
-              for (const item of designData.items) {
-                if (item.newRevision && item.itemNumber) {
-                  revisionsAssigned[item.itemNumber] = item.newRevision
-                }
-              }
-
-              // Create release commit on main branch
-              await CommitService.create(
-                {
-                  branchId: mainBranch.id,
-                  message: `Released via ${label}`,
-                  changeOrderItemId: changeOrderId,
-                  revisionsAssigned,
-                  itemChanges: designData.items.map((item) => ({
-                    itemId: item.itemId,
-                    changeType: item.changeType,
-                  })),
-                },
-                userId,
-                tx,
+              trackReleasedItem(
+                releasedItemsByDesign,
+                item.designId,
+                releasedEntry(item, outcome, action),
               )
             }
+
+            // The release commit and summary for each design this pass
+            // released on — shared with the post-merge pass, so the two
+            // cannot drift apart again
+            await this.recordDesignReleases(
+              tx,
+              { changeOrderId, userId, label },
+              releasedItemsByDesign,
+            )
 
             // Archive any ECO branches associated with this change order
             for (const changeOrderDesign of ecoDesigns) {
@@ -1159,6 +1281,7 @@ export class ChangeOrderMergeService {
                 await BranchService.archiveBranch(
                   changeOrderDesign.branchId,
                   tx,
+                  userId,
                 )
               }
             }
@@ -1194,6 +1317,92 @@ export class ChangeOrderMergeService {
   }
 
   /**
+   * The release commit on main and the `design.released` summary for each
+   * design a release pass acted on, inside that pass's transaction.
+   *
+   * Shared by both affected-item passes so they cannot drift apart, which is
+   * how the post-merge pass came to release items with no summary at all.
+   * Every consumer keyed on `design.released` — the superseded watermark, the
+   * work-instruction alert, the ERP sync, the audit anchor — silently missed
+   * what that pass released: a design in a multi-design change order whose
+   * branch was skipped got no summary, and a design whose branch merged got one
+   * that left those items out.
+   *
+   * A design whose branch also merged therefore receives a **second** summary
+   * from here, carrying only what this pass released, with a null `branchId`
+   * and a release commit of its own — exactly as a branchless release reads.
+   */
+  private static async recordDesignReleases(
+    tx: TransactionClient,
+    release: { changeOrderId: string; userId: string; label: string },
+    releasedItemsByDesign: ReadonlyMap<string, ReleasedItemsForDesign>,
+  ): Promise<void> {
+    const { changeOrderId, userId, label } = release
+    for (const [designId, designData] of releasedItemsByDesign) {
+      if (designData.items.length === 0) continue
+
+      const mainBranch = await BranchService.getMainBranch(designId)
+      if (!mainBranch) continue
+
+      // Build revision assignments map
+      const revisionsAssigned: Record<string, string> = {}
+      for (const item of designData.items) {
+        if (item.newRevision && item.itemNumber) {
+          revisionsAssigned[item.itemNumber] = item.newRevision
+        }
+      }
+
+      // The release commit, so the release appears in the design's history
+      // graph
+      const releaseCommit = await CommitService.create(
+        {
+          branchId: mainBranch.id,
+          message: `Released via ${label}`,
+          changeOrderItemId: changeOrderId,
+          revisionsAssigned,
+          itemChanges: designData.items.map((item) => ({
+            itemId: item.itemId,
+            changeType: item.changeType,
+          })),
+        },
+        userId,
+        tx,
+      )
+
+      // The design's summary. Its per-item facts are already on the log —
+      // `applyChangeAction` emitted each as it applied it — so a consumer sees
+      // the same shape and order here as on the branch-merge arm.
+      await publishDomainEvent(tx, DESIGN_RELEASED, {
+        actorId: userId,
+        subject: { id: designId },
+        context: { designId },
+        correlationId: changeOrderId,
+        payload: {
+          changeOrderId,
+          changeOrderLabel: label,
+          designId,
+          branchId: null,
+          targetBranchId: mainBranch.id,
+          mergeCommitId: releaseCommit.id,
+          revisionsAssigned,
+          items: designData.items.map((released) => ({
+            itemId: released.itemId,
+            previousItemId: released.previousItemId,
+            masterId: released.masterId,
+            itemNumber: released.itemNumber ?? '',
+            name: released.name,
+            itemType: released.itemType,
+            previousRevision: released.previousRevision,
+            newRevision: released.newRevision ?? released.previousRevision,
+            changeType: released.changeType,
+            action: released.action,
+          })),
+        },
+      })
+    }
+  }
+
+  /**
    * Phase 3 — the affected-item actions the branch merge did not carry out.
    *
    * Runs only after a branch merged, and is not a fallback: a branch merge
@@ -1210,10 +1419,15 @@ export class ChangeOrderMergeService {
    * completed "successfully" having never promoted it. The rule is structural
    * instead: whatever the branch merge did not handle, this does — through the
    * same `applyChangeAction` as the branchless pass, so the two cannot drift.
+   *
+   * It owes each design it acts on what that pass owes: a release commit and a
+   * `design.released` summary (`recordDesignReleases`). A design whose branch
+   * also merged gets a second summary here, for what this pass released.
    */
   private static async applyRemainingActions(
     changeOrderId: string,
     userId: string,
+    label: string,
     designsWithBranches: Array<ChangeOrderDesignRecord>,
     results: ChangeOrderMergeResult,
   ): Promise<void> {
@@ -1256,6 +1470,9 @@ export class ChangeOrderMergeService {
         // it records what the branch merge already committed, which no retry
         // of this pass can change.
         let assignedThisAttempt = 0
+        // Per-attempt too: a map declared outside the closure would carry an
+        // aborted attempt's items into the summary of the one that commits.
+        const releasedItemsByDesign = new Map<string, ReleasedItemsForDesign>()
 
         return db.transaction(
           async (tx) => {
@@ -1289,17 +1506,29 @@ export class ChangeOrderMergeService {
                 action,
                 item,
                 await LifecycleService.resolveActionStates(item.itemType),
-                { userId, tx },
+                { userId, tx, changeOrderId },
               )
               if (outcome.kind === 'invalid') {
                 throw new ValidationError(
                   `Cannot apply "${action}" to ${item.itemNumber}: ${outcome.error}`,
                 )
               }
-              if (outcome.kind === 'applied' && outcome.assignedRevision) {
-                assignedThisAttempt++
-              }
+              if (outcome.kind !== 'applied') continue
+              if (outcome.assignedRevision) assignedThisAttempt++
+              trackReleasedItem(
+                releasedItemsByDesign,
+                item.designId,
+                releasedEntry(item, outcome, action),
+              )
             }
+
+            // The summary every release arm owes its designs; see
+            // `recordDesignReleases` for what its absence here cost
+            await this.recordDesignReleases(
+              tx,
+              { changeOrderId, userId, label },
+              releasedItemsByDesign,
+            )
 
             // In the same transaction as the work it vouches for
             await this.markImplemented(changeOrderId, tx)
@@ -1481,6 +1710,7 @@ export class ChangeOrderMergeService {
       await this.applyRemainingActions(
         changeOrderId,
         userId,
+        releaseLabel(changeOrder),
         designsWithBranches,
         results,
       )
@@ -2105,8 +2335,18 @@ export class ChangeOrderMergeService {
               )
             }
 
-            // 8. Archive ECO branch
-            await BranchService.archiveBranch(branchId, tx)
+            // 8. Check in whatever is still checked out on the branch, then
+            // archive it. Inside the release, so a merge that fails — a
+            // conflict, a serialization failure — leaves every lock where it
+            // was: this used to run on the pool before validation, so a
+            // release that went on to fail had already dropped them all, and
+            // recorded none of it.
+            await releaseBranchLocks(
+              tx,
+              { branchId, designId: branch.designId },
+              'checked_in',
+            )
+            await BranchService.archiveBranch(branchId, tx, userId)
 
             // 9. Record the design's merge on the change order. This has to
             // commit with the release itself: the retry guard in merge() trusts
@@ -2161,13 +2401,27 @@ export class ChangeOrderMergeService {
                 : [],
             )
 
+            // 11. The per-item release facts, and the design's summary, on the
+            // domain event log and in this transaction: each exists iff the
+            // version reached main. `action` is null — this is branch content
+            // merged rather than an affected-item action, which
+            // `applyChangeAction` emits for itself. Publishing takes no lock:
+            // `seq` is assigned when this transaction commits.
+            const releasedFacts: Array<DesignReleasedPayload['items'][number]> =
+              []
+
             for (const change of itemChanges) {
               const releasedRow = releasedById.get(change.itemId)
               if (!releasedRow) continue
 
+              // Empty only for an item new in this release. A deletion names no
+              // previous row because the row it retires is the one released
+              // here, so the revision being retired is that row's own.
               const previousRevision = change.previousItemId
                 ? (previousRevisionById.get(change.previousItemId) ?? '')
-                : ''
+                : change.changeType === 'deleted'
+                  ? releasedRow.revision
+                  : ''
 
               upstreamItems.push({
                 masterId: change.itemMasterId,
@@ -2178,7 +2432,50 @@ export class ChangeOrderMergeService {
                 newRevision: releasedRow.revision,
                 changeType: change.changeType,
               })
+
+              const fact = {
+                itemId: change.itemId,
+                previousItemId: change.previousItemId ?? null,
+                masterId: change.itemMasterId,
+                itemNumber: releasedRow.itemNumber,
+                name: releasedRow.name,
+                itemType: releasedRow.itemType,
+                previousRevision,
+                newRevision: releasedRow.revision,
+                changeType: change.changeType,
+                action: null,
+              }
+              releasedFacts.push(fact)
+              await publishDomainEvent(tx, ITEM_RELEASED, {
+                actorId: userId,
+                subject: { id: change.itemId, masterId: change.itemMasterId },
+                context: { designId: branch.designId, branchId },
+                correlationId: changeOrderId,
+                payload: { changeOrderId, designId: branch.designId, ...fact },
+              })
             }
+
+            // 12. The per-design summary — the fact the ERP hook keys on today
+            // — atomically with the release itself. Unlike the post-commit
+            // dispatches below, it cannot be lost to a crash, and it cannot
+            // exist for a merge that rolled back. Last write of the
+            // transaction.
+            await publishDomainEvent(tx, DESIGN_RELEASED, {
+              actorId: userId,
+              subject: { id: branch.designId },
+              context: { designId: branch.designId, branchId },
+              correlationId: changeOrderId,
+              payload: {
+                changeOrderId,
+                changeOrderLabel: label,
+                designId: branch.designId,
+                branchId,
+                targetBranchId: mainBranch.id,
+                mergeCommitId: commit.id,
+                revisionsAssigned,
+                items: releasedFacts,
+              },
+            })
 
             return {
               commit,
@@ -2208,55 +2505,34 @@ export class ChangeOrderMergeService {
       ['40001', '40P01', '23505'],
     )
 
-    // Outbound side effects, after the release has committed. A queue publish
-    // cannot be rolled back, and holding a serializable transaction open across
-    // it would extend the lock window over a network call.
-    try {
-      const changedPartIds = released.itemChanges
-        .filter((c) => c.changeType === 'modified' || c.changeType === 'added')
-        .map((c) => c.itemMasterId)
-
-      if (changedPartIds.length > 0) {
-        const { JobService } = await import('@/lib/jobs')
-        await JobService.submit(
-          'notification.workinstruction.partchanged',
-          {
-            changeOrderId,
-            changedPartIds,
-            userId,
-          },
-          userId,
-        )
-      }
-    } catch (error) {
-      // WI alert job failure should not block ECO merge
-      serviceLogger.warn({ error }, 'Failed to submit WI change alert job')
-    }
-
-    // Mark the revisions this release superseded.
+    // The work-instruction change alert and the superseded-revision watermark
+    // used to be dispatched here, as two post-commit try/catch blocks. They are
+    // now `consumed` extensions on `design.released`
+    // (`lib/extensions/core/`), which is strictly better in the one way that
+    // matters and not worse in any: this block only ever ran on the
+    // branch-merge path, so a change order releasing through the branchless or
+    // state-only arm dispatched neither and nothing recorded that it was owed.
+    // Keyed on the fact instead, they cover every arm, retry, catch up after an
+    // outage, and park visibly rather than logging a warning nobody reads.
     //
-    // A superseded PDF stays downloadable forever — that is the point of a
-    // vault — so the only thing stopping someone building to it is that the
-    // copy in their hand says nothing about being out of date. Stamping it is
-    // what makes the paper self-describing.
-    //
-    // Dispatched rather than done inline: this rewrites every PDF attached to
-    // every superseded revision, and a failure there must be retried on its
-    // own rather than rolling back a release that has already happened.
-    try {
-      await this.submitSupersededWatermarkJobs(
-        released.itemChanges,
-        userId,
-        label,
-      )
-    } catch (error) {
-      serviceLogger.warn({ error }, 'Failed to submit superseded watermark job')
-    }
+    // `MbomService.notifyDerivedMboms` is the third candidate and stays inline
+    // for this wave — see the note at its call site. It has the same
+    // arm-blindness, which is recorded rather than fixed here, because moving
+    // it is a payload question dressed as a dispatch question.
 
     // Post-release module hooks (e.g. an ERP connector syncing the released
-    // design). Same contract as the dispatches above: the release has already
-    // committed, so a hook failure is logged — and retried by whatever the
-    // hook queued — never rolled back into the merge.
+    // design). The release has already committed, so a hook failure is logged —
+    // and retried by whatever the hook queued — never rolled back into the
+    // merge.
+    //
+    // **Deprecated, and kept deliberately.** `ReleaseHookRegistry` is
+    // superseded by a `consumed` extension on `design.released`; see the note
+    // on the registry itself for why. Neither edition registers a hook any
+    // more — the Odoo connector moved to a consumer — so this loop runs over
+    // nothing. It stays one more release because the registry is documented
+    // public API in the published edition, and it stays *here*, on the
+    // branch-merge path only: widening it to the other release arms would be
+    // perpetuating the thing being retired.
     for (const hook of ReleaseHookRegistry.all()) {
       try {
         await hook.afterRelease({
@@ -2281,98 +2557,6 @@ export class ChangeOrderMergeService {
       itemsAdded: released.itemsAdded,
       itemsDeleted: released.itemsDeleted,
       changedItems: released.upstreamItems,
-    }
-  }
-
-  /**
-   * Auto-checkin all items on a branch.
-   * Releases checkout locks — used during both ECO release (merge) and cancellation.
-   */
-  static async autoCheckinBranchItems(branchId: string): Promise<number> {
-    const result = await db
-      .update(branchItems)
-      .set({
-        checkedOutBy: null,
-        checkedOutAt: null,
-      })
-      .where(eq(branchItems.branchId, branchId))
-      .returning()
-
-    return result.length
-  }
-
-  /**
-   * Queue a "SUPERSEDED" stamp for the PDFs on every revision this release
-   * replaced.
-   *
-   * One job per superseded revision, not one for the whole release: the stamp
-   * carries the revision that replaced it, which differs per item, and a
-   * per-item job means a document whose attachments fail to stamp can be
-   * retried without re-stamping the rest.
-   *
-   * Files hang off an item *version* row, so the superseded revision still owns
-   * its own attachments — the ones to mark are exactly the ones on
-   * `previousItemId`, and the new revision's files are untouched.
-   */
-  private static async submitSupersededWatermarkJobs(
-    itemChanges: Array<{
-      itemId: string
-      itemMasterId: string
-      changeType: 'added' | 'modified' | 'deleted'
-      previousItemId?: string
-    }>,
-    userId: string,
-    label: string,
-  ): Promise<void> {
-    const superseded = itemChanges.filter(
-      (change) => change.changeType === 'modified' && change.previousItemId,
-    )
-    if (superseded.length === 0) return
-
-    const { JobService } = await import('@/lib/jobs')
-    const { previewKindFor } = await import('@/lib/vault/preview')
-
-    for (const change of superseded) {
-      const previousItemId = change.previousItemId
-      if (!previousItemId) continue
-
-      const files = await FileService.listItemFiles(previousItemId)
-      const pdfIds = files
-        .filter(
-          (file) =>
-            !file.deletedAt &&
-            file.isLatestVersion &&
-            !file.isCheckedOut &&
-            previewKindFor(file.originalFileName) === 'pdf',
-        )
-        .map((file) => file.id)
-
-      if (pdfIds.length === 0) continue
-
-      const released = await db
-        .select({ itemNumber: items.itemNumber, revision: items.revision })
-        .from(items)
-        .where(eq(items.id, change.itemId))
-        .limit(1)
-        .then((rows) => rows.at(0))
-
-      await JobService.submit(
-        'document.watermark.apply',
-        {
-          fileIds: pdfIds,
-          text: 'SUPERSEDED',
-          subtext: released
-            ? `Superseded by ${released.itemNumber} Rev ${released.revision}`
-            : null,
-          position: 'diagonal',
-          color: '#dc2626',
-          opacity: 0.25,
-          reason: `Superseded by the release of ${label}`,
-          userId,
-        },
-        userId,
-        { itemId: previousItemId },
-      )
     }
   }
 
@@ -2604,12 +2788,11 @@ export class ChangeOrderMergeService {
         ),
       )
 
-    // Held checkouts are a warning, not a blocker: `merge()` calls
-    // `autoCheckinBranchItems` on the branch before validating it, so by the
-    // time a real release reaches here there are none. Reporting them as
-    // conflicts made the release preview say "cannot release" for an ECO whose
-    // engineer simply still had an item open — which is every ECO, since saving
-    // keeps the checkout.
+    // Held checkouts are a warning, not a blocker: the release checks every
+    // one of them in, inside its own transaction (`releaseBranchLocks`).
+    // Reporting them as conflicts made the release preview say "cannot
+    // release" for an ECO whose engineer simply still had an item open —
+    // which is every ECO, since saving keeps the checkout.
     for (const { branchItem, item } of checkedOutItems) {
       warnings.push(
         `${item?.itemNumber || branchItem.itemMasterId} is still checked out; releasing will check it in`,

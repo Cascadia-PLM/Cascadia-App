@@ -77,7 +77,7 @@ app.get(
       // vacuous on the four types whose `items.design_id` is NULL — ChangeOrder,
       // Issue, WorkOrder, PhysicalPart. `requireItemAccess` dispatches all four
       // and ends in the identical design check for the rest, and
-      // `getResourceType` is fail-closed where `itemTypeToResource` skipped the
+      // `getResourceType` is fail-closed where the old null-returning lookup skipped the
       // tuple entirely on a type it did not know.
       const subject = await requireItemAccess(user.id, params.id)
       await requirePermission(

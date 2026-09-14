@@ -1,12 +1,13 @@
 {
   "name": "@cascadia/core",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Cascadia PLM core — the AGPL edition, published to Cascadia-PLM/Cascadia-App.",
   "license": "AGPL-3.0-or-later",
   "private": true,
   "type": "module",
   "exports": {
     "./styles.css": "./src/styles.css",
+    "./extensions": "./src/lib/extensions/public.ts",
     "./*": "./src/*.ts",
     "./*.tsx": "./src/*.tsx"
   }

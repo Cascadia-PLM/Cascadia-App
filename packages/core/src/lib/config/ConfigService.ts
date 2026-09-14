@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { db } from '../db'
 import { itemTypeConfigs, items } from '../db/schema'
 import { notDeleted } from '../db/filters'
-import { ConflictError, NotFoundError, ValidationError } from '../errors'
+import { ConflictError, ValidationError } from '../errors'
 import { ItemTypeRegistry } from '../items/registry'
 import { LifecycleDefinitionService } from '../lifecycles/LifecycleDefinitionService'
 import { resolveLifecycleType } from '../lifecycles/normalize'
@@ -26,33 +26,11 @@ const lifecyclesByChangeTypeSchema = z
  * Schema for validating runtime configuration updates
  */
 const runtimeConfigSchema = z.object({
-  label: z.string().min(1).max(100).optional(),
-  pluralLabel: z.string().min(1).max(100).optional(),
-  icon: z.string().min(1).max(50).optional(),
   /**
    * Links this item type to a lifecycle definition.
    * Must be a valid UUID referencing an active lifecycle in workflow_definitions.
    */
   lifecycleDefinitionId: z.string().uuid().optional().nullable(),
-  permissions: z
-    .object({
-      create: z.array(z.string()),
-      read: z.array(z.string()),
-      update: z.array(z.string()),
-      delete: z.array(z.string()),
-    })
-    .optional(),
-  relationships: z
-    .array(
-      z.object({
-        type: z.string().min(1),
-        label: z.string().min(1),
-        targetTypes: z.array(z.string()),
-        allowMultiple: z.boolean(),
-      }),
-    )
-    .optional(),
-  fieldMetadata: z.record(z.string(), z.unknown()).optional(),
   /**
    * ChangeOrder only: the Driving definition each change type runs. Every
    * change type an install creates needs an entry; null is not a value.
@@ -145,7 +123,20 @@ export class ConfigService {
   }
 
   /**
-   * Create or update runtime configuration for an item type
+   * Create or update runtime configuration for an item type.
+   *
+   * This is the only write path, and it validates rather than trusting its
+   * caller: shape, the mandatory-lifecycle floor, and the lifecycle swap
+   * itself. The swap check used to live in a `saveConfigWithLifecycleValidation`
+   * wrapper that no route ever called, so the documented gate — an item type
+   * may not be pointed at a lifecycle its items' states are missing from, nor
+   * at a definition of the wrong kind — was bypassed by every real save.
+   * Nothing needs to remember to opt in now; the current lifecycle comes from
+   * the row being replaced.
+   *
+   * It also refreshes the registry, for the same reason: three route handlers
+   * each remembered to call `reload()` afterwards, and the next writer would
+   * not have.
    */
   static async saveConfig(
     itemType: string,
@@ -181,9 +172,29 @@ export class ConfigService {
       parseResult.data as RuntimeItemTypeConfig,
     )
 
+    const validation = await this.validateLifecycleSwap(
+      itemType,
+      existing?.config.lifecycleDefinitionId,
+      normalized.lifecycleDefinitionId,
+    )
+    if (!validation.valid) {
+      throw new ValidationError(validation.errors.join('; '), undefined, {
+        operation: 'saveConfig',
+        resource: `ItemTypeConfig:${itemType}`,
+        details: {
+          currentLifecycle: validation.currentLifecycleName,
+          targetLifecycle: validation.targetLifecycleName,
+          statesNotInTarget: validation.statesNotInTarget,
+        },
+      })
+    }
+
     let result
     if (existing) {
-      // Update existing config
+      // Update existing config. Pinned to the version this call read, so two
+      // administrators saving the same type at once is a conflict rather than
+      // a silent last-writer-wins: the whole config document is replaced, so
+      // the loser's edit would otherwise disappear without a trace.
       const updated = await db
         .update(itemTypeConfigs)
         .set({
@@ -192,8 +203,19 @@ export class ConfigService {
           modifiedBy: userId,
           modifiedAt: new Date(),
         })
-        .where(eq(itemTypeConfigs.itemType, itemType))
+        .where(
+          and(
+            eq(itemTypeConfigs.itemType, itemType),
+            eq(itemTypeConfigs.version, existing.version),
+          ),
+        )
         .returning()
+
+      if (updated.length === 0) {
+        throw new ConflictError(
+          `The configuration for ${itemType} changed while you were editing it. Reload and reapply your change.`,
+        )
+      }
 
       result = updated[0]
     } else {
@@ -210,99 +232,40 @@ export class ConfigService {
       result = inserted[0]
     }
 
+    // The registry serves `lifecycleDefinitionId` from a process-local cache;
+    // a write nothing reloads is invisible to this process until restart.
+    await ItemTypeRegistry.reload()
+
     return result as ItemTypeConfigRecord
   }
 
-  /**
-   * Delete runtime configuration for an item type (reverts to code defaults)
-   */
-  static async deleteConfig(itemType: string): Promise<boolean> {
-    // Deleting a registered type's config would drop its lifecycle
-    // assignment; assign a different lifecycle instead.
-    if (ItemTypeRegistry.getType(itemType)) {
-      throw new ConflictError(
-        `Cannot delete the config for registered item type ${itemType}: it carries the lifecycle assignment, which every item type requires`,
-      )
-    }
-    const result = await db
-      .delete(itemTypeConfigs)
-      .where(eq(itemTypeConfigs.itemType, itemType))
-      .returning()
-
-    if (result.length === 0) {
-      throw new NotFoundError('ItemTypeConfig', itemType, {
-        operation: 'delete',
-      })
-    }
-
-    return true
-  }
-
-  /**
-   * Deactivate a configuration without deleting it (soft delete)
-   */
-  static async deactivateConfig(
-    itemType: string,
-    userId: string,
-  ): Promise<ItemTypeConfigRecord> {
-    const result = await db
-      .update(itemTypeConfigs)
-      .set({
-        isActive: false,
-        modifiedBy: userId,
-        modifiedAt: new Date(),
-      })
-      .where(eq(itemTypeConfigs.itemType, itemType))
-      .returning()
-
-    if (result.length === 0) {
-      throw new NotFoundError('ItemTypeConfig', itemType, {
-        operation: 'deactivate',
-      })
-    }
-
-    return result[0] as ItemTypeConfigRecord
-  }
-
-  /**
-   * Reactivate a previously deactivated configuration
-   */
-  static async activateConfig(
-    itemType: string,
-    userId: string,
-  ): Promise<ItemTypeConfigRecord> {
-    const result = await db
-      .update(itemTypeConfigs)
-      .set({
-        isActive: true,
-        modifiedBy: userId,
-        modifiedAt: new Date(),
-      })
-      .where(eq(itemTypeConfigs.itemType, itemType))
-      .returning()
-
-    if (result.length === 0) {
-      throw new NotFoundError('ItemTypeConfig', itemType, {
-        operation: 'activate',
-      })
-    }
-
-    return result[0] as ItemTypeConfigRecord
-  }
-
-  /**
-   * Get configuration history (all versions) for an item type
-   * Note: Current implementation only stores latest version.
-   * Full history would require a separate audit table (Phase 4).
-   */
-  static async getConfigVersion(itemType: string): Promise<number> {
-    const config = await this.getConfig(itemType)
-    return config?.version ?? 0
-  }
+  // `deleteConfig`, `deactivateConfig` and `activateConfig` are gone with the
+  // DELETE route that was their only caller. Deleting a registered type's row
+  // would drop the lifecycle assignment every item type is required to have,
+  // so the delete could only refuse; the two soft-delete methods had never had
+  // a caller at all.
 
   // ============================================
   // Lifecycle Validation Methods
   // ============================================
+
+  /**
+   * The kind of definition this item type's *code* definition assigns, or
+   * null when it has none or the row is missing.
+   *
+   * Read from the code definition rather than the merged one on purpose: the
+   * merged value is what a previous runtime save set, so validating against
+   * it would let a type drift one save at a time.
+   */
+  private static async governingKindFromCode(
+    itemType: string,
+  ): Promise<'Driven' | 'Driving' | 'Free' | null> {
+    const codeLifecycleId =
+      ItemTypeRegistry.getCodeDefinition(itemType)?.lifecycleDefinitionId
+    if (!codeLifecycleId) return null
+    const definition = await LifecycleDefinitionService.getById(codeLifecycleId)
+    return definition ? resolveLifecycleType(definition) : null
+  }
 
   /**
    * Validate that a lifecycle can be assigned to an item type.
@@ -339,16 +302,49 @@ export class ConfigService {
       }
     }
 
-    // Item types take item lifecycles (Free or Driven) — a Driving
-    // change-order workflow is not assignable here. (This gate used to
-    // read the legacy definitionType field, which also rejected every
-    // post-Phase-3 definition that never carries it.)
-    if (resolveLifecycleType(targetLifecycle) === 'Driving') {
+    // A swap may change which definition governs a type; it may not change
+    // what *kind* governs it. The kind is what branch protection reads:
+    // `isBranchProtectionExempt` exempts Free and Driving, so pointing Part
+    // at a change-order workflow would take every Part out of the ECO
+    // machinery and let it be written straight to a protected main. The
+    // converse matters too — a ChangeOrder pointed at an item lifecycle has
+    // no change-action mappings and stops driving anything.
+    //
+    // The reference kind is the one the type's code definition carries, which
+    // is why this is not a blanket "no Driving": ChangeOrder is Driving-
+    // governed by design, and the gate that rejected every Driving target
+    // would have rejected its own shipped configuration.
+    const expectedKind = await this.governingKindFromCode(itemType)
+    const targetKind = resolveLifecycleType(targetLifecycle)
+    const targetIsDriving = targetKind === 'Driving'
+
+    if (
+      expectedKind !== null &&
+      targetIsDriving !== (expectedKind === 'Driving')
+    ) {
       return {
         valid: false,
-        errors: [`'${targetLifecycle.name}' is a workflow, not a lifecycle`],
+        errors: [
+          targetIsDriving
+            ? `'${targetLifecycle.name}' is a change-order workflow, not an item lifecycle: assigning it to ${itemType} would exempt every ${itemType} from branch protection`
+            : `'${targetLifecycle.name}' is an item lifecycle, not a change-order workflow, and ${itemType} is governed by a workflow`,
+        ],
         statesNotInTarget: [],
         targetLifecycleName: targetLifecycle.name,
+      }
+    }
+
+    // A Driving-governed type's items do not all run the type-level
+    // definition — a change order runs whichever definition its change type
+    // maps to (`lifecyclesByChangeType`) — so their states are not this
+    // definition's to account for, and checking them would reject a valid
+    // save the moment one change order had run the flexible workflow.
+    if (targetIsDriving) {
+      return {
+        valid: true,
+        errors: [],
+        targetLifecycleName: targetLifecycle.name,
+        statesNotInTarget: [],
       }
     }
 
@@ -413,38 +409,5 @@ export class ConfigService {
       targetLifecycleName: targetLifecycle.name,
       statesNotInTarget: [],
     }
-  }
-
-  /**
-   * Validate and save config with lifecycle swap check
-   */
-  static async saveConfigWithLifecycleValidation(
-    itemType: string,
-    config: RuntimeItemTypeConfig,
-    userId: string,
-    currentLifecycleId?: string | null,
-  ): Promise<ItemTypeConfigRecord> {
-    // If lifecycleDefinitionId is changing, validate the swap
-    if (config.lifecycleDefinitionId !== undefined) {
-      const validation = await this.validateLifecycleSwap(
-        itemType,
-        currentLifecycleId,
-        config.lifecycleDefinitionId,
-      )
-
-      if (!validation.valid) {
-        throw new ValidationError(validation.errors.join('; '), undefined, {
-          operation: 'saveConfig',
-          resource: `ItemTypeConfig:${itemType}`,
-          details: {
-            currentLifecycle: validation.currentLifecycleName,
-            targetLifecycle: validation.targetLifecycleName,
-            statesNotInTarget: validation.statesNotInTarget,
-          },
-        })
-      }
-    }
-
-    return this.saveConfig(itemType, config, userId)
   }
 }

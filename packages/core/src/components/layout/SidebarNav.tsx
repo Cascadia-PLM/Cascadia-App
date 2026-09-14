@@ -24,10 +24,12 @@ import {
   Layers,
   ListChecks,
   Package,
+  Radio,
   RotateCcw,
   Settings,
   Shield,
   Users,
+  Webhook,
   Wrench,
 } from 'lucide-react'
 import { SidebarNavItem } from './SidebarNavItem'
@@ -352,6 +354,18 @@ export function SidebarNav({
                 to="/admin/jobs"
                 icon={Activity}
                 label="Jobs"
+                onClick={onNavClick}
+              />
+              <NavSubItem
+                to="/admin/events"
+                icon={Radio}
+                label="Domain Events"
+                onClick={onNavClick}
+              />
+              <NavSubItem
+                to="/admin/webhooks"
+                icon={Webhook}
+                label="Webhooks"
                 onClick={onNavClick}
               />
               <NavSubItem

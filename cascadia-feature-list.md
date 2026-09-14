@@ -846,6 +846,28 @@ User and developer documentation.
 | Deployment guides       | ✅     | Docker, Kubernetes               |
 | Configuration reference | ✅     | Environment variables            |
 
+### Extensibility & Events ✅
+
+A durable, ordered log of business facts, and a three-phase extension layer that
+lets code react to them. Handler bodies are TypeScript; enablement and
+subscriptions are rows. See
+[docs/features/extensibility.md](./docs/features/extensibility.md).
+
+| Feature                       | Status | Notes                                                                           |
+| ----------------------------- | ------ | ------------------------------------------------------------------------------- |
+| Transactional event log       | ✅     | Written in the same transaction as the change; the fact exists iff it committed |
+| Commit-order sequencing       | ✅     | A deferred trigger assigns `seq` at COMMIT, so a cursor can never skip          |
+| Ordered cursor consumers      | ✅     | At-least-once, per-consumer cursors, retry with backoff and catch-up            |
+| `guard` phase                 | ✅     | Refuses an operation before its writes, with a reason the user sees             |
+| `in-transaction` phase        | ✅     | Commits with the fact, or rolls back with it                                    |
+| `consumed` phase              | ✅     | Durable, ordered, retried; the phase most extensions want                       |
+| Outbound webhooks             | ✅     | HMAC-signed, ordered per subscription, with a delivery log and a breaker        |
+| Operator panel                | ✅     | Lag, parked consumers, resume/skip/forget, the event type catalog               |
+| Retention                     | ✅     | Prunes below every cursor, with a give-up horizon for an abandoned one          |
+| RabbitMQ relay                | ✅     | The broker is a consumer, not the bus — an outage costs latency, not events     |
+| Program scope on events       | ⬜     | `context.programId` is populated by no emitter; scope resolves via design       |
+| Third-party extension surface | ⬜     | First-party and module authors today; no out-of-repo registration point yet     |
+
 ---
 
 ## Planned Features (Not Yet Implemented)

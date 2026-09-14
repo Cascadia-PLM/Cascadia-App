@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { z } from 'zod'
-import { baseItemSchema, commonStates } from './base'
+import { baseItemSchema } from './base'
 import type { BaseItem } from './base'
 import type {
   StepBlockType,
@@ -209,9 +209,6 @@ export const workInstructionChangeAlertSchema = z.object({
   previousValues: z.record(z.string(), z.unknown()).optional(),
   newValues: z.record(z.string(), z.unknown()).optional(),
 })
-
-// WorkInstruction states - using standard lifecycle (Free type)
-export const workInstructionStates = commonStates
 
 // WorkInstruction relationships
 export const workInstructionRelationships = [

@@ -15,6 +15,13 @@ import {
 } from 'drizzle-orm'
 import { db, withTx } from '../../db'
 import {
+  CHANGE_ORDER_CANCELLED,
+  CHANGE_ORDER_RELEASED,
+  ITEM_UPDATED,
+  publishDomainEvent,
+} from '../../events'
+import { resolveChangeOrderProgram } from '../../events/program-scope'
+import {
   branchItems,
   branches,
   changeOrderAffectedItems,
@@ -23,6 +30,7 @@ import {
   changeOrderImpactedItems,
   changeOrderRisks,
   changeOrders,
+  commits,
   designs,
   itemRelationships,
   items,
@@ -31,6 +39,10 @@ import {
 import { changeOrderAccessScopeCondition, notDeleted } from '../../db/filters'
 import { BranchService } from '../../services/BranchService'
 import { CheckoutService } from '../../services/CheckoutService'
+import {
+  recordLockTransfer,
+  releaseBranchLocks,
+} from '../../services/checkout-locks'
 import { CommitService } from '../../services/CommitService'
 import { DesignService } from '../../services/DesignService'
 import { ChangeOrderMergeService } from '../../services/ChangeOrderMergeService'
@@ -341,7 +353,7 @@ export class ChangeOrderService {
   ): Promise<void> {
     for (const design of await this.getChangeOrderDesigns(changeOrderId)) {
       if (design.branchId) {
-        await BranchService.archiveBranch(design.branchId)
+        await BranchService.archiveBranch(design.branchId, undefined, userId)
       }
     }
     await ItemService.delete(changeOrderId, userId)
@@ -1403,11 +1415,12 @@ export class ChangeOrderService {
     await this.assertScopeOpen(changeOrderId, 'remove affected items')
 
     // Branch content for this master, across every branch this ECO owns
-    const changeOrderBranchIds = (
-      await this.getChangeOrderDesigns(changeOrderId)
-    )
-      .map((d) => d.branchId)
-      .filter((id): id is string => id !== null)
+    const designIdByBranch = new Map<string, string>()
+    for (const linked of await this.getChangeOrderDesigns(changeOrderId)) {
+      if (linked.branchId)
+        designIdByBranch.set(linked.branchId, linked.designId)
+    }
+    const changeOrderBranchIds = [...designIdByBranch.keys()]
 
     const branchChanges =
       affected.affectedItemMasterId && changeOrderBranchIds.length > 0
@@ -1435,6 +1448,21 @@ export class ChangeOrderService {
 
     await db.transaction(async (tx) => {
       for (const branchChange of branchChanges) {
+        // A lock on the change goes with it, recorded as a cancellation: the
+        // edits it guarded are being discarded.
+        const designId = designIdByBranch.get(branchChange.branchId)
+        if (designId) {
+          await releaseBranchLocks(
+            tx,
+            {
+              branchId: branchChange.branchId,
+              designId,
+              itemMasterIds: [branchChange.itemMasterId],
+            },
+            'checkout_cancelled',
+          )
+        }
+
         if (branchChange.changeType === 'added') {
           // Nothing on main to fall back to - drop the tracking row outright
           await tx
@@ -1957,7 +1985,7 @@ export class ChangeOrderService {
    *
    * Called when transitioning to a cancellation final state (Cancelled/Rejected).
    */
-  static async cancel(changeOrderId: string, _userId: string) {
+  static async cancel(changeOrderId: string, userId: string) {
     const changeOrder = await ItemService.findById(changeOrderId)
     if (!changeOrder) {
       throw new NotFoundError('Change Order', changeOrderId, {
@@ -1967,23 +1995,35 @@ export class ChangeOrderService {
 
     const ecoDesigns = await this.getChangeOrderDesigns(changeOrderId)
 
-    for (const changeOrderDesign of ecoDesigns) {
-      if (!changeOrderDesign.branchId) continue
+    // One transaction: every branch's locks released and the branch archived,
+    // and the change order closed — or none of it. The locks are released as
+    // cancellations, since the edits under them are being discarded, and each
+    // is recorded; they used to be cleared on the pool with nothing recorded,
+    // and each branch archived in a transaction of its own.
+    await db.transaction(async (tx) => {
+      for (const changeOrderDesign of ecoDesigns) {
+        if (!changeOrderDesign.branchId) continue
 
-      // Release all checkout locks on the branch
-      await ChangeOrderMergeService.autoCheckinBranchItems(
-        changeOrderDesign.branchId,
-      )
+        await releaseBranchLocks(
+          tx,
+          {
+            branchId: changeOrderDesign.branchId,
+            designId: changeOrderDesign.designId,
+          },
+          'checkout_cancelled',
+        )
+        await BranchService.archiveBranch(
+          changeOrderDesign.branchId,
+          tx,
+          userId,
+        )
+      }
 
-      // Archive the branch
-      await BranchService.archiveBranch(changeOrderDesign.branchId)
-    }
-
-    // Set closedAt timestamp
-    await db
-      .update(changeOrders)
-      .set({ closedAt: new Date() })
-      .where(eq(changeOrders.itemId, changeOrderId))
+      await tx
+        .update(changeOrders)
+        .set({ closedAt: new Date() })
+        .where(eq(changeOrders.itemId, changeOrderId))
+    })
   }
 
   /**
@@ -2050,7 +2090,13 @@ export class ChangeOrderService {
         { actorId: userId },
         tx,
       )
-      await tx
+      const before = (
+        await tx
+          .select({ state: items.state })
+          .from(items)
+          .where(eq(items.id, changeOrderId))
+      ).at(0)
+      const [stamped] = await tx
         .update(items)
         .set({
           state: instance.currentState,
@@ -2058,6 +2104,31 @@ export class ChangeOrderService {
           modifiedBy: userId,
         })
         .where(eq(items.id, changeOrderId))
+        .returning()
+
+      // `item.created` announced the state `ItemService.create` stamped, and a
+      // workflow run by another definition starts somewhere else. The move is
+      // recorded as the edit it is — only when the state actually moved.
+      if (stamped && before && before.state !== stamped.state) {
+        await publishDomainEvent(tx, ITEM_UPDATED, {
+          actorId: userId,
+          subject: { id: stamped.id, masterId: stamped.masterId },
+          context: { designId: stamped.designId ?? undefined },
+          payload: {
+            itemId: stamped.id,
+            masterId: stamped.masterId,
+            itemType: stamped.itemType,
+            itemNumber: stamped.itemNumber,
+            name: stamped.name,
+            designId: stamped.designId,
+            revision: stamped.revision,
+            state: stamped.state,
+            branchId: null,
+            changedFields: ['state'],
+            commitId: null,
+          },
+        })
+      }
       return instance
     })
   }
@@ -2326,6 +2397,78 @@ export class ChangeOrderService {
                 .update(changeOrders)
                 .set({ approvedAt: new Date(), approvedBy: userId })
                 .where(eq(changeOrders.itemId, changeOrderId))
+            }
+
+            // The change-order-level fact, in the transaction that writes the
+            // final state: the last write of a release, so every design's own
+            // events are already visible below it. Every event of one release
+            // carries the change order's id as correlationId.
+            const changeOrderNumber =
+              (
+                await tx
+                  .select({ itemNumber: items.itemNumber })
+                  .from(items)
+                  .where(eq(items.id, changeOrderId))
+              ).at(0)?.itemNumber ?? ''
+            const designIds = (
+              await this.getChangeOrderDesigns(changeOrderId)
+            ).map((d) => d.designId)
+            // The program, when every linked design shares one, so a
+            // program-scoped subscriber hears how its own change orders end.
+            const programId = await resolveChangeOrderProgram(tx, changeOrderId)
+            if (finalKind === 'release') {
+              // What was released, read from the release commits rather than
+              // this attempt's in-memory result. That result is empty on
+              // exactly the runs an operator has just recovered — a retry
+              // after this transaction failed, which skips every design as
+              // already merged — and never covered the branchless arms. Every
+              // release pass writes one commit per design carrying the change
+              // order and the revisions it assigned; the change order's other
+              // commits, an adoption say, assign none.
+              const releaseCommits = await tx
+                .select({
+                  designId: commits.designId,
+                  commitId: commits.id,
+                  revisionsAssigned: commits.revisionsAssigned,
+                })
+                .from(commits)
+                .where(
+                  and(
+                    eq(commits.changeOrderItemId, changeOrderId),
+                    isNotNull(commits.revisionsAssigned),
+                  ),
+                )
+                .orderBy(asc(commits.createdAt), asc(commits.id))
+              const releases = releaseCommits.map((release) => ({
+                designId: release.designId,
+                mergeCommitId: release.commitId,
+                revisionsAssigned: release.revisionsAssigned ?? {},
+              }))
+              await publishDomainEvent(tx, CHANGE_ORDER_RELEASED, {
+                actorId: userId,
+                subject: { id: changeOrderId },
+                context: { programId: programId ?? undefined },
+                correlationId: changeOrderId,
+                payload: {
+                  changeOrderId,
+                  changeOrderNumber,
+                  designIds,
+                  releases,
+                  totalRevisionsAssigned: releases.reduce(
+                    (total, release) =>
+                      total + Object.keys(release.revisionsAssigned).length,
+                    0,
+                  ),
+                },
+              })
+            } else {
+              await publishDomainEvent(tx, CHANGE_ORDER_CANCELLED, {
+                actorId: userId,
+                subject: { id: changeOrderId },
+                context: { programId: programId ?? undefined },
+                correlationId: changeOrderId,
+                payload: { changeOrderId, changeOrderNumber, designIds },
+              })
             }
           },
         },
@@ -2882,7 +3025,10 @@ export class ChangeOrderService {
   ) {
     const ItemTypeRegistry = await getItemTypeRegistry()
 
-    // Get ChangeOrder runtime config
+    // Get ChangeOrder runtime config. `ensureFresh` first: this mapping is
+    // runtime configuration, and on another replica the cached copy could be
+    // an interval out of date.
+    await ItemTypeRegistry.ensureFresh()
     const config = ItemTypeRegistry.getRuntimeConfig('ChangeOrder')
 
     // Typed, because creation now depends on this: a plain Error surfaced as
@@ -3240,10 +3386,23 @@ export class ChangeOrderService {
           continue
         }
 
-        await tx
+        const [moved] = await tx
           .update(branchItems)
           .set({ branchId: changeOrderBranchId })
           .where(eq(branchItems.id, row.id))
+          .returning()
+
+        // A held lock moves with its row: the holder keeps their claim, on
+        // the change order's branch now. Read from the moved row rather than
+        // the pre-read, which a check-in could have overtaken.
+        if (moved) {
+          await recordLockTransfer(
+            tx,
+            moved,
+            { branchId: workspaceBranchId, designId: workspace.designId },
+            { branchId: changeOrderBranchId, designId: workspace.designId },
+          )
+        }
 
         // Register on the reviewed scope the same way the organic ECO paths
         // do. For an item the workspace created, the draft itself is what is

@@ -509,6 +509,39 @@ export class LifecycleService {
   }
 
   /**
+   * Where `state` sits in the type's lifecycle, as flags: initial, released
+   * family, final and what finishing there means. The shape an extension's
+   * guard intent carries, so a rule keys on semantics rather than on a state
+   * id somebody can rename.
+   */
+  static async statePosition(
+    itemType: string,
+    state: string | null | undefined,
+  ): Promise<{
+    isInitial: boolean
+    isReleased: boolean
+    isFinal: boolean
+    finalKind: 'release' | 'cancel' | 'complete' | null
+  }> {
+    if (state == null) {
+      return {
+        isInitial: false,
+        isReleased: false,
+        isFinal: false,
+        finalKind: null,
+      }
+    }
+    const lifecycle = await this.getLifecycleForItemType(itemType)
+    const found = lifecycle?.states.find((s) => s.id === state)
+    return {
+      isInitial: found?.isInitial === true,
+      isReleased: await this.isReleasedFamilyState(itemType, state),
+      isFinal: found?.isFinal === true,
+      finalKind: found?.isFinal ? (found.finalKind ?? null) : null,
+    }
+  }
+
+  /**
    * Check if a change action assigns a revision letter.
    *
    * @param itemType - The type of item
@@ -704,6 +737,9 @@ export class LifecycleService {
     const states: Array<LifecycleState> = governing ? [...governing.states] : []
     const seen = new Set(states.map((s) => s.id))
 
+    // Runtime configuration, so the same freshness check the lifecycle
+    // lookups make. (`governing` above already went through one.)
+    await ItemTypeRegistry.ensureFresh()
     const mapped =
       ItemTypeRegistry.getRuntimeConfig(itemType)?.lifecyclesByChangeType
     if (!mapped) return states

@@ -2,7 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useEffect, useState } from 'react'
-import { ExternalLink, Search } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Search } from 'lucide-react'
+import { AddPartChoice } from './AddPartChoice'
+import { CreatePartInDesignForm } from './CreatePartInDesignForm'
+import type { AddPartStep } from './AddPartChoice'
 import {
   Dialog,
   DialogContent,
@@ -43,9 +46,20 @@ interface AddPartToStructureDialogProps {
   parentItemNumber: string
   currentDesignId: string
   currentDesignCode: string
+  /**
+   * The branch the design page is viewing, for the create path; undefined
+   * is main. The use-existing path is unchanged and does not read it.
+   */
+  branchId?: string
   onSuccess?: () => void
 }
 
+/**
+ * Opens on a choice — make a new part under the parent, or bring in one that
+ * exists. 'existing' is the original dialog: a part from this design or the
+ * standard library, added as a BOM line. 'create' is the in-place part form,
+ * which writes the part and then the same line.
+ */
 export function AddPartToStructureDialog({
   open,
   onOpenChange,
@@ -53,9 +67,11 @@ export function AddPartToStructureDialog({
   parentItemNumber,
   currentDesignId,
   currentDesignCode,
+  branchId,
   onSuccess,
 }: AddPartToStructureDialogProps) {
   const { handleError } = useErrorHandler()
+  const [step, setStep] = useState<AddPartStep>('choose')
   const [designScope, setDesignScope] = useState<DesignScope>('current')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Array<EnrichedItem>>([])
@@ -110,9 +126,10 @@ export function AddPartToStructureDialog({
     return () => clearTimeout(debounceTimer)
   }, [searchQuery, designScope])
 
-  // Reset state when dialog opens
+  // Reset state when dialog opens, on the choice
   useEffect(() => {
     if (open) {
+      setStep('choose')
       setDesignScope('current')
       setSearchQuery('')
       setSearchResults([])
@@ -157,170 +174,241 @@ export function AddPartToStructureDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto auto-hide-scroll">
         <DialogHeader>
-          <DialogTitle>Add Part to BOM</DialogTitle>
+          <DialogTitle>
+            {step === 'choose'
+              ? 'Add Child Part'
+              : step === 'create'
+                ? 'New Child Part'
+                : 'Add Part to BOM'}
+          </DialogTitle>
           <DialogDescription>
-            Add a child part to{' '}
-            <span className="font-medium">{parentItemNumber}</span> in{' '}
-            <span className="font-medium">{currentDesignCode}</span>
+            {step === 'choose' ? (
+              <>
+                Create a new part under{' '}
+                <span className="font-medium">{parentItemNumber}</span>, or add
+                one that already exists.
+              </>
+            ) : step === 'create' ? (
+              <>
+                Created in{' '}
+                <span className="font-medium">{currentDesignCode}</span> and
+                placed under{' '}
+                <span className="font-medium">{parentItemNumber}</span>.
+              </>
+            ) : (
+              <>
+                Add a child part to{' '}
+                <span className="font-medium">{parentItemNumber}</span> in{' '}
+                <span className="font-medium">{currentDesignCode}</span>
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Source Selector */}
-          <div>
-            <Label className="text-sm font-medium mb-2 block">Source</Label>
-            <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
-              {scopeOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setDesignScope(option.value)}
-                  className={cn(
-                    'flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
-                    designScope === option.value
-                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
-                  )}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        {step === 'choose' && (
+          <AddPartChoice
+            createDescription={`A new part, created in ${currentDesignCode} and placed under ${parentItemNumber}.`}
+            existingDescription={`A part from this design or the standard library, placed under ${parentItemNumber}.`}
+            onCreateNew={() => setStep('create')}
+            onUseExisting={() => setStep('existing')}
+          />
+        )}
 
-          {/* Search Input */}
-          <div>
-            <Label>Search Parts</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                type="text"
-                placeholder="Search by part number or name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
+        {step === 'create' && (
+          <CreatePartInDesignForm
+            designId={currentDesignId}
+            designCode={currentDesignCode}
+            branchId={branchId}
+            parent={{ id: parentItemId, itemNumber: parentItemNumber }}
+            onBack={() => setStep('choose')}
+            onCreated={() => {
+              onSuccess?.()
+              onOpenChange(false)
+            }}
+          />
+        )}
 
-          {/* Search Results */}
-          <div className="border border-slate-300 dark:border-slate-700 rounded-lg max-h-48 overflow-y-auto auto-hide-scroll">
-            {searching ? (
-              <div className="p-4 text-center text-sm text-slate-500 dark:text-slate-400">
-                Searching...
+        {step === 'existing' && (
+          <div className="space-y-4">
+            {/* Source Selector */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Source</Label>
+              <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                {scopeOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setDesignScope(option.value)}
+                    className={cn(
+                      'flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                      designScope === option.value
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
-            ) : searchQuery.length < 2 ? (
-              <div className="p-4 text-center text-sm text-slate-500 dark:text-slate-400">
-                Type at least 2 characters to search
+            </div>
+
+            {/* Search Input */}
+            <div>
+              <Label>Search Parts</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  type="text"
+                  placeholder="Search by part number or name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
               </div>
-            ) : searchResults.length === 0 ? (
-              <div className="p-4 text-center text-sm text-slate-500 dark:text-slate-400">
-                No parts found matching "{searchQuery}"
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-200 dark:divide-slate-700">
-                {searchResults.map((item) => {
-                  const isSelected = selectedItem?.id === item.id
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setSelectedItem(item)}
-                      className={cn(
-                        'w-full px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors',
-                        isSelected && 'bg-cyan-50 dark:bg-cyan-950',
-                      )}
-                    >
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <div
-                          className={cn(
-                            'flex-shrink-0 w-4 h-4 rounded-full border flex items-center justify-center',
-                            isSelected
-                              ? 'border-slate-900 dark:border-slate-50'
-                              : 'border-slate-300 dark:border-slate-600',
-                          )}
-                        >
-                          {isSelected && (
-                            <div className="w-2 h-2 rounded-full bg-slate-900 dark:bg-slate-50" />
+            </div>
+
+            {/* Search Results */}
+            <div className="border border-slate-300 dark:border-slate-700 rounded-lg max-h-48 overflow-y-auto auto-hide-scroll">
+              {searching ? (
+                <div className="p-4 text-center text-sm text-slate-500 dark:text-slate-400">
+                  Searching...
+                </div>
+              ) : searchQuery.length < 2 ? (
+                <div className="p-4 text-center text-sm text-slate-500 dark:text-slate-400">
+                  Type at least 2 characters to search
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="p-4 text-center text-sm text-slate-500 dark:text-slate-400">
+                  No parts found matching "{searchQuery}"
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                  {searchResults.map((item) => {
+                    const isSelected = selectedItem?.id === item.id
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setSelectedItem(item)}
+                        className={cn(
+                          'w-full px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors',
+                          isSelected && 'bg-cyan-50 dark:bg-cyan-950',
+                        )}
+                      >
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div
+                            className={cn(
+                              'flex-shrink-0 w-4 h-4 rounded-full border flex items-center justify-center',
+                              isSelected
+                                ? 'border-slate-900 dark:border-slate-50'
+                                : 'border-slate-300 dark:border-slate-600',
+                            )}
+                          >
+                            {isSelected && (
+                              <div className="w-2 h-2 rounded-full bg-slate-900 dark:bg-slate-50" />
+                            )}
+                          </div>
+                          <span className="font-medium text-sm text-slate-900 dark:text-slate-100">
+                            {item.itemNumber}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {item.revision}
+                          </Badge>
+                          <StateBadge
+                            itemType={item.itemType}
+                            state={item.state}
+                            className="text-xs"
+                          />
+                          {/* External design badge */}
+                          {item.isExternal && item.designCode && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-600"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              {item.designCode}
+                            </Badge>
                           )}
                         </div>
-                        <span className="font-medium text-sm text-slate-900 dark:text-slate-100">
-                          {item.itemNumber}
-                        </span>
-                        <Badge variant="outline" className="text-xs">
-                          {item.revision}
-                        </Badge>
-                        <StateBadge
-                          itemType={item.itemType}
-                          state={item.state}
-                          className="text-xs"
-                        />
-                        {/* External design badge */}
-                        {item.isExternal && item.designCode && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-600"
-                          >
-                            <ExternalLink className="h-3 w-3 mr-1" />
-                            {item.designCode}
-                          </Badge>
+                        {item.name && (
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 ml-6">
+                            {item.name}
+                          </p>
                         )}
-                      </div>
-                      {item.name && (
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 ml-6">
-                          {item.name}
-                        </p>
-                      )}
-                    </button>
-                  )
-                })}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* BOM Fields */}
+            {selectedItem && (
+              <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                <div>
+                  <Label>Quantity</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    placeholder="1"
+                  />
+                </div>
+                <div>
+                  <Label>Find Number</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={findNumber}
+                    onChange={(e) => setFindNumber(e.target.value)}
+                    placeholder="Optional"
+                  />
+                </div>
               </div>
             )}
           </div>
+        )}
 
-          {/* BOM Fields */}
-          {selectedItem && (
-            <div className="grid grid-cols-2 gap-4 pt-2 border-t">
-              <div>
-                <Label>Quantity</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  placeholder="1"
-                />
-              </div>
-              <div>
-                <Label>Find Number</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={findNumber}
-                  onChange={(e) => setFindNumber(e.target.value)}
-                  placeholder="Optional"
-                />
-              </div>
-            </div>
-          )}
-        </div>
+        {step === 'choose' && (
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        )}
 
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleAdd}
-            disabled={!selectedItem || addPart.isPending}
-          >
-            {addPart.isPending ? 'Adding...' : 'Add to BOM'}
-          </Button>
-        </DialogFooter>
+        {step === 'existing' && (
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mr-auto"
+              onClick={() => setStep('choose')}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleAdd}
+              disabled={!selectedItem || addPart.isPending}
+            >
+              {addPart.isPending ? 'Adding...' : 'Add to BOM'}
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   )

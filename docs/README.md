@@ -46,16 +46,18 @@ This documentation covers the Cascadia PLM application architecture, features, A
 | [AI Assistant](./features/ai-assistant.md)                                     | LLM chatbot with PLM tools, multi-provider support                                                                                                           |
 | [MCP Servers](./features/mcp.md)                                               | Model Context Protocol servers: PLM tools for external agents, dev/admin tools for self-hosters                                                              |
 | [Design Engine](./features/design-engine.md)                                   | AI-assisted collaborative design: requirements, BOM, CAD, assembly                                                                                           |
-| [CAD Services](./features/cad-services.md)                                     | CAD conversion (STEP/IGES to STL/GLB) and generation (Zoo API, KCL)                                                                                          |
+| [CAD Services](./features/cad-services.md)                                     | CAD conversion (STEP/IGES to STL/GLB) and AI generation (FreeCAD scripts, assembly composition)                                                              |
 
 ## Optional Packages
 
 Separately-licensed functionality, enabled per instance via `CASCADIA_PACKAGES`.
 
-| Document                                               | Description                                                                              |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| [Advanced Auditing](./features/advanced-auditing.md)   | CAC/PIV digital signatures on approvals, hash-chained audit trail                        |
-| [Odoo ERP Integration](./features/odoo-integration.md) | Pushes released parts and BOMs into an Odoo 19+ ERP on release, plus manual/dry-run sync |
+| Document                                               | Description                                                                                                      |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| [Advanced Auditing](./features/advanced-auditing.md)   | CAC/PIV digital signatures on approvals, hash-chained audit trail                                                |
+| [Extensibility](./features/extensibility.md)           | The domain event log and the three-phase extension layer — how to change what the system does without forking it |
+| [Webhooks](./features/webhooks.md)                     | Delivering domain events to an external endpoint, for whoever builds the receiver                                |
+| [Odoo ERP Integration](./features/odoo-integration.md) | Pushes released parts and BOMs into an Odoo 19+ ERP on release, plus manual/dry-run sync                         |
 
 ## Administration
 
@@ -63,6 +65,7 @@ Separately-licensed functionality, enabled per instance via `CASCADIA_PACKAGES`.
 | --------------------------------------------- | ----------------------------------------------------------- |
 | [User Management](./admin/user-management.md) | Users, roles, authentication, sessions, account lockout     |
 | [Access Control](./admin/access-control.md)   | RBAC, program isolation, permission model                   |
+| [Event Consumers](./admin/event-consumers.md) | Lag, parked consumers, resume vs skip vs forget, retention  |
 | [System Settings](./admin/system-settings.md) | Runtime configuration, lifecycle, AI, vault settings        |
 | [Background Jobs](./admin/background-jobs.md) | RabbitMQ job system, job types, monitoring, troubleshooting |
 
@@ -125,17 +128,19 @@ Ready-to-use configurations, each with the compose file or manifests alongside i
 
 ## Development Guides
 
-| Document                                                          | Description                                               |
-| ----------------------------------------------------------------- | --------------------------------------------------------- |
-| [Service Patterns](./development/service-patterns.md)             | Service layer conventions, error handling, transactions   |
-| [Database Patterns](./development/database-patterns.md)           | Drizzle ORM patterns, schema conventions, migrations      |
-| [Adding Item Types](./development/adding-item-types.md)           | Step-by-step guide to extending the type system           |
-| [Adding API Routes](./development/adding-api-routes.md)           | Hono route conventions, apiHandler usage                  |
-| [Adding Background Jobs](./development/adding-background-jobs.md) | Job type registration, handler patterns, submission       |
-| [Adding Packages](./development/adding-packages.md)               | Optional package framework: catalog, entitlement, gating  |
-| [Testing](./development/testing.md)                               | Test strategy, utilities, CI/CD integration               |
-| [UI Components](./development/ui-components.md)                   | Component library, forms, DataGrid, common pitfalls       |
-| [Demo Datasets](./development/demo-datasets.md)                   | Seeding the robot-arm and FreeCAD/KiCad demos, and baking |
+| Document                                                          | Description                                                                  |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| [Service Patterns](./development/service-patterns.md)             | Service layer conventions, error handling, transactions                      |
+| [Database Patterns](./development/database-patterns.md)           | Drizzle ORM patterns, schema conventions, migrations                         |
+| [Adding Item Types](./development/adding-item-types.md)           | Step-by-step guide to extending the type system                              |
+| [Adding API Routes](./development/adding-api-routes.md)           | Hono route conventions, apiHandler usage                                     |
+| [Adding Background Jobs](./development/adding-background-jobs.md) | Job type registration, handler patterns, submission                          |
+| [Adding a Domain Event](./development/adding-domain-events.md)    | Defining a business fact and emitting it in the caller's transaction         |
+| [Writing Extensions](./development/writing-extensions.md)         | The three phase contracts, the tx-only rule, idempotency, the testing recipe |
+| [Adding Packages](./development/adding-packages.md)               | Optional package framework: catalog, entitlement, gating                     |
+| [Testing](./development/testing.md)                               | Test strategy, utilities, CI/CD integration                                  |
+| [UI Components](./development/ui-components.md)                   | Component library, forms, DataGrid, common pitfalls                          |
+| [Demo Datasets](./development/demo-datasets.md)                   | Seeding the robot-arm and FreeCAD/KiCad demos, and baking                    |
 
 ## Design Proposals
 

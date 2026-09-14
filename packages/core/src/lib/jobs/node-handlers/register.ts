@@ -17,6 +17,7 @@ import { JobTypeRegistry } from '../registry'
 import { workflowTransitionHandler } from './notification'
 import { cloneDesignHandler } from './design-clone'
 import { cacheCleanupHandler } from './cache-cleanup'
+import { eventsPruneHandler } from './events-prune'
 import { sessionCleanupHandler } from './session-cleanup'
 import { wiPartChangedHandler } from './workinstruction'
 import { watermarkPdfHandler } from './watermark'
@@ -24,6 +25,7 @@ import { watermarkPdfHandler } from './watermark'
 JobTypeRegistry.registerHandler(workflowTransitionHandler)
 JobTypeRegistry.registerHandler(cloneDesignHandler)
 JobTypeRegistry.registerHandler(cacheCleanupHandler)
+JobTypeRegistry.registerHandler(eventsPruneHandler)
 JobTypeRegistry.registerHandler(sessionCleanupHandler)
 JobTypeRegistry.registerHandler(wiPartChangedHandler)
 JobTypeRegistry.registerHandler(watermarkPdfHandler)

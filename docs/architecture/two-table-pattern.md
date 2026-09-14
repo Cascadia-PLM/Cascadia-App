@@ -142,13 +142,18 @@ export const parts = pgTable('parts', {
 
 ## ItemService: Automatic Two-Table Handling
 
-`ItemService` in `packages/core/src/lib/items/services/ItemService.ts` handles both tables transparently. When you create or update an item, ItemService:
+`ItemService` in `packages/core/src/lib/items/services/ItemService.ts` handles both tables transparently. When you create an item, ItemService:
 
-1. **Looks up the type config** via `ItemTypeRegistry.getType(type)` to find the extension table name
+1. **Looks up the type config** via `ItemTypeRegistry.getType(type)`
 2. **Validates the full payload** against the Zod schema for that type (e.g., `partSchema`)
-3. **Splits the data** into base fields (for `items`) and type-specific fields (for the extension table)
-4. **Inserts/updates both tables** in a single transaction
+3. **Splits the data** into base fields (for `items`) and type-specific fields, which go to the type's handler
+4. **Inserts into both tables** in a single transaction
 5. **Returns merged data** -- the caller sees a flat object with all fields
+
+`update` deliberately does **not** validate: the merge and conflict-resolution
+paths call it with stored rows rather than user input. Validating user input
+is the route's job, with the type's own `*UpdateSchema` (`itemUpdateSchemaFor`
+resolves it from the stored item's type).
 
 When querying, `ItemService.findById()` joins `items` with the appropriate extension table based on `itemType`, returning a unified result.
 
@@ -156,57 +161,62 @@ When querying, `ItemService.findById()` joins `items` with the appropriate exten
 
 ## ItemTypeRegistry
 
-`ItemTypeRegistry` in `packages/core/src/lib/items/registry.ts` is the central registry where every item type declares its configuration:
+`ItemTypeRegistry` in `packages/core/src/lib/items/registry.ts` is the central registry. The definitions it holds live in one place, `packages/core/src/lib/items/item-type-definitions.ts`:
 
 ```typescript
-ItemTypeRegistry.register({
+Part: {
   name: 'Part',
   label: 'Part',
   pluralLabel: 'Parts',
   icon: 'Package',
-  table: 'parts', // Extension table name
   schema: partSchema, // Zod validation schema
-  defaultState: 'Draft',
   lifecycleDefinitionId: LIFECYCLE_IDS.part, // Which lifecycle controls state transitions
-  states: partStates, // Fallback states if no lifecycle assigned
   relationships: partRelationships, // Allowed relationship types
-  permissions: {
-    create: ['*'],
-    read: ['*'],
-    update: ['*'],
-    delete: ['Admin', 'Engineer'],
-  },
   searchableFields: ['itemNumber', 'name', 'description', 'material'],
   displayField: 'itemNumber',
-  components: { form, table, detail }, // React components for UI rendering
-})
+},
 ```
+
+`registerItemTypes.server.ts` loops over that record and registers each entry;
+there are no per-type `register()` calls. The extension table is not named
+here either — the type handler holds the Drizzle table object, and every
+consumer reads it from there (see below).
 
 The registry implements a two-tier configuration system:
 
-- **Code definitions**: Type-safe configs defined in TypeScript files (`packages/core/src/lib/items/registerItemTypes.server.ts`). These include schemas, component references, and relationships.
-- **Runtime configs**: Business rules loaded from the `item_type_configs` database table. These can override labels, icons, lifecycle assignment, and permissions without a code deploy.
+- **Code definitions**: everything above, defined in TypeScript.
+- **Runtime config**: one field from the `item_type_configs` table — which lifecycle governs the type (plus, for ChangeOrder, the workflow each change type runs).
 
-Runtime overrides are merged on top of code defaults via `mergeConfigs()`. Components and schemas always come from code for type safety.
+Runtime overrides are merged on top of code defaults via `mergeConfigs()`. Everything but the lifecycle assignment always comes from code. See [System Settings](../admin/system-settings.md) for what that tier used to carry and why it does not any more.
 
 ### Registration Flow
 
-At server startup:
+At startup, in each composition root — the HTTP entry points and `runJobsWorker()`:
 
 ```
-registerItemTypes.server.ts
+import '@/lib/items/registerItemTypes.server'
     │
-    ├── ItemTypeRegistry.register('Part', { ... })
-    ├── ItemTypeRegistry.register('Document', { ... })
-    ├── ItemTypeRegistry.register('ChangeOrder', { ... })
-    ├── ... (9 item types total)
+    └── loops ITEM_TYPE_DEFINITIONS (13 item types), registering each
+
+await ItemTypeRegistry.initialize()
     │
-    └── ItemTypeRegistry.initialize()
-            │
-            └── Loads runtime configs from item_type_configs table
-                Merges with code definitions
-                Caches merged results
+    └── Loads runtime configs from item_type_configs table
+        Merges with code definitions
+        Caches merged results
 ```
+
+The load is awaited, and a failure fails the boot: `lifecycleDefinitionId` is
+a runtime value, so a process serving requests against code defaults resolves
+initial states, revision schemes and release targets from the shipped
+lifecycle rather than the assigned one.
+
+### Type handlers
+
+Reads and writes to an extension table go through a `TypeHandler`, registered
+in `packages/core/src/lib/items/type-handlers/` and looked up with
+`getTypeHandler(itemType)`. It owns the Drizzle table object and the type's
+insert/get/update, so `ItemService` has no per-type switch — and neither does
+anything else that needs a type's own columns.
 
 ---
 
@@ -268,7 +278,7 @@ const changed = await db
   .where(eq(branchItems.branchId, branchId))
 ```
 
-No need to query 9 separate tables and union the results.
+No need to query 13 separate tables and union the results.
 
 ### 2. Type-Specific Integrity
 
@@ -299,13 +309,13 @@ Type-specific columns only exist in the extension table. A ChangeOrder row does 
 
 Start with these files:
 
-| File                                                      | Contains                                                                 |
-| --------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `packages/core/src/lib/db/schema/items.ts`                | The `items` table + all extension tables + `itemRelationships`           |
-| `packages/core/src/lib/db/schema/versioning.ts`           | `branches`, `commits`, `branchItems`, `itemVersions`, `itemFieldChanges` |
-| `packages/core/src/lib/db/schema/designs.ts`              | `designs` table                                                          |
-| `packages/core/src/lib/db/schema/users.ts`                | `users`, `sessions`, `roles`, `userRoles`, `authEvents`                  |
-| `packages/core/src/lib/items/types/part.ts`               | Part-specific Zod schema and interface                                   |
-| `packages/core/src/lib/items/types/base.ts`               | `BaseItem` interface and `ItemTypeConfig` definition                     |
-| `packages/core/src/lib/items/registry.ts`                 | `ItemTypeRegistry` class                                                 |
-| `packages/core/src/lib/items/registerItemTypes.server.ts` | All item type registrations                                              |
+| File                                                   | Contains                                                                 |
+| ------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `packages/core/src/lib/db/schema/items.ts`             | The `items` table + all extension tables + `itemRelationships`           |
+| `packages/core/src/lib/db/schema/versioning.ts`        | `branches`, `commits`, `branchItems`, `itemVersions`, `itemFieldChanges` |
+| `packages/core/src/lib/db/schema/designs.ts`           | `designs` table                                                          |
+| `packages/core/src/lib/db/schema/users.ts`             | `users`, `sessions`, `roles`, `userRoles`, `authEvents`                  |
+| `packages/core/src/lib/items/types/part.ts`            | Part-specific Zod schema and interface                                   |
+| `packages/core/src/lib/items/types/base.ts`            | `BaseItem` interface and `ItemTypeConfig` definition                     |
+| `packages/core/src/lib/items/registry.ts`              | `ItemTypeRegistry` class                                                 |
+| `packages/core/src/lib/items/item-type-definitions.ts` | All item type definitions                                                |

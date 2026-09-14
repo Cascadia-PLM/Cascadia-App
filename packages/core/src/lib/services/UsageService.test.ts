@@ -26,7 +26,7 @@ import {
   expect,
   it,
 } from 'vitest'
-import { eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { UsageService } from './UsageService'
 import { DesignService } from './DesignService'
 import { BranchService } from './BranchService'
@@ -37,6 +37,7 @@ import {
   branchItems,
   branches,
   documents,
+  domainEvents,
   itemRelationships,
   items,
   parts,
@@ -1042,6 +1043,45 @@ describe('UsageService', () => {
         .where(eq(itemRelationships.sourceId, newChild))
       expect(childEdges).toHaveLength(1)
       expect(childEdges[0]!.targetId).toBe(newGrand)
+    })
+
+    it('announces every usage it creates and every line it copies', async () => {
+      const { assembly } = await seedSubtree()
+
+      const result = await UsageService.createUsageSubtree(
+        { rootItemId: assembly.id, targetDesignId },
+        user.id,
+      )
+
+      // A pulled-in subtree is new masters and new structure in this design;
+      // both used to reach no consumer at all.
+      const created = await testDb.db
+        .select()
+        .from(domainEvents)
+        .where(
+          and(
+            eq(domainEvents.type, 'item.created'),
+            inArray(
+              domainEvents.subjectId,
+              result.items.map((usage) => usage.id),
+            ),
+          ),
+        )
+      expect(created).toHaveLength(3)
+
+      const lines = await testDb.db
+        .select()
+        .from(domainEvents)
+        .where(
+          and(
+            eq(domainEvents.type, 'relationship.added'),
+            eq(domainEvents.designId, targetDesignId),
+          ),
+        )
+      expect(lines).toHaveLength(2)
+      for (const line of lines) {
+        expect(line.actorId).toBe(user.id)
+      }
     })
 
     it('tracks created usages on the ECO branch with changeType added when branchId is supplied', async () => {

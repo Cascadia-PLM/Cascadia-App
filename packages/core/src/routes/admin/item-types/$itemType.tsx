@@ -9,10 +9,9 @@ import {
   ArrowLeft,
   CheckCircle,
   ExternalLink,
-  RotateCcw,
   Save,
 } from 'lucide-react'
-import type { ItemTypePermissions, LifecyclesByChangeType } from '@/lib/query'
+import type { LifecyclesByChangeType } from '@/lib/query'
 import { PageContainer } from '@/components/layout'
 import {
   Badge,
@@ -22,7 +21,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Input,
   Label,
   Select,
   SelectContent,
@@ -51,13 +49,6 @@ export const Route = createFileRoute('/admin/item-types/$itemType')({
 
 const CHANGE_ORDER_TYPES = ['ECO', 'ECN', 'Deviation', 'MCO', 'XCO'] as const
 
-const NO_PERMISSIONS: ItemTypePermissions = {
-  create: [],
-  read: [],
-  update: [],
-  delete: [],
-}
-
 function ItemTypeConfigEditPage() {
   const { itemType } = Route.useParams()
   const invalidate = useInvalidateResources()
@@ -76,15 +67,12 @@ function ItemTypeConfigEditPage() {
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  // Form state
-  const [label, setLabel] = useState('')
-  const [pluralLabel, setPluralLabel] = useState('')
-  const [icon, setIcon] = useState('')
+  // Form state. The lifecycle assignment — and, for ChangeOrder, the
+  // definition each change type runs — is the whole of what an administrator
+  // can change here; everything else about an item type is code.
   const [lifecycleDefinitionId, setLifecycleDefinitionId] = useState<
     string | null
   >(null)
-  const [permissions, setPermissions] =
-    useState<ItemTypePermissions>(NO_PERMISSIONS)
   const [lifecyclesByChangeType, setLifecyclesByChangeType] =
     useState<LifecyclesByChangeType>({})
 
@@ -99,7 +87,6 @@ function ItemTypeConfigEditPage() {
     [definitions],
   )
 
-  const hasRuntimeConfig = detail?.runtimeConfig != null
   const runtimeConfigVersion = detail?.runtimeConfig?.version ?? 0
   const codeConfig = detail?.codeConfig ?? null
 
@@ -115,15 +102,11 @@ function ItemTypeConfigEditPage() {
     const overrides = detail.runtimeConfig?.config
     const base = overrides ?? detail.mergedConfig ?? detail.codeConfig
 
-    setLabel(base.label ?? '')
-    setPluralLabel(base.pluralLabel ?? '')
-    setIcon(base.icon ?? '')
     setLifecycleDefinitionId(
       base.lifecycleDefinitionId ??
         detail.codeConfig.lifecycleDefinitionId ??
         null,
     )
-    setPermissions(base.permissions ?? detail.codeConfig.permissions)
     setLifecyclesByChangeType(overrides?.lifecyclesByChangeType ?? {})
     setSeededRevision(revision)
   }, [detail, revision, seededRevision])
@@ -138,11 +121,7 @@ function ItemTypeConfigEditPage() {
 
     try {
       const config: Record<string, unknown> = {
-        label,
-        pluralLabel,
-        icon,
         lifecycleDefinitionId: lifecycleDefinitionId || null,
-        permissions,
       }
 
       // Include lifecyclesByChangeType for ChangeOrder
@@ -163,45 +142,6 @@ function ItemTypeConfigEditPage() {
     } finally {
       setSaving(false)
     }
-  }
-
-  const handleResetToCode = async () => {
-    if (
-      !window.confirm(
-        'Reset to code defaults? This will delete the runtime configuration and cannot be undone.',
-      )
-    ) {
-      return
-    }
-
-    setSaving(true)
-    setError(null)
-    setSuccessMessage(null)
-
-    try {
-      await apiFetch(`/api/v1/admin/item-type-configs/${itemType}`, {
-        method: 'DELETE',
-      })
-
-      setSuccessMessage('Configuration reset to code defaults!')
-      await invalidate('admin')
-      setTimeout(() => setSuccessMessage(null), 5000)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const updatePermission = (
-    action: keyof ItemTypePermissions,
-    value: string,
-  ) => {
-    const roles = value
-      .split(',')
-      .map((r) => r.trim())
-      .filter(Boolean)
-    setPermissions({ ...permissions, [action]: roles })
   }
 
   const getStateColorClass = (color?: string) => {
@@ -242,7 +182,7 @@ function ItemTypeConfigEditPage() {
           </Link>
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-              Configure {label || itemType}
+              Configure {codeConfig?.label ?? itemType}
             </h1>
             <p className="text-slate-600 dark:text-slate-400 mt-1">
               Type: <code className="text-sm">{itemType}</code>
@@ -250,16 +190,6 @@ function ItemTypeConfigEditPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          {hasRuntimeConfig && (
-            <Button
-              variant="outline"
-              onClick={handleResetToCode}
-              disabled={saving}
-            >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Reset to Code
-            </Button>
-          )}
           <Button onClick={handleSave} disabled={saving}>
             <Save className="w-4 h-4 mr-2" />
             {saving ? 'Saving...' : 'Save Changes'}
@@ -287,84 +217,21 @@ function ItemTypeConfigEditPage() {
         </div>
       )}
 
-      {/* Status banner */}
+      {/* What is configurable here */}
       <Card className="bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {hasRuntimeConfig ? (
-                <>
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                    Runtime Override Active (v{runtimeConfigVersion})
-                  </Badge>
-                  <span className="text-sm text-blue-800 dark:text-blue-200">
-                    These settings override code defaults
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Badge variant="secondary">Using Code Defaults</Badge>
-                  <span className="text-sm text-blue-800 dark:text-blue-200">
-                    Save to create runtime override
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Basic Configuration */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Basic Configuration</CardTitle>
-          <CardDescription>
-            Labels and display settings for the item type
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="label">Label (Singular)</Label>
-              <Input
-                id="label"
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                placeholder="Part"
-              />
-              {codeConfig && (
-                <p className="text-xs text-slate-500">
-                  Code default: {codeConfig.label}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pluralLabel">Label (Plural)</Label>
-              <Input
-                id="pluralLabel"
-                value={pluralLabel}
-                onChange={(e) => setPluralLabel(e.target.value)}
-                placeholder="Parts"
-              />
-              {codeConfig && (
-                <p className="text-xs text-slate-500">
-                  Code default: {codeConfig.pluralLabel}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="icon">Icon Name</Label>
-            <Input
-              id="icon"
-              value={icon}
-              onChange={(e) => setIcon(e.target.value)}
-              placeholder="Package"
-            />
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Lucide icon name (e.g., Package, FileText, Settings).{' '}
-              {codeConfig && <span>Code default: {codeConfig.icon}</span>}
-            </p>
+          <div className="flex items-start gap-2">
+            <Badge variant="secondary">v{runtimeConfigVersion}</Badge>
+            <span className="text-sm text-blue-800 dark:text-blue-200">
+              The lifecycle assignment below is the runtime setting for an item
+              type. Its name, icon, fields, relationships and numbering are
+              defined in code — see the reference at the bottom of this page —
+              and access is granted by role, under{' '}
+              <Link to="/admin/roles" className="underline">
+                Roles
+              </Link>
+              .
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -429,40 +296,6 @@ function ItemTypeConfigEditPage() {
         </CardContent>
       </Card>
 
-      {/* Permissions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Permissions</CardTitle>
-          <CardDescription>
-            Role-based access control for this item type
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {(['create', 'read', 'update', 'delete'] as const).map((action) => (
-            <div key={action} className="space-y-2">
-              <Label htmlFor={`${action}Permissions`} className="capitalize">
-                {action} Permissions
-              </Label>
-              <Input
-                id={`${action}Permissions`}
-                value={permissions[action].join(', ')}
-                onChange={(e) => updatePermission(action, e.target.value)}
-                placeholder={action === 'read' ? '*' : 'Admin, Engineer'}
-              />
-              {codeConfig && (
-                <p className="text-xs text-slate-500">
-                  Code default:{' '}
-                  {codeConfig.permissions[action].join(', ') || '(none)'}
-                </p>
-              )}
-            </div>
-          ))}
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Enter comma-separated role names. Use <code>*</code> for all roles.
-          </p>
-        </CardContent>
-      </Card>
-
       {/* Lifecycle Assignment - not shown for ChangeOrder as they use workflows */}
       {itemType !== 'ChangeOrder' && (
         <Card>
@@ -501,9 +334,6 @@ function ItemTypeConfigEditPage() {
                   <SelectValue placeholder="Select a lifecycle..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">
-                    No lifecycle assigned
-                  </SelectItem>
                   {availableLifecycles.map((lifecycle) => (
                     <SelectItem key={lifecycle.id} value={lifecycle.id}>
                       {lifecycle.name}
@@ -539,14 +369,6 @@ function ItemTypeConfigEditPage() {
                     </Badge>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {!lifecycleDefinitionId && availableLifecycles.length > 0 && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-400">
-                <AlertCircle className="w-4 h-4 inline mr-2" />
-                No lifecycle assigned. Items will use legacy code-defined
-                states.
               </div>
             )}
 

@@ -17,6 +17,8 @@ import dashboard from './routes/dashboard'
 import designs from './routes/designs'
 import documents from './routes/documents'
 import enterpriseSearch from './routes/enterprise-search'
+import events from './routes/events'
+import extensions from './routes/extensions'
 import files from './routes/files'
 import health from './routes/health'
 import importRoutes from './routes/import'
@@ -45,6 +47,7 @@ import testPlans from './routes/test-plans'
 import thread from './routes/thread'
 import tools from './routes/tools'
 import users from './routes/users'
+import webhooks from './routes/webhooks'
 import workInstructions from './routes/work-instructions'
 import workOrders from './routes/work-orders'
 import workflows from './routes/workflows'
@@ -55,6 +58,15 @@ import { applySecurityHeaders, buildPreflightResponse } from '@/lib/api/cors'
 import { createErrorResponse } from '@/lib/errors/api'
 import { getRequestId } from '@/lib/errors/handleApiError'
 import { AppError, ErrorCode } from '@/lib/errors'
+// Item type code definitions. Every route module above imports this too, but
+// this file should not depend on one of them happening to.
+//
+// Registration only: loading the runtime configuration that overrides it
+// reads the database, and each entry point awaits
+// `ItemTypeRegistry.initialize()` before `serve()`. Doing it here instead
+// would make importing the app require a reachable database, which the
+// OpenAPI snapshot tool (and its CI job, which runs no Postgres) does.
+import '@/lib/items/registerItemTypes.server'
 
 const app = new Hono()
 
@@ -84,6 +96,8 @@ app.route('/api/v1/dashboard', dashboard)
 app.route('/api/v1/designs', designs)
 app.route('/api/v1/documents', documents)
 app.route('/api/v1/enterprise-search', enterpriseSearch)
+app.route('/api/v1/events', events)
+app.route('/api/v1/extensions', extensions)
 app.route('/api/v1/files', files)
 app.route('/api/v1/health', health)
 app.route('/api/v1/import', importRoutes)
@@ -114,6 +128,7 @@ app.route('/api/v1/test-plans', testPlans)
 app.route('/api/v1/thread', thread)
 app.route('/api/v1/tools', tools)
 app.route('/api/v1/users', users)
+app.route('/api/v1/webhooks', webhooks)
 app.route('/api/v1/work-instructions', workInstructions)
 app.route('/api/v1/work-orders', workOrders)
 app.route('/api/v1/workflows', workflows)

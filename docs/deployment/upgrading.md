@@ -87,6 +87,44 @@ Nothing special: run `npm run db:migrate` against an empty database. It
 applies the baseline and every later migration, journal included. Then seed
 (`npm run db:seed`).
 
+## Upgrading to v0.6.0 — the event log
+
+v0.6.0 adds the domain event log and the extensibility layer. The schema change
+is **additive and safe on a populated database**: new tables (`domain_events`,
+`event_consumers`, `webhook_subscriptions`, `webhook_deliveries`, and on the
+enterprise edition `odoo_sync_intents`), one sequence, and one deferred
+constraint trigger. Nothing existing is altered or backfilled, so
+`npm run db:migrate` needs no downtime window beyond its own runtime.
+
+Three things worth knowing:
+
+**The sequencing trigger is not something drizzle-kit can express**, so it ships
+in the migration _and_ every emitting or consuming process ensures it at boot,
+both idempotent. A database provisioned with `db:push` rather than the committed
+migrations therefore has no trigger until the app or worker next starts — it will
+pick it up on first boot. Until it does, events are written with a null `seq` and
+no consumer sees them. `db:check-migrations` asserts the trigger's presence in
+CI, so a missing one in production means the database was provisioned by
+something other than `db:migrate`.
+
+**Registering the new job handler changes the worker's derived queue name.** The
+worker's durable queue is derived from the routing keys it handles, and
+`maintenance.events.prune` is new — so the old queue survives, still bound to the
+exchange, accumulating messages nobody consumes. **Delete the orphaned queue**
+after the upgrade, from the RabbitMQ management UI or `rabbitmqctl`. Deployments
+that would rather not deal with this again should pin `WORKER_QUEUE_NAME`.
+
+**`ENCRYPTION_KEY` must now also reach the jobs worker**, with the same value the
+app tier uses, if you intend to use signed webhooks — the worker is where
+deliveries are signed. The delivery pump refuses to start, naming the variable,
+rather than sending unsigned. See
+[SECURITY.md](../../SECURITY.md#secrets-at-rest).
+
+New tables grow: see
+[Operating event consumers](../admin/event-consumers.md#retention) for
+`EVENT_RETENTION_DAYS` and `WEBHOOK_DELIVERY_RETENTION_DAYS`, both pruned by the
+maintenance sweep.
+
 ## Upgrading an install created before v0.5.0
 
 Pre-0.5 databases were created by `db:push`, which writes no migration

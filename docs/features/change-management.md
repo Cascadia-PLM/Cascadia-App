@@ -765,7 +765,7 @@ Change-order cancellation is a lifecycle transition like any other. When a chang
 
 4. **No revision consumption**: Because revisions are only assigned at merge time, cancelling a change order wastes no revision letters.
 
-5. **Checkout locks released**: The `autoCheckinBranchItems()` step during close releases any remaining checkout locks.
+5. **Checkout locks released**: Cancelling releases every checkout lock still held on the change order's branches, in the transaction that archives them, and records each release as `item.checkout_cancelled`. A release does the same inside each design's merge transaction, recording `item.checked_in`.
 
 ---
 

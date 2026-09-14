@@ -25,6 +25,11 @@
  * transition" failure with no execution row at all. These cases therefore
  * race the first run deliberately — there is no warm-up.
  *
+ * Completion and sign-off had the same shape: a status read, then an update
+ * with no status in its WHERE. Two completes both wrote, and the log recorded
+ * one run completing twice; two reviewers both decided. Each write now names
+ * the status it expects, and the loser gets a ConflictError.
+ *
  * This cannot be tested under `TestDatabase`: one connection inside one
  * transaction serializes every call, so the race cannot occur. These commit
  * for real through `ConcurrentTestDatabase`, which cleans up after itself.
@@ -33,16 +38,18 @@
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { WorkOrderService } from '@/lib/services/WorkOrderService'
 import { WorkOrderInstructionService } from '@/lib/services/WorkOrderInstructionService'
 import { InstructionExecutionService } from '@/lib/services/InstructionExecutionService'
-import { ValidationError } from '@/lib/errors'
+import { ConflictError, ValidationError } from '@/lib/errors'
 import { seedWorkOrderLifecycle } from '@/__tests__/fixtures/lifecycles'
 import {
+  domainEvents,
+  executionSignOffs,
   instructionExecutions,
   items,
   lifecycleHistory,
@@ -73,7 +80,10 @@ describe('InstructionExecutionService.start — one open run per unit', () => {
   })
 
   /** A work order with one traveler line on it, and the technician running it. */
-  async function travelerLine(label: string) {
+  async function travelerLine(
+    label: string,
+    { requiresSignOff = false }: { requiresSignOff?: boolean } = {},
+  ) {
     const { user, designId } = await concurrent.seedScope(label)
 
     const outputPart = (await ItemService.create(
@@ -109,7 +119,7 @@ describe('InstructionExecutionService.start — one open run per unit', () => {
     const wo = await WorkOrderService.create(
       {
         quantity: 1,
-        requiresSignOff: false,
+        requiresSignOff,
         partId: outputPart.id,
         assignedTo: [],
       } as never,
@@ -332,5 +342,83 @@ describe('InstructionExecutionService.start — one open run per unit', () => {
     expect(again.resumed).toBe(true)
     expect(again.execution.id).toBe(first.execution.id)
     expect(await openRuns(line.id, user)).toHaveLength(1)
+  })
+
+  describe('completion and sign-off: one outcome per run', () => {
+    /** The facts one run produced, of one type. */
+    async function runFacts(type: string, executionId: string) {
+      return concurrent.db
+        .select({ id: domainEvents.id })
+        .from(domainEvents)
+        .where(
+          and(
+            eq(domainEvents.type, type),
+            sql`${domainEvents.payload}->>'executionId' = ${executionId}`,
+          ),
+        )
+    }
+
+    /** A loser lost either at the status read or at the conditional write. */
+    function lostTheRace(result: PromiseSettledResult<unknown>) {
+      return (
+        result.status === 'rejected' &&
+        (result.reason instanceof ConflictError ||
+          result.reason instanceof ValidationError)
+      )
+    }
+
+    it('records a run completing once when two completes race', async () => {
+      const { user, line } = await travelerLine('complete-race')
+      const { execution } = await InstructionExecutionService.start(
+        line.id,
+        user.id,
+      )
+
+      const results = await Promise.allSettled([
+        InstructionExecutionService.complete(execution.id, user.id),
+        InstructionExecutionService.complete(execution.id, user.id),
+      ])
+
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+      expect(results.filter(lostTheRace)).toHaveLength(1)
+      expect(
+        await runFacts('work_order.run_completed', execution.id),
+      ).toHaveLength(1)
+    })
+
+    it('records one sign-off decision when two reviewers decide at once', async () => {
+      const { user, line } = await travelerLine('sign-off-race', {
+        requiresSignOff: true,
+      })
+      const { execution } = await InstructionExecutionService.start(
+        line.id,
+        user.id,
+      )
+      await InstructionExecutionService.complete(execution.id, user.id)
+
+      const results = await Promise.allSettled([
+        InstructionExecutionService.submitSignOff(
+          execution.id,
+          user.id,
+          'approved',
+        ),
+        InstructionExecutionService.submitSignOff(
+          execution.id,
+          user.id,
+          'rejected',
+        ),
+      ])
+
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+      expect(results.filter(lostTheRace)).toHaveLength(1)
+      const decisions = await concurrent.db
+        .select({ id: executionSignOffs.id })
+        .from(executionSignOffs)
+        .where(eq(executionSignOffs.executionId, execution.id))
+      expect(decisions).toHaveLength(1)
+      expect(
+        await runFacts('work_order.sign_off_submitted', execution.id),
+      ).toHaveLength(1)
+    })
   })
 })

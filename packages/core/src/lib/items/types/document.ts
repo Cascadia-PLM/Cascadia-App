@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { z } from 'zod'
-import { baseItemSchema, commonStates } from './base'
+import { baseItemSchema } from './base'
 import type { BaseItem } from './base'
 
 // Document-specific interface
@@ -32,9 +32,6 @@ export const documentSchema = baseItemSchema.extend({
   mimeType: z.string().max(100).optional(),
   storagePath: z.string().optional(),
 })
-
-// Document-specific states (using common states)
-export const documentStates = commonStates
 
 // Document relationships
 export const documentRelationships = [

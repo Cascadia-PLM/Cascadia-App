@@ -43,10 +43,21 @@ const connectionString: string = envConnectionString
  * The connection target with credentials stripped, e.g.
  * `localhost:5432/cascadia`. For logging which database a script is
  * about to touch — never log `connectionString` itself, it carries the password.
+ *
+ * A URL with an `@` in its path, query or fragment is reported as unparseable,
+ * although `new URL()` accepts it. That is what a password containing an
+ * unencoded `/`, `?` or `#` looks like: the character ends the authority before
+ * its `@`, so `postgresql://postgres:1/s3cr3t@db:5432/app` parses as host
+ * `postgres`, port `1` and path `/s3cr3t@db:5432/app`, with no password at all —
+ * and host plus path prints it. Digits in front of a `?` or `#` land in the
+ * port the same way, and a URL missing its `//` is all path.
  */
 export function describeConnection(connStr = connectionString): string {
   try {
     const url = new URL(connStr)
+    if (`${url.pathname}${url.search}${url.hash}`.includes('@')) {
+      return '(unparseable DATABASE_URL)'
+    }
     return `${url.host}${url.pathname}`
   } catch {
     return '(unparseable DATABASE_URL)'

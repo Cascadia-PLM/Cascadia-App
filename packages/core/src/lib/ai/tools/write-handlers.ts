@@ -348,7 +348,7 @@ async function withConfirmationToken<T extends WriteToolResponse>(
  * `sourceItemUpdatePermission` — `ItemService.addRelationship` has no RBAC of
  * its own either, so the wrapper is the only gate there too.
  *
- * `getResourceType` rather than `itemTypeToResource` for the reason the item
+ * `getResourceType` is fail-closed, for the reason the item
  * routes made the same swap: it is fail-closed, charging `parts` for a type
  * with no mapping instead of skipping the check. A *missing* item falls back
  * the same way on purpose — the wrapper runs before the handler, so refusing

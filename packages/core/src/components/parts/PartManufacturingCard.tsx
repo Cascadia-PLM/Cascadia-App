@@ -14,7 +14,9 @@ import {
   ViewEditText,
 } from '@/components/ui'
 
-const PART_TYPE_OPTIONS = [
+// Shared with the design page's in-place part form, so both offer the one
+// list of types.
+export const PART_TYPE_OPTIONS = [
   { value: 'Manufacture', label: 'Manufacture' },
   { value: 'Purchase', label: 'Purchase' },
   { value: 'Software', label: 'Software' },

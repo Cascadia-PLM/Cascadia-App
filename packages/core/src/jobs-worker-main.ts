@@ -35,6 +35,22 @@
  *   /health, and how stale a cached depth may be (default: 30000)
  * - DLQ_WARN_DEPTH: Depth at which the worker logs a warning that the
  *   dead-letter queue needs draining (default: 100)
+ * - EVENT_POLL_INTERVAL_MS: Domain event consumer poll interval (default: 2000)
+ * - EVENT_CONSUMER_PARK_AFTER: Consecutive handler failures after which an
+ *   event consumer is parked until an admin resumes it (default: 10)
+ * - EVENT_CONSUMERS_IN_APP: Whether the *app server* also polls event
+ *   consumers (default: true). Set false when this worker is deployed, to keep
+ *   one poller; running both is safe either way.
+ * - EVENT_RETENTION_DAYS: How much event history the retention job keeps
+ *   (default: 90). Zero or less retains forever.
+ * - WEBHOOK_PUMP_INTERVAL_MS: How often the webhook delivery pump looks for
+ *   pending deliveries (default: 5000).
+ * - WEBHOOK_DELIVERY_RETENTION_DAYS: How much webhook delivery history the same
+ *   retention job keeps (default: 30). Zero or less retains forever. Pending
+ *   deliveries are never pruned whatever their age.
+ * - ENCRYPTION_KEY: Required to sign webhook deliveries. The pump refuses to
+ *   start when a signed subscription exists and this is unset, rather than
+ *   sending unsigned.
  */
 
 // Load .env file for local development
@@ -42,17 +58,39 @@ import 'dotenv/config'
 
 import http from 'node:http'
 import { createHash } from 'node:crypto'
+import {
+  ensureDomainEventSequencing,
+  sequenceUnsequencedEvents,
+} from './lib/events'
+import {
+  registerCoreExtensions,
+  registerRabbitMqEventRelay,
+  registerWebhookDispatcher,
+  startEventConsumerPolling,
+} from './lib/extensions'
+import { db } from './lib/db'
+import { startWebhookDeliveryPump } from './lib/webhooks/pump'
 import { JobWorker } from './lib/jobs/worker'
 import { RabbitMQClient } from './lib/jobs/rabbitmq/client'
 import { JobTypeRegistry } from './lib/jobs/registry'
+import { ItemTypeRegistry } from './lib/items/registry'
 import { deadLetterDepth, startRetryScheduler } from './lib/jobs/scheduler'
 import { workerLogger } from './lib/logging/logger'
+import { redactUrlCredentials } from './lib/logging/redact-url'
 
 // Register job type definitions (configs + schemas)
 import './lib/jobs/definitions/register'
 
 // Register Node.js handler implementations
 import './lib/jobs/node-handlers/register'
+
+// Register item type definitions.
+//
+// The HTTP server gets these from any of the route modules it mounts; this
+// process mounts none, so without this line the registry is empty here and
+// every item type answers "no lifecycle assigned" — which is what
+// `design.clone` hit on its first item, reporting it as an unseeded database.
+import './lib/items/registerItemTypes.server'
 
 /**
  * Start a simple HTTP health check server for container orchestration.
@@ -71,8 +109,18 @@ import './lib/jobs/node-handlers/register'
  * depth is not known yet or the broker could not answer it; a monitor should
  * treat that as unknown rather than as zero. The value is served from a cache
  * the scheduler refreshes, so a poll every second costs the broker nothing.
+ *
+ * `webhookPump` says whether this worker is sending webhook deliveries:
+ * `starting`, `running`, or `not_running` when the pump refused to start — a
+ * signed subscription exists and `ENCRYPTION_KEY` is not set — and nothing is
+ * being delivered. Not part of the verdict either: a restart would refuse
+ * again, for the same reason.
  */
-function startHealthServer(worker: JobWorker, port: number): http.Server {
+function startHealthServer(
+  worker: JobWorker,
+  port: number,
+  extras: () => Record<string, unknown> = () => ({}),
+): http.Server {
   const server = http.createServer((req, res) => {
     if (req.url === '/health' && req.method === 'GET') {
       const shuttingDown = worker.isShuttingDownNow()
@@ -91,6 +139,7 @@ function startHealthServer(worker: JobWorker, port: number): http.Server {
               : 'disconnected',
           activeJobs: worker.getActiveJobCount(),
           dlqDepth: deadLetterDepth(),
+          ...extras(),
           timestamp: new Date().toISOString(),
         }),
       )
@@ -150,6 +199,11 @@ export async function runJobsWorker(): Promise<void> {
   // in a way nothing reports.
   installProcessBackstops()
 
+  // The database half of item-type registration, awaited for the same reason
+  // the HTTP server awaits it: a job that resolves a lifecycle must see the
+  // assigned one, not the shipped default.
+  await ItemTypeRegistry.initialize()
+
   const concurrency = parseInt(process.env.WORKER_CONCURRENCY || '5', 10)
   const rawJobTypes = (process.env.JOB_TYPES || '*')
     .split(',')
@@ -189,7 +243,7 @@ export async function runJobsWorker(): Promise<void> {
   console.log(`  Timeout: ${timeout}ms`)
   console.log(`  Health port: ${healthPort}`)
   console.log(
-    `  RabbitMQ: ${process.env.RABBITMQ_URL || 'amqp://localhost:5672'}`,
+    `  RabbitMQ: ${redactUrlCredentials(process.env.RABBITMQ_URL || 'amqp://localhost:5672')}`,
   )
 
   const worker = new JobWorker({
@@ -200,20 +254,61 @@ export async function runJobsWorker(): Promise<void> {
   })
 
   // Start health check server before connecting to RabbitMQ
-  const healthServer = startHealthServer(worker, healthPort)
+  let webhookPumpState: 'starting' | 'running' | 'not_running' = 'starting'
+  const healthServer = startHealthServer(worker, healthPort, () => ({
+    webhookPump: webhookPumpState,
+  }))
 
   // Parked retries and submit-crash orphans are re-published from here — the
   // sweep lives in the worker process, next to the atomic claim that makes
   // its duplicate publishes harmless.
   const retryScheduler = startRetryScheduler()
 
-  // Handle graceful shutdown
+  // Domain event consumers run in the worker too: it is the process that owns
+  // broker connectivity, and `FOR UPDATE SKIP LOCKED` on the cursor rows
+  // makes extra pollers harmless if another process ever runs them as well.
+  // The sequencing trigger is ensured first — a push-provisioned database
+  // has none, and without it no event is ever assigned a seq to consume.
+  await ensureDomainEventSequencing(db)
+  // Rows written before the trigger existed carry no seq and would never be
+  // consumed; give them one before any poller starts.
+  await sequenceUnsequencedEvents(db)
+  // The relay is a `consumed` extension like any other — registered here
+  // rather than at import time so a deployment without RabbitMQ never
+  // registers a consumer that cannot connect.
+  registerRabbitMqEventRelay()
+  // The webhook fan-out, registered here and *only* here for the same reason
+  // as the relay: this is the process that drains the deliveries it writes, and
+  // registering it somewhere that never runs the pump would advance its cursor
+  // past events whose deliveries nobody sends.
+  registerWebhookDispatcher()
+  // Core's release follow-ups. The app server registers these too; whichever
+  // process polls first for a given consumer takes its cursor row and the
+  // other skips it.
+  registerCoreExtensions()
+  const stopEventPolling = startEventConsumerPolling({
+    intervalMs: parseInt(process.env.EVENT_POLL_INTERVAL_MS || '2000', 10),
+  })
+
+  // The webhook delivery pump. Not the maintenance sweep, which submits one job
+  // per registered type guarded over a twenty-four-hour period — a webhook would
+  // fire at most once a day. It refuses to start rather than sending unsigned if
+  // a signed subscription exists with no ENCRYPTION_KEY.
+  const webhookPump = await startWebhookDeliveryPump()
+  webhookPumpState = webhookPump.running ? 'running' : 'not_running'
+
+  // Handle graceful shutdown. Event polling and the webhook pump each let the
+  // work in flight finish — a consumer run commits or rolls back whole, and an
+  // interrupted delivery gives its attempt back — and each bounds its own wait,
+  // so a hung receiver cannot hold the process open.
   const shutdown = () => {
     console.log(
-      '[Jobs Worker] Shutting down retry scheduler and health server...',
+      '[Jobs Worker] Shutting down retry scheduler, event polling, webhook pump and health server...',
     )
     retryScheduler.stop()
-    healthServer.close()
+    void Promise.allSettled([stopEventPolling(), webhookPump.stop()]).finally(
+      () => healthServer.close(),
+    )
   }
 
   process.on('SIGTERM', shutdown)

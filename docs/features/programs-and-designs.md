@@ -572,13 +572,13 @@ GET /api/v1/designs/:id/structure
 
 A part is a top-level part only because something designated it:
 
-| Gesture                                                              | Effect on `inDesignStructure`                             |
-| -------------------------------------------------------------------- | --------------------------------------------------------- |
-| Creating a Part in a design (`POST /api/v1/items` with `designId`)   | set — the new part is a root until something nests it     |
-| Adding a part from another design (`POST /api/v1/designs/:id/items`) | set on the copied subtree's root, cleared on its children |
-| "Add to Structure" (`PATCH /api/v1/designs/:id/items`)               | set                                                       |
-| "Remove from Structure" (`DELETE /api/v1/designs/:id/items`)         | cleared                                                   |
-| Nesting the part under a parent in its own design (a BOM line)       | cleared                                                   |
+| Gesture                                                                                                                          | Effect on `inDesignStructure`                             |
+| -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Creating a Part in a design (`POST /api/v1/items` with `designId` — the part form, or the Structure tab's Add Part → Create New) | set — the new part is a root until something nests it     |
+| Adding a part from another design (`POST /api/v1/designs/:id/items`)                                                             | set on the copied subtree's root, cleared on its children |
+| "Add to Structure" (`PATCH /api/v1/designs/:id/items`)                                                                           | set                                                       |
+| "Remove from Structure" (`DELETE /api/v1/designs/:id/items`)                                                                     | cleared                                                   |
+| Nesting the part under a parent in its own design (a BOM line)                                                                   | cleared                                                   |
 
 Nesting clears the designation so that removing the line later does not promote the child: a part whose only parent dropped it is listed with the non-structure items, where "Add to Structure" makes it a root on purpose. The column defaults to `false`, so a row minted by a path that never considered the structure is not silently a top-level part.
 

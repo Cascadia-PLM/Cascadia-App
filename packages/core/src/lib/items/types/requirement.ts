@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { z } from 'zod'
-import { baseItemSchema, commonStates } from './base'
+import { baseItemSchema } from './base'
 import type { BaseItem } from './base'
 
 // Verification method types for requirements
@@ -72,13 +72,6 @@ export const requirementSchema = baseItemSchema.extend({
   allocatedDesignId: z.string().uuid().optional(),
   parentRequirementId: z.string().uuid().optional(),
 })
-
-// Requirements are versioned, ECO-driven items like Parts and Documents.
-// Review progress (Proposed/Approved/Rejected in the default lifecycle) is
-// part of the lifecycle itself — manual pre-release transitions — and release
-// maps Approved → Released; the old `status` field is gone. Verification
-// outcome stays the measured `verificationStatus`.
-export const requirementStates = commonStates
 
 // Requirement relationships
 export const requirementRelationships = [

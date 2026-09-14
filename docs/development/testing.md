@@ -132,6 +132,16 @@ describe('BranchService', () => {
 
 Integration tests use `TestDatabase` for transaction-based isolation:
 
+> **There is a second harness, and choosing wrong fails silently.**
+> `ConcurrentTestDatabase` hands out real, separate connections and **commits**.
+> Anything that reads a committed value — a domain event's `seq`, which a
+> deferred trigger assigns at COMMIT — or that a background runner reads on the
+> module-level connection, sees _nothing_ under `TestDatabase`, so the test
+> passes while asserting the absence it was written to disprove. The rule, its
+> four commit-time disciplines, and the cleanup discipline that keeps parallel
+> files from eating each other's rows live in
+> [`packages/core/src/__tests__/README.md`](../../packages/core/src/__tests__/README.md#choosing-a-harness).
+
 ```typescript
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestOrganization } from '@/__tests__/fixtures/organizations'

@@ -278,7 +278,7 @@ describe('WorkOrderInstructionService', () => {
 
       // Still executable from the snapshot…
       const done = await completeRun(line.id)
-      expect(done?.status).toBe('Complete')
+      expect(done.status).toBe('Complete')
 
       // …but no template to re-freeze from.
       await expect(
@@ -472,7 +472,7 @@ describe('WorkOrderInstructionService', () => {
         execution.id,
         user.id,
       )
-      expect(abandoned?.status).toBe('Incomplete')
+      expect(abandoned.status).toBe('Incomplete')
 
       const after = await WorkOrderInstructionService.get(wo.id, line.id)
       expect(after.status).toBe('In Progress') // attempted, not done
@@ -498,7 +498,7 @@ describe('WorkOrderInstructionService', () => {
         execution.id,
         user.id,
       )
-      expect(completed?.status).toBe('Pending Approval')
+      expect(completed.status).toBe('Pending Approval')
 
       // Pending approval is not a countable run.
       expect(
@@ -559,7 +559,7 @@ describe('WorkOrderInstructionService', () => {
         execution.id,
         user.id,
       )
-      expect(resubmitted?.status).toBe('Pending Approval')
+      expect(resubmitted.status).toBe('Pending Approval')
     })
   })
 

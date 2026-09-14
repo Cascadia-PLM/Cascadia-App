@@ -3,7 +3,7 @@
 
 import { z } from 'zod'
 import { baseItemSchema } from './base'
-import type { RelationshipConfig, StateConfig } from './base'
+import type { RelationshipConfig } from './base'
 import type { InstructionSnapshot } from '@/lib/db/schema/work-orders'
 
 export type { InstructionSnapshot }
@@ -74,13 +74,6 @@ export const workOrderItemSchema = baseItemSchema.extend({
   requiresSignOff: z.boolean().default(false),
   completedAt: z.union([z.string(), z.date()]).nullable().optional(),
 })
-
-export const workOrderStates: Array<StateConfig> = [
-  { id: 'Not Started', name: 'Not Started', color: 'gray' },
-  { id: 'In Progress', name: 'In Progress', color: 'blue' },
-  { id: 'Complete', name: 'Complete', color: 'green' },
-  { id: 'Cancelled', name: 'Cancelled', color: 'red' },
-]
 
 // Consumes/Produces edges are created by the material-consumption services,
 // not the generic relationship picker.

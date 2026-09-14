@@ -14,7 +14,13 @@ import {
   workOrderInstructions,
   workOrders,
 } from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors'
+import {
+  WORK_ORDER_RUN_COMPLETED,
+  WORK_ORDER_SIGN_OFF_SUBMITTED,
+  publishDomainEvent,
+} from '@/lib/events'
+import { COUNTABLE_EXECUTION_STATUSES } from '@/lib/items/types/work-order'
 import {
   asPostgresError,
   constraintOf,
@@ -241,7 +247,7 @@ export class InstructionExecutionService {
    * Finish a run. Routes to Pending Approval when the order requires
    * sign-off, else Complete.
    */
-  static async complete(executionId: string, _userId: string, notes?: string) {
+  static async complete(executionId: string, userId: string, notes?: string) {
     const execution = await getExecution(executionId)
     if (execution.status !== 'In Progress') {
       throw new ValidationError(
@@ -259,21 +265,69 @@ export class InstructionExecutionService {
       ? 'Pending Approval'
       : 'Complete'
 
-    const [updated] = await db
-      .update(instructionExecutions)
-      .set({
-        status: newStatus,
-        completedAt,
-        duration,
-        notes: notes || execution.notes,
-      })
-      .where(eq(instructionExecutions.id, executionId))
-      .returning()
+    const { woItem } = await getLineContext(execution.workOrderInstructionId)
 
-    return updated
+    return db.transaction(async (tx) => {
+      // The status check above is a read, so it is restated here, where it
+      // holds: two completes that both passed it would otherwise both write,
+      // and the log would record one run completing twice. The loser finds
+      // nothing left to update.
+      const [updated] = await tx
+        .update(instructionExecutions)
+        .set({
+          status: newStatus,
+          completedAt,
+          duration,
+          notes: notes || execution.notes,
+        })
+        .where(
+          and(
+            eq(instructionExecutions.id, executionId),
+            eq(instructionExecutions.status, 'In Progress'),
+          ),
+        )
+        .returning()
+      if (!updated) {
+        throw new ConflictError(
+          `Execution ${executionId} is no longer in progress`,
+        )
+      }
+
+      // Flags, not the status string. Completion routes to a pending-approval
+      // state or a complete state purely by the work order's sign-off
+      // requirement, so a consumer is told the two things it would otherwise
+      // have to derive from an enum whose membership can grow.
+      await publishDomainEvent(tx, WORK_ORDER_RUN_COMPLETED, {
+        actorId: userId,
+        subject: { id: woItem.id, masterId: woItem.masterId },
+        context: { designId: woItem.designId ?? undefined },
+        payload: {
+          workOrderId: woItem.id,
+          workOrderMasterId: woItem.masterId,
+          workOrderNumber: woItem.itemNumber,
+          lineId: execution.workOrderInstructionId,
+          executionId,
+          countsTowardRequired:
+            COUNTABLE_EXECUTION_STATUSES.includes(newStatus),
+          requiresSignOff: workOrder.requiresSignOff === true,
+          startedAt: new Date(execution.startedAt).toISOString(),
+          durationSeconds: duration,
+        },
+      })
+
+      return updated
+    })
   }
 
-  /** Abandon an open run — it stays as an Incomplete record. */
+  /**
+   * Abandon an open run — it stays as an Incomplete record.
+   *
+   * The actor is still unused, and deliberately so. `complete` threads its user
+   * id because it now emits a fact that carries one; abandonment is
+   * deliberately *not* on the bus — an incomplete record is telemetry nothing
+   * acts on — and there is no column for an actor to land in. Threading it here
+   * would be churn that records nothing.
+   */
   static async abandon(executionId: string, _userId: string, notes?: string) {
     const execution = await getExecution(executionId)
     if (execution.status !== 'In Progress') {
@@ -287,6 +341,8 @@ export class InstructionExecutionService {
       (completedAt.getTime() - new Date(execution.startedAt).getTime()) / 1000,
     )
 
+    // Conditional on the run still being open, like `complete`: an abandon
+    // racing a completion must not overwrite the completed record.
     const [updated] = await db
       .update(instructionExecutions)
       .set({
@@ -295,8 +351,18 @@ export class InstructionExecutionService {
         duration,
         notes: notes || execution.notes,
       })
-      .where(eq(instructionExecutions.id, executionId))
+      .where(
+        and(
+          eq(instructionExecutions.id, executionId),
+          eq(instructionExecutions.status, 'In Progress'),
+        ),
+      )
       .returning()
+    if (!updated) {
+      throw new ConflictError(
+        `Execution ${executionId} is no longer in progress`,
+      )
+    }
 
     return updated
   }
@@ -482,20 +548,55 @@ export class InstructionExecutionService {
     }
 
     const newStatus = decision === 'approved' ? 'Approved' : 'Rejected'
+    const { woItem } = await getLineContext(execution.workOrderInstructionId)
     return db.transaction(async (tx) => {
+      // The decision is taken on the run as it stands, not as it was read:
+      // two reviewers deciding at once would otherwise both write, and the log
+      // would record two decisions on one run. The loser's sign-off row never
+      // lands.
+      const [updated] = await tx
+        .update(instructionExecutions)
+        .set({ status: newStatus })
+        .where(
+          and(
+            eq(instructionExecutions.id, executionId),
+            eq(instructionExecutions.status, 'Pending Approval'),
+          ),
+        )
+        .returning()
+      if (!updated) {
+        throw new ConflictError(
+          `Execution ${executionId} is no longer awaiting sign-off`,
+        )
+      }
       await tx.insert(executionSignOffs).values({
         executionId,
         reviewerId,
         decision,
         comments: comments || null,
       })
-      return takeFirst(
-        await tx
-          .update(instructionExecutions)
-          .set({ status: newStatus })
-          .where(eq(instructionExecutions.id, executionId))
-          .returning(),
-      )
+
+      // The decision and its consequence commit together, so a consumer can
+      // never see one without the other.
+      await publishDomainEvent(tx, WORK_ORDER_SIGN_OFF_SUBMITTED, {
+        actorId: reviewerId,
+        subject: { id: woItem.id, masterId: woItem.masterId },
+        context: { designId: woItem.designId ?? undefined },
+        payload: {
+          workOrderId: woItem.id,
+          workOrderMasterId: woItem.masterId,
+          workOrderNumber: woItem.itemNumber,
+          lineId: execution.workOrderInstructionId,
+          executionId,
+          decision,
+          reviewerId,
+          comments: comments || null,
+          countsTowardRequired:
+            COUNTABLE_EXECUTION_STATUSES.includes(newStatus),
+        },
+      })
+
+      return updated
     })
   }
 
@@ -519,8 +620,16 @@ export class InstructionExecutionService {
     const [updated] = await db
       .update(instructionExecutions)
       .set({ status: 'Pending Approval' })
-      .where(eq(instructionExecutions.id, executionId))
+      .where(
+        and(
+          eq(instructionExecutions.id, executionId),
+          eq(instructionExecutions.status, 'Rejected'),
+        ),
+      )
       .returning()
+    if (!updated) {
+      throw new ConflictError(`Execution ${executionId} is no longer rejected`)
+    }
 
     return updated
   }

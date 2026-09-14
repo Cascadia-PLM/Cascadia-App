@@ -24,6 +24,7 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest'
 import { and, eq } from 'drizzle-orm'
 import { cloneDesignHandler } from './design-clone'
@@ -191,5 +192,70 @@ describe('cloneDesignHandler', () => {
     // the new item. Any parts column that fails to copy — including ones
     // added after this was written — fails here.
     expect({ ...clonedPart, itemId: sourceItem.id }).toEqual(sourcePart)
+  })
+
+  it('frees the requested code when the clone fails part-way', async () => {
+    const source = await DesignService.create(
+      {
+        programId,
+        name: 'Source Design',
+        code: `${uniquePrefix}-FSRC`,
+        designType: 'Engineering',
+      },
+      user.id,
+    )
+    const initialCommit = source.initialCommit
+    if (!initialCommit) {
+      throw new Error('An Engineering design is created with an initial commit')
+    }
+
+    const sourceItem = takeFirst(
+      await testDb.db
+        .insert(items)
+        .values({
+          masterId: randomUUID(),
+          designId: source.id,
+          itemNumber: `${uniquePrefix}-FPART-001`,
+          revision: 'A',
+          itemType: 'Part',
+          name: 'Bracket',
+          state: await LifecycleService.getInitialStateId('Part'),
+          isCurrent: true,
+          commitId: initialCommit.id,
+          createdBy: user.id,
+          modifiedBy: user.id,
+        })
+        .returning(),
+    )
+    await testDb.db.insert(itemVersions).values({
+      itemId: sourceItem.id,
+      commitId: initialCommit.id,
+      changeType: 'added',
+    })
+    await testDb.db.insert(parts).values({ itemId: sourceItem.id })
+
+    // Fail inside the item loop, which runs after the target design and its
+    // main branch are already committed.
+    const targetCode = `${uniquePrefix}-FTGT`
+    vi.spyOn(LifecycleService, 'getInitialStateId').mockRejectedValueOnce(
+      new Error('boom'),
+    )
+
+    await expect(
+      cloneDesignHandler.execute(
+        {
+          sourceDesignId: source.id,
+          targetCode,
+          targetName: 'Doomed Clone',
+          userId: user.id,
+        },
+        jobContext(),
+      ),
+    ).rejects.toThrow('boom')
+
+    // The code the user asked for is available again — without this, both the
+    // configured retry and the user's own retry fail on the duplicate rather
+    // than on whatever actually went wrong.
+    expect(await DesignService.getByCode(targetCode)).toBeFalsy()
   })
 })

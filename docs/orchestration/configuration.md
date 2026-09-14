@@ -204,6 +204,62 @@ S3_FORCE_PATH_STYLE=false           # Set true for MinIO
 | `DLQ_CHECK_MS`                | `30000`  | How often the dead-letter queue's depth is read for `/health`       |
 | `DLQ_WARN_DEPTH`              | `100`    | Depth at which the worker warns that the DLQ needs draining         |
 
+### Domain Event Consumers
+
+The event log's consumers: the RabbitMQ relay, the webhook dispatcher, core's
+release follow-ups (work-instruction change alerts, superseded-revision
+watermarks), and anything a licensed module registers. Each owns a cursor, so one falling behind or parking
+never holds up another.
+
+| Variable                          | Default | Description                                                                                                              |
+| --------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `EVENT_POLL_INTERVAL_MS`          | `2000`  | How often a poller looks for new events                                                                                  |
+| `EVENT_CONSUMER_PARK_AFTER`       | `10`    | Consecutive handler failures after which a consumer parks until an admin acts                                            |
+| `EVENT_CONSUMERS_IN_APP`          | `true`  | Whether the app server polls consumers itself, as well as the jobs worker                                                |
+| `EVENT_RETENTION_DAYS`            | `90`    | Days of event history kept, and how long a consumer may stay parked before it is abandoned; zero or less retains forever |
+| `WEBHOOK_PUMP_INTERVAL_MS`        | `5000`  | How often the delivery pump looks for pending webhook deliveries                                                         |
+| `WEBHOOK_DELIVERY_RETENTION_DAYS` | `30`    | Days of webhook delivery history kept; a live subscription's pending rows are never pruned                               |
+
+`EVENT_CONSUMERS_IN_APP` defaults on so that a single-server install with no
+jobs worker still drains its consumers — the alternative failure is silent, and
+looks exactly like the feature not existing. Set it to `false` where a worker is
+deployed and you want a single poller; running both is safe regardless, because
+a consumer's cursor row is claimed `FOR UPDATE SKIP LOCKED` and the second
+poller simply finds it taken.
+
+**Webhooks need the jobs worker, whatever this says.** The dispatcher and the
+delivery pump run only there, so an instance with no worker accepts webhook
+subscriptions and delivers nothing; the webhooks page warns when it can see no
+worker running the dispatcher.
+
+**Retention deletes conservatively, and that is deliberate.** An event goes only
+when it is older than `EVENT_RETENTION_DAYS` _and_ every consumer has already
+passed it — including a parked one, and including an orphan cursor for a consumer
+no process currently registers, because a pruning process can only see its own
+registry and another process in the fleet may still hold that consumer. The
+consequence is that one consumer stuck forever would pin the log's growth
+forever, so a consumer parked past a give-up horizon is excluded from the floor
+and marked **abandoned**: its backlog is forfeit, it must be re-registered, and
+the exclusion is reported by the prune job and shown on the admin panel rather
+than happening silently. To drop a cursor deliberately — an ERP consumer on an
+instance that no longer owns the package, say — use
+`DELETE /api/v1/events/consumers/:id`, which abandons that backlog on purpose.
+
+**`ENCRYPTION_KEY` must reach the jobs worker, not only the app tier.** It is
+the key webhook deliveries are signed with, and before this wave it was
+declared on the app service alone — so every containerised deployment would
+have run the delivery pump with no key. The pump **refuses to start** when at
+least one enabled subscription has a signing secret and the key is unset,
+naming the variable: loud once at boot rather than quietly per delivery,
+because the alternative failure is a customer discovering that their signature
+verification has been passing against nothing. Both tiers must be given the
+_same_ value.
+
+**One topology must set it to `false`:** a platform that throttles CPU outside a
+request — scale-to-zero or request-scoped runtimes — does not reliably schedule
+an interval timer between requests, so the app process cannot be depended on to
+poll at all. Keep the jobs worker there.
+
 ### Specialized Workers
 
 ```bash
@@ -266,8 +322,8 @@ S3_SECRET_KEY=...
 
 ## CAD Worker Timeout Enforcement
 
-The Python CAD workers (`cad-converter`, `cad-generator`) enforce `JOB_TIMEOUT`
-themselves, in two stages. A pythonocc or CadQuery call that wedges inside
+The Python CAD workers (`cad-converter`, `cad-generator`, `freecad-runner`) enforce
+`JOB_TIMEOUT` themselves, in two stages. A pythonocc or CadQuery call that wedges inside
 native code cannot be interrupted — a Python thread cannot be killed, and one
 parked in a C extension never reaches the interpreter to be asked to stop — so
 the deadline is enforced from the outside.

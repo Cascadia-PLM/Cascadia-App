@@ -86,7 +86,7 @@ services:
     networks: [cascadia-demo]
 
   app:
-    image: ghcr.io/cascadia-plm/cascadia-app:latest@sha256:cedffb9848d8356882e5fc1836d14544d0825ce1b2a6e52a9bbe07e5461569fb
+    image: ghcr.io/cascadia-plm/cascadia-app:latest@sha256:a9d8d50e9713e6d748d25213e1d795fe766c10ed858d6d86f8a24bfa22b7d881
     container_name: cascadia-demo-app
     restart: unless-stopped
     depends_on:
@@ -165,6 +165,10 @@ services:
       WORKER_CONCURRENCY: 5
       JOB_TYPES: '*'
       JOB_TIMEOUT: 300000
+      # Signing key for webhook deliveries. Empty here because the demo stack
+      # ships no subscriptions; the pump refuses to start rather than sending
+      # unsigned if one is ever added without setting this.
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
     networks: [cascadia-demo]
 
 volumes:

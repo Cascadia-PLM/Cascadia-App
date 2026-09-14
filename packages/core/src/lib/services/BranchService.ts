@@ -4,6 +4,12 @@
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { db, withTx } from '../db'
+import {
+  BRANCH_ARCHIVED,
+  BRANCH_CREATED,
+  ITEM_DELETED,
+  publishDomainEvent,
+} from '../events'
 import { notDeleted } from '../db/filters'
 import {
   branchItems,
@@ -18,6 +24,7 @@ import {
   ValidationError,
 } from '../errors'
 import { DesignService } from './DesignService'
+import { releaseBranchLocks } from './checkout-locks'
 import type { TransactionClient } from '../db'
 import type { BranchType } from '@/lib/versioning/branch-types'
 import { takeFirst } from '@/lib/db/take-first'
@@ -357,6 +364,10 @@ export class BranchService {
    * moves the branch rows off the workspace, so this guard matters only for
    * data that referenced workspace content before adoption existed — and as
    * a backstop against any future path that references first, moves later.)
+   *
+   * Everything it does is recorded, in its one transaction: a
+   * `branch.archived` with the owner as actor, an `item.deleted` per draft it
+   * discards, and an `item.checkout_cancelled` per lock it releases.
    */
   static async deleteWorkspaceBranch(branchId: string, userId: string) {
     const branch = await this.getById(branchId)
@@ -380,6 +391,14 @@ export class BranchService {
     }
 
     await db.transaction(async (tx) => {
+      // Every lock on the workspace goes with it, recorded as a cancellation:
+      // the workspace's edits are being discarded.
+      await releaseBranchLocks(
+        tx,
+        { branchId, designId: branch.designId },
+        'checkout_cancelled',
+      )
+
       // Find all items that were created on this workspace (changeType: 'added')
       // These items exist only on this branch and should be deleted
       const workspaceOnlyItems = await tx
@@ -434,17 +453,18 @@ export class BranchService {
               inArray(branchItems.currentItemId, itemIds),
             ),
           )
-        await tx.delete(items).where(inArray(items.id, itemIds))
+        const discarded = await tx
+          .delete(items)
+          .where(inArray(items.id, itemIds))
+          .returning()
+        for (const draft of discarded) {
+          await this.recordDraftDeleted(tx, draft, userId, branchId)
+        }
       }
 
-      // Soft delete the branch by archiving
-      await tx
-        .update(branches)
-        .set({
-          isArchived: true,
-          archivedAt: new Date(),
-        })
-        .where(eq(branches.id, branchId))
+      // Archived through `archiveBranch`, so the archive records its own fact
+      // with the owner as its actor. A raw update used to archive it silently.
+      await this.archiveBranch(branchId, tx, userId)
     })
   }
 
@@ -537,6 +557,13 @@ export class BranchService {
     }
 
     await db.transaction(async (tx) => {
+      // The holder's claim goes with the row, recorded as a cancellation: the
+      // workspace's edits to this item are being discarded.
+      await releaseBranchLocks(
+        tx,
+        { branchId, designId: branch.designId, itemMasterIds: [itemMasterId] },
+        'checkout_cancelled',
+      )
       await tx.delete(branchItems).where(eq(branchItems.id, row.id))
 
       if (row.changeType === 'added' && row.currentItemId) {
@@ -551,9 +578,44 @@ export class BranchService {
         ).at(0)
 
         if (!referenced) {
-          await tx.delete(items).where(eq(items.id, row.currentItemId))
+          const [draft] = await tx
+            .delete(items)
+            .where(eq(items.id, row.currentItemId))
+            .returning()
+          if (draft) {
+            await this.recordDraftDeleted(tx, draft, userId, branchId)
+          }
         }
       }
+    })
+  }
+
+  /**
+   * The end of a workspace-born draft, recorded in the transaction that
+   * deletes it. Its birth was on the bus — `createOnBranch` emits
+   * `item.created` — so without this a draft created and discarded on a
+   * workspace would stay in every consumer's projection for good.
+   */
+  private static async recordDraftDeleted(
+    tx: TransactionClient,
+    draft: typeof items.$inferSelect,
+    actorId: string,
+    branchId: string,
+  ): Promise<void> {
+    await publishDomainEvent(tx, ITEM_DELETED, {
+      actorId,
+      subject: { id: draft.id, masterId: draft.masterId },
+      context: { designId: draft.designId ?? undefined, branchId },
+      payload: {
+        itemId: draft.id,
+        masterId: draft.masterId,
+        itemType: draft.itemType,
+        itemNumber: draft.itemNumber,
+        name: draft.name,
+        designId: draft.designId,
+        revision: draft.revision,
+        state: draft.state,
+      },
     })
   }
 
@@ -597,30 +659,58 @@ export class BranchService {
    * Archive a branch
    * Used after ECO is merged or workspace is abandoned
    */
-  static async archiveBranch(branchId: string, tx?: TransactionClient) {
-    const client = tx ?? db
-    const branch = (
+  static async archiveBranch(
+    branchId: string,
+    tx?: TransactionClient,
+    /**
+     * Who archived it. Optional because the test call sites do not care, and
+     * threaded from every caller that does: without it every archive — a user
+     * cancelling their own change order, a user deleting their own workspace —
+     * was attributed to the system, which is both wrong and unfalsifiable
+     * after the fact.
+     */
+    actorId?: string,
+  ) {
+    // The archive and its event commit together — in the caller's
+    // transaction when there is one (the release), otherwise in their own.
+    await withTx(tx, async (client) => {
+      const branch = (
+        await client
+          .select()
+          .from(branches)
+          .where(eq(branches.id, branchId))
+          .limit(1)
+      ).at(0)
+      if (!branch) {
+        throw new NotFoundError('Branch', branchId, { operation: 'archive' })
+      }
+
+      if (branch.branchType === 'main') {
+        throw new ValidationError('Cannot archive main branch')
+      }
+
       await client
-        .select()
-        .from(branches)
+        .update(branches)
+        .set({
+          isArchived: true,
+          archivedAt: new Date(),
+        })
         .where(eq(branches.id, branchId))
-        .limit(1)
-    ).at(0)
-    if (!branch) {
-      throw new NotFoundError('Branch', branchId, { operation: 'archive' })
-    }
 
-    if (branch.branchType === 'main') {
-      throw new ValidationError('Cannot archive main branch')
-    }
-
-    await client
-      .update(branches)
-      .set({
-        isArchived: true,
-        archivedAt: new Date(),
+      await publishDomainEvent(client, BRANCH_ARCHIVED, {
+        actorId: actorId ?? null,
+        subject: { id: branch.id },
+        context: { designId: branch.designId, branchId: branch.id },
+        payload: {
+          branchId: branch.id,
+          designId: branch.designId,
+          name: branch.name,
+          branchType: branch.branchType,
+          changeOrderItemId: branch.changeOrderItemId ?? null,
+          baseCommitId: branch.baseCommitId ?? null,
+        },
       })
-      .where(eq(branches.id, branchId))
+    })
   }
 
   /**
@@ -770,6 +860,20 @@ export class BranchService {
             })
             .returning(),
         )
+
+        await publishDomainEvent(tx, BRANCH_CREATED, {
+          actorId: data.userId,
+          subject: { id: branch.id },
+          context: { designId: branch.designId, branchId: branch.id },
+          payload: {
+            branchId: branch.id,
+            designId: branch.designId,
+            name: branch.name,
+            branchType: branch.branchType,
+            changeOrderItemId: branch.changeOrderItemId ?? null,
+            baseCommitId: branch.baseCommitId ?? null,
+          },
+        })
 
         // 2. Note: branchItems are created lazily when items are first checked out
         // This avoids copying all items upfront for large designs

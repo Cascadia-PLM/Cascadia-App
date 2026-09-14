@@ -29,22 +29,15 @@ import {
 import { ITEM_TYPE_DEFINITIONS } from './item-type-definitions'
 import type { LucideIcon } from 'lucide-react'
 
-/** Detail-page base path per item type. Every registered type has a `$id` route. */
-const ITEM_DETAIL_BASE_PATHS: Record<string, string> = {
-  Part: '/parts',
-  Document: '/documents',
-  Requirement: '/requirements',
-  ChangeOrder: '/change-orders',
-  Task: '/tasks',
-  TestPlan: '/test-plans',
-  TestCase: '/test-cases',
-  Issue: '/issues',
-  WorkInstruction: '/work-instructions',
-  Software: '/software',
-  Tool: '/tools',
-  WorkOrder: '/work-orders',
-  PhysicalPart: '/physical-parts',
-}
+/**
+ * Detail-page base path per item type. Every registered type has a `$id`
+ * route, and the path is declared on the definition so a new type cannot be
+ * added without one — a type missing from this map was simply unlinkable,
+ * and nothing said so.
+ */
+const ITEM_DETAIL_BASE_PATHS: Record<string, string> = Object.fromEntries(
+  Object.values(ITEM_TYPE_DEFINITIONS).map((def) => [def.name, def.detailPath]),
+)
 
 /** Detail-page path for an item, or null for an unregistered type. */
 export function getItemDetailPath(

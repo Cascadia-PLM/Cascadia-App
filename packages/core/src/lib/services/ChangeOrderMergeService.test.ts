@@ -32,6 +32,7 @@ import { LifecycleService } from './LifecycleService'
 import { RevisionService } from './RevisionService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import type { PersistedItem } from '@/lib/items/types/base'
+import type { DesignReleasedPayload } from '@/lib/events'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
@@ -40,6 +41,7 @@ import {
   changeOrderDesigns,
   changeOrders,
   designs,
+  domainEvents,
   itemRelationships,
   items,
   lifecycleDefinitions,
@@ -58,6 +60,7 @@ import {
   seedStandardPartLifecycle,
 } from '@/__tests__/fixtures/lifecycles'
 import { takeFirst } from '@/lib/db/take-first'
+import { DESIGN_RELEASED } from '@/lib/events'
 import {
   MergeConflictError,
   NotFoundError,
@@ -2195,6 +2198,109 @@ describe('ChangeOrderMergeService', () => {
       expect(obsoleted?.state).toBe('Obsolete')
     })
 
+    /** Every `design.released` this change order's release recorded. */
+    async function designReleases(changeOrderId: string) {
+      const rows = await testDb.db
+        .select()
+        .from(domainEvents)
+        .where(
+          and(
+            eq(domainEvents.type, DESIGN_RELEASED.type),
+            eq(domainEvents.correlationId, changeOrderId),
+          ),
+        )
+      return rows.map((row) => row.payload as DesignReleasedPayload)
+    }
+
+    /**
+     * Gate 1. The post-merge pass released items and recorded no summary, so
+     * every consumer keyed on `design.released` — the superseded watermark, the
+     * work-instruction alert, the ERP sync — silently missed what it released.
+     */
+    it('records a design.released summary for what the post-merge pass releases', async () => {
+      const part = await createPart('obs-summary', 'Released')
+      const changeOrder = await changeOrderWithBranchContent()
+
+      await testDb.db.insert(changeOrderAffectedItems).values({
+        changeOrderId: changeOrder.id,
+        affectedItemId: part.id,
+        affectedItemMasterId: part.masterId,
+        changeAction: 'obsolete',
+        currentState: 'Released',
+        currentRevision: 'A',
+        createdBy: user.id,
+      })
+
+      await approveChangeOrder(changeOrder.id)
+      await ChangeOrderMergeService.merge(changeOrder.id, user.id)
+
+      const summaries = await designReleases(changeOrder.id)
+      const merged = summaries.filter((s) => s.branchId !== null)
+      const applied = summaries.filter((s) => s.branchId === null)
+
+      // The merge's summary, then the pass's own; and the two item lists are
+      // disjoint, so a consumer acting on both acts on each item once.
+      expect(merged).toHaveLength(1)
+      expect(applied).toHaveLength(1)
+      expect(applied[0]!.designId).toBe(designId)
+      expect(applied[0]!.items.map((i) => i.masterId)).toEqual([part.masterId])
+      expect(merged[0]!.items.map((i) => i.masterId)).not.toContain(
+        part.masterId,
+      )
+    })
+
+    it('records a design.released for a design that released only through the post-merge pass', async () => {
+      const otherDesign = await DesignService.create(
+        {
+          programId,
+          name: 'Second Design',
+          code: `OTHER-${uniquePrefix}`,
+          designType: 'Engineering',
+        },
+        user.id,
+      )
+      const otherPart = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-other`,
+          revision: 'A',
+          name: 'Part on the second design',
+          designId: otherDesign.id,
+          state: 'Released',
+        } as any,
+        user.id,
+      )
+      const changeOrder = await changeOrderWithBranchContent()
+      await testDb.db.insert(changeOrderDesigns).values({
+        changeOrderId: changeOrder.id,
+        designId: otherDesign.id,
+        mergeStatus: 'pending',
+      })
+      await testDb.db.insert(changeOrderAffectedItems).values({
+        changeOrderId: changeOrder.id,
+        affectedItemId: otherPart.id,
+        affectedItemMasterId: otherPart.masterId,
+        changeAction: 'obsolete',
+        currentState: 'Released',
+        currentRevision: 'A',
+        createdBy: user.id,
+      })
+
+      await approveChangeOrder(changeOrder.id)
+      await ChangeOrderMergeService.merge(changeOrder.id, user.id)
+
+      // The second design merged no branch, so this is its only summary — and
+      // before, it had none.
+      const forOther = (await designReleases(changeOrder.id)).filter(
+        (s) => s.designId === otherDesign.id,
+      )
+      expect(forOther).toHaveLength(1)
+      expect(forOther[0]!.branchId).toBeNull()
+      expect(forOther[0]!.items.map((i) => i.masterId)).toEqual([
+        otherPart.masterId,
+      ])
+    })
+
     it('refuses to release branch content the change order does not list', async () => {
       const changeOrder = await changeOrderWithBranchContent()
       const ecoDesigns = await ChangeOrderService.getChangeOrderDesigns(
@@ -3164,13 +3270,15 @@ describe('ChangeOrderMergeService', () => {
         changeType: null,
       })
 
-      // Track on ECO branch
+      // Track on ECO branch, checked out by the engineer working on it
       await testDb.db.insert(branchItems).values({
         branchId: branch.id,
         itemMasterId: part.masterId!,
         currentItemId: part.id,
         baseItemId: part.id,
         changeType: 'modified',
+        checkedOutBy: user.id,
+        checkedOutAt: new Date(),
       })
 
       // Simulate concurrent modification: create a new revision on main with DIFFERENT name
@@ -3223,6 +3331,20 @@ describe('ChangeOrderMergeService', () => {
       await expect(
         ChangeOrderMergeService.merge(changeOrder.id, user.id),
       ).rejects.toThrow(MergeConflictError)
+
+      // A release that failed released nothing, the engineer's lock included.
+      // Locks used to be cleared on the pool before validation, so a refused
+      // release had already dropped every lock on its branch.
+      const [changeOrderRow] = await testDb.db
+        .select()
+        .from(branchItems)
+        .where(
+          and(
+            eq(branchItems.branchId, branch.id),
+            eq(branchItems.itemMasterId, part.masterId),
+          ),
+        )
+      expect(changeOrderRow?.checkedOutBy).toBe(user.id)
     })
   })
 

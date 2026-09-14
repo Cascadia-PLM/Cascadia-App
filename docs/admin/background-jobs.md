@@ -187,20 +187,35 @@ Sends notifications when items transition between lifecycle states. High priorit
 
 Alerts work instruction owners when referenced parts are changed.
 
-### Zoo Text-to-CAD Generation
+### FreeCAD Script Execution
 
-| Property     | Value                      |
-| ------------ | -------------------------- |
-| Type         | `generation.cad.zoo`       |
-| Label        | Zoo Text-to-CAD Generation |
-| Routing Key  | `jobs.generation.cad.zoo`  |
-| Timeout      | 600,000 ms (10 minutes)    |
-| Max Attempts | 2                          |
-| Retry Delays | 60s, 120s                  |
-| Priority     | normal                     |
-| Handler      | Node.js worker             |
+| Property     | Value                          |
+| ------------ | ------------------------------ |
+| Type         | `generation.cad.freecad`       |
+| Label        | FreeCAD Script Execution       |
+| Routing Key  | `jobs.generation.cad.freecad`  |
+| Timeout      | 420,000 ms (7 minutes)         |
+| Max Attempts | 2                              |
+| Retry Delays | 5s                             |
+| Priority     | high                           |
+| Handler      | FreeCAD runner (Python worker) |
 
-Generates CAD models from text descriptions using the Zoo Text-to-CAD API. Long timeout due to external API latency.
+Runs one AI-written FreeCAD Python script in a sandboxed headless FreeCAD process and reports what it built (or the traceback); with `persist: true` the STEP is stored in the vault. A script that fails is a _completed_ job with `ok: false` — the agent that submitted it revises the script — so the retry here covers only the worker dying under the job.
+
+### AI CAD Generation (FreeCAD)
+
+| Property     | Value                       |
+| ------------ | --------------------------- |
+| Type         | `generation.cad.ai`         |
+| Label        | AI CAD Generation (FreeCAD) |
+| Routing Key  | `jobs.generation.cad.ai`    |
+| Timeout      | 1,800,000 ms (30 minutes)   |
+| Max Attempts | 2                           |
+| Retry Delays | 30s                         |
+| Priority     | normal                      |
+| Handler      | Node.js worker              |
+
+Runs the FreeCAD agent for one existing part (the part page's **Generate CAD** action): the AI provider writes a script, each attempt is a `generation.cad.freecad` job, and the accepted script's STEP is attached to the part. The timeout is sized for the largest attempt budget an admin can configure.
 
 ### Parametric CAD Generation
 

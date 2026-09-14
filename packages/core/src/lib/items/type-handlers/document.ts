@@ -40,7 +40,9 @@ registerTypeHandler('Document', {
       updateData.description = data.description || null
     if (data.fileId !== undefined) updateData.fileId = data.fileId || null
     if (data.fileName !== undefined) updateData.fileName = data.fileName || null
-    if (data.fileSize !== undefined) updateData.fileSize = data.fileSize || null
+    // `?? null` rather than `|| null`: a zero-byte file has size 0, and
+    // insert above already passes it through unchanged.
+    if (data.fileSize !== undefined) updateData.fileSize = data.fileSize ?? null
     if (data.mimeType !== undefined) updateData.mimeType = data.mimeType || null
     if (data.storagePath !== undefined)
       updateData.storagePath = data.storagePath || null

@@ -3,14 +3,16 @@
 
 import { randomUUID } from 'node:crypto'
 import { and, eq, inArray, sql } from 'drizzle-orm'
-import { db } from '../db'
+import { db, withTx } from '../db'
 import { notDeleted } from '../db/filters'
 import { itemRelationships, items } from '../db/schema/items'
 import { branchItems } from '../db/schema/versioning'
 import { designs } from '../db/schema/designs'
+import { ITEM_CREATED, RELATIONSHIP_ADDED, publishDomainEvent } from '../events'
 import { NotFoundError, ValidationError } from '../errors'
 import { getTypeHandler } from '../items/type-handlers'
 import { extensionRowCopy } from '../items/type-handlers/copy'
+import { publishStructureEdges } from '../items/structure-events'
 import { BranchService } from './BranchService'
 import { LifecycleService } from './LifecycleService'
 import type { BaseItem } from '../items/types/base'
@@ -67,6 +69,13 @@ export interface CreateUsageInput {
    * says nothing gets the definition's own designation.
    */
   inDesignStructure?: boolean
+  /**
+   * The branch the usage is born on, when that is not main. Carried as the
+   * context of its `item.created`, so a consumer can tell a branch-born master
+   * from a main-born one; tracking the usage on the branch stays the caller's
+   * write.
+   */
+  branchId?: string
 }
 
 /**
@@ -217,62 +226,86 @@ export class UsageService {
     userId: string,
     tx?: TransactionClient,
   ): Promise<CreateUsageResult> {
-    const client = tx ?? db
+    return withTx(tx, async (client) => {
+      // 1. Resolve the canonical definition (follows usageOf chain)
+      const definition = await this.resolveDefinition(
+        input.definitionId,
+        client,
+      )
+      if (!definition) {
+        throw new NotFoundError('Definition', input.definitionId, {
+          operation: 'createUsage',
+        })
+      }
 
-    // 1. Resolve the canonical definition (follows usageOf chain)
-    // Pass tx, not client: resolveDefinition applies its own `?? db` fallback,
-    // and its param is TransactionClient (a transaction), which the
-    // `tx ?? db` union of `client` does not satisfy.
-    const definition = await this.resolveDefinition(input.definitionId, tx)
-    if (!definition) {
-      throw new NotFoundError('Definition', input.definitionId, {
-        operation: 'createUsage',
+      // 2. Get inheritance config for item type
+      const inheritConfig = this.getInheritanceConfig(definition.itemType)
+
+      // 3. Determine the sysmlType for the new usage
+      const sysmlType = this.getSysmlType(definition.itemType, true)
+
+      // 4. Build usage item data
+      const usageData = {
+        masterId: randomUUID(),
+        designId: input.targetDesignId,
+        usageOf: definition.id, // Always point to resolved definition
+        itemNumber: input.overrides?.itemNumber ?? definition.itemNumber,
+        revision: '-', // Fresh start for usage
+        itemType: definition.itemType,
+        name: input.overrides?.name ?? definition.name,
+        state: await LifecycleService.getInitialStateId(definition.itemType),
+        sysmlType: sysmlType,
+        metamodel: definition.metamodel ?? 'cascadia',
+        isCurrent: true,
+        // The caller says whether the usage is a top-level part of the design
+        // it lands in; absent that, it stands where its definition stands.
+        inDesignStructure:
+          input.inDesignStructure ?? definition.inDesignStructure,
+        attributes: definition.attributes,
+        createdBy: userId,
+        modifiedBy: userId,
+      }
+
+      // 5. Insert usage item
+      const usage = takeFirst(
+        await client.insert(items).values(usageData).returning(),
+      )
+
+      // 6. Copy type-specific data (respecting inherit vs copy config)
+      const typeData = await this.copyTypeSpecificData(
+        client,
+        definition,
+        usage.id,
+        inheritConfig,
+        input.overrides?.typeSpecific,
+      )
+
+      // 7. A usage is a new master, announced the way every other new master
+      // is — `ItemService.create`, `createOnBranch`. This was the one creation
+      // path that said nothing, so a subtree pulled into a design reached no
+      // consumer at all. In the transaction that inserts it: the caller's when
+      // there is one, its own otherwise.
+      await publishDomainEvent(client, ITEM_CREATED, {
+        actorId: userId,
+        subject: { id: usage.id, masterId: usage.masterId },
+        context: {
+          designId: usage.designId ?? undefined,
+          branchId: input.branchId,
+        },
+        payload: {
+          itemId: usage.id,
+          masterId: usage.masterId,
+          itemType: usage.itemType,
+          itemNumber: usage.itemNumber,
+          name: usage.name,
+          designId: usage.designId,
+          state: usage.state,
+          revision: usage.revision,
+        },
       })
-    }
 
-    // 2. Get inheritance config for item type
-    const inheritConfig = this.getInheritanceConfig(definition.itemType)
-
-    // 3. Determine the sysmlType for the new usage
-    const sysmlType = this.getSysmlType(definition.itemType, true)
-
-    // 4. Build usage item data
-    const usageData = {
-      masterId: randomUUID(),
-      designId: input.targetDesignId,
-      usageOf: definition.id, // Always point to resolved definition
-      itemNumber: input.overrides?.itemNumber ?? definition.itemNumber,
-      revision: '-', // Fresh start for usage
-      itemType: definition.itemType,
-      name: input.overrides?.name ?? definition.name,
-      state: await LifecycleService.getInitialStateId(definition.itemType),
-      sysmlType: sysmlType,
-      metamodel: definition.metamodel ?? 'cascadia',
-      isCurrent: true,
-      // The caller says whether the usage is a top-level part of the design it
-      // lands in; absent that, it stands where its definition stands.
-      inDesignStructure:
-        input.inDesignStructure ?? definition.inDesignStructure,
-      attributes: definition.attributes,
-      createdBy: userId,
-      modifiedBy: userId,
-    }
-
-    // 5. Insert usage item
-    const usage = takeFirst(
-      await client.insert(items).values(usageData).returning(),
-    )
-
-    // 6. Copy type-specific data (respecting inherit vs copy config)
-    const typeData = await this.copyTypeSpecificData(
-      client,
-      definition,
-      usage.id,
-      inheritConfig,
-      input.overrides?.typeSpecific,
-    )
-
-    return { usage, definition, typeData }
+      return { usage, definition, typeData }
+    })
   }
 
   /**
@@ -653,6 +686,7 @@ export class UsageService {
             // The subtree's root is what the caller added to the design's
             // structure; everything below it arrives as a child of it.
             inDesignStructure: sourceItem.id === rootItemId,
+            ...(isChangeOrderBranch ? { branchId: trackingBranchId } : {}),
             ...(overrides.itemNumber ? { overrides } : {}),
           },
           userId,
@@ -673,6 +707,7 @@ export class UsageService {
 
       // Step 3: copy BOM relationships with remapped ids.
       let relationshipsCreated = 0
+      const copiedEdges: Array<typeof itemRelationships.$inferSelect> = []
       const nestedReusedIds = new Set<string>()
 
       for (const rel of bomRelationships) {
@@ -685,24 +720,36 @@ export class UsageService {
 
         // Both ends in the subtree: remap. External target (e.g. a library
         // item): preserve the original reference.
-        await tx.insert(itemRelationships).values({
-          sourceId: newSourceId,
-          targetId: newTargetId ?? rel.targetId,
-          relationshipType: rel.relationshipType,
-          quantity: rel.quantity,
-          findNumber: rel.findNumber,
-          referenceDesignator: rel.referenceDesignator,
-          metadata: rel.metadata,
-          isComposite: rel.isComposite,
-          isDirected: rel.isDirected,
-          multiplicityLower: rel.multiplicityLower,
-          multiplicityUpper: rel.multiplicityUpper,
-          usageAttributes: rel.usageAttributes,
-          createdBy: userId,
-          modifiedBy: userId,
-        })
+        const copied = await tx
+          .insert(itemRelationships)
+          .values({
+            sourceId: newSourceId,
+            targetId: newTargetId ?? rel.targetId,
+            relationshipType: rel.relationshipType,
+            quantity: rel.quantity,
+            findNumber: rel.findNumber,
+            referenceDesignator: rel.referenceDesignator,
+            metadata: rel.metadata,
+            isComposite: rel.isComposite,
+            isDirected: rel.isDirected,
+            multiplicityLower: rel.multiplicityLower,
+            multiplicityUpper: rel.multiplicityUpper,
+            usageAttributes: rel.usageAttributes,
+            createdBy: userId,
+            modifiedBy: userId,
+          })
+          .returning()
+        copiedEdges.push(...copied)
         relationshipsCreated++
       }
+
+      // Each copied line is a structure edge somebody added to this design,
+      // recorded as the one-at-a-time mutators record theirs.
+      await publishStructureEdges(
+        tx,
+        RELATIONSHIP_ADDED,
+        copiedEdges.map((edge) => ({ edge, actorId: userId })),
+      )
 
       // A usage that already stood in this design and was just nested under
       // a copied parent is a child now, not a top-level part — the rule

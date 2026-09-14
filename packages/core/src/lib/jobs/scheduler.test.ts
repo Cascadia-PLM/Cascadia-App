@@ -88,6 +88,7 @@ describe('retry sweep', () => {
   const testDb = new TestDatabase()
   let user: TestUser
   let publishSpy: MockInstance<typeof RabbitMQClient.publish>
+  let connectSpy: MockInstance<typeof RabbitMQClient.connect>
 
   beforeAll(async () => {
     await testDb.setup()
@@ -137,6 +138,11 @@ describe('retry sweep', () => {
   beforeEach(async () => {
     await testDb.beginTransaction()
     user = await insertTestUser(testDb.db)
+    // The maintenance sweep submits through `JobService.submit`, which
+    // connects before it writes a row; no broker runs in CI.
+    connectSpy = vi
+      .spyOn(RabbitMQClient, 'connect')
+      .mockResolvedValue(undefined)
     publishSpy = vi
       .spyOn(RabbitMQClient, 'publish')
       .mockResolvedValue(undefined)
@@ -270,6 +276,7 @@ describe('retry sweep', () => {
     const MAINTENANCE_TYPES = [
       'maintenance.session.cleanup',
       'maintenance.cache.cleanup',
+      'maintenance.events.prune',
     ] as const
 
     async function insertMaintenanceJob(
@@ -288,7 +295,7 @@ describe('retry sweep', () => {
     }
 
     it('submits exactly one of each maintenance type on an empty table, then nothing', async () => {
-      expect(await sweepMaintenanceJobs()).toBe(2)
+      expect(await sweepMaintenanceJobs()).toBe(MAINTENANCE_TYPES.length)
 
       for (const type of MAINTENANCE_TYPES) {
         const rows = await testDb.db
@@ -300,19 +307,43 @@ describe('retry sweep', () => {
         expect(rows[0]!.createdBy).toBeNull()
         expect(rows[0]!.status).toBe('queued')
       }
-      expect(publishSpy).toHaveBeenCalledTimes(2)
+      expect(publishSpy).toHaveBeenCalledTimes(MAINTENANCE_TYPES.length)
 
       // The guard sees the fresh rows — no unbounded accumulation.
       expect(await sweepMaintenanceJobs()).toBe(0)
-      expect(publishSpy).toHaveBeenCalledTimes(2)
+      expect(publishSpy).toHaveBeenCalledTimes(MAINTENANCE_TYPES.length)
     })
 
     it('submits nothing while a job of the type is active or recent', async () => {
-      await insertMaintenanceJob('maintenance.session.cleanup', 'running')
-      await insertMaintenanceJob('maintenance.cache.cleanup', 'completed')
+      // Every type, derived: seeding a subset means the next registered type
+      // reddens this test for no reason, which is what happened when the event
+      // prune arrived.
+      for (const [index, type] of MAINTENANCE_TYPES.entries()) {
+        await insertMaintenanceJob(type, index === 0 ? 'running' : 'completed')
+      }
 
       expect(await sweepMaintenanceJobs()).toBe(0)
       expect(publishSpy).not.toHaveBeenCalled()
+    })
+
+    it('tries a type again at the next check when the broker was unreachable', async () => {
+      // An outage leaves no row behind, so nothing mistakes the attempt for
+      // the type's run. The failed row it used to leave did, and the recency
+      // guard then skipped that maintenance job for its whole period.
+      connectSpy.mockRejectedValueOnce(
+        new Error('connect ECONNREFUSED 127.0.0.1:5672'),
+      )
+      expect(await sweepMaintenanceJobs()).toBe(MAINTENANCE_TYPES.length - 1)
+
+      expect(await sweepMaintenanceJobs()).toBe(1)
+      for (const type of MAINTENANCE_TYPES) {
+        const rows = await testDb.db
+          .select()
+          .from(jobs)
+          .where(eq(jobs.type, type))
+        expect(rows).toHaveLength(1)
+        expect(rows[0]!.status).toBe('queued')
+      }
     })
 
     it('re-submits a type whose last run is older than the period', async () => {
@@ -322,8 +353,12 @@ describe('retry sweep', () => {
         'completed',
         overADayAgo,
       )
-      // cache-cleanup ran recently and stays quiet.
-      await insertMaintenanceJob('maintenance.cache.cleanup', 'completed')
+      // Every other type ran recently and stays quiet.
+      for (const type of MAINTENANCE_TYPES.filter(
+        (candidate) => candidate !== 'maintenance.session.cleanup',
+      )) {
+        await insertMaintenanceJob(type, 'completed')
+      }
 
       expect(await sweepMaintenanceJobs()).toBe(1)
 

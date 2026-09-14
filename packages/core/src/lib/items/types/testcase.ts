@@ -3,7 +3,7 @@
 
 import { z } from 'zod'
 import { baseItemSchema } from './base'
-import type { BaseItem, StateConfig } from './base'
+import type { BaseItem } from './base'
 
 // Test type categories
 export type TestType = 'Unit' | 'Integration' | 'System' | 'Acceptance'
@@ -52,46 +52,6 @@ export const testCaseSchema = baseItemSchema.extend({
   lastExecutedBy: z.string().uuid().optional(),
   environment: z.string().max(100).optional(),
 })
-
-// TestCase-specific states (defined explicitly rather than spreading commonStates)
-export const testCaseStates: Array<StateConfig> = [
-  {
-    id: 'Draft',
-    name: 'Draft',
-    color: 'gray',
-    description: 'Test case is being created or edited',
-  },
-  {
-    id: 'NotRun',
-    name: 'Not Run',
-    color: 'gray',
-    description: 'Test case has not been executed',
-  },
-  {
-    id: 'Passed',
-    name: 'Passed',
-    color: 'green',
-    description: 'Test case execution passed',
-  },
-  {
-    id: 'Failed',
-    name: 'Failed',
-    color: 'red',
-    description: 'Test case execution failed',
-  },
-  {
-    id: 'Blocked',
-    name: 'Blocked',
-    color: 'yellow',
-    description: 'Test case execution is blocked',
-  },
-  {
-    id: 'Obsolete',
-    name: 'Obsolete',
-    color: 'red',
-    description: 'Test case is no longer used',
-  },
-]
 
 // TestCase relationships
 export const testCaseRelationships = [

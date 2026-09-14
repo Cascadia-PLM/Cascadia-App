@@ -4,6 +4,7 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
+import { DESIGN_CREATED, publishDomainEvent } from '../events'
 import {
   branches,
   commits,
@@ -217,6 +218,31 @@ export class MbomService {
         .update(designs)
         .set({ defaultBranchId: mainBranch.id })
         .where(eq(designs.id, mbomDesign.id))
+
+      // The design is announced like any other, in `DesignService.create`'s
+      // shape and the transaction that creates it. It was silent, so the first
+      // `design.released` for a Manufacturing design named one no consumer had
+      // been told about. The items copied into it below stay silent: the
+      // volume path `item.updated` describes.
+      await publishDomainEvent(tx, DESIGN_CREATED, {
+        actorId: userId,
+        subject: { id: mbomDesign.id },
+        context: {
+          programId: mbomDesign.programId ?? undefined,
+          designId: mbomDesign.id,
+        },
+        payload: {
+          designId: mbomDesign.id,
+          programId: mbomDesign.programId,
+          name: mbomDesign.name,
+          code: mbomDesign.code,
+          designType: mbomDesign.designType,
+          parentDesignId: mbomDesign.parentDesignId,
+          cloneSourceDesignId: mbomDesign.cloneSourceDesignId,
+          mainBranchId: mainBranch.id,
+          initialCommitId: initialCommit.id,
+        },
+      })
 
       let itemsCopied = 0
       let relationshipsCopied = 0

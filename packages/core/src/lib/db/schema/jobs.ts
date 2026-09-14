@@ -8,12 +8,23 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import { users } from './users'
 import { items } from './items'
+import type { SQL } from 'drizzle-orm'
+
+/**
+ * The statuses in which a job has released its dedupe key, as SQL text.
+ *
+ * Text rather than bound parameters because the partial unique index needs a
+ * literal predicate — DDL cannot carry a parameter — and the same text is what
+ * `dedupeKeyHeld` restates for ON CONFLICT inference.
+ */
+const DEDUPE_KEY_RELEASING_STATUSES_SQL = `'failed', 'cancelled'`
 
 // Job status and priority types
 export type JobStatus =
@@ -46,6 +57,41 @@ export const jobs = pgTable(
     // Progress tracking
     progress: integer('progress').default(0),
     progressMessage: text('progress_message'),
+
+    /**
+     * Caller-supplied natural key making a submission idempotent.
+     *
+     * Null for almost every job: a submission is normally a fresh request and
+     * two of them are two jobs. It is set by a caller that may be asked to
+     * submit the same work twice and must not produce two — above all a
+     * `consumed` extension, because event delivery is at-least-once.
+     *
+     * **This is why it lives here rather than on the caller.** A handler runs
+     * in a savepoint while `JobService.submit` writes through the module-level
+     * connection, so every way a duplicate arises — the handler throwing after
+     * the submit, or the run transaction failing at COMMIT — rolls back the
+     * handler's own bookkeeping and leaves the job behind. A dedupe row inside
+     * the handler therefore cannot see the job it is trying to deduplicate.
+     * This column can, because it is on the row that survived.
+     *
+     * Uniqueness is enforced by a **partial** index over non-null values, so
+     * the null majority costs nothing and cannot collide with itself.
+     *
+     * **A key is held only by live or finished work.** A job that is pending,
+     * queued, running or completed holds its key; one that failed — its broker
+     * publish failed, or it exhausted its attempts — or was cancelled has
+     * released it, and the same work can be submitted again. Without that, a
+     * failed publish wedged its key for good: every later submission under it
+     * was answered with the dead job and nothing was ever queued, while the
+     * caller recorded success. The partial index below enforces this, so it
+     * holds for every writer of `status` — the Python workers included.
+     *
+     * One bound worth knowing: the key lives exactly as long as its job row, so
+     * it deduplicates against history that still exists. A redelivery arriving
+     * after the job has been pruned submits again — which needs a cursor rewound
+     * past the job retention window, and is not a case this is trying to cover.
+     */
+    dedupeKey: varchar('dedupe_key', { length: 200 }),
 
     // Relationships
     itemId: uuid('item_id').references(() => items.id, {
@@ -88,8 +134,26 @@ export const jobs = pgTable(
     index('idx_jobs_created_at').on(table.createdAt),
     index('idx_jobs_next_retry').on(table.nextRetryAt),
     index('idx_jobs_status_priority').on(table.status, table.priority),
+    // Partial twice over. Over non-null keys, so the null majority neither
+    // pays for the index nor collides with itself; and over jobs that still
+    // hold their key, so a failed or cancelled job releases it (see
+    // `dedupeKey`). `JobService.submit` restates this predicate for ON CONFLICT
+    // inference, which Postgres performs only when it can prove they match.
+    uniqueIndex('uq_jobs_dedupe_key')
+      .on(table.dedupeKey)
+      .where(
+        sql`${table.dedupeKey} IS NOT NULL AND ${table.status} NOT IN (${sql.raw(DEDUPE_KEY_RELEASING_STATUSES_SQL)})`,
+      ),
   ],
 )
+
+/**
+ * A job row that still holds its dedupe key: the predicate of the partial
+ * unique index `uq_jobs_dedupe_key`, restated for queries. ON CONFLICT infers
+ * a partial index only when its `where` provably implies the index predicate,
+ * and a holder lookup must not return a job that has already released the key.
+ */
+export const dedupeKeyHeld: SQL = sql`${jobs.dedupeKey} IS NOT NULL AND ${jobs.status} NOT IN (${sql.raw(DEDUPE_KEY_RELEASING_STATUSES_SQL)})`
 
 /**
  * Job logs for debugging and audit trail

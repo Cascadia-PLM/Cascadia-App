@@ -36,12 +36,6 @@ export interface ItemTypeDescription {
   fields: Array<FieldDefinition>
   relationships: Array<RelationshipConfig>
   states: Array<StateConfig>
-  permissions: {
-    create: Array<string>
-    read: Array<string>
-    update: Array<string>
-    delete: Array<string>
-  }
   searchableFields: Array<string>
   displayField: string
 }
@@ -148,12 +142,18 @@ export class KnowledgeService {
     // Ensure ItemTypeRegistry is initialized
     await ItemTypeRegistry.initialize()
 
+    // Dynamic, to keep lib/ai off a static cycle through the service layer.
+    const { LifecycleService } = await import('@/lib/services/LifecycleService')
+
     const itemTypes = ItemTypeRegistry.getAllTypes()
 
     const itemTypeDescriptions: Array<ItemTypeDescription> = await Promise.all(
       itemTypes.map(async (type) => {
         const fields = this.extractFields(type.schema)
-        const states = await ItemTypeRegistry.getStatesForType(type.name)
+        // Every state an item of this type can hold. For ChangeOrder that is
+        // the union over the definitions its change types run, which is why
+        // it comes from the lifecycle service and not from the registry.
+        const states = await LifecycleService.getRenderableStates(type.name)
 
         return {
           name: type.name,
@@ -163,7 +163,6 @@ export class KnowledgeService {
           fields,
           relationships: type.relationships,
           states,
-          permissions: type.permissions,
           searchableFields: type.searchableFields,
           displayField: type.displayField,
         }

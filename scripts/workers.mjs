@@ -9,9 +9,10 @@
  *   node scripts/workers.mjs logs
  *
  * The set of workers is a property of the edition, not a constant. The CAD
- * *converter* is core; the CAD *generator* is proprietary and its directory is
- * absent from the published tree — so a script naming both would fail there
- * with a compose build error about a missing context.
+ * *converter* is core; the CAD *generator* and the *FreeCAD runner* are
+ * proprietary and their directories are absent from the published tree — so a
+ * script naming all of them would fail there with a compose build error about
+ * a missing context.
  *
  * Presence on disk is the test rather than a flag, for the same reason
  * `core:standalone` deletes the packages instead of unimporting them: a
@@ -25,6 +26,7 @@ import { resolveApp } from './edition.mjs'
 const CAD_WORKERS = [
   ['workers/cad-converter', 'cad-converter-dev'],
   ['workers/cad-generator', 'cad-generator-dev'],
+  ['workers/freecad-runner', 'freecad-runner-dev'],
 ]
 
 const services = CAD_WORKERS.filter(([dir]) => existsSync(dir)).map(

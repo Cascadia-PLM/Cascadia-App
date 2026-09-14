@@ -11,18 +11,31 @@ import {
 } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
+import {
+  ITEM_CHECKED_IN,
+  ITEM_CHECKED_OUT,
+  ITEM_CHECKOUT_CANCELLED,
+  ITEM_CREATED,
+  ITEM_DELETED,
+  ITEM_UPDATED,
+  publishDomainEvent,
+} from '../events'
 import { branchItems, branches, items, users } from '../db/schema'
 import { takeFirst } from '../db/take-first'
 import { getTypeHandler } from '../items/type-handlers'
 import '../items/type-handlers/init'
 import { isBranchProtectionExempt } from '../items/branch-protection'
 import { NotFoundError, ResourceLockedError, ValidationError } from '../errors'
+import { guardOrThrow, hasGuardExtensions } from '../extensions/dispatch'
+import { ITEM_UPDATE } from '../extensions/operations'
+import { itemUpdateIntent } from '../items/guard-intents'
 import { BranchService } from './BranchService'
 import { CommitService } from './CommitService'
 import { LifecycleService } from './LifecycleService'
 import { RevisionService } from './RevisionService'
 import { VersionResolver } from './VersionResolver'
 import { expandSourceFieldChanges } from './software-source-changes'
+import { publishCheckoutEvent } from './checkout-locks'
 import type { TransactionClient } from '../db'
 import type { commits } from '../db/schema'
 import type { FieldChange } from './CommitService'
@@ -359,6 +372,7 @@ export class CheckoutService {
     branchId: string,
     itemMasterId: string,
     userId: string,
+    designId: string,
   ): Promise<typeof branchItems.$inferSelect> {
     const read = async () =>
       db
@@ -384,15 +398,27 @@ export class CheckoutService {
         await this.refuseLockedByAnother(row.checkedOutBy, itemMasterId)
       }
 
-      const claimed = await db
-        .update(branchItems)
-        .set({ checkedOutBy: userId, checkedOutAt: new Date() })
-        .where(
-          and(eq(branchItems.id, row.id), isNull(branchItems.checkedOutBy)),
-        )
-        .returning()
-
-      const won = claimed.at(0)
+      const won = await db.transaction(async (tx) => {
+        const claimed = await tx
+          .update(branchItems)
+          .set({ checkedOutBy: userId, checkedOutAt: new Date() })
+          .where(
+            and(eq(branchItems.id, row.id), isNull(branchItems.checkedOutBy)),
+          )
+          .returning()
+        const winner = claimed.at(0)
+        if (winner) {
+          await publishCheckoutEvent(
+            tx,
+            ITEM_CHECKED_OUT,
+            winner,
+            branchId,
+            designId,
+            userId,
+          )
+        }
+        return winner
+      })
       if (won) return won
     }
 
@@ -494,6 +520,7 @@ export class CheckoutService {
         validated.branchId,
         validated.itemMasterId,
         userId,
+        branch.designId,
       )
     }
 
@@ -516,23 +543,35 @@ export class CheckoutService {
     // no row, and `branch_items_unique` would turn the loser's insert into a
     // raw 23505 — a 500 with a constraint name in it, for what is really "the
     // other tab got there first".
-    const branchItem = await db
-      .insert(branchItems)
-      .values({
-        branchId: validated.branchId,
-        itemMasterId: validated.itemMasterId,
-        currentItemId: releasedItem.id, // Start with the released version
-        baseItemId: releasedItem.id, // Base for diff calculation
-        changeType: null, // No changes yet
-        checkedOutBy: userId,
-        checkedOutAt: new Date(),
-      })
-      .onConflictDoNothing({
-        target: [branchItems.branchId, branchItems.itemMasterId],
-      })
-      .returning()
-
-    const created = branchItem.at(0)
+    const created = await db.transaction(async (tx) => {
+      const branchItem = await tx
+        .insert(branchItems)
+        .values({
+          branchId: validated.branchId,
+          itemMasterId: validated.itemMasterId,
+          currentItemId: releasedItem.id, // Start with the released version
+          baseItemId: releasedItem.id, // Base for diff calculation
+          changeType: null, // No changes yet
+          checkedOutBy: userId,
+          checkedOutAt: new Date(),
+        })
+        .onConflictDoNothing({
+          target: [branchItems.branchId, branchItems.itemMasterId],
+        })
+        .returning()
+      const row = branchItem.at(0)
+      if (row) {
+        await publishCheckoutEvent(
+          tx,
+          ITEM_CHECKED_OUT,
+          row,
+          validated.branchId,
+          branch.designId,
+          userId,
+        )
+      }
+      return row
+    })
     if (!created) {
       // Lost the insert. The row now exists and belongs to whoever won, so
       // resolve against it exactly as the update path does — and do not
@@ -542,6 +581,7 @@ export class CheckoutService {
         validated.branchId,
         validated.itemMasterId,
         userId,
+        branch.designId,
       )
     }
 
@@ -707,19 +747,36 @@ export class CheckoutService {
       throw new ValidationError('You do not have this item checked out')
     }
 
-    // If no changes were made (changeType is null), remove the branchItem entirely
-    if (!bi.changeType) {
-      await db.delete(branchItems).where(eq(branchItems.id, bi.id))
-    } else {
-      // Otherwise, just clear the checkout
-      await db
-        .update(branchItems)
-        .set({
-          checkedOutBy: null,
-          checkedOutAt: null,
-        })
-        .where(eq(branchItems.id, bi.id))
+    const branch = await BranchService.getById(branchId)
+    if (!branch) {
+      throw new NotFoundError('Branch', branchId, {
+        operation: 'cancelCheckout',
+      })
     }
+
+    await db.transaction(async (tx) => {
+      // If no changes were made (changeType is null), remove the branchItem entirely
+      if (!bi.changeType) {
+        await tx.delete(branchItems).where(eq(branchItems.id, bi.id))
+      } else {
+        // Otherwise, just clear the checkout
+        await tx
+          .update(branchItems)
+          .set({
+            checkedOutBy: null,
+            checkedOutAt: null,
+          })
+          .where(eq(branchItems.id, bi.id))
+      }
+      await publishCheckoutEvent(
+        tx,
+        ITEM_CHECKOUT_CANCELLED,
+        bi,
+        branchId,
+        branch.designId,
+        userId,
+      )
+    })
   }
 
   /**
@@ -817,6 +874,14 @@ export class CheckoutService {
   static async saveChanges(
     data: SaveChangesInput,
     userId: string,
+    options: {
+      /**
+       * Dispatch the `item.update` guard. Off only for core's own machinery:
+       * `ItemService.update` passes its internal-machinery verdict through
+       * when it reroutes a working-copy edit here.
+       */
+      dispatchGuards?: boolean
+    } = {},
   ): Promise<{
     item: typeof items.$inferSelect
     commit: typeof commits.$inferSelect
@@ -913,6 +978,21 @@ export class CheckoutService {
       }
     }
 
+    // The `item.update` guard, for both arms below. The first save of a
+    // checked-out item mints its working copy here, and `ItemService.update`
+    // reroutes exactly that edit to this method before its own guard runs — so
+    // until this dispatched, a rule on `item.update` never saw the most common
+    // edit on a change-order branch, nor any save through the branch-edit
+    // route. After the checkout check and the sanitising above, before any
+    // write.
+    if (options.dispatchGuards !== false && hasGuardExtensions(ITEM_UPDATE)) {
+      await guardOrThrow(
+        ITEM_UPDATE,
+        await itemUpdateIntent(item, sanitizedChanges),
+        { db, actorId: userId },
+      )
+    }
+
     const changeType = bi.changeType === 'added' ? 'added' : 'modified'
 
     // A branch-local working copy already exists (first save happened, or the
@@ -1005,6 +1085,32 @@ export class CheckoutService {
           if (!updated) {
             throw new NotFoundError('Item', item.id, {
               operation: 'saveChanges',
+            })
+          }
+
+          if (fieldChanges.length > 0) {
+            await publishDomainEvent(tx, ITEM_UPDATED, {
+              actorId: userId,
+              subject: { id: updated.id, masterId: updated.masterId },
+              context: {
+                designId: updated.designId ?? undefined,
+                branchId: validated.branchId,
+              },
+              payload: {
+                itemId: updated.id,
+                masterId: updated.masterId,
+                itemType: updated.itemType,
+                itemNumber: updated.itemNumber,
+                name: updated.name,
+                designId: updated.designId,
+                branchId: validated.branchId,
+                revision: updated.revision,
+                state: updated.state,
+                changedFields: fieldChanges.map(
+                  (change) => change.fieldPath ?? change.fieldName,
+                ),
+                commitId: commit.id,
+              },
             })
           }
 
@@ -1157,6 +1263,51 @@ export class CheckoutService {
           .update(items)
           .set({ commitId: commit.id })
           .where(eq(items.id, newItem.id))
+
+        // The first content save of an item on a branch is an edit, and it
+        // emitted nothing — while the *second* edit of the same field fired,
+        // because only the in-place arm above published. `ItemService.update`
+        // early-returns into this arm, so an ordinary field edit on a freshly
+        // checked-out item was silent.
+        //
+        // `revision` and `state` are stripped from `changedFields`, and that
+        // filter is the whole point rather than a detail. Neither column is in
+        // the service's ignore list, so the field-change computation always
+        // reports the base-to-placeholder revision change and often a
+        // revise-reset state change — while the in-place arm never reports
+        // them, because it strips those columns from the sanitised changes
+        // before writing. Without the filter the two arms describe the same
+        // user action differently.
+        //
+        // The commit's own field changes are deliberately *not* filtered:
+        // history keeps the full version diff, and the event and the commit
+        // differ here on purpose.
+        const reportableFields = fieldChanges
+          .map((change) => change.fieldPath ?? change.fieldName)
+          .filter((field) => field !== 'revision' && field !== 'state')
+        if (reportableFields.length > 0) {
+          await publishDomainEvent(tx, ITEM_UPDATED, {
+            actorId: userId,
+            subject: { id: newItem.id, masterId: newItem.masterId },
+            context: {
+              designId: newItem.designId ?? undefined,
+              branchId: validated.branchId,
+            },
+            payload: {
+              itemId: newItem.id,
+              masterId: newItem.masterId,
+              itemType: newItem.itemType,
+              itemNumber: newItem.itemNumber,
+              name: newItem.name,
+              designId: newItem.designId,
+              branchId: validated.branchId,
+              revision: newItem.revision,
+              state: newItem.state,
+              changedFields: reportableFields,
+              commitId: commit.id,
+            },
+          })
+        }
 
         return { item: { ...newItem, commitId: commit.id }, commit }
       },
@@ -1320,6 +1471,35 @@ export class CheckoutService {
         tx,
       )
 
+      // 8. The birth of a master, on the log.
+      //
+      // This is precisely what `ITEM_CREATED`'s own docstring calls "a new item
+      // master came into existence", and it recorded nothing — so whether the
+      // fact existed was decided by whether the caller passed a `branchId`. The
+      // same spreadsheet imported through the bulk import route's branch arm
+      // was silent and through its non-branch arm emitted. One fix closes that
+      // for the AI item-creation ECO arm, design-engine materialisation and
+      // `ItemVersioningFacade` too, all of which funnel here.
+      //
+      // `context.branchId` is set so a consumer can tell a branch-born master
+      // from a main-born one, which is a real distinction rather than an
+      // accident of the call site.
+      await publishDomainEvent(tx, ITEM_CREATED, {
+        actorId: userId,
+        subject: { id: newItem.id, masterId },
+        context: { designId: newItem.designId ?? undefined, branchId },
+        payload: {
+          itemId: newItem.id,
+          masterId,
+          itemType: newItem.itemType,
+          itemNumber: newItem.itemNumber,
+          name: newItem.name,
+          designId: newItem.designId,
+          state: newItem.state,
+          revision: newItem.revision,
+        },
+      })
+
       return { item: newItem, commit, masterId }
     })
 
@@ -1436,6 +1616,39 @@ export class CheckoutService {
             operation: 'deleteOnBranch',
           })
         }
+        // The death of a branch-born master, before the tracking row that
+        // names it goes. With 2.1 putting its birth on the bus, a draft
+        // created and destroyed entirely on one branch would otherwise
+        // produce a creation and nothing else — a consumer's projection would
+        // carry it forever.
+        const doomed = (
+          await tx
+            .select()
+            .from(items)
+            .where(eq(items.id, locked.currentItemId))
+            .limit(1)
+        ).at(0)
+        if (doomed) {
+          await publishDomainEvent(tx, ITEM_DELETED, {
+            actorId: userId,
+            subject: { id: doomed.id, masterId: doomed.masterId },
+            context: {
+              designId: doomed.designId ?? undefined,
+              branchId,
+            },
+            payload: {
+              itemId: doomed.id,
+              masterId: doomed.masterId,
+              itemType: doomed.itemType,
+              itemNumber: doomed.itemNumber,
+              name: doomed.name,
+              designId: doomed.designId,
+              revision: doomed.revision,
+              state: doomed.state,
+            },
+          })
+        }
+
         await tx.delete(branchItems).where(eq(branchItems.id, locked.id))
 
         // Retire the working copy too. Dropping only the tracking left the
@@ -1495,6 +1708,7 @@ export class CheckoutService {
       }
 
       if (locked) {
+        const heldALock = locked.checkedOutBy !== null
         await tx
           .update(branchItems)
           .set({
@@ -1503,6 +1717,23 @@ export class CheckoutService {
             checkedOutAt: null,
           })
           .where(eq(branchItems.id, locked.id))
+
+        // The write above releases a checkout without saying so, and a
+        // consumer maintaining a "who has what checked out" projection from
+        // the three checkout events accumulates a permanently stuck lock for
+        // every delete of a checked-out item. `cancelled` rather than
+        // `checked_in`, because the edits are being discarded rather than
+        // kept.
+        if (heldALock) {
+          await publishCheckoutEvent(
+            tx,
+            ITEM_CHECKOUT_CANCELLED,
+            locked,
+            branchId,
+            branch.designId,
+            userId,
+          )
+        }
       } else {
         // Create branchItem with deleted status. `onConflictDoNothing` rather
         // than a bare insert: FOR UPDATE locks no row when there is none to
@@ -1620,12 +1851,27 @@ export class CheckoutService {
       throw new ValidationError('You do not have this item checked out')
     }
 
-    await db
-      .update(branchItems)
-      .set({
-        checkedOutBy: null,
-        checkedOutAt: null,
-      })
-      .where(eq(branchItems.id, bi.id))
+    const branch = await BranchService.getById(branchId)
+    if (!branch) {
+      throw new NotFoundError('Branch', branchId, { operation: 'checkin' })
+    }
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(branchItems)
+        .set({
+          checkedOutBy: null,
+          checkedOutAt: null,
+        })
+        .where(eq(branchItems.id, bi.id))
+      await publishCheckoutEvent(
+        tx,
+        ITEM_CHECKED_IN,
+        bi,
+        branchId,
+        branch.designId,
+        userId,
+      )
+    })
   }
 }

@@ -309,7 +309,7 @@ export default [
   //
   // It began as the effect-fetches that predated the rule, pinned file by file
   // while the conversion batches (FE-3..FE-6) drained them; one entry is
-  // deliberately NOT a query read, and the two after it are what widening the
+  // deliberately NOT a query read, and the one after it is what widening the
   // glob to `.ts` uncovered. Files may only ever be REMOVED from this list —
   // never added.
   //
@@ -317,27 +317,21 @@ export default [
   //    URL it must revoke on unmount. Putting that in the query cache would
   //    leak URLs nobody revokes; the effect owns the resource lifetime.
   //
-  // Still to convert — each conversion deletes its own line. Neither was ever
-  // granted an exemption: both are `.ts`, and the ban was registered for
-  // `.tsx` only until the block above was widened, so the rule had never once
-  // looked at them. They are pre-existing debt made visible, not new
-  // permission, and the never-added contract still binds every file after
-  // them.
+  // Still to convert — its conversion deletes its line. It was never granted
+  // an exemption: it is `.ts`, and the ban was registered for `.tsx` only
+  // until the block above was widened, so the rule had never once looked at
+  // it. It is pre-existing debt made visible, not new permission, and the
+  // never-added contract still binds every file after it.
   //
-  //  - navigation/useBreadcrumbData.ts chains `/items/:id` → `/designs/:id` →
-  //    `/programs/:id` into `useState` on every pathname change, with no
-  //    cancellation, so an interleaved navigation can land the previous
-  //    page's crumb last. It is mounted on every authenticated page.
   //  - work-orders/useInstructionRun.ts starts or resumes an execution and
-  //    reads its resolved parametric values the same way — GETs into
-  //    `useState` that no invalidation reaches.
+  //    reads its resolved parametric values through GETs into `useState` that
+  //    no invalidation reaches.
   //
   // The exemption is the effect-fetch selector only. `'off'` would zero the
   // rule wholesale, taking the LIKE-pattern selectors with it now that `.ts`
   // files can appear here, so those are restated rather than dropped.
   {
     files: [
-      'packages/core/src/components/navigation/useBreadcrumbData.ts',
       'packages/core/src/components/vault/FilePreview.tsx',
       'packages/core/src/components/work-orders/useInstructionRun.ts',
     ],
@@ -439,6 +433,55 @@ export default [
         // `routes/api/**` being a subset of `routes/**`; that is left as-is
         // because no such directory exists — API routes live under
         // `src/server/routes/` — and server code has no `useEffect` to gate.
+        ...likePatternRestrictions,
+      ],
+    },
+  },
+  // The webhook dispatcher runs inside a consumer transaction holding its
+  // cursor row FOR UPDATE, so two things are banned in its directory and
+  // neither ban is stylistic.
+  //
+  //  - **No HTTP.** One slow or hostile endpoint would hold the cursor for up
+  //    to the handler deadline per event across a whole batch, and one
+  //    subscriber's failure would be recorded as a CONSUMER failure — backing
+  //    the dispatcher off and eventually parking it. That is "one bad
+  //    subscription stalls every other subscription".
+  //  - **No job submission.** `JobService.submit` writes through the
+  //    module-level connection and takes no transaction, so the job row and its
+  //    broker message commit independently of the cursor. That is the dual
+  //    write the event log exists to remove.
+  //
+  // Placed LAST deliberately. `no-restricted-syntax` options OVERRIDE per
+  // matched file rather than merge, so this block has to come after every
+  // earlier block that matches these files — `packages/*/src/**/*.ts` does —
+  // and has to restate their selectors, which is what the spread below is for.
+  // Adding this block anywhere above that one would silently disable the
+  // LIKE-pattern restrictions for the dispatcher.
+  {
+    files: ['packages/*/src/lib/events/webhooks/**/*.ts'],
+    ignores: ['packages/*/src/lib/events/webhooks/**/*.test.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'CallExpression[callee.name=/^(fetch|apiFetch)$/]',
+          message:
+            'The webhook dispatcher must not make HTTP requests: it runs inside a consumer transaction holding the cursor row. Write a webhook_deliveries row and let the delivery pump send it.',
+        },
+        {
+          // The same call through the global object, which the bare-name
+          // selector above does not see.
+          selector:
+            "CallExpression[callee.property.name='fetch'][callee.object.name=/^(globalThis|window|self)$/]",
+          message:
+            'The webhook dispatcher must not make HTTP requests: it runs inside a consumer transaction holding the cursor row. Write a webhook_deliveries row and let the delivery pump send it.',
+        },
+        {
+          selector:
+            "CallExpression[callee.object.name='JobService'][callee.property.name='submit']",
+          message:
+            'The webhook dispatcher must not submit jobs: JobService.submit commits outside the consumer transaction, so the job outlives a rolled-back cursor. Write a webhook_deliveries row on the run transaction instead.',
+        },
         ...likePatternRestrictions,
       ],
     },

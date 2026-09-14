@@ -31,6 +31,18 @@ services:
       JOB_TYPES: ${JOB_TYPES:-*}
       JOB_TIMEOUT: ${JOB_TIMEOUT:-300000}
 
+      # Domain event consumers. Declared explicitly: this service enumerates
+      # its environment rather than using env_file, so a variable that is not
+      # named here never reaches the container.
+      EVENT_POLL_INTERVAL_MS: ${EVENT_POLL_INTERVAL_MS:-2000}
+      EVENT_CONSUMER_PARK_AFTER: ${EVENT_CONSUMER_PARK_AFTER:-10}
+      EVENT_RETENTION_DAYS: ${EVENT_RETENTION_DAYS:-90}
+      WEBHOOK_PUMP_INTERVAL_MS: ${WEBHOOK_PUMP_INTERVAL_MS:-5000}
+      WEBHOOK_DELIVERY_RETENTION_DAYS: ${WEBHOOK_DELIVERY_RETENTION_DAYS:-30}
+      # Webhook deliveries are signed here, so the key must reach this service
+      # and not only the app tier.
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+
     deploy:
       replicas: ${WORKER_REPLICAS:-2}
 

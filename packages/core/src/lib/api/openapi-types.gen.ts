@@ -270,7 +270,7 @@ export interface paths {
         get: operations["getApiV1AdminItemTypeConfigsByItemType"];
         put?: never;
         post?: never;
-        delete: operations["deleteApiV1AdminItemTypeConfigsByItemType"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1744,6 +1744,147 @@ export interface paths {
          * @description Flat, paged search across every item type the user may read, scoped to designs in their programs plus library designs. Sortable and filterable on base item columns; `program` and `design` column filters take ids. Rows carry the full base item record plus design and program identity.
          */
         get: operations["getApiV1EnterpriseSearchResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List domain events (newest first)
+         * @description The append-only log of committed business facts. Filter by type; page backward with beforeSeq.
+         */
+        get: operations["getApiV1Events"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/consumers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List event consumers, their cursors and lag
+         * @description Durable cursor rows, with each consumer's lag behind the head of the log.
+         *
+         *     `registeredHere` says whether *this* process registers the consumer, and **false is a normal reading rather than a fault**: each process runs only its own consumers, and the RabbitMQ relay and the webhook dispatcher run in the jobs worker alone. What actually says "no poller is running anywhere" is lag that grows while `updatedAt` stays stale.
+         */
+        get: operations["getApiV1EventsConsumers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/consumers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Forget an event consumer's cursor
+         * @description Deletes the cursor row. **This abandons that consumer's backlog permanently** — exactly as skip does, but for all of it rather than one event. A consumer re-registered afterwards restarts at whatever its `startAt` declares, so anything declaring 'head' treats everything currently in the log as delivered.
+         *
+         *     It exists because neither resume nor skip removes a cursor, and a cursor nobody owns pins the retention horizon forever — so without this the only fix for an ERP consumer on an instance that dropped the package, or a webhook dispatcher on one that abandoned webhooks, is manual SQL.
+         */
+        delete: operations["deleteApiV1EventsConsumersById"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/consumers/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume a parked or backing-off event consumer
+         * @description Clears the failure count, backoff and parked flag of the consumer so the next poll runs it again from the same cursor. Use once the cause of the failures is fixed. Refused with 409 for a consumer retention abandoned, whose backlog may already be pruned: forget its cursor instead.
+         */
+        post: operations["postApiV1EventsConsumersByIdResume"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/consumers/{id}/skip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Skip the event a consumer keeps failing on
+         * @description Advances the cursor of the consumer past its last failed event and clears its failure state. Deliberate and logged: that event is never delivered to this consumer. Refused when no failure is on record, and with 409 for a consumer retention abandoned.
+         */
+        post: operations["postApiV1EventsConsumersByIdSkip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List registered domain event types */
+        get: operations["getApiV1EventsTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/extensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List registered extensions
+         * @description Every extension this process can run, with the operation or event type it attaches to, its phase, its declarative filter and whether it runs here — switched off by an operator, or by its own declaration, when not. Optionally filtered to one subject.
+         */
+        get: operations["getApiV1Extensions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4317,6 +4458,143 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List webhook subscriptions
+         * @description Soft-deleted subscriptions are omitted. Neither the encrypted secret nor anything derived from it beyond a short display prefix is ever returned.
+         */
+        get: operations["getApiV1Webhooks"];
+        put?: never;
+        /**
+         * Create a webhook subscription
+         * @description The signing secret is returned **once**, in this response, exactly as an API key is. It is stored encrypted and cannot be read back afterwards; a lost secret is rotated, not recovered.
+         *
+         *     The subscription starts at the current head of the event log, so creating one on an instance with a long history delivers nothing retrospectively.
+         */
+        post: operations["postApiV1Webhooks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a webhook subscription */
+        get: operations["getApiV1WebhooksById"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a webhook subscription
+         * @description A **soft** delete, and deliberately so: a hard delete racing the dispatcher's fan-out insert fails the foreign key check and throws inside the one component that must never take a per-subscription fault. The row stops matching immediately and its delivery history stays readable until retention prunes it.
+         *
+         *     Deliveries still pending are **expired** in the same transaction, since nothing will ever send them. A delivery already in flight when the delete lands may still arrive.
+         */
+        delete: operations["deleteApiV1WebhooksById"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a webhook subscription
+         * @description The secret is not updatable here — rotate it instead, which is the only operation that returns a new one.
+         */
+        patch: operations["patchApiV1WebhooksById"];
+        trace?: never;
+    };
+    "/api/v1/webhooks/{id}/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A subscription's delivery log
+         * @description Newest first, ordered by seq **and id** — never by a timestamp alone: rows created in one transaction tie exactly, and paginating on a tying column repeats and skips rows.
+         *
+         *     Gated on `system:manage` like the rest of this router rather than something looser, because it carries response snippets from the receiver and is arguably more sensitive than the subscription list itself.
+         */
+        get: operations["getApiV1WebhooksByIdDeliveries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable a webhook subscription
+         * @description Stops delivery and stops matching new events. Pending deliveries stay pending rather than being discarded.
+         */
+        post: operations["postApiV1WebhooksByIdDisable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/{id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enable a webhook subscription
+         * @description Clears both the operator flag and any automatic disable, and resets the failure counter so the breaker starts from zero.
+         *
+         *     Deliveries queued while it was off are sent if they are still within the maximum pending age and **expired** if not, so re-enabling a long-dead subscription does not flood its receiver with a week of backlog.
+         */
+        post: operations["postApiV1WebhooksByIdEnable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/{id}/rotate-secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate a subscription's signing secret
+         * @description Returns the new secret **once**, like creation. The old secret stops working immediately — there is no overlap window on this side. A receiver bridges a rotation by verifying against both of its own secrets until it has switched.
+         */
+        post: operations["postApiV1WebhooksByIdRotateSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/work-instructions/{id}": {
         parameters: {
             query?: never;
@@ -5863,24 +6141,6 @@ export interface operations {
         };
     };
     getApiV1AdminItemTypeConfigsByItemType: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                itemType: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            500: components["responses"]["ServerError"];
-        };
-    };
-    deleteApiV1AdminItemTypeConfigsByItemType: {
         parameters: {
             query?: never;
             header?: never;
@@ -8894,6 +9154,293 @@ export interface operations {
                                 state: string | null;
                             }[];
                             total: number;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getApiV1Events: {
+        parameters: {
+            query?: {
+                type?: string;
+                beforeSeq?: string;
+                limit?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            events: {
+                                actorId: string | null;
+                                branchId: string | null;
+                                causationId: string | null;
+                                correlationId: string | null;
+                                designId: string | null;
+                                /** Format: uuid */
+                                id: string;
+                                occurredAt: string;
+                                payload: {
+                                    [key: string]: unknown;
+                                };
+                                programId: string | null;
+                                schemaVersion: number;
+                                seq: number;
+                                subjectId: string | null;
+                                subjectMasterId: string | null;
+                                subjectType: string | null;
+                                type: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getApiV1EventsConsumers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            consumers: {
+                                abandonedAt: string | null;
+                                failureCount: number;
+                                id: string;
+                                lag: number;
+                                lastError: string | null;
+                                lastErrorAt: string | null;
+                                lastErrorSeq: number | null;
+                                lastSeq: number;
+                                nextAttemptAt: string | null;
+                                parkedAt: string | null;
+                                registeredHere: boolean;
+                                updatedAt: string;
+                            }[];
+                            latestSeq: number;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    deleteApiV1EventsConsumersById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            forgotten: boolean;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    postApiV1EventsConsumersByIdResume: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            abandonedAt: string | null;
+                            failureCount: number;
+                            id: string;
+                            lastError: string | null;
+                            lastErrorAt: string | null;
+                            lastErrorSeq: number | null;
+                            lastSeq: number;
+                            nextAttemptAt: string | null;
+                            parkedAt: string | null;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    postApiV1EventsConsumersByIdSkip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            abandonedAt: string | null;
+                            failureCount: number;
+                            id: string;
+                            lastError: string | null;
+                            lastErrorAt: string | null;
+                            lastErrorSeq: number | null;
+                            lastSeq: number;
+                            nextAttemptAt: string | null;
+                            parkedAt: string | null;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getApiV1EventsTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            types: {
+                                description: string;
+                                schemaVersion: number;
+                                subjectType: string | null;
+                                type: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getApiV1Extensions: {
+        parameters: {
+            query?: {
+                on?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            extensions: {
+                                description: string | null;
+                                disabledBy: ("operator" | "extension") | null;
+                                enabled: boolean;
+                                id: string;
+                                on: string;
+                                /** @enum {string} */
+                                phase: "guard" | "in-transaction" | "consumed";
+                                source: string;
+                                when: {
+                                    [key: string]: unknown;
+                                } | null;
+                            }[];
+                            operations: {
+                                description: string;
+                                operation: string;
+                            }[];
                         };
                     };
                 };
@@ -15139,6 +15686,446 @@ export interface operations {
             };
         };
         responses: {
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getApiV1Webhooks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            subscriptions: {
+                                consecutiveFailures: number;
+                                createdAt: string;
+                                createdFromSeq: number;
+                                disabledAt: string | null;
+                                disabledReason: string | null;
+                                enabled: boolean;
+                                eventTypes: string[];
+                                /** Format: uuid */
+                                id: string;
+                                lastFailureAt: string | null;
+                                lastSuccessAt: string | null;
+                                name: string;
+                                programId: string | null;
+                                rotatedAt: string | null;
+                                secretPrefix: string | null;
+                                targetUrl: string;
+                                updatedAt: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    postApiV1Webhooks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    allowInsecure?: boolean;
+                    eventTypes?: string[];
+                    name: string;
+                    programId?: string | null;
+                    signed?: boolean;
+                    targetUrl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            secret: string | null;
+                            subscription: {
+                                consecutiveFailures: number;
+                                createdAt: string;
+                                createdFromSeq: number;
+                                disabledAt: string | null;
+                                disabledReason: string | null;
+                                enabled: boolean;
+                                eventTypes: string[];
+                                /** Format: uuid */
+                                id: string;
+                                lastFailureAt: string | null;
+                                lastSuccessAt: string | null;
+                                name: string;
+                                programId: string | null;
+                                rotatedAt: string | null;
+                                secretPrefix: string | null;
+                                targetUrl: string;
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getApiV1WebhooksById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            subscription: {
+                                consecutiveFailures: number;
+                                createdAt: string;
+                                createdFromSeq: number;
+                                disabledAt: string | null;
+                                disabledReason: string | null;
+                                enabled: boolean;
+                                eventTypes: string[];
+                                /** Format: uuid */
+                                id: string;
+                                lastFailureAt: string | null;
+                                lastSuccessAt: string | null;
+                                name: string;
+                                programId: string | null;
+                                rotatedAt: string | null;
+                                secretPrefix: string | null;
+                                targetUrl: string;
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    deleteApiV1WebhooksById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            deleted: boolean;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    patchApiV1WebhooksById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    allowInsecure?: boolean;
+                    eventTypes?: string[];
+                    name?: string;
+                    programId?: string | null;
+                    targetUrl?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            subscription: {
+                                consecutiveFailures: number;
+                                createdAt: string;
+                                createdFromSeq: number;
+                                disabledAt: string | null;
+                                disabledReason: string | null;
+                                enabled: boolean;
+                                eventTypes: string[];
+                                /** Format: uuid */
+                                id: string;
+                                lastFailureAt: string | null;
+                                lastSuccessAt: string | null;
+                                name: string;
+                                programId: string | null;
+                                rotatedAt: string | null;
+                                secretPrefix: string | null;
+                                targetUrl: string;
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getApiV1WebhooksByIdDeliveries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            deliveries: {
+                                attemptCount: number;
+                                createdAt: string;
+                                deliveredAt: string | null;
+                                error: string | null;
+                                /** Format: uuid */
+                                eventId: string;
+                                eventSeq: number;
+                                eventType: string;
+                                /** Format: uuid */
+                                id: string;
+                                nextAttemptAt: string | null;
+                                responseSnippet: string | null;
+                                responseStatus: number | null;
+                                status: string;
+                            }[];
+                            nextBeforeSeq: number | null;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    postApiV1WebhooksByIdDisable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            subscription: {
+                                consecutiveFailures: number;
+                                createdAt: string;
+                                createdFromSeq: number;
+                                disabledAt: string | null;
+                                disabledReason: string | null;
+                                enabled: boolean;
+                                eventTypes: string[];
+                                /** Format: uuid */
+                                id: string;
+                                lastFailureAt: string | null;
+                                lastSuccessAt: string | null;
+                                name: string;
+                                programId: string | null;
+                                rotatedAt: string | null;
+                                secretPrefix: string | null;
+                                targetUrl: string;
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    postApiV1WebhooksByIdEnable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            subscription: {
+                                consecutiveFailures: number;
+                                createdAt: string;
+                                createdFromSeq: number;
+                                disabledAt: string | null;
+                                disabledReason: string | null;
+                                enabled: boolean;
+                                eventTypes: string[];
+                                /** Format: uuid */
+                                id: string;
+                                lastFailureAt: string | null;
+                                lastSuccessAt: string | null;
+                                name: string;
+                                programId: string | null;
+                                rotatedAt: string | null;
+                                secretPrefix: string | null;
+                                targetUrl: string;
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    postApiV1WebhooksByIdRotateSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            secret: string;
+                            subscription: {
+                                consecutiveFailures: number;
+                                createdAt: string;
+                                createdFromSeq: number;
+                                disabledAt: string | null;
+                                disabledReason: string | null;
+                                enabled: boolean;
+                                eventTypes: string[];
+                                /** Format: uuid */
+                                id: string;
+                                lastFailureAt: string | null;
+                                lastSuccessAt: string | null;
+                                name: string;
+                                programId: string | null;
+                                rotatedAt: string | null;
+                                secretPrefix: string | null;
+                                targetUrl: string;
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

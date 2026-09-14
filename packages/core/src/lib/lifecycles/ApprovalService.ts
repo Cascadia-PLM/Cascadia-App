@@ -12,6 +12,9 @@ import {
 } from '../db/schema/lifecycles'
 import { roles, userRoles, users } from '../db/schema/users'
 import { items } from '../db/schema/items'
+import { APPROVAL_VOTED, publishDomainEvent } from '../events'
+import { resolveChangeOrderProgram } from '../events/program-scope'
+import { APPROVAL_VOTE, guardOrThrow, hasGuardExtensions } from '../extensions'
 import { ApprovalRegistry } from './approval-registry'
 import type { TransactionClient } from '../db'
 import type {
@@ -766,6 +769,45 @@ export class ApprovalService {
 
     await ApprovalRegistry.beforeVote(ctx)
 
+    // The `approval.vote` guard, beside `beforeVote` rather than replacing it.
+    //
+    // `ApprovalRegistry` is **not** absorbed by this layer, and the reason is
+    // specific rather than conservative: its contract carries two things no
+    // phase here can express. `buildExtras` derives per-request input from the
+    // raw HTTP `Request`, which is how the auditing package receives a
+    // forwarded client certificate; and `afterVote` returns values core merges
+    // into the HTTP response, while every phase handler returns nothing. It
+    // also shares a memoised attestation snapshot between its halves so the
+    // snapshot is taken outside the transaction and reused inside it, which
+    // two disjoint contexts cannot do.
+    //
+    // So the honest count after this wave is nine interception points becoming
+    // three phases plus one named specialisation plus a deprecated hook
+    // registry — not one.
+    if (hasGuardExtensions(APPROVAL_VOTE)) {
+      const instanceRow = (
+        await db
+          .select({ itemId: lifecycleInstances.itemId })
+          .from(lifecycleInstances)
+          .where(eq(lifecycleInstances.id, instanceId))
+          .limit(1)
+      ).at(0)
+      await guardOrThrow(
+        APPROVAL_VOTE,
+        {
+          instanceId,
+          itemId: instanceRow?.itemId ?? '',
+          stateId,
+          userId,
+          vote,
+          roleId: roleId ?? null,
+          roleName,
+          comments: comments ?? null,
+        },
+        { db, actorId: userId },
+      )
+    }
+
     return db.transaction(async (tx) => {
       let inserted
       try {
@@ -794,6 +836,49 @@ export class ApprovalService {
       }
 
       const contributed = await ApprovalRegistry.afterVote(inserted.id, ctx, tx)
+
+      // The fact of the vote, in the vote's own transaction — beside the
+      // signature advanced-auditing writes there, when it is licensed.
+      // With the item's master and design: the master so a consumer can follow
+      // the item across revisions as every other item fact allows, the design
+      // so a program-scoped webhook subscription can match the vote at all. A
+      // vote on a change order, which has no design, names the program its
+      // designs share when they share one.
+      const instanceRow = (
+        await tx
+          .select({
+            itemId: lifecycleInstances.itemId,
+            masterId: items.masterId,
+            designId: items.designId,
+          })
+          .from(lifecycleInstances)
+          .innerJoin(items, eq(items.id, lifecycleInstances.itemId))
+          .where(eq(lifecycleInstances.id, instanceId))
+      ).at(0)
+      if (!instanceRow?.itemId) {
+        throw new NotFoundError('Lifecycle instance', instanceId)
+      }
+      await publishDomainEvent(tx, APPROVAL_VOTED, {
+        actorId: userId,
+        subject: { id: instanceRow.itemId, masterId: instanceRow.masterId },
+        context: {
+          designId: instanceRow.designId ?? undefined,
+          programId: instanceRow.designId
+            ? undefined
+            : ((await resolveChangeOrderProgram(tx, instanceRow.itemId)) ??
+              undefined),
+        },
+        payload: {
+          voteId: inserted.id,
+          instanceId,
+          itemId: instanceRow.itemId,
+          stateId,
+          vote,
+          roleId: roleId ?? null,
+          roleName,
+          comments: comments ?? null,
+        },
+      })
 
       return {
         id: inserted.id,

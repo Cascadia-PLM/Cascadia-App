@@ -11,6 +11,7 @@
 import postgres from 'postgres'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import * as schema from '../lib/db/schema'
+import { ensureDomainEventSequencing } from '../lib/events/sequencing'
 import { seedDefaultLifecycles } from '../lib/items/default-lifecycles'
 import { seedBuiltInRoles } from './fixtures/users'
 
@@ -78,6 +79,10 @@ export default async function globalSetup() {
     const db = drizzle(client, { schema })
     await seedDefaultLifecycles(db)
     await seedBuiltInRoles(db)
+    // `db:push` cannot create triggers, and the event log's seq is assigned
+    // by one at commit — without it every event stays unsequenced and no
+    // consumer test could ever see anything. Idempotent, like the seeds.
+    await ensureDomainEventSequencing(db)
   } finally {
     await client.end()
   }
@@ -89,10 +94,21 @@ export default async function globalSetup() {
   console.log('')
 }
 
-/** Connection target for logging, with credentials stripped. */
-function describeDatabaseUrl(url: string): string {
+/**
+ * Connection target for logging, with credentials stripped.
+ *
+ * The same rule as `describeConnection` in `lib/db`, which cannot be imported
+ * here — it builds a client from `DATABASE_URL` the moment it loads. An `@` in
+ * the path, query or fragment means a password with an unencoded `/`, `?` or
+ * `#` ended the authority early, and host, port and path would print part of
+ * it. Exported for its test.
+ */
+export function describeDatabaseUrl(url: string): string {
   try {
     const parsed = new URL(url)
+    if (`${parsed.pathname}${parsed.search}${parsed.hash}`.includes('@')) {
+      return '(unparseable TEST_DATABASE_URL)'
+    }
     return `${parsed.hostname}:${parsed.port || '5432'}${parsed.pathname}`
   } catch {
     return '(unparseable TEST_DATABASE_URL)'

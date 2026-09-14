@@ -31,10 +31,14 @@ registerTypeHandler('WorkInstruction', {
     // attachment flagged isOutput, written here so a work instruction is never
     // committed without the attachment its designId was derived from.
     //
-    // Creation always supplies it (workInstructionSchema requires it), but this
-    // same method is reused by createRevision, which passes the stored
-    // work_instructions row — no outputPartId on it — and lets copyChildren
+    // Creation always supplies it (workInstructionSchema requires it), but
+    // this same method is reused by paths that mint a new version from a
+    // stored row — the conflict-detection rebase and pull, which pass merged
+    // extension fields with no outputPartId on them, and let `copyChildren`
     // carry the existing attachments, isOutput included. Hence the guard.
+    // (Version copies that go through `copyTypeSpecificData` never reach this
+    // method at all: it copies the row wholesale and then calls
+    // `copyChildren` itself.)
     if (data.outputPartId && ctx?.userId) {
       // The design a work instruction lives in is the design its output part
       // lives in. Checked here, inside the creating transaction, so every path

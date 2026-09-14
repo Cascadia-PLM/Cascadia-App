@@ -3,6 +3,13 @@
 
 import { and, desc, eq, isNotNull, isNull, lt, ne, or } from 'drizzle-orm'
 import { db } from '../../db'
+import {
+  FILE_CHECKED_IN,
+  FILE_DELETED,
+  FILE_RESTORED,
+  FILE_UPLOADED,
+  publishDomainEvent,
+} from '../../events'
 import { items, users, vaultFileHistory, vaultFiles } from '../../db/schema'
 import { StorageFactory } from '../storage'
 import {
@@ -296,30 +303,38 @@ export class FileService {
       }
 
       // Insert file record
-      fileRecord = takeFirst(
-        await db
-          .insert(vaultFiles)
-          .values({
-            id: fileId,
-            itemId,
-            branchId: branchId ?? null,
-            fileName: sanitized,
-            originalFileName: metadata.originalFileName,
-            fileSize: file.length,
-            mimeType: metadata.mimeType,
-            fileHash,
-            storageType: (process.env.VAULT_TYPE as string) || 'local',
-            storagePath,
-            fileVersion: 1,
-            isLatestVersion: true,
-            isCheckedOut: false,
-            uploadedBy,
-            metadata: combinedMetadata,
-            fileCategory,
-            isPrimaryModel,
-            isItemThumbnail,
-          })
-          .returning(),
+      fileRecord = await db.transaction(async (tx) =>
+        recordFileEvent(
+          tx,
+          FILE_UPLOADED,
+          uploadedBy,
+          null,
+          takeFirst(
+            await tx
+              .insert(vaultFiles)
+              .values({
+                id: fileId,
+                itemId,
+                branchId: branchId ?? null,
+                fileName: sanitized,
+                originalFileName: metadata.originalFileName,
+                fileSize: file.length,
+                mimeType: metadata.mimeType,
+                fileHash,
+                storageType: (process.env.VAULT_TYPE as string) || 'local',
+                storagePath,
+                fileVersion: 1,
+                isLatestVersion: true,
+                isCheckedOut: false,
+                uploadedBy,
+                metadata: combinedMetadata,
+                fileCategory,
+                isPrimaryModel,
+                isItemThumbnail,
+              })
+              .returning(),
+          ),
+        ),
       )
     } catch (error) {
       await this.discardOrphanedBlob(storagePath)
@@ -521,6 +536,13 @@ export class FileService {
   static async listItemFiles(
     itemId: string,
     includeDeleted: boolean = false,
+    /**
+     * Read on the caller's transaction rather than the pool. The superseded
+     * watermark extension needs it: a consumer run *is* a transaction, and a
+     * read outside it answers from a different snapshot than the cursor the
+     * run is about to advance.
+     */
+    tx?: TransactionClient,
   ): Promise<Array<FileRecord>> {
     const conditions = [
       eq(vaultFiles.itemId, itemId),
@@ -535,7 +557,7 @@ export class FileService {
       conditions.push(isNull(vaultFiles.deletedAt))
     }
 
-    const files = await db
+    const files = await (tx ?? db)
       .select()
       .from(vaultFiles)
       .where(and(...conditions))
@@ -730,14 +752,23 @@ export class FileService {
       .limit(1)
       .then((r) => r.at(0))
 
-    // Soft delete
-    await db
-      .update(vaultFiles)
-      .set({
-        deletedAt: new Date(),
-        deletedBy: userId,
-      })
-      .where(eq(vaultFiles.id, fileId))
+    // Soft delete, with its fact in the same transaction.
+    await db.transaction(async (tx) => {
+      const deleted = (
+        await tx
+          .update(vaultFiles)
+          .set({
+            deletedAt: new Date(),
+            deletedBy: userId,
+          })
+          .where(eq(vaultFiles.id, fileId))
+          .returning()
+      ).at(0)
+      if (!deleted) {
+        throw new NotFoundError('File', fileId, { operation: 'deleteFile' })
+      }
+      await recordFileEvent(tx, FILE_DELETED, userId, null, deleted)
+    })
 
     // Log delete action
     await this.logAction({
@@ -817,14 +848,28 @@ export class FileService {
       throw new ValidationError('File is not deleted')
     }
 
-    // Restore file
-    await db
-      .update(vaultFiles)
-      .set({
-        deletedAt: null,
-        deletedBy: null,
-      })
-      .where(eq(vaultFiles.id, fileId))
+    // The restore and its fact commit together, conditional on the row still
+    // being deleted, so two restores racing record one restoration.
+    const restored = await db.transaction(async (tx) => {
+      const row = (
+        await tx
+          .update(vaultFiles)
+          .set({
+            deletedAt: null,
+            deletedBy: null,
+          })
+          .where(
+            and(eq(vaultFiles.id, fileId), isNotNull(vaultFiles.deletedAt)),
+          )
+          .returning()
+      ).at(0)
+      if (!row) return false
+      await recordFileEvent(tx, FILE_RESTORED, userId, null, row)
+      return true
+    })
+    if (!restored) {
+      throw new ValidationError('File is not deleted')
+    }
 
     // Log restore action
     await this.logAction({
@@ -1175,47 +1220,53 @@ export class FileService {
         if (!won) return null
 
         // Insert new version record (preserve branchId from original file)
-        return takeFirst(
-          await tx
-            .insert(vaultFiles)
-            .values({
-              id: newFileId,
-              itemId: file.itemId,
-              branchId: file.branchId,
-              fileName: sanitized,
-              originalFileName: metadata.originalFileName,
-              fileSize: newFileData.length,
-              mimeType: metadata.mimeType,
-              fileHash,
-              storageType: (process.env.VAULT_TYPE as string) || 'local',
-              storagePath,
-              fileVersion: newVersionNumber,
-              isLatestVersion: true,
-              isCheckedOut: false,
-              uploadedBy: userId,
-              metadata: { ...extractedMetadata, ...metadata },
-              // The category rides the version chain. A manual category is a
-              // person's answer about the file's role, which a new revision of
-              // the same file does not change; an auto category is re-detected,
-              // since the replacement may be a different kind of file entirely.
-              fileCategory:
-                file.categorySource === 'manual'
-                  ? file.fileCategory
-                  : detectFileCategory(
-                      metadata.originalFileName,
-                      metadata.mimeType,
-                    ),
-              categorySource: file.categorySource,
-              // Carry the thumbnail designation onto the new version, but only if
-              // the replacement is still a usable image
-              isItemThumbnail:
-                file.isItemThumbnail &&
-                isThumbnailableImage(
-                  metadata.originalFileName,
-                  metadata.mimeType,
-                ),
-            })
-            .returning(),
+        return recordFileEvent(
+          tx,
+          FILE_CHECKED_IN,
+          userId,
+          fileId,
+          takeFirst(
+            await tx
+              .insert(vaultFiles)
+              .values({
+                id: newFileId,
+                itemId: file.itemId,
+                branchId: file.branchId,
+                fileName: sanitized,
+                originalFileName: metadata.originalFileName,
+                fileSize: newFileData.length,
+                mimeType: metadata.mimeType,
+                fileHash,
+                storageType: (process.env.VAULT_TYPE as string) || 'local',
+                storagePath,
+                fileVersion: newVersionNumber,
+                isLatestVersion: true,
+                isCheckedOut: false,
+                uploadedBy: userId,
+                metadata: { ...extractedMetadata, ...metadata },
+                // The category rides the version chain. A manual category is a
+                // person's answer about the file's role, which a new revision of
+                // the same file does not change; an auto category is re-detected,
+                // since the replacement may be a different kind of file entirely.
+                fileCategory:
+                  file.categorySource === 'manual'
+                    ? file.fileCategory
+                    : detectFileCategory(
+                        metadata.originalFileName,
+                        metadata.mimeType,
+                      ),
+                categorySource: file.categorySource,
+                // Carry the thumbnail designation onto the new version, but only if
+                // the replacement is still a usable image
+                isItemThumbnail:
+                  file.isItemThumbnail &&
+                  isThumbnailableImage(
+                    metadata.originalFileName,
+                    metadata.mimeType,
+                  ),
+              })
+              .returning(),
+          ),
         )
       })
 
@@ -1354,37 +1405,48 @@ export class FileService {
       )
       if (!won) return null
 
-      return takeFirst(
-        await tx
-          .insert(vaultFiles)
-          .values({
-            id: newFileId,
-            itemId: file.itemId,
-            branchId: file.branchId,
-            fileName: file.fileName,
-            originalFileName: file.originalFileName,
-            fileSize: data.length,
-            mimeType: file.mimeType,
-            fileHash,
-            storageType: (process.env.VAULT_TYPE as string) || 'local',
-            storagePath,
-            fileVersion: newVersionNumber,
-            isLatestVersion: true,
-            isCheckedOut: false,
-            uploadedBy: userId,
-            // The rewrite replaces bytes, not meaning: the file is the same
-            // document playing the same role, so its category and description
-            // ride across verbatim rather than being re-detected.
-            metadata: {
-              ...(file.metadata as Record<string, unknown> | null),
-              [action]: { at: new Date().toISOString(), ...args.details },
-            },
-            fileCategory: file.fileCategory,
-            categorySource: file.categorySource,
-            isItemThumbnail: file.isItemThumbnail,
-            thumbnailFileId: file.thumbnailFileId,
-          })
-          .returning(),
+      // This demotes the head of a version chain and inserts its successor,
+      // which is literally the `file.checked_in` contract — and it recorded
+      // nothing. It is the path the superseded-watermark job and the signed
+      // release PDF writer both take, so the artefact an audit or ERP consumer
+      // most needs was the one that never reached the log.
+      return recordFileEvent(
+        tx,
+        FILE_CHECKED_IN,
+        userId,
+        fileId,
+        takeFirst(
+          await tx
+            .insert(vaultFiles)
+            .values({
+              id: newFileId,
+              itemId: file.itemId,
+              branchId: file.branchId,
+              fileName: file.fileName,
+              originalFileName: file.originalFileName,
+              fileSize: data.length,
+              mimeType: file.mimeType,
+              fileHash,
+              storageType: (process.env.VAULT_TYPE as string) || 'local',
+              storagePath,
+              fileVersion: newVersionNumber,
+              isLatestVersion: true,
+              isCheckedOut: false,
+              uploadedBy: userId,
+              // The rewrite replaces bytes, not meaning: the file is the same
+              // document playing the same role, so its category and description
+              // ride across verbatim rather than being re-detected.
+              metadata: {
+                ...(file.metadata as Record<string, unknown> | null),
+                [action]: { at: new Date().toISOString(), ...args.details },
+              },
+              fileCategory: file.fileCategory,
+              categorySource: file.categorySource,
+              isItemThumbnail: file.isItemThumbnail,
+              thumbnailFileId: file.thumbnailFileId,
+            })
+            .returning(),
+        ),
       )
     })
 
@@ -2169,4 +2231,60 @@ export class FileService {
 
     return files as Array<FileRecordWithItem>
   }
+}
+
+/**
+ * Publish a file fact for a vault row and hand the row back, so a write can
+ * be wrapped without restating the record. `previousFileId` is the version
+ * record a check-in supersedes; null otherwise.
+ *
+ * The item behind the row is read for two things the row lacks: its master,
+ * so a consumer can follow a file across revisions, and its design, without
+ * which a program-scoped webhook subscription could never match a file fact.
+ */
+async function recordFileEvent<T extends typeof vaultFiles.$inferSelect>(
+  tx: TransactionClient,
+  definition:
+    | typeof FILE_UPLOADED
+    | typeof FILE_CHECKED_IN
+    | typeof FILE_DELETED
+    | typeof FILE_RESTORED,
+  actorId: string,
+  previousFileId: string | null,
+  record: T,
+): Promise<T> {
+  const owner = (
+    await tx
+      .select({ masterId: items.masterId, designId: items.designId })
+      .from(items)
+      .where(eq(items.id, record.itemId))
+      .limit(1)
+  ).at(0)
+  if (!owner) {
+    throw new NotFoundError('Item', record.itemId, {
+      operation: 'recordFileEvent',
+    })
+  }
+  await publishDomainEvent(tx, definition, {
+    actorId,
+    subject: { id: record.itemId, masterId: owner.masterId },
+    context: {
+      designId: owner.designId ?? undefined,
+      branchId: record.branchId ?? undefined,
+    },
+    payload: {
+      fileId: record.id,
+      itemId: record.itemId,
+      itemMasterId: owner.masterId,
+      branchId: record.branchId ?? null,
+      fileName: record.fileName,
+      fileCategory: record.fileCategory ?? null,
+      fileVersion: record.fileVersion,
+      fileSize: record.fileSize,
+      mimeType: record.mimeType,
+      fileHash: record.fileHash,
+      previousFileId,
+    },
+  })
+  return record
 }

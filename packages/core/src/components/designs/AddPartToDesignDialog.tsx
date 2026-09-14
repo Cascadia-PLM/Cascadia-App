@@ -3,7 +3,10 @@
 
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronRight } from 'lucide-react'
+import { ArrowLeft, ChevronRight } from 'lucide-react'
+import { AddPartChoice } from './AddPartChoice'
+import { CreatePartInDesignForm } from './CreatePartInDesignForm'
+import type { AddPartStep } from './AddPartChoice'
 import {
   Dialog,
   DialogContent,
@@ -68,19 +71,36 @@ interface AddPartToDesignDialogProps {
   designId: string
   designCode: string
   designName: string
+  /**
+   * The branch the design page is viewing, for the create path; undefined
+   * is main. The use-existing path is unchanged and does not read it.
+   */
+  branchId?: string
   onSuccess?: () => void
 }
 
+/**
+ * The dialog opens on a choice — make a new part here, or bring in one that
+ * exists — and each choice is its own step. 'existing' is the original
+ * dialog: usage copy or cross-design reference of a part from the library or
+ * another design. 'create' is the part form cut down to a top-level part's
+ * essentials.
+ */
 export function AddPartToDesignDialog({
   open,
   onOpenChange,
   designId,
   designCode,
   designName,
+  branchId,
   onSuccess,
 }: AddPartToDesignDialogProps) {
   const { alert } = useAlertDialog()
   const { handleError } = useErrorHandler()
+  const [step, setStep] = useState<AddPartStep>('choose')
+  // The use-existing step's reads are gated on being in it: a visit that
+  // ends in "Create New" should not list fifty parts on the way.
+  const existing = open && step === 'existing'
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedItems, setSelectedItems] = useState<Array<Item>>([])
 
@@ -100,17 +120,17 @@ export function AddPartToDesignDialog({
   // The three breadcrumb lists, each enabled by the one above it.
   const { data: programs = [] } = useQuery({
     ...programListQuery(),
-    enabled: open,
+    enabled: existing,
   })
   const { data: designs = [] } = useQuery({
     ...designListQuery<DesignOption>(selectedProgramId || undefined),
-    enabled: open && Boolean(selectedProgramId),
+    enabled: existing && Boolean(selectedProgramId),
   })
   const { data: branches = [] } = useQuery(
     designBranchesQuery<BranchOption>(
       selectedDesignId,
       true,
-      open && Boolean(selectedDesignId),
+      existing && Boolean(selectedDesignId),
     ),
   )
 
@@ -128,13 +148,13 @@ export function AddPartToDesignDialog({
   const { data: partsByType = [], isFetching: listing } = useQuery(
     itemSearchQuery<Item>(
       { itemType: 'Part', limit: 50, ...scope },
-      !debouncedQuery,
+      existing && !debouncedQuery,
     ),
   )
   const { data: partsByText = [], isFetching: textSearching } = useQuery(
     itemTextSearchQuery<Item>(
       { q: debouncedQuery, types: ['Part'], limit: 50, ...scope },
-      Boolean(debouncedQuery),
+      existing && Boolean(debouncedQuery),
     ),
   )
   const searching = debouncedQuery ? textSearching : listing
@@ -144,9 +164,10 @@ export function AddPartToDesignDialog({
     (item) => item.designId !== designId,
   )
 
-  // Start every visit from a clean form.
+  // Start every visit from a clean form, on the choice.
   useEffect(() => {
     if (open) {
+      setStep('choose')
       setSelectedItems([])
       setSearchQuery('')
       setAddMode('usage_copy')
@@ -237,264 +258,323 @@ export function AddPartToDesignDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto auto-hide-scroll">
         <DialogHeader>
-          <DialogTitle>Add Parts to Design</DialogTitle>
+          <DialogTitle>
+            {step === 'choose'
+              ? 'Add Part'
+              : step === 'create'
+                ? 'New Part'
+                : 'Add Parts to Design'}
+          </DialogTitle>
           <DialogDescription>
-            {addMode === 'usage_copy'
-              ? `Selected parts will be copied as usages in ${designName}.`
-              : `Selected parts will be linked as read-only references in ${designName}.`}
+            {step === 'choose'
+              ? `Create a new part in ${designName}, or bring in one that already exists.`
+              : step === 'create'
+                ? `Created in ${designName}, at the top level of its structure.`
+                : addMode === 'usage_copy'
+                  ? `Selected parts will be copied as usages in ${designName}.`
+                  : `Selected parts will be linked as read-only references in ${designName}.`}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Mode Toggle */}
-          <div className="flex rounded-lg border border-slate-300 dark:border-slate-600 overflow-hidden">
-            <button
-              type="button"
-              className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
-                addMode === 'usage_copy'
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                  : 'bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
-              }`}
-              onClick={() => setAddMode('usage_copy')}
-            >
-              Usage Copy
-            </button>
-            <button
-              type="button"
-              className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors border-l border-slate-300 dark:border-slate-600 ${
-                addMode === 'cross_design_ref'
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                  : 'bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
-              }`}
-              onClick={() => setAddMode('cross_design_ref')}
-            >
-              Cross-Design Reference
-            </button>
-          </div>
+        {step === 'choose' && (
+          <AddPartChoice
+            createDescription={`A new part, created in ${designCode} and placed at the top level of its structure.`}
+            existingDescription="Copy or reference a part from the standard library or another design."
+            onCreateNew={() => setStep('create')}
+            onUseExisting={() => setStep('existing')}
+          />
+        )}
 
-          {/* Breadcrumb Filters */}
-          <div className="flex items-center gap-1.5">
-            <Select
-              value={selectedProgramId || '__all__'}
-              onValueChange={(v) =>
-                setSelectedProgramId(v === '__all__' ? '' : v)
-              }
-            >
-              <SelectTrigger className="h-8 text-xs flex-1">
-                <SelectValue placeholder="All Programs" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">All Programs</SelectItem>
-                {programs.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {step === 'create' && (
+          <CreatePartInDesignForm
+            designId={designId}
+            designCode={designCode}
+            branchId={branchId}
+            onBack={() => setStep('choose')}
+            onCreated={() => {
+              onSuccess?.()
+              onOpenChange(false)
+            }}
+          />
+        )}
 
-            <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
-
-            <Select
-              value={selectedDesignId || '__all__'}
-              onValueChange={(v) =>
-                setSelectedDesignId(v === '__all__' ? '' : v)
-              }
-              disabled={!selectedProgramId}
-            >
-              <SelectTrigger className="h-8 text-xs flex-1">
-                <SelectValue placeholder="All Designs" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">All Designs</SelectItem>
-                {designs.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.code} — {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
-
-            <Select
-              value={selectedBranchId || '__all__'}
-              onValueChange={(v) =>
-                setSelectedBranchId(v === '__all__' ? '' : v)
-              }
-              disabled={!selectedDesignId}
-            >
-              <SelectTrigger className="h-8 text-xs flex-1">
-                <SelectValue placeholder="All Branches" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">All Branches</SelectItem>
-                {branches.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>
-                    {b.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Search Input */}
-          <div>
-            <Label>Search Parts</Label>
-            <Input
-              type="text"
-              placeholder="Search by part number or name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          {/* Selected Items */}
-          {selectedItems.length > 0 && (
-            <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
-              <Label className="text-xs text-cyan-700 dark:text-cyan-300">
-                Selected ({selectedItems.length})
-              </Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {selectedItems.map((item) => (
-                  <Badge
-                    key={item.id}
-                    variant="default"
-                    className="cursor-pointer hover:bg-cyan-600"
-                    onClick={() => toggleItemSelection(item)}
-                  >
-                    {item.itemNumber} &times;
-                  </Badge>
-                ))}
-              </div>
+        {step === 'existing' && (
+          <div className="space-y-4">
+            {/* Mode Toggle */}
+            <div className="flex rounded-lg border border-slate-300 dark:border-slate-600 overflow-hidden">
+              <button
+                type="button"
+                className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
+                  addMode === 'usage_copy'
+                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                    : 'bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
+                }`}
+                onClick={() => setAddMode('usage_copy')}
+              >
+                Usage Copy
+              </button>
+              <button
+                type="button"
+                className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors border-l border-slate-300 dark:border-slate-600 ${
+                  addMode === 'cross_design_ref'
+                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                    : 'bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
+                }`}
+                onClick={() => setAddMode('cross_design_ref')}
+              >
+                Cross-Design Reference
+              </button>
             </div>
-          )}
 
-          {/* Search Results */}
-          <div className="border border-slate-300 dark:border-slate-700 rounded-lg max-h-60 overflow-y-auto auto-hide-scroll">
-            {searching ? (
-              <div className="p-4 text-center text-sm text-slate-500">
-                Searching...
-              </div>
-            ) : searchResults.length === 0 ? (
-              <div className="p-4 text-center text-sm text-slate-500">
-                No parts found. Try a different search term.
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-200 dark:divide-slate-700">
-                {searchResults.map((item) => {
-                  const isSelected = selectedItems.some((i) => i.id === item.id)
-                  return (
-                    <label
+            {/* Breadcrumb Filters */}
+            <div className="flex items-center gap-1.5">
+              <Select
+                value={selectedProgramId || '__all__'}
+                onValueChange={(v) =>
+                  setSelectedProgramId(v === '__all__' ? '' : v)
+                }
+              >
+                <SelectTrigger className="h-8 text-xs flex-1">
+                  <SelectValue placeholder="All Programs" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All Programs</SelectItem>
+                  {programs.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
+
+              <Select
+                value={selectedDesignId || '__all__'}
+                onValueChange={(v) =>
+                  setSelectedDesignId(v === '__all__' ? '' : v)
+                }
+                disabled={!selectedProgramId}
+              >
+                <SelectTrigger className="h-8 text-xs flex-1">
+                  <SelectValue placeholder="All Designs" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All Designs</SelectItem>
+                  {designs.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.code} — {d.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
+
+              <Select
+                value={selectedBranchId || '__all__'}
+                onValueChange={(v) =>
+                  setSelectedBranchId(v === '__all__' ? '' : v)
+                }
+                disabled={!selectedDesignId}
+              >
+                <SelectTrigger className="h-8 text-xs flex-1">
+                  <SelectValue placeholder="All Branches" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All Branches</SelectItem>
+                  {branches.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Search Input */}
+            <div>
+              <Label>Search Parts</Label>
+              <Input
+                type="text"
+                placeholder="Search by part number or name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Selected Items */}
+            {selectedItems.length > 0 && (
+              <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
+                <Label className="text-xs text-cyan-700 dark:text-cyan-300">
+                  Selected ({selectedItems.length})
+                </Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedItems.map((item) => (
+                    <Badge
                       key={item.id}
-                      className={`flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors ${
-                        isSelected ? 'bg-cyan-50 dark:bg-cyan-950' : ''
-                      }`}
+                      variant="default"
+                      className="cursor-pointer hover:bg-cyan-600"
+                      onClick={() => toggleItemSelection(item)}
                     >
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={() => toggleItemSelection(item)}
-                        className="mt-0.5"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm text-slate-900 dark:text-slate-100">
-                            {item.itemNumber}
-                          </span>
-                          <Badge variant="outline" className="text-xs">
-                            {item.revision}
-                          </Badge>
-                          <StateBadge
-                            itemType={item.itemType}
-                            state={item.state}
-                            className="text-xs"
-                          />
-                          {item.designCode && (
-                            <Badge
-                              variant="outline"
-                              className="text-xs text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-600"
-                            >
-                              {item.designCode}
-                            </Badge>
-                          )}
-                          {item.designId &&
-                            item.designId !== designId &&
-                            !item.designCode && (
-                              <Badge
-                                variant="outline"
-                                className="text-xs text-amber-600 dark:text-amber-400"
-                              >
-                                Assigned elsewhere
-                              </Badge>
-                            )}
-                        </div>
-                        {item.name && (
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                            {item.name}
-                          </p>
-                        )}
-                      </div>
-                    </label>
-                  )
-                })}
+                      {item.itemNumber} &times;
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
-          </div>
 
-          {/* Suffix Item Numbers Checkbox (only for usage copy mode) */}
-          {addMode === 'usage_copy' && (
-            <>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="suffixItemNumbers"
-                  checked={suffixItemNumbers}
-                  onCheckedChange={(checked) =>
-                    setSuffixItemNumbers(checked as boolean)
-                  }
-                />
-                <Label
-                  htmlFor="suffixItemNumbers"
-                  className="text-sm font-normal cursor-pointer"
-                >
-                  Suffix item numbers with design code
-                </Label>
-              </div>
-              {suffixItemNumbers && designCode && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 ml-6">
-                  e.g., PN-000001-{designCode}
-                </p>
+            {/* Search Results */}
+            <div className="border border-slate-300 dark:border-slate-700 rounded-lg max-h-60 overflow-y-auto auto-hide-scroll">
+              {searching ? (
+                <div className="p-4 text-center text-sm text-slate-500">
+                  Searching...
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="p-4 text-center text-sm text-slate-500">
+                  No parts found. Try a different search term.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                  {searchResults.map((item) => {
+                    const isSelected = selectedItems.some(
+                      (i) => i.id === item.id,
+                    )
+                    return (
+                      <label
+                        key={item.id}
+                        className={`flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors ${
+                          isSelected ? 'bg-cyan-50 dark:bg-cyan-950' : ''
+                        }`}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleItemSelection(item)}
+                          className="mt-0.5"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm text-slate-900 dark:text-slate-100">
+                              {item.itemNumber}
+                            </span>
+                            <Badge variant="outline" className="text-xs">
+                              {item.revision}
+                            </Badge>
+                            <StateBadge
+                              itemType={item.itemType}
+                              state={item.state}
+                              className="text-xs"
+                            />
+                            {item.designCode && (
+                              <Badge
+                                variant="outline"
+                                className="text-xs text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-600"
+                              >
+                                {item.designCode}
+                              </Badge>
+                            )}
+                            {item.designId &&
+                              item.designId !== designId &&
+                              !item.designCode && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs text-amber-600 dark:text-amber-400"
+                                >
+                                  Assigned elsewhere
+                                </Badge>
+                              )}
+                          </div>
+                          {item.name && (
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                              {item.name}
+                            </p>
+                          )}
+                        </div>
+                      </label>
+                    )
+                  })}
+                </div>
               )}
-            </>
-          )}
+            </div>
 
-          {/* Cross-design reference info */}
-          {addMode === 'cross_design_ref' && (
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Referenced parts appear read-only in the BOM tree. You can later
-              &ldquo;pull in&rdquo; a reference to convert it to a full usage
-              copy.
-            </p>
-          )}
-        </div>
+            {/* Suffix Item Numbers Checkbox (only for usage copy mode) */}
+            {addMode === 'usage_copy' && (
+              <>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="suffixItemNumbers"
+                    checked={suffixItemNumbers}
+                    onCheckedChange={(checked) =>
+                      setSuffixItemNumbers(checked as boolean)
+                    }
+                  />
+                  <Label
+                    htmlFor="suffixItemNumbers"
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    Suffix item numbers with design code
+                  </Label>
+                </div>
+                {suffixItemNumbers && designCode && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 ml-6">
+                    e.g., PN-000001-{designCode}
+                  </p>
+                )}
+              </>
+            )}
 
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleAdd}
-            disabled={selectedItems.length === 0 || addParts.isPending}
-          >
-            {addParts.isPending
-              ? 'Adding...'
-              : `Add ${selectedItems.length > 0 ? `(${selectedItems.length})` : ''}`}
-          </Button>
-        </DialogFooter>
+            {/* Cross-design reference info */}
+            {addMode === 'cross_design_ref' && (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Referenced parts appear read-only in the BOM tree. You can later
+                &ldquo;pull in&rdquo; a reference to convert it to a full usage
+                copy.
+              </p>
+            )}
+          </div>
+        )}
+
+        {step === 'choose' && (
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        )}
+
+        {step === 'existing' && (
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mr-auto"
+              onClick={() => setStep('choose')}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleAdd}
+              disabled={selectedItems.length === 0 || addParts.isPending}
+            >
+              {addParts.isPending
+                ? 'Adding...'
+                : `Add ${selectedItems.length > 0 ? `(${selectedItems.length})` : ''}`}
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   )

@@ -21,6 +21,7 @@ import { cloneDesignConfig } from './design/config'
 
 // Maintenance jobs
 import { cacheCleanupConfig } from './cache-cleanup/config'
+import { eventsPruneConfig } from './events-prune/config'
 import { sessionCleanupConfig } from './session-cleanup/config'
 
 // Work instruction jobs
@@ -37,6 +38,7 @@ import { jobLogger } from '@/lib/logging/logger'
 JobTypeRegistry.register(workflowTransitionNotificationConfig)
 JobTypeRegistry.register(cloneDesignConfig)
 JobTypeRegistry.register(cacheCleanupConfig)
+JobTypeRegistry.register(eventsPruneConfig)
 JobTypeRegistry.register(sessionCleanupConfig)
 JobTypeRegistry.register(wiPartChangedConfig)
 JobTypeRegistry.register(cadConversionConfig)

@@ -26,7 +26,6 @@ import {
 import {
   ITEM_TYPE_RESOURCES,
   getResourceType,
-  itemTypeToResource,
 } from '@/lib/items/item-type-resources'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { itemCreateRequestSchema } from '@/lib/items/item-create-request'
@@ -296,10 +295,7 @@ app.get(
           throw new ValidationError('itemType or q parameter is required')
         }
 
-        const typeResource = itemTypeToResource(itemType)
-        if (typeResource) {
-          await requirePermission(request, typeResource, 'read')
-        }
+        await requirePermission(request, getResourceType(itemType), 'read')
 
         const designIds = await resolveDesignScope(
           designScope ?? null,
@@ -493,10 +489,7 @@ app.get(
       // path below (the no-design fallback defaults to Part and is gated
       // in place).
       if (itemType) {
-        const typeResource = itemTypeToResource(itemType)
-        if (typeResource) {
-          await requirePermission(request, typeResource, 'read')
-        }
+        await requirePermission(request, getResourceType(itemType), 'read')
       }
 
       // Resolve programId to designIds when no specific designId is set
@@ -907,9 +900,10 @@ app.post('/enrich-from-url', enrichItemHandler({ deprecated: true }))
 // otherwise ends in the identical `requireDesignAccess` call, so the nine
 // design-carrying types are unaffected.
 //
-// `getResourceType` replaces `itemTypeToResource` for the same reason
-// `detail.ts` made the swap: it is fail-closed, so an unknown item type
-// charges `parts` rather than skipping the check entirely.
+// `getResourceType` is fail-closed: an unknown item type charges `parts`
+// rather than skipping the check entirely. It is now the only lookup — the
+// `itemTypeToResource` that returned null, and the `if (resource)` guards
+// that skipped the check when it did, are gone.
 //
 // The gate now runs BEFORE the existence lookup, matching `detail.ts`. One
 // consequence, for soft-deleted rows only: `requireItemAccess` deliberately
@@ -1032,10 +1026,11 @@ app.put(
         }
 
         // Check type-specific RBAC permission
-        const resource = itemTypeToResource(item.itemType)
-        if (resource) {
-          await requirePermission(request, resource, 'update')
-        }
+        await requirePermission(
+          request,
+          getResourceType(item.itemType),
+          'update',
+        )
 
         // Validated in-handler rather than via the static `body:` option
         // because the schema depends on the stored item's type, which is only
@@ -1126,10 +1121,7 @@ app.get(
         throw new NotFoundError('Item', params.id)
       }
 
-      const resource = itemTypeToResource(item.itemType)
-      if (resource) {
-        await requirePermission(request, resource, 'read')
-      }
+      await requirePermission(request, getResourceType(item.itemType), 'read')
 
       return LifecycleInstanceService.getAvailableFreeTransitions(params.id)
     }),
@@ -1166,10 +1158,11 @@ app.post(
           throw new NotFoundError('Item', params.id)
         }
 
-        const resource = itemTypeToResource(item.itemType)
-        if (resource) {
-          await requirePermission(request, resource, 'update')
-        }
+        await requirePermission(
+          request,
+          getResourceType(item.itemType),
+          'update',
+        )
 
         const transitioned = await LifecycleInstanceService.transitionFreeItem(
           params.id,
@@ -1201,10 +1194,7 @@ app.delete(
       }
 
       // Check type-specific RBAC permission
-      const resource = itemTypeToResource(item.itemType)
-      if (resource) {
-        await requirePermission(request, resource, 'delete')
-      }
+      await requirePermission(request, getResourceType(item.itemType), 'delete')
 
       // If no branchId, use legacy delete
       if (!branchId) {

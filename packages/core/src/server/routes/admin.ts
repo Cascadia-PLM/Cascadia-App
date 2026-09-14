@@ -709,8 +709,6 @@ app.get(
                 label: codeDefinition.label,
                 pluralLabel: codeDefinition.pluralLabel,
                 icon: codeDefinition.icon,
-                states: codeDefinition.states,
-                permissions: codeDefinition.permissions,
                 relationships: codeDefinition.relationships,
               }
             : null,
@@ -728,8 +726,6 @@ app.get(
             label: type.label,
             pluralLabel: type.pluralLabel,
             icon: type.icon,
-            states: type.states,
-            permissions: type.permissions,
             relationships: type.relationships,
           },
         }
@@ -759,10 +755,8 @@ app.post(
         }
 
         const existingConfig = await ConfigService.getConfig(itemType)
+        // Validates the lifecycle swap and reloads the registry itself.
         const result = await ConfigService.saveConfig(itemType, config, user.id)
-
-        // Reload registry to pick up new config
-        await ItemTypeRegistry.reload()
 
         return new Response(
           JSON.stringify({
@@ -805,8 +799,6 @@ app.get(
             label: codeDefinition.label,
             pluralLabel: codeDefinition.pluralLabel,
             icon: codeDefinition.icon,
-            states: codeDefinition.states,
-            permissions: codeDefinition.permissions,
             relationships: codeDefinition.relationships,
             searchableFields: codeDefinition.searchableFields,
             displayField: codeDefinition.displayField,
@@ -827,8 +819,6 @@ app.get(
                 label: mergedConfig.label,
                 pluralLabel: mergedConfig.pluralLabel,
                 icon: mergedConfig.icon,
-                states: mergedConfig.states,
-                permissions: mergedConfig.permissions,
                 relationships: mergedConfig.relationships,
               }
             : null,
@@ -838,32 +828,11 @@ app.get(
   ),
 )
 
-// DELETE /api/admin/item-type-configs/:itemType
-app.delete(
-  '/item-type-configs/:itemType',
-  adapt(
-    apiHandler<{ itemType: string }>(
-      { permission: ['system', 'manage'] },
-      async ({ params }) => {
-        const { itemType } = params
-
-        if (!ItemTypeRegistry.hasType(itemType)) {
-          throw new NotFoundError('Item type', itemType)
-        }
-
-        await ConfigService.deleteConfig(itemType)
-
-        // Reload registry to clear the runtime config
-        await ItemTypeRegistry.reload()
-
-        return {
-          success: true,
-          message: `Runtime configuration for "${itemType}" deleted. Reverted to code defaults.`,
-        }
-      },
-    ),
-  ),
-)
+// There is deliberately no DELETE for an item-type config. The row carries
+// the type's lifecycle assignment, and every registered type must keep one,
+// so "reset to code defaults" could only ever answer 409 — which is what it
+// did, on every call, behind a confirm dialog. Reassign the lifecycle
+// instead.
 
 // ============================================
 // Jobs

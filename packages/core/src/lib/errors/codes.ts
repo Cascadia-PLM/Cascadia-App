@@ -32,6 +32,12 @@ export enum ErrorCode {
   // Business Logic (5xxx)
   WORKFLOW_INVALID_TRANSITION = 'WORKFLOW_INVALID_TRANSITION',
   WORKFLOW_ACTION_NOT_ALLOWED = 'WORKFLOW_ACTION_NOT_ALLOWED',
+  /**
+   * A `guard` extension refused the operation: a considered policy "no" from
+   * code a module registered, carrying that extension's own reason. Distinct
+   * from VALIDATION_FAILED, which is core's judgement of the input.
+   */
+  EXTENSION_REFUSED = 'EXTENSION_REFUSED',
   ITEM_REVISION_CONFLICT = 'ITEM_REVISION_CONFLICT',
   ITEM_RELATIONSHIP_CYCLE = 'ITEM_RELATIONSHIP_CYCLE',
   ITEM_CHECKOUT_REQUIRED = 'ITEM_CHECKOUT_REQUIRED',
@@ -112,6 +118,7 @@ export const errorCodeToHttpStatus: Record<ErrorCode, number> = {
   // Business → 403/409/413/415/422
   [ErrorCode.WORKFLOW_INVALID_TRANSITION]: 422,
   [ErrorCode.WORKFLOW_ACTION_NOT_ALLOWED]: 422,
+  [ErrorCode.EXTENSION_REFUSED]: 422,
   [ErrorCode.ITEM_REVISION_CONFLICT]: 409,
   [ErrorCode.ITEM_RELATIONSHIP_CYCLE]: 422,
   [ErrorCode.ITEM_CHECKOUT_REQUIRED]: 409,

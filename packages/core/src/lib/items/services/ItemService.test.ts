@@ -168,6 +168,37 @@ describe('ItemService', () => {
       expect(result.masterId).toBeDefined()
     })
 
+    it('stores a lead time of zero as zero, not null', async () => {
+      // 0 is a value the schema admits ("in stock") and both Part forms send
+      // it as a number. The handler coerced numeric columns with truthiness,
+      // so it was written as NULL and the field came back blank.
+      const created = (await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-LEAD0`,
+          revision: 'A',
+          name: 'In-stock part',
+          designId,
+          leadTimeDays: 0,
+        } as any,
+        user.id,
+      )) as Part
+
+      // Read back rather than trusting the return value, which echoes the
+      // validated input and so reported 0 either way.
+      const afterCreate = (await ItemService.findById(created.id!)) as Part
+      expect(afterCreate.leadTimeDays).toBe(0)
+
+      await ItemService.update(
+        created.id!,
+        { leadTimeDays: 14 } as any,
+        user.id,
+      )
+      await ItemService.update(created.id!, { leadTimeDays: 0 } as any, user.id)
+      const afterUpdate = (await ItemService.findById(created.id!)) as Part
+      expect(afterUpdate.leadTimeDays).toBe(0)
+    })
+
     it('creates a Document item with valid data', async () => {
       const itemNumber = `DOC-${uniquePrefix}-001`
       const docData = {

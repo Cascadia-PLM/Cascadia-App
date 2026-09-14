@@ -13,55 +13,33 @@
  */
 
 import { LIFECYCLE_IDS } from './lifecycle-ids'
-import { partRelationships, partSchema, partStates } from './types/part'
-import { taskRelationships, taskSchema, taskStates } from './types/task'
-import {
-  documentRelationships,
-  documentSchema,
-  documentStates,
-} from './types/document'
+import { partRelationships, partSchema } from './types/part'
+import { taskRelationships, taskSchema } from './types/task'
+import { documentRelationships, documentSchema } from './types/document'
 import {
   requirementRelationships,
   requirementSchema,
-  requirementStates,
 } from './types/requirement'
 import {
   changeOrderRelationships,
   changeOrderSchema,
 } from './types/change-order'
-import {
-  testPlanRelationships,
-  testPlanSchema,
-  testPlanStates,
-} from './types/testplan'
-import {
-  testCaseRelationships,
-  testCaseSchema,
-  testCaseStates,
-} from './types/testcase'
+import { testPlanRelationships, testPlanSchema } from './types/testplan'
+import { testCaseRelationships, testCaseSchema } from './types/testcase'
 import {
   workInstructionRelationships,
   workInstructionSchema,
-  workInstructionStates,
 } from './types/work-instruction'
-import { issueRelationships, issueSchema, issueStates } from './types/issue'
-import { toolRelationships, toolSchema, toolStates } from './types/tool'
+import { issueRelationships, issueSchema } from './types/issue'
+import { toolRelationships, toolSchema } from './types/tool'
 import {
   physicalPartRelationships,
   physicalPartSchema,
-  physicalPartStates,
 } from './types/physical-part'
-import {
-  workOrderItemSchema,
-  workOrderRelationships,
-  workOrderStates,
-} from './types/work-order'
-import {
-  softwareRelationships,
-  softwareSchema,
-  softwareStates,
-} from './types/software'
-import type { RelationshipConfig, StateConfig } from './types/base'
+import { workOrderItemSchema, workOrderRelationships } from './types/work-order'
+import { softwareRelationships, softwareSchema } from './types/software'
+import type { RelationshipConfig } from './types/base'
+import type { ResourceType } from '@/lib/auth/permissions'
 import type { z } from 'zod'
 
 /**
@@ -69,20 +47,27 @@ import type { z } from 'zod'
  */
 export interface SharedItemTypeDef {
   name: string
+  /**
+   * The RBAC resource this type's permissions are held against. Every route,
+   * AI tool and MCP handler resolves an item type to one of these and then
+   * asks the roles table; a type that reaches the fallback would be charged
+   * another type's permission, so it is declared here where the entry does
+   * not typecheck without it.
+   */
+  resource: ResourceType
+  /**
+   * Base path of the type's detail route (`/parts` -> `/parts/$id`). Read by
+   * every surface that links to an item — search results, the digital thread,
+   * BOM tables. A type missing from the old hand-kept map was simply
+   * unlinkable, with nothing to say so.
+   */
+  detailPath: string
   label: string
   pluralLabel: string
   icon: string
-  table: string
   schema: z.ZodSchema
-  states: Array<StateConfig>
   lifecycleDefinitionId: string
   relationships: Array<RelationshipConfig>
-  permissions: {
-    create: Array<string>
-    read: Array<string>
-    update: Array<string>
-    delete: Array<string>
-  }
   searchableFields: Array<string>
   displayField: string
 }
@@ -93,60 +78,42 @@ export interface SharedItemTypeDef {
 export const ITEM_TYPE_DEFINITIONS: Record<string, SharedItemTypeDef> = {
   Part: {
     name: 'Part',
+    resource: 'parts',
+    detailPath: '/parts',
     label: 'Part',
     pluralLabel: 'Parts',
     icon: 'Package',
-    table: 'parts',
     schema: partSchema,
-    states: partStates,
     lifecycleDefinitionId: LIFECYCLE_IDS.part,
     relationships: partRelationships,
-    permissions: {
-      create: ['*'],
-      read: ['*'],
-      update: ['*'],
-      delete: ['Admin', 'Engineer'],
-    },
     searchableFields: ['itemNumber', 'name', 'description', 'material'],
     displayField: 'itemNumber',
   },
 
   Document: {
     name: 'Document',
+    resource: 'documents',
+    detailPath: '/documents',
     label: 'Document',
     pluralLabel: 'Documents',
     icon: 'FileText',
-    table: 'documents',
     schema: documentSchema,
-    states: documentStates,
     lifecycleDefinitionId: LIFECYCLE_IDS.document,
     relationships: documentRelationships,
-    permissions: {
-      create: ['*'],
-      read: ['*'],
-      update: ['*'],
-      delete: ['Admin', 'Engineer'],
-    },
     searchableFields: ['itemNumber', 'name', 'description', 'fileName'],
     displayField: 'itemNumber',
   },
 
   Requirement: {
     name: 'Requirement',
+    resource: 'requirements',
+    detailPath: '/requirements',
     label: 'Requirement',
     pluralLabel: 'Requirements',
     icon: 'ListChecks',
-    table: 'requirements',
     schema: requirementSchema,
-    states: requirementStates,
     lifecycleDefinitionId: LIFECYCLE_IDS.requirement,
     relationships: requirementRelationships,
-    permissions: {
-      create: ['*'],
-      read: ['*'],
-      update: ['*'],
-      delete: ['Admin', 'Engineer', 'ProductManager'],
-    },
     searchableFields: [
       'itemNumber',
       'name',
@@ -159,43 +126,28 @@ export const ITEM_TYPE_DEFINITIONS: Record<string, SharedItemTypeDef> = {
 
   Task: {
     name: 'Task',
+    resource: 'tasks',
+    detailPath: '/tasks',
     label: 'Task',
     pluralLabel: 'Tasks',
     icon: 'CheckSquare',
-    table: 'tasks',
     schema: taskSchema,
-    states: taskStates,
     lifecycleDefinitionId: LIFECYCLE_IDS.task,
     relationships: taskRelationships,
-    permissions: {
-      create: ['*'],
-      read: ['*'],
-      update: ['*'],
-      delete: ['Admin', 'ProjectManager', 'Engineer'],
-    },
     searchableFields: ['itemNumber', 'name', 'description'],
     displayField: 'itemNumber',
   },
 
   ChangeOrder: {
     name: 'ChangeOrder',
+    resource: 'change_orders',
+    detailPath: '/change-orders',
     label: 'Change Order',
     pluralLabel: 'Change Orders',
     icon: 'GitBranch',
-    table: 'change_orders',
     schema: changeOrderSchema,
-    // None in code: a change order's states are those of the Driving
-    // definition its change type runs. Resolved through the lifecycle
-    // service, never from a list here.
-    states: [],
     lifecycleDefinitionId: LIFECYCLE_IDS.changeOrder,
     relationships: changeOrderRelationships,
-    permissions: {
-      create: ['*'],
-      read: ['*'],
-      update: ['*'],
-      delete: ['Admin', 'Engineer'],
-    },
     searchableFields: [
       'itemNumber',
       'name',
@@ -207,60 +159,42 @@ export const ITEM_TYPE_DEFINITIONS: Record<string, SharedItemTypeDef> = {
 
   TestPlan: {
     name: 'TestPlan',
+    resource: 'test_plans',
+    detailPath: '/test-plans',
     label: 'Test Plan',
     pluralLabel: 'Test Plans',
     icon: 'ClipboardList',
-    table: 'test_plans',
     schema: testPlanSchema,
-    states: testPlanStates,
     lifecycleDefinitionId: LIFECYCLE_IDS.testPlan,
     relationships: testPlanRelationships,
-    permissions: {
-      create: ['*'],
-      read: ['*'],
-      update: ['*'],
-      delete: ['Admin', 'Engineer', 'QualityEngineer'],
-    },
     searchableFields: ['itemNumber', 'name', 'scope', 'environment'],
     displayField: 'itemNumber',
   },
 
   TestCase: {
     name: 'TestCase',
+    resource: 'test_cases',
+    detailPath: '/test-cases',
     label: 'Test Case',
     pluralLabel: 'Test Cases',
     icon: 'TestTube2',
-    table: 'test_cases',
     schema: testCaseSchema,
-    states: testCaseStates,
     lifecycleDefinitionId: LIFECYCLE_IDS.testCase,
     relationships: testCaseRelationships,
-    permissions: {
-      create: ['*'],
-      read: ['*'],
-      update: ['*'],
-      delete: ['Admin', 'Engineer', 'QualityEngineer'],
-    },
     searchableFields: ['itemNumber', 'name', 'preconditions', 'testType'],
     displayField: 'itemNumber',
   },
 
   Issue: {
     name: 'Issue',
+    resource: 'issues',
+    detailPath: '/issues',
     label: 'Issue',
     pluralLabel: 'Issues',
     icon: 'AlertTriangle',
-    table: 'issues',
     schema: issueSchema,
-    states: issueStates,
     lifecycleDefinitionId: LIFECYCLE_IDS.issue,
     relationships: issueRelationships,
-    permissions: {
-      create: ['*'],
-      read: ['*'],
-      update: ['*'],
-      delete: ['Admin', 'Engineer', 'QualityEngineer'],
-    },
     searchableFields: [
       'itemNumber',
       'name',
@@ -274,20 +208,14 @@ export const ITEM_TYPE_DEFINITIONS: Record<string, SharedItemTypeDef> = {
 
   WorkInstruction: {
     name: 'WorkInstruction',
+    resource: 'work_instructions',
+    detailPath: '/work-instructions',
     label: 'Work Instruction',
     pluralLabel: 'Work Instructions',
     icon: 'ClipboardCheck',
-    table: 'work_instructions',
     schema: workInstructionSchema,
-    states: workInstructionStates,
     lifecycleDefinitionId: LIFECYCLE_IDS.workInstruction,
     relationships: workInstructionRelationships,
-    permissions: {
-      create: ['*'],
-      read: ['*'],
-      update: ['*'],
-      delete: ['Admin', 'Engineer', 'ManufacturingEngineer'],
-    },
     searchableFields: [
       'itemNumber',
       'name',
@@ -300,20 +228,14 @@ export const ITEM_TYPE_DEFINITIONS: Record<string, SharedItemTypeDef> = {
 
   Software: {
     name: 'Software',
+    resource: 'software',
+    detailPath: '/software',
     label: 'Software',
     pluralLabel: 'Software',
     icon: 'Cpu',
-    table: 'software',
     schema: softwareSchema,
-    states: softwareStates,
     lifecycleDefinitionId: LIFECYCLE_IDS.part,
     relationships: softwareRelationships,
-    permissions: {
-      create: ['*'],
-      read: ['*'],
-      update: ['*'],
-      delete: ['Admin', 'Engineer'],
-    },
     searchableFields: [
       'itemNumber',
       'name',
@@ -326,20 +248,14 @@ export const ITEM_TYPE_DEFINITIONS: Record<string, SharedItemTypeDef> = {
 
   Tool: {
     name: 'Tool',
+    resource: 'tools',
+    detailPath: '/tools',
     label: 'Tool',
     pluralLabel: 'Tools',
     icon: 'Wrench',
-    table: 'tools',
     schema: toolSchema,
-    states: toolStates,
     lifecycleDefinitionId: LIFECYCLE_IDS.tool,
     relationships: toolRelationships,
-    permissions: {
-      create: ['*'],
-      read: ['*'],
-      update: ['*'],
-      delete: ['Admin', 'Engineer'],
-    },
     searchableFields: [
       'itemNumber',
       'name',
@@ -352,40 +268,28 @@ export const ITEM_TYPE_DEFINITIONS: Record<string, SharedItemTypeDef> = {
 
   PhysicalPart: {
     name: 'PhysicalPart',
+    resource: 'physical_parts',
+    detailPath: '/physical-parts',
     label: 'Physical Part',
     pluralLabel: 'Physical Parts',
     icon: 'Package',
-    table: 'physical_parts',
     schema: physicalPartSchema,
-    states: physicalPartStates,
     lifecycleDefinitionId: LIFECYCLE_IDS.physicalPart,
     relationships: physicalPartRelationships,
-    permissions: {
-      create: ['*'],
-      read: ['*'],
-      update: ['*'],
-      delete: ['Admin', 'Engineer'],
-    },
     searchableFields: ['itemNumber', 'name', 'serialNumber', 'lotNumber'],
     displayField: 'itemNumber',
   },
 
   WorkOrder: {
     name: 'WorkOrder',
+    resource: 'work_orders',
+    detailPath: '/work-orders',
     label: 'Work Order',
     pluralLabel: 'Work Orders',
     icon: 'Factory',
-    table: 'work_orders',
     schema: workOrderItemSchema,
-    states: workOrderStates,
     lifecycleDefinitionId: LIFECYCLE_IDS.workOrder,
     relationships: workOrderRelationships,
-    permissions: {
-      create: ['*'],
-      read: ['*'],
-      update: ['*'],
-      delete: ['Admin', 'Engineer'],
-    },
     searchableFields: ['itemNumber', 'name', 'customerOrder'],
     displayField: 'itemNumber',
   },

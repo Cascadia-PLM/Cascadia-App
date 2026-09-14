@@ -84,7 +84,7 @@ function ItemTypesConfigPage() {
               Item Type Configuration
             </h1>
             <p className="text-slate-600 dark:text-slate-400 mt-2">
-              Configure permissions, states, and labels for item types
+              Assign the lifecycle that governs each item type
             </p>
           </div>
         </div>
@@ -133,13 +133,17 @@ function ItemTypesConfigPage() {
             <div className="space-y-2 text-sm">
               <p className="text-blue-900 dark:text-blue-100">
                 <strong>Code-First Configuration:</strong> Item types are
-                defined in code with TypeScript type safety. Runtime
-                configurations allow you to override labels, permissions,
-                states, and relationships without redeploying.
+                defined in code with TypeScript type safety — their names,
+                fields, relationships and numbering ship with the release. Which
+                lifecycle governs a type is the runtime setting, and it takes
+                effect immediately.
               </p>
               <p className="text-blue-800 dark:text-blue-200">
-                Changes to runtime configurations take effect immediately and
-                can be reloaded without restarting the application.
+                Access is granted by role rather than per item type; see{' '}
+                <Link to="/admin/roles" className="underline">
+                  Roles
+                </Link>
+                .
               </p>
             </div>
           </div>
@@ -183,39 +187,6 @@ function ItemTypesConfigPage() {
                       ` (v${config.runtimeConfig.version})`}
                   </Badge>
                 )}
-              </div>
-
-              {/* States */}
-              <div>
-                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  States ({config.mergedConfig.states.length}):
-                </h4>
-                <div className="flex flex-wrap gap-1">
-                  {config.mergedConfig.states.slice(0, 5).map((state) => (
-                    <Badge key={state.id} variant="outline" className="text-xs">
-                      {state.name}
-                    </Badge>
-                  ))}
-                  {config.mergedConfig.states.length > 5 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{config.mergedConfig.states.length - 5} more
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              {/* Create Permissions */}
-              <div>
-                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Create Permissions:
-                </h4>
-                <div className="flex flex-wrap gap-1">
-                  {config.mergedConfig.permissions.create.map((perm, idx) => (
-                    <Badge key={idx} variant="secondary" className="text-xs">
-                      {perm === '*' ? 'All Roles' : perm}
-                    </Badge>
-                  ))}
-                </div>
               </div>
 
               {/* Relationships */}

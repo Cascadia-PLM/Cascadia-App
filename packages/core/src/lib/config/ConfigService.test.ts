@@ -30,11 +30,14 @@ import { insertTestUser } from '@/__tests__/fixtures/users'
 import { overrideItemTypeConfig } from '@/__tests__/fixtures/lifecycles'
 import { itemTypeConfigs } from '@/lib/db/schema'
 import { ItemTypeRegistry } from '@/lib/items/registry'
+import { ValidationError } from '@/lib/errors'
 import { takeFirst } from '@/lib/db/take-first'
 import '@/lib/items/registerItemTypes.server'
 
 const DEFINITION = '00000000-0000-4000-8000-000000000102'
 const OTHER = '00000000-0000-4000-8000-000000000103'
+/** The Part lifecycle: Driven, ECO-controlled. */
+const PART_LIFECYCLE = '00000000-0000-4000-8000-000000000100'
 
 describe('normalizeRuntimeConfig', () => {
   it('folds the legacy key into lifecyclesByChangeType', () => {
@@ -112,6 +115,48 @@ describe('ConfigService change-type mapping', () => {
     const row = all.find((c) => c.itemType === 'ChangeOrder')
     expect(row?.config.lifecyclesByChangeType).toEqual({ ECO: DEFINITION })
     expect(row?.config.workflowsByChangeType).toBeUndefined()
+  })
+
+  /**
+   * Security gate. `isBranchProtectionExempt` exempts Free and Driving
+   * lifecycles, so a Part pointed at a change-order workflow stops being
+   * ECO-controlled and can be written straight to a protected main. The check
+   * that refuses it lived in a wrapper method no route called, which is why
+   * this asserts through `saveConfig` — the path the admin API actually takes.
+   */
+  it('refuses to point an item type at a change-order workflow', async () => {
+    await expect(
+      ConfigService.saveConfig(
+        'Part',
+        { lifecycleDefinitionId: DEFINITION },
+        userId,
+      ),
+    ).rejects.toThrow(ValidationError)
+  })
+
+  it('refuses to point a workflow-governed type at an item lifecycle', async () => {
+    await expect(
+      ConfigService.saveConfig(
+        'ChangeOrder',
+        { lifecycleDefinitionId: PART_LIFECYCLE },
+        userId,
+      ),
+    ).rejects.toThrow(ValidationError)
+  })
+
+  it('accepts the change-order workflow for the type it governs', async () => {
+    // The shipped ChangeOrder configuration. A blanket "no Driving targets"
+    // gate would reject this, which is why the check compares kinds.
+    const saved = await ConfigService.saveConfig(
+      'ChangeOrder',
+      {
+        lifecycleDefinitionId: DEFINITION,
+        lifecyclesByChangeType: { ECO: DEFINITION },
+      },
+      userId,
+    )
+
+    expect(saved.config.lifecycleDefinitionId).toBe(DEFINITION)
   })
 
   it('stores a config sent under the legacy key under the new one only', async () => {

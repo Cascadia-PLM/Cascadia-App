@@ -1,7 +1,7 @@
 # Stage 1: Build conda environment with pythonocc-core
 # Base digests pinned (resolved 2026-08-27) so the fragile conda solve builds
 # from a known image; bump via `docker buildx imagetools inspect <image>`.
-FROM condaforge/miniforge3:latest@sha256:609d8012d8ad3ea46c8e531ce2de9e727031960067b3a1e412c6e2954ef551c9 AS build
+FROM condaforge/miniforge3:latest@sha256:3a41fcca7d6740df102951d9f122bf1a5f81170fdba234243060f72eb4891901 AS build
 
 # Build context is ./workers (not this directory): the image also carries
 # the shared py-common package alongside the worker source (JOBS-8).

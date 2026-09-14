@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { z } from 'zod'
-import { baseItemSchema, commonStates } from './base'
+import { baseItemSchema } from './base'
 import type { BaseItem } from './base'
 
 // Part classification. Exported as a schema so the AI/MCP tool schemas can
@@ -48,9 +48,6 @@ export const partSchema = baseItemSchema.extend({
   costCurrency: z.string().length(3).optional().default('USD'),
   leadTimeDays: z.number().int().min(0).optional(),
 })
-
-// Part-specific states (using common states)
-export const partStates = commonStates
 
 // Part relationships
 export const partRelationships = [

@@ -31,6 +31,13 @@ export const RABBITMQ_CONFIG = {
   /** Dead letter queue */
   DLQ_QUEUE: 'jobs.dead-letter',
 
+  /**
+   * Topic exchange domain events are relayed to (routing key = event type,
+   * e.g. `change_order.released`). Fed by the `relay.rabbitmq` event
+   * consumer; external integrations bind their own queues to it.
+   */
+  EVENTS_EXCHANGE: 'cascadia.events',
+
   /** Maximum message priority (1-255 in RabbitMQ, we use 10) */
   MAX_PRIORITY: 10,
 } as const

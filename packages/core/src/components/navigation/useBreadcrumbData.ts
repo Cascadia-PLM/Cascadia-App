@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { Design } from '@/lib/types/design'
 import type { Program } from '@/lib/types/program'
 import type {
@@ -9,236 +9,79 @@ import type {
   BreadcrumbRouteInfo,
   UseBreadcrumbDataResult,
 } from './breadcrumb-types'
-import { apiFetch } from '@/lib/api/client'
+import { entityQuery } from '@/lib/query'
+import { designListQuery } from '@/lib/query/options/designs'
+import { programListQuery } from '@/lib/query/options/programs'
 
-// Type definitions for API responses
-type DesignResponse = {
-  data: {
-    design: {
-      id: string
-      name: string
-      code: string
-      programId?: string | null
-    }
-  }
-}
-
-type ProgramResponse = {
-  data: { program: { id: string; name: string; code: string } }
-}
-
-type ItemResponse = {
-  data: {
-    item: {
-      id: string
-      itemNumber: string
-      itemType: string
-      designId?: string
-    }
-  }
-}
-
-/**
- * Extract ID from pathname for a given route pattern.
- * More reliable than params.id which can be stale during navigation.
- */
-function extractIdFromPath(pathname: string, pattern: RegExp): string | null {
-  const match = pathname.match(pattern)
-  return match?.[1] ?? null
-}
+type BreadcrumbItem = NonNullable<BreadcrumbData['item']>
 
 /**
  * Hook to fetch breadcrumb data based on current route.
  * Handles both list page data (programs/designs for dropdowns) and
  * detail page data (parent program/design for links).
+ *
+ * A detail page's trail is resolved one hop at a time — the item names its
+ * design, the design its program — and each hop is a query keyed by the id it
+ * reads. A response that arrives after the user has moved on lands in its own
+ * cache entry rather than in the next page's crumbs, which the effect chain
+ * this replaced could not promise. The keys are the ones the detail pages
+ * read, so a crumb usually resolves from cache and refreshes whenever its
+ * entity is invalidated.
  */
 export function useBreadcrumbData(
   routeInfo: BreadcrumbRouteInfo,
 ): UseBreadcrumbDataResult {
-  const [breadcrumbData, setBreadcrumbData] = useState<BreadcrumbData>({})
-  const [programs, setPrograms] = useState<Array<Program>>([])
-  const [designs, setDesigns] = useState<Array<Design>>([])
-
   const {
-    pathname,
+    detailId,
     isListPageWithDropdowns,
     needsDesignDropdown,
-    isProgramListPage,
     isItemDetailPage,
     isDesignDetailPage,
     isProgramDetailPage,
     isChangeOrderDetailPage,
   } = routeInfo
 
-  // Extract IDs directly from pathname to avoid race conditions during navigation
-  // where params.id might be stale while pathname has already changed
-  // Note: Use non-capturing group (?:...) for route type so ID is in group 1
-  const itemIdFromPath = extractIdFromPath(
-    pathname,
-    /^\/(?:parts|documents|requirements|tasks|issues)\/([^/]+)/,
+  // Programs and designs for the list pages' dropdowns
+  const { data: programs = [] } = useQuery({
+    ...programListQuery(),
+    enabled: isListPageWithDropdowns,
+  })
+  const { data: designs = [] } = useQuery({
+    ...designListQuery(),
+    enabled: isListPageWithDropdowns && needsDesignDropdown,
+  })
+
+  // A change order's crumb comes from its item record, like any other item's
+  const itemId =
+    isItemDetailPage || isChangeOrderDetailPage ? detailId : undefined
+  const item = useQuery(
+    entityQuery<BreadcrumbItem>('items', itemId ?? '', 'item', !!itemId),
   )
-  const designIdFromPath = extractIdFromPath(pathname, /^\/designs\/([^/]+)/)
-  const programIdFromPath = extractIdFromPath(pathname, /^\/programs\/([^/]+)/)
-  const changeOrderIdFromPath = extractIdFromPath(
-    pathname,
-    /^\/change-orders\/([^/]+)/,
+
+  const designId = isDesignDetailPage
+    ? detailId
+    : (item.data?.designId ?? undefined)
+  const design = useQuery(
+    entityQuery<Design>('designs', designId ?? '', 'design', !!designId),
   )
 
-  // Fetch programs and designs for list pages
-  useEffect(() => {
-    async function fetchListData() {
-      if (!isListPageWithDropdowns) return
+  const programId = isProgramDetailPage
+    ? detailId
+    : (design.data?.programId ?? undefined)
+  const program = useQuery(
+    entityQuery<Program>('programs', programId ?? '', 'program', !!programId),
+  )
 
-      try {
-        // Fetch programs
-        const programsRes = await apiFetch<{
-          data: { programs: Array<Program> }
-        }>('/api/v1/programs')
-        setPrograms(programsRes.data.programs)
-
-        // Fetch designs (for pages that need design dropdown)
-        if (needsDesignDropdown) {
-          const designsRes = await apiFetch<{
-            data: { designs: Array<Design> }
-          }>('/api/v1/designs')
-          setDesigns(designsRes.data.designs)
-        }
-      } catch {
-        // Silently fail - breadcrumb dropdowns will show empty state
-      }
-    }
-    fetchListData()
-  }, [isListPageWithDropdowns, needsDesignDropdown])
-
-  // Fetch breadcrumb data for detail pages
-  useEffect(() => {
-    async function fetchBreadcrumbData() {
-      // Skip for list pages (they use dropdowns instead)
-      if (isListPageWithDropdowns || isProgramListPage) {
-        setBreadcrumbData({})
-        return
-      }
-
-      try {
-        const data: BreadcrumbData = {}
-
-        // For item detail pages, fetch the item first
-        if (isItemDetailPage && itemIdFromPath) {
-          try {
-            const itemRes = await apiFetch<ItemResponse>(
-              `/api/v1/items/${itemIdFromPath}`,
-            )
-            data.item = {
-              id: itemRes.data.item.id,
-              itemNumber: itemRes.data.item.itemNumber,
-              itemType: itemRes.data.item.itemType,
-              designId: itemRes.data.item.designId,
-            }
-
-            if (itemRes.data.item.designId) {
-              const designRes = await apiFetch<DesignResponse>(
-                `/api/v1/designs/${itemRes.data.item.designId}`,
-              )
-              data.design = designRes.data.design
-
-              if (designRes.data.design.programId) {
-                const programRes = await apiFetch<ProgramResponse>(
-                  `/api/v1/programs/${designRes.data.design.programId}`,
-                )
-                data.program = programRes.data.program
-              }
-            }
-          } catch {
-            // Silently fail - breadcrumb will show without item context
-          }
-        }
-
-        // For change order detail pages
-        if (isChangeOrderDetailPage && changeOrderIdFromPath) {
-          try {
-            const itemRes = await apiFetch<ItemResponse>(
-              `/api/v1/items/${changeOrderIdFromPath}`,
-            )
-            data.item = {
-              id: itemRes.data.item.id,
-              itemNumber: itemRes.data.item.itemNumber,
-              itemType: itemRes.data.item.itemType,
-              designId: itemRes.data.item.designId,
-            }
-
-            if (itemRes.data.item.designId) {
-              const designRes = await apiFetch<DesignResponse>(
-                `/api/v1/designs/${itemRes.data.item.designId}`,
-              )
-              data.design = designRes.data.design
-
-              if (designRes.data.design.programId) {
-                const programRes = await apiFetch<ProgramResponse>(
-                  `/api/v1/programs/${designRes.data.design.programId}`,
-                )
-                data.program = programRes.data.program
-              }
-            }
-          } catch {
-            // Silently fail - breadcrumb will show without change order context
-          }
-        }
-
-        // For design detail pages
-        if (isDesignDetailPage && designIdFromPath) {
-          try {
-            const designRes = await apiFetch<DesignResponse>(
-              `/api/v1/designs/${designIdFromPath}`,
-            )
-            data.design = designRes.data.design
-
-            if (designRes.data.design.programId) {
-              const programRes = await apiFetch<ProgramResponse>(
-                `/api/v1/programs/${designRes.data.design.programId}`,
-              )
-              data.program = programRes.data.program
-            }
-          } catch {
-            // Silently fail - breadcrumb will show without design context
-          }
-        }
-
-        // For program detail pages
-        if (isProgramDetailPage && programIdFromPath) {
-          try {
-            const programRes = await apiFetch<ProgramResponse>(
-              `/api/v1/programs/${programIdFromPath}`,
-            )
-            data.program = programRes.data.program
-          } catch {
-            // Silently fail - breadcrumb will show without program context
-          }
-        }
-
-        setBreadcrumbData(data)
-      } catch {
-        // Silently fail - breadcrumb will show default state
-      }
-    }
-
-    fetchBreadcrumbData()
-  }, [
-    pathname,
-    isListPageWithDropdowns,
-    isProgramListPage,
-    isItemDetailPage,
-    isDesignDetailPage,
-    isProgramDetailPage,
-    isChangeOrderDetailPage,
-    itemIdFromPath,
-    designIdFromPath,
-    programIdFromPath,
-    changeOrderIdFromPath,
-  ])
+  // Held back until every hop has settled, so the trail appears whole instead
+  // of growing a segment per response. A hop that fails ends the trail where
+  // it got to.
+  const settled = !item.isLoading && !design.isLoading && !program.isLoading
 
   return {
     programs,
     designs,
-    breadcrumbData,
+    breadcrumbData: settled
+      ? { item: item.data, design: design.data, program: program.data }
+      : {},
   }
 }

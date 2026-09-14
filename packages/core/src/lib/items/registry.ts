@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { resolveLifecycleType } from '../lifecycles/normalize'
-import type { ItemTypeConfig, StateConfig } from './types/base'
+import type { ItemTypeConfig } from './types/base'
 import type { RuntimeItemTypeConfig } from './types/runtime-config'
 import type { LifecycleDefinition } from '../lifecycles/types'
 import type { ConfigService as ConfigServiceType } from '../config'
@@ -11,8 +11,9 @@ import type { LifecycleDefinitionService as LifecycleDefinitionServiceType } fro
 // Re-export for convenience
 export type { RuntimeItemTypeConfig } from './types/runtime-config'
 
-// Lazy import of ConfigService to avoid bundling database code in client
-// This is only used on the server in loadRuntimeConfigs()
+// Lazy import of ConfigService to break the static cycle: ConfigService
+// imports this registry (it enforces the mandatory-lifecycle floor and
+// reloads the caches after a write), and this registry reads its rows.
 let ConfigServiceCache: typeof ConfigServiceType | null = null
 async function getConfigService() {
   if (!ConfigServiceCache) {
@@ -83,6 +84,51 @@ class ItemTypeRegistry {
   private static initPromise: Promise<void> | null = null
 
   /**
+   * How long a process may serve its cached runtime configuration before
+   * reading the table again, and when it last did.
+   *
+   * These caches are per process, and the only invalidation is per process
+   * too: `reload()` from the config write path, `invalidateLifecycleCache()`
+   * from the lifecycle write path. The documented topology is N stateless app
+   * replicas plus a separate jobs worker over one database, so an
+   * administrator's lifecycle reassignment reached exactly the replica that
+   * served the request and no other — with no time bound at all, since
+   * nothing expired. Every other process kept the previous definition until
+   * it restarted, and a stale definition is not a stale label: it decides
+   * release-state resolution, revision schemes and, through
+   * `isBranchProtectionExempt`, whether an item may be written to main.
+   *
+   * A bounded window is the cheap answer, and the one this codebase already
+   * uses for role permissions (`PermissionService.CACHE_TTL`). Postgres
+   * LISTEN/NOTIFY would propagate instantly but costs a dedicated connection
+   * per process and a new failure mode to operate.
+   *
+   * The per-release memo this cache exists for is untouched: a refresh costs
+   * one SELECT per interval per process, and a release finishes well inside
+   * one. A refresh that does land mid-operation clears the memo, which is the
+   * same thing an administrator's save has always done.
+   */
+  private static readonly REFRESH_INTERVAL_MS = 30_000
+  private static loadedAt = 0
+
+  /** In-flight refresh, so concurrent readers share one load. */
+  private static refreshPromise: Promise<void> | null = null
+
+  /**
+   * Bumped by every path that empties a cache, so an async fill started
+   * before the invalidation can tell that it did.
+   *
+   * `getAssignedDefinitionForType` reads the database and then writes what it
+   * read into `lifecycleCache`. Between those two steps an admin's item-type
+   * save (`reload`) or a lifecycle edit (`invalidateLifecycleCache`) can clear
+   * the map, and the write then lands in the freshly cleared cache — putting
+   * the pre-edit definition back, where nothing but another edit or a restart
+   * will dislodge it. The synchronous clear-and-repopulate in
+   * `loadRuntimeConfigs` has no such window; only the lazy fill does.
+   */
+  private static generation = 0
+
+  /**
    * Register a new item type configuration from code.
    * This defines the base configuration including schema and components.
    */
@@ -91,6 +137,7 @@ class ItemTypeRegistry {
     // Invalidate merged cache for this type
     this.mergedCache.delete(config.name)
     this.lifecycleCache.delete(config.name)
+    this.generation++
   }
 
   /**
@@ -102,55 +149,82 @@ class ItemTypeRegistry {
    */
   static invalidateLifecycleCache(): void {
     this.lifecycleCache.clear()
+    this.generation++
   }
 
   /**
    * Load runtime configurations from the database.
-   * Called during server initialization.
+   *
+   * Throws when the database cannot answer. It used to catch, log and return,
+   * which made "the configs could not be read" indistinguishable from "there
+   * are none" — and the difference matters, because `lifecycleDefinitionId`
+   * is a runtime value: a registry that silently falls back to code defaults
+   * resolves initial states, revision schemes and release targets from the
+   * shipped lifecycle rather than the assigned one, and `reload()` reported
+   * success to the admin who had just reassigned it. Callers decide what a
+   * failure means; boot fails on it (see the composition roots), and the MCP
+   * dev tool deliberately answers with code definitions alone.
    */
   static async loadRuntimeConfigs(): Promise<void> {
-    try {
-      const configService = await getConfigService()
-      const configs = await configService.getAllConfigs()
+    const configService = await getConfigService()
+    const configs = await configService.getAllConfigs()
 
-      this.runtimeConfigs.clear()
-      this.mergedCache.clear()
-      this.lifecycleCache.clear()
+    // Clear and repopulate below the await, so no caller can observe a
+    // half-loaded registry: nothing yields between here and the last set().
+    this.runtimeConfigs.clear()
+    this.mergedCache.clear()
+    this.lifecycleCache.clear()
+    this.generation++
 
-      for (const config of configs) {
-        this.runtimeConfigs.set(config.itemType, config.config)
-      }
-    } catch (error) {
-      // Log but don't fail - code defaults will be used
-      console.error('[ItemTypeRegistry] Failed to load runtime configs:', error)
+    for (const config of configs) {
+      this.runtimeConfigs.set(config.itemType, config.config)
     }
+
+    this.loadedAt = Date.now()
+  }
+
+  /**
+   * Reload the runtime configuration if this process's copy has aged past
+   * `REFRESH_INTERVAL_MS`; otherwise do nothing.
+   *
+   * Call it before reading anything an administrator can change — which,
+   * since the runtime tier shrank to the lifecycle assignment, means the
+   * lifecycle lookups below and the change-type mapping. A process that has
+   * not initialized yet initializes here instead.
+   */
+  static async ensureFresh(): Promise<void> {
+    if (!this.isInitialized) {
+      return this.initialize()
+    }
+
+    if (Date.now() - this.loadedAt < ItemTypeRegistry.REFRESH_INTERVAL_MS) {
+      return
+    }
+
+    this.refreshPromise ??= this.loadRuntimeConfigs().finally(() => {
+      this.refreshPromise = null
+    })
+
+    return this.refreshPromise
   }
 
   /**
    * Initialize the registry by loading runtime configurations.
-   * Safe to call multiple times - will only load once.
+   *
+   * Safe to call multiple times — concurrent callers share one load, and it
+   * runs once per process. A failed load rejects and leaves the registry
+   * uninitialized so the next caller retries, rather than marking itself
+   * initialized and serving code defaults for the lifetime of the process.
+   * Every composition root awaits this before serving anything.
    */
   static async initialize(): Promise<void> {
     if (this.isInitialized) {
       return
     }
 
-    // Prevent duplicate initialization
-    if (this.initPromise) {
-      return this.initPromise
-    }
-
-    this.initPromise = this.loadRuntimeConfigs()
+    this.initPromise ??= this.loadRuntimeConfigs()
       .then(() => {
         this.isInitialized = true
-      })
-      .catch((error) => {
-        // Mark as initialized even on failure to prevent retry loops
-        this.isInitialized = true
-        console.error(
-          '[ItemTypeRegistry] Initialization failed, using code defaults:',
-          error,
-        )
       })
       .finally(() => {
         this.initPromise = null
@@ -173,23 +247,13 @@ class ItemTypeRegistry {
     }
 
     return {
-      // Always from code (type safety)
-      name: codeConfig.name,
-      schema: codeConfig.schema,
-      table: codeConfig.table,
-      components: codeConfig.components,
-      searchableFields: codeConfig.searchableFields,
-      displayField: codeConfig.displayField,
-      states: codeConfig.states, // Deprecated: states now come from lifecycle definition
+      ...codeConfig,
 
-      // Runtime overrides code defaults
-      label: runtimeConfig.label ?? codeConfig.label,
-      pluralLabel: runtimeConfig.pluralLabel ?? codeConfig.pluralLabel,
-      icon: runtimeConfig.icon ?? codeConfig.icon,
+      // The one field an administrator may override. Everything else comes
+      // from code: see RuntimeItemTypeConfig for what used to be here and why
+      // offering a setting nothing reads was worse than offering none.
       lifecycleDefinitionId:
         runtimeConfig.lifecycleDefinitionId ?? codeConfig.lifecycleDefinitionId,
-      permissions: runtimeConfig.permissions ?? codeConfig.permissions,
-      relationships: runtimeConfig.relationships ?? codeConfig.relationships,
     }
   }
 
@@ -220,9 +284,11 @@ class ItemTypeRegistry {
    * Get all registered item types (merged configurations)
    */
   static getAllTypes(): Array<ItemTypeConfig> {
-    return Array.from(this.codeDefinitions.keys())
-      .map((name) => this.getType(name)!)
-      .filter(Boolean)
+    // Every key came from `codeDefinitions`, so `getType` answers for all of
+    // them. (It used to assert non-null and then filter for null.)
+    return Array.from(this.codeDefinitions.keys()).map(
+      (name) => this.getType(name) as ItemTypeConfig,
+    )
   }
 
   /**
@@ -230,17 +296,6 @@ class ItemTypeRegistry {
    */
   static hasType(name: string): boolean {
     return this.codeDefinitions.has(name)
-  }
-
-  /**
-   * Get item types that can be created by a user with specific roles
-   */
-  static getTypesForRoles(roles: Array<string>): Array<ItemTypeConfig> {
-    return this.getAllTypes().filter((type) => {
-      return type.permissions.create.some(
-        (permission) => permission === '*' || roles.includes(permission),
-      )
-    })
   }
 
   /**
@@ -268,13 +323,6 @@ class ItemTypeRegistry {
   }
 
   /**
-   * Check if runtime configs have been loaded
-   */
-  static isReady(): boolean {
-    return this.isInitialized
-  }
-
-  /**
    * Unregister an item type (mainly for testing)
    */
   static unregister(name: string): boolean {
@@ -282,6 +330,7 @@ class ItemTypeRegistry {
     this.runtimeConfigs.delete(name)
     this.mergedCache.delete(name)
     this.lifecycleCache.delete(name)
+    this.generation++
     return true
   }
 
@@ -293,6 +342,7 @@ class ItemTypeRegistry {
     this.runtimeConfigs.clear()
     this.mergedCache.clear()
     this.lifecycleCache.clear()
+    this.generation++
     this.isInitialized = false
     this.initPromise = null
   }
@@ -327,6 +377,11 @@ class ItemTypeRegistry {
   static async getAssignedDefinitionForType(
     itemType: string,
   ): Promise<LifecycleDefinition | undefined> {
+    // Before the memo, not after it: a type already memoized would otherwise
+    // never notice that the interval had passed, and nothing would ever
+    // refresh.
+    await this.ensureFresh()
+
     if (this.lifecycleCache.has(itemType)) {
       return this.lifecycleCache.get(itemType)
     }
@@ -337,9 +392,14 @@ class ItemTypeRegistry {
       return undefined
     }
 
+    // Read the generation before the lookup and only memoize if no
+    // invalidation landed while it was in flight; see `generation` above.
+    const generation = this.generation
     const definitions = await getLifecycleDefinitionService()
     const definition = (await definitions.getById(lifecycleId)) ?? undefined
-    this.lifecycleCache.set(itemType, definition)
+    if (generation === this.generation) {
+      this.lifecycleCache.set(itemType, definition)
+    }
     return definition
   }
 
@@ -357,27 +417,6 @@ class ItemTypeRegistry {
     return definition && resolveLifecycleType(definition) !== 'Driving'
       ? definition
       : undefined
-  }
-
-  /**
-   * Get the valid states for an item type from its lifecycle definition.
-   * Every state an item of the type can hold, resolved through the lifecycle
-   * service: a Driving-governed type (ChangeOrder) gets the union across the
-   * definitions its change types run. There is no code-defined fallback any
-   * more — it answered for ChangeOrder, because the registry deliberately
-   * never resolves a Driving definition as an item lifecycle, with a list of
-   * states no change order could hold.
-   */
-  static async getStatesForType(itemType: string): Promise<Array<StateConfig>> {
-    const { LifecycleService } = await import('../services/LifecycleService')
-    return (await LifecycleService.getRenderableStates(itemType)).map(
-      (state) => ({
-        id: state.id,
-        name: state.name,
-        color: state.color,
-        description: state.description,
-      }),
-    )
   }
 
   /**

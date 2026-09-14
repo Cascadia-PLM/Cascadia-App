@@ -321,8 +321,8 @@ export class ConflictDetectionService {
         itemNumber: item?.itemNumber || 'Unknown',
         itemName: item?.name || null,
         conflictType: 'checkout',
-        // Not blocking: the release auto-checks-in every item on the branch
-        // before merging (`autoCheckinBranchItems`), which is the documented
+        // Not blocking: the release checks in every item on the branch inside
+        // its merge transaction (`releaseBranchLocks`), which is the documented
         // behaviour. Reporting this as an error meant an ECO could never be
         // released while anyone still held a checkout — and a checkout is held
         // for as long as the engineer keeps editing, since saving keeps it.
@@ -1195,6 +1195,12 @@ export class ConflictDetectionService {
         if (typeHandler) {
           const { itemId: _ignored, ...extFields } = mergedData
           await typeHandler.insert(newWorkingCopy.id, extFields, tx)
+          // The extension *row* is the merged data, so this deliberately does
+          // not go through `copyTypeSpecificData`. Content a type keeps in
+          // child tables is not part of that merge and still has to be
+          // carried, from the copy being rebased — the same authority the
+          // files and relationships below are taken from.
+          await typeHandler.copyChildren?.(ourItem.id, newWorkingCopy.id, tx)
         }
 
         // Rebase mints a version row like every other step that does, so the
@@ -1344,6 +1350,12 @@ export class ConflictDetectionService {
         if (typeHandler) {
           const { itemId: _ignored, ...extFields } = mergedData
           await typeHandler.insert(newWorkingCopy.id, extFields, tx)
+          // The extension *row* is the merged data, so this deliberately does
+          // not go through `copyTypeSpecificData`. Content a type keeps in
+          // child tables is not part of that merge and still has to be
+          // carried, from the copy being rebased — the same authority the
+          // files and relationships below are taken from.
+          await typeHandler.copyChildren?.(ourItem.id, newWorkingCopy.id, tx)
         }
 
         // Main wins on fields here, but not on files: they are not part of the

@@ -6,16 +6,18 @@
  *
  * One journey, end to end, in the design-management.spec.ts style: seed a
  * design and its parts over the API, open the design detail page (Structure
- * is the default tab), and drive the tab's three write paths through the UI —
- * add a part from another design, add a BOM child, remove a root from the
- * structure.
+ * is the default tab), and drive the tab's five write paths through the UI —
+ * create a part in place, add a part from another design, add a BOM child,
+ * create a child in place, remove a root from the structure.
  *
  * Every assertion here is about the tree restaging *without a page reload*.
  * The Structure tab reads `designStructureQuery` from the shared cache, and
  * its dialogs refresh it by naming the resource they wrote: design membership
- * writes invalidate 'designs' directly, while the BOM-child add invalidates
+ * writes invalidate 'designs' directly, the BOM-child add invalidates
  * 'relationships' and reaches the tree through the RESOURCE_DEPENDENTS
- * fan-out — two different wires, each pinned by its own phase below. If that
+ * fan-out, and the in-place creates invalidate 'parts' and reach it through
+ * 'relationships' — three different wires, each pinned by its own phase
+ * below. If that
  * wiring is dropped, the writes still succeed and the page still renders; the
  * only observable failure is the tree not changing until a reload, which is
  * exactly what these expects wait on. The window marker at the end proves no
@@ -37,8 +39,9 @@ test.describe('Design Structure Journey', () => {
     const ts = Date.now()
 
     // The design under test holds two root parts. The donor design exists
-    // because the Add Part dialog only offers parts from *other* designs —
-    // its usage-copy mode copies the part in, keeping the item number.
+    // because the Add Part dialog's Use Existing step only offers parts from
+    // *other* designs — its usage-copy mode copies the part in, keeping the
+    // item number.
     const design = await seedFreshDesign(page, 'E2E Structure Journey')
     const parent = await seedPart(page, design.id, {
       itemNumber: `PN-E2E-ST-PARENT-${ts}`,
@@ -71,10 +74,45 @@ test.describe('Design Structure Journey', () => {
       ;(window as MarkedWindow).__structureJourneyMarker = true
     })
 
+    // ---- Create a part in place (writes an item) ----
+    // The greenfield gesture: Add Part → Create New, the item number left
+    // blank so the server numbers it. The part is created in this design,
+    // which designates it a top-level part, and the tree shows it as a root
+    // via the third wire — invalidate('parts') reaching 'designs' through
+    // 'relationships'.
+    await page.getByRole('button', { name: 'Add Part' }).click()
+    const createDialog = page.getByRole('dialog')
+    await expect(createDialog).toBeVisible()
+    await createDialog.getByRole('button', { name: 'Create New' }).click()
+    await createDialog
+      .getByTestId('create-part-name')
+      .fill(`E2E Structure Created ${ts}`)
+    const [createResponse] = await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          new URL(r.url()).pathname === '/api/v1/items' &&
+          r.request().method() === 'POST',
+        { timeout: 15000 },
+      ),
+      createDialog.getByTestId('create-part-submit').click(),
+    ])
+    expect(
+      createResponse.ok(),
+      `create part failed: ${await createResponse.text()}`,
+    ).toBe(true)
+    const created = (await createResponse.json()).data.item as {
+      itemNumber: string
+    }
+    await expect(createDialog).toBeHidden({ timeout: 15000 })
+    await expect(
+      page.getByText(created.itemNumber, { exact: true }),
+    ).toBeVisible({ timeout: 15000 })
+
     // ---- Add a part from the donor design (writes design membership) ----
     await page.getByRole('button', { name: 'Add Part' }).click()
     const addDialog = page.getByRole('dialog')
     await expect(addDialog).toBeVisible()
+    await addDialog.getByRole('button', { name: 'Use Existing' }).click()
     await addDialog
       .getByPlaceholder('Search by part number or name...')
       .fill(donor.itemNumber)
@@ -117,6 +155,7 @@ test.describe('Design Structure Journey', () => {
     await page.getByRole('menuitem', { name: 'Add Child' }).click()
     const childDialog = page.getByRole('dialog')
     await expect(childDialog).toBeVisible()
+    await childDialog.getByRole('button', { name: 'Use Existing' }).click()
     await childDialog
       .getByPlaceholder('Search by part number or name...')
       .fill(child.itemNumber)
@@ -155,6 +194,65 @@ test.describe('Design Structure Journey', () => {
     await expect(
       page.getByText(child.itemNumber, { exact: true }),
     ).toBeVisible()
+
+    // ---- Create a child in place (writes an item, then a relationship) ----
+    // Add Child → Create New makes the part in this design and nests it under
+    // the parent in one go. The parent is expanded from the step above, so
+    // the new number shows under it; the server's structure says whether it
+    // is a child or a root.
+    await page
+      .getByText(parent.itemNumber, { exact: true })
+      .click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Add Child' }).click()
+    const createChildDialog = page.getByRole('dialog')
+    await expect(createChildDialog).toBeVisible()
+    await createChildDialog.getByRole('button', { name: 'Create New' }).click()
+    await createChildDialog
+      .getByTestId('create-part-name')
+      .fill(`E2E Structure Created Child ${ts}`)
+    const [childCreateResponse, childEdgeResponse] = await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          new URL(r.url()).pathname === '/api/v1/items' &&
+          r.request().method() === 'POST',
+        { timeout: 15000 },
+      ),
+      page.waitForResponse(
+        (r) =>
+          r.url().includes(`/items/${parent.id}/relationships`) &&
+          r.request().method() === 'POST',
+        { timeout: 15000 },
+      ),
+      createChildDialog.getByTestId('create-part-submit').click(),
+    ])
+    expect(
+      childCreateResponse.ok(),
+      `create child failed: ${await childCreateResponse.text()}`,
+    ).toBe(true)
+    expect(
+      childEdgeResponse.ok(),
+      `nest child failed: ${await childEdgeResponse.text()}`,
+    ).toBe(true)
+    const createdChild = (await childCreateResponse.json()).data.item as {
+      id: string
+      itemNumber: string
+    }
+    await expect(createChildDialog).toBeHidden({ timeout: 15000 })
+    await expect(
+      page.getByText(createdChild.itemNumber, { exact: true }),
+    ).toBeVisible({ timeout: 15000 })
+    const structureResponse = await page.request.get(
+      `/api/v1/designs/${design.id}/structure`,
+    )
+    const structure = (await structureResponse.json()).data as {
+      roots: Array<{ itemId: string; children?: Array<{ itemId: string }> }>
+    }
+    expect(structure.roots.map((r) => r.itemId)).not.toContain(createdChild.id)
+    expect(
+      structure.roots
+        .find((r) => r.itemId === parent.id)
+        ?.children?.map((c) => c.itemId),
+    ).toContain(createdChild.id)
 
     // ---- Remove a root from the structure (writes design membership) ----
     await page

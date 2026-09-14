@@ -25,8 +25,10 @@ import { ItemSearchService } from './ItemSearchService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { designs, items, programs } from '@/lib/db/schema'
+import { designs, items, programs, tools } from '@/lib/db/schema'
 import { takeFirst } from '@/lib/db/take-first'
+import { ITEM_TYPE_DEFINITIONS } from '@/lib/items/item-type-definitions'
+import { getTypeHandler } from '@/lib/items/type-handlers'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'
@@ -606,5 +608,85 @@ describe('ItemSearchService.findIdsByItemNumbers', () => {
   it('returns an empty map for an empty request without querying', async () => {
     const resolved = await ItemSearchService.findIdsByItemNumbers([])
     expect(resolved.size).toBe(0)
+  })
+})
+
+/**
+ * Per-type enrichment: the generic list path must carry a type's own columns.
+ *
+ * `getTypeTable` and `getTypeSpecificData` were hand-written switches, and
+ * both had fallen behind the registry — Tool, PhysicalPart and WorkOrder were
+ * in neither, so `GET /api/v1/items?itemType=Tool` returned rows with no
+ * `toolType`, `manufacturer` or `model`, and the Tools page rendered a dash in
+ * every one of those columns. They read the type handler now, which is where
+ * the rest of the codebase gets the extension table.
+ *
+ * The first case is the ratchet: it is about the derivation, so it covers a
+ * fourteenth type on the day it is added rather than the next time someone
+ * remembers a switch.
+ */
+describe('ItemSearchService — type-specific enrichment', () => {
+  const testDb = new TestDatabase()
+  let user: TestUser
+
+  beforeAll(async () => {
+    await testDb.setup()
+  })
+
+  afterAll(async () => {
+    await testDb.teardown()
+  })
+
+  beforeEach(async () => {
+    await testDb.beginTransaction()
+    user = await insertTestUser(testDb.db)
+  })
+
+  afterEach(async () => {
+    await testDb.rollback()
+  })
+
+  it('has an extension table for every registered item type', () => {
+    for (const def of Object.values(ITEM_TYPE_DEFINITIONS)) {
+      expect(
+        getTypeHandler(def.name)?.table,
+        `Item type "${def.name}" has no type handler, so a generic search ` +
+          'returns its rows without any of its own columns',
+      ).toBeDefined()
+    }
+  })
+
+  it('returns a tool with its own columns', async () => {
+    const item = takeFirst(
+      await testDb.db
+        .insert(items)
+        .values({
+          masterId: crypto.randomUUID(),
+          itemNumber: 'TOOL-000900',
+          revision: '-',
+          itemType: 'Tool',
+          name: 'Laser cutter',
+          state: 'Draft',
+          createdBy: user.id,
+          modifiedBy: user.id,
+        })
+        .returning(),
+    )
+    await testDb.db.insert(tools).values({
+      itemId: item.id,
+      toolType: 'manufacturing',
+      toolSubtype: 'laser_cutter',
+      manufacturer: 'Trotec',
+      model: 'Speedy 400',
+    })
+
+    const { items: results } = await ItemSearchService.search('Tool', {})
+    const found = results.find((row) => row.id === item.id) as
+      Record<string, unknown> | undefined
+
+    expect(found).toBeDefined()
+    expect(found?.toolType).toBe('manufacturing')
+    expect(found?.manufacturer).toBe('Trotec')
+    expect(found?.model).toBe('Speedy 400')
   })
 })

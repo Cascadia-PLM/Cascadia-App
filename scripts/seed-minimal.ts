@@ -263,36 +263,18 @@ try {
       itemType: 'Part',
       config: {
         lifecycleDefinitionId: IDS.partLifecycle,
-        permissions: {
-          create: ['Power User', 'Administrator'],
-          read: ['*'],
-          update: ['Power User', 'Administrator'],
-          delete: ['Administrator'],
-        },
       },
     },
     {
       itemType: 'Document',
       config: {
         lifecycleDefinitionId: IDS.documentLifecycle,
-        permissions: {
-          create: ['Power User', 'Administrator', 'View Only'],
-          read: ['*'],
-          update: ['Power User', 'Administrator'],
-          delete: ['Administrator'],
-        },
       },
     },
     {
       itemType: 'Requirement',
       config: {
         lifecycleDefinitionId: IDS.requirementLifecycle,
-        permissions: {
-          create: ['Power User', 'Administrator'],
-          read: ['*'],
-          update: ['Power User', 'Administrator'],
-          delete: ['Administrator'],
-        },
       },
     },
     {
@@ -308,84 +290,42 @@ try {
           MCO: IDS.changeOrderWorkflow,
           XCO: IDS.flexibleChangeOrderWorkflow,
         },
-        permissions: {
-          create: ['Power User', 'Administrator'],
-          read: ['*'],
-          update: ['Power User', 'Administrator'],
-          delete: ['Administrator'],
-        },
       },
     },
     {
       itemType: 'Issue',
       config: {
         lifecycleDefinitionId: IDS.issueLifecycle,
-        permissions: {
-          create: ['Power User', 'Administrator', 'User'],
-          read: ['*'],
-          update: ['Power User', 'Administrator', 'User'],
-          delete: ['Administrator'],
-        },
       },
     },
     {
       itemType: 'Tool',
       config: {
         lifecycleDefinitionId: IDS.toolLifecycle,
-        permissions: {
-          create: ['*'],
-          read: ['*'],
-          update: ['*'],
-          delete: ['Administrator'],
-        },
       },
     },
     {
       itemType: 'Task',
       config: {
         lifecycleDefinitionId: LIFECYCLE_IDS.task,
-        permissions: {
-          create: ['*'],
-          read: ['*'],
-          update: ['*'],
-          delete: ['Administrator'],
-        },
       },
     },
     {
       itemType: 'TestPlan',
       config: {
         lifecycleDefinitionId: LIFECYCLE_IDS.testPlan,
-        permissions: {
-          create: ['Power User', 'Administrator'],
-          read: ['*'],
-          update: ['Power User', 'Administrator'],
-          delete: ['Administrator'],
-        },
       },
     },
     {
       itemType: 'TestCase',
       config: {
         lifecycleDefinitionId: LIFECYCLE_IDS.testCase,
-        permissions: {
-          create: ['Power User', 'Administrator'],
-          read: ['*'],
-          update: ['Power User', 'Administrator'],
-          delete: ['Administrator'],
-        },
       },
     },
     {
       itemType: 'WorkInstruction',
       config: {
         lifecycleDefinitionId: LIFECYCLE_IDS.workInstruction,
-        permissions: {
-          create: ['Power User', 'Administrator'],
-          read: ['*'],
-          update: ['Power User', 'Administrator'],
-          delete: ['Administrator'],
-        },
       },
     },
     {
@@ -393,40 +333,29 @@ try {
       itemType: 'Software',
       config: {
         lifecycleDefinitionId: LIFECYCLE_IDS.part,
-        permissions: {
-          create: ['Power User', 'Administrator'],
-          read: ['*'],
-          update: ['Power User', 'Administrator'],
-          delete: ['Administrator'],
-        },
       },
     },
     {
       itemType: 'PhysicalPart',
       config: {
         lifecycleDefinitionId: IDS.physicalPartLifecycle,
-        permissions: {
-          create: ['*'],
-          read: ['*'],
-          update: ['*'],
-          delete: ['Administrator'],
-        },
       },
     },
     {
       itemType: 'WorkOrder',
       config: {
         lifecycleDefinitionId: IDS.workOrderLifecycle,
-        permissions: {
-          create: ['*'],
-          read: ['*'],
-          update: ['*'],
-          delete: ['Administrator'],
-        },
       },
     },
   ]
 
+  // First-writer-wins, like `seedDefaultLifecycles` above and for the same
+  // reason: this is the row that carries an item type's lifecycle assignment,
+  // and the seed is a command the deployment docs hand operators as a repair
+  // step. Upserting it replaced the whole config document, so re-running the
+  // seed silently reverted every lifecycle reassignment an administrator had
+  // made in /admin — and, because the seed runs out of process, the running
+  // app went on serving the admin's version until it was restarted.
   for (const typeConfig of typeConfigs) {
     await db
       .insert(itemTypeConfigs)
@@ -435,14 +364,7 @@ try {
         config: typeConfig.config,
         modifiedBy: adminId,
       })
-      .onConflictDoUpdate({
-        target: itemTypeConfigs.itemType,
-        set: {
-          config: typeConfig.config,
-          modifiedBy: adminId,
-          modifiedAt: new Date(),
-        },
-      })
+      .onConflictDoNothing({ target: itemTypeConfigs.itemType })
   }
   console.log('✓ Item Type Configs (with lifecycle assignments)')
 

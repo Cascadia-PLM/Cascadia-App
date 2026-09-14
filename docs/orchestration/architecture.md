@@ -10,6 +10,26 @@ Cascadia PLM uses a modular architecture where components can run together or se
 4. **Cloud Agnostic** - Works with any PostgreSQL provider and any object storage
 5. **Stateless Services** - All state lives in the database or object storage
 
+### One exception, and its window
+
+Every process caches the item-type configuration it reads at startup: which
+lifecycle governs each item type, and the definitions themselves. That cache
+is per process, and a write invalidates only the process that served it — so
+when an administrator reassigns a lifecycle, or edits a lifecycle definition,
+the replica that handled the request is correct immediately and the others
+are not.
+
+They catch up on their own within **30 seconds**
+(`ItemTypeRegistry.REFRESH_INTERVAL_MS`), which bounds the window; the same
+applies to the jobs worker. `POST /api/v1/admin/reload-config` forces a
+reload, but only on whichever instance the load balancer routes it to, so it
+is a way to make one process current, not the fleet.
+
+There is no Redis and no cache-invalidation bus. The registry caches exist
+because a change-order release asks the same lifecycle question a few hundred
+times inside one transaction; a 30-second window is the price of not asking
+the database each time.
+
 ## Service Boundaries
 
 ### Core App (`cascadia-app`)
@@ -212,4 +232,5 @@ Best for:
 1. **Database** - Connection pooling (PgBouncer), read replicas
 2. **File I/O** - Object storage (S3), CDN for downloads
 3. **CPU** - Dedicated job workers, queue priority
-4. **Memory** - Caching layer (Redis)
+4. **Memory** - Caching layer (Redis) — planned, not shipped; nothing in the
+   application reads `REDIS_URL` today

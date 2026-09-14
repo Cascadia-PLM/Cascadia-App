@@ -253,10 +253,8 @@ export type {
   ItemTypeConfigDetail,
   ItemTypeConfigOverrides,
   ItemTypeConfigSummary,
-  ItemTypePermissions,
   ItemTypeRelationship,
   ItemTypeRuntimeConfig,
-  ItemTypeState,
   LifecyclesByChangeType,
 } from './options/item-types'
 export {
@@ -268,6 +266,21 @@ export type {
   CatalogEntryPage,
   CatalogEntrySearch,
 } from './options/component-catalog'
+export { eventConsumersQuery, eventTypesQuery } from './options/events'
+export {
+  webhookDeliveriesQuery,
+  webhookSubscriptionsQuery,
+} from './options/webhooks'
+export type {
+  WebhookDelivery,
+  WebhookDeliveryPage,
+  WebhookSubscription,
+} from './options/webhooks'
+export type {
+  EventConsumerStatus,
+  EventConsumersSnapshot,
+  EventTypeSummary,
+} from './options/events'
 export { jobDetailQuery, jobListQuery, jobStatusQuery } from './options/jobs'
 export type { Job, JobDetail, JobLog, JobStatusSnapshot } from './options/jobs'
 export { packageListQuery } from './options/packages'

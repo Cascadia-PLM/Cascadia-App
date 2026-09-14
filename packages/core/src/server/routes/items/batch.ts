@@ -7,10 +7,7 @@ import type { ResourceType } from '@/lib/auth/permissions'
 import type { BaseItem } from '@/lib/items/types/base'
 import { requirePermission } from '@/lib/auth/server'
 import { ValidationError } from '@/lib/errors'
-import {
-  getResourceType,
-  itemTypeToResource,
-} from '@/lib/items/item-type-resources'
+import { getResourceType } from '@/lib/items/item-type-resources'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { apiHandler, jsonResponse } from '@/lib/api/handler'
 import { requireBranchAccess, requireDesignAccess } from '@/lib/auth/access'
@@ -18,6 +15,7 @@ import { batchCreateRequestSchema } from '@/lib/api'
 import {
   batchDeleteRequestSchema,
   batchUpdateRequestSchema,
+  itemUpdateSchemaFor,
 } from '@/lib/api/schemas'
 
 const adapt = tagged('Items')
@@ -232,8 +230,7 @@ app.post(
           const item = await ItemService.findById(itemId)
           resolvedItems.set(itemId, item)
           if (item) {
-            const resource = itemTypeToResource(item.itemType)
-            if (resource) requiredResources.add(resource)
+            requiredResources.add(getResourceType(item.itemType))
           }
         }
         for (const resource of requiredResources) {
@@ -321,13 +318,15 @@ app.post(
         }
 
         // Resolve item types first so permissions are checked before any
-        // update — a mixed batch must not half-apply and then 403.
+        // update — a mixed batch must not half-apply and then 403. The types
+        // are kept because the update schema depends on them (below).
         const requiredResources = new Set<ResourceType>()
+        const itemTypesById = new Map<string, string>()
         for (const itemRequest of requestItems) {
           const item = await ItemService.findById(itemRequest.id)
           if (item) {
-            const resource = itemTypeToResource(item.itemType)
-            if (resource) requiredResources.add(resource)
+            itemTypesById.set(itemRequest.id, item.itemType)
+            requiredResources.add(getResourceType(item.itemType))
           }
         }
         for (const resource of requiredResources) {
@@ -342,8 +341,29 @@ app.post(
           try {
             const { id, data } = itemRequest
 
+            // Validate against the stored item's own update schema, the same
+            // way `PUT /api/v1/items/:id` does. `ItemService.update` does not
+            // validate — the merge and conflict paths feed it stored rows,
+            // not user input — so without this the request body reached the
+            // type handler as sent: a bogus `partType` was written to a
+            // varchar with no CHECK behind it, and a non-numeric
+            // `leadTimeDays` surfaced as a raw Postgres message.
+            //
+            // An id that resolved to nothing above is left alone, so
+            // `ItemService.update` raises the NotFoundError and the catch
+            // below records it against that row like any other failure.
+            const itemType = itemTypesById.get(id)
+            let validatedData: Record<string, unknown> = data
+            if (itemType) {
+              const parsed = itemUpdateSchemaFor(itemType).safeParse(data)
+              if (!parsed.success) {
+                throw ValidationError.fromZodError(parsed.error)
+              }
+              validatedData = parsed.data
+            }
+
             // Build update data - spread item data and add commit message if provided
-            const updateData: Record<string, unknown> = { ...data }
+            const updateData: Record<string, unknown> = { ...validatedData }
             if (commitMessage) {
               updateData.commitMessage = commitMessage
             }

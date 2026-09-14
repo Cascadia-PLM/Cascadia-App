@@ -43,6 +43,13 @@
       "when": 1789002865493,
       "tag": "0005_cad_model_node_links",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789228530388,
+      "tag": "0006_domain_events",
+      "breakpoints": true
     }
   ]
 }

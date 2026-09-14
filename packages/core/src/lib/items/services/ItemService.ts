@@ -6,9 +6,26 @@ import { and, eq, ne, or } from 'drizzle-orm'
 import { ZodError } from 'zod'
 import { db, withTx } from '../../db'
 import { branchItems, branches, designs, items } from '../../db/schema'
+import {
+  ITEM_CREATED,
+  ITEM_DELETED,
+  ITEM_UPDATED,
+  publishDomainEvent,
+} from '../../events'
+import {
+  ITEM_CREATE,
+  ITEM_DELETE,
+  ITEM_UPDATE,
+  guardOrThrow,
+  hasGuardExtensions,
+  isInternalMachinery,
+  orNull,
+} from '../../extensions'
+import { itemDeleteIntent, itemUpdateIntent } from '../guard-intents'
 import { NumberingService } from '../numbering'
 import { ItemTypeRegistry } from '../registry'
 import { getTypeHandler } from '../type-handlers'
+import { copyTypeSpecificData } from '../type-handlers/copy'
 import { isBranchProtectionExempt } from '../branch-protection'
 import '../type-handlers/init'
 import {
@@ -207,6 +224,27 @@ export class ItemService {
       throw error
     }
 
+    // The `item.create` guard, and the one placement it can have.
+    //
+    // After the type schema's parse, so the intent is the validated shape
+    // rather than whatever arrived; and **before** `NumberingService.generate`
+    // below, which commits on `autonomousDb` — a refusal after it would burn a
+    // number nothing reclaims. That is also why the intent's `itemNumber` is
+    // nullable: at this point there may not be one yet, by construction.
+    if (!isInternalMachinery(options)) {
+      await guardOrThrow(
+        ITEM_CREATE,
+        {
+          itemType: type,
+          designId: orNull(validatedData.designId),
+          itemNumber: orNull(validatedData.itemNumber),
+          name: orNull(validatedData.name),
+          data: validatedData as unknown as Record<string, unknown>,
+        },
+        { db, actorId: userId },
+      )
+    }
+
     // Handle item number generation
     if (!validatedData.itemNumber) {
       // Auto-generate item number
@@ -376,6 +414,25 @@ export class ItemService {
             )
           }
         }
+
+        // Record the fact on the domain event log, atomically with the insert.
+        // Publishing takes no lock: `seq` is assigned when this transaction
+        // commits.
+        await publishDomainEvent(tx, ITEM_CREATED, {
+          actorId: userId,
+          subject: { id: item.id, masterId: item.masterId },
+          context: { designId: item.designId ?? undefined },
+          payload: {
+            itemId: item.id,
+            masterId: item.masterId,
+            itemType: type,
+            itemNumber: item.itemNumber,
+            name: item.name,
+            designId: item.designId,
+            state: item.state,
+            revision: item.revision,
+          },
+        })
 
         return {
           ...validatedData,
@@ -584,6 +641,10 @@ export class ItemService {
       // the released/main row and leak the edit outside the branch, so route
       // the change through saveChanges, which creates the working copy.
       if (branchInfo && branchInfo.changeType === null) {
+        // `saveChanges` dispatches the `item.update` guard itself — this
+        // reroute returns before the guard below, and it is the most common
+        // edit on a change-order branch — so pass this call's verdict on
+        // whether it is core's own machinery through.
         const result = await CheckoutService.saveChanges(
           {
             branchId: branchInfo.branchId,
@@ -594,6 +655,7 @@ export class ItemService {
               `${oldItem.itemType} ${oldItem.itemNumber || 'item'} updated`,
           },
           userId,
+          { dispatchGuards: !isInternalMachinery(options) },
         )
 
         const workingCopy = await this.findById(result.item.id)
@@ -612,6 +674,25 @@ export class ItemService {
       throw new NotFoundError('Item type', oldItem.itemType, {
         operation: 'update',
       })
+    }
+
+    // The `item.update` guard: after the access and editability checks, before
+    // the transaction opens. The working-copy edit above never reaches here —
+    // it returned through `saveChanges`, which dispatches the same guard.
+    //
+    // `db` is `options?.tx ?? db` and not simply `db`: a caller composing this
+    // update into a transaction of its own — and not flagged as internal
+    // machinery, which dispatches no guards at all — hands the guard that
+    // transaction, because a guard given the pool would read a connection that
+    // cannot see the work it is about to refuse. So a guard does not always run
+    // outside a transaction; the contract is "before this operation's own
+    // writes".
+    if (!isInternalMachinery(options) && hasGuardExtensions(ITEM_UPDATE)) {
+      await guardOrThrow(
+        ITEM_UPDATE,
+        await itemUpdateIntent(oldItem, data as Record<string, unknown>),
+        { db: options?.tx ?? db, actorId: userId },
+      )
     }
 
     // Wrap all database operations in a transaction for atomicity — the
@@ -650,22 +731,25 @@ export class ItemService {
         })
       }
 
+      // What changed, by field: the commit's content below and the event's
+      // changedFields. Computed for every update, not only committed ones,
+      // so an item outside any design still reports its edits. Software
+      // manifest changes become per-file 'source' rows.
+      const fieldChanges = await expandSourceFieldChanges(
+        oldItem.itemType,
+        computeFieldChanges(
+          oldItem as unknown as Record<string, unknown>,
+          completeItem as unknown as Record<string, unknown>,
+          oldItem.itemType,
+        ),
+      )
+      let commitId: string | null = null
+      let branchId: string | null = null
+
       // Create commit for history tracking if item has a designId and skipCommit is not set
       if (oldItem.designId && !options?.skipCommit) {
         try {
-          // Software manifest changes become per-file 'source' rows
-          const fieldChanges = await expandSourceFieldChanges(
-            oldItem.itemType,
-            computeFieldChanges(
-              oldItem as unknown as Record<string, unknown>,
-              completeItem as unknown as Record<string, unknown>,
-              oldItem.itemType,
-            ),
-          )
-
           if (fieldChanges.length > 0) {
-            let branchId: string | null = null
-
             if (branchInfo) {
               branchId = branchInfo.branchId
             } else {
@@ -698,6 +782,7 @@ export class ItemService {
                 .update(items)
                 .set({ commitId: commit.id })
                 .where(eq(items.id, id))
+              commitId = commit.id
             }
           }
         } catch (error) {
@@ -706,6 +791,35 @@ export class ItemService {
             'Failed to create commit for item update',
           )
         }
+      }
+
+      // The fact of the edit, in the same transaction. Outside the commit's
+      // try/catch on purpose: a commit that fails to record is a warning; an
+      // event that fails to validate is a bug that must roll the edit back.
+      if (fieldChanges.length > 0) {
+        await publishDomainEvent(tx, ITEM_UPDATED, {
+          actorId: userId,
+          subject: { id, masterId: completeItem.masterId },
+          context: {
+            designId: completeItem.designId ?? undefined,
+            branchId: branchId ?? undefined,
+          },
+          payload: {
+            itemId: id,
+            masterId: completeItem.masterId,
+            itemType: oldItem.itemType,
+            itemNumber: completeItem.itemNumber,
+            name: completeItem.name ?? null,
+            designId: completeItem.designId ?? null,
+            branchId,
+            revision: completeItem.revision,
+            state: completeItem.state,
+            changedFields: fieldChanges.map(
+              (change) => change.fieldPath ?? change.fieldName,
+            ),
+            commitId,
+          },
+        })
       }
 
       return completeItem as T
@@ -829,9 +943,34 @@ export class ItemService {
 
     await this.requireNoRetainedEvidence(item, id)
 
+    // The `item.delete` guard: after the evidence check, before the
+    // transaction. A refusal here leaves no row of any kind — nothing has been
+    // written yet.
+    if (!isInternalMachinery(options) && hasGuardExtensions(ITEM_DELETE)) {
+      await guardOrThrow(ITEM_DELETE, await itemDeleteIntent(item), {
+        db,
+        actorId: userId,
+      })
+    }
+
     await db.transaction(async (tx) => {
       await this.releaseBranchTracking(item, id, tx)
       await tx.delete(items).where(eq(items.id, id))
+      await publishDomainEvent(tx, ITEM_DELETED, {
+        actorId: userId,
+        subject: { id, masterId: item.masterId },
+        context: { designId: item.designId ?? undefined },
+        payload: {
+          itemId: id,
+          masterId: item.masterId,
+          itemType: item.itemType,
+          itemNumber: item.itemNumber,
+          name: item.name ?? null,
+          designId: item.designId ?? null,
+          revision: item.revision,
+          state: item.state,
+        },
+      })
     })
   }
 
@@ -967,12 +1106,6 @@ export class ItemService {
         .set({ isCurrent: false })
         .where(eq(items.masterId, currentItem.masterId))
 
-      // Get type-specific data
-      const typeSpecificData = await this.getTypeSpecificData(
-        currentItem.itemType,
-        id,
-      )
-
       // Create new revision, starting at the lifecycle's initial state
       const revisionInitialState = await this.resolveInitialStateId(
         currentItem.itemType,
@@ -1005,15 +1138,19 @@ export class ItemService {
           .returning(),
       )
 
-      // Copy type-specific data
-      if (typeSpecificData) {
-        await this.insertTypeSpecificData(
-          currentItem.itemType,
-          newItem.id,
-          typeSpecificData,
-          tx,
-        )
-      }
+      // Copy type-specific data.
+      //
+      // Through `copyTypeSpecificData`, not a read-then-insert of the
+      // extension row: the shared copy also runs the handler's `copyChildren`
+      // for types whose content spills into child tables, and drops the
+      // columns in NEVER_COPIED. Reading and re-inserting did neither, so a
+      // revision of a type with child tables would be minted with them empty.
+      // No shipped type reaches it today — WorkInstruction is the only one
+      // with children and its lifecycle is Free, so a change order never
+      // revises it — but lifecycle assignment is runtime configuration, and
+      // the merge path (ChangeOrderMergeService) already calls this.
+      // The read also ran outside `tx`.
+      await copyTypeSpecificData(currentItem.itemType, id, newItem.id, tx)
 
       // Carry the item's files onto the new revision. File rows point at one
       // item *version*, so the revision would otherwise be born with no CAD and

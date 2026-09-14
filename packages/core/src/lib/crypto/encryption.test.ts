@@ -91,7 +91,7 @@ describe('decryptSecret', () => {
       ['an Anthropic key', 'sk-ant-api03-0123456789abcdefghijklmnop'],
       ['a prefixed vendor key', 'key-0123456789abcdefghijklmnopqrstuv'],
       ['a Google AI Studio key', 'AIzaSyD-0123456789abcdefghijklmnopqrstu'],
-      ['a short opaque key', 'zoo-live-7f3a91'],
+      ['a short opaque key', 'svc-live-7f3a91'],
     ])('passes %s through untouched', (_label, plaintext) => {
       expect(decryptSecret(plaintext)).toBe(plaintext)
     })

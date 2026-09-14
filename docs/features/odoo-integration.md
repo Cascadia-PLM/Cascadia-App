@@ -34,7 +34,8 @@ The parts that are not the connector itself:
 - The package registry — `PackageRegistry.isEnabled()`, `requirePackage()`, and
   the `PackageNotLicensedError` a missing entitlement raises. See
   [adding-packages.md](../development/adding-packages.md).
-- **`ReleaseHookRegistry`**, the core seam the connector's release trigger uses
+- **The domain event log and the extension registry**, which the connector's
+  release trigger uses: it is a `consumed` extension on `design.released`
   ([`packages/core/src/lib/services/release-hooks.ts`](../../packages/core/src/lib/services/release-hooks.ts)).
   Hooks run after the merge transaction commits, each in a warn-only try/catch,
   so a failing hook can never roll back or block a release. Core ships zero

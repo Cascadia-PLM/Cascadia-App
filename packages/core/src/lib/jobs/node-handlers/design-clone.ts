@@ -58,445 +58,465 @@ export const cloneDesignHandler: JobHandler<
       suffixItemNumbers,
     } = payload
 
-    // =========================================================================
-    // 1. Validate source design
-    // =========================================================================
-    await context.updateProgress(5, 'Validating source design...')
-    await context.log.info('Starting design clone (usage-based)', {
-      sourceDesignId,
-      targetCode,
-    })
+    // A failure after the target design is created must not leave it behind:
+    // its code is unique, so the orphan blocks the retry the job config asks
+    // for and the user's own retry through the route. See quarantineClone.
+    let createdDesignId: string | null = null
 
-    const sourceDesign = await DesignService.getById(sourceDesignId)
-    if (!sourceDesign) {
-      throw new Error(`Source design not found: ${sourceDesignId}`)
-    }
-
-    const mainBranch = await BranchService.getMainBranch(sourceDesignId)
-    if (!mainBranch) {
-      throw new Error(`No main branch found for design: ${sourceDesignId}`)
-    }
-
-    // =========================================================================
-    // 2. Get all current items from source main branch
-    // =========================================================================
-    await context.updateProgress(10, 'Loading source items...')
-
-    const sourceItems = await getItemsOnBranch(mainBranch.id)
-    const totalItems = sourceItems.length
-
-    await context.log.info(`Found ${totalItems} items to clone`)
-
-    // Validate that resulting item numbers won't exceed column length
-    const sourceCodeSuffix = `-${sourceDesign.code}`
-    const targetSuffix = `-${targetCode}`
-    const tooLong = sourceItems.filter((item) => {
-      if (item.itemNumber.endsWith(sourceCodeSuffix)) {
-        // Replacement: remove old suffix, add new one
-        const resultLength =
-          item.itemNumber.length - sourceCodeSuffix.length + targetSuffix.length
-        return resultLength > 100
-      }
-      if (suffixItemNumbers) {
-        return item.itemNumber.length + targetSuffix.length > 100
-      }
-      return false
-    })
-    const firstTooLong = tooLong[0]
-    if (firstTooLong) {
-      throw new Error(
-        `${tooLong.length} item number(s) would exceed 100 characters after suffix substitution (e.g., "${firstTooLong.itemNumber}")`,
-      )
-    }
-
-    if (context.signal.aborted) throw new Error('Job cancelled')
-
-    // =========================================================================
-    // 3. Create target design
-    // =========================================================================
-    await context.updateProgress(15, 'Creating target design...')
-
-    const targetDesign = await DesignService.create(
-      {
-        programId: targetProgramId ?? sourceDesign.programId,
-        name: targetName,
-        code: targetCode,
-        description: targetDescription ?? `Cloned from ${sourceDesign.code}`,
-        designType: 'Engineering',
-        cloneSourceDesignId: sourceDesignId,
-      },
-      userId,
-    )
-
-    const targetMainBranch = await BranchService.getMainBranch(targetDesign.id)
-    if (!targetMainBranch) {
-      throw new Error('Failed to create main branch for target design')
-    }
-
-    await context.log.info('Created target design', {
-      designId: targetDesign.id,
-      code: targetDesign.code,
-    })
-
-    // =========================================================================
-    // 4. Create usage items in batches
-    // =========================================================================
-    const itemIdMap = new Map<string, string>() // sourceItemId -> targetUsageId
-    let usagesCreated = 0
-    let filesReferenced = 0
-
-    for (let i = 0; i < sourceItems.length; i += BATCH_SIZE) {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- aborted may change between batches
-      if (context.signal.aborted) throw new Error('Job cancelled')
-
-      const batch = sourceItems.slice(i, i + BATCH_SIZE)
-
-      await db.transaction(async (tx) => {
-        for (const sourceItem of batch) {
-          // Use UsageService to resolve the canonical definition
-          // - If source is already a usage, this follows the chain to the definition
-          // - If source is a definition, it returns the source itself
-          const definitionId = sourceItem.usageOf ?? sourceItem.id
-
-          // Auto-assign sysmlType based on whether this is a usage
-          // Since we're always creating usages here, always pass true
-          const sysmlType = UsageService.getSysmlType(sourceItem.itemType, true)
-
-          // Create new usage item
-          const newMasterId = crypto.randomUUID()
-          const newUsage = takeFirst(
-            await tx
-              .insert(items)
-              .values({
-                // New identity
-                masterId: newMasterId,
-                designId: targetDesign.id,
-
-                // Usage reference - this is the key for traceability!
-                usageOf: definitionId,
-
-                // Copy field values from source (including any modifications)
-                itemNumber: applyItemNumberSuffix(
-                  sourceItem.itemNumber,
-                  sourceDesign.code,
-                  targetCode,
-                  suffixItemNumbers,
-                ),
-                revision: '-', // Fresh start
-                itemType: sourceItem.itemType,
-                name: sourceItem.name,
-                // Fresh start at the lifecycle's initial state ID (WI-5.1)
-                state: await LifecycleService.getInitialStateId(
-                  sourceItem.itemType,
-                ),
-                isCurrent: true,
-                attributes: sourceItem.attributes,
-                sysmlType: sysmlType, // Auto-assigned based on item type
-                metamodel: sourceItem.metamodel ?? 'cascadia',
-                inDesignStructure: sourceItem.inDesignStructure,
-
-                // Audit
-                createdBy: userId,
-                modifiedBy: userId,
-              })
-              .returning(),
-            'cloned usage item',
-          )
-
-          itemIdMap.set(sourceItem.id, newUsage.id)
-
-          // Copy the type-specific row whole (these are the "overrides" on the
-          // usage): every column carries over, including the source's own
-          // modifications. Whole-row on purpose — a hand-written column list
-          // here had dropped a Part's `trackingMode`, so every serial- or
-          // lot-tracked part came out of a clone reset to `none`.
-          await copyTypeSpecificData(
-            sourceItem.itemType,
-            sourceItem.id,
-            newUsage.id,
-            tx,
-          )
-
-          // Copy file references (not actual files - they reference same vault files)
-          const sourceFiles = await tx
-            .select()
-            .from(vaultFiles)
-            .where(eq(vaultFiles.itemId, sourceItem.id))
-
-          for (const file of sourceFiles) {
-            // Skip deleted files
-            if (file.deletedAt) continue
-
-            await tx.insert(vaultFiles).values({
-              itemId: newUsage.id,
-              fileName: file.fileName,
-              originalFileName: file.originalFileName,
-              mimeType: file.mimeType,
-              fileSize: file.fileSize,
-              storagePath: file.storagePath, // Same vault file
-              storageType: file.storageType,
-              fileHash: file.fileHash,
-              fileVersion: 1, // Start fresh version numbering
-              isLatestVersion: true,
-              uploadedBy: userId,
-              fileCategory: file.fileCategory,
-              isPrimaryModel: file.isPrimaryModel,
-              isItemThumbnail: file.isItemThumbnail,
-              cadMetadata: file.cadMetadata,
-              metadata: file.metadata,
-            })
-            filesReferenced++
-          }
-
-          // Track on new design's main branch
-          await tx.insert(branchItems).values({
-            branchId: targetMainBranch.id,
-            itemMasterId: newUsage.masterId,
-            currentItemId: newUsage.id,
-            baseItemId: newUsage.id,
-            changeType: null,
-          })
-        }
+    try {
+      // =========================================================================
+      // 1. Validate source design
+      // =========================================================================
+      await context.updateProgress(5, 'Validating source design...')
+      await context.log.info('Starting design clone (usage-based)', {
+        sourceDesignId,
+        targetCode,
       })
 
-      usagesCreated += batch.length
-      const percent =
-        15 + Math.floor((usagesCreated / Math.max(totalItems, 1)) * 60) // 15-75%
-      await context.updateProgress(
-        percent,
-        `Created ${usagesCreated} of ${totalItems} usages...`,
-      )
-    }
+      const sourceDesign = await DesignService.getById(sourceDesignId)
+      if (!sourceDesign) {
+        throw new Error(`Source design not found: ${sourceDesignId}`)
+      }
 
-    await context.log.info(`Created ${usagesCreated} usage items`)
+      const mainBranch = await BranchService.getMainBranch(sourceDesignId)
+      if (!mainBranch) {
+        throw new Error(`No main branch found for design: ${sourceDesignId}`)
+      }
 
-    // =========================================================================
-    // 5. Create initial commit to record all cloned items
-    // =========================================================================
-    await context.updateProgress(76, 'Creating initial commit...')
+      // =========================================================================
+      // 2. Get all current items from source main branch
+      // =========================================================================
+      await context.updateProgress(10, 'Loading source items...')
 
-    // Build item changes for the commit (all items are 'added')
-    const itemChanges = Array.from(itemIdMap.values()).map((newItemId) => ({
-      itemId: newItemId,
-      changeType: 'added' as const,
-    }))
+      const sourceItems = await getItemsOnBranch(mainBranch.id)
+      const totalItems = sourceItems.length
 
-    if (itemChanges.length > 0) {
-      await CommitService.create(
+      await context.log.info(`Found ${totalItems} items to clone`)
+
+      // Validate that resulting item numbers won't exceed column length
+      const sourceCodeSuffix = `-${sourceDesign.code}`
+      const targetSuffix = `-${targetCode}`
+      const tooLong = sourceItems.filter((item) => {
+        if (item.itemNumber.endsWith(sourceCodeSuffix)) {
+          // Replacement: remove old suffix, add new one
+          const resultLength =
+            item.itemNumber.length -
+            sourceCodeSuffix.length +
+            targetSuffix.length
+          return resultLength > 100
+        }
+        if (suffixItemNumbers) {
+          return item.itemNumber.length + targetSuffix.length > 100
+        }
+        return false
+      })
+      const firstTooLong = tooLong[0]
+      if (firstTooLong) {
+        throw new Error(
+          `${tooLong.length} item number(s) would exceed 100 characters after suffix substitution (e.g., "${firstTooLong.itemNumber}")`,
+        )
+      }
+
+      if (context.signal.aborted) throw new Error('Job cancelled')
+
+      // =========================================================================
+      // 3. Create target design
+      // =========================================================================
+      await context.updateProgress(15, 'Creating target design...')
+
+      const targetDesign = await DesignService.create(
         {
-          branchId: targetMainBranch.id,
-          message: `Cloned ${itemChanges.length} items from ${sourceDesign.code}`,
-          itemChanges,
+          programId: targetProgramId ?? sourceDesign.programId,
+          name: targetName,
+          code: targetCode,
+          description: targetDescription ?? `Cloned from ${sourceDesign.code}`,
+          designType: 'Engineering',
+          cloneSourceDesignId: sourceDesignId,
         },
         userId,
       )
-      await context.log.info(
-        `Created commit with ${itemChanges.length} cloned items`,
+      createdDesignId = targetDesign.id
+
+      const targetMainBranch = await BranchService.getMainBranch(
+        targetDesign.id,
       )
-    }
-
-    // =========================================================================
-    // 6. Copy BOM relationships (remapping IDs to new usages)
-    // =========================================================================
-    await context.updateProgress(80, 'Copying relationships...')
-
-    let relationshipsCopied = 0
-
-    // Build masterId -> new usage ID mapping
-    // We need this because relationships may point to older item versions (before ECO revisions)
-    const masterIdToNewUsageId = new Map<string, string>()
-    for (const sourceItem of sourceItems) {
-      const newUsageId = itemIdMap.get(sourceItem.id)
-      if (newUsageId) {
-        masterIdToNewUsageId.set(sourceItem.masterId, newUsageId)
+      if (!targetMainBranch) {
+        throw new Error('Failed to create main branch for target design')
       }
-    }
 
-    // Get all masterIds from source items
-    const sourceMasterIds = sourceItems.map((item) => item.masterId)
+      await context.log.info('Created target design', {
+        designId: targetDesign.id,
+        code: targetDesign.code,
+      })
 
-    if (sourceMasterIds.length > 0) {
-      // Find ALL item version IDs for these masters (including old revisions)
-      const allItemVersions = await db
-        .select({
-          id: items.id,
-          masterId: items.masterId,
-          itemNumber: items.itemNumber,
+      // =========================================================================
+      // 4. Create usage items in batches
+      // =========================================================================
+      const itemIdMap = new Map<string, string>() // sourceItemId -> targetUsageId
+      let usagesCreated = 0
+      let filesReferenced = 0
+
+      for (let i = 0; i < sourceItems.length; i += BATCH_SIZE) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- aborted may change between batches
+        if (context.signal.aborted) throw new Error('Job cancelled')
+
+        const batch = sourceItems.slice(i, i + BATCH_SIZE)
+
+        await db.transaction(async (tx) => {
+          for (const sourceItem of batch) {
+            // Use UsageService to resolve the canonical definition
+            // - If source is already a usage, this follows the chain to the definition
+            // - If source is a definition, it returns the source itself
+            const definitionId = sourceItem.usageOf ?? sourceItem.id
+
+            // Auto-assign sysmlType based on whether this is a usage
+            // Since we're always creating usages here, always pass true
+            const sysmlType = UsageService.getSysmlType(
+              sourceItem.itemType,
+              true,
+            )
+
+            // Create new usage item
+            const newMasterId = crypto.randomUUID()
+            const newUsage = takeFirst(
+              await tx
+                .insert(items)
+                .values({
+                  // New identity
+                  masterId: newMasterId,
+                  designId: targetDesign.id,
+
+                  // Usage reference - this is the key for traceability!
+                  usageOf: definitionId,
+
+                  // Copy field values from source (including any modifications)
+                  itemNumber: applyItemNumberSuffix(
+                    sourceItem.itemNumber,
+                    sourceDesign.code,
+                    targetCode,
+                    suffixItemNumbers,
+                  ),
+                  revision: '-', // Fresh start
+                  itemType: sourceItem.itemType,
+                  name: sourceItem.name,
+                  // Fresh start at the lifecycle's initial state ID (WI-5.1)
+                  state: await LifecycleService.getInitialStateId(
+                    sourceItem.itemType,
+                  ),
+                  isCurrent: true,
+                  attributes: sourceItem.attributes,
+                  sysmlType: sysmlType, // Auto-assigned based on item type
+                  metamodel: sourceItem.metamodel ?? 'cascadia',
+                  inDesignStructure: sourceItem.inDesignStructure,
+
+                  // Audit
+                  createdBy: userId,
+                  modifiedBy: userId,
+                })
+                .returning(),
+              'cloned usage item',
+            )
+
+            itemIdMap.set(sourceItem.id, newUsage.id)
+
+            // Copy the type-specific row whole (these are the "overrides" on the
+            // usage): every column carries over, including the source's own
+            // modifications. Whole-row on purpose — a hand-written column list
+            // here had dropped a Part's `trackingMode`, so every serial- or
+            // lot-tracked part came out of a clone reset to `none`.
+            await copyTypeSpecificData(
+              sourceItem.itemType,
+              sourceItem.id,
+              newUsage.id,
+              tx,
+            )
+
+            // Copy file references (not actual files - they reference same vault files)
+            const sourceFiles = await tx
+              .select()
+              .from(vaultFiles)
+              .where(eq(vaultFiles.itemId, sourceItem.id))
+
+            for (const file of sourceFiles) {
+              // Skip deleted files
+              if (file.deletedAt) continue
+
+              await tx.insert(vaultFiles).values({
+                itemId: newUsage.id,
+                fileName: file.fileName,
+                originalFileName: file.originalFileName,
+                mimeType: file.mimeType,
+                fileSize: file.fileSize,
+                storagePath: file.storagePath, // Same vault file
+                storageType: file.storageType,
+                fileHash: file.fileHash,
+                fileVersion: 1, // Start fresh version numbering
+                isLatestVersion: true,
+                uploadedBy: userId,
+                fileCategory: file.fileCategory,
+                isPrimaryModel: file.isPrimaryModel,
+                isItemThumbnail: file.isItemThumbnail,
+                cadMetadata: file.cadMetadata,
+                metadata: file.metadata,
+              })
+              filesReferenced++
+            }
+
+            // Track on new design's main branch
+            await tx.insert(branchItems).values({
+              branchId: targetMainBranch.id,
+              itemMasterId: newUsage.masterId,
+              currentItemId: newUsage.id,
+              baseItemId: newUsage.id,
+              changeType: null,
+            })
+          }
         })
-        .from(items)
-        .where(inArray(items.masterId, sourceMasterIds))
 
-      const allSourceItemIds = allItemVersions.map((v) => v.id)
-
-      await context.log.info(
-        `Found ${allItemVersions.length} item versions for ${sourceMasterIds.length} masters`,
-      )
-
-      // Build itemId -> masterId mapping for all versions
-      const itemIdToMasterId = new Map<string, string>()
-      for (const v of allItemVersions) {
-        itemIdToMasterId.set(v.id, v.masterId)
+        usagesCreated += batch.length
+        const percent =
+          15 + Math.floor((usagesCreated / Math.max(totalItems, 1)) * 60) // 15-75%
+        await context.updateProgress(
+          percent,
+          `Created ${usagesCreated} of ${totalItems} usages...`,
+        )
       }
 
-      // Get all relationships where source is any version of our items
-      const sourceRelationships = await db
+      await context.log.info(`Created ${usagesCreated} usage items`)
+
+      // =========================================================================
+      // 5. Create initial commit to record all cloned items
+      // =========================================================================
+      await context.updateProgress(76, 'Creating initial commit...')
+
+      // Build item changes for the commit (all items are 'added')
+      const itemChanges = Array.from(itemIdMap.values()).map((newItemId) => ({
+        itemId: newItemId,
+        changeType: 'added' as const,
+      }))
+
+      if (itemChanges.length > 0) {
+        await CommitService.create(
+          {
+            branchId: targetMainBranch.id,
+            message: `Cloned ${itemChanges.length} items from ${sourceDesign.code}`,
+            itemChanges,
+          },
+          userId,
+        )
+        await context.log.info(
+          `Created commit with ${itemChanges.length} cloned items`,
+        )
+      }
+
+      // =========================================================================
+      // 6. Copy BOM relationships (remapping IDs to new usages)
+      // =========================================================================
+      await context.updateProgress(80, 'Copying relationships...')
+
+      let relationshipsCopied = 0
+
+      // Build masterId -> new usage ID mapping
+      // We need this because relationships may point to older item versions (before ECO revisions)
+      const masterIdToNewUsageId = new Map<string, string>()
+      for (const sourceItem of sourceItems) {
+        const newUsageId = itemIdMap.get(sourceItem.id)
+        if (newUsageId) {
+          masterIdToNewUsageId.set(sourceItem.masterId, newUsageId)
+        }
+      }
+
+      // Get all masterIds from source items
+      const sourceMasterIds = sourceItems.map((item) => item.masterId)
+
+      if (sourceMasterIds.length > 0) {
+        // Find ALL item version IDs for these masters (including old revisions)
+        const allItemVersions = await db
+          .select({
+            id: items.id,
+            masterId: items.masterId,
+            itemNumber: items.itemNumber,
+          })
+          .from(items)
+          .where(inArray(items.masterId, sourceMasterIds))
+
+        const allSourceItemIds = allItemVersions.map((v) => v.id)
+
+        await context.log.info(
+          `Found ${allItemVersions.length} item versions for ${sourceMasterIds.length} masters`,
+        )
+
+        // Build itemId -> masterId mapping for all versions
+        const itemIdToMasterId = new Map<string, string>()
+        for (const v of allItemVersions) {
+          itemIdToMasterId.set(v.id, v.masterId)
+        }
+
+        // Get all relationships where source is any version of our items
+        const sourceRelationships = await db
+          .select()
+          .from(itemRelationships)
+          .where(inArray(itemRelationships.sourceId, allSourceItemIds))
+
+        await context.log.info(
+          `Found ${sourceRelationships.length} relationships to copy`,
+        )
+
+        // Build itemNumber lookup for logging
+        const masterIdToItemNumber = new Map<string, string>()
+        for (const v of allItemVersions) {
+          if (!masterIdToItemNumber.has(v.masterId)) {
+            masterIdToItemNumber.set(v.masterId, v.itemNumber)
+          }
+        }
+
+        // Track which relationships we've already copied (by masterId pair) to avoid duplicates
+        const copiedRelationships = new Set<string>()
+        let skippedNoSource = 0
+        let skippedNoTarget = 0
+        let skippedDuplicate = 0
+
+        for (const rel of sourceRelationships) {
+          // Skip DerivedFrom - we use usageOf for traceability now
+          if (rel.relationshipType === 'DerivedFrom') continue
+
+          // Map item IDs to masterIds, then to new usage IDs
+          const sourceMasterId = itemIdToMasterId.get(rel.sourceId)
+          const targetMasterId = itemIdToMasterId.get(rel.targetId)
+
+          if (!sourceMasterId) {
+            skippedNoSource++
+            continue
+          }
+
+          // Check if we've already copied this relationship (from a different version)
+          const relKey = `${sourceMasterId}:${targetMasterId || rel.targetId}:${rel.relationshipType}`
+          if (copiedRelationships.has(relKey)) {
+            skippedDuplicate++
+            continue
+          }
+          copiedRelationships.add(relKey)
+
+          const newSourceId = masterIdToNewUsageId.get(sourceMasterId)
+          const newTargetId = targetMasterId
+            ? masterIdToNewUsageId.get(targetMasterId)
+            : null
+
+          if (!newTargetId && targetMasterId) {
+            // Target is in our item set but we don't have a mapping - shouldn't happen
+            const sourceNum =
+              masterIdToItemNumber.get(sourceMasterId) || 'unknown'
+            const targetNum =
+              masterIdToItemNumber.get(targetMasterId) || 'unknown'
+            await context.log.warn(
+              `Missing target mapping for ${sourceNum} -> ${targetNum}`,
+            )
+            skippedNoTarget++
+            continue
+          }
+
+          if (newSourceId && newTargetId) {
+            // Both ends are in our set - remap to new usage IDs
+            await db.insert(itemRelationships).values({
+              sourceId: newSourceId,
+              targetId: newTargetId,
+              relationshipType: rel.relationshipType,
+              quantity: rel.quantity,
+              findNumber: rel.findNumber,
+              referenceDesignator: rel.referenceDesignator,
+              metadata: rel.metadata,
+              isComposite: rel.isComposite,
+              isDirected: rel.isDirected,
+              multiplicityLower: rel.multiplicityLower,
+              multiplicityUpper: rel.multiplicityUpper,
+              usageAttributes: rel.usageAttributes,
+              createdBy: userId,
+              modifiedBy: userId,
+            })
+            relationshipsCopied++
+          } else if (newSourceId && !targetMasterId) {
+            // Target is outside our item set (e.g., library item from another design)
+            // Preserve the relationship pointing to the original external item
+            await db.insert(itemRelationships).values({
+              sourceId: newSourceId,
+              targetId: rel.targetId, // Original external item
+              relationshipType: rel.relationshipType,
+              quantity: rel.quantity,
+              findNumber: rel.findNumber,
+              referenceDesignator: rel.referenceDesignator,
+              metadata: rel.metadata,
+              isComposite: rel.isComposite,
+              isDirected: rel.isDirected,
+              multiplicityLower: rel.multiplicityLower,
+              multiplicityUpper: rel.multiplicityUpper,
+              usageAttributes: rel.usageAttributes,
+              createdBy: userId,
+              modifiedBy: userId,
+            })
+            relationshipsCopied++
+          }
+        }
+
+        await context.log.info(
+          `Copied ${relationshipsCopied} relationships (skipped: ${skippedNoSource} no source, ${skippedNoTarget} no target, ${skippedDuplicate} duplicates)`,
+        )
+      }
+
+      // =========================================================================
+      // 7. Copy cross-design references (baseline only)
+      // =========================================================================
+      await context.updateProgress(90, 'Copying cross-design references...')
+
+      let crossReferencesCopied = 0
+
+      const sourceCrossRefs = await db
         .select()
-        .from(itemRelationships)
-        .where(inArray(itemRelationships.sourceId, allSourceItemIds))
+        .from(designCrossReferences)
+        .where(
+          and(
+            eq(designCrossReferences.referencingDesignId, sourceDesignId),
+            isNull(designCrossReferences.branchId),
+          ),
+        )
 
-      await context.log.info(
-        `Found ${sourceRelationships.length} relationships to copy`,
-      )
-
-      // Build itemNumber lookup for logging
-      const masterIdToItemNumber = new Map<string, string>()
-      for (const v of allItemVersions) {
-        if (!masterIdToItemNumber.has(v.masterId)) {
-          masterIdToItemNumber.set(v.masterId, v.itemNumber)
-        }
-      }
-
-      // Track which relationships we've already copied (by masterId pair) to avoid duplicates
-      const copiedRelationships = new Set<string>()
-      let skippedNoSource = 0
-      let skippedNoTarget = 0
-      let skippedDuplicate = 0
-
-      for (const rel of sourceRelationships) {
-        // Skip DerivedFrom - we use usageOf for traceability now
-        if (rel.relationshipType === 'DerivedFrom') continue
-
-        // Map item IDs to masterIds, then to new usage IDs
-        const sourceMasterId = itemIdToMasterId.get(rel.sourceId)
-        const targetMasterId = itemIdToMasterId.get(rel.targetId)
-
-        if (!sourceMasterId) {
-          skippedNoSource++
-          continue
-        }
-
-        // Check if we've already copied this relationship (from a different version)
-        const relKey = `${sourceMasterId}:${targetMasterId || rel.targetId}:${rel.relationshipType}`
-        if (copiedRelationships.has(relKey)) {
-          skippedDuplicate++
-          continue
-        }
-        copiedRelationships.add(relKey)
-
-        const newSourceId = masterIdToNewUsageId.get(sourceMasterId)
-        const newTargetId = targetMasterId
-          ? masterIdToNewUsageId.get(targetMasterId)
-          : null
-
-        if (!newTargetId && targetMasterId) {
-          // Target is in our item set but we don't have a mapping - shouldn't happen
-          const sourceNum =
-            masterIdToItemNumber.get(sourceMasterId) || 'unknown'
-          const targetNum =
-            masterIdToItemNumber.get(targetMasterId) || 'unknown'
-          await context.log.warn(
-            `Missing target mapping for ${sourceNum} -> ${targetNum}`,
-          )
-          skippedNoTarget++
-          continue
-        }
-
-        if (newSourceId && newTargetId) {
-          // Both ends are in our set - remap to new usage IDs
-          await db.insert(itemRelationships).values({
-            sourceId: newSourceId,
-            targetId: newTargetId,
-            relationshipType: rel.relationshipType,
-            quantity: rel.quantity,
-            findNumber: rel.findNumber,
-            referenceDesignator: rel.referenceDesignator,
-            metadata: rel.metadata,
-            isComposite: rel.isComposite,
-            isDirected: rel.isDirected,
-            multiplicityLower: rel.multiplicityLower,
-            multiplicityUpper: rel.multiplicityUpper,
-            usageAttributes: rel.usageAttributes,
+      if (sourceCrossRefs.length > 0) {
+        for (const ref of sourceCrossRefs) {
+          await db.insert(designCrossReferences).values({
+            referencingDesignId: targetDesign.id,
+            referencedItemId: ref.referencedItemId,
+            sourceDesignId: ref.sourceDesignId,
+            inDesignStructure: ref.inDesignStructure,
+            notes: ref.notes,
             createdBy: userId,
             modifiedBy: userId,
           })
-          relationshipsCopied++
-        } else if (newSourceId && !targetMasterId) {
-          // Target is outside our item set (e.g., library item from another design)
-          // Preserve the relationship pointing to the original external item
-          await db.insert(itemRelationships).values({
-            sourceId: newSourceId,
-            targetId: rel.targetId, // Original external item
-            relationshipType: rel.relationshipType,
-            quantity: rel.quantity,
-            findNumber: rel.findNumber,
-            referenceDesignator: rel.referenceDesignator,
-            metadata: rel.metadata,
-            isComposite: rel.isComposite,
-            isDirected: rel.isDirected,
-            multiplicityLower: rel.multiplicityLower,
-            multiplicityUpper: rel.multiplicityUpper,
-            usageAttributes: rel.usageAttributes,
-            createdBy: userId,
-            modifiedBy: userId,
-          })
-          relationshipsCopied++
+          crossReferencesCopied++
         }
+
+        await context.log.info(
+          `Copied ${crossReferencesCopied} cross-design references`,
+        )
       }
 
-      await context.log.info(
-        `Copied ${relationshipsCopied} relationships (skipped: ${skippedNoSource} no source, ${skippedNoTarget} no target, ${skippedDuplicate} duplicates)`,
-      )
-    }
+      // =========================================================================
+      // 8. Done
+      // =========================================================================
+      await context.updateProgress(100, 'Complete')
 
-    // =========================================================================
-    // 7. Copy cross-design references (baseline only)
-    // =========================================================================
-    await context.updateProgress(90, 'Copying cross-design references...')
-
-    let crossReferencesCopied = 0
-
-    const sourceCrossRefs = await db
-      .select()
-      .from(designCrossReferences)
-      .where(
-        and(
-          eq(designCrossReferences.referencingDesignId, sourceDesignId),
-          isNull(designCrossReferences.branchId),
-        ),
-      )
-
-    if (sourceCrossRefs.length > 0) {
-      for (const ref of sourceCrossRefs) {
-        await db.insert(designCrossReferences).values({
-          referencingDesignId: targetDesign.id,
-          referencedItemId: ref.referencedItemId,
-          sourceDesignId: ref.sourceDesignId,
-          inDesignStructure: ref.inDesignStructure,
-          notes: ref.notes,
-          createdBy: userId,
-          modifiedBy: userId,
-        })
-        crossReferencesCopied++
+      return {
+        designId: targetDesign.id,
+        designCode: targetDesign.code,
+        itemsCloned: usagesCreated,
+        relationshipsCloned: relationshipsCopied,
+        derivedFromCreated: 0, // No longer using DerivedFrom, usageOf provides traceability
+        filesReferenced,
+        crossReferencesCopied,
       }
-
-      await context.log.info(
-        `Copied ${crossReferencesCopied} cross-design references`,
-      )
-    }
-
-    // =========================================================================
-    // 8. Done
-    // =========================================================================
-    await context.updateProgress(100, 'Complete')
-
-    return {
-      designId: targetDesign.id,
-      designCode: targetDesign.code,
-      itemsCloned: usagesCreated,
-      relationshipsCloned: relationshipsCopied,
-      derivedFromCreated: 0, // No longer using DerivedFrom, usageOf provides traceability
-      filesReferenced,
-      crossReferencesCopied,
+    } catch (error) {
+      if (createdDesignId) {
+        await quarantineClone(createdDesignId, targetCode, context, userId)
+      }
+      throw error
     }
   },
 }
@@ -504,6 +524,59 @@ export const cloneDesignHandler: JobHandler<
 // =============================================================================
 // Helper Functions
 // =============================================================================
+
+/**
+ * Take a half-cloned design out of the way of the retry.
+ *
+ * The target design and its main branch are committed before the item loop
+ * starts, and the loop commits a batch at a time, so a failure anywhere after
+ * that leaves a design carrying the code the user asked for. `designs.code`
+ * is unique, so both the configured retry and the user's own retry through
+ * the route then fail on the duplicate rather than on whatever actually went
+ * wrong — and the empty design is indistinguishable from a real one in any
+ * listing.
+ *
+ * It is renamed and archived rather than deleted: `items.design_id` has no
+ * cascade, so a delete would have to walk items, branch items, commits,
+ * branches and cross-references in the right order, inside a handler whose
+ * job is already to report someone else's failure. Archiving keeps the
+ * partial clone out of the listings and available for inspection, and the
+ * rename is what frees the code.
+ *
+ * Never throws: it runs from a catch block, and the original error is the one
+ * worth reporting.
+ */
+async function quarantineClone(
+  designId: string,
+  targetCode: string,
+  context: JobContext,
+  userId: string,
+): Promise<void> {
+  // `designs.code` is uppercase alphanumeric and hyphens, max 50.
+  const marker = `-FAILED-${context.jobId.slice(0, 8).toUpperCase()}`
+  const quarantinedCode = `${targetCode.slice(0, 50 - marker.length)}${marker}`
+
+  try {
+    await DesignService.update(designId, { code: quarantinedCode }, userId)
+    await DesignService.archive(designId, userId)
+    await context.log.warn(
+      'Clone failed after the target design was created; the partial design has been archived and its code released',
+      { designId, releasedCode: targetCode, archivedAs: quarantinedCode },
+    )
+  } catch (cleanupError) {
+    await context.log.error(
+      'Clone failed and the partial target design could not be archived; it still holds the requested code and must be removed by hand',
+      {
+        designId,
+        code: targetCode,
+        error:
+          cleanupError instanceof Error
+            ? cleanupError.message
+            : String(cleanupError),
+      },
+    )
+  }
+}
 
 /**
  * Get all items on a branch using proper version resolution.

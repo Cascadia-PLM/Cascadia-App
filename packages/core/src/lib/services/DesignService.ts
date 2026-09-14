@@ -14,6 +14,7 @@ import {
 } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
+import { DESIGN_CREATED, publishDomainEvent } from '../events'
 import { likeContains } from '../db/like-pattern'
 import { notDeleted } from '../db/filters'
 import { branches, commits, designs, items, tags } from '../db/schema'
@@ -199,29 +200,55 @@ export class DesignService {
 
     // Family designs don't have branches/commits - they're just containers
     if (designType === 'Family') {
-      const design = takeFirst(
-        await db
-          .insert(designs)
-          .values({
-            programId: validated.programId,
-            name: validated.name,
-            code: validated.code,
-            description: validated.description,
-            designType: 'Family',
-            parentDesignId: validated.parentDesignId,
-            cloneSourceDesignId: validated.cloneSourceDesignId,
-            plannedQuantity: validated.plannedQuantity,
-            attributes: validated.attributes || {},
-            createdBy: userId,
-          })
-          .returning(),
-      )
+      // Wrapped for the emit: this was a bare pool insert, and the fact has to
+      // commit with the row. Both arms emit the same shape, so a consumer
+      // cannot tell them apart except by the two fields that legitimately
+      // differ.
+      return db.transaction(async (tx) => {
+        const design = takeFirst(
+          await tx
+            .insert(designs)
+            .values({
+              programId: validated.programId,
+              name: validated.name,
+              code: validated.code,
+              description: validated.description,
+              designType: 'Family',
+              parentDesignId: validated.parentDesignId,
+              cloneSourceDesignId: validated.cloneSourceDesignId,
+              plannedQuantity: validated.plannedQuantity,
+              attributes: validated.attributes || {},
+              createdBy: userId,
+            })
+            .returning(),
+        )
 
-      return {
-        ...design,
-        mainBranch: null,
-        initialCommit: null,
-      }
+        await publishDomainEvent(tx, DESIGN_CREATED, {
+          actorId: userId,
+          subject: { id: design.id },
+          context: {
+            programId: design.programId ?? undefined,
+            designId: design.id,
+          },
+          payload: {
+            designId: design.id,
+            programId: design.programId,
+            name: design.name,
+            code: design.code,
+            designType: design.designType,
+            parentDesignId: design.parentDesignId,
+            cloneSourceDesignId: design.cloneSourceDesignId,
+            mainBranchId: null,
+            initialCommitId: null,
+          },
+        })
+
+        return {
+          ...design,
+          mainBranch: null,
+          initialCommit: null,
+        }
+      })
     }
 
     // Use a transaction to ensure atomicity for regular designs
@@ -292,6 +319,32 @@ export class DesignService {
       if (!updatedDesign) {
         throw new NotFoundError('Design', design.id, { operation: 'create' })
       }
+
+      // The same shape the family arm emits. This is also the one site where
+      // the program id is in hand for free, which is what a consumer mirroring
+      // the hierarchy needs and what `design.released` never carried.
+      await publishDomainEvent(tx, DESIGN_CREATED, {
+        actorId: userId,
+        subject: { id: updatedDesign.id },
+        context: {
+          // From the inserted row rather than the updated one: the column is
+          // nullable, but `create` always writes the validated program id, and
+          // the insert's return type says so where the update's does not.
+          programId: design.programId ?? undefined,
+          designId: updatedDesign.id,
+        },
+        payload: {
+          designId: updatedDesign.id,
+          programId: design.programId,
+          name: updatedDesign.name,
+          code: updatedDesign.code,
+          designType: updatedDesign.designType,
+          parentDesignId: updatedDesign.parentDesignId,
+          cloneSourceDesignId: updatedDesign.cloneSourceDesignId,
+          mainBranchId: mainBranch.id,
+          initialCommitId: initialCommit.id,
+        },
+      })
 
       return {
         ...updatedDesign,

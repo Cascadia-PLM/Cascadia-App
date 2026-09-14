@@ -321,6 +321,65 @@ const PROGRAM_B = id(121)
 
 const SCENARIOS = [
   {
+    tag: DOMAIN_EVENTS_TAG(),
+    name: 'the jobs dedupe index is created over a populated jobs table, and every existing row survives it',
+    async seed(sql) {
+      // Jobs that predate the column. Every one of them will have a NULL
+      // dedupe_key when the index is built, which is the whole reason the
+      // index is partial: were it a plain unique index, these would collide
+      // with each other on NULL under some engines and, more to the point,
+      // an operator would have no way to upgrade a busy instance.
+      await exec(
+        sql,
+        `
+        insert into jobs (id, type, status, payload)
+        values
+          ('${id(70)}', 'maintenance.cache.cleanup', 'completed', '{}'::jsonb),
+          ('${id(71)}', 'maintenance.cache.cleanup', 'pending',   '{}'::jsonb),
+          ('${id(72)}', 'design.clone',              'failed',    '{"a":1}'::jsonb);
+      `,
+      )
+    },
+    async assert(sql) {
+      expect(
+        await relationExists(sql, 'uq_jobs_dedupe_key'),
+        'uq_jobs_dedupe_key should exist after the migration',
+      )
+
+      const survivors = await one(
+        sql,
+        `select count(*)::int as n from jobs where id in ('${id(70)}', '${id(71)}', '${id(72)}')`,
+      )
+      expectEqual(survivors.n, 3, 'every pre-existing job survives the upgrade')
+
+      const keyed = await one(
+        sql,
+        `select count(*)::int as n from jobs where dedupe_key is not null`,
+      )
+      expectEqual(keyed.n, 0, 'no existing job is given a dedupe key')
+
+      // The partial predicate is the part worth proving: many NULLs coexist,
+      // which a plain unique index over a nullable column would not guarantee
+      // across engines and which the ON CONFLICT target depends on matching.
+      const indexDef = await one(
+        sql,
+        `select indexdef from pg_indexes where indexname = 'uq_jobs_dedupe_key'`,
+      )
+      expect(
+        /where .*dedupe_key is not null/i.test(indexDef.indexdef),
+        'the index must be partial, or ON CONFLICT cannot infer it as a target',
+      )
+      // And partial over the jobs that still hold their key: a failed or
+      // cancelled job releases it, or one failed broker publish wedges that
+      // key for good.
+      expect(
+        /failed/i.test(indexDef.indexdef) &&
+          /cancelled/i.test(indexDef.indexdef),
+        'the index must exclude failed and cancelled jobs, which release their key',
+      )
+    },
+  },
+  {
     tag: '0001_remediation',
     name: 'duplicate live votes: newest stays live, the rest are superseded',
     async seed(sql) {
@@ -2397,7 +2456,53 @@ function signingCredentialSeed() {
  * Prefer a scenario. An argument is only better than an execution when there
  * is genuinely nothing to execute.
  */
-const CANNOT_ABORT = []
+/**
+ * The domain-event sequencing migration, named by what it builds for the same
+ * reason as the helpers above: the tag differs per edition.
+ */
+function DOMAIN_EVENTS_TAG() {
+  const found = migrations.find((m) =>
+    m.sql.some((s) => s.includes('domain_events_assign_seq')),
+  )
+  if (!found) {
+    throw new Error(
+      'No migration creates domain_events_assign_seq — the CANNOT_ABORT entry names a file that no longer exists.',
+    )
+  }
+  return found.tag
+}
+
+const CANNOT_ABORT = [
+  {
+    tag: DOMAIN_EVENTS_TAG(),
+    statement: 'UPDATE',
+    why:
+      'The UPDATE is inside a CREATE OR REPLACE FUNCTION body — the trigger ' +
+      'that assigns domain_events.seq at commit — so the migration defines it ' +
+      'and never executes it. It qualifies only because bareSql() strips ' +
+      'ordinary string literals but not $$ … $$ dollar-quoting, which leaves ' +
+      'the function body looking like statements the migration runs. Against ' +
+      'a populated database the migration still creates one sequence, two ' +
+      'tables, three indexes and this function: there are no rows for it to ' +
+      'depend on, and the table it writes is the one it has just created. A ' +
+      'replay scenario is the wrong tool because there is nothing to execute.',
+  },
+  {
+    tag: DOMAIN_EVENTS_TAG(),
+    statement: 'ADD CONSTRAINT on "webhook_deliveries"',
+    why:
+      'The constraint is the foreign key from webhook_deliveries to ' +
+      'webhook_subscriptions, and the same migration CREATEs both tables two ' +
+      'statements earlier. Postgres validates an ADD CONSTRAINT against the ' +
+      'rows already in the table, and a table this migration just created has ' +
+      'none — there is no database, populated or otherwise, in which this ' +
+      'statement can find a violating row. The classifier is right to be ' +
+      'coarse here: it deliberately does not track whether a table was created ' +
+      'in the same file, because that reasoning is exactly what goes wrong ' +
+      'silently. So the argument is recorded rather than the classifier ' +
+      'narrowed. A scenario would seed a table that does not exist yet.',
+  },
+]
 
 function runRatchet() {
   const covered = new Set(SCENARIOS.map((s) => s.tag))

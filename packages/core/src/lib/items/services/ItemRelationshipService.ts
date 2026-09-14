@@ -24,6 +24,13 @@ import {
   resolveInheritedLineage,
 } from '../version-lineage'
 import { CommitService } from '../../services/CommitService'
+import {
+  RELATIONSHIP_ADDED,
+  RELATIONSHIP_REMOVED,
+  RELATIONSHIP_UPDATED,
+  publishDomainEvent,
+} from '../../events'
+import { publishStructureEdges, structurePayload } from '../structure-events'
 import { ThreadCacheService } from '../../services/ThreadCacheService'
 import type { TransactionClient } from '../../db'
 import type { PersistedItem } from '../types/base'
@@ -718,6 +725,10 @@ export class ItemRelationshipService {
       throw relationshipExistsError(sourceId, targetId, relationshipType)
     }
 
+    // Read before the transaction so the emit inside it has both ends. The
+    // history block below re-reads the target; this is the same row.
+    const targetItemForEvent = await ItemService.findById(targetId)
+
     let relationship: typeof itemRelationships.$inferSelect
     try {
       relationship = await db.transaction(async (tx) => {
@@ -739,6 +750,20 @@ export class ItemRelationshipService {
         // landed without this would keep its top-level designation, and
         // resurface as a root the day the line is removed.
         await this.clearDesignationOfNestedTargets([inserted], tx)
+
+        // A BOM edit produced a commit and zero events, which made structure
+        // the largest class of engineering change completely invisible on the
+        // bus — `ItemService.update` is not involved, so the parent's own
+        // `item.updated` does not fire either.
+        if (sourceItem && targetItemForEvent) {
+          await publishDomainEvent(tx, RELATIONSHIP_ADDED, {
+            actorId: userId,
+            subject: { id: sourceId, masterId: sourceItem.masterId },
+            context: { designId: sourceItem.designId ?? undefined },
+            payload: structurePayload(inserted, sourceItem, targetItemForEvent),
+          })
+        }
+
         return inserted
       })
     } catch (error) {
@@ -914,6 +939,7 @@ export class ItemRelationshipService {
     let inserted: Array<typeof itemRelationships.$inferSelect>
     try {
       inserted = await db.transaction(async (tx) => {
+        const cleared: Array<typeof itemRelationships.$inferSelect> = []
         if (options?.replaceExisting) {
           const typesBySource = new Map<string, Set<string>>()
           for (const rel of relationships) {
@@ -923,14 +949,17 @@ export class ItemRelationshipService {
           }
 
           for (const [sourceId, types] of typesBySource) {
-            await tx
-              .delete(itemRelationships)
-              .where(
-                and(
-                  eq(itemRelationships.sourceId, sourceId),
-                  inArray(itemRelationships.relationshipType, [...types]),
-                ),
-              )
+            cleared.push(
+              ...(await tx
+                .delete(itemRelationships)
+                .where(
+                  and(
+                    eq(itemRelationships.sourceId, sourceId),
+                    inArray(itemRelationships.relationshipType, [...types]),
+                  ),
+                )
+                .returning()),
+            )
           }
         }
 
@@ -950,6 +979,39 @@ export class ItemRelationshipService {
           )
           .returning()
         await this.clearDesignationOfNestedTargets(rows, tx)
+
+        // The batch records what the one-at-a-time mutators record: each edge
+        // a replacement cleared, then each edge written. An edge replaced by
+        // an identical one is both, since it is a new row. This path used to
+        // record nothing at all.
+        const actorBySource = new Map(
+          relationships.map((rel) => [rel.sourceId, rel.userId]),
+        )
+        const actorByEdge = new Map(
+          relationships.map((rel) => [
+            `${rel.sourceId}:${rel.targetId}:${rel.relationshipType}`,
+            rel.userId,
+          ]),
+        )
+        await publishStructureEdges(
+          tx,
+          RELATIONSHIP_REMOVED,
+          cleared.map((edge) => ({
+            edge,
+            actorId: actorBySource.get(edge.sourceId) ?? null,
+          })),
+        )
+        await publishStructureEdges(
+          tx,
+          RELATIONSHIP_ADDED,
+          rows.map((edge) => ({
+            edge,
+            actorId:
+              actorByEdge.get(
+                `${edge.sourceId}:${edge.targetId}:${edge.relationshipType}`,
+              ) ?? null,
+          })),
+        )
         return rows
       })
     } catch (error) {
@@ -1127,9 +1189,37 @@ export class ItemRelationshipService {
       )
     }
 
-    await db
-      .delete(itemRelationships)
-      .where(eq(itemRelationships.id, relationshipId))
+    // The delete and its fact commit together. The best-effort commit below
+    // stays **outside** this transaction deliberately: the event's contract is
+    // that the edge is gone if and only if the event exists, while history's
+    // contract is already warn-and-continue — folding it in would turn a
+    // history failure into a rolled-back BOM edit, which is a regression sold
+    // as a fix.
+    const targetItemForEvent = await ItemService.findById(relationship.targetId)
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(itemRelationships)
+        .where(eq(itemRelationships.id, relationshipId))
+
+      // The payload carries the values the edge *had*: a consumer reacting to
+      // a removal needs to know what was removed, and by then there is nothing
+      // left to look up.
+      if (sourceItem && targetItemForEvent) {
+        await publishDomainEvent(tx, RELATIONSHIP_REMOVED, {
+          actorId: userId,
+          subject: {
+            id: relationship.sourceId,
+            masterId: sourceItem.masterId,
+          },
+          context: { designId: sourceItem.designId ?? undefined },
+          payload: structurePayload(
+            relationship,
+            sourceItem,
+            targetItemForEvent,
+          ),
+        })
+      }
+    })
 
     // Track relationship removal in history
     {
@@ -1245,19 +1335,55 @@ export class ItemRelationshipService {
       updateData.referenceDesignator = data.referenceDesignator
     if (data.findNumber !== undefined) updateData.findNumber = data.findNumber
 
-    const [updated] = await db
-      .update(itemRelationships)
-      .set(updateData)
-      .where(eq(itemRelationships.id, relationshipId))
-      .returning()
+    // Which of the line's three properties actually changed, hoisted above the
+    // write. The commit's own comparison below is computed two guards deep —
+    // inside a design *and* a branch resolution that does not run for an edge
+    // whose source has no design — so the event needs its own, available to
+    // both.
+    const changedFields = (
+      [
+        ['quantity', existing.quantity, data.quantity],
+        [
+          'referenceDesignator',
+          existing.referenceDesignator,
+          data.referenceDesignator,
+        ],
+        ['findNumber', existing.findNumber, data.findNumber],
+      ] as const
+    )
+      .filter(([, before, after]) => after !== undefined && before !== after)
+      .map(([field]) => field)
 
-    if (!updated) {
-      throw new NotFoundError('ItemRelationship', relationshipId)
-    }
-
-    // Track relationship update in history
     const sourceItem = await ItemService.findById(existing.sourceId)
     const targetItem = await ItemService.findById(existing.targetId)
+
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(itemRelationships)
+        .set(updateData)
+        .where(eq(itemRelationships.id, relationshipId))
+        .returning()
+
+      if (!row) {
+        throw new NotFoundError('ItemRelationship', relationshipId)
+      }
+
+      // Nothing changed is not an edit, and the payload schema forbids an
+      // empty `changedFields` anyway.
+      if (changedFields.length > 0 && sourceItem && targetItem) {
+        await publishDomainEvent(tx, RELATIONSHIP_UPDATED, {
+          actorId: userId,
+          subject: { id: existing.sourceId, masterId: sourceItem.masterId },
+          context: { designId: sourceItem.designId ?? undefined },
+          payload: {
+            ...structurePayload(row, sourceItem, targetItem),
+            changedFields: [...changedFields],
+          },
+        })
+      }
+
+      return row
+    })
 
     if (sourceItem?.designId) {
       try {

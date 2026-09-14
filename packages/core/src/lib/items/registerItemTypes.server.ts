@@ -2,41 +2,27 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * Server-Side Item Type Registration
+ * Item Type Registration
  *
- * Registers all item types for server-side use (API routes, data validation).
- * Shared definitions come from item-type-definitions.ts; this file only
- * adds dummy components (server has no React rendering).
+ * Registers every item type's code definition. Importing this module is all
+ * it does; loading the runtime configuration that overrides it is the
+ * caller's, because it reads the database and the answer is worth waiting
+ * for. Each composition root — the HTTP entry points and `runJobsWorker()` —
+ * awaits `ItemTypeRegistry.initialize()`.
+ *
+ * It used to fire that load and forget it, which meant the server answered
+ * requests against code defaults for the length of one query, and a load that
+ * failed was logged as a success.
+ *
+ * The `.server` in the name is now only history: there was a `.tsx` sibling
+ * that registered the same definitions with React components attached, but
+ * no entry point, router or component ever imported it, and nothing ever read
+ * the components. The browser's item-type map is `item-type-ui.ts`.
  */
 
 import { ItemTypeRegistry } from './registry'
 import { ITEM_TYPE_DEFINITIONS } from './item-type-definitions'
-import { itemLogger } from '@/lib/logging/logger'
-
-// Dummy components for server-side registration (no React on server)
-const DummyComponent = () => null
 
 for (const def of Object.values(ITEM_TYPE_DEFINITIONS)) {
-  ItemTypeRegistry.register({
-    ...def,
-    components: {
-      form: DummyComponent as any,
-      table: DummyComponent as any,
-      detail: DummyComponent as any,
-    },
-  })
+  ItemTypeRegistry.register(def)
 }
-
-/**
- * Initialize the registry to load runtime configurations from database.
- * This runs asynchronously but the registry will work with code defaults
- * until runtime configs are loaded.
- */
-ItemTypeRegistry.initialize()
-  .then(() => {
-    itemLogger.info('Registry initialized with runtime configurations')
-  })
-  .catch((error) => {
-    itemLogger.error({ err: error }, 'Failed to initialize registry')
-    // Continue with code-only definitions if DB init fails
-  })

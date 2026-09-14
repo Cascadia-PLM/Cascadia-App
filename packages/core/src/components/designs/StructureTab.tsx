@@ -1120,6 +1120,7 @@ export function StructureTab({
         designId={designId}
         designCode={designCode}
         designName={designName}
+        branchId={versionContext.branchId}
       />
 
       {/* Add Part to BOM Dialog (cross-design aware) */}
@@ -1131,6 +1132,7 @@ export function StructureTab({
           parentItemNumber={parentForAddChild.number}
           currentDesignId={designId}
           currentDesignCode={designCode}
+          branchId={versionContext.branchId}
         />
       )}
 

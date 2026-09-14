@@ -338,12 +338,12 @@ jobs:
       # Appended here it is binding the moment it merges, because Unit Tests
       # already is.
       #
-      # Scope is workers/py-common only. The cad-converter and cad-generator
-      # suites stay local: they import pythonocc-core and cadquery, which are
-      # conda-only, so running them here would mean a third-party setup action
-      # and a multi-hundred-megabyte solve for pure-geometry unit tests. Their
-      # results belong in the pull request body instead. py-common needs pip and
-      # nothing else.
+      # Scope is workers/py-common only. The cad-converter, cad-generator and
+      # freecad-runner suites stay local: they import pythonocc-core, cadquery
+      # and FreeCAD, which are conda-only, so running them here would mean a
+      # third-party setup action and a multi-hundred-megabyte solve for
+      # pure-geometry unit tests. Their results belong in the pull request body
+      # instead. py-common needs pip and nothing else.
       - name: Setup Python
         uses: actions/setup-python@v5
         with:

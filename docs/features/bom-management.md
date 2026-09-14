@@ -214,6 +214,8 @@ The BOM tree is built server-side in the `GET /api/v1/designs/:id/structure` end
 - **Column resize**: Drag column borders to resize
 - **Column filtering**: Per-column filter popovers
 - **Context menus**: Right-click for actions (add child, remove, open detail page, etc.)
+- **Add Part**: Opens on a choice. _Create New_ makes a part in this design, on the branch the page is viewing, and it appears as a top-level part of the structure; _Use Existing_ copies or references a part from the standard library or another design
+- **Add Child** (context menu): Opens on the same choice. _Create New_ makes the part and places it under the node with the quantity and find number given; _Use Existing_ adds a part from this design or the standard library
 - **CSV export**: Export the full indented BOM to a CSV file
 - **External badges**: Items from other designs show an amber badge with the source design code
 

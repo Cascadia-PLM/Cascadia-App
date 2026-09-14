@@ -6,6 +6,22 @@ import { registerTypeHandler } from './index'
 import { db } from '@/lib/db'
 import { parts } from '@/lib/db/schema'
 
+/**
+ * Empty-or-absent to NULL, for a column whose value can legitimately be zero.
+ *
+ * The string columns around it use `x || null`, which is the right
+ * normalization there — an empty form field means "no value". On a number it
+ * is wrong: a lead time of 0 ("in stock") is a value the schema accepts and
+ * both Part forms send as a number, and truthiness turned it into NULL on
+ * every write, so the field came back blank after saving it.
+ */
+function numberOrNull(value: unknown): number | null {
+  if (value === '' || value === null || value === undefined) return null
+  // The type's Zod schema admits only a number here, on create and (through
+  // `itemUpdateSchemaFor`) on update.
+  return value as number
+}
+
 registerTypeHandler('Part', {
   table: parts,
 
@@ -21,10 +37,7 @@ registerTypeHandler('Part', {
       weightUnit: data.weightUnit || null,
       cost: data.cost && data.cost !== '' ? data.cost : null,
       costCurrency: data.costCurrency || null,
-      leadTimeDays:
-        data.leadTimeDays && data.leadTimeDays !== ''
-          ? data.leadTimeDays
-          : null,
+      leadTimeDays: numberOrNull(data.leadTimeDays),
     })
   },
 
@@ -57,8 +70,7 @@ registerTypeHandler('Part', {
     if (data.costCurrency !== undefined)
       updateData.costCurrency = data.costCurrency || null
     if (data.leadTimeDays !== undefined)
-      updateData.leadTimeDays =
-        data.leadTimeDays && data.leadTimeDays !== '' ? data.leadTimeDays : null
+      updateData.leadTimeDays = numberOrNull(data.leadTimeDays)
 
     if (Object.keys(updateData).length > 0) {
       await run.update(parts).set(updateData).where(eq(parts.itemId, itemId))

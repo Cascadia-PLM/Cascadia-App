@@ -31,23 +31,8 @@ export const LIFECYCLE_IDS = {
   workOrder: '00000000-0000-4000-8000-000000000114',
 } as const
 
-/**
- * Mapping of item types to their default lifecycle IDs.
- * This is the source of truth for which lifecycle each item type uses.
- */
-export const ITEM_TYPE_LIFECYCLES: Record<string, string> = {
-  Part: LIFECYCLE_IDS.part,
-  Document: LIFECYCLE_IDS.document,
-  Requirement: LIFECYCLE_IDS.requirement,
-  ChangeOrder: LIFECYCLE_IDS.changeOrder,
-  Task: LIFECYCLE_IDS.task,
-  TestPlan: LIFECYCLE_IDS.testPlan,
-  TestCase: LIFECYCLE_IDS.testCase,
-  WorkInstruction: LIFECYCLE_IDS.workInstruction,
-  Issue: LIFECYCLE_IDS.issue,
-  Tool: LIFECYCLE_IDS.tool,
-  // Software shares the Part lifecycle: driven, ECO-controlled release
-  Software: LIFECYCLE_IDS.part,
-  PhysicalPart: LIFECYCLE_IDS.physicalPart,
-  WorkOrder: LIFECYCLE_IDS.workOrder,
-}
+// There was a second map here, `ITEM_TYPE_LIFECYCLES`, calling itself "the
+// source of truth for which lifecycle each item type uses". Nothing imported
+// it, and the answer it gave was a copy of the `lifecycleDefinitionId` each
+// entry in ITEM_TYPE_DEFINITIONS already carries — which is the real source,
+// and the one an admin's runtime config overrides.

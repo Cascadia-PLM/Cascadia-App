@@ -2,7 +2,6 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { z } from 'zod'
-import type { ComponentType } from 'react'
 
 /**
  * A JSON document value - what a `jsonb` column can actually hold.
@@ -185,43 +184,13 @@ export interface RelationshipConfig {
   allowMultiple: boolean
 }
 
-// Form component props
-export interface ItemFormProps<T = any> {
-  item?: T
-  onSubmit: (data: T) => void | Promise<void>
-  onCancel?: () => void
-  disabled?: boolean
-}
-
-// Table component props
-export interface ItemTableProps<T = any> {
-  items: Array<T>
-  onEdit?: (item: T) => void
-  onDelete?: (item: T) => void
-  onSelect?: (item: T) => void
-}
-
-// Detail component props
-export interface ItemDetailProps<T = any> {
-  item: T
-  onEdit?: () => void
-  onDelete?: () => void
-}
-
 // Item type configuration
 export interface ItemTypeConfig<T = any> {
   name: string
   label: string
   pluralLabel: string
   icon: string
-  table: string
   schema: z.ZodSchema<T>
-  /**
-   * @deprecated Use lifecycleDefinitionId instead.
-   * States are now managed through lifecycle definitions in workflow_definitions table.
-   * This field is kept for backward compatibility and as a fallback when no lifecycle is assigned.
-   */
-  states: Array<StateConfig>
   /**
    * Links this item type to a lifecycle definition (from workflow_definitions table).
    * When set, the lifecycle controls which states are valid and how items transition.
@@ -229,51 +198,6 @@ export interface ItemTypeConfig<T = any> {
    */
   lifecycleDefinitionId?: string
   relationships: Array<RelationshipConfig>
-  components: {
-    form: ComponentType<ItemFormProps<T>>
-    table: ComponentType<ItemTableProps<T>>
-    detail: ComponentType<ItemDetailProps<T>>
-  }
-  permissions: {
-    create: Array<string>
-    read: Array<string>
-    update: Array<string>
-    delete: Array<string>
-  }
   searchableFields: Array<string>
   displayField: string
 }
-
-// Common states used across item types
-export const commonStates: Array<StateConfig> = [
-  {
-    id: 'Draft',
-    name: 'Draft',
-    color: 'gray',
-    description: 'Item is being created or edited',
-  },
-  {
-    id: 'InReview',
-    name: 'In Review',
-    color: 'blue',
-    description: 'Item is under review',
-  },
-  {
-    id: 'Approved',
-    name: 'Approved',
-    color: 'green',
-    description: 'Item has been approved',
-  },
-  {
-    id: 'Released',
-    name: 'Released',
-    color: 'green',
-    description: 'Item is released for use',
-  },
-  {
-    id: 'Obsolete',
-    name: 'Obsolete',
-    color: 'red',
-    description: 'Item is no longer used',
-  },
-]

@@ -21,11 +21,12 @@ import {
   it,
   vi,
 } from 'vitest'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 import { ChangeOrderService } from './ChangeOrderService'
 import { ItemService } from './ItemService'
 import type { Part } from '@/lib/items/types/part'
 import type { TestUser } from '@/__tests__/fixtures/users'
+import type { ChangeOrderReleasedPayload } from '@/lib/events'
 import { RevisionService } from '@/lib/services/RevisionService'
 import { CommitService } from '@/lib/services/CommitService'
 import { TestDatabase } from '@/__tests__/helpers/db'
@@ -39,6 +40,7 @@ import {
   changeOrders,
   commits,
   designs,
+  domainEvents,
   itemFieldChanges,
   itemRelationships,
   itemVersions,
@@ -893,6 +895,16 @@ describe('ChangeOrderService', () => {
         { affectedItemId: part.id, changeAction: 'revise' },
         user.id,
       )
+      // An engineer holds the working copy's lock when the change is dropped.
+      await testDb.db
+        .update(branchItemsTable)
+        .set({ checkedOutBy: user.id, checkedOutAt: new Date() })
+        .where(
+          and(
+            eq(branchItemsTable.itemMasterId, part.masterId),
+            isNotNull(branchItemsTable.changeType),
+          ),
+        )
 
       await ChangeOrderService.removeAffectedItem(
         changeOrder.id,
@@ -901,6 +913,20 @@ describe('ChangeOrderService', () => {
           discardBranchChanges: true,
         },
       )
+
+      // The lock went with the change, and the log says so: a projection of
+      // who holds what would otherwise keep it for good.
+      const cancelled = await testDb.db
+        .select()
+        .from(domainEvents)
+        .where(
+          and(
+            eq(domainEvents.type, 'item.checkout_cancelled'),
+            eq(domainEvents.subjectMasterId, part.masterId),
+          ),
+        )
+      expect(cancelled).toHaveLength(1)
+      expect(cancelled[0]!.actorId).toBe(user.id)
 
       expect(
         await ChangeOrderService.getAffectedItems(changeOrder.id),
@@ -1172,6 +1198,53 @@ describe('ChangeOrderService', () => {
     })
   })
 
+  describe('release summary', () => {
+    it('reports what a release without a branch released, read from its commits', async () => {
+      const changeOrder = await createChangeOrder()
+      const part = await createPart()
+      await ChangeOrderService.addAffectedItem(
+        changeOrder.id,
+        { affectedItemId: part.id, changeAction: 'release' },
+        user.id,
+      )
+
+      await transitionTo(changeOrder.id, 'InReview')
+      await transitionTo(changeOrder.id, 'Approved')
+      await transitionTo(changeOrder.id, 'Implemented')
+      await transitionTo(changeOrder.id, 'Closed')
+
+      const [released] = await testDb.db
+        .select()
+        .from(domainEvents)
+        .where(
+          and(
+            eq(domainEvents.type, 'change_order.released'),
+            eq(domainEvents.subjectId, changeOrder.id),
+          ),
+        )
+      const payload = released?.payload as ChangeOrderReleasedPayload
+      // No branch merged, and the list used to be built from branch merges
+      // alone, so a release like this one reported nothing released.
+      const [releaseCommit] = await testDb.db
+        .select()
+        .from(commits)
+        .where(
+          and(
+            eq(commits.changeOrderItemId, changeOrder.id),
+            isNotNull(commits.revisionsAssigned),
+          ),
+        )
+      expect(payload.releases).toHaveLength(1)
+      expect(payload.releases[0]).toMatchObject({
+        designId,
+        mergeCommitId: releaseCommit?.id,
+      })
+      expect(payload.totalRevisionsAssigned).toBe(
+        Object.keys(payload.releases[0]!.revisionsAssigned).length,
+      )
+    })
+  })
+
   describe('close', () => {
     // Note: close() calls releaseChangeOrder() which requires 'Approved' state
     // In simplified workflow, close() from Approved state stays in Approved (no transition)
@@ -1302,6 +1375,82 @@ describe('ChangeOrderService', () => {
 
       expect(instance).toBeDefined()
       expect(instance.currentState).toBe('Draft')
+    })
+
+    it('records the state it restamps when the workflow starts somewhere else', async () => {
+      const definitionId = '00000000-0000-4000-8000-000000000232'
+      await testDb.db
+        .insert(lifecycleDefinitions)
+        .values({
+          id: definitionId,
+          name: 'Test ECO Workflow - Proposed start',
+          version: 1,
+          workflowType: 'strict',
+          definition: {
+            states: [
+              {
+                id: 'Proposed',
+                name: 'Proposed',
+                isInitial: true,
+                isFinal: false,
+              },
+              {
+                id: 'Done',
+                name: 'Done',
+                isInitial: false,
+                isFinal: true,
+                finalKind: 'release',
+              },
+            ],
+            transitions: [
+              {
+                id: 't1',
+                name: 'Finish',
+                fromStateId: 'Proposed',
+                toStateId: 'Done',
+              },
+            ],
+            applicableItemTypes: ['ChangeOrder'],
+          },
+          isActive: true,
+          lifecycleType: 'Driving',
+        })
+        .onConflictDoNothing()
+      const changeOrder = await ItemService.create(
+        'ChangeOrder',
+        {
+          revision: 'A',
+          name: 'Restamped ECO',
+          changeType: 'ECO',
+          priority: 'medium',
+          reasonForChange: 'Restamp',
+          designId,
+        } as any,
+        user.id,
+      )
+
+      await ChangeOrderService.startWorkflow(
+        changeOrder.id,
+        definitionId,
+        user.id,
+      )
+
+      // `item.created` said the change order was in the type's initial state;
+      // the workflow started it in its own, and the log has to say so.
+      const updates = await testDb.db
+        .select()
+        .from(domainEvents)
+        .where(
+          and(
+            eq(domainEvents.type, 'item.updated'),
+            eq(domainEvents.subjectId, changeOrder.id),
+          ),
+        )
+      expect(updates).toHaveLength(1)
+      expect(updates[0]!.payload).toMatchObject({
+        state: 'Proposed',
+        changedFields: ['state'],
+      })
     })
   })
 
@@ -1865,9 +2014,9 @@ describe('ChangeOrderService', () => {
 
   describe('states a change order can hold', () => {
     it('come from every workflow a change type runs, never from a list in code', async () => {
-      const ids = (await ItemTypeRegistry.getStatesForType('ChangeOrder')).map(
-        (s) => s.id,
-      )
+      const ids = (
+        await LifecycleService.getRenderableStates('ChangeOrder')
+      ).map((s) => s.id)
 
       // Both mapped definitions, in one list
       expect(ids).toEqual(

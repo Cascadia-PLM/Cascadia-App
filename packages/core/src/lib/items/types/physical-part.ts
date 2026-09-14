@@ -3,7 +3,7 @@
 
 import { z } from 'zod'
 import { baseItemSchema } from './base'
-import type { BaseItem, RelationshipConfig, StateConfig } from './base'
+import type { BaseItem, RelationshipConfig } from './base'
 
 /**
  * PhysicalPart — a physical instance of a Part: a serialized unit or an
@@ -59,13 +59,6 @@ export const physicalPartSchema = baseItemSchema
         'Units carry exactly a serialNumber; lots carry exactly a lotNumber',
     },
   )
-
-export const physicalPartStates: Array<StateConfig> = [
-  { id: 'Available', name: 'Available', color: 'green' },
-  { id: 'Consumed', name: 'Consumed', color: 'blue' },
-  { id: 'In Service', name: 'In Service', color: 'purple' },
-  { id: 'Scrapped', name: 'Scrapped', color: 'red' },
-]
 
 // Consumes/Produces/Evidences edges are created by services (work order
 // consumption, production, qualification evidence), not through the generic

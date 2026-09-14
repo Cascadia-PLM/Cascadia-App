@@ -31,6 +31,7 @@ import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
 import { takeFirst } from '@/lib/db/take-first'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import {
+  domainEvents,
   itemRelationships,
   items,
   programs,
@@ -154,6 +155,42 @@ describe('MbomService', () => {
   }
 
   describe('createFromEbom — copy fidelity', () => {
+    it('announces the Manufacturing design it creates, and not the items it copies', async () => {
+      await seedEngineeringDesign()
+      await seedTwoLevelBom()
+
+      const result = await createMbom()
+
+      const created = await testDb.db
+        .select()
+        .from(domainEvents)
+        .where(
+          and(
+            eq(domainEvents.type, 'design.created'),
+            eq(domainEvents.subjectId, result.design.id),
+          ),
+        )
+      expect(created).toHaveLength(1)
+      expect(created[0]!.payload).toMatchObject({
+        designId: result.design.id,
+        designType: 'Manufacturing',
+        mainBranchId: result.mainBranch.id,
+      })
+
+      // The copy is the volume path: every master in the design in one
+      // operation, reported by the operation rather than one fact each.
+      const itemFacts = await testDb.db
+        .select()
+        .from(domainEvents)
+        .where(
+          and(
+            eq(domainEvents.type, 'item.created'),
+            eq(domainEvents.designId, result.design.id),
+          ),
+        )
+      expect(itemFacts).toHaveLength(0)
+    })
+
     it('copies every source item and every BOM edge, and says how many', async () => {
       await seedEngineeringDesign()
       await seedTwoLevelBom()

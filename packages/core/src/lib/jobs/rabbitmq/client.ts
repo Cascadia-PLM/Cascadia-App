@@ -3,11 +3,18 @@
 
 import amqp from 'amqplib'
 import { RABBITMQ_CONFIG } from './types'
-import type { Channel } from 'amqplib'
+import type { Channel, ConfirmChannel } from 'amqplib'
 import type { JobMessage } from '../types'
 import { rabbitmqLogger } from '@/lib/logging/logger'
+import { redactUrlCredentials } from '@/lib/logging/redact-url'
 
-const { EXCHANGE_NAME, DLX_EXCHANGE, DLQ_QUEUE, MAX_PRIORITY } = RABBITMQ_CONFIG
+const {
+  EXCHANGE_NAME,
+  DLX_EXCHANGE,
+  DLQ_QUEUE,
+  EVENTS_EXCHANGE,
+  MAX_PRIORITY,
+} = RABBITMQ_CONFIG
 
 // amqplib returns ChannelModel from connect(), but the @types/amqplib package
 // has some inconsistencies. We use a looser type to work around this.
@@ -20,6 +27,16 @@ type AmqpConnection = Awaited<ReturnType<typeof amqp.connect>>
 export class RabbitMQClient {
   private static connection: AmqpConnection | null = null
   private static channel: Channel | null = null
+  /**
+   * A second channel, in **confirm** mode, for the domain event relay.
+   *
+   * Separate from the job channel because confirm mode is a channel-level
+   * property and jobs do not want per-message round trips. Created lazily, so a
+   * deployment that never relays never opens it, and nulled on every teardown
+   * path below — a publish into a dead channel gets a callback that never fires,
+   * and the only thing that would end that hang is the handler deadline.
+   */
+  private static confirmChannel: ConfirmChannel | null = null
   private static isConnecting = false
   private static connectionPromise: Promise<void> | null = null
   private static onConnectionLost: (() => void) | null = null
@@ -75,7 +92,8 @@ export class RabbitMQClient {
 
   private static async doConnect(): Promise<void> {
     const url = process.env.RABBITMQ_URL || 'amqp://localhost:5672'
-    rabbitmqLogger.info({ url }, 'Connecting')
+    // Never the raw URL: it carries the broker password.
+    rabbitmqLogger.info({ url: redactUrlCredentials(url) }, 'Connecting')
 
     const conn = await amqp.connect(url)
     this.connection = conn
@@ -89,14 +107,22 @@ export class RabbitMQClient {
     await this.channel.assertQueue(DLQ_QUEUE, { durable: true })
     await this.channel.bindQueue(DLQ_QUEUE, DLX_EXCHANGE, '')
 
+    // Domain event fan-out exchange (no queues asserted here — consumers own
+    // their bindings)
+    await this.channel.assertExchange(EVENTS_EXCHANGE, 'topic', {
+      durable: true,
+    })
+
     // Handle connection errors
     conn.on('error', (err: Error) => {
       rabbitmqLogger.error({ err }, 'Connection error')
+      this.confirmChannel = null
       this.handleConnectionLoss()
     })
 
     conn.on('close', () => {
       rabbitmqLogger.warn('Connection closed')
+      this.confirmChannel = null
       this.handleConnectionLoss()
     })
 
@@ -132,6 +158,101 @@ export class RabbitMQClient {
     }
 
     rabbitmqLogger.info({ jobId: message.jobId, routingKey }, 'Published job')
+  }
+
+  /** The relay's confirm channel, opened on first use. */
+  private static async getConfirmChannel(): Promise<ConfirmChannel> {
+    await this.connect()
+    if (this.confirmChannel) return this.confirmChannel
+    if (!this.connection) {
+      throw new Error('RabbitMQ connection not available')
+    }
+    const channel = await this.connection.createConfirmChannel()
+    // A channel can die without its connection doing so — a publish to a
+    // missing exchange closes it with a 404 — and an `error` event with no
+    // listener is an uncaught exception, which exits the jobs worker. Either
+    // way the channel is finished: forget it, so the next publish opens a fresh
+    // one instead of throwing on a dead handle until the connection reconnects.
+    channel.on('error', (err: Error) => {
+      rabbitmqLogger.error({ err }, 'Confirm channel error')
+      if (this.confirmChannel === channel) this.confirmChannel = null
+    })
+    channel.on('close', () => {
+      if (this.confirmChannel === channel) this.confirmChannel = null
+    })
+    await channel.assertExchange(EVENTS_EXCHANGE, 'topic', { durable: true })
+    this.confirmChannel = channel
+    return channel
+  }
+
+  /**
+   * Publish a domain event envelope to the events topic exchange, and wait for
+   * the broker to confirm it.
+   *
+   * **Why the confirm matters.** This used to publish on the shared
+   * non-confirm channel and return as soon as amqplib accepted the buffer — and
+   * the relay awaits this before the consumer transaction commits its cursor.
+   * So the cursor advanced on *buffer acceptance* rather than broker
+   * persistence, and a broker dying with unflushed frames lost those events
+   * permanently. That is the one loss mode this whole design exists to prevent.
+   *
+   * Per-message rather than a batched `waitForConfirms`: the cursor advances per
+   * event inside a savepoint loop, and a batch confirm makes a partial failure
+   * ambiguous about which event to stop before.
+   *
+   * The old "channel buffer full" throw is gone, and why matters — under
+   * confirms the message is still buffered and its callback still fires, and
+   * because the relay awaits each confirm before publishing the next, that await
+   * *is* the back-pressure.
+   */
+  static async publishDomainEvent(
+    routingKey: string,
+    envelope: { id: string; occurredAt: Date; type: string },
+    signal?: AbortSignal,
+  ): Promise<void> {
+    if (signal?.aborted) {
+      throw new Error('Aborted before publishing event')
+    }
+    const channel = await this.getConfirmChannel()
+    const content = Buffer.from(JSON.stringify(envelope))
+
+    await new Promise<void>((resolve, reject) => {
+      let settled = false
+      const finish = (error?: Error) => {
+        if (settled) return
+        settled = true
+        signal?.removeEventListener('abort', onAbort)
+        if (error) reject(error)
+        else resolve()
+      }
+      const onAbort = () =>
+        finish(new Error('Aborted while awaiting a broker confirm'))
+      signal?.addEventListener('abort', onAbort, { once: true })
+
+      channel.publish(
+        EVENTS_EXCHANGE,
+        routingKey,
+        content,
+        {
+          persistent: true,
+          messageId: envelope.id,
+          timestamp: envelope.occurredAt.getTime(),
+          contentType: 'application/json',
+          headers: { 'x-event-type': envelope.type },
+        },
+        (error) => {
+          // amqplib's callback is the ack/nack: an error here is a nack or a
+          // channel that died, and either means the broker does not have it.
+          finish(
+            error instanceof Error
+              ? error
+              : error
+                ? new Error(String(error))
+                : undefined,
+          )
+        },
+      )
+    })
   }
 
   /**
@@ -245,10 +366,15 @@ export class RabbitMQClient {
     // awaits below, and handleConnectionLoss must find an already-cleared
     // client so a deliberate shutdown never masquerades as a connection loss.
     const channel = this.channel
+    const confirmChannel = this.confirmChannel
     const connection = this.connection
     this.channel = null
+    this.confirmChannel = null
     this.connection = null
     try {
+      if (confirmChannel) {
+        await confirmChannel.close()
+      }
       if (channel) {
         await channel.close()
       }

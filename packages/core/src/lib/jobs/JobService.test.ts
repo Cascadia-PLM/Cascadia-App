@@ -36,6 +36,7 @@ import {
   it,
   vi,
 } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { MockInstance } from 'vitest'
 import type { TestUser } from '@/__tests__/fixtures/users'
@@ -392,8 +393,13 @@ describe('JobService — claim and retry invariants', () => {
 
   describe('publish-window races (JOBS2-3)', () => {
     let publishSpy: MockInstance<typeof RabbitMQClient.publish>
+    let connectSpy: MockInstance<typeof RabbitMQClient.connect>
 
     beforeEach(() => {
+      // `submit` connects before it writes the row, and no broker runs in CI.
+      connectSpy = vi
+        .spyOn(RabbitMQClient, 'connect')
+        .mockResolvedValue(undefined)
       publishSpy = vi
         .spyOn(RabbitMQClient, 'publish')
         .mockResolvedValue(undefined)
@@ -448,6 +454,25 @@ describe('JobService — claim and retry invariants', () => {
       const row = await rowFor(submitted.id)
       expect(row.status).toBe('cancelled')
       expect(row.completedAt).not.toBeNull()
+    })
+
+    it('writes no row when the broker cannot be reached', async () => {
+      const refused = new Error('connect ECONNREFUSED 127.0.0.1:5672')
+      connectSpy.mockRejectedValue(refused)
+
+      // The connection error reaches the caller unwrapped, as a publish
+      // failure's does.
+      await expect(JobService.submit(TEST_TYPE, {}, user.id)).rejects.toBe(
+        refused,
+      )
+
+      // Nothing was queued, so no row claims anything was: a caller retrying
+      // through an outage must not leave a failed job behind per attempt.
+      const rows = await testDb.db
+        .select()
+        .from(jobs)
+        .where(eq(jobs.type, TEST_TYPE))
+      expect(rows).toHaveLength(0)
     })
 
     it('marks the job failed when the publish fails and nothing raced it', async () => {

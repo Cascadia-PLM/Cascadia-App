@@ -4,6 +4,7 @@
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
+import { PROGRAM_CREATED, publishDomainEvent } from '../events'
 import { likeContains } from '../db/like-pattern'
 import { programMembers, programs, users } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
@@ -117,38 +118,61 @@ export class ProgramService {
       })
     }
 
-    // Insert program
-    const program = takeFirst(
-      await db
-        .insert(programs)
-        .values({
-          name: validated.name,
-          code: validated.code,
-          description: validated.description,
-          contractNumber: validated.contractNumber,
-          customer: validated.customer,
-          startDate: validated.startDate,
-          targetEndDate: validated.targetEndDate,
-          status: validated.status || 'Active',
-          attributes: validated.attributes || {},
-          createdBy: userId,
-          updatedBy: userId,
-        })
-        .returning(),
-    )
+    // The program row, the creator's administrator membership and the fact,
+    // in one transaction.
+    //
+    // These were two separate pool writes, so a failed membership insert left
+    // an **ownerless program** — and a program is the permission boundary, so
+    // nothing in the product could then reach it to fix it. Wrapping them is an
+    // independent data-integrity fix that earns its own changelog line; the
+    // event is why it happened now rather than eventually.
+    return db.transaction(async (tx) => {
+      const program = takeFirst(
+        await tx
+          .insert(programs)
+          .values({
+            name: validated.name,
+            code: validated.code,
+            description: validated.description,
+            contractNumber: validated.contractNumber,
+            customer: validated.customer,
+            startDate: validated.startDate,
+            targetEndDate: validated.targetEndDate,
+            status: validated.status || 'Active',
+            attributes: validated.attributes || {},
+            createdBy: userId,
+            updatedBy: userId,
+          })
+          .returning(),
+      )
 
-    // Automatically add creator as admin
-    await db.insert(programMembers).values({
-      programId: program.id,
-      userId: userId,
-      role: 'admin',
-      canCreateEco: true,
-      canApproveEco: true,
-      canManageDesigns: true,
-      invitedBy: userId,
+      // Automatically add creator as admin
+      await tx.insert(programMembers).values({
+        programId: program.id,
+        userId: userId,
+        role: 'admin',
+        canCreateEco: true,
+        canApproveEco: true,
+        canManageDesigns: true,
+        invitedBy: userId,
+      })
+
+      await publishDomainEvent(tx, PROGRAM_CREATED, {
+        actorId: userId,
+        subject: { id: program.id },
+        context: { programId: program.id },
+        payload: {
+          programId: program.id,
+          name: program.name,
+          code: program.code,
+          status: program.status,
+          customer: program.customer,
+          contractNumber: program.contractNumber,
+        },
+      })
+
+      return program
     })
-
-    return program
   }
 
   /**

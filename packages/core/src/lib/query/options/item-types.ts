@@ -5,22 +5,6 @@ import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
 import { apiFetch } from '@/lib/api/client'
 
-export interface ItemTypeState {
-  id: string
-  name: string
-  color?: string
-  description?: string
-  isInitial?: boolean
-  isFinal?: boolean
-}
-
-export interface ItemTypePermissions {
-  create: Array<string>
-  read: Array<string>
-  update: Array<string>
-  delete: Array<string>
-}
-
 export interface ItemTypeRelationship {
   type: string
   label: string
@@ -41,21 +25,24 @@ export interface ItemTypeConfig {
   label: string
   pluralLabel: string
   icon: string
-  states: Array<ItemTypeState>
   lifecycleDefinitionId?: string
-  permissions: ItemTypePermissions
   relationships: Array<ItemTypeRelationship>
   searchableFields?: Array<string>
   displayField?: string
 }
 
-/** The subset an administrator may override at runtime. */
+/**
+ * The subset an administrator may override at runtime: the lifecycle, and
+ * for ChangeOrder the definition each change type runs.
+ *
+ * Labels, icons and per-type permission lists used to be here. Nothing read
+ * them — the enforced permission model is roles and resources, and every
+ * surface that displays a type's name reads the code definition — so the
+ * editor offered inputs whose only effect was to make an administrator
+ * believe the system was configured differently than it was.
+ */
 export interface ItemTypeConfigOverrides {
-  label?: string
-  pluralLabel?: string
-  icon?: string
   lifecycleDefinitionId?: string | null
-  permissions?: ItemTypePermissions
   lifecyclesByChangeType?: LifecyclesByChangeType
 }
 

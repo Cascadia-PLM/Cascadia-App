@@ -23,15 +23,21 @@ import {
   issues,
   items,
   parts,
+  physicalParts,
   programs,
   requirements,
   software,
   tasks,
   testCases,
   testPlans,
+  tools,
   workInstructions,
+  workOrders,
 } from '../../db/schema'
 import { accessScopeCondition, notDeleted } from '../../db/filters'
+import { getTypeHandler } from '../type-handlers'
+// Registers the handlers this file reads the extension tables from.
+import '../type-handlers/init'
 import type { AccessScope } from '../../db/filters'
 import type { SQL } from 'drizzle-orm'
 import type { BaseItem } from '../types/base'
@@ -663,33 +669,18 @@ export class ItemSearchService {
   }
 
   /**
-   * Get the type-specific table for a given item type
+   * The type's extension table, for the join that carries its own columns
+   * back with the base item.
+   *
+   * Read from the type handler, which is where every other service reads it
+   * (CheckoutService, UsageService, the generic row copy). This was a switch
+   * listing ten of the thirteen types, and it had already fallen behind: Tool,
+   * PhysicalPart and WorkOrder were missing, so `GET /api/v1/items` returned
+   * them with no type-specific fields at all and the Tools list page rendered
+   * an empty column for every one of them.
    */
   private static getTypeTable(type: string) {
-    switch (type) {
-      case 'Part':
-        return parts
-      case 'Document':
-        return documents
-      case 'Requirement':
-        return requirements
-      case 'Task':
-        return tasks
-      case 'ChangeOrder':
-        return changeOrders
-      case 'TestPlan':
-        return testPlans
-      case 'TestCase':
-        return testCases
-      case 'Issue':
-        return issues
-      case 'WorkInstruction':
-        return workInstructions
-      case 'Software':
-        return software
-      default:
-        return null
-    }
+    return getTypeHandler(type)?.table ?? null
   }
 
   /**
@@ -739,6 +730,15 @@ export class ItemSearchService {
         'version',
         'targetHardware',
         'toolchain',
+      ],
+      Tool: ['toolType', 'toolSubtype', 'manufacturer', 'model', 'location'],
+      PhysicalPart: ['instanceKind', 'serialNumber', 'lotNumber', 'erpRef'],
+      WorkOrder: [
+        'quantity',
+        'quantityCompleted',
+        'priority',
+        'dueDate',
+        'customerOrder',
       ],
     }
 
@@ -835,6 +835,26 @@ export class ItemSearchService {
         version: software.version,
         targetHardware: software.targetHardware,
         toolchain: software.toolchain,
+      },
+      Tool: {
+        toolType: tools.toolType,
+        toolSubtype: tools.toolSubtype,
+        manufacturer: tools.manufacturer,
+        model: tools.model,
+        location: tools.location,
+      },
+      PhysicalPart: {
+        instanceKind: physicalParts.instanceKind,
+        serialNumber: physicalParts.serialNumber,
+        lotNumber: physicalParts.lotNumber,
+        erpRef: physicalParts.erpRef,
+      },
+      WorkOrder: {
+        quantity: workOrders.quantity,
+        quantityCompleted: workOrders.quantityCompleted,
+        priority: workOrders.priority,
+        dueDate: workOrders.dueDate,
+        customerOrder: workOrders.customerOrder,
       },
     }
 
@@ -991,6 +1011,26 @@ export class ItemSearchService {
         targetHardware: software.targetHardware,
         toolchain: software.toolchain,
       },
+      Tool: {
+        toolType: tools.toolType,
+        toolSubtype: tools.toolSubtype,
+        manufacturer: tools.manufacturer,
+        model: tools.model,
+        location: tools.location,
+      },
+      PhysicalPart: {
+        instanceKind: physicalParts.instanceKind,
+        serialNumber: physicalParts.serialNumber,
+        lotNumber: physicalParts.lotNumber,
+        erpRef: physicalParts.erpRef,
+      },
+      WorkOrder: {
+        quantity: workOrders.quantity,
+        quantityCompleted: workOrders.quantityCompleted,
+        priority: workOrders.priority,
+        dueDate: workOrders.dueDate,
+        customerOrder: workOrders.customerOrder,
+      },
     }
 
     // Check base columns
@@ -1015,87 +1055,20 @@ export class ItemSearchService {
   }
 
   /**
-   * Get type-specific data for an item (used internally by search methods for enrichment)
+   * Type-specific data for one item, for the enrichment paths that do not
+   * already have it from a join.
+   *
+   * The handler's own reader, for the same reason as `getTypeTable`: this was
+   * a second switch, one type further behind than that one (it was also
+   * missing WorkInstruction), and the two could drift from each other as well
+   * as from the registry.
    */
   private static async getTypeSpecificData(
     type: string,
     itemId: string,
   ): Promise<any> {
-    switch (type) {
-      case 'Part': {
-        const [part] = await db
-          .select()
-          .from(parts)
-          .where(eq(parts.itemId, itemId))
-          .limit(1)
-        return part
-      }
-      case 'Document': {
-        const [doc] = await db
-          .select()
-          .from(documents)
-          .where(eq(documents.itemId, itemId))
-          .limit(1)
-        return doc
-      }
-      case 'Requirement': {
-        const [requirement] = await db
-          .select()
-          .from(requirements)
-          .where(eq(requirements.itemId, itemId))
-          .limit(1)
-        return requirement
-      }
-      case 'Task': {
-        const [task] = await db
-          .select()
-          .from(tasks)
-          .where(eq(tasks.itemId, itemId))
-          .limit(1)
-        return task
-      }
-      case 'ChangeOrder': {
-        const [co] = await db
-          .select()
-          .from(changeOrders)
-          .where(eq(changeOrders.itemId, itemId))
-          .limit(1)
-        return co
-      }
-      case 'TestPlan': {
-        const [tp] = await db
-          .select()
-          .from(testPlans)
-          .where(eq(testPlans.itemId, itemId))
-          .limit(1)
-        return tp
-      }
-      case 'TestCase': {
-        const [tc] = await db
-          .select()
-          .from(testCases)
-          .where(eq(testCases.itemId, itemId))
-          .limit(1)
-        return tc
-      }
-      case 'Issue': {
-        const [issue] = await db
-          .select()
-          .from(issues)
-          .where(eq(issues.itemId, itemId))
-          .limit(1)
-        return issue
-      }
-      case 'Software': {
-        const [sw] = await db
-          .select()
-          .from(software)
-          .where(eq(software.itemId, itemId))
-          .limit(1)
-        return sw
-      }
-      default:
-        return null
-    }
+    const handler = getTypeHandler(type)
+    if (!handler) return null
+    return handler.get(itemId)
   }
 }

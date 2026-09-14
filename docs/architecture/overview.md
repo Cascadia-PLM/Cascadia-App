@@ -165,7 +165,9 @@ lib/
 ├── db/                  # Drizzle schema definitions, database connection, filters
 │   └── schema/          # Table definitions: items.ts, versioning.ts, designs.ts, users.ts
 ├── items/               # Item type system
-│   ├── registry.ts      # ItemTypeRegistry (central type registration)
+│   ├── item-type-definitions.ts  # ITEM_TYPE_DEFINITIONS — the 13 types
+│   ├── registry.ts      # ItemTypeRegistry (code definitions + runtime lifecycle)
+│   ├── type-handlers/   # Per-type extension-table reads and writes
 │   ├── types/           # Zod schemas + TypeScript interfaces per item type
 │   ├── services/        # ItemService, ChangeOrderService, ItemSearchService
 │   └── numbering/       # Auto-numbering (P-001, ECO-001, etc.)
@@ -185,7 +187,7 @@ lib/
 ├── errors/              # Typed error hierarchy (AppError, NotFoundError, ValidationError, ...)
 ├── ai/                  # AI chatbot tools, adapters, session service
 ├── design-engine/       # Collaborative design engine (stages, tools, materialization)
-├── cad-generation/      # CAD generation pipeline (Zoo API, KCL) — same package
+├── cad-generation/      # CAD generation pipeline (FreeCAD agent, assembly composition) — same package
 └── sysml/               # SysML v2 serialization
 ```
 

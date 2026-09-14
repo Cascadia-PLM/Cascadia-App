@@ -6,9 +6,10 @@ repository.
 
 ## What it does
 
-Turns text descriptions into CAD geometry — part generation through a
-text-to-CAD service, and assembly composition through generated KCL (KittyCAD
-Language). Output lands in the vault as STEP files attached to real parts, so
+Turns part specifications into CAD geometry — an AI agent writes FreeCAD
+scripts that a headless FreeCAD worker executes and validates, and assemblies
+are composed from LLM-planned placements. Output lands in the vault as STEP
+files attached to real parts, so
 downstream conversion and viewing work exactly as they do for hand-authored CAD.
 
 ## What is in this edition

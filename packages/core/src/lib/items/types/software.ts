@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { z } from 'zod'
-import { baseItemSchema, commonStates } from './base'
+import { baseItemSchema } from './base'
 import type { BaseItem, RelationshipConfig } from './base'
 
 // ============================================================================
@@ -120,9 +120,6 @@ export const softwareSchema = baseItemSchema.extend({
   draftManifestId: z.string().uuid().nullable().optional(),
   buildArtifactFileId: z.string().uuid().nullable().optional(),
 })
-
-// Software uses the standard driven lifecycle (ECO-controlled), like Parts
-export const softwareStates = commonStates
 
 export const softwareRelationships: Array<RelationshipConfig> = [
   {

@@ -27,6 +27,13 @@ everything else a suite needs it builds itself. `test:db:push` uses `push` rathe
 than `migrate` because the database is disposable and CI's Unit Tests job builds
 its schema the same way. Re-run it after a schema change.
 
+Two things `test:db:push` does not do for you. It cannot finish unattended when a
+previous run left committed rows in a table whose change needs a truncate:
+drizzle-kit prompts, and `--force` does not answer that prompt, so empty the
+disposable database first (`TRUNCATE items CASCADE`, then push). And it does not
+notice a change to a partial index's `WHERE` predicate alone: drop that index in
+the test database and push again, or the suite runs against the old predicate.
+
 Nothing is derived. A guessed `${dev}_test` would still be a database nobody
 chose, and on a machine with more than one Cascadia checkout the guess lands in
 another checkout's data.
@@ -88,6 +95,57 @@ describe('MyService', () => {
 **Do not use `db.transaction()` inside your test body** — the SUT may already
 call it and postgres.js deadlocks on nested `BEGIN` with a single-connection
 pool. Let the services manage their own transactions; just pass `testDb.db`.
+
+## Choosing a harness
+
+Two harnesses, and picking the wrong one produces a test that passes while
+proving nothing.
+
+| Use                      | When                                                                                    |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| `TestDatabase`           | Almost always. One transaction per test, rolled back — fast, and perfectly isolated.    |
+| `ConcurrentTestDatabase` | The test reasons about **committed** state, or about two callers genuinely overlapping. |
+
+**The rule that decides it: does the code under test need its writes to be
+committed?** Three shapes do, and every one of them fails silently on the gate
+harness rather than erroring:
+
+- **Anything that reads a committed `seq`.** The domain event log assigns `seq`
+  in a deferred constraint trigger that runs inside `COMMIT`. On a harness that
+  rolls back, the trigger never fires, every event keeps a null `seq`, and a
+  consumer scanning `seq > cursor` sees **an empty log** — so the test passes,
+  asserting nothing happened, which is exactly what it was supposed to disprove.
+- **Anything a background runner reads.** A consumer poll, a delivery pump, a job
+  worker: they read the module-level connection, not your open transaction, so
+  fixtures written on `testDb.db` are invisible to them.
+- **Anything asserting two callers race.** One connection cannot overlap with
+  itself.
+
+### Four disciplines, because it really commits
+
+`ConcurrentTestDatabase` writes rows that other files in the parallel pool can
+see and that outlive a failed test. Four rules follow, and each was learned by
+breaking one:
+
+1. **Clean up by the ids you created** — never by type, never by truncation. A
+   suite that deletes `domain_events` by event type eats other suites' events; a
+   suite that truncates takes the whole run down with it.
+2. **Scope every emptiness assertion.** "The table is empty" is never true here:
+   other suites' committed rows are in it. Assert on a test-local event type, a
+   test-local consumer id, or the specific ids you captured.
+3. **Give every shared-key row a per-run id.** A consumer id, a subscription
+   name, a settings key: `` `test.thing-${randomUUID().slice(0, 8)}` `` so a
+   re-run never inherits the last run's state and two parallel files never
+   contend.
+4. **Never assert a constant duration.** See the section below.
+
+### Arrange states an operator can actually reach
+
+A test that pokes a row into a shape no code path produces proves nothing about
+the path it claims to test. Driving a consumer's recovery by hand-writing its
+cursor row, for instance, leaves the backoff timestamp set and the next run
+returns `waiting` — whereas `resumeEventConsumer`, the operator's actual path,
+clears the backoff _and_ the failure state. Call the real function.
 
 ## Race tests: never assert a constant duration
 

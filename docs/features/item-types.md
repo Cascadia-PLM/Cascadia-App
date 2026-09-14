@@ -1060,36 +1060,29 @@ See `docs/features/software-management.md` for the full design.
 
 All item types are registered in `ItemTypeRegistry`, which implements a two-tier configuration pattern:
 
-1. **Code definitions** -- Type-safe configs defined in `packages/core/src/lib/items/registerItemTypes.server.ts` (schemas, components, table names, default states).
-2. **Runtime configs** -- Business rules from the database `item_type_configs` table (overridable labels, permissions, lifecycle assignments, relationships).
+1. **Code definitions** -- everything about a type: its schema, table, labels, icon, relationships and searchable fields. They live in `ITEM_TYPE_DEFINITIONS` (`packages/core/src/lib/items/item-type-definitions.ts`) and are registered by `registerItemTypes.server.ts`.
+2. **Runtime config** -- one field, from the database `item_type_configs` table: which lifecycle governs the type (plus, for ChangeOrder, the workflow each change type runs).
 
-Runtime configs override code defaults for configurable fields. Components and schemas always come from code for type safety.
+Runtime config overrides the code default for that one field; everything else always comes from code.
 
 ### Registration Source
 
-`packages/core/src/lib/items/registerItemTypes.server.ts`
+`packages/core/src/lib/items/item-type-definitions.ts` holds the definitions;
+`registerItemTypes.server.ts` registers them. Each composition root — the HTTP
+server and the jobs worker — imports the registrations and then awaits
+`ItemTypeRegistry.initialize()`, which loads the runtime configs.
 
 ### Lifecycle Assignment
 
-Each item type is assigned a lifecycle definition by ID (stored in `packages/core/src/lib/items/lifecycle-ids.ts`). The lifecycle controls valid states and transition rules. Multiple item types can share the same lifecycle definition.
+Each item type is assigned a lifecycle definition by ID (defaults in `packages/core/src/lib/items/lifecycle-ids.ts`). The lifecycle controls valid states and transition rules. Multiple item types can share the same lifecycle definition. An administrator can reassign it under **Admin > Item Types**; the swap is refused if the target is the wrong kind of definition or if any existing item is in a state the target does not define.
 
 ### Permissions Model
 
-Each registered type declares CRUD permissions by role:
-
-| Item Type       | Delete Restricted To                   |
-| --------------- | -------------------------------------- |
-| Part            | Admin, Engineer                        |
-| Document        | Admin, Engineer                        |
-| ChangeOrder     | Admin, Engineer                        |
-| Requirement     | Admin, Engineer, ProductManager        |
-| Task            | Admin, ProjectManager, Engineer        |
-| WorkInstruction | Admin, Engineer, ManufacturingEngineer |
-| Issue           | Admin, Engineer, QualityEngineer       |
-| TestPlan        | Admin, Engineer, QualityEngineer       |
-| TestCase        | Admin, Engineer, QualityEngineer       |
-
-All types currently allow create, read, and update for all roles (`*`).
+Access is not configured per item type. Each type maps to an RBAC resource
+(`ITEM_TYPE_RESOURCES` in `packages/core/src/lib/items/item-type-resources.ts`
+— `Part` to `parts`, `ChangeOrder` to `change_orders`, and so on), and roles
+hold permissions on those resources. See
+[Access Control](../admin/access-control.md).
 
 ---
 

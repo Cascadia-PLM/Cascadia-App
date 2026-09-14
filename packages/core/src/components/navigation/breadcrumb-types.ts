@@ -7,11 +7,18 @@ import type { Program } from '@/lib/types/program'
 export interface BreadcrumbData {
   program?: { id: string; name: string; code: string }
   design?: { id: string; name: string; code: string; programId?: string | null }
-  item?: { id: string; itemNumber: string; itemType: string; designId?: string }
+  item?: {
+    id: string
+    itemNumber: string
+    itemType: string
+    designId?: string | null
+  }
 }
 
 export interface BreadcrumbRouteInfo {
   pathname: string
+  /** The `$id` of the detail page shown, or undefined on any other page. */
+  detailId: string | undefined
   isItemListPage: boolean
   isItemDetailPage: boolean
   isDesignDetailPage: boolean

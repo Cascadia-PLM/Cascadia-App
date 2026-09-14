@@ -15,14 +15,15 @@ import {
 } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
-import { jobLogs, jobs } from '../db/schema/jobs'
-import { NotFoundError, ValidationError } from '../errors'
+import { dedupeKeyHeld, jobLogs, jobs } from '../db/schema/jobs'
+import { ConflictError, NotFoundError, ValidationError } from '../errors'
+import { describeError } from '../errors/describe'
+import { isUniqueViolation } from '../errors/pg'
 import { paginatedOrderBy } from '../db/paginated-order'
 import { JobTypeRegistry } from './registry'
 import { RabbitMQClient } from './rabbitmq/client'
 import { PRIORITY_MAP } from './types'
 import type { JobPriority, JobStatus } from '../db/schema/jobs'
-import { takeFirst } from '@/lib/db/take-first'
 
 // Register all job type definitions when JobService is imported
 import './definitions/register'
@@ -70,6 +71,21 @@ function queuedStaleGraceMs(): number {
 export interface SubmitJobOptions {
   priority?: JobPriority
   itemId?: string
+  /**
+   * A natural key that makes this submission idempotent.
+   *
+   * When a job with this key already exists, **that job is returned and nothing
+   * new is queued** — no second row, no second broker message, no second
+   * execution. Pass one from anywhere that may legitimately be asked to submit
+   * the same work twice; a `consumed` extension always should, because event
+   * delivery is at-least-once.
+   *
+   * Build it from what makes the work unique, not from a timestamp or a random
+   * value: `<extension id>:<event id>` when one event means one job, with a
+   * further discriminator when one event means several — the superseded item,
+   * the design, whatever the job is actually about.
+   */
+  dedupeKey?: string
 }
 
 export interface JobFilter {
@@ -133,6 +149,12 @@ export class JobService {
    * `userId: null` is the system-submission path (the scheduler's
    * maintenance sweep) — there is no seeded system user on released
    * installs, so `created_by` is simply NULL.
+   *
+   * **The broker is reached before anything is written.** When it cannot be,
+   * this throws the connection error and leaves no job row — unless the work
+   * was already submitted under `options.dedupeKey`, whose job is returned,
+   * since answering with it needs no broker. A publish that fails once
+   * connected still marks its row 'failed'.
    */
   static async submit<TPayload>(
     type: string,
@@ -160,25 +182,51 @@ export class JobService {
 
     const priority = options.priority ?? config.priority
 
-    // Insert job record
-    const job = takeFirst(
-      await db
-        .insert(jobs)
-        .values({
-          type,
-          status: 'pending',
-          priority,
-          payload: payload as Record<string, unknown>,
-          itemId: options.itemId ?? null,
-          createdBy: userId,
-          maxAttempts: config.maxAttempts,
-          // Snapshot the schedule alongside the attempt cap so the Python
-          // executors park on the type's own delays instead of a constant
-          // of their own (JOBS2-10).
-          retryDelays: config.retryDelays,
-        })
-        .returning(),
+    // Reach the broker before writing anything. A row inserted ahead of a
+    // failed publish is marked 'failed', and a failed job releases its dedupe
+    // key — so a caller retrying through an outage, as an event consumer does
+    // every few minutes for as long as one lasts, left one dead row per attempt
+    // and queued none of them. The maintenance sweep, meanwhile, counted such a
+    // row as the type's run and skipped the job for its whole period.
+    try {
+      await RabbitMQClient.connect()
+    } catch (error) {
+      // Work already submitted under this key needs no broker. Answer with it,
+      // as the insert below would, rather than make a redelivered event wait
+      // out the outage for a submission that already happened.
+      const held = options.dedupeKey
+        ? await this.findKeyHolder(options.dedupeKey)
+        : undefined
+      if (held) return this.mapToJob(held)
+      throw error
+    }
+
+    // Insert job record. With a dedupe key, losing the insert is a success:
+    // somebody already queued this exact work, and returning their job is the
+    // whole point — a second broker message would run it twice.
+    const claimed = await this.insertOrFindKeyedJob(
+      {
+        type,
+        status: 'pending',
+        priority,
+        payload: payload as Record<string, unknown>,
+        itemId: options.itemId ?? null,
+        dedupeKey: options.dedupeKey ?? null,
+        createdBy: userId,
+        maxAttempts: config.maxAttempts,
+        // Snapshot the schedule alongside the attempt cap so the Python
+        // executors park on the type's own delays instead of a constant
+        // of their own (JOBS2-10).
+        retryDelays: config.retryDelays,
+      },
+      options.dedupeKey,
     )
+    if (claimed.existing) {
+      // Returned untouched — not re-queued, not re-prioritised, not reset. It
+      // is already on its way, or already done.
+      return this.mapToJob(claimed.existing)
+    }
+    const job = claimed.inserted
 
     // Publish to RabbitMQ
     try {
@@ -212,17 +260,84 @@ export class JobService {
       // indistinguishable from a lost message), so the job may already be
       // running or cancelled by now; the guard keeps this from resurrecting
       // a row that has moved on.
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error'
       await db
         .update(jobs)
         .set({
           status: 'failed',
-          error: `Failed to queue job: ${errorMessage}`,
+          error: `Failed to queue job: ${describeError(error)}`,
         })
         .where(and(eq(jobs.id, job.id), eq(jobs.status, 'pending')))
       throw error
     }
+  }
+
+  /**
+   * Insert a job row, or — when its dedupe key is already held — find the job
+   * holding it.
+   *
+   * A key is held only by a job that is pending, queued, running or completed.
+   * The unique index is partial over exactly those, so a job that failed or
+   * was cancelled has released its key and the same work can be submitted
+   * again. That is what stops a failed broker publish wedging a key for good:
+   * the row marked 'failed' used to keep it, and every later submission — the
+   * redelivery of the event that asked for the work, above all — was answered
+   * with that dead job while nothing was ever queued.
+   *
+   * A loop, because a key can change hands between the conflicting insert and
+   * the read that looks for its holder: the holder fails or is cancelled,
+   * leaves the index, and the next insert wins. Three rounds is two more than
+   * that can plausibly take.
+   */
+  private static async insertOrFindKeyedJob(
+    values: typeof jobs.$inferInsert,
+    dedupeKey: string | undefined,
+  ): Promise<
+    | { inserted: typeof jobs.$inferSelect; existing?: undefined }
+    | { existing: typeof jobs.$inferSelect; inserted?: undefined }
+  > {
+    for (let round = 0; round < 3; round++) {
+      const [inserted] = await db
+        .insert(jobs)
+        .values(values)
+        .onConflictDoNothing(
+          dedupeKey
+            ? {
+                target: jobs.dedupeKey,
+                // The index is PARTIAL, and Postgres will not infer a partial
+                // index as a conflict target unless its predicate is restated
+                // here — without this the insert fails outright with "no
+                // unique or exclusion constraint matching the ON CONFLICT
+                // specification". (`where`, not `targetWhere`: that is the
+                // option `onConflictDoUpdate` takes, and passing it here is
+                // silently ignored rather than rejected.)
+                where: dedupeKeyHeld,
+              }
+            : undefined,
+        )
+        .returning()
+      if (inserted) return { inserted }
+
+      // Only reachable with a dedupe key: without one there is no constraint
+      // to conflict on.
+      const existing = await this.findKeyHolder(dedupeKey ?? '')
+      if (existing) return { existing }
+    }
+    throw new ConflictError(
+      `The dedupe key '${dedupeKey ?? ''}' changed hands repeatedly during submission; nothing was queued`,
+      { operation: 'submit' },
+    )
+  }
+
+  /** The job holding `dedupeKey`, if any — see `insertOrFindKeyedJob`. */
+  private static async findKeyHolder(
+    dedupeKey: string,
+  ): Promise<typeof jobs.$inferSelect | undefined> {
+    const [holder] = await db
+      .select()
+      .from(jobs)
+      .where(and(eq(jobs.dedupeKey, dedupeKey), dedupeKeyHeld))
+      .limit(1)
+    return holder
   }
 
   /**
@@ -369,7 +484,9 @@ export class JobService {
       throw new NotFoundError('Job type', job.type)
     }
 
-    // Reset job for retry
+    // Reset job for retry. A failed job released its dedupe key, so another
+    // job may hold that key by now; putting this one back into a live status
+    // would give one key two live jobs, which the partial index refuses.
     const [updated] = await db
       .update(jobs)
       .set({
@@ -386,6 +503,15 @@ export class JobService {
       })
       .where(and(eq(jobs.id, jobId), eq(jobs.status, 'failed')))
       .returning()
+      .catch((error: unknown) => {
+        if (isUniqueViolation(error)) {
+          throw new ConflictError(
+            `Job ${jobId} cannot be retried: another job for the same work already holds its dedupe key`,
+            { operation: 'retry', jobId },
+          )
+        }
+        throw error
+      })
 
     if (!updated) {
       // Zero rows now means either shape, so read the row to tell them

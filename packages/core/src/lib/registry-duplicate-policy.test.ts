@@ -5,12 +5,16 @@
  * Every registry a module registers into decides the same question: what
  * happens when two contributions claim one name. The answer used to differ per
  * registry — `registerTool` and `registerPackage` threw, `JobTypeRegistry`
- * overwrote silently, `ApprovalRegistry` and `ReleaseHookRegistry` appended a
- * second entry under the same name — and the silent halves lose configuration
- * nothing else can catch: an overwritten job config takes its timeout, retry
- * delays and routing key with it, and a duplicate release hook fires twice
- * while `registered()` reports it once. Neither is a type error, and neither
- * logs at a level anyone reads.
+ * overwrote silently, and `ApprovalRegistry` appended a second entry under the
+ * same name — and the silent halves lose configuration nothing else can catch:
+ * an overwritten job config takes its timeout, retry delays and routing key
+ * with it. Not a type error, and not logged at a level anyone reads.
+ *
+ * `ReleaseHookRegistry` was covered here too until the Odoo connector moved off
+ * it. It now has **zero registrants in both editions**, so there is nothing left
+ * for a duplicate policy to protect; the registry is deprecated and removed a
+ * wave later, and this block went with its last registrant rather than testing a
+ * seam nothing uses.
  *
  * These tests pin the unified policy: a conflict throws, and the harmless case
  * a throw would break — the same object registered again, which is what a
@@ -21,12 +25,15 @@
  * contributions per key is their contract, so they have no conflict to detect.
  */
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import type { JobHandler, JobTypeConfig } from '@/lib/jobs/types'
+import type { ConsumedExtension } from '@/lib/extensions'
+import type { DomainEventDefinition } from '@/lib/events'
 import { JobTypeRegistry } from '@/lib/jobs/registry'
 import { ApprovalRegistry } from '@/lib/lifecycles/approval-registry'
-import { ReleaseHookRegistry } from '@/lib/services/release-hooks'
+import { EventTypeRegistry, defineDomainEvent } from '@/lib/events'
+import { ExtensionRegistry, defineExtension } from '@/lib/extensions'
 
 /** A type no shipped definition claims — this file never imports `register.ts`. */
 const TEST_TYPE = 'test.registries.duplicate-policy'
@@ -58,7 +65,8 @@ describe('registry duplicate policy', () => {
   afterEach(() => {
     JobTypeRegistry.clear()
     ApprovalRegistry.clear()
-    ReleaseHookRegistry.clear()
+    ExtensionRegistry.clear()
+    EventTypeRegistry.clear()
   })
 
   describe('JobTypeRegistry', () => {
@@ -122,27 +130,66 @@ describe('registry duplicate policy', () => {
     })
   })
 
-  describe('ReleaseHookRegistry', () => {
-    const noop = () => Promise.resolve()
-
-    it('throws on a duplicate hook name', () => {
-      ReleaseHookRegistry.register({
-        name: 'duplicate-policy-test',
-        afterRelease: noop,
+  describe('ExtensionRegistry', () => {
+    // One definition per test, not one per call: `defineDomainEvent` registers,
+    // and a second object under the same type is itself a conflict — which is
+    // the policy the block above already pins.
+    let definition: DomainEventDefinition<{ marker: string }>
+    beforeEach(() => {
+      definition = defineDomainEvent({
+        type: TEST_TYPE,
+        schemaVersion: 1,
+        description: 'Test-only definition for the duplicate policy',
+        payloadSchema: z.object({ marker: z.string() }),
       })
-      expect(() => {
-        ReleaseHookRegistry.register({
-          name: 'duplicate-policy-test',
-          afterRelease: noop,
-        })
-      }).toThrow(/already registered/)
-      expect(ReleaseHookRegistry.all()).toHaveLength(1)
     })
 
-    it('accepts distinct names', () => {
-      ReleaseHookRegistry.register({ name: 'a', afterRelease: noop })
-      ReleaseHookRegistry.register({ name: 'b', afterRelease: noop })
-      expect(ReleaseHookRegistry.registered()).toEqual(['a', 'b'])
+    const extension = (id: string): ConsumedExtension<{ marker: string }> => ({
+      id,
+      phase: 'consumed',
+      on: definition,
+      handler: () => Promise.resolve(),
+    })
+
+    it('throws on a duplicate extension id', () => {
+      defineExtension(extension('duplicate-policy-test'))
+      expect(() => {
+        defineExtension(extension('duplicate-policy-test'))
+      }).toThrow(/already registered/)
+      expect(ExtensionRegistry.list()).toHaveLength(1)
+    })
+
+    it('treats the identical object again as a no-op', () => {
+      const only = extension('duplicate-policy-test')
+      defineExtension(only)
+      defineExtension(only)
+      expect(ExtensionRegistry.list()).toEqual([only])
+    })
+
+    it('accepts distinct ids', () => {
+      defineExtension(extension('a'))
+      defineExtension(extension('b'))
+      expect(ExtensionRegistry.list().map((e) => e.id)).toEqual(['a', 'b'])
+    })
+
+    // The half the consumer registry it replaces did not have. A subscription
+    // naming a type that had been renamed did not fail there — it advanced its
+    // cursor past every event forever and reported itself idle.
+    it('refuses a subscription to an event type no definition claims', () => {
+      expect(() => {
+        defineExtension({
+          id: 'names-a-type-that-does-not-exist',
+          phase: 'consumed',
+          on: {
+            type: 'test.registries.never-registered',
+            schemaVersion: 1,
+            description: 'Never passed to defineDomainEvent',
+            payloadSchema: z.object({}),
+          },
+          handler: () => Promise.resolve(),
+        })
+      }).toThrow(/unknown event type/)
+      expect(ExtensionRegistry.list()).toHaveLength(0)
     })
   })
 })

@@ -284,6 +284,25 @@ JobTypeRegistry.register(cadConversionConfig)
 
 Submit jobs from services or API routes using `JobService.submit()`:
 
+> **Pass a `dedupeKey` from anywhere that may legitimately be asked to submit the
+> same work twice** — above all a `consumed` extension, since event delivery is
+> at-least-once. A job already submitted under that key is _returned_ rather than
+> queued again: no second row, no second broker message, no second execution.
+> Build it from what makes the work unique, never from a timestamp or a random
+> value. Without a key two submissions are two jobs, which is what an ordinary
+> request wants.
+>
+> A key is held while its job is pending, queued, running or completed. A job that
+> failed — its broker publish included — or was cancelled releases it, so the same
+> work can be submitted again; retrying a failed job whose key another job has
+> taken since is refused with a 409.
+>
+> `submit` connects to the broker **before** it writes the job row. While the
+> broker is unreachable it throws the connection error and writes nothing, so a
+> caller retrying through an outage does not leave a failed job behind per
+> attempt; a key already held is still answered with its job. A publish that fails
+> once connected marks its row failed, as above.
+
 ```typescript
 import { JobService } from '@/lib/jobs'
 
@@ -333,7 +352,10 @@ packages/core/src/lib/jobs/
 │   │   └── config.ts
 │   ├── conversion/            # CAD conversion (Python worker)
 │   │   └── config.ts          # Config only — no handler
-│   ├── zoo-generation/        # Text-to-CAD generation
+│   ├── freecad-script/        # FreeCAD script execution (Python worker)
+│   │   └── config.ts
+│   ├── ai-generation/         # AI CAD generation (FreeCAD agent)
+│   │   ├── types.ts
 │   │   └── config.ts
 │   └── yourjob/               # Your new job type
 │       ├── types.ts
@@ -342,7 +364,7 @@ packages/core/src/lib/jobs/
 │   ├── register.ts            # Handler registration entry point
 │   ├── workflow-transition.ts # Email on state change
 │   ├── design-clone.ts        # Clone a design with all items
-│   ├── zoo-generation.ts      # Zoo Text-to-CAD
+│   ├── ai-generation.ts       # AI CAD generation (FreeCAD agent)
 │   └── yourjob.ts             # Your new job handler
 ├── rabbitmq/
 │   └── client.ts              # RabbitMQ connection and publishing
@@ -511,12 +533,14 @@ of the sweep's way.
 
 ## Existing Job Types for Reference
 
-| Job Type                           | Routing Key                  | Handler | Description                   |
-| ---------------------------------- | ---------------------------- | ------- | ----------------------------- |
-| `notification.workflow.transition` | `jobs.notification.workflow` | Node.js | Email on state change         |
-| `design.clone`                     | `jobs.design.clone`          | Node.js | Clone a design with all items |
-| `maintenance.cache.cleanup`        | `jobs.maintenance.cache`     | Node.js | Periodic cache cleanup        |
-| `workinstruction.part.changed`     | `jobs.workinstruction.part`  | Node.js | Alert on part change          |
-| `cad.conversion.process`           | `jobs.cad.conversion`        | Python  | STEP/IGES to STL/GLB          |
-| `cad.parametric.generate`          | `jobs.cad.parametric`        | Python  | Parametric CAD generation     |
-| `cad.zoo.generate`                 | `jobs.cad.zoo`               | Node.js | Zoo Text-to-CAD               |
+| Job Type                           | Routing Key                   | Handler | Description                                |
+| ---------------------------------- | ----------------------------- | ------- | ------------------------------------------ |
+| `notification.workflow.transition` | `jobs.notification.workflow`  | Node.js | Email on state change                      |
+| `design.clone`                     | `jobs.design.clone`           | Node.js | Clone a design with all items              |
+| `maintenance.cache.cleanup`        | `jobs.maintenance.cache`      | Node.js | Periodic cache cleanup                     |
+| `maintenance.events.prune`         | `jobs.maintenance.events`     | Node.js | Prunes the event and webhook delivery logs |
+| `workinstruction.part.changed`     | `jobs.workinstruction.part`   | Node.js | Alert on part change                       |
+| `cad.conversion.process`           | `jobs.cad.conversion`         | Python  | STEP/IGES to STL/GLB                       |
+| `cad.parametric.generate`          | `jobs.cad.parametric`         | Python  | Parametric CAD generation                  |
+| `generation.cad.freecad`           | `jobs.generation.cad.freecad` | Python  | FreeCAD script execution                   |
+| `generation.cad.ai`                | `jobs.generation.cad.ai`      | Node.js | AI CAD generation (FreeCAD)                |

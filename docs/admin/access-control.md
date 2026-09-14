@@ -302,42 +302,29 @@ Two convenience functions in `packages/core/src/lib/auth/access.ts` enforce desi
 
 These functions are used by API routes handling design and branch operations.
 
-## Runtime Permission Configuration
+## There is no per-item-type permission configuration
 
-Permissions can be reconfigured at runtime without code changes using the item type configuration system.
+Access to an item type is granted by giving a role a permission on the
+matching resource — `parts`, `documents`, `change_orders` and so on. The map
+from item type to resource is `ITEM_TYPE_RESOURCES` in
+`packages/core/src/lib/items/item-type-resources.ts`, a test keeps it total,
+and every route, AI tool and MCP handler resolves through it.
 
-### Runtime Permission Overrides
+`RuntimeItemTypeConfig` used to accept a per-type `permissions` object, and
+the admin screen offered four inputs for it under the heading "Role-based
+access control for this item type". No enforcement path ever read it. An
+administrator could save `delete: ["Administrator"]` for Part, see it echoed
+back in the merged configuration, and still have every Power User able to
+delete parts. The field, the inputs and this section's former contents are
+gone; change what a role may do under **Roles**, or in `ROLE_DEFINITIONS` for
+the built-in ones.
 
-The `RuntimeItemTypeConfig` includes an optional `permissions` field:
+### Reloading configuration
 
-```json
-{
-  "itemType": "Part",
-  "config": {
-    "permissions": {
-      "create": ["Engineer", "Administrator"],
-      "read": ["*"],
-      "update": ["Engineer", "Administrator"],
-      "delete": ["Administrator"]
-    }
-  }
-}
-```
+After reassigning a lifecycle:
 
-These runtime permissions are stored in the `item_type_configs` table and merged with code-defined defaults at startup. Runtime values take precedence.
-
-**API endpoint**: `POST /api/v1/admin/item-type-configs`
-
-**Role required**: Administrator
-
-See [System Settings](./system-settings.md) for complete documentation of the runtime configuration system.
-
-### Reloading Configuration
-
-After changing runtime permissions:
-
-1. The API automatically calls `ItemTypeRegistry.reload()` on the instance that made the change
-2. In multi-instance deployments, call `POST /api/v1/admin/reload-config` on each instance to pick up changes
+1. The API calls `ItemTypeRegistry.reload()` on the instance that served the request
+2. Other instances pick the change up within the registry's refresh interval; `POST /api/v1/admin/reload-config` forces it immediately on whichever instance serves that call
 
 ## Troubleshooting
 

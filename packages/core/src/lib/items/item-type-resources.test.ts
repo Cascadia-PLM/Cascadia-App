@@ -16,28 +16,28 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import {
-  ITEM_TYPE_RESOURCES,
-  getResourceType,
-  itemTypeToResource,
-} from './item-type-resources'
+import { ITEM_TYPE_RESOURCES, getResourceType } from './item-type-resources'
 import { ITEM_TYPE_DEFINITIONS } from './item-type-definitions'
 
 describe('ITEM_TYPE_RESOURCES', () => {
-  it('has an explicit mapping for every registered item type', () => {
+  it('has a mapping for every registered item type', () => {
+    // Derived from the definitions now, so this cannot drift the way the
+    // hand-kept map could. It stays as the assertion that the derivation is
+    // total — a definition whose `resource` went missing would not compile,
+    // but a map built from the wrong field would still typecheck.
     for (const def of Object.values(ITEM_TYPE_DEFINITIONS)) {
-      expect(
-        ITEM_TYPE_RESOURCES[def.name],
-        `Item type "${def.name}" has no RBAC resource mapping — add it to ` +
-          'ITEM_TYPE_RESOURCES so its permission checks do not fall back to parts',
-      ).toBeDefined()
+      expect(ITEM_TYPE_RESOURCES[def.name]).toBe(def.resource)
     }
+    expect(Object.keys(ITEM_TYPE_RESOURCES)).toHaveLength(
+      Object.keys(ITEM_TYPE_DEFINITIONS).length,
+    )
   })
 
   it('fails closed for unknown types', () => {
-    // Create path requires *a* permission rather than skipping the check
+    // Requires *a* permission rather than skipping the check. This is the
+    // only lookup: the null-returning sibling, whose eight callers guarded
+    // with `if (resource)` and skipped the check when it answered null, is
+    // gone.
     expect(getResourceType('NotARealType')).toBe('parts')
-    // Lookup path reports unknown explicitly
-    expect(itemTypeToResource('NotARealType')).toBeNull()
   })
 })

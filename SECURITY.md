@@ -60,6 +60,48 @@ Only the latest release receives security patches. We recommend always running t
 - Set `ENCRYPTION_KEY` (64 hex characters — generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) so provider API keys entered in the admin UI are encrypted with AES-256-GCM before storage. **When it is unset, those keys are stored in plaintext in the database**; the server logs a warning each time that happens.
 - Keys saved before `ENCRYPTION_KEY` was configured remain plaintext — re-save them once the key is set.
 - Treat `ENCRYPTION_KEY` like any other secret (see Environment Variables below). Rotating it makes previously encrypted values undecryptable until they are re-entered.
+- **Webhook signing secrets are the one exception to the plaintext fallback above, deliberately.** A signed webhook subscription cannot be created or rotated while `ENCRYPTION_KEY` is unset: the request is refused with a validation error naming the variable. That is stricter than the treatment of provider API keys, and the difference is blast radius rather than inconsistency — a plaintext provider key exposes a credential the operator already holds elsewhere and can rotate upstream, whereas a plaintext HMAC key lets anyone who can read a table the admin API reads **forge deliveries** into whatever the customer wired the webhook to. An operator on a trusted network can still create an explicitly unsigned subscription; what is refused is the silent middle, a subscription that claims to be signed and is not.
+- `ENCRYPTION_KEY` must be set on the **jobs worker** as well as the app tier, with the same value: the worker is where deliveries are signed. The delivery pump refuses to start — logging an error that names the variable — when at least one enabled subscription has a signing secret and the key is unset, rather than sending unsigned.
+
+### Outbound Webhooks
+
+Webhook delivery is the only place Cascadia makes outbound HTTP requests to an
+address a user chose, so it is the only place server-side request forgery is a
+live concern.
+
+- **Targets are validated at write time and re-classified at send time.** A
+  stored target is re-fetched forever, so a write-time check alone would age into
+  an internal-network read primitive as DNS changes under it. Every delivery
+  resolves the host and refuses it if _any_ returned address is loopback,
+  link-local, private, carrier-grade NAT, benchmarking, multicast, reserved,
+  IPv4-compatible or local-use NAT64 — any, not the first, because a hostile name
+  can answer with one public address and one private one. A host that does not
+  resolve at all is retried rather than refused for good, since that is no
+  verdict on its address. Saving a subscription also resolves its host and
+  refuses one that points somewhere private now; that is best-effort, and the
+  send-time check is the boundary.
+- **Redirects are not followed** (`redirect: 'manual'`). A 3xx is recorded as a
+  permanent failure. Following one is what turns a validated public host into a
+  read primitive, and it was the cheap version of the attack.
+- **HTTPS is required** unless plaintext is explicitly enabled for a
+  subscription, and a target URL may not embed credentials.
+- **DNS rebinding between the lookup and the connection is not closed.** Closing
+  it needs a custom dispatcher that connects to the vetted address while
+  preserving the Host header. What raises the cost meanwhile is that a rebind has
+  to win a race on every delivery rather than being configured once, and that the
+  redirect ban removes the easy path. This is stated rather than implied because
+  an unstated gap is worse than a known one.
+- **Delivery failures never carry the target URL or the upstream response body**
+  into an error message or a log line. The API error builder returns messages
+  verbatim to the client and the error-log table stores context unredacted, so an
+  error that echoed either would make an SSRF probe both API-readable and
+  permanently logged. The response status and a bounded snippet are stored on the
+  delivery row instead, which is gated on `system:manage`.
+- Deliveries are signed with HMAC-SHA256 over the **raw request bytes** with the
+  timestamp inside the signed material, so a receiver can verify what it received
+  without re-serialising it and can distinguish a legitimate redelivery from a
+  replay. Redelivery is a designed property: receivers should also dedupe on the
+  `X-Cascadia-Event-Id` header.
 
 ### Network
 

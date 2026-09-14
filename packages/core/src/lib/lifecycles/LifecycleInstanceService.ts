@@ -5,6 +5,12 @@ import { and, desc, eq, isNull, lt, or } from 'drizzle-orm'
 import { db, withTx } from '../db'
 import { lifecycleHistory, lifecycleInstances } from '../db/schema/lifecycles'
 import { items } from '../db/schema/items'
+import { LIFECYCLE_TRANSITIONED, publishDomainEvent } from '../events'
+import {
+  LIFECYCLE_TRANSITION,
+  dispatchGuard,
+  hasGuardExtensions,
+} from '../extensions'
 import { permissionService } from '../auth/permission-service'
 import { AlreadyExistsError, NotFoundError, ValidationError } from '../errors'
 import { LifecycleService } from '../services/LifecycleService'
@@ -16,6 +22,7 @@ import {
   UPDATE_FIELD_ALLOWED_COLUMNS,
 } from './LifecycleDefinitionService'
 import type { TransactionClient } from '../db'
+import type { LifecycleTransitionIntent } from '../extensions'
 import type {
   ActionResult,
   ApprovalRequirement,
@@ -37,6 +44,7 @@ import type {
   TransitionFlowContext,
   TransitionResult,
 } from './types'
+import { resolveChangeOrderProgram } from '@/lib/events/program-scope'
 import { takeFirst } from '@/lib/db/take-first'
 
 /**
@@ -578,7 +586,78 @@ export class LifecycleInstanceService {
       }
     }
 
+    // The second dispatch, on the read path, in an explicit preview mode.
+    //
+    // This method's own doc comment says the preview predicts what execution
+    // will decide, and the interface is built from it — so a guard bound only
+    // to `transition()` would make the UI offer a transition that then fails,
+    // which is the exact divergence this layer exists to remove.
+    //
+    // It imposes a contract worth stating out loud rather than leaving to be
+    // discovered: **a `guard` handler must be side-effect-free.** This is the
+    // one sanctioned read-path dispatch in the system, and naming it as such
+    // is what keeps it from looking like a violated non-goal.
+    if (hasGuardExtensions(LIFECYCLE_TRANSITION)) {
+      for (const entry of available) {
+        const refusals = await dispatchGuard(
+          LIFECYCLE_TRANSITION,
+          await this.buildTransitionIntent(
+            instance,
+            entry.transition.toStateId,
+            entry.transition,
+            effectiveStructure.states,
+          ),
+          { db, actorId: context.user.id, preview: true },
+        )
+        if (refusals.length === 0) continue
+        entry.guardResults = [
+          ...entry.guardResults,
+          ...refusals.map((refusal) => ({
+            guardId: refusal.extensionId,
+            guardName: refusal.extensionId,
+            passed: false,
+            errorMessage: refusal.reason,
+          })),
+        ]
+        entry.canTransition = false
+      }
+    }
+
     return available
+  }
+
+  /**
+   * The intent a `lifecycle.transition` guard is handed.
+   *
+   * Built in one place because two call sites use it — `transition()` and the
+   * preview in `getAvailableTransitions` — and the preview's own doc comment
+   * promises it predicts what execution will decide. Two hand-built intents
+   * would be two chances for that promise to quietly stop holding.
+   *
+   * The item's type costs a read that `transition()` does not otherwise do
+   * before its write, so every caller checks `hasGuardExtensions` first.
+   */
+  private static async buildTransitionIntent(
+    instance: LifecycleInstance,
+    toStateId: string,
+    transition: { id: string; name: string },
+    states: Array<LifecycleState>,
+    comments?: string,
+  ): Promise<LifecycleTransitionIntent> {
+    const item = await this.getItemData(instance.itemId)
+    const target = states.find((state) => state.id === toStateId)
+    return {
+      instanceId: instance.id,
+      itemId: instance.itemId,
+      itemType: typeof item?.itemType === 'string' ? item.itemType : '',
+      fromState: instance.currentState,
+      toState: toStateId,
+      toStateIsFinal: target?.isFinal === true,
+      toStateFinalKind: target?.finalKind ?? null,
+      transitionId: transition.id,
+      transitionName: transition.name,
+      comments: comments ?? null,
+    }
   }
 
   /**
@@ -881,6 +960,50 @@ export class LifecycleInstanceService {
       }
     }
 
+    // The `lifecycle.transition` guard, dispatched **after** the if/else above
+    // so that both arms reach it.
+    //
+    // Placing it beside `GuardEvaluator.evaluateAll` would have been the
+    // obvious spot and would have been wrong: that call lives only in the
+    // definition-level `else`, so extension coverage would have become
+    // conditional on `isInstanceLevel` — an administrator-editable property of
+    // the instance. A rule that stops applying because somebody switched a
+    // workflow to instance-level is not a rule.
+    //
+    // This is also the one site that translates rather than throws: a refusal
+    // is folded into `guardResults` as a synthetic entry carrying the
+    // extension's id, exactly as core already does for the
+    // approval-requirement check, so the transition endpoint's failure
+    // vocabulary is unchanged.
+    if (hasGuardExtensions(LIFECYCLE_TRANSITION)) {
+      const refusals = await dispatchGuard(
+        LIFECYCLE_TRANSITION,
+        await this.buildTransitionIntent(
+          instance,
+          toStateId,
+          transition,
+          effectiveStructure.states,
+          comments,
+        ),
+        { db, actorId },
+      )
+      if (refusals.length > 0) {
+        const refusalResults: Array<GuardResult> = refusals.map((refusal) => ({
+          guardId: refusal.extensionId,
+          guardName: refusal.extensionId,
+          passed: false,
+          errorMessage: refusal.reason,
+        }))
+        return {
+          success: false,
+          fromState: instance.currentState,
+          toState: toStateId,
+          guardResults: [...guardResults, ...refusalResults],
+          error: refusals.map((refusal) => refusal.reason).join('; '),
+        }
+      }
+    }
+
     // Execute "before" actions (definition-level only)
     const beforeResults: Array<ActionResult> = []
     if (!effectiveStructure.isInstanceLevel) {
@@ -1038,14 +1161,26 @@ export class LifecycleInstanceService {
       }
 
       // Update the item's state to match (use state ID for consistency with service code)
-      await tx
-        .update(items)
-        .set({
-          state: toStateId,
-          modifiedAt: new Date(),
-          modifiedBy: actorId,
+      const updatedItem = (
+        await tx
+          .update(items)
+          .set({
+            state: toStateId,
+            modifiedAt: new Date(),
+            modifiedBy: actorId,
+          })
+          .where(eq(items.id, instance.itemId))
+          .returning({
+            itemType: items.itemType,
+            masterId: items.masterId,
+            designId: items.designId,
+          })
+      ).at(0)
+      if (!updatedItem) {
+        throw new NotFoundError('Item', instance.itemId, {
+          operation: 'transition',
         })
-        .where(eq(items.id, instance.itemId))
+      }
 
       await this.recordHistory(tx, {
         instanceId,
@@ -1058,6 +1193,39 @@ export class LifecycleInstanceService {
           guardResults,
           beforeActionResults: beforeResults,
           isInstanceLevel: effectiveStructure.isInstanceLevel,
+        },
+      })
+
+      // The fact of the transition, in the transaction that writes it. The
+      // history row is the de-facto transition log and the item row is what
+      // every reader sees, so the event exists exactly when both do. It
+      // precedes `afterFinalize` so a caller recording its own fact there —
+      // a change order emitting `change_order.released` — orders after this
+      // one, which is the order the change-order definitions describe.
+      await publishDomainEvent(tx, LIFECYCLE_TRANSITIONED, {
+        actorId,
+        subject: { id: instance.itemId, masterId: updatedItem.masterId },
+        context: {
+          designId: updatedItem.designId ?? undefined,
+          // An item outside any design — a change order — names the program
+          // its linked designs share, when they share one.
+          programId: updatedItem.designId
+            ? undefined
+            : ((await resolveChangeOrderProgram(tx, instance.itemId)) ??
+              undefined),
+        },
+        payload: {
+          instanceId,
+          itemId: instance.itemId,
+          itemType: updatedItem.itemType,
+          fromState: instance.currentState,
+          toState: toStateId,
+          toStateIsFinal: isComplete,
+          toStateFinalKind: targetStateObj?.finalKind ?? null,
+          fromStateIsInitial: currentStateObj?.isInitial === true,
+          toStateIsInitial: targetStateObj?.isInitial === true,
+          action: transition.name,
+          comments: comments ?? null,
         },
       })
 

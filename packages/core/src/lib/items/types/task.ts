@@ -38,41 +38,6 @@ export const taskSchema = baseItemSchema.extend({
   tags: z.array(z.string()).optional(),
 })
 
-// Task-specific states for Kanban
-export const taskStates = [
-  {
-    id: 'Backlog',
-    name: 'Backlog',
-    color: 'slate',
-    description: 'Task is in the backlog',
-  },
-  {
-    id: 'ToDo',
-    name: 'To Do',
-    color: 'blue',
-    description: 'Task is ready to be started',
-  },
-  {
-    id: 'InProgress',
-    name: 'In Progress',
-    color: 'yellow',
-    description: 'Task is being worked on',
-  },
-  {
-    id: 'InReview',
-    name: 'In Review',
-    color: 'purple',
-    description: 'Task is being reviewed',
-  },
-  { id: 'Done', name: 'Done', color: 'green', description: 'Task is complete' },
-  {
-    id: 'Cancelled',
-    name: 'Cancelled',
-    color: 'red',
-    description: 'Task was cancelled',
-  },
-]
-
 // Task relationships
 export const taskRelationships = [
   {

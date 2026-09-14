@@ -3,7 +3,7 @@
 
 import { z } from 'zod'
 import { baseItemSchema } from './base'
-import type { BaseItem, StateConfig } from './base'
+import type { BaseItem } from './base'
 
 // TestPlan-specific interface. The flow position (Draft/Active/Completed/
 // Archived in the default lifecycle) is the item's lifecycle `state`; the
@@ -26,40 +26,6 @@ export const testPlanSchema = baseItemSchema.extend({
   entryCriteria: z.string().max(5000).optional(),
   exitCriteria: z.string().max(5000).optional(),
 })
-
-// TestPlan-specific states (defined explicitly rather than spreading commonStates)
-export const testPlanStates: Array<StateConfig> = [
-  {
-    id: 'Draft',
-    name: 'Draft',
-    color: 'gray',
-    description: 'Test plan is being created or edited',
-  },
-  {
-    id: 'Active',
-    name: 'Active',
-    color: 'blue',
-    description: 'Test plan is currently being executed',
-  },
-  {
-    id: 'Completed',
-    name: 'Completed',
-    color: 'green',
-    description: 'Test plan execution is complete',
-  },
-  {
-    id: 'Archived',
-    name: 'Archived',
-    color: 'gray',
-    description: 'Test plan has been archived',
-  },
-  {
-    id: 'Obsolete',
-    name: 'Obsolete',
-    color: 'red',
-    description: 'Test plan is no longer used',
-  },
-]
 
 // TestPlan relationships
 export const testPlanRelationships = [

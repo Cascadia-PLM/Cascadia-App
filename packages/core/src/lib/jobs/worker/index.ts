@@ -8,6 +8,7 @@ import { jobMessageSchema } from '../types'
 import type { Channel, ConsumeMessage } from 'amqplib'
 import type { Job } from '../JobService'
 import type { JobContext, JobMessage } from '../types'
+import { describeError } from '@/lib/errors/describe'
 import { workerLogger } from '@/lib/logging/logger'
 
 // ============================================================================
@@ -436,8 +437,7 @@ export class JobWorker {
       workerLogger.info({ jobId }, 'Completed job')
       this.ack(deliveryChannel, msg)
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage = describeError(error)
       workerLogger.error({ jobId, err: error }, 'Job failed')
 
       // Recording a failure is itself two database writes, running in exactly

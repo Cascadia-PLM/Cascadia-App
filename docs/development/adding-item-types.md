@@ -4,14 +4,19 @@ This guide walks through adding a new item type to Cascadia PLM. Item types are 
 
 ## Overview
 
-Adding an item type requires changes in 6 areas:
+Adding an item type requires changes in 8 areas:
 
 1. Database schema (type-specific table)
 2. Migration
 3. Zod validation schema + TypeScript interface
-4. Registry registration
-5. API schemas (create/update)
-6. Form component
+4. The definition entry (one record; most of the system derives from it)
+5. A type handler (reads and writes the extension table)
+6. A lifecycle, RBAC resource and numbering scheme
+7. API schemas (create/update) and routes
+8. Client pages and navigation
+
+The checklist at the end is the authoritative list — some of these are pinned
+by tests and some are not, and it says which.
 
 ## Step 1: Add Database Schema
 
@@ -57,7 +62,7 @@ Create `packages/core/src/lib/items/types/widget.ts` with the TypeScript interfa
 ```typescript
 // packages/core/src/lib/items/types/widget.ts
 import { z } from 'zod'
-import { baseItemSchema, commonStates } from './base'
+import { baseItemSchema } from './base'
 import type { BaseItem } from './base'
 
 // TypeScript interface extending BaseItem
@@ -82,9 +87,6 @@ export const widgetSchema = baseItemSchema.extend({
   isActive: z.boolean().optional().default(true),
 })
 
-// States — use commonStates or define custom ones
-export const widgetStates = commonStates
-
 // Relationships — what this type can link to
 export const widgetRelationships = [
   {
@@ -104,120 +106,141 @@ export const widgetRelationships = [
 export type WidgetInput = z.infer<typeof widgetSchema>
 ```
 
-## Step 4: Register the Item Type
+## Step 4: Add the Definition
 
-### Server-Side Registration
-
-Add the registration to `packages/core/src/lib/items/registerItemTypes.server.ts`:
-
-```typescript
-import { widgetRelationships, widgetSchema, widgetStates } from './types/widget'
-
-// Dummy components for server-side registration
-const DummyComponent = () => null
-
-ItemTypeRegistry.register({
-  name: 'Widget',
-  label: 'Widget',
-  pluralLabel: 'Widgets',
-  icon: 'Wrench', // Lucide icon name
-  table: 'widgets', // Database table name
-  schema: widgetSchema,
-  states: widgetStates, // seed-source palette; the lifecycle is the authority at runtime
-  lifecycleDefinitionId: LIFECYCLE_IDS.part, // Use existing lifecycle or create new one
-  relationships: widgetRelationships,
-  components: {
-    form: DummyComponent as any,
-    table: DummyComponent as any,
-    detail: DummyComponent as any,
-  },
-  permissions: {
-    create: ['*'],
-    read: ['*'],
-    update: ['*'],
-    delete: ['Admin', 'Engineer'],
-  },
-  searchableFields: ['itemNumber', 'name', 'description', 'serialNumber'],
-  displayField: 'itemNumber',
-})
-```
-
-### Client-Side Registration
-
-Add to `packages/core/src/lib/items/registerItemTypes.tsx` with actual form components:
+Every item type is one entry in `ITEM_TYPE_DEFINITIONS`
+(`packages/core/src/lib/items/item-type-definitions.ts`). There are no
+per-type `register()` calls: `registerItemTypes.server.ts` loops over this
+record, and the AI and MCP tool enums, the OpenAPI create union, the admin
+listing and the search type filter all derive from it.
 
 ```typescript
-import { WidgetForm } from '@/components/widgets/WidgetForm'
-import { widgetRelationships, widgetSchema, widgetStates } from './types/widget'
+// packages/core/src/lib/items/item-type-definitions.ts
+import { widgetRelationships, widgetSchema } from './types/widget'
 
-ItemTypeRegistry.register({
-  name: 'Widget',
-  label: 'Widget',
-  // ... same as server-side, but with real components:
-  components: {
-    form: WidgetForm,
-    table: DummyComponent as any,
-    detail: DummyComponent as any,
+export const ITEM_TYPE_DEFINITIONS: Record<string, SharedItemTypeDef> = {
+  // ...
+  Widget: {
+    name: 'Widget',
+    label: 'Widget',
+    pluralLabel: 'Widgets',
+    icon: 'Wrench', // Lucide icon name, resolved by item-type-ui.ts
+    schema: widgetSchema,
+    lifecycleDefinitionId: LIFECYCLE_IDS.widget,
+    relationships: widgetRelationships,
+    searchableFields: ['itemNumber', 'name', 'description', 'serialNumber'],
+    displayField: 'itemNumber',
   },
-})
-```
-
-### Lifecycle Definition
-
-**Every item type must have a lifecycle** — there is no literal default state anywhere in the services; `ItemService.create` resolves the lifecycle's `isInitial` state, and the type's released family, branch-protection exemption and final states all derive from the lifecycle's flags and mappings. A new type needs:
-
-1. A well-known ID in `packages/core/src/lib/items/lifecycle-ids.ts`.
-2. A default definition in `packages/core/src/lib/items/default-lifecycles.ts` — added to `DEFAULT_ITEM_LIFECYCLES` and linked in `DEFAULT_LIFECYCLE_LINKS` — which the app seed, the test global-setup and the fixtures all seed. Or reuse one: Software links to `LIFECYCLE_IDS.part`.
-3. `lifecycleDefinitionId` in the registration above pointing at it.
-
-Pick the lifecycle type by how the item changes state: **Driven** (state changes only through ECO release; define `release`/`revise`/`obsolete` mappings — these are what make a state "released"), **Free** (manual transitions through `POST /api/v1/items/:id/transition`), or the degenerate Free lifecycle — one state flagged both `isInitial` and `isFinal`, named something like `Current` — for a type with no meaningful flow. Finals on Free lifecycles may declare `finalKind: 'complete' | 'cancel'` when something (like the work-order traveler gate) needs to tell success from abandonment.
-
-Never gate on a state's name in code; ask `LifecycleService` (`isReleasedFamilyState`, `isInitialState`, `getFinalStateIds`, `getFinalKind`) and render with `StateBadge`.
-
-## Step 5: Update ItemService Type-Specific Methods
-
-`ItemService` handles the two-table insert/update pattern. You need to add your type to the type-specific data handlers.
-
-In `packages/core/src/lib/items/services/ItemService.ts`, add cases for your type in:
-
-### insertTypeSpecificData
-
-```typescript
-private static async insertTypeSpecificData(
-  type: string,
-  itemId: string,
-  data: any,
-  tx: TransactionClient,
-) {
-  switch (type) {
-    case 'Part':
-      await tx.insert(parts).values({ itemId, ... })
-      break
-    case 'Document':
-      await tx.insert(documents).values({ itemId, ... })
-      break
-    // Add your type:
-    case 'Widget':
-      await tx.insert(widgets).values({
-        itemId,
-        description: data.description,
-        widgetCategory: data.widgetCategory,
-        serialNumber: data.serialNumber,
-        calibrationDate: data.calibrationDate,
-        isActive: data.isActive,
-      })
-      break
-  }
 }
 ```
 
-### updateTypeSpecificData
+There is no client-side registration step. A `registerItemTypes.tsx` used to
+register the same definitions with React components attached; nothing
+imported it and nothing read the components, so both are gone. The browser
+gets a type's icon, label and detail-route path from
+`packages/core/src/lib/items/item-type-ui.ts`.
 
-Same pattern for updates — add a case that updates the `widgets` table.
+### Lifecycle Definition
 
-### findById / search
+**Every item type must have a lifecycle** — there is no literal default state
+anywhere in the services; `ItemService.create` resolves the lifecycle's
+`isInitial` state, and the type's released family, branch-protection
+exemption and final states all derive from the lifecycle's flags and
+mappings. A new type needs:
 
-The `findById` method joins the base `items` table with the type-specific table. Add a case for your new table.
+1. A well-known ID in `packages/core/src/lib/items/lifecycle-ids.ts`.
+2. A default definition in `packages/core/src/lib/items/default-lifecycles.ts` — added to `DEFAULT_ITEM_LIFECYCLES` and linked in `DEFAULT_LIFECYCLE_LINKS` — which the app seed, the test global-setup and the fixtures all seed. Or reuse one: Software links to `LIFECYCLE_IDS.part`.
+3. `lifecycleDefinitionId` in the definition above pointing at it.
+
+Both of the first two are pinned by `default-lifecycles.test.ts`.
+
+Pick the lifecycle type by how the item changes state: **Driven** (state
+changes only through ECO release; define `release`/`revise`/`obsolete`
+mappings — these are what make a state "released"), **Free** (manual
+transitions through `POST /api/v1/items/:id/transition`), or the degenerate
+Free lifecycle — one state flagged both `isInitial` and `isFinal`, named
+something like `Current` — for a type with no meaningful flow. Finals on Free
+lifecycles may declare `finalKind: 'complete' | 'cancel'` when something
+(like the work-order traveler gate) needs to tell success from abandonment.
+
+Never gate on a state's name in code; ask `LifecycleService`
+(`isReleasedFamilyState`, `isInitialState`, `getFinalStateIds`,
+`getFinalKind`) and render with `StateBadge`.
+
+An administrator can reassign the lifecycle later under **Admin > Item
+Types**. That is the only runtime-configurable thing about an item type;
+everything else on this page is code.
+
+## Step 5: Add a Type Handler
+
+`ItemService` has no per-type switch. Reads and writes to an extension table
+go through a `TypeHandler`, which owns the Drizzle table object and the
+type's insert/get/update. Create
+`packages/core/src/lib/items/type-handlers/widget.ts`:
+
+```typescript
+// packages/core/src/lib/items/type-handlers/widget.ts
+import { eq } from 'drizzle-orm'
+import { registerTypeHandler } from './index'
+import { db } from '@/lib/db'
+import { widgets } from '@/lib/db/schema'
+
+registerTypeHandler('Widget', {
+  table: widgets,
+
+  async insert(itemId, data, tx) {
+    const run = tx ?? db
+    await run.insert(widgets).values({
+      itemId,
+      description: data.description || null,
+      widgetCategory: data.widgetCategory || null,
+      serialNumber: data.serialNumber || null,
+    })
+  },
+
+  async get(itemId, tx) {
+    const run = tx ?? db
+    const [widget] = await run
+      .select()
+      .from(widgets)
+      .where(eq(widgets.itemId, itemId))
+      .limit(1)
+    return widget
+  },
+
+  async update(itemId, data, tx) {
+    const run = tx ?? db
+    const updateData: Record<string, unknown> = {}
+    if (data.description !== undefined)
+      updateData.description = data.description || null
+    // ... one line per updatable column
+    if (Object.keys(updateData).length > 0) {
+      await run
+        .update(widgets)
+        .set(updateData)
+        .where(eq(widgets.itemId, itemId))
+    }
+  },
+})
+```
+
+Then add the side-effect import to
+`packages/core/src/lib/items/type-handlers/init.ts`.
+
+Registering the handler is what makes generic machinery work for the new
+type: `ItemService` create/update, the version-to-version row copy, checkout,
+merge, conflict detection, and the search join that carries a type's own
+columns back with the base item. A type with no handler creates and then
+silently loses its extension data, so the create path throws rather than
+letting that happen.
+
+If the type keeps content in child tables (as WorkInstruction does with
+operations and steps), also declare `copyChildren` on the handler, so a new
+version carries them.
+
+Numbering is separate and required: add a scheme to
+`packages/core/src/lib/items/numbering/schemes.ts`, or `ItemService.create`
+throws for the new type.
 
 ## Step 6: Add API Schemas
 
@@ -371,25 +394,40 @@ export function WidgetForm({ onSubmit, item, disabled }: WidgetFormProps) {
 
 ## Checklist
 
-- [ ] Type-specific table in `packages/core/src/lib/db/schema/items.ts`
-- [ ] Export from `packages/core/src/lib/db/schema/index.ts`
-- [ ] Migration generated and applied
+Pinned by a test — CI fails if you skip it:
+
+- [ ] Definition entry in `packages/core/src/lib/items/item-type-definitions.ts`
 - [ ] Type definition in `packages/core/src/lib/items/types/widget.ts`
-- [ ] Registered in `registerItemTypes.server.ts`
-- [ ] Registered in `registerItemTypes.tsx`
-- [ ] RBAC resource mapping in `packages/core/src/lib/items/item-type-resources.ts`
-      (a test fails if the mapping is missing) and the new resource granted
-      in `ROLE_DEFINITIONS` (`packages/core/src/lib/auth/permissions.ts`)
-- [ ] Cases added to `ItemService` type-specific methods
-- [ ] API schemas in `packages/core/src/lib/api/schemas.ts`
-- [ ] API routes in `packages/core/src/server/routes/widgets.ts`
+- [ ] Lifecycle in `default-lifecycles.ts` (`DEFAULT_ITEM_LIFECYCLES` + `DEFAULT_LIFECYCLE_LINKS`) and an ID in `lifecycle-ids.ts`
+- [ ] RBAC resource in `packages/core/src/lib/items/item-type-resources.ts`, and the resource granted in `ROLE_DEFINITIONS` (`packages/core/src/lib/auth/permissions.ts`)
+- [ ] Type handler in `type-handlers/`, imported from `type-handlers/init.ts`
+- [ ] Numbering scheme in `packages/core/src/lib/items/numbering/schemes.ts`
+
+Not pinned — forgetting one degrades quietly, so check them by hand:
+
+- [ ] Detail-route path in `packages/core/src/lib/items/item-type-ui.ts` (without it, nothing can link to an item of the type)
+- [ ] Icon name in that file's `ICONS_BY_NAME` (an unknown name silently renders a magnifying glass)
+- [ ] Filterable/sortable columns in `ItemSearchService` (`typeSpecificColumns` and the two `typeColumnMaps`)
+- [ ] If the type has no `designId`: an arm in `requireItemAccess` (`lib/auth/access.ts`) and an entry in `SELF_SCOPED_ITEM_TYPES` (`lib/db/filters.ts`) — **without these an item-level access check may not run at all**
+- [ ] Import field config in `lib/import/field-configs/index.ts`, if the type should be importable
+- [ ] Config row in `scripts/seed-minimal.ts`
+
+Ordinary application work:
+
+- [ ] Type-specific table in `packages/core/src/lib/db/schema/items.ts`, exported from `schema/index.ts`
+- [ ] Migrations generated for **both** editions and committed
+- [ ] API schemas in `packages/core/src/lib/api/schemas.ts` (at minimum an update schema — `itemUpdateSchemaFor` has a test that covers every type)
+- [ ] API routes in `packages/core/src/server/routes/widgets.ts`, mounted in `server/index.ts`
+- [ ] `npm run openapi:snapshot` and commit the result
+- [ ] Client pages under `packages/core/src/routes/` and a navigation entry
 - [ ] Form component
 - [ ] Seed data (if needed for testing)
 
 The AI chatbot and MCP tool schemas need **no changes**: `search_items` and
 `create_item` derive their item-type coverage from `ITEM_TYPE_DEFINITIONS`
 automatically, and per-type permission checks flow through the resource
-mapping above.
+mapping above. (`create_item` exposes per-type _fields_ for only a few types;
+see its definition if the new type needs more than name and description.)
 
 ## Existing Item Types for Reference
 
@@ -398,11 +436,16 @@ mapping above.
 | Part            | `parts`             | `types/part.ts`             | Driven (ECO-controlled)        |
 | Document        | `documents`         | `types/document.ts`         | Driven                         |
 | Requirement     | `requirements`      | `types/requirement.ts`      | Driven                         |
+| Software        | `software`          | `types/software.ts`         | Driven (shares Part lifecycle) |
 | ChangeOrder     | `change_orders`     | `types/change-order.ts`     | Driving (controls others)      |
 | Task            | `tasks`             | `types/task.ts`             | Free (self-controlled)         |
 | TestPlan        | `test_plans`        | `types/testplan.ts`         | Free                           |
 | TestCase        | `test_cases`        | `types/testcase.ts`         | Free                           |
 | Issue           | `issues`            | `types/issue.ts`            | Free                           |
 | WorkInstruction | `work_instructions` | `types/work-instruction.ts` | Free                           |
-| Tool            | `tools`             | `types/tool.ts`             | Free                           |
-| Software        | `software`          | `types/software.ts`         | Driven (shares Part lifecycle) |
+| Tool            | `tools`             | `types/tool.ts`             | Free, non-versioned            |
+| PhysicalPart    | `physical_parts`    | `types/physical-part.ts`    | Free, non-versioned            |
+| WorkOrder       | `work_orders`       | `types/work-order.ts`       | Free, non-versioned            |
+
+Item types are declared in core, in `ITEM_TYPE_DEFINITIONS` and the per-type
+maps that feed off it. There is no second place they can come from.

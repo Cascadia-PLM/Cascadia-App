@@ -54,6 +54,8 @@ import {
 } from '@/lib/api/scope-graph'
 import { serviceLogger } from '@/lib/logging/logger'
 import { db } from '@/lib/db'
+import { RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED } from '@/lib/events'
+import { publishStructureEdges } from '@/lib/items/structure-events'
 import { paginatedOrderBy } from '@/lib/db/paginated-order'
 import {
   changeOrderAffectedItems,
@@ -1031,6 +1033,7 @@ app.post(
           }
 
           let relationshipsCreated = 0
+          const copiedEdges: Array<typeof itemRelationships.$inferSelect> = []
           const chainItemIdSet = new Set(chainItemIds)
 
           // Find all BOM relationships between chain items (handles any topology: linear, star, etc.)
@@ -1049,22 +1052,26 @@ app.post(
             const parentUsageId = usageCopyMap.get(rel.sourceId)
             const childUsageId = usageCopyMap.get(rel.targetId)
             if (parentUsageId && childUsageId) {
-              await tx.insert(itemRelationships).values({
-                sourceId: parentUsageId,
-                targetId: childUsageId,
-                relationshipType: rel.relationshipType,
-                quantity: rel.quantity,
-                findNumber: rel.findNumber,
-                referenceDesignator: rel.referenceDesignator,
-                metadata: rel.metadata,
-                isComposite: rel.isComposite,
-                isDirected: rel.isDirected,
-                multiplicityLower: rel.multiplicityLower,
-                multiplicityUpper: rel.multiplicityUpper,
-                usageAttributes: rel.usageAttributes,
-                createdBy: user.id,
-                modifiedBy: user.id,
-              })
+              const copied = await tx
+                .insert(itemRelationships)
+                .values({
+                  sourceId: parentUsageId,
+                  targetId: childUsageId,
+                  relationshipType: rel.relationshipType,
+                  quantity: rel.quantity,
+                  findNumber: rel.findNumber,
+                  referenceDesignator: rel.referenceDesignator,
+                  metadata: rel.metadata,
+                  isComposite: rel.isComposite,
+                  isDirected: rel.isDirected,
+                  multiplicityLower: rel.multiplicityLower,
+                  multiplicityUpper: rel.multiplicityUpper,
+                  usageAttributes: rel.usageAttributes,
+                  createdBy: user.id,
+                  modifiedBy: user.id,
+                })
+                .returning()
+              copiedEdges.push(...copied)
               relationshipsCreated++
             }
           }
@@ -1088,22 +1095,26 @@ app.post(
               // Skip children that are part of the chain (already handled above)
               if (chainItemIdSet.has(rel.targetId)) continue
 
-              await tx.insert(itemRelationships).values({
-                sourceId: usageId,
-                targetId: rel.targetId,
-                relationshipType: rel.relationshipType,
-                quantity: rel.quantity,
-                findNumber: rel.findNumber,
-                referenceDesignator: rel.referenceDesignator,
-                metadata: rel.metadata,
-                isComposite: rel.isComposite,
-                isDirected: rel.isDirected,
-                multiplicityLower: rel.multiplicityLower,
-                multiplicityUpper: rel.multiplicityUpper,
-                usageAttributes: rel.usageAttributes,
-                createdBy: user.id,
-                modifiedBy: user.id,
-              })
+              const copied = await tx
+                .insert(itemRelationships)
+                .values({
+                  sourceId: usageId,
+                  targetId: rel.targetId,
+                  relationshipType: rel.relationshipType,
+                  quantity: rel.quantity,
+                  findNumber: rel.findNumber,
+                  referenceDesignator: rel.referenceDesignator,
+                  metadata: rel.metadata,
+                  isComposite: rel.isComposite,
+                  isDirected: rel.isDirected,
+                  multiplicityLower: rel.multiplicityLower,
+                  multiplicityUpper: rel.multiplicityUpper,
+                  usageAttributes: rel.usageAttributes,
+                  createdBy: user.id,
+                  modifiedBy: user.id,
+                })
+                .returning()
+              copiedEdges.push(...copied)
               relationshipsCreated++
             }
           }
@@ -1114,16 +1125,40 @@ app.post(
             // Safe: chainItemIds is non-empty (validated above)
             const topmostUsageId = usageCopyMap.get(chainItemIds[0]!)
             if (topmostUsageId) {
-              await tx
+              const [before] = await tx
+                .select()
+                .from(itemRelationships)
+                .where(eq(itemRelationships.id, parentBomRelationshipId))
+              const [repointed] = await tx
                 .update(itemRelationships)
                 .set({
                   targetId: topmostUsageId,
                   modifiedBy: user.id,
                 })
                 .where(eq(itemRelationships.id, parentBomRelationshipId))
+                .returning()
+              // The parent's line now points at a different master, which to
+              // a structure consumer is a line removed and a line added; its
+              // own properties did not change, so `relationship.updated`
+              // would say the wrong thing. Same relationship id on both.
+              if (before && repointed) {
+                await publishStructureEdges(tx, RELATIONSHIP_REMOVED, [
+                  { edge: before, actorId: user.id },
+                ])
+                copiedEdges.push(repointed)
+              }
               relationshipsCreated++
             }
           }
+
+          // Every line this pull-in wrote, recorded as a person's structure
+          // edits: it brings structure into this design the way adding each
+          // line by hand would.
+          await publishStructureEdges(
+            tx,
+            RELATIONSHIP_ADDED,
+            copiedEdges.map((edge) => ({ edge, actorId: user.id })),
+          )
 
           return { items: createdUsages, relationshipsCreated }
         })

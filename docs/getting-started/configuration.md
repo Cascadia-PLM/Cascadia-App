@@ -138,13 +138,12 @@ Both variables are required. The login page shows the GitHub button either way, 
 
 Cascadia includes an AI chatbot and design engine that require API keys from supported providers.
 
-| Variable            | Description                                                                       |
-| ------------------- | --------------------------------------------------------------------------------- |
-| `OPENAI_API_KEY`    | OpenAI API key for GPT models                                                     |
-| `ANTHROPIC_API_KEY` | Anthropic API key for Claude models                                               |
-| `ZOO_API_KEY`       | Zoo API key for text-to-CAD generation (can also be set in the UI at `/admin/ai`) |
+| Variable            | Description                         |
+| ------------------- | ----------------------------------- |
+| `OPENAI_API_KEY`    | OpenAI API key for GPT models       |
+| `ANTHROPIC_API_KEY` | Anthropic API key for Claude models |
 
-At least one of `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` is required for AI features. If neither is set, the AI chatbot panel is hidden but the rest of the application works normally.
+At least one of `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` is required for AI features. If neither is set, the AI chatbot panel is hidden but the rest of the application works normally. AI CAD generation (the design engine's FreeCAD stages and the part **Generate CAD** action) uses the same provider and has no key of its own — see [CAD Services](../features/cad-services.md).
 
 AI settings can also be configured per-program via the Admin UI at `/admin/ai`. The `ai_settings` database table stores provider configuration that can override environment variables.
 
@@ -238,43 +237,30 @@ The `config` JSONB column accepts these fields:
 
 ```typescript
 interface RuntimeItemTypeConfig {
-  label?: string // Display name override (e.g., "Component" instead of "Part")
-  pluralLabel?: string // Plural display name
-  icon?: string // Lucide icon name
-  lifecycleDefinitionId?: string // UUID of the lifecycle/workflow definition
-  states?: Array<{
-    id: string // State identifier
-    name: string // Display name
-    color?: string // Badge color
-    description?: string // Help text
-  }>
-  permissions?: {
-    create: string[] // Role names that can create
-    read: string[] // Use ["*"] for all roles
-    update: string[]
-    delete: string[]
+  /** UUID of the lifecycle definition that governs this item type. */
+  lifecycleDefinitionId?: string
+  /** ChangeOrder only: the workflow each change type runs. */
+  lifecyclesByChangeType?: {
+    ECO?: string
+    ECN?: string
+    Deviation?: string
+    MCO?: string
+    XCO?: string
   }
-  relationships?: Array<{
-    type: string // e.g., "BOM", "Reference"
-    label: string
-    targetTypes: string[]
-    allowMultiple: boolean
-  }>
-  fieldMetadata?: Record<
-    string,
-    {
-      label?: string
-      description?: string
-      required?: boolean
-      visible?: boolean
-    }
-  >
 }
 ```
 
+That is the whole of it. `label`, `pluralLabel`, `icon`, `states`,
+`permissions`, `relationships` and `fieldMetadata` were once accepted and are
+not any more — nothing read the last three, `states` came from the lifecycle,
+and the labels reached two of the dozen surfaces that show a type's name. A
+setting that does not take effect is worse than no setting. Everything but
+the lifecycle is code: see `ITEM_TYPE_DEFINITIONS` in
+`packages/core/src/lib/items/item-type-definitions.ts`.
+
 ### Managing runtime configuration
 
-**Via Admin UI**: Navigate to `/admin/item-types` to view, edit, and reset configurations.
+**Via Admin UI**: Navigate to `/admin/item-types` to view item types and reassign their lifecycles.
 
 **Via API** (requires Admin role):
 
@@ -288,10 +274,7 @@ GET /api/v1/admin/item-type-configs/:itemType
 # Create or update
 POST /api/v1/admin/item-type-configs
 Content-Type: application/json
-{ "itemType": "Part", "config": { "label": "Component" } }
-
-# Delete (revert to code defaults)
-DELETE /api/v1/admin/item-type-configs/:itemType
+{ "itemType": "Part", "config": { "lifecycleDefinitionId": "..." } }
 
 # Hot-reload all configs
 POST /api/v1/admin/reload-config

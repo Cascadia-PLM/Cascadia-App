@@ -121,6 +121,12 @@ export interface MaintenanceJobEntry {
 const BASE_MAINTENANCE_JOBS: ReadonlyArray<MaintenanceJobEntry> = [
   { type: 'maintenance.session.cleanup' },
   { type: 'maintenance.cache.cleanup' },
+  // The event log has no other pruner: nothing in this tree deletes from
+  // `jobs` or `job_logs` either, so an append-only log with no horizon grows
+  // until somebody notices. Ungated — retention switches itself off through
+  // `EVENT_RETENTION_DAYS <= 0` rather than through this entry, so an operator
+  // opting out still sees the job type in the catalog.
+  { type: 'maintenance.events.prune' },
 ]
 
 /** Entries contributed by modules, in registration order. */

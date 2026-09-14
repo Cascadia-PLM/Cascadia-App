@@ -212,18 +212,18 @@ it is equally the mechanism any module — licensed or your own — plugs into.
 A module is a package that registers; it is never imported by core. The
 registries core provides:
 
-| Extend                        | Registry                                                                                 |
-| ----------------------------- | ---------------------------------------------------------------------------------------- |
-| Approval voting (server)      | `ApprovalRegistry` — `beforeVote` / `afterVote` / `buildExtras`                          |
-| Change-order release (server) | `ReleaseHookRegistry` — `afterRelease`, post-commit, warn-only                           |
-| Approval dialog (client)      | `useApprovalFormSlots` — renders, gates submit, adds request fields                      |
-| Any other UI                  | `registerSlot()` — core declares the named slots and their props                         |
-| API routes                    | `registerRoutes(mount, path, app)` — mount points: `api-root`, `admin`, `parts`, `files` |
-| AI tools                      | `registerTool()`                                                                         |
-| Jobs                          | `JobTypeRegistry.register()` / `.registerHandler()`                                      |
-| Cache resources               | `registerResourceDependents()` + declaration merging on `ModuleResources`                |
-| Package catalog               | `registerPackage()`                                                                      |
-| Schema                        | `apps/*/src/modules.schema.ts` — a re-export, because drizzle-kit reads it statically    |
+| Extend                        | Registry                                                                                            |
+| ----------------------------- | --------------------------------------------------------------------------------------------------- |
+| Approval voting (server)      | `ApprovalRegistry` — `beforeVote` / `afterVote` / `buildExtras`                                     |
+| Change-order release (server) | A `consumed` extension on `design.released` (`ReleaseHookRegistry` is deprecated, zero registrants) |
+| Approval dialog (client)      | `useApprovalFormSlots` — renders, gates submit, adds request fields                                 |
+| Any other UI                  | `registerSlot()` — core declares the named slots and their props                                    |
+| API routes                    | `registerRoutes(mount, path, app)` — mount points: `api-root`, `admin`, `parts`, `files`            |
+| AI tools                      | `registerTool()`                                                                                    |
+| Jobs                          | `JobTypeRegistry.register()` / `.registerHandler()`                                                 |
+| Cache resources               | `registerResourceDependents()` + declaration merging on `ModuleResources`                           |
+| Package catalog               | `registerPackage()`                                                                                 |
+| Schema                        | `apps/*/src/modules.schema.ts` — a re-export, because drizzle-kit reads it statically               |
 
 **Registration happens in a composition root**, never in core:
 `apps/*/src/modules.{server,client,schema}.ts`. Order is load-bearing — route
@@ -303,6 +303,9 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 | UI components / forms                   | `./docs/development/ui-components.md`          |
 | Testing patterns                        | `./docs/development/testing.md`                |
 | Background jobs                         | `./docs/development/adding-background-jobs.md` |
+| Domain events, the event log            | `./docs/development/adding-domain-events.md`   |
+| Extensions, the three phases            | `./docs/development/writing-extensions.md`     |
+| Webhooks, building a receiver           | `./docs/features/webhooks.md`                  |
 | Demo data and seeding                   | `./docs/development/demo-datasets.md`          |
 
 ## Architecture Quick Reference
@@ -345,7 +348,7 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 **Lifecycle states are configuration, never literals**: no state name appears in application logic. A state carries `isInitial`, `isFinal` (+ `finalKind`), and the roles it plays in change-action mappings; everything else is the configuring user's choice. Every item type has a lifecycle (defaults in `packages/core/src/lib/items/default-lifecycles.ts`). Ask `LifecycleService` — `isReleasedFamilyState`, `isInitialState`, `getFinalStateIds`, `getFinalKind`, `resolveActionStates` — never compare `state === 'Released'`; render with `StateBadge`. See `docs/features/workflow-engine.md`.
 
-**Item types** (13): Part, Document, ChangeOrder, Requirement, Task, TestPlan, TestCase, WorkInstruction, Issue, Tool, Software, WorkOrder, PhysicalPart. All extend `BaseItem` and register via `ItemTypeRegistry` (definitions in `packages/core/src/lib/items/item-type-definitions.ts`, DB handlers in `packages/core/src/lib/items/type-handlers/`).
+**Item types** (13): Part, Document, ChangeOrder, Requirement, Task, TestPlan, TestCase, WorkInstruction, Issue, Tool, Software, WorkOrder, PhysicalPart. All extend `BaseItem` and register via `ItemTypeRegistry` (definitions in `packages/core/src/lib/items/item-type-definitions.ts`, DB handlers in `packages/core/src/lib/items/type-handlers/`). A type is more than its definition: it also needs a type handler, a numbering scheme, an RBAC resource and a detail-route path, and the derived surfaces (AI and MCP tools, the OpenAPI create union, the admin listing, the type filters) follow from the definition automatically. `docs/development/adding-item-types.md` has the checklist, marked by which entries a test will catch and which degrade quietly. The one runtime-configurable thing about an item type is which lifecycle governs it.
 
 **Physical traceability**: PhysicalPart (serialized units and lots, non-versioned, Tool pattern) + WorkOrder consumption/production recorded as `Consumes`/`Produces`/`Evidences` edges in `item_relationships` (WO/PhysicalPart always the edge source). Genealogy is derived, never stored; the qualification rollup (`GET /api/v1/work-orders/:id/qualification`) reports requirement satisfaction and uncertified-material gaps. Parts carry `trackingMode` (`none | lot | serial`); the AML lives in `manufacturer_parts`/`part_manufacturer_parts` bound to the part masterId. See `docs/features/physical-parts-and-traceability.md`.
 

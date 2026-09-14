@@ -43,7 +43,7 @@
  *
  * Two mounts do not register core by-id verbs at all: `/test-plans` and
  * `/test-cases` expose only sub-resources. Their types are driven through
- * `/api/v1/items/:id`, which resolves the resource with `itemTypeToResource`
+ * `/api/v1/items/:id`, which resolves the resource with `getResourceType`
  * and is the surface those types actually have. The verb list per mount is
  * read from what the router registered rather than assumed, so
  * `/physical-parts` (GET and PATCH, no DELETE) is covered for what it has.
@@ -165,7 +165,7 @@ describe('typed by-id routes declare their own RBAC resource', () => {
         const verbs = coreByIdVerbs(router)
         // `/test-plans` and `/test-cases` register only sub-resources; the
         // generic item route is the by-id surface those types have, and it
-        // dispatches on `itemTypeToResource`.
+        // dispatches on `getResourceType`.
         return verbs.length > 0
           ? [itemType, { mount, verbs }]
           : [

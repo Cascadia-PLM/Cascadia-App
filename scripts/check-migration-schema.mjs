@@ -21,7 +21,8 @@
  *
  * Deliberately **not** compared: the `drizzle.__drizzle_migrations` bookkeeping
  * table, which exists only on the migrated side, and anything under a schema
- * other than `public`.
+ * other than `public`. One further asymmetry is expected rather than ignored —
+ * see `MIGRATE_ONLY`.
  */
 
 import { execFileSync } from 'node:child_process'
@@ -61,6 +62,26 @@ const ENUMS = `
    order by t.typname, e.enumsortorder
 `
 
+/**
+ * Objects a migration creates that `db:push` cannot, and that are therefore
+ * expected on the migrated side alone.
+ *
+ * drizzle-kit has no way to express a trigger, so the schema module cannot
+ * declare one: the push path — dev, CI and the test database — installs it
+ * from `ensureDomainEventSequencing()` at boot instead, and the migration
+ * carries the same statements for `db:migrate`.
+ *
+ * Listed, not ignored. Each entry is asserted to be present after
+ * `db:migrate`, so the failure this exists to prevent fails here rather than
+ * passing silently: regenerating the domain-events migration drops its
+ * `CREATE CONSTRAINT TRIGGER`, which turns commit-time sequencing back into
+ * the insert-time race the whole design exists to remove — and every other
+ * gate in this repository stays green while it does.
+ */
+const MIGRATE_ONLY = [
+  'constraint domain_events.domain_events_assign_seq TRIGGER DEFERRABLE INITIALLY DEFERRED',
+]
+
 /** A sorted, normalised text rendering of everything `public` contains. */
 async function dump(url) {
   const sql = postgres(url, { max: 1, onnotice: () => {} })
@@ -93,7 +114,9 @@ async function dump(url) {
 function reportDifference(migrated, pushed) {
   const a = migrated.split('\n')
   const b = pushed.split('\n')
-  const onlyMigrated = a.filter((l) => l && !b.includes(l))
+  const onlyMigrated = a.filter(
+    (l) => l && !b.includes(l) && !MIGRATE_ONLY.includes(l),
+  )
   const onlyPushed = b.filter((l) => l && !a.includes(l))
 
   console.error(
@@ -181,10 +204,39 @@ const [migrated, pushed] = await Promise.all([
   dump(pushedUrl),
 ])
 
-if (migrated === pushed) {
+// The push path cannot build these, so their absence there is the contract.
+// Their absence on the *migrated* side is the defect, and this is the only
+// place in the repository that would notice it.
+const migratedLines = migrated.split('\n')
+const missing = MIGRATE_ONLY.filter((l) => !migratedLines.includes(l))
+if (missing.length > 0) {
+  console.error(
+    [
+      '',
+      '✗ A migration no longer creates what it is required to create:',
+      '',
+      ...missing.map((l) => `      ${l}`),
+      '',
+      '   `db:push` cannot express these, so nothing else checks them. If',
+      '   the migration was regenerated, drizzle-kit dropped the statements',
+      '   — re-append them by hand rather than regenerating again.',
+      '',
+    ].join('\n'),
+  )
+  process.exit(1)
+}
+
+const comparable = (dumped) =>
+  dumped
+    .split('\n')
+    .filter((l) => !MIGRATE_ONLY.includes(l))
+    .join('\n')
+
+if (comparable(migrated) === comparable(pushed)) {
   const rows = migrated.split('\n').length - 1
   console.log(
-    `\n✅ Migrated and declared schemas are identical (${rows} objects).`,
+    `\n✅ Migrated and declared schemas are identical (${rows} objects,` +
+      ` ${MIGRATE_ONLY.length} migrate-only).`,
   )
   process.exit(0)
 }

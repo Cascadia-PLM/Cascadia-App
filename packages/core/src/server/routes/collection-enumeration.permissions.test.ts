@@ -112,6 +112,8 @@ import testPlansRoutes from './test-plans'
 import threadRoutes from './thread'
 import toolsRoutes from './tools'
 import usersRoutes from './users'
+import webhooksRoutes from './webhooks'
+import eventsRoutes from './events'
 import workInstructionsRoutes from './work-instructions'
 import workOrdersRoutes from './work-orders'
 import workflowsRoutes from './workflows'
@@ -184,6 +186,20 @@ const ALLOWLIST = new Map<string, string>([
   // reaches — workflows, roles, users, packages, admin config, the import
   // templates — hold no item, design or program rows at all, so they pass the
   // leak leg on their own and need no entry to do it.
+  //
+  // `/events` and `/webhooks` are the one pair that could hold such ids and
+  // still have no entry, so the reason is worth writing down. Both are gated on
+  // `system:manage`, which this suite's outsider holds — it holds every verb but
+  // `programs:manage` — so both answer 2xx here and are genuinely enumerated.
+  // They pass because the fixtures live in a rolled-back transaction while the
+  // routers read the module-level connection, so no event referencing a fixture
+  // is visible to them. That is a property of the harness, not a filter in the
+  // route: the event log **is** instance-wide by design, and an administrator
+  // reading it can see events from every program. Scoping it per program would
+  // defeat what it is for — an operator diagnosing a stalled consumer needs the
+  // events it is stalled on, whichever program they came from. No entry is added
+  // because an ALLOWLIST entry is not asserted against anything, so one here
+  // would be a claim this suite does not check.
 ])
 
 /**
@@ -222,6 +238,7 @@ describe('collection routes, enumerated — outsider enumeration', () => {
     { mount: '/api/v1/designs', router: designsRoutes },
     { mount: '/api/v1/documents', router: documentsRoutes },
     { mount: '/api/v1/enterprise-search', router: enterpriseSearchRoutes },
+    { mount: '/api/v1/events', router: eventsRoutes },
     { mount: '/api/v1/files', router: filesRoutes },
     { mount: '/api/v1/import', router: importRoutes },
     { mount: '/api/v1/issues', router: issuesRoutes },
@@ -247,6 +264,7 @@ describe('collection routes, enumerated — outsider enumeration', () => {
     { mount: '/api/v1/thread', router: threadRoutes },
     { mount: '/api/v1/tools', router: toolsRoutes },
     { mount: '/api/v1/users', router: usersRoutes },
+    { mount: '/api/v1/webhooks', router: webhooksRoutes },
     { mount: '/api/v1/work-instructions', router: workInstructionsRoutes },
     { mount: '/api/v1/work-orders', router: workOrdersRoutes },
     { mount: '/api/v1/workflows', router: workflowsRoutes },

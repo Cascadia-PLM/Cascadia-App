@@ -10,6 +10,9 @@
  * - Lock status helpers
  * - Request/response schemas
  *
+ * The browser-side `apiFetch` family lives in `./client` and is imported from
+ * there directly: this barrel is server code.
+ *
  * @example
  * ```typescript
  * import {
@@ -157,14 +160,3 @@ export {
   type VersionContext,
   type ItemListQuery,
 } from './schemas'
-
-// Client utilities (for frontend use)
-export {
-  ApiError,
-  apiFetch,
-  apiGet,
-  apiPost,
-  apiPut,
-  apiPatch,
-  apiDelete,
-} from './client'

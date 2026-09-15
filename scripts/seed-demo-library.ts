@@ -49,20 +49,17 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHash, randomUUID } from 'node:crypto'
 import { and, eq, sql } from 'drizzle-orm'
-import { db } from '../packages/core/src/lib/db/index.ts'
-import { users } from '../packages/core/src/lib/db/schema/users.ts'
-import { designs } from '../packages/core/src/lib/db/schema/designs.ts'
-import {
-  branchItems,
-  branches,
-} from '../packages/core/src/lib/db/schema/versioning.ts'
-import { items, parts } from '../packages/core/src/lib/db/schema/items.ts'
-import { vaultFiles } from '../packages/core/src/lib/db/schema/vault.ts'
+import { db } from '@cascadia/api/lib/db'
+import { users } from '@cascadia/api/lib/db/schema/users'
+import { designs } from '@cascadia/api/lib/db/schema/designs'
+import { branchItems, branches } from '@cascadia/api/lib/db/schema/versioning'
+import { items, parts } from '@cascadia/api/lib/db/schema/items'
+import { vaultFiles } from '@cascadia/api/lib/db/schema/vault'
 import {
   generateStoragePath,
   sanitizeFilename,
-} from '../packages/core/src/lib/vault/utils/file-utils.ts'
-import { takeFirst } from '../packages/core/src/lib/db/take-first'
+} from '@cascadia/api/lib/vault/utils/file-utils'
+import { takeFirst } from '@cascadia/api/lib/db/take-first'
 import { DemoDataMissing } from './demo-seed-types.ts'
 import type { DatasetResult } from './demo-seed-types.ts'
 

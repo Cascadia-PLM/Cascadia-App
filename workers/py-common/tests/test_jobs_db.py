@@ -9,7 +9,7 @@ worker and a cancelling user, from resurrecting a settled job. A guard lives in
 a string that no type checker reads, so the only way to know it is still there
 is to drive a row through the transition and look at what came out.
 
-The mirror of this file is packages/core/src/lib/jobs/JobService.test.ts. Where
+The mirror of this file is packages/cascadia-api/src/lib/jobs/JobService.test.ts. Where
 the two implementations must agree, they are asserted to the same values here.
 """
 

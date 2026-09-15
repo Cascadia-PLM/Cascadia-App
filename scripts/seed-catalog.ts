@@ -12,7 +12,7 @@
  * Usage: npx tsx scripts/seed-catalog.ts
  */
 
-import { CatalogSeedService } from '../packages/core/src/lib/services/CatalogSeedService.ts'
+import { CatalogSeedService } from '@cascadia/api/lib/services/CatalogSeedService'
 
 async function main() {
   console.log('=== Component Catalog Seed ===\n')

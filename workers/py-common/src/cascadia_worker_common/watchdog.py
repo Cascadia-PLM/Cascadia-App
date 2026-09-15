@@ -31,7 +31,7 @@ reason this is two stages rather than one: killing the process at the deadline
 would take down every other in-flight job on a worker whose only real problem
 was one slow conversion. Rows left 'running' by the exit are collateral, and
 are recovered by the stale-running reaper (``sweepStaleRunningJobs`` in
-packages/core/src/lib/jobs/scheduler.ts), which is why that landed first.
+packages/cascadia-api/src/lib/jobs/scheduler.ts), which is why that landed first.
 
 Nothing here is a substitute for a correct ``JOB_TIMEOUT``. A deployment whose
 STEP files legitimately take longer than the default should raise the timeout

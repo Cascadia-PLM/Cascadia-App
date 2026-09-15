@@ -4,7 +4,7 @@
 """Fixtures for the database-backed half of the py-common suite.
 
 The suite runs against the real `jobs` schema — the one `npm run test:db:push`
-builds from packages/core/src/lib/db/schema/jobs.ts — rather than DDL of its
+builds from packages/cascadia-api/src/lib/db/schema/jobs.ts — rather than DDL of its
 own. Duplicating the table here would let the workers' SQL keep passing against
 a shape the application no longer has, which is the only failure this suite
 exists to catch.

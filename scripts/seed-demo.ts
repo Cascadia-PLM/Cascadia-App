@@ -36,7 +36,7 @@
  * code is non-zero if any dataset failed, so CI still notices.
  */
 
-import { describeConnection } from '../packages/core/src/lib/db/index.ts'
+import { describeConnection } from '@cascadia/api/lib/db'
 import { DemoDataMissing } from './demo-seed-types.ts'
 import { seedRobotArm } from './seed-demo-robot-arm.ts'
 import { seedFreecadDemo } from './seed-freecad-demo.ts'

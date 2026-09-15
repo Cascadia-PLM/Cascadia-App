@@ -39,7 +39,7 @@ import {
 import { workOrderItemSchema, workOrderRelationships } from './types/work-order'
 import { softwareRelationships, softwareSchema } from './types/software'
 import type { RelationshipConfig } from './types/base'
-import type { ResourceType } from '@/lib/auth/permissions'
+import type { ResourceType } from '../auth/permissions'
 import type { z } from 'zod'
 
 /**

@@ -3,7 +3,7 @@
 
 import { getFieldsForType, getRequiredFieldsByType } from './constants'
 import type { ColumnMapping, ImportItemType } from './types'
-import type { JsonValue } from '@/lib/items/types/base'
+import type { JsonValue } from '../items/types/base'
 
 /**
  * Options for applying mappings

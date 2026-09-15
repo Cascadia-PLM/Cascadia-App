@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { z } from 'zod'
+import { jsonValueSchema } from '../items/types/base'
+import { makeCodeSchema } from '../types/variants'
 import { MAX_IMPORT_RELATIONSHIPS } from './constants'
-import { jsonValueSchema } from '@/lib/items/types/base'
-import { makeCodeSchema } from '@/lib/types/variants'
 
 /**
  * Supported item types for import

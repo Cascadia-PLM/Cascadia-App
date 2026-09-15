@@ -4,7 +4,7 @@
 import pkg from '../../package.json'
 
 /**
- * The product version, single-sourced from @cascadia/core's package.json —
+ * The product version, single-sourced from this package's package.json —
  * `npm version <v> --workspaces` keeps every workspace package in step, so
  * this is the same number the release tag carries.
  *

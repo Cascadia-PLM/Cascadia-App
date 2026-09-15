@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
+import { isWorkingRevisionValue } from '../types/lifecycle'
 import { importPartRowSchema } from './types'
 import { importDocumentRowSchema } from './types/document'
 import { importIssueRowSchema } from './types/issue'
@@ -14,7 +15,6 @@ import type {
   ValidatedRow,
 } from './types'
 import type { z } from 'zod'
-import { RevisionService } from '@/lib/services/RevisionService'
 
 /**
  * Get the validation schema for a specific item type
@@ -123,7 +123,7 @@ function validateRow(
   if (
     options.importAsReleased &&
     itemType !== 'Issue' &&
-    RevisionService.isWorkingRevision(
+    isWorkingRevisionValue(
       typeof coercedData.revision === 'string'
         ? coercedData.revision
         : undefined,

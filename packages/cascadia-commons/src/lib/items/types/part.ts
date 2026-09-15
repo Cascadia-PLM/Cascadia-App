@@ -2,15 +2,15 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { z } from 'zod'
-import { baseItemSchema } from './base'
-import type { BaseItem } from './base'
-import type { Make, OptionModel } from '@/lib/types/variants'
 import {
   makesSchema,
   optionModelSchema,
   productFamilyCodeSchema,
   variantCodeSchema,
-} from '@/lib/types/variants'
+} from '../../types/variants'
+import { baseItemSchema } from './base'
+import type { BaseItem } from './base'
+import type { Make, OptionModel } from '../../types/variants'
 
 // Part classification. Exported as a schema so the AI/MCP tool schemas can
 // advertise exactly the values this type accepts (see requirement.ts).

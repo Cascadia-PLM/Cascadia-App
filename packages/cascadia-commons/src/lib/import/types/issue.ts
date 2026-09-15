@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { z } from 'zod'
-import { jsonValueSchema } from '@/lib/items/types/base'
+import { jsonValueSchema } from '../../items/types/base'
 
 /**
  * Single issue row data for import

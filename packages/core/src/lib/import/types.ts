@@ -20,6 +20,8 @@ export interface ImportContext {
   branchId?: string // Required for post-release designs
   designPhase?: 'pre-release' | 'post-release' // Not applicable for Issues
   itemType?: ImportItemType // Item type being imported
+  /** Record source-system revisions as existing formal releases on main. */
+  importAsReleased?: boolean
 }
 
 /**
@@ -195,6 +197,7 @@ export const importPartsRequestSchema = z.object({
     .min(1, 'At least one row is required')
     .max(500, 'Maximum 500 rows per import'),
   bypassBranchProtection: z.boolean().optional().default(false),
+  importAsReleased: z.boolean().optional().default(false),
 })
 
 export type ImportPartsRequest = z.infer<typeof importPartsRequestSchema>

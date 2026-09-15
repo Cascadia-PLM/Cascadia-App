@@ -10179,6 +10179,8 @@ export interface operations {
                     bypassBranchProtection?: boolean;
                     /** Format: uuid */
                     designId: string;
+                    /** @default false */
+                    importAsReleased?: boolean;
                     rows: {
                         attributes?: {
                             [key: string]: unknown;
@@ -10272,6 +10274,8 @@ export interface operations {
                     bypassBranchProtection?: boolean;
                     /** Format: uuid */
                     designId: string;
+                    /** @default false */
+                    importAsReleased?: boolean;
                     rows: {
                         attributes?: {
                             [key: string]: unknown;

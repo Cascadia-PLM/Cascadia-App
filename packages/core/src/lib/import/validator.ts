@@ -14,6 +14,7 @@ import type {
   ValidatedRow,
 } from './types'
 import type { z } from 'zod'
+import { RevisionService } from '@/lib/services/RevisionService'
 
 /**
  * Get the validation schema for a specific item type
@@ -77,6 +78,7 @@ function validateRow(
   mappedData: Record<string, unknown>,
   _rowNumber: number,
   itemType: ImportItemType = 'Part',
+  options: { importAsReleased?: boolean } = {},
 ): {
   errors: Array<RowValidationError>
   warnings: Array<RowValidationWarning>
@@ -91,7 +93,11 @@ function validateRow(
   }
 
   // Set default revision if not provided (for Parts and Documents)
-  if (itemType !== 'Issue' && !coercedData.revision) {
+  if (
+    itemType !== 'Issue' &&
+    !coercedData.revision &&
+    !options.importAsReleased
+  ) {
     coercedData.revision = '-'
   }
 
@@ -109,6 +115,25 @@ function validateRow(
         message: issue.message,
       })
     }
+  }
+
+  // The browser does not own lifecycle configuration, so exact scheme
+  // validation remains in the API. It can still prevent known working-copy
+  // markers from being presented as valid formal releases in the preview.
+  if (
+    options.importAsReleased &&
+    itemType !== 'Issue' &&
+    RevisionService.isWorkingRevision(
+      typeof coercedData.revision === 'string'
+        ? coercedData.revision
+        : undefined,
+    )
+  ) {
+    errors.push({
+      field: 'Revision',
+      message:
+        'A formal released revision is required; -, DRAFT, and branch working revisions are not allowed',
+    })
   }
 
   // Additional warnings
@@ -146,6 +171,7 @@ export function validateRows(
   rows: Array<Record<string, unknown>>,
   rawRows: Array<Record<string, unknown>>,
   itemType: ImportItemType = 'Part',
+  options: { importAsReleased?: boolean } = {},
 ): Array<ValidatedRow> {
   const validatedRows: Array<ValidatedRow> = []
   const seenItemNumbers = new Map<string, number>() // itemNumber -> rowNumber
@@ -161,11 +187,20 @@ export function validateRows(
     }
 
     // Set default revision if not provided (for Parts and Documents)
-    if (itemType !== 'Issue' && !coercedData.revision) {
+    if (
+      itemType !== 'Issue' &&
+      !coercedData.revision &&
+      !options.importAsReleased
+    ) {
       coercedData.revision = '-'
     }
 
-    const { errors, warnings } = validateRow(mappedData, rowNumber, itemType)
+    const { errors, warnings } = validateRow(
+      mappedData,
+      rowNumber,
+      itemType,
+      options,
+    )
 
     // Check for duplicate item numbers within the file
     if (coercedData.itemNumber) {

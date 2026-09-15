@@ -88,9 +88,10 @@ export function ImportProgressStep({
 
         requestBody = {
           designId: context.designId,
-          branchId: context.branchId,
+          branchId: context.importAsReleased ? undefined : context.branchId,
           rows,
           bypassBranchProtection: context.designPhase === 'pre-release',
+          importAsReleased: context.importAsReleased,
           bomRelationships:
             bomRelationshipsForApi.length > 0
               ? bomRelationshipsForApi
@@ -111,9 +112,10 @@ export function ImportProgressStep({
 
         requestBody = {
           designId: context.designId,
-          branchId: context.branchId,
+          branchId: context.importAsReleased ? undefined : context.branchId,
           rows,
           bypassBranchProtection: context.designPhase === 'pre-release',
+          importAsReleased: context.importAsReleased,
         }
       } else {
         // Issue

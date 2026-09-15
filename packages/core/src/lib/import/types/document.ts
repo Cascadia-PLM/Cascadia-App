@@ -46,6 +46,7 @@ export const importDocumentsRequestSchema = z.object({
     .min(1, 'At least one row is required')
     .max(500, 'Maximum 500 rows per import'),
   bypassBranchProtection: z.boolean().optional().default(false),
+  importAsReleased: z.boolean().optional().default(false),
 })
 
 export type ImportDocumentsRequest = z.infer<

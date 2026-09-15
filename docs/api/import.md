@@ -48,7 +48,8 @@ Bulk-create parts from an array of row data. Optionally includes BOM relationshi
       "referenceDesignator": "R1, R2"
     }
   ],
-  "bypassBranchProtection": false
+  "bypassBranchProtection": false,
+  "importAsReleased": false
 }
 ```
 
@@ -56,13 +57,14 @@ Bulk-create parts from an array of row data. Optionally includes BOM relationshi
 
 #### Top-level fields
 
-| Field                    | Type    | Required    | Description                                                                     |
-| ------------------------ | ------- | ----------- | ------------------------------------------------------------------------------- |
-| `designId`               | UUID    | Yes         | Target design for the imported parts                                            |
-| `branchId`               | UUID    | Conditional | Required for post-release designs (unless `bypassBranchProtection` is true)     |
-| `rows`                   | Array   | Yes         | 1-500 part rows to import                                                       |
-| `bomRelationships`       | Array   | No          | BOM parent-child relationships to create after parts are imported               |
-| `bypassBranchProtection` | boolean | No          | If true, create directly on main even for post-release designs (default: false) |
+| Field                    | Type    | Required    | Description                                                                                |
+| ------------------------ | ------- | ----------- | ------------------------------------------------------------------------------------------ |
+| `designId`               | UUID    | Yes         | Target design for the imported parts                                                       |
+| `branchId`               | UUID    | Conditional | Required for post-release designs unless bypass or formal baseline import is enabled       |
+| `rows`                   | Array   | Yes         | 1-500 part rows to import                                                                  |
+| `bomRelationships`       | Array   | No          | BOM parent-child relationships to create after parts are imported                          |
+| `bypassBranchProtection` | boolean | No          | If true, create directly on main even for post-release designs (default: false)            |
+| `importAsReleased`       | boolean | No          | Administrator-only import of existing formal revisions directly onto main (default: false) |
 
 #### Row fields
 
@@ -123,13 +125,32 @@ Bulk-create parts from an array of row data. Optionally includes BOM relationshi
 
 The import behavior depends on the design's lifecycle phase:
 
-| Design Phase | `branchId` provided | `bypassBranchProtection` | Behavior                                                     |
-| ------------ | ------------------- | ------------------------ | ------------------------------------------------------------ |
-| Pre-release  | No                  | -                        | Creates directly on main                                     |
-| Pre-release  | Yes                 | -                        | Creates on specified branch                                  |
-| Post-release | Yes                 | false                    | Creates on specified branch via `ItemService.createOnBranch` |
-| Post-release | No                  | false                    | **Error**: Branch ID required                                |
-| Post-release | No                  | true                     | Creates directly, bypassing branch protection                |
+| Design Phase | `branchId` provided | Bypass | Formal baseline | Behavior                                                     |
+| ------------ | ------------------- | ------ | --------------- | ------------------------------------------------------------ |
+| Pre-release  | No                  | -      | false           | Creates directly on main                                     |
+| Pre-release  | Yes                 | -      | false           | Creates on specified branch                                  |
+| Post-release | Yes                 | false  | false           | Creates on specified branch via `ItemService.createOnBranch` |
+| Post-release | No                  | false  | false           | **Error**: Branch ID required                                |
+| Post-release | No                  | true   | false           | Creates directly, bypassing branch protection                |
+| Any          | No                  | -      | true            | Creates an existing formal release directly on main          |
+| Any          | Yes                 | -      | true            | **Error**: formal baseline imports cannot target a branch    |
+
+### Importing an existing formal release
+
+Set `importAsReleased` to `true` when migrating Parts or Documents whose
+release already happened in the source system. This mode is restricted to the
+`Administrator` role. It is not a shortcut for ordinary revision changes.
+
+- Every row must provide a formal `revision`; the ordinary `-` default is
+  rejected.
+- The revision must match the revision scheme active in the lifecycle's
+  release state, for example `R4` for an `R`-prefixed numeric scheme.
+- The item is created in the lifecycle state targeted by its `release` action,
+  directly on main, as the current formal version.
+- `branchId` must be omitted. No placeholder ECO or intermediate revisions are
+  created.
+- A later normal revise action continues from the imported value (for example,
+  `R4` becomes `R5`). The revision is not encoded in the Item Number.
 
 ### BOM relationship resolution
 
@@ -170,7 +191,8 @@ Bulk-create documents. Follows the same branch-aware pattern as parts import. Ad
       "mimeType": "application/pdf"
     }
   ],
-  "bypassBranchProtection": false
+  "bypassBranchProtection": false,
+  "importAsReleased": false
 }
 ```
 
@@ -189,7 +211,8 @@ Bulk-create documents. Follows the same branch-aware pattern as parts import. Ad
 
 ### Response
 
-Same structure as parts import (without BOM relationship fields).
+Same structure as parts import (without BOM relationship fields). Documents
+also support the Administrator-only `importAsReleased` mode described above.
 
 ---
 

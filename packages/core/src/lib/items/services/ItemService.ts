@@ -45,6 +45,7 @@ import {
   computeInitialFieldValues,
 } from '../../services/CheckoutService'
 import { BranchService } from '../../services/BranchService'
+import { parseBaselineReleaseRevision } from '../../import/baseline-revision'
 // Imported directly rather than through lib/auth/access.ts, whose static
 // FileService import would recreate the ItemService <-> FileService cycle that
 // the dynamic import further down this file exists to break.
@@ -202,7 +203,15 @@ export class ItemService {
     type: string,
     data: T,
     userId: string,
-    options?: { bypassBranchProtection?: boolean },
+    options?: {
+      bypassBranchProtection?: boolean
+      /**
+       * Import a source system's existing formal release directly onto main.
+       * HTTP callers reach this only through the Administrator-gated import
+       * routes; normal create and ECO flows must never set it.
+       */
+      importAsReleased?: boolean
+    },
   ): Promise<T> {
     const typeConfig = ItemTypeRegistry.getType(type)
     if (!typeConfig) {
@@ -284,14 +293,43 @@ export class ItemService {
       }
     }
 
-    // The revision is the lifecycle's to assign, not the caller's. A client
-    // that names one is honoured (imports carry the revision the source system
-    // recorded); one that omits it gets the value its lifecycle implies. Bound
-    // as a const as well as written back, because the insert below runs inside
-    // a closure where the narrowing on a mutable field does not survive.
-    const revision =
-      validatedData.revision ?? (await this.resolveInitialRevision(type))
-    validatedData.revision = revision
+    // A baseline import is the one controlled exception to assigning formal
+    // revisions through an ECO: the release happened in the source system and
+    // Cascadia is recording that existing fact. Resolve both fields from the
+    // lifecycle so R4 cannot be stored as a Draft-shaped row.
+    let revision: string
+    let initialState: string
+    if (options?.importAsReleased) {
+      const { LifecycleService } =
+        await import('../../services/LifecycleService')
+      const lifecycle = await LifecycleService.getLifecycleForItemType(type)
+      const releaseState = await LifecycleService.getTargetState(
+        type,
+        'release',
+      )
+      if (!lifecycle || !releaseState) {
+        throw new ValidationError(
+          `${type} does not define a formal release action and cannot be imported as a released baseline`,
+          undefined,
+          { operation: 'importBaselineRelease', resource: type },
+        )
+      }
+      revision = parseBaselineReleaseRevision(
+        validatedData.revision,
+        LifecycleService.getRevisionSchemeForState(lifecycle, releaseState),
+      )
+      initialState = releaseState
+      validatedData.revision = revision
+      validatedData.state = releaseState
+    } else {
+      // The revision is the lifecycle's to assign, not the caller's. A client
+      // that names one is honoured (imports may carry source metadata); one
+      // that omits it gets the value its lifecycle implies.
+      revision =
+        validatedData.revision ?? (await this.resolveInitialRevision(type))
+      validatedData.revision = revision
+      initialState = await this.resolveInitialStateId(type)
+    }
 
     // Check branch protection if item is associated with a design
     // Skip this check if:
@@ -326,8 +364,6 @@ export class ItemService {
         await import('../../services/LifecycleService')
       await LifecycleService.validateStateForType(type, validatedData.state)
     }
-    const initialState = await this.resolveInitialStateId(type)
-
     // Auto-assign sysmlType based on whether this is a usage or definition
     // If usageOf is set, this is a usage; otherwise it's a definition
     const isUsage = !!(validatedData as unknown as { usageOf?: string }).usageOf
@@ -390,7 +426,9 @@ export class ItemService {
               const commit = await CommitService.create(
                 {
                   branchId: targetBranchId,
-                  message: `${type} ${validatedData.itemNumber || 'item'} created`,
+                  message: options?.importAsReleased
+                    ? `${type} ${validatedData.itemNumber || 'item'} imported as released revision ${revision}`
+                    : `${type} ${validatedData.itemNumber || 'item'} created`,
                   itemChanges: [
                     {
                       itemId: item.id,

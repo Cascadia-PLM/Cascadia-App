@@ -14,6 +14,7 @@ The import system is designed for migrating data from other PLM systems, ERP exp
 - Create up to 500 items per import batch
 - Detect and import BOM structure from level-based, parent-child, or flat formats
 - Branch-aware import: create items on ECO branches for post-release designs
+- Administrator-only migration of existing formal Part and Document revisions
 - Collect unmapped columns as custom attributes on the created items
 
 **Supported item types:** Part, Document, Issue
@@ -194,6 +195,10 @@ Before any data is written to the database, every row is validated and presented
 4. **Warnings**: Non-blocking issues like missing descriptions or special characters in item numbers.
 5. **Default values**: Revision defaults to `"-"` for Parts and Documents if not provided.
 
+The default revision represents an unreleased item. When **Import as existing
+formal releases** is selected, every row must instead contain a formal revision
+matching the lifecycle's release-phase scheme.
+
 ### Validation Summary
 
 The review step displays:
@@ -235,6 +240,7 @@ The import behavior depends on the design's lifecycle phase:
 
 - **Pre-release design**: Items are created directly on the main branch. The `bypassBranchProtection` flag is set automatically.
 - **Post-release design**: Items must be created on an ECO or workspace branch. The user selects the target branch in the context step. Items are created via `ItemService.createOnBranch()`.
+- **Existing formal release import**: Administrators may import Parts or Documents directly on main at their source-system revision and release state. This mode requires a revision in every row, forbids `branchId`, and does not create intermediate ECOs.
 
 ---
 
@@ -367,6 +373,7 @@ Creates parts in bulk, optionally with BOM relationships.
   "designId": "uuid",
   "branchId": "uuid (optional, required for post-release)",
   "bypassBranchProtection": false,
+  "importAsReleased": false,
   "rows": [
     {
       "name": "Aluminum Housing",
@@ -457,6 +464,7 @@ Creates documents in bulk. Same structure as parts import but without BOM suppor
   "designId": "uuid",
   "branchId": "uuid (optional)",
   "bypassBranchProtection": false,
+  "importAsReleased": false,
   "rows": [
     {
       "name": "Assembly Instructions",
@@ -484,7 +492,7 @@ Creates documents in bulk. Same structure as parts import but without BOM suppor
 | `mimeType`    | string (max 100)  | No       |                                                                      |
 | `attributes`  | object            | No       | Any JSON document                                                    |
 
-This endpoint requires design access (`requireDesignAccess`) and branch access (`requireBranchAccess`) if a branch is specified. Bypassing branch protection requires the Administrator role.
+This endpoint requires design access (`requireDesignAccess`) and branch access (`requireBranchAccess`) if a branch is specified. Bypassing branch protection or importing existing formal releases requires the Administrator role.
 
 ### POST /api/v1/import/issues
 
@@ -574,7 +582,7 @@ Exports the flat list of items affected by an ECO, with current and target revis
 
 The import wizard (`ImportDialog` component) guides users through a five-step process:
 
-1. **Select Design** (or Select Program for Issues) -- Choose the target program, design, and branch.
+1. **Select Design** (or Select Program for Issues) -- Choose the target program, design, and branch. Administrators can instead select **Import as existing formal releases**, which targets main without a branch.
 2. **Upload File** -- Drag-and-drop or browse for .xlsx/.csv files. Shows a preview of the first 3 rows.
 3. **Map Columns** -- Review auto-detected mappings. Manually adjust via dropdowns. See which columns will become custom attributes.
 4. **Review** -- Validation summary with error/warning counts, row-level detail table, BOM structure detection info, and filter controls.

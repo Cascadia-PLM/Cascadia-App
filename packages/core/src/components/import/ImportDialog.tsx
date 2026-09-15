@@ -250,7 +250,14 @@ export function ImportDialog({
           const mappedRows = applyMappings(parsedFile!.rows, mappings, {
             collectUnmappedAsAttributes: true,
           })
-          const validated = validateRows(mappedRows, parsedFile!.rows, itemType)
+          const validated = validateRows(
+            mappedRows,
+            parsedFile!.rows,
+            itemType,
+            {
+              importAsReleased: context?.importAsReleased,
+            },
+          )
           setValidatedRows(validated)
 
           // Detect BOM format and extract relationships (only for Parts)
@@ -277,7 +284,14 @@ export function ImportDialog({
         setCurrentStep('importing')
         break
     }
-  }, [currentStep, parsedFile, mappings, itemType, config.supportsBom])
+  }, [
+    currentStep,
+    parsedFile,
+    mappings,
+    itemType,
+    config.supportsBom,
+    context?.importAsReleased,
+  ])
 
   // Render step content
   const renderStepContent = () => {

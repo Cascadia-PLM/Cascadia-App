@@ -13,8 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
-import { Badge, FormField } from '@/components/ui'
+import { Badge, Checkbox, FormField } from '@/components/ui'
 import {
+  authSessionQuery,
   designBranchesQuery,
   designListQuery,
   designStatusQuery,
@@ -70,8 +71,11 @@ export function ContextSelectStep({
   const [selectedBranchId, setSelectedBranchId] = useState<string | undefined>(
     initialBranchId,
   )
+  const [importAsReleased, setImportAsReleased] = useState(false)
 
   // The three cascading lists, each enabled by the one above it.
+  const { data: session } = useQuery(authSessionQuery())
+  const isSystemAdmin = session?.setupStatus?.isAdmin ?? false
   const { data: programs = [], isPending: loadingPrograms } =
     useQuery(programListQuery())
   const { data: designs = [], isFetching: loadingDesigns } = useQuery(
@@ -101,6 +105,10 @@ export function ContextSelectStep({
       setSelectedBranchId(undefined)
       return
     }
+    if (importAsReleased) {
+      setSelectedBranchId(undefined)
+      return
+    }
     if (designStatus.protection.isMainBranchProtected) {
       const unlocked = branches.filter(
         (b) => !b.isLocked && b.branchType !== 'main',
@@ -111,7 +119,7 @@ export function ContextSelectStep({
       const mainBranch = branches.find((b) => b.branchType === 'main')
       if (mainBranch) setSelectedBranchId(mainBranch.id)
     }
-  }, [selectedDesignId, designStatus, branches])
+  }, [selectedDesignId, designStatus, branches, importAsReleased])
 
   // Update context when selection changes
   useEffect(() => {
@@ -132,7 +140,7 @@ export function ContextSelectStep({
     const phase = designStatus.protection.phase
 
     // For post-release, require branch selection
-    if (phase === 'post-release' && !selectedBranchId) {
+    if (phase === 'post-release' && !selectedBranchId && !importAsReleased) {
       onChange(null)
       return
     }
@@ -140,9 +148,10 @@ export function ContextSelectStep({
     onChange({
       programId: selectedProgramId,
       designId: selectedDesignId,
-      branchId: selectedBranchId,
+      branchId: importAsReleased ? undefined : selectedBranchId,
       designPhase: phase,
       itemType,
+      importAsReleased,
     })
   }, [
     selectedProgramId,
@@ -152,6 +161,7 @@ export function ContextSelectStep({
     onChange,
     requiresDesign,
     itemType,
+    importAsReleased,
   ])
 
   const isPostRelease = designStatus?.protection.phase === 'post-release'
@@ -257,88 +267,130 @@ export function ContextSelectStep({
         </FormField>
       )}
 
-      {/* Branch Selection (only for post-release designs that require design) */}
-      {requiresDesign && selectedDesignId && designStatus && (
-        <FormField
-          label="Branch"
-          required={isPostRelease}
-          helpText={
-            isPostRelease
-              ? 'This design has released items. Select a branch to import new parts.'
-              : 'Parts will be imported to the main branch.'
-          }
-        >
-          <div className="flex items-center gap-2">
-            <GitBranch className="h-5 w-5 text-slate-400" />
-            <Select
-              value={selectedBranchId}
-              onValueChange={setSelectedBranchId}
-              disabled={loadingBranches || !isPostRelease}
-            >
-              <SelectTrigger className="flex-1">
-                <SelectValue
-                  placeholder={
-                    loadingBranches
-                      ? 'Loading branches...'
-                      : isPostRelease
-                        ? 'Select a branch...'
-                        : 'main'
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {availableBranches.map((branch) => (
-                  <SelectItem key={branch.id} value={branch.id}>
-                    <div className="flex items-center gap-2">
-                      {branch.branchType === BRANCH_TYPES.changeOrder && (
-                        <Badge variant="default" className="text-xs">
-                          ECO
-                        </Badge>
-                      )}
-                      {branch.branchType === 'workspace' && (
-                        <Badge variant="secondary" className="text-xs">
-                          WS
-                        </Badge>
-                      )}
-                      <span>{branch.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {/* A migration/import exception, not an alternative revision editor. */}
+      {requiresDesign && selectedDesignId && isSystemAdmin && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="importAsReleased"
+              checked={importAsReleased}
+              onCheckedChange={(checked) =>
+                setImportAsReleased(checked === true)
+              }
+              className="mt-0.5"
+            />
+            <div className="space-y-1">
+              <label
+                htmlFor="importAsReleased"
+                className="cursor-pointer text-sm font-medium text-blue-900 dark:text-blue-100"
+              >
+                Import as existing formal releases
+              </label>
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                Each row must provide a revision matching the lifecycle (for
+                example R4). Items are recorded as released directly on main; no
+                placeholder ECOs are created.
+              </p>
+            </div>
           </div>
-        </FormField>
+        </div>
       )}
+
+      {/* Branch Selection (only for post-release designs that require design) */}
+      {requiresDesign &&
+        selectedDesignId &&
+        designStatus &&
+        !importAsReleased && (
+          <FormField
+            label="Branch"
+            required={isPostRelease}
+            helpText={
+              isPostRelease
+                ? 'This design has released items. Select a branch to import new parts.'
+                : 'Parts will be imported to the main branch.'
+            }
+          >
+            <div className="flex items-center gap-2">
+              <GitBranch className="h-5 w-5 text-slate-400" />
+              <Select
+                value={selectedBranchId}
+                onValueChange={setSelectedBranchId}
+                disabled={loadingBranches || !isPostRelease}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue
+                    placeholder={
+                      loadingBranches
+                        ? 'Loading branches...'
+                        : isPostRelease
+                          ? 'Select a branch...'
+                          : 'main'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableBranches.map((branch) => (
+                    <SelectItem key={branch.id} value={branch.id}>
+                      <div className="flex items-center gap-2">
+                        {branch.branchType === BRANCH_TYPES.changeOrder && (
+                          <Badge variant="default" className="text-xs">
+                            ECO
+                          </Badge>
+                        )}
+                        {branch.branchType === 'workspace' && (
+                          <Badge variant="secondary" className="text-xs">
+                            WS
+                          </Badge>
+                        )}
+                        <span>{branch.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </FormField>
+        )}
 
       {/* Status Info - only shown for items that require design */}
       {requiresDesign && designStatus && (
         <div
           className={`p-3 rounded-lg text-sm ${
-            isPostRelease
-              ? 'bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800'
-              : 'bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800'
+            importAsReleased
+              ? 'bg-blue-50 border border-blue-200 dark:bg-blue-950/30 dark:border-blue-800'
+              : isPostRelease
+                ? 'bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800'
+                : 'bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800'
           }`}
         >
           <div className="flex items-start gap-2">
             <AlertCircle
               className={`h-4 w-4 mt-0.5 shrink-0 ${
-                isPostRelease
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-green-600'
+                importAsReleased
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : isPostRelease
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-green-600'
               }`}
             />
             <div>
               <p
-                className={`font-medium ${isPostRelease ? 'text-amber-800 dark:text-amber-200' : 'text-green-800 dark:text-green-200'}`}
+                className={`font-medium ${importAsReleased ? 'text-blue-800 dark:text-blue-200' : isPostRelease ? 'text-amber-800 dark:text-amber-200' : 'text-green-800 dark:text-green-200'}`}
               >
-                {isPostRelease ? 'Post-Release Design' : 'Pre-Release Design'}
+                {importAsReleased
+                  ? 'Existing release import'
+                  : isPostRelease
+                    ? 'Post-Release Design'
+                    : 'Pre-Release Design'}
               </p>
               <p
-                className={`text-xs ${isPostRelease ? 'text-amber-700 dark:text-amber-300' : 'text-green-700 dark:text-green-300'}`}
+                className={`text-xs ${importAsReleased ? 'text-blue-700 dark:text-blue-300' : isPostRelease ? 'text-amber-700 dark:text-amber-300' : 'text-green-700 dark:text-green-300'}`}
               >
-                {isPostRelease
-                  ? 'New parts must be imported through a change-order or workspace branch.'
-                  : 'Parts can be imported directly to this design.'}
+                {importAsReleased
+                  ? 'Rows will become the current formal releases on main.'
+                  : isPostRelease
+                    ? 'New parts must be imported through a change-order or workspace branch.'
+                    : 'Parts can be imported directly to this design.'}
               </p>
             </div>
           </div>

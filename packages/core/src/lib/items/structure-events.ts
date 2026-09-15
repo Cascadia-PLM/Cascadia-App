@@ -29,9 +29,10 @@ export interface StructureEnd {
  *
  * Both ends carry a master id as well as a version id, because the table
  * references item *version* rows and a version id alone is useless to a
- * consumer across revisions. The line's three scalars ride along — a
- * documented exception to "payloads state what happened, not values",
- * because for a BOM line those three *are* what happened.
+ * consumer across revisions. The line's own values ride along — quantity,
+ * reference designator, find number, option condition and target execution —
+ * a documented exception to "payloads state what happened, not values",
+ * because for a BOM line those *are* what happened.
  */
 export function structurePayload(
   edge: Edge,
@@ -53,6 +54,8 @@ export function structurePayload(
     quantity: edge.quantity,
     referenceDesignator: edge.referenceDesignator,
     findNumber: edge.findNumber,
+    option: edge.option,
+    targetMakeCode: edge.targetMakeCode,
   }
 }
 

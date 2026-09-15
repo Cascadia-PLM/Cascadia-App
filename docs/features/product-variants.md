@@ -106,7 +106,9 @@ signature that conflict detection and the merge pre-flight compare, so an
 option-only edit on two branches is a structure conflict. It appears in the
 design structure endpoint, the change-order structure, the relationship
 graph, the digital thread and its comparison, the CSV export, and the
-`get_bom` AI tool.
+`get_bom` AI tool. The `relationship.added`, `relationship.removed` and
+`relationship.updated` domain events carry it beside the target execution,
+and a condition-only edit is an update whose `changedFields` names `option`.
 
 ### Write rules
 

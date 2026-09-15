@@ -1605,7 +1605,7 @@ export class ItemRelationshipService {
     if (option !== undefined) updateData.option = option
     if (targetMakeCode !== undefined) updateData.targetMakeCode = targetMakeCode
 
-    // Which of the line's three properties actually changed, hoisted above the
+    // Which of the line's properties actually changed, hoisted above the
     // write. The commit's own comparison below is computed two guards deep —
     // inside a design *and* a branch resolution that does not run for an edge
     // whose source has no design — so the event needs its own, available to
@@ -1619,6 +1619,12 @@ export class ItemRelationshipService {
           data.referenceDesignator,
         ],
         ['findNumber', existing.findNumber, data.findNumber],
+        [
+          'option',
+          optionConditionKey(existing.option),
+          option === undefined ? undefined : optionConditionKey(option),
+        ],
+        ['targetMakeCode', existing.targetMakeCode, targetMakeCode],
       ] as const
     )
       .filter(([, before, after]) => after !== undefined && before !== after)

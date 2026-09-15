@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { defineDomainEvent } from '../publish'
 
 /**
- * Both ends of the edge, and the line's own three values.
+ * Both ends of the edge, and the line's own values.
  *
  * **Master ids as well as version ids, on both ends.** The relationship table
  * references item *version* rows, so a version id alone is useless to a
@@ -18,7 +18,9 @@ import { defineDomainEvent } from '../publish'
  * values". For a BOM line those three *are* what happened — they are the line.
  * They are three scalars, and while the commit does carry two of them inside a
  * free-form JSON field, a consumer should not have to fetch and parse a commit
- * to read a quantity.
+ * to read a quantity. The option condition and the pinned target execution
+ * ride along for the same reason: on a 150 % BOM they are as much the line as
+ * the quantity is.
  */
 const relationshipIdentity = {
   relationshipId: z.string().uuid(),
@@ -44,6 +46,20 @@ const relationshipIdentity = {
   quantity: z.string().nullable(),
   referenceDesignator: z.string().nullable(),
   findNumber: z.number().int().nullable(),
+
+  /**
+   * The line's option condition in the canonical form the service stores —
+   * families and values lower-cased and sorted — and the execution it pins on
+   * the target Part's revision. Both null on a plain fixed line.
+   */
+  option: z
+    .object({
+      all: z.array(
+        z.object({ family: z.string(), values: z.array(z.string()) }),
+      ),
+    })
+    .nullable(),
+  targetMakeCode: z.string().nullable(),
 }
 
 export const relationshipAddedPayloadSchema = z.object(relationshipIdentity)
@@ -122,7 +138,7 @@ export type RelationshipUpdatedPayload = z.infer<
 
 /**
  * A structure edge's own properties changed — quantity, reference designator,
- * find number.
+ * find number, option condition, target execution.
  *
  * Never emitted when nothing changed: a save that submits the same values is
  * not an edit, and the schema forbids an empty `changedFields` anyway. Same
@@ -131,7 +147,8 @@ export type RelationshipUpdatedPayload = z.infer<
 export const RELATIONSHIP_UPDATED = defineDomainEvent({
   type: 'relationship.updated',
   schemaVersion: 1,
-  description: "A structure edge's quantity or position changed",
+  description:
+    "A structure edge's quantity, position, condition or execution pin changed",
   subjectType: 'item',
   payloadSchema: relationshipUpdatedPayloadSchema,
 })

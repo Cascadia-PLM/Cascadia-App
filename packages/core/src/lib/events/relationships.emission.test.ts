@@ -33,7 +33,7 @@ import { BranchService } from '@/lib/services/BranchService'
 import { DesignService } from '@/lib/services/DesignService'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { domainEvents, programs } from '@/lib/db/schema'
+import { domainEvents, parts, programs } from '@/lib/db/schema'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
 import { ItemTypeRegistry } from '@/lib/items/registry'
 import '@/lib/items/registerItemTypes.server'
@@ -208,6 +208,56 @@ describe('structure event emission', () => {
     const changed = (update?.payload as { changedFields: Array<string> })
       .changedFields
     expect([...changed].sort()).toEqual(['findNumber', 'quantity'])
+  })
+
+  /**
+   * The changed-field list knew the three scalars, so a condition-only edit
+   * emitted nothing and the payload never said which product a line belonged
+   * to. Both ends of the variant vocabulary ride every structure event now.
+   */
+  it('a condition-only edit is an update naming option, and the events carry it', async () => {
+    const parent = await part('cparent')
+    const child = await part('cchild')
+    await testDb.db
+      .update(parts)
+      .set({
+        optionModel: {
+          families: [
+            {
+              code: 'color',
+              name: 'Colour',
+              required: true,
+              values: [
+                { code: 'black', label: 'Black' },
+                { code: 'white', label: 'White' },
+              ],
+            },
+          ],
+          constraints: [],
+        },
+      })
+      .where(eq(parts.itemId, parent.id))
+    const edge = await ItemRelationshipService.addRelationship(
+      parent.id,
+      child.id,
+      'BOM',
+      user.id,
+      { quantity: '1.000' },
+    )
+    const [added] = await structureEvents(parent.id)
+    expect(added?.payload).toMatchObject({ option: null, targetMakeCode: null })
+
+    await ItemRelationshipService.updateRelationship(edge.id, user.id, {
+      option: { all: [{ family: 'color', values: ['black'] }] },
+    })
+    const events = await structureEvents(parent.id)
+    expect(events).toHaveLength(2)
+    const update = events.find((e) => e.type === 'relationship.updated')
+    expect(update?.payload).toMatchObject({
+      changedFields: ['option'],
+      option: { all: [{ family: 'color', values: ['black'] }] },
+      targetMakeCode: null,
+    })
   })
 
   /**

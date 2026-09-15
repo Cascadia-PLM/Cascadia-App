@@ -1,0 +1,16 @@
+{
+  "name": "@cascadia/api",
+  "version": "0.6.0",
+  "description": "Cascadia PLM — the Hono API server, services, database schema, jobs and extensions.",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./extensions": "./src/lib/extensions/public.ts",
+    "./*": "./src/*.ts",
+    "./*.tsx": "./src/*.tsx"
+  },
+  "dependencies": {
+    "@cascadia/commons": "*"
+  }
+}

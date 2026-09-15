@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
+import { Hono } from 'hono'
+import { APP_VERSION } from '@cascadia/commons/lib/version'
+import { tagged } from '../adapter'
+import { apiHandler } from '@/lib/api/handler'
+
+const adapt = tagged('Health')
+
+const app = new Hono()
+
+// GET /api/health
+app.get(
+  '/',
+  adapt(
+    // eslint-disable-next-line @typescript-eslint/require-await -- apiHandler signature requires async
+    apiHandler({ public: true }, async () => {
+      return {
+        status: 'ok',
+        version: APP_VERSION,
+        timestamp: new Date().toISOString(),
+      }
+    }),
+  ),
+)
+
+export default app

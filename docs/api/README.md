@@ -41,7 +41,7 @@ Deliberate v1 behaviors that look like accidents until written down:
 
 ## How the spec is generated
 
-Every route module in `packages/core/src/server/routes/` declares a default tag at the top of the file:
+Every route module in `packages/cascadia-api/src/server/routes/` declares a default tag at the top of the file:
 
 ```typescript
 import { tagged } from '../adapter'
@@ -73,7 +73,7 @@ app.get(
 )
 ```
 
-The shared error envelope (400/401/403/404/500) is added automatically by `metadataToSpec` in `packages/core/src/lib/api/openapi-helpers.ts`. Success payloads are wrapped in the standard `{ data: ... }` envelope.
+The shared error envelope (400/401/403/404/500) is added automatically by `metadataToSpec` in `packages/cascadia-api/src/lib/api/openapi-helpers.ts`. Success payloads are wrapped in the standard `{ data: ... }` envelope.
 
 ## Documenting a request body
 
@@ -107,7 +107,7 @@ document, and is the cheapest way to explain a field an integrator cannot guess.
 Note that the schemas are converted here rather than handed to hono-openapi's
 `resolver()`: that returns a proxy the generator only awaits for _responses_, so
 a resolver in a body position serialises as the literal `{ "vendor": "zod" }`.
-`packages/core/src/lib/api/openapi-helpers.test.ts` guards against that
+`packages/cascadia-api/src/lib/api/openapi-helpers.test.ts` guards against that
 regressing — it is invisible in every other check.
 
 ## CI gate
@@ -128,7 +128,7 @@ Or use any OpenAPI-compatible toolchain (Kiota, openapi-generator, Stoplight, et
 
 v1 is frozen, so every rename in the change-management remediation is additive on the wire: new paths mount beside the old ones, response keys are never removed, and persisted values that appear in responses keep their spelling. What could not be done additively is collected here, to be taken up together when v2 is cut — after the lifecycle consolidation, as its own project.
 
-- **Persisted values that appear in responses.** `branchType: 'eco'` and `tagType: 'eco-release'`; the code reads them as `BRANCH_TYPES.changeOrder` and `TAG_TYPES.changeOrderRelease` (`packages/core/src/lib/versioning/branch-types.ts`), and the `eco/` branch-name prefix goes with them.
+- **Persisted values that appear in responses.** `branchType: 'eco'` and `tagType: 'eco-release'`; the code reads them as `BRANCH_TYPES.changeOrder` and `TAG_TYPES.changeOrderRelease` (`packages/cascadia-commons/src/lib/versioning/branch-types.ts`), and the `eco/` branch-name prefix goes with them.
 - **Columns and the properties that mirror them.** `program_members.can_create_eco` / `can_approve_eco` (`canCreateEco`, `canApproveEco`); `conflict_reviews.their_eco_id` (`theirEcoId`, with `theirEcoNumber`); `work_instruction_change_alerts.eco_id`; `upstream_changes.source_eco_id` / `response_eco_id`.
 - **Request and response properties.** `ecoId`, `ecoTitle`, `ecoDescription`, `ecoNumber`, `ecoName`, `ecoBranches`, `ecoBranch`, `ecoDesign`, `ecos`, `isInEco`.
 - **Path aliases kept for v1.** `/designs/{id}/ecos` (now `/designs/{id}/change-orders`), `/workspaces/{id}/convert-to-eco` and `/merge-to-eco` (now `-change-order`), and `/workflows*`, now mounted canonically at `/lifecycles*` (whose responses keep the `lifecycles` / `workflow` keys for the same reason).

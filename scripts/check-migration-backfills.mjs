@@ -87,7 +87,7 @@ loadEnv({ path: resolve(import.meta.dirname, '..', '.env'), quiet: true })
 
 // This script DROPs and recreates the `public` schema once per scenario. It
 // gets an explicitly named database or it does not run — the same posture, and
-// for the same reason, as packages/core/src/__tests__/global-setup.ts. Deriving
+// for the same reason, as packages/cascadia-api/src/__tests__/global-setup.ts. Deriving
 // a name would land in a database nobody chose.
 const url = process.env.BACKFILL_DATABASE_URL
 if (!url) {

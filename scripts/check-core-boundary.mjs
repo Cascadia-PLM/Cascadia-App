@@ -23,9 +23,11 @@
  * import resolution will catch `usePackageEnabled(<a quoted module id>)`.
  * (Which is why this file spells no id in quotes — it scans itself.)
  *
- * The same resolver then answers a second question, one package outward: does
- * any module package import *another* module package without declaring it?
- * See "Cross-module dependency honesty" below.
+ * The same resolver then answers two more questions. One package outward:
+ * does any module package import *another* module package without declaring
+ * it? See "Cross-module dependency honesty" below. And inward: does the
+ * application's own layering hold — commons reaching nothing, the web never
+ * reaching the api? See "Application layering" below.
  *
  * This is a stopgap with a known replacement. Phase 2 splits the workspace, at
  * which point CI can build and test `apps/cascadia` with the proprietary
@@ -49,6 +51,24 @@ import { MODULE_PACKAGES, editionOf, normalize } from './edition-manifest.mjs'
 const PROPRIETARY_PACKAGE_IDS = MODULE_PACKAGES
 
 const MODULE_SRC = MODULE_PACKAGES.map((p) => `packages/${p}/src`)
+
+/**
+ * The application's own packages, by import name. `@/` inside one of them
+ * means that package alone; the others are reached by name — and only the
+ * names a package's tsconfig maps are meant to resolve at all.
+ */
+const APP_PACKAGES = {
+  '@cascadia/commons': 'packages/cascadia-commons/src',
+  '@cascadia/api': 'packages/cascadia-api/src',
+  '@cascadia/web': 'packages/cascadia-web/src',
+}
+const APP_SRC = Object.values(APP_PACKAGES)
+
+/** Import name of the application package a file belongs to, or null. */
+const appPackageOf = (file) =>
+  Object.entries(APP_PACKAGES).find(([, src]) =>
+    file.startsWith(`${src}/`),
+  )?.[0] ?? null
 
 /**
  * Entry points, which are allowed to import a composition root.
@@ -140,15 +160,29 @@ function tryExtensions(base) {
 function resolveSpecifier(specifier, fromFile) {
   let base
   if (specifier.startsWith('@/')) {
-    // Mirrors the app tsconfigs: core first, then the module packages.
-    for (const root of ['packages/core/src', ...MODULE_SRC]) {
+    // `@/` is the importing file's own package. Inside an application package
+    // that is exactly one root; inside a module package the tsconfigs search
+    // the module's own root (a module has no `@/` reach into the application
+    // packages — it names them).
+    const own = appPackageOf(fromFile)
+    const roots = own ? [APP_PACKAGES[own]] : MODULE_SRC
+    for (const root of roots) {
       const hit = tryExtensions(join(root, specifier.slice(2)))
       if (hit) return hit
     }
     return null
-  } else if (specifier.startsWith('@cascadia/core/')) {
+  } else if (specifier.startsWith('@test/')) {
     return tryExtensions(
-      join('packages/core/src', specifier.slice('@cascadia/core/'.length)),
+      join(APP_PACKAGES['@cascadia/api'], '__tests__', specifier.slice(6)),
+    )
+  } else if (
+    Object.keys(APP_PACKAGES).some((name) => specifier.startsWith(`${name}/`))
+  ) {
+    const name = Object.keys(APP_PACKAGES).find((n) =>
+      specifier.startsWith(`${n}/`),
+    )
+    return tryExtensions(
+      join(APP_PACKAGES[name], specifier.slice(name.length + 1)),
     )
   } else if (specifier.startsWith('@cascadia/')) {
     for (const name of MODULE_PACKAGES) {
@@ -233,12 +267,15 @@ for (const file of allFiles) {
 
 // ── Alias-root collisions ────────────────────────────────────────────────
 //
-// The `@/` alias resolves core first, then the module packages, and modules
-// deliberately contribute files in core-owned namespaces (server/routes,
-// lib/jobs/definitions, ...). That ordering means a core file later created
-// at the same relative path silently SHADOWS the module file everywhere it
-// is imported — no error, the module's contribution just stops loading. So
-// the same relative path may exist under at most one alias root.
+// The `@/` alias in an app's Vite build resolves the web package first, then
+// the module packages, and modules deliberately contribute files in
+// application-owned namespaces (server/routes, lib/jobs/definitions, ...).
+// That ordering means an application file later created at the same
+// relative path silently SHADOWS the module file everywhere it is imported —
+// no error, the module's contribution just stops loading. So the same
+// relative path may exist under at most one alias root. The three application
+// packages count as roots too: they preserve core's layout, and a module file
+// at `lib/x.ts` collides with any of them.
 //
 // Comparison is extension- and index-stripped, because both resolvers try
 // the extension candidates: core lib/x.ts shadows module lib/x.tsx too.
@@ -250,7 +287,7 @@ for (const file of allFiles) {
 // entry here, which is the point.
 const COLLISION_ALLOWLIST = new Set(['register.server', 'register.client'])
 
-const ALIAS_ROOTS = ['packages/core/src', ...MODULE_SRC]
+const ALIAS_ROOTS = [...APP_SRC, ...MODULE_SRC]
 const byRelativePath = new Map()
 for (const file of allFiles) {
   const root = ALIAS_ROOTS.find((r) => file.startsWith(`${r}/`))
@@ -325,6 +362,52 @@ for (const file of allFiles) {
     const detail = `imports ${specifier}  →  ${target}  (${to}, undeclared)`
     if (existing) existing.push(detail)
     else undeclared.set(file, [detail])
+  }
+}
+
+// ── Application layering ─────────────────────────────────────────────────
+//
+// Commons imports commons. The web imports web and commons. The api imports
+// api and commons. Nothing else — in particular the web never reaches the api,
+// which is the property the package split exists to hold: the client bundle
+// cannot pull `postgres` in through a type import that happened to sit beside
+// a service.
+//
+// The tsconfigs and the Vite alias plugin already refuse to *resolve* an
+// import that crosses the wrong way, so a violation here normally fails
+// typecheck and the build first. This pass is what makes it a stated rule
+// rather than an accident of which `paths` entries exist: it reads the
+// resolved target, so a relative `../../cascadia-api/src/...` is caught the
+// same as a named one.
+//
+// Test files are exempt in one direction only: a web or commons test may use
+// the api's database helpers (`@test/...`), because that is where the fixtures
+// live. Source files never.
+const LAYERS_MAY_REACH = {
+  '@cascadia/commons': new Set(['@cascadia/commons']),
+  '@cascadia/web': new Set(['@cascadia/web', '@cascadia/commons']),
+  '@cascadia/api': new Set(['@cascadia/api', '@cascadia/commons']),
+}
+const isTestFile = (file) =>
+  /\.test\.tsx?$/.test(file) || file.includes('/__tests__/')
+
+/** file → list of imports that cross the layering the wrong way */
+const layering = new Map()
+
+for (const file of allFiles) {
+  const from = appPackageOf(file)
+  if (!from) continue
+  const source = readFileSync(file, 'utf8')
+  for (const specifier of specifiersIn(source)) {
+    const target = resolveSpecifier(specifier, file)
+    if (!target) continue
+    const to = appPackageOf(target)
+    if (!to || LAYERS_MAY_REACH[from].has(to)) continue
+    if (isTestFile(file) && target.includes('/__tests__/')) continue
+    const existing = layering.get(file)
+    const detail = `imports ${specifier}  →  ${target}  (${to})`
+    if (existing) existing.push(detail)
+    else layering.set(file, [detail])
   }
 }
 
@@ -403,6 +486,23 @@ if (undeclared.size > 0) {
       'publish, delete, or license one of those packages on its own.\n' +
       'Either add the dependency to the importing package.json (and accept\n' +
       'that the two now ship together), or invert it through a registry.',
+  )
+  process.exit(1)
+}
+
+if (layering.size > 0) {
+  console.error(
+    `\n✗ ${layering.size} file(s) import across the application layering:\n`,
+  )
+  for (const [file, details] of layering) {
+    console.error(`   ${file}`)
+    for (const d of details) console.error(`      ${d}`)
+    console.error('')
+  }
+  console.error(
+    'commons reaches only commons; web reaches web and commons; api reaches\n' +
+      'api and commons. A type the web needs from a service belongs in\n' +
+      '@cascadia/commons — declare it there and re-export it from the service.',
   )
   process.exit(1)
 }

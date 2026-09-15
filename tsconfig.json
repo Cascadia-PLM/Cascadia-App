@@ -17,8 +17,19 @@
     "allowJs": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./packages/core/src/*"],
-      "@cascadia/core/*": ["./packages/core/src/*"]
+      // Scripts name the package they import. The `@/` fallback list is for
+      // the package files that pulls in, each meaning its own package — safe
+      // because the three keep disjoint layouts (`boundary:check` enforces it).
+      // tsx reads this file too, so `npm run db:seed` and the rest resolve
+      // `@/` inside the api the same way.
+      "@/*": [
+        "./packages/cascadia-api/src/*",
+        "./packages/cascadia-web/src/*",
+        "./packages/cascadia-commons/src/*"
+      ],
+      "@cascadia/api/*": ["./packages/cascadia-api/src/*"],
+      "@cascadia/web/*": ["./packages/cascadia-web/src/*"],
+      "@cascadia/commons/*": ["./packages/cascadia-commons/src/*"]
     }
   }
 }

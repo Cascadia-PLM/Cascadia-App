@@ -50,7 +50,7 @@ const { registerModules } = (await import(
 )) as { registerModules: () => void }
 registerModules()
 
-const { default: app } = await import('../packages/core/src/server/index')
+const { default: app } = await import('@cascadia/api/server')
 
 // `--out <path>` overrides the destination, for generating the community
 // snapshot from this tree. Default is the canonical path, which is also what

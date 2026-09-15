@@ -6,6 +6,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@cascadia/core": "*"
+    "@cascadia/api": "*",
+    "@cascadia/commons": "*",
+    "@cascadia/web": "*"
   }
 }

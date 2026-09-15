@@ -19,7 +19,9 @@ COPY package.json package-lock.json ./
 # quietly installs only the root's dependencies. Listed one per line rather than
 # globbed because `COPY packages/*/…` flattens the paths. A new workspace
 # belongs here too.
-COPY packages/core/package.json ./packages/core/
+COPY packages/cascadia-commons/package.json ./packages/cascadia-commons/
+COPY packages/cascadia-api/package.json ./packages/cascadia-api/
+COPY packages/cascadia-web/package.json ./packages/cascadia-web/
 COPY apps/cascadia/package.json ./apps/cascadia/
 
 # =============================================================================
@@ -145,7 +147,7 @@ COPY --from=builder /app/public ./public
 
 # Admin scripts (seed, migrate, reset) run via tsx and import from the
 # workspace packages. The server itself reads none of this at runtime — only
-# `scripts/*.ts` do. The catalog seed JSON under packages/core/test-data comes
+# `scripts/*.ts` do. The catalog seed JSON under packages/cascadia-api/test-data comes
 # along with them: the bundled server inlines it, but tsx-run scripts read it
 # from disk.
 COPY --from=builder /app/tsconfig.base.json ./

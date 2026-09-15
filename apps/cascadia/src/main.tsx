@@ -7,7 +7,7 @@ import { RouterProvider } from '@tanstack/react-router'
 import { getRouter } from './router'
 import { registerClientModules } from './modules.client'
 
-import '@cascadia/core/styles.css'
+import '@cascadia/web/styles.css'
 
 // Before the first render: slots are read as components mount.
 registerClientModules()

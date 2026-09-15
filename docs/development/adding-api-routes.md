@@ -4,14 +4,14 @@ This guide covers how to add API routes in Cascadia using Hono route modules and
 
 ## Route Architecture
 
-API routes are defined in `packages/core/src/server/routes/`, one file per domain. Each file creates a `Hono` app, defines routes using `adapt()` + `apiHandler()`, and exports the app. The routes are mounted in `packages/core/src/server/index.ts`.
+API routes are defined in `packages/cascadia-api/src/server/routes/`, one file per domain. Each file creates a `Hono` app, defines routes using `adapt()` + `apiHandler()`, and exports the app. The routes are mounted in `packages/cascadia-api/src/server/index.ts`.
 
-| File                                               | Mounted At              |
-| -------------------------------------------------- | ----------------------- |
-| `packages/core/src/server/routes/parts.ts`         | `/api/v1/parts`         |
-| `packages/core/src/server/routes/programs.ts`      | `/api/v1/programs`      |
-| `packages/core/src/server/routes/designs.ts`       | `/api/v1/designs`       |
-| `packages/core/src/server/routes/change-orders.ts` | `/api/v1/change-orders` |
+| File                                                       | Mounted At              |
+| ---------------------------------------------------------- | ----------------------- |
+| `packages/cascadia-api/src/server/routes/parts.ts`         | `/api/v1/parts`         |
+| `packages/cascadia-api/src/server/routes/programs.ts`      | `/api/v1/programs`      |
+| `packages/cascadia-api/src/server/routes/designs.ts`       | `/api/v1/designs`       |
+| `packages/cascadia-api/src/server/routes/change-orders.ts` | `/api/v1/change-orders` |
 
 Route parameters use the `:param` naming convention (e.g., `/:id`, `/:designId/branches`).
 
@@ -20,7 +20,7 @@ Route parameters use the `:param` naming convention (e.g., `/:id`, `/:designId/b
 Every API route file creates a `Hono` app, uses `adapt()` to bridge Hono's context to the `apiHandler()` signature, and wraps handlers with `apiHandler()`:
 
 ```typescript
-// packages/core/src/server/routes/widgets.ts
+// packages/cascadia-api/src/server/routes/widgets.ts
 import { Hono } from 'hono'
 import { adapt } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'
@@ -71,7 +71,7 @@ app.delete(
 export default app
 ```
 
-Then mount the route in `packages/core/src/server/index.ts`:
+Then mount the route in `packages/cascadia-api/src/server/index.ts`:
 
 ```typescript
 import widgets from './routes/widgets'
@@ -81,7 +81,7 @@ app.route('/api/v1/widgets', widgets)
 
 ## The adapt() Bridge
 
-`adapt()` from `packages/core/src/server/adapter.ts` bridges Hono's `Context` to the `apiHandler()` signature. It extracts `params` and `request` from the Hono context and passes them to the legacy handler:
+`adapt()` from `packages/cascadia-api/src/server/adapter.ts` bridges Hono's `Context` to the `apiHandler()` signature. It extracts `params` and `request` from the Hono context and passes them to the legacy handler:
 
 ```typescript
 export function adapt(handler: LegacyHandler) {
@@ -97,7 +97,7 @@ You always wrap `apiHandler()` calls with `adapt()` when defining Hono routes.
 
 ## The apiHandler() Wrapper
 
-`apiHandler()` from `packages/core/src/lib/api/handler.ts` wraps every API handler. It provides:
+`apiHandler()` from `packages/cascadia-api/src/lib/api/handler.ts` wraps every API handler. It provides:
 
 1. **Authentication** — verifies session or API key, extracts user
 2. **Authorization** — checks permissions if specified
@@ -149,7 +149,7 @@ the message an unauthorized caller gets.
 
 `npm run permissions:check` fails on a tuple no role in `ROLE_DEFINITIONS`
 grants, and runs in CI's Lint job. The other way to satisfy one is to grant the
-action in `packages/core/src/lib/auth/permissions.ts` — existing databases pick
+action in `packages/cascadia-commons/src/lib/auth/permissions.ts` — existing databases pick
 that up with `npm run db:sync-roles`. To see which roles a tuple actually
 admits, run `npm run permissions:check -- --audience`.
 
@@ -305,7 +305,7 @@ app.get(
 )
 ```
 
-Common query schemas from `packages/core/src/lib/api/schemas.ts`:
+Common query schemas from `packages/cascadia-api/src/lib/api/schemas.ts`:
 
 ```typescript
 // Pagination
@@ -384,7 +384,7 @@ app.post('/checkout', adapt(
 
 ## Response Helpers
 
-For responses that need custom status codes, use helpers from `packages/core/src/lib/api/handler.ts`:
+For responses that need custom status codes, use helpers from `packages/cascadia-api/src/lib/api/handler.ts`:
 
 ```typescript
 import { apiHandler, created, jsonResponse } from '@/lib/api/handler'
@@ -396,7 +396,7 @@ return created({ part })
 return jsonResponse({ results }, 207) // Multi-status
 ```
 
-Or use response builders from `packages/core/src/lib/api/response.ts` for more control:
+Or use response builders from `packages/cascadia-api/src/lib/api/response.ts` for more control:
 
 ```typescript
 import {
@@ -479,7 +479,7 @@ optional ones: [`docs/api/README.md`](../api/README.md).
 
 ### Mounting New Routes
 
-After creating a new route file, you must import and mount it in `packages/core/src/server/index.ts`:
+After creating a new route file, you must import and mount it in `packages/cascadia-api/src/server/index.ts`:
 
 ```typescript
 import widgets from './routes/widgets'
@@ -513,7 +513,7 @@ Use `import type` for types, and dynamic imports for server-only services when n
 ### Collection Endpoint (List + Search)
 
 ```typescript
-// packages/core/src/server/routes/widgets.ts
+// packages/cascadia-api/src/server/routes/widgets.ts
 import { Hono } from 'hono'
 import { adapt } from '../adapter'
 import { apiHandler, parseQuery, created } from '@/lib/api/handler'
@@ -562,7 +562,7 @@ export default app
 ### Action Endpoint (Non-CRUD)
 
 ```typescript
-// packages/core/src/server/routes/change-orders.ts (excerpt)
+// packages/cascadia-api/src/server/routes/change-orders.ts (excerpt)
 import { Hono } from 'hono'
 import { adapt } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'

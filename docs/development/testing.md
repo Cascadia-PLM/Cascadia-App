@@ -44,7 +44,7 @@ npm run test:coverage # Run with coverage report
 npm run test:ui       # Open Vitest UI
 
 # Run a single file
-npx vitest run packages/core/src/lib/services/BranchService.test.ts
+npx vitest run packages/cascadia-api/src/lib/services/BranchService.test.ts
 
 # Run tests matching a pattern
 npx vitest run -t "should create branch"
@@ -67,17 +67,17 @@ npm run test:e2e:full     # Reset database + seed + run tests
 Tests are co-located with the code they test:
 
 ```
-packages/core/src/lib/services/
+packages/cascadia-api/src/lib/services/
 ├── BranchService.ts
 ├── BranchService.test.ts     # Co-located test
 ├── CheckoutService.ts
 ├── CheckoutService.test.ts
 ```
 
-Shared test infrastructure lives in `packages/core/src/__tests__/`:
+Shared test infrastructure lives in `packages/cascadia-api/src/__tests__/`:
 
 ```
-packages/core/src/__tests__/
+packages/cascadia-api/src/__tests__/
 ├── setup.ts              # Test setup (runs before each file)
 ├── global-setup.ts       # Global setup (runs once)
 ├── fixtures/             # Test data factories
@@ -98,7 +98,7 @@ packages/core/src/__tests__/
 Vitest globals are enabled — `describe`, `it`, `expect`, `vi` are available without import.
 
 ```typescript
-// packages/core/src/lib/services/BranchService.test.ts
+// packages/cascadia-api/src/lib/services/BranchService.test.ts
 describe('BranchService', () => {
   describe('createChangeOrderBranch', () => {
     it('creates a branch named eco/{itemNumber}', async () => {
@@ -140,7 +140,7 @@ Integration tests use `TestDatabase` for transaction-based isolation:
 > passes while asserting the absence it was written to disprove. The rule, its
 > four commit-time disciplines, and the cleanup discipline that keeps parallel
 > files from eating each other's rows live in
-> [`packages/core/src/__tests__/README.md`](../../packages/core/src/__tests__/README.md#choosing-a-harness).
+> [`packages/cascadia-api/src/__tests__/README.md`](../../packages/cascadia-api/src/__tests__/README.md#choosing-a-harness).
 
 ```typescript
 import { TestDatabase } from '@/__tests__/helpers/db'

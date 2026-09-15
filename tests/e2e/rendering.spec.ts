@@ -110,7 +110,7 @@ test.describe('Stylesheet', () => {
 
     expect(
       utilities,
-      'the page loaded a stylesheet with (almost) no utility classes — check the `@source` directives in packages/core/src/styles.css',
+      'the page loaded a stylesheet with (almost) no utility classes — check the `@source` directives in packages/cascadia-web/src/styles.css',
     ).toBeGreaterThan(50)
   })
 })

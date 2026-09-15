@@ -38,10 +38,16 @@ const local = {
 // is right: this file is published, where those packages do not exist. In the
 // public tree `PROPRIETARY` is empty, so both lists below are empty and the
 // rule below restricts nothing, which is exactly correct there.
+const APP_PACKAGES = new Set([
+  'cascadia-api',
+  'cascadia-web',
+  'cascadia-commons',
+])
+
 const MODULE_PACKAGES = [
   ...new Set(
     PROPRIETARY.map((p) => /^packages\/([^/]+)\//.exec(p)?.[1]).filter(
-      (name) => name !== undefined && name !== 'core',
+      (name) => name !== undefined && !APP_PACKAGES.has(name),
     ),
   ),
 ]
@@ -110,14 +116,14 @@ export default [
       'html/**',
       'infra/**',
       '**/*.js',
-      'packages/core/test-data/**',
+      'packages/cascadia-api/test-data/**',
       // Generated per app and gitignored. Type-aware linting two of these
       // alongside four TS programs exhausts the default heap, and there is
       // nothing to review in a file nobody writes.
       'apps/*/src/routeTree.gen.ts',
       // Generated from the OpenAPI snapshot (npm run types:openapi) and
       // committed; nothing to review here either.
-      'packages/core/src/lib/api/openapi-types.gen.ts',
+      'packages/cascadia-web/src/lib/api/openapi-types.gen.ts',
     ],
   },
   ...tanstackConfig,
@@ -194,9 +200,12 @@ export default [
   ...(proprietaryImportPatterns.length > 0
     ? [
         {
-          // Scoped to core by path, so no ignore list is needed: module files
-          // simply are not in `packages/core`.
-          files: ['packages/core/src/**/*.ts', 'packages/core/src/**/*.tsx'],
+          // Scoped to the application packages by path, so no ignore list is
+          // needed: module files simply are not under these three.
+          files: [
+            'packages/cascadia-{api,web,commons}/src/**/*.ts',
+            'packages/cascadia-{api,web,commons}/src/**/*.tsx',
+          ],
           rules: {
             'no-restricted-imports': [
               'error',
@@ -332,8 +341,8 @@ export default [
   // files can appear here, so those are restated rather than dropped.
   {
     files: [
-      'packages/core/src/components/vault/FilePreview.tsx',
-      'packages/core/src/components/work-orders/useInstructionRun.ts',
+      'packages/cascadia-web/src/components/vault/FilePreview.tsx',
+      'packages/cascadia-web/src/components/work-orders/useInstructionRun.ts',
     ],
     rules: {
       'no-restricted-syntax': ['error', ...likePatternRestrictions],
@@ -368,14 +377,14 @@ export default [
   //    the edit context through the query client.
   {
     files: [
-      'packages/core/src/components/change-orders/AddDesignToChangeOrderDialog.tsx',
-      'packages/core/src/components/change-orders/ChangeOrderAffectedItemsPanel.tsx',
-      'packages/core/src/components/change-orders/ParentPropagationDialog.tsx',
-      'packages/core/src/components/designs/AddPartToStructureDialog.tsx',
-      'packages/core/src/components/designs/MembersTab.tsx',
-      'packages/core/src/components/software/SourceDiffDialog.tsx',
-      'packages/core/src/components/software/SourceViewer.tsx',
-      'packages/core/src/routes/work-instructions/$id/index.tsx',
+      'packages/cascadia-web/src/components/change-orders/AddDesignToChangeOrderDialog.tsx',
+      'packages/cascadia-web/src/components/change-orders/ChangeOrderAffectedItemsPanel.tsx',
+      'packages/cascadia-web/src/components/change-orders/ParentPropagationDialog.tsx',
+      'packages/cascadia-web/src/components/designs/AddPartToStructureDialog.tsx',
+      'packages/cascadia-web/src/components/designs/MembersTab.tsx',
+      'packages/cascadia-web/src/components/software/SourceDiffDialog.tsx',
+      'packages/cascadia-web/src/components/software/SourceViewer.tsx',
+      'packages/cascadia-web/src/routes/work-instructions/$id/index.tsx',
       'packages/design-engine/src/components/parts/GenerateCadDialog.tsx',
     ],
     rules: {

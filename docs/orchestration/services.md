@@ -77,7 +77,7 @@ GET /api/v1/health
 ## File Vault (embedded in Core App)
 
 File storage is part of the Core App process. The vault library
-(`packages/core/src/lib/vault/`) handles upload/download, check-out/check-in,
+(`packages/cascadia-api/src/lib/vault/`) handles upload/download, check-out/check-in,
 version management, and storage abstraction — there is no separate vault
 container to build or deploy.
 

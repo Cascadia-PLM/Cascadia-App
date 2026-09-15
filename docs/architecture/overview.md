@@ -92,7 +92,7 @@ Cascadia takes the opposite approach:
 
 - **Item types are TypeScript interfaces** registered via `ItemTypeRegistry`. Adding a field means adding a Drizzle column and a Zod property.
 - **Workflows are code-defined state machines** stored in `workflow_definitions` with transitions validated by `LifecycleDefinitionService` and run by `LifecycleInstanceService`.
-- **Permissions are declared in code** (`ROLE_DEFINITIONS` in `packages/core/src/lib/auth/permissions.ts`) and enforced via `apiHandler()`.
+- **Permissions are declared in code** (`ROLE_DEFINITIONS` in `packages/cascadia-commons/src/lib/auth/permissions.ts`) and enforced via `apiHandler()`.
 - **All customization lives in the Git repository**, reviewed through PRs, tested with Vitest/Playwright.
 
 A two-tier configuration pattern allows runtime overrides from the database (labels, icons, lifecycle assignment) while keeping schemas, validation, and components strictly in code. See [two-table-pattern.md](./two-table-pattern.md) for details.
@@ -138,7 +138,38 @@ Programs are the permission boundary. Users are program members. Designs belong 
 
 ## Project Structure
 
-### `packages/core/src/components/`
+The application is three workspace packages with a one-way dependency graph:
+
+```
+@cascadia/web  ──►  @cascadia/commons  ◄──  @cascadia/api
+packages/cascadia-web   packages/cascadia-commons   packages/cascadia-api
+```
+
+| Package             | Holds                                                                                                                                        | May import   |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `@cascadia/commons` | Shared common logic: item Zod schemas and definitions, permissions, lifecycle types, the import parser, and every wire type the client names | nothing else |
+| `@cascadia/api`     | The Hono server: routes, services, the Drizzle schema, jobs, domain events, extensions, MCP, and the database-backed test helpers            | commons      |
+| `@cascadia/web`     | The Vite SPA: routes, components, hooks, the query layer, the API client, styles                                                             | commons      |
+
+`npm run boundary:check` helps enforce the dependency graph. A type the client needs from a service is declared in commons
+and re-exported from the service (`lib/thread/types.ts`,
+`lib/services/types/*.ts`); a row type inferred from a Drizzle table is written
+out in commons and pinned to the table with `Expect<Equal<…>>`
+(`lib/db/schema/designs.ts`).
+
+Inside a package, `@/` means that package. Across packages, imports are by
+name: `@cascadia/commons/lib/...`. Commons imports itself relatively, because
+its files are compiled inside the api's and the web's programs as well as its
+own. Directory layouts were preserved across the split, so a path under
+`src/` identifies a file regardless of which package it landed in, and
+`git log --follow` crosses the split for any file.
+
+An app under `apps/` composes the three (plus, in the enterprise edition, the
+module packages) into one deployable — see "The extension boundary" in
+[CLAUDE.md](../../CLAUDE.md) and
+[writing-extensions.md](../development/writing-extensions.md).
+
+### `packages/cascadia-web/src/components/`
 
 React UI components, organized by domain.
 
@@ -154,7 +185,7 @@ components/
 └── forms/               # Item-type-specific form components (PartForm, DocumentForm, etc.)
 ```
 
-### `packages/core/src/lib/`
+### `packages/cascadia-api/src/lib/`
 
 All business logic, organized by concern.
 
@@ -191,9 +222,9 @@ lib/
 └── sysml/               # SysML v2 serialization
 ```
 
-### `packages/core/src/server/`
+### `packages/cascadia-api/src/server/`
 
-Hono API server. Route modules live in `packages/core/src/server/routes/` (one file per domain), mounted in `packages/core/src/server/index.ts`.
+Hono API server. Route modules live in `packages/cascadia-api/src/server/routes/` (one file per domain), mounted in `packages/cascadia-api/src/server/index.ts`.
 
 ```
 server/
@@ -211,7 +242,7 @@ server/
     └── ...
 ```
 
-### `packages/core/src/routes/`
+### `packages/cascadia-web/src/routes/`
 
 TanStack Router file-based routes for the Vite SPA frontend.
 

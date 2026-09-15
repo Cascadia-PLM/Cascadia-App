@@ -31,7 +31,7 @@ import { execFileSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import { getTableName, is, sql } from 'drizzle-orm'
 import { PgTable } from 'drizzle-orm/pg-core'
-import { db, describeConnection } from '../packages/core/src/lib/db/index.ts'
+import { db, describeConnection } from '@cascadia/api/lib/db'
 import { classifyMigrationState } from './boot-migrate-state.ts'
 import { resolveApp } from './edition.mjs'
 

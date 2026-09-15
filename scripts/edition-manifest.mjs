@@ -31,10 +31,17 @@ export const PROPRIETARY = []
  * classification. PROPRIETARY is empty here, so this is too — `boundary:check`
  * imports it and runs in CI.
  */
+/** The application's own packages — never a module, whatever the manifest says. */
+const APP_PACKAGES = new Set([
+  'cascadia-api',
+  'cascadia-web',
+  'cascadia-commons',
+])
+
 export const MODULE_PACKAGES = [
   ...new Set(
     PROPRIETARY.map((p) => /^packages\/([^/]+)\//.exec(p)?.[1]).filter(
-      (name) => name !== undefined && name !== 'core',
+      (name) => name !== undefined && !APP_PACKAGES.has(name),
     ),
   ),
 ]

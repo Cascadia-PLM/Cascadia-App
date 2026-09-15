@@ -1,0 +1,640 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  Filter,
+  Loader2,
+  Plus,
+  X,
+} from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
+import { ChangeOrderTreeTable as ChangeOrderTreeTable } from './ChangeOrderTreeTable'
+import { AddPartFromDesignDialog } from './AddPartFromDesignDialog'
+import type { BOMTreeNode } from './ChangeOrderTreeTable'
+import type { OrphanItem } from '@cascadia/commons/lib/types/bom'
+import { useTreeSelection } from '@/components/bom/useTreeSelection'
+import { Badge, Button, Card, CardContent } from '@/components/ui'
+import {
+  changeOrderDesignStructureQuery,
+  useInvalidateResources,
+} from '@/lib/query'
+import { StateBadge } from '@/components/items/StateBadge'
+import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+
+interface ChangeOrderBranch {
+  id: string
+  mergeStatus: string
+  itemsAffected: number
+}
+
+interface ChangeOrderDesignStructureTreeProps {
+  designId: string
+  designName: string
+  designCode?: string
+  designType?: string
+  branchId?: string | null
+  changeOrderId: string
+  readOnly?: boolean
+  onAddToChangeOrder: (node: BOMTreeNode, designId: string) => void
+  onAddChild?: (node: BOMTreeNode, designId: string) => void
+  onBatchAddToChangeOrder?: (
+    nodes: Array<BOMTreeNode>,
+    designId: string,
+  ) => void
+  onItemsAdded?: () => void
+}
+
+export function ChangeOrderDesignStructureTree({
+  designId,
+  designName,
+  designCode,
+  designType,
+  branchId,
+  changeOrderId,
+  readOnly = false,
+  onAddToChangeOrder: onAddToChangeOrder,
+  onAddChild,
+  onBatchAddToChangeOrder: onBatchAddToChangeOrder,
+  onItemsAdded,
+}: ChangeOrderDesignStructureTreeProps) {
+  const invalidate = useInvalidateResources()
+
+  const {
+    data: structure,
+    isPending: loading,
+    error: structureError,
+  } = useQuery(
+    changeOrderDesignStructureQuery<BOMTreeNode, OrphanItem, ChangeOrderBranch>(
+      changeOrderId,
+      designId,
+    ),
+  )
+
+  const roots = structure?.roots ?? []
+  const orphans = structure?.orphans ?? []
+  const changeOrderBranch = structure?.ecoBranch ?? null
+  const error = structureError ? 'Failed to load design structure.' : null
+
+  const fetchStructure = () => invalidate('change-orders')
+
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [addFromDesignOpen, setAddFromDesignOpen] = useState(false)
+
+  // Column filter state
+  const [columnFilters, setColumnFilters] = useState<Record<string, unknown>>(
+    {},
+  )
+
+  const handleColumnFilterChange = useCallback(
+    (columnId: string, value: unknown) => {
+      setColumnFilters((prev) => {
+        const next = { ...prev }
+        // Remove filter if empty
+        const isEmpty =
+          value === '' ||
+          value === undefined ||
+          value === null ||
+          (Array.isArray(value) && value.length === 0)
+        if (isEmpty) {
+          delete next[columnId]
+        } else {
+          next[columnId] = value
+        }
+        return next
+      })
+    },
+    [],
+  )
+
+  const clearAllFilters = useCallback(() => {
+    setColumnFilters({})
+  }, [])
+
+  const hasActiveFilters = Object.keys(columnFilters).length > 0
+
+  // Selection hook — only eligible items can be selected. An item whose flow
+  // has ended (a final state of its lifecycle — obsolete, superseded, however
+  // named) is not added to an ECO. Parts dominate the tree; the Part
+  // lifecycle's flags decide.
+  const { data: partLifecycle } = useLifecyclePhases('Part')
+  const isEligible = useCallback(
+    (node: BOMTreeNode) => {
+      const final =
+        partLifecycle?.states.find((st) => st.id === node.state)?.isFinal ??
+        false
+      return !node.isInEco && !final
+    },
+    [partLifecycle],
+  )
+  const selection = useTreeSelection({ isEligible })
+
+  // Node matching function for filters
+  const nodeMatchesFilters = useCallback(
+    (
+      node: {
+        itemNumber: string
+        name: string | null
+        revision: string
+        state: string
+        isInEco?: boolean
+        changeAction?: string | null
+      },
+      filters: Record<string, unknown>,
+    ): boolean => {
+      for (const [key, value] of Object.entries(filters)) {
+        if (value === undefined || value === null || value === '') continue
+        if (Array.isArray(value) && value.length === 0) continue
+
+        switch (key) {
+          case 'item': {
+            const search = (value as string).toLowerCase()
+            if (!node.itemNumber.toLowerCase().includes(search)) return false
+            break
+          }
+          case 'name': {
+            const search = (value as string).toLowerCase()
+            if (!(node.name ?? '').toLowerCase().includes(search)) return false
+            break
+          }
+          case 'rev': {
+            const search = (value as string).toLowerCase()
+            if (!formatRevision(node.revision).toLowerCase().includes(search))
+              return false
+            break
+          }
+          case 'state': {
+            const selected = value as Array<string>
+            if (!selected.includes(node.state)) return false
+            break
+          }
+          case 'action': {
+            const selected = value as Array<string>
+            let matches = false
+            for (const s of selected) {
+              if (s === '__not_in_eco__') {
+                if (!node.isInEco) {
+                  matches = true
+                  break
+                }
+              } else if (s === '__in_eco__') {
+                if (node.isInEco && !node.changeAction) {
+                  matches = true
+                  break
+                }
+              } else {
+                if (node.isInEco && node.changeAction === s) {
+                  matches = true
+                  break
+                }
+              }
+            }
+            if (!matches) return false
+            break
+          }
+        }
+      }
+      return true
+    },
+    [],
+  )
+
+  // Flatten entire tree into a list of leaf-level nodes (no children)
+  const flattenTree = useCallback(
+    (nodes: Array<BOMTreeNode>): Array<BOMTreeNode> => {
+      const result: Array<BOMTreeNode> = []
+      const walk = (items: Array<BOMTreeNode>) => {
+        for (const node of items) {
+          // Push a shallow copy without children so it renders as a flat row
+          result.push({ ...node, children: undefined })
+          if (node.children?.length) walk(node.children)
+        }
+      }
+      walk(nodes)
+      return result
+    },
+    [],
+  )
+
+  // Compute filtered data
+  const { filteredRoots, filteredOrphans, filteredResultCount } =
+    useMemo(() => {
+      if (!hasActiveFilters) {
+        return {
+          filteredRoots: roots,
+          filteredOrphans: orphans,
+          filteredResultCount: -1, // sentinel: not filtered
+        }
+      }
+
+      // Flatten tree and filter
+      const allNodes = flattenTree(roots)
+      const matchingNodes = allNodes.filter((n) =>
+        nodeMatchesFilters(n, columnFilters),
+      )
+
+      // Filter orphans too
+      const matchingOrphans = orphans.filter((item) =>
+        nodeMatchesFilters(
+          {
+            itemNumber: item.itemNumber,
+            name: item.name,
+            revision: item.revision,
+            state: item.state,
+            isInEco: item.isInEco,
+            changeAction: item.changeAction,
+          },
+          columnFilters,
+        ),
+      )
+
+      return {
+        filteredRoots: matchingNodes,
+        filteredOrphans: matchingOrphans,
+        filteredResultCount: matchingNodes.length + matchingOrphans.length,
+      }
+    }, [
+      roots,
+      orphans,
+      columnFilters,
+      hasActiveFilters,
+      flattenTree,
+      nodeMatchesFilters,
+    ])
+
+  // Update visible nodes whenever roots/expansion/filters change
+  useEffect(() => {
+    if (filteredRoots.length > 0) {
+      selection.setVisibleNodes(
+        filteredRoots,
+        hasActiveFilters ? new Set() : expandedNodes,
+      )
+    }
+  }, [
+    filteredRoots,
+    expandedNodes,
+    hasActiveFilters,
+    selection.setVisibleNodes,
+  ])
+
+  // Clear selection when filters change
+  useEffect(() => {
+    selection.clearSelection()
+  }, [columnFilters])
+
+  // Toggle node expansion
+  const toggleNode = (itemId: string) => {
+    if (hasActiveFilters) return // no-op when filtered (flat view)
+    setExpandedNodes((prev) => {
+      const next = new Set(prev)
+      if (next.has(itemId)) {
+        next.delete(itemId)
+      } else {
+        next.add(itemId)
+      }
+      return next
+    })
+  }
+
+  // Expand all nodes
+  const expandAll = () => {
+    const allIds = new Set<string>()
+    const collectIds = (nodes: Array<BOMTreeNode>) => {
+      nodes.forEach((node) => {
+        if (node.children && node.children.length > 0) {
+          allIds.add(node.itemId)
+          collectIds(node.children)
+        }
+      })
+    }
+    collectIds(roots)
+    setExpandedNodes(allIds)
+  }
+
+  // Collapse all nodes
+  const collapseAll = () => {
+    setExpandedNodes(new Set())
+  }
+
+  // Expand only the paths needed to reveal affected items
+  const showAffectedItems = () => {
+    const idsToExpand = new Set<string>()
+    const walk = (node: BOMTreeNode, ancestors: Array<string>) => {
+      if (node.isInEco) {
+        for (const id of ancestors) {
+          idsToExpand.add(id)
+        }
+      }
+      if (node.children) {
+        for (const child of node.children) {
+          walk(child, [...ancestors, node.itemId])
+        }
+      }
+    }
+    for (const root of roots) {
+      walk(root, [])
+    }
+    setExpandedNodes(idsToExpand)
+  }
+
+  // Handle add to ECO
+  const handleAddToChangeOrder = (node: BOMTreeNode) => {
+    onAddToChangeOrder(node, designId)
+  }
+
+  // Handle add child
+  const handleAddChild = (node: BOMTreeNode) => {
+    onAddChild?.(node, designId)
+  }
+
+  // Handle batch add
+  const handleBatchAdd = () => {
+    if (!onBatchAddToChangeOrder || selection.selectedCount === 0) return
+
+    // Collect full BOMTreeNode objects for selected IDs
+    const selectedNodes: Array<BOMTreeNode> = []
+    const collect = (nodes: Array<BOMTreeNode>) => {
+      for (const node of nodes) {
+        if (selection.selectedIds.has(node.itemId)) {
+          selectedNodes.push(node)
+        }
+        if (node.children) collect(node.children)
+      }
+    }
+    // Search in both filtered roots and original roots (filtered roots are flat copies)
+    collect(filteredRoots)
+
+    onBatchAddToChangeOrder(selectedNodes, designId)
+    selection.clearSelection()
+  }
+
+  // Whether to show selection UI
+  const showSelection = !readOnly && !!onBatchAddToChangeOrder
+
+  // Get state badge variant
+  // Count active filters
+  const activeFilterCount = Object.keys(columnFilters).length
+
+  return (
+    <Card className="mb-4">
+      {/* Design Header */}
+      <div
+        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        <button className="p-0.5">
+          {isCollapsed ? (
+            <ChevronRight className="h-5 w-5 text-slate-500" />
+          ) : (
+            <ChevronDown className="h-5 w-5 text-slate-500" />
+          )}
+        </button>
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">
+            {designName || designCode || 'Untitled Design'}
+          </h3>
+          {designCode && designName && designCode !== designName && (
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              ({designCode})
+            </span>
+          )}
+        </div>
+        {changeOrderBranch && (
+          <Badge variant="outline" className="text-xs">
+            {changeOrderBranch.itemsAffected} items affected
+          </Badge>
+        )}
+      </div>
+
+      {/* Collapsible content */}
+      {!isCollapsed && (
+        <CardContent className="pt-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-4 text-red-500">{error}</div>
+          ) : (
+            <>
+              {/* Toolbar */}
+              <div className="flex items-center justify-between gap-2 mb-4">
+                {/* Selection toolbar + filter info (left) */}
+                <div className="flex items-center gap-2">
+                  {showSelection && selection.selectedCount > 0 && (
+                    <>
+                      <Badge variant="default" className="text-xs">
+                        {selection.selectedCount} selected
+                      </Badge>
+                      <Button size="sm" onClick={handleBatchAdd}>
+                        <Plus className="h-3.5 w-3.5 mr-1" />
+                        Add Selected to ECO
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={selection.clearSelection}
+                      >
+                        <X className="h-3.5 w-3.5 mr-1" />
+                        Clear
+                      </Button>
+                    </>
+                  )}
+                  {hasActiveFilters && (
+                    <>
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Filter className="h-3 w-3" />
+                        {activeFilterCount}{' '}
+                        {activeFilterCount === 1 ? 'filter' : 'filters'} active
+                        ({filteredResultCount}{' '}
+                        {filteredResultCount === 1 ? 'result' : 'results'})
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearAllFilters}
+                        className="h-7 px-2 text-xs text-slate-500"
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Clear Filters
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {/* Expand/collapse buttons (right) — hidden when filters active */}
+                {!hasActiveFilters && (
+                  <div className="flex items-center gap-2">
+                    {!readOnly && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAddFromDesignOpen(true)}
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1" />
+                        Add Parts
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={showAffectedItems}
+                    >
+                      <Eye className="h-3.5 w-3.5 mr-1" />
+                      Show Affected
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={expandAll}>
+                      Expand All
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={collapseAll}>
+                      Collapse All
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* BOM Tree Table */}
+              {filteredRoots.length > 0 ? (
+                <ChangeOrderTreeTable
+                  nodes={filteredRoots}
+                  expandedNodes={
+                    hasActiveFilters ? new Set<string>() : expandedNodes
+                  }
+                  onToggle={toggleNode}
+                  onAddToChangeOrder={handleAddToChangeOrder}
+                  onAddChild={onAddChild ? handleAddChild : undefined}
+                  readOnly={readOnly}
+                  branchId={changeOrderBranch?.id}
+                  showCheckboxes={showSelection}
+                  selectedIds={selection.selectedIds}
+                  onSelectionClick={selection.handleClick}
+                  onCheckboxChange={selection.handleCheckboxChange}
+                  isItemSelectable={isEligible}
+                  onSelectAll={
+                    selection.isAllSelected
+                      ? selection.clearSelection
+                      : selection.selectAll
+                  }
+                  isAllSelected={selection.isAllSelected}
+                  isIndeterminate={selection.isIndeterminate}
+                  columnFilters={columnFilters}
+                  onColumnFilterChange={handleColumnFilterChange}
+                />
+              ) : hasActiveFilters ? (
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                  <p className="mb-2">No items match the current filters.</p>
+                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                    <X className="h-3.5 w-3.5 mr-1" />
+                    Clear Filters
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                  No BOM structure found in this design.
+                </div>
+              )}
+
+              {/* Items outside the BOM tree: documents, requirements, and
+                  parts that are neither a top-level part nor anyone's child */}
+              {filteredOrphans.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Other Items (not in the BOM tree)
+                  </h4>
+                  <div className="border rounded-lg dark:border-slate-700 overflow-hidden">
+                    {/* Orphan items header */}
+                    <div className="flex items-center h-7 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 px-2 text-xs font-medium text-slate-600 dark:text-slate-400">
+                      <div className="flex-[2] min-w-[200px]">Item</div>
+                      <div className="flex-[2] min-w-[150px]">Name</div>
+                      <div className="w-16 flex-shrink-0 text-center">Rev</div>
+                      <div className="w-24 flex-shrink-0 text-center">
+                        State
+                      </div>
+                      <div className="w-28 flex-shrink-0 text-center">
+                        ECO Action
+                      </div>
+                    </div>
+                    {/* Orphan item rows */}
+                    <div className="divide-y dark:divide-slate-700">
+                      {filteredOrphans.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center h-7 px-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm"
+                        >
+                          <div className="flex-[2] min-w-[200px] flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className="text-xs flex-shrink-0"
+                            >
+                              {item.itemType}
+                            </Badge>
+                            <span className="font-medium text-slate-900 dark:text-white truncate">
+                              {item.itemNumber}
+                            </span>
+                          </div>
+                          <div className="flex-[2] min-w-[150px] truncate text-slate-600 dark:text-slate-400">
+                            {item.name}
+                          </div>
+                          <div className="w-16 flex-shrink-0 text-center text-xs text-slate-500">
+                            {formatRevision(item.revision)}
+                          </div>
+                          <div className="w-24 flex-shrink-0 flex justify-center">
+                            <StateBadge
+                              itemType={item.itemType}
+                              state={item.state}
+                              className="text-xs"
+                            />
+                          </div>
+                          <div className="w-28 flex-shrink-0 flex justify-center">
+                            {item.isInEco ? (
+                              <Badge
+                                variant={
+                                  item.changeAction === 'release'
+                                    ? 'success'
+                                    : item.changeAction === 'obsolete'
+                                      ? 'destructive'
+                                      : 'default'
+                                }
+                                className="text-xs"
+                              >
+                                {item.changeAction
+                                  ? item.changeAction.charAt(0).toUpperCase() +
+                                    item.changeAction.slice(1)
+                                  : 'In change order'}
+                              </Badge>
+                            ) : (
+                              <span className="text-slate-400 text-xs">—</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      )}
+      {/* Add Part from Design Dialog */}
+      <AddPartFromDesignDialog
+        open={addFromDesignOpen}
+        onOpenChange={setAddFromDesignOpen}
+        designId={designId}
+        designName={designName || designCode || 'Untitled Design'}
+        changeOrderId={changeOrderId}
+        designType={designType}
+        branchId={branchId}
+        onSuccess={() => {
+          fetchStructure()
+          onItemsAdded?.()
+        }}
+      />
+    </Card>
+  )
+}

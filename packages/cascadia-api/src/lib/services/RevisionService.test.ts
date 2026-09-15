@@ -1,0 +1,332 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Cascadia PLM LLC
+
+import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
+import { RevisionService } from './RevisionService'
+import type { RevisionScheme } from '@cascadia/commons/lib/types/lifecycle'
+
+describe('RevisionService', () => {
+  // ============================================
+  // Alpha Scheme (default)
+  // ============================================
+
+  describe('getNextRevision - alpha scheme', () => {
+    it('returns A for empty revision', () => {
+      expect(RevisionService.getNextRevision('')).toBe('A')
+    })
+
+    it('returns A for DRAFT revision', () => {
+      expect(RevisionService.getNextRevision('DRAFT')).toBe('A')
+    })
+
+    it('returns A for dash revision', () => {
+      expect(RevisionService.getNextRevision('-')).toBe('A')
+    })
+
+    it('returns A for dash-prefixed placeholder', () => {
+      expect(RevisionService.getNextRevision('-abc12345')).toBe('A')
+    })
+
+    it('increments A to B', () => {
+      expect(RevisionService.getNextRevision('A')).toBe('B')
+    })
+
+    it('increments Y to Z', () => {
+      expect(RevisionService.getNextRevision('Y')).toBe('Z')
+    })
+
+    it('increments Z to AA', () => {
+      expect(RevisionService.getNextRevision('Z')).toBe('AA')
+    })
+
+    it('increments AA to AB', () => {
+      expect(RevisionService.getNextRevision('AA')).toBe('AB')
+    })
+
+    it('increments AZ to BA', () => {
+      expect(RevisionService.getNextRevision('AZ')).toBe('BA')
+    })
+
+    it('increments ZZ to AAA', () => {
+      expect(RevisionService.getNextRevision('ZZ')).toBe('AAA')
+    })
+
+    it('handles lowercase input', () => {
+      expect(RevisionService.getNextRevision('a')).toBe('B')
+    })
+
+    it('defaults to alpha when no scheme provided', () => {
+      expect(RevisionService.getNextRevision('A')).toBe('B')
+      expect(RevisionService.getNextRevision('A', undefined)).toBe('B')
+    })
+
+    it('works with explicit alpha scheme', () => {
+      const scheme: RevisionScheme = { type: 'alpha' }
+      expect(RevisionService.getNextRevision('A', scheme)).toBe('B')
+      expect(RevisionService.getNextRevision('Z', scheme)).toBe('AA')
+    })
+  })
+
+  // ============================================
+  // Numeric Scheme
+  // ============================================
+
+  describe('getNextRevision - numeric scheme', () => {
+    const scheme: RevisionScheme = { type: 'numeric' }
+
+    it('returns 1 for empty revision', () => {
+      expect(RevisionService.getNextRevision('', scheme)).toBe('1')
+    })
+
+    it('returns 1 for DRAFT revision', () => {
+      expect(RevisionService.getNextRevision('DRAFT', scheme)).toBe('1')
+    })
+
+    it('returns 1 for dash revision', () => {
+      expect(RevisionService.getNextRevision('-', scheme)).toBe('1')
+    })
+
+    it('increments 1 to 2', () => {
+      expect(RevisionService.getNextRevision('1', scheme)).toBe('2')
+    })
+
+    it('increments 99 to 100', () => {
+      expect(RevisionService.getNextRevision('99', scheme)).toBe('100')
+    })
+
+    it('returns 1 for non-numeric input', () => {
+      expect(RevisionService.getNextRevision('abc', scheme)).toBe('1')
+    })
+  })
+
+  // ============================================
+  // Prefixed-Numeric Scheme
+  // ============================================
+
+  describe('getNextRevision - prefixed-numeric scheme', () => {
+    const scheme: RevisionScheme = { type: 'prefixed-numeric', prefix: 'X' }
+
+    it('returns X1 for empty revision', () => {
+      expect(RevisionService.getNextRevision('', scheme)).toBe('X1')
+    })
+
+    it('returns X1 for DRAFT revision', () => {
+      expect(RevisionService.getNextRevision('DRAFT', scheme)).toBe('X1')
+    })
+
+    it('returns X1 for dash revision', () => {
+      expect(RevisionService.getNextRevision('-', scheme)).toBe('X1')
+    })
+
+    it('increments X1 to X2', () => {
+      expect(RevisionService.getNextRevision('X1', scheme)).toBe('X2')
+    })
+
+    it('increments X9 to X10', () => {
+      expect(RevisionService.getNextRevision('X9', scheme)).toBe('X10')
+    })
+
+    it('handles multi-character prefix', () => {
+      const protoScheme: RevisionScheme = {
+        type: 'prefixed-numeric',
+        prefix: 'PROTO-',
+      }
+      expect(RevisionService.getNextRevision('', protoScheme)).toBe('PROTO-1')
+      expect(RevisionService.getNextRevision('PROTO-3', protoScheme)).toBe(
+        'PROTO-4',
+      )
+    })
+
+    it('returns prefix+1 for non-prefixed input', () => {
+      expect(RevisionService.getNextRevision('abc', scheme)).toBe('X1')
+    })
+  })
+
+  // ============================================
+  // None Scheme
+  // ============================================
+
+  describe('startAt on numeric schemes', () => {
+    it('starts a numeric scheme at 0 when asked', () => {
+      const scheme: RevisionScheme = { type: 'numeric', startAt: 0 }
+      expect(RevisionService.getInitialRevision(scheme)).toBe('0')
+      expect(RevisionService.getNextRevision('', scheme)).toBe('0')
+      expect(RevisionService.getNextRevision('0', scheme)).toBe('1')
+      expect(RevisionService.getNextRevision('1', scheme)).toBe('2')
+    })
+
+    it('runs a prefixed-numeric scheme R0 -> R1 -> R2', () => {
+      const scheme: RevisionScheme = {
+        type: 'prefixed-numeric',
+        prefix: 'R',
+        startAt: 0,
+      }
+      expect(RevisionService.getInitialRevision(scheme)).toBe('R0')
+      expect(RevisionService.getNextRevision('', scheme)).toBe('R0')
+      expect(RevisionService.getNextRevision('R0', scheme)).toBe('R1')
+      expect(RevisionService.getNextRevision('R1', scheme)).toBe('R2')
+    })
+
+    it('leaves the default at 1 when startAt is absent', () => {
+      expect(RevisionService.getInitialRevision({ type: 'numeric' })).toBe('1')
+      expect(
+        RevisionService.getInitialRevision({
+          type: 'prefixed-numeric',
+          prefix: 'P',
+        }),
+      ).toBe('P1')
+    })
+  })
+
+  describe('getNextRevision - none scheme', () => {
+    const scheme: RevisionScheme = { type: 'none' }
+
+    it('lands an item with no revision on the marker, never on empty', () => {
+      expect(RevisionService.getNextRevision('', scheme)).toBe(
+        RevisionService.NO_REVISION,
+      )
+    })
+
+    it('returns current revision unchanged', () => {
+      expect(RevisionService.getNextRevision('A', scheme)).toBe('A')
+      expect(RevisionService.getNextRevision('5', scheme)).toBe('5')
+      expect(RevisionService.getNextRevision('X2', scheme)).toBe('X2')
+    })
+  })
+
+  // ============================================
+  // getInitialRevision
+  // ============================================
+
+  describe('getInitialRevision', () => {
+    it('returns A for alpha scheme (default)', () => {
+      expect(RevisionService.getInitialRevision()).toBe('A')
+      expect(RevisionService.getInitialRevision(undefined)).toBe('A')
+      expect(RevisionService.getInitialRevision({ type: 'alpha' })).toBe('A')
+    })
+
+    it('returns 1 for numeric scheme', () => {
+      expect(RevisionService.getInitialRevision({ type: 'numeric' })).toBe('1')
+    })
+
+    it('returns prefix+1 for prefixed-numeric scheme', () => {
+      expect(
+        RevisionService.getInitialRevision({
+          type: 'prefixed-numeric',
+          prefix: 'X',
+        }),
+      ).toBe('X1')
+      expect(
+        RevisionService.getInitialRevision({
+          type: 'prefixed-numeric',
+          prefix: 'PROTO-',
+        }),
+      ).toBe('PROTO-1')
+    })
+
+    it('returns the fixed marker for none scheme', () => {
+      expect(RevisionService.getInitialRevision({ type: 'none' })).toBe(
+        RevisionService.NO_REVISION,
+      )
+    })
+  })
+
+  // ============================================
+  // The `none` scheme's released marker
+  // ============================================
+
+  describe('NO_REVISION marker', () => {
+    it('reads as a released revision, not a working copy', () => {
+      // The whole defect: at '' the marker read as unreleased, so an item
+      // released under `none` was filtered out of every released-item query.
+      expect(
+        RevisionService.isWorkingRevision(RevisionService.NO_REVISION),
+      ).toBe(false)
+    })
+
+    it('satisfies the shape items.revision imposes on a stored revision', () => {
+      const marker: string = RevisionService.NO_REVISION
+      // varchar(10), and ck_items_revision_working_marker rejects a leading
+      // '-' that is not '-' or '-{8 hex}'. 'DRAFT'/'' are working markers.
+      expect(marker).not.toBe('')
+      expect(marker.length).toBeLessThanOrEqual(10)
+      expect(marker.startsWith('-')).toBe(false)
+      expect(marker).not.toBe('DRAFT')
+    })
+
+    it('carries no ordinal, so switching schemes mints the first revision', () => {
+      // Incrementing the marker text itself ('N/A' -> 'N/B') would invent a
+      // revision that was never released.
+      expect(
+        RevisionService.getNextRevision(RevisionService.NO_REVISION, {
+          type: 'alpha',
+        }),
+      ).toBe('A')
+      expect(
+        RevisionService.getNextRevision(RevisionService.NO_REVISION, {
+          type: 'numeric',
+        }),
+      ).toBe('1')
+      expect(
+        RevisionService.getNextRevision(RevisionService.NO_REVISION, {
+          type: 'prefixed-numeric',
+          prefix: 'X',
+        }),
+      ).toBe('X1')
+    })
+  })
+
+  // ============================================
+  // getResetRevision
+  // ============================================
+
+  // ============================================
+  // Working-copy markers and how they are displayed
+  // ============================================
+
+  describe('working revisions', () => {
+    it('reads every unreleased marker as a working copy', () => {
+      // The merge decides "is this a working copy?" with this predicate; a
+      // marker it misses takes the legacy path and mints a revision from the
+      // literal marker text.
+      expect(RevisionService.isWorkingRevision('')).toBe(true)
+      expect(RevisionService.isWorkingRevision(null)).toBe(true)
+      expect(RevisionService.isWorkingRevision(undefined)).toBe(true)
+      expect(RevisionService.isWorkingRevision('DRAFT')).toBe(true)
+      expect(
+        RevisionService.isWorkingRevision(
+          RevisionService.getUnreleasedRevision(),
+        ),
+      ).toBe(true)
+      expect(
+        RevisionService.isWorkingRevision(
+          RevisionService.getWorkingRevision(
+            '01704247-dead-beef-cafe-000000000000',
+          ),
+        ),
+      ).toBe(true)
+    })
+
+    it('does not read a released revision as a working copy', () => {
+      expect(RevisionService.isWorkingRevision('A')).toBe(false)
+      expect(RevisionService.isWorkingRevision('1')).toBe(false)
+      expect(RevisionService.isWorkingRevision('X1')).toBe(false)
+    })
+
+    it('displays every working marker as a dash, released revisions verbatim', () => {
+      // The branch placeholder exists to satisfy the items unique constraint,
+      // not to be read: rendering it put '-01704247' in a Rev column.
+      const branchId = '01704247-dead-beef-cafe-000000000000'
+      expect(formatRevision(RevisionService.getWorkingRevision(branchId))).toBe(
+        '-',
+      )
+      expect(formatRevision('DRAFT')).toBe('-')
+      expect(formatRevision('')).toBe('-')
+      expect(formatRevision(null)).toBe('-')
+      expect(formatRevision('B')).toBe('B')
+      expect(formatRevision(RevisionService.NO_REVISION)).toBe(
+        RevisionService.NO_REVISION,
+      )
+    })
+  })
+})

@@ -48,7 +48,7 @@ interface HandlerContext<TParams> {
 ### Usage Example
 
 ```typescript
-// packages/core/src/server/routes/parts.ts
+// packages/cascadia-api/src/server/routes/parts.ts
 import { Hono } from 'hono'
 import { tagged } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'

@@ -27,10 +27,13 @@ const TSC_HEAP_MB = 4096
 
 /** `[project directory, tsconfig filename, file that must exist first]` */
 const PROJECTS = [
-  // The packages use their `tsconfig.typecheck.json`, which leaves out route
-  // files — those are checked in the app projects, through the generated tree
-  // that types them. See the comment in packages/core/tsconfig.typecheck.json.
-  ['packages/core', 'tsconfig.typecheck.json', null],
+  // Packages with route files use their `tsconfig.typecheck.json`, which
+  // leaves those out — they are checked in the app projects, through the
+  // generated tree that types them. See the comment in
+  // packages/cascadia-web/tsconfig.typecheck.json.
+  ['packages/cascadia-commons', 'tsconfig.json', null],
+  ['packages/cascadia-api', 'tsconfig.json', null],
+  ['packages/cascadia-web', 'tsconfig.typecheck.json', null],
   ['packages/advanced-auditing', 'tsconfig.json', null],
   ['packages/design-engine', 'tsconfig.typecheck.json', null],
   ['packages/odoo-integration', 'tsconfig.json', null],

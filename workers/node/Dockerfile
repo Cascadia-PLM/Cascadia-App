@@ -19,7 +19,9 @@ COPY package.json package-lock.json ./
 # quietly installs only the root's dependencies. Listed one per line rather than
 # globbed because `COPY packages/*/…` flattens the paths. A new workspace
 # belongs here too.
-COPY packages/core/package.json ./packages/core/
+COPY packages/cascadia-commons/package.json ./packages/cascadia-commons/
+COPY packages/cascadia-api/package.json ./packages/cascadia-api/
+COPY packages/cascadia-web/package.json ./packages/cascadia-web/
 COPY apps/cascadia/package.json ./apps/cascadia/
 
 # =============================================================================
@@ -97,7 +99,7 @@ FROM runtime-deps AS production
 COPY --from=builder /app/.output ./.output
 
 # Copy job-related code
-COPY --from=builder /app/packages/core/src/lib/db ./packages/core/src/lib/db
+COPY --from=builder /app/packages/cascadia-api/src/lib/db ./packages/cascadia-api/src/lib/db
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \

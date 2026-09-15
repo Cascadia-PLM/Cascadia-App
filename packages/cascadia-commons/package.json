@@ -1,0 +1,12 @@
+{
+  "name": "@cascadia/commons",
+  "version": "0.6.0",
+  "description": "Cascadia PLM — code shared by the API and the web client: item schemas, permissions, wire types, import parsing.",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts",
+    "./*.tsx": "./src/*.tsx"
+  }
+}

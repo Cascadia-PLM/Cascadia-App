@@ -25,7 +25,7 @@ COPY apps/cascadia/package.json ./apps/cascadia/
 # =============================================================================
 # Stage 2: Dependencies
 # =============================================================================
-FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS deps
+FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS deps
 
 WORKDIR /app
 
@@ -40,7 +40,7 @@ RUN npm ci
 # =============================================================================
 # Stage 3: Builder
 # =============================================================================
-FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS builder
+FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS builder
 
 WORKDIR /app
 
@@ -64,7 +64,7 @@ RUN npm run build:app -- "$APP"
 # that copy is what used to drag a ten-minute Vite build in front of any
 # attempt to exercise the install below. CI's Docker Build Smoke job builds
 # this target for exactly that reason.
-FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS runtime-deps
+FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS runtime-deps
 
 WORKDIR /app
 

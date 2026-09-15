@@ -39,7 +39,7 @@ Best for: Development, testing, small teams, single-server deployments.
 # docker-compose.yml
 services:
   postgres:
-    image: postgres:18-alpine
+    image: docker.io/library/postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_DB: cascadia

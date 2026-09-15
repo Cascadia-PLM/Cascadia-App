@@ -5,19 +5,31 @@
  * Per-file setup for the `dom` project — the .test.tsx component files.
  *
  * Everything here presumes jsdom: RTL cleanup, jest-dom matchers, and the
- * window/Element polyfills Radix needs. The environment-neutral mock hygiene
- * is shared with the node project via setup.node.ts.
+ * window/Element polyfills Radix needs. The mock hygiene at the bottom is the
+ * same as the node project's `setup.node.ts` in the api package — restated
+ * rather than imported, because that file also initializes `ItemTypeRegistry`
+ * against the database, and the web package neither reaches the api nor has
+ * a database. A component test that needs runtime item-type configuration is
+ * testing the wrong layer.
  */
 
-import { afterEach, vi } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import '@testing-library/dom'
 import '@testing-library/jest-dom/vitest'
-import './setup.node'
 
 // Automatically cleanup after each test when using React Testing Library
 afterEach(() => {
   cleanup()
+})
+
+// Reset all mocks between tests
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 // Mock window.matchMedia for components that use media queries

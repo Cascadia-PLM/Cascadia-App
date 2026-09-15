@@ -15,7 +15,11 @@ import viteReact from '@vitejs/plugin-react'
 // packages,
 // and naming a missing tsconfig here would fail before a single test ran.
 const tsconfigProjects = [
-  './packages/core/tsconfig.json',
+  './packages/cascadia-commons/tsconfig.json',
+  './packages/cascadia-api/tsconfig.json',
+  './packages/cascadia-web/tsconfig.json',
+  // Root: `scripts/` and its tests, which name the packages by import name.
+  './tsconfig.json',
   './packages/advanced-auditing/tsconfig.json',
   './packages/design-engine/tsconfig.json',
   './packages/odoo-integration/tsconfig.json',
@@ -38,7 +42,7 @@ export default defineConfig({
         test: {
           name: 'node',
           environment: 'node',
-          setupFiles: ['./packages/core/src/__tests__/setup.node.ts'],
+          setupFiles: ['./packages/cascadia-api/src/__tests__/setup.node.ts'],
           include: [
             'packages/*/src/**/*.{test,spec}.ts',
             'publish/*.{test,spec}.ts',
@@ -60,14 +64,14 @@ export default defineConfig({
         test: {
           name: 'dom',
           environment: 'jsdom',
-          setupFiles: ['./packages/core/src/__tests__/setup.dom.ts'],
+          setupFiles: ['./packages/cascadia-web/src/__tests__/setup.dom.ts'],
           include: ['packages/*/src/**/*.{test,spec}.tsx'],
         },
       },
     ],
 
     // Global setup/teardown (root-level: runs once, before any project)
-    globalSetup: './packages/core/src/__tests__/global-setup.ts',
+    globalSetup: './packages/cascadia-api/src/__tests__/global-setup.ts',
 
     exclude: ['node_modules', 'dist', '.output'],
 
@@ -116,9 +120,11 @@ export default defineConfig({
     mockReset: true,
     restoreMocks: true,
 
-    // Alias for test utilities
+    // Alias for test utilities. The helpers are database-backed, so they live
+    // in the api package; a commons or web test that wants them is testing the
+    // wrong layer.
     alias: {
-      '@test': './packages/core/src/__tests__',
+      '@test': './packages/cascadia-api/src/__tests__',
     },
   },
 })

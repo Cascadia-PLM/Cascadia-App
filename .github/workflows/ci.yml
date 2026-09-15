@@ -33,7 +33,7 @@ env:
   NODE_ENV: test
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_test
   # The unit suite runs against its own database and refuses to guess which
-  # one (packages/core/src/__tests__/global-setup.ts). Here it is the same
+  # one (packages/cascadia-api/src/__tests__/global-setup.ts). Here it is the same
   # database DATABASE_URL names, because each job gets a throwaway service
   # container — locally the two are deliberately different.
   TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_test

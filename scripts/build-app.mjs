@@ -75,7 +75,7 @@ async function bundle(entry, outfile) {
     },
     loader: { '.node': 'copy' },
     // esbuild reads `paths` from the app's tsconfig, which is what makes
-    // `@/`, `@cascadia/core/` and `@cascadia/enterprise/` resolve here exactly
+    // `@cascadia/api/`, `@cascadia/commons/` and `@cascadia/enterprise/` resolve here exactly
     // as they do for tsc and Vite.
     tsconfig: `apps/${app}/tsconfig.json`,
     logLevel: 'info',
@@ -94,7 +94,7 @@ async function bundle(entry, outfile) {
  * in `packages/`, so detection quietly found nothing: ~19 KB of resets and
  * theme variables, not one `.bg-*` rule, in **both** editions. Everything
  * worked — routing, auth, the API — and the application rendered as unstyled
- * HTML. `packages/core/src/styles.css` now declares its sources explicitly.
+ * HTML. `packages/cascadia-web/src/styles.css` now declares its sources explicitly.
  *
  * A missing stylesheet is loud. A stylesheet that builds, loads, and contains
  * no utilities is silent, which is why this asserts on content rather than
@@ -115,7 +115,7 @@ function assertStyled(edition) {
         `class(es) across ${sheets.length} stylesheet(s).\n` +
         '  Tailwind found no source files to scan — the app will render ' +
         'unstyled.\n  Check the `@source` directives in ' +
-        'packages/core/src/styles.css.',
+        'packages/cascadia-web/src/styles.css.',
     )
     process.exit(1)
   }

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { serve } from '@hono/node-server'
-import { ItemTypeRegistry } from '@cascadia/core/lib/items/registry'
+import { ItemTypeRegistry } from '@cascadia/api/lib/items/registry'
 import { registerModules } from '../modules.server'
 
 // Set production mode before importing app (affects static file serving)
@@ -11,7 +11,7 @@ process.env.NODE_ENV = 'production'
 // Before the app import — see the note in `dev.ts`.
 registerModules()
 
-const { default: app } = await import('@cascadia/core/server/index')
+const { default: app } = await import('@cascadia/api/server')
 
 // Runtime item-type configuration, before the first request rather than
 // alongside it: `lifecycleDefinitionId` is a runtime value, so a request
@@ -25,8 +25,8 @@ await ItemTypeRegistry.initialize()
 // it. Done before serving: this process emits on its first write.
 const [{ ensureDomainEventSequencing, sequenceUnsequencedEvents }, { db }] =
   await Promise.all([
-    import('@cascadia/core/lib/events/sequencing'),
-    import('@cascadia/core/lib/db'),
+    import('@cascadia/api/lib/events/sequencing'),
+    import('@cascadia/api/lib/db'),
   ])
 await ensureDomainEventSequencing(db)
 // Anything written before the trigger existed committed with no seq, which the
@@ -38,7 +38,7 @@ await sequenceUnsequencedEvents(db)
 // `FOR UPDATE SKIP LOCKED` on the cursor row makes concurrent pollers
 // mutually exclusive per consumer.
 const { startAppEventConsumers } =
-  await import('@cascadia/core/lib/extensions/app-consumers')
+  await import('@cascadia/api/lib/extensions/app-consumers')
 const stopEventConsumers = startAppEventConsumers()
 
 const port = parseInt(process.env.PORT || '3000', 10)
@@ -48,5 +48,5 @@ const server = serve({ fetch: app.fetch, port }, (info) => {
 })
 
 const { installGracefulShutdown } =
-  await import('@cascadia/core/server/shutdown')
+  await import('@cascadia/api/server/shutdown')
 installGracefulShutdown({ server, stopEventConsumers })

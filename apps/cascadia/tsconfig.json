@@ -11,8 +11,14 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["../../packages/core/src/*"],
-      "@cascadia/core/*": ["../../packages/core/src/*"]
+      "@/*": [
+        "../../packages/cascadia-web/src/*",
+        "../../packages/cascadia-api/src/*",
+        "../../packages/cascadia-commons/src/*"
+      ],
+      "@cascadia/api/*": ["../../packages/cascadia-api/src/*"],
+      "@cascadia/web/*": ["../../packages/cascadia-web/src/*"],
+      "@cascadia/commons/*": ["../../packages/cascadia-commons/src/*"]
     }
   }
 }

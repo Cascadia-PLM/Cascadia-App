@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { runJobsWorker } from '@cascadia/core/jobs-worker-main'
+import { runJobsWorker } from '@cascadia/api/jobs-worker-main'
 import { registerModules, registerWorkerModules } from './modules.server'
 
 // A job that votes on an approval must go through the same interceptors a

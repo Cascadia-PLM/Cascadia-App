@@ -1,0 +1,16 @@
+{
+  "name": "@cascadia/web",
+  "version": "0.6.0",
+  "description": "Cascadia PLM — the Vite + TanStack Router web client: routes, components, queries.",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./styles.css": "./src/styles.css",
+    "./*": "./src/*.ts",
+    "./*.tsx": "./src/*.tsx"
+  },
+  "dependencies": {
+    "@cascadia/commons": "*"
+  }
+}
